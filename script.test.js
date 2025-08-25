@@ -7,6 +7,9 @@ describe('script DOM interactions', () => {
   let mod;
   beforeEach(async () => {
     jest.resetModules();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
     document.body.innerHTML = `
       <div id="status"></div>
       <div id="currentPlayer"></div>
@@ -104,6 +107,44 @@ describe('script DOM interactions', () => {
     expect(log.textContent).toContain('termina il turno');
     expect(status.textContent).toContain('Player 2');
     expect(status.textContent).toContain('reinforce');
+  });
+
+  test('state is saved and restored from localStorage', async () => {
+    const t1 = document.getElementById('t1');
+    t1.click();
+    t1.click();
+    t1.click();
+    const armies = mod.game.territoryById('t1').armies;
+    const phase = mod.game.getPhase();
+    const saved = localStorage.getItem('netriskGame');
+    expect(saved).toBeTruthy();
+
+    // simulate reload
+    jest.resetModules();
+    document.body.innerHTML = `
+      <div id="status"></div>
+      <div id="currentPlayer"></div>
+      <div id="turnNumber"></div>
+      <div id="actionLog"></div>
+      <div id="diceResults"></div>
+      <div id="uiPanel"></div>
+      <button id="endTurn"></button>
+      <div id="t1" class="territory" data-id="t1"></div>
+      <div id="t2" class="territory" data-id="t2"></div>
+      <div id="t3" class="territory" data-id="t3"></div>
+      <div id="t4" class="territory" data-id="t4"></div>
+      <div id="t5" class="territory" data-id="t5"></div>
+      <div id="t6" class="territory" data-id="t6"></div>`;
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ json: () => Promise.resolve(mapData) })
+    );
+    global.logger = { info: jest.fn(), error: jest.fn() };
+    window.Game = Game;
+    const mod2 = require('./script.js');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mod2.game.territoryById('t1').armies).toBe(armies);
+    expect(mod2.game.getPhase()).toBe(phase);
   });
 });
 
