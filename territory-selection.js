@@ -1,4 +1,4 @@
-/* global logger game addLogEntry gameState */
+/* global logger game addLogEntry gameState attachTerritoryHandlers updateUI */
 let selectedTerritory = null;
 const infoPanel = document.getElementById('selectedTerritory');
 
