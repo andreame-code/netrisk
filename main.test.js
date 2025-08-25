@@ -1,5 +1,4 @@
 const mapData = require('./src/data/map.json');
-const Game = require('./game');
 
 jest.mock('./territory-selection.js', () => jest.fn());
 
@@ -30,7 +29,6 @@ describe('main DOM interactions', () => {
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
     global.prompt = jest.fn(() => '1');
-    window.Game = Game;
     main = require('./main.js');
     ui = require('./ui.js');
     await Promise.resolve();
@@ -146,7 +144,6 @@ describe('main DOM interactions', () => {
       Promise.resolve({ json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
-    window.Game = Game;
     const main2 = require('./main.js');
     require('./ui.js');
     await Promise.resolve();
