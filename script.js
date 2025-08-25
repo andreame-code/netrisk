@@ -101,18 +101,29 @@ function handleTerritoryClick(e) {
 }
 
 function attack(from, to) {
-  const attackRoll = Math.ceil(Math.random()*6);
-  const defendRoll = Math.ceil(Math.random()*6);
-  if (attackRoll > defendRoll) {
-    to.armies -= 1;
-    if (to.armies <= 0) {
-      to.owner = from.owner;
-      to.armies = 1;
+  const attackDice = Math.min(3, from.armies - 1);
+  const defendDice = Math.min(2, to.armies);
+
+  const attackRolls = Array.from({ length: attackDice }, () => Math.ceil(Math.random() * 6)).sort((a, b) => b - a);
+  const defendRolls = Array.from({ length: defendDice }, () => Math.ceil(Math.random() * 6)).sort((a, b) => b - a);
+
+  const comparisons = Math.min(attackRolls.length, defendRolls.length);
+  for (let i = 0; i < comparisons; i++) {
+    if (attackRolls[i] > defendRolls[i]) {
+      to.armies -= 1;
+    } else {
       from.armies -= 1;
-      checkVictory();
     }
-  } else {
+  }
+
+  const resultText = 'Attacker: ' + attackRolls.join(', ') + ' | Defender: ' + defendRolls.join(', ');
+  document.getElementById('diceResults').textContent = resultText;
+
+  if (to.armies <= 0) {
+    to.owner = from.owner;
+    to.armies = 1;
     from.armies -= 1;
+    checkVictory();
   }
 }
 
