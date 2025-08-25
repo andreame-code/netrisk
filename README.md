@@ -24,6 +24,15 @@ npm start
 
 Open `http://localhost:8080` in your browser.
 
+## Testing
+
+Run the test suite and lint checks to verify changes:
+
+```bash
+npm test
+npm run lint
+```
+
 ## UAT Debug
 
 The client exposes a basic logger wrapping the browser console with `info`, `warn` and `error` levels. An error overlay appears at the top of the page when an uncaught exception or unhandled promise rejection occurs.
