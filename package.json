@@ -1,0 +1,12 @@
+{
+  "name": "netrisk",
+  "version": "1.0.0",
+  "description": "Simple browser-based Risk-inspired game",
+  "scripts": {
+    "start": "http-server .",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
