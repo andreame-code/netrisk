@@ -43,16 +43,28 @@ function moveToken(el) {
   if (typeof addLogEntry !== 'undefined' && typeof game !== 'undefined') {
     const name = el.dataset.name || el.id;
     addLogEntry(`${game.players[game.currentPlayer].name} muove il segnalino su ${name}`);
+    if (typeof logger !== 'undefined') {
+      logger.info(`${game.players[game.currentPlayer].name} moves token to ${name}`);
+    }
   }
 }
 
 const moveBtn = document.getElementById('moveToken');
 if (moveBtn) {
   moveBtn.addEventListener('click', () => {
-    if (selectedTerritory) {
-      moveToken(selectedTerritory.el);
-    } else if (typeof addLogEntry !== 'undefined') {
-      addLogEntry('Nessun territorio selezionato');
+    if (typeof logger !== 'undefined') {
+      logger.info('Move token clicked');
+    }
+    try {
+      if (selectedTerritory) {
+        moveToken(selectedTerritory.el);
+      } else if (typeof addLogEntry !== 'undefined') {
+        addLogEntry('Nessun territorio selezionato');
+      }
+    } catch (err) {
+      if (typeof logger !== 'undefined') {
+        logger.error(err);
+      }
     }
   });
 }
@@ -108,4 +120,9 @@ fetch('map.svg')
         selectTerritory(null);
       }
     });
+  })
+  .catch((err) => {
+    if (typeof logger !== 'undefined') {
+      logger.error(err);
+    }
   });

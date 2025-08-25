@@ -1,9 +1,20 @@
 /* global logger */
 // Remove any previously registered service workers to avoid stale caches
+// and log their status so that we know if any were present.
 if (typeof navigator !== "undefined" && navigator.serviceWorker) {
   navigator.serviceWorker
     .getRegistrations()
-    .then((regs) => regs.forEach((reg) => reg.unregister()));
+    .then((regs) => {
+      if (typeof logger !== "undefined") {
+        logger.info(`Found ${regs.length} service worker(s)`);
+      }
+      regs.forEach((reg) => reg.unregister());
+    })
+    .catch((err) => {
+      if (typeof logger !== "undefined") {
+        logger.error("Service worker check failed", err);
+      }
+    });
 }
 
 const GameClass =
@@ -119,60 +130,95 @@ function runAI() {
 function attachTerritoryHandlers() {
   document.querySelectorAll(".territory").forEach((el) => {
     el.addEventListener("click", () => {
-      const result = game.handleTerritoryClick(el.dataset.id);
-      if (result) {
-        const playerName = game.players[game.currentPlayer].name;
-        if (result.type === "attack") {
-          playAttackSound();
-          const fromEl = document.getElementById(result.from);
-          const toEl = document.getElementById(result.to);
-          fromEl.classList.add("attack");
-          toEl.classList.add("attack");
-          setTimeout(() => {
-            fromEl.classList.remove("attack");
-            toEl.classList.remove("attack");
-          }, 500);
-          document.getElementById("diceResults").textContent =
-            `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
-          if (result.conquered) {
-            playConquerSound();
-            toEl.classList.add("conquer");
-            setTimeout(() => toEl.classList.remove("conquer"), 1000);
+      if (typeof logger !== "undefined") {
+        logger.info(`Territory clicked: ${el.dataset.id}`);
+      }
+      try {
+        const result = game.handleTerritoryClick(el.dataset.id);
+        if (result) {
+          const playerName = game.players[game.currentPlayer].name;
+          if (result.type === "attack") {
+            if (typeof logger !== "undefined") {
+              logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
+            }
+            playAttackSound();
+            const fromEl = document.getElementById(result.from);
+            const toEl = document.getElementById(result.to);
+            fromEl.classList.add("attack");
+            toEl.classList.add("attack");
+            setTimeout(() => {
+              fromEl.classList.remove("attack");
+              toEl.classList.remove("attack");
+            }, 500);
+            document.getElementById("diceResults").textContent =
+              `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
+            if (result.conquered) {
+              playConquerSound();
+              toEl.classList.add("conquer");
+              setTimeout(() => toEl.classList.remove("conquer"), 1000);
+            }
+            addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
+          } else if (result.type === "reinforce") {
+            if (typeof logger !== "undefined") {
+              logger.info(`${playerName} reinforces ${result.territory}`);
+            }
+            addLogEntry(`${playerName} rinforza ${result.territory}`);
+          } else if (result.type === "fortify") {
+            if (typeof logger !== "undefined") {
+              logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
+            }
+            addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
           }
-          addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
-        } else if (result.type === "reinforce") {
-          addLogEntry(`${playerName} rinforza ${result.territory}`);
-        } else if (result.type === "fortify") {
-          addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
+        }
+        updateUI();
+        if (result && result.type === "select") {
+          if (typeof logger !== "undefined") {
+            logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
+          }
+          document.getElementById(result.territory).classList.add("selected");
+        }
+        updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
+        updateInfoPanel();
+        runAI();
+      } catch (err) {
+        if (typeof logger !== "undefined") {
+          logger.error(err);
         }
       }
-      updateUI();
-      if (result && result.type === "select") {
-        document.getElementById(result.territory).classList.add("selected");
-      }
-      updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
-      updateInfoPanel();
-      runAI();
     });
   });
 }
 
 document.getElementById("endTurn").addEventListener("click", () => {
-  const prev = game.currentPlayer;
-  game.endTurn();
-  if (game.getPhase() !== "reinforce") {
+  if (typeof logger !== "undefined") {
+    logger.info("End turn clicked");
+  }
+  try {
+    const prev = game.currentPlayer;
     game.endTurn();
+    if (game.getPhase() !== "reinforce") {
+      game.endTurn();
+    }
+    if (prev !== game.currentPlayer) {
+      gameState.turnNumber += 1;
+      addLogEntry(
+        `${game.players[prev].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
+      );
+      if (typeof logger !== "undefined") {
+        logger.info(
+          `${game.players[prev].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
+        );
+      }
+    }
+    updateUI();
+    updateGameState();
+    updateInfoPanel();
+    runAI();
+  } catch (err) {
+    if (typeof logger !== "undefined") {
+      logger.error(err);
+    }
   }
-  if (prev !== game.currentPlayer) {
-    gameState.turnNumber += 1;
-    addLogEntry(
-      `${game.players[prev].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
-    );
-  }
-  updateUI();
-  updateGameState();
-  updateInfoPanel();
-  runAI();
 });
 
 const forceErrorBtn = document.getElementById("forceError");
