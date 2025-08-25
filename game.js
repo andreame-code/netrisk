@@ -1,4 +1,4 @@
-const ai = require('./ai');
+const ai = typeof module !== 'undefined' && module.exports ? require('./ai') : globalThis.ai;
 
 class Game {
   constructor(players, territories, continents, deck) {
