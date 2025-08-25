@@ -151,6 +151,66 @@ test('AI fortifies at end of turn', () => {
   attack.mockRestore();
 });
 
+test('AI plays cards and reinforces most threatened territory', () => {
+  game.setCurrentPlayer(2);
+  game.hands[2] = [
+    { territory: 'a', type: 'infantry' },
+    { territory: 'b', type: 'cavalry' },
+    { territory: 'c', type: 'artillery' }
+  ];
+  const t5 = game.territoryById('t5');
+  const t6 = game.territoryById('t6');
+  const t2 = game.territoryById('t2'); t2.armies = 10;
+  const t4 = game.territoryById('t4'); t4.armies = 10;
+  const t3 = game.territoryById('t3'); t3.armies = 10;
+  const playSpy = jest.spyOn(game, 'playCards');
+  game.performAITurn();
+  expect(playSpy).toHaveBeenCalled();
+  expect(game.hands[2].length).toBe(0);
+  expect(t5.armies).toBeGreaterThan(t6.armies);
+  playSpy.mockRestore();
+});
+
+test('AI chooses attack with highest success probability', () => {
+  game.setCurrentPlayer(2);
+  game.reinforcements = 0;
+  game.setPhase('reinforce');
+  const t5 = game.territoryById('t5');
+  const t6 = game.territoryById('t6');
+  const t2 = game.territoryById('t2');
+  const t3 = game.territoryById('t3');
+  t5.armies = 5;
+  t6.armies = 3;
+  t2.armies = 1; t2.owner = 0;
+  t3.armies = 2; t3.owner = 1;
+  const attack = jest.spyOn(game, 'attack').mockImplementation((from, to) => {
+    to.owner = from.owner;
+    to.armies = 1;
+    from.armies -= 1;
+    return { conquered: true, attackRolls: [], defendRolls: [] };
+  });
+  game.performAITurn();
+  expect(attack).toHaveBeenCalled();
+  expect(attack.mock.calls[0][0].id).toBe('t5');
+  expect(attack.mock.calls[0][1].id).toBe('t2');
+  attack.mockRestore();
+});
+
+test('AI fortifies weaker border territory when no attack is favorable', () => {
+  game.setCurrentPlayer(2);
+  game.setPhase('reinforce');
+  game.reinforcements = 0;
+  const t5 = game.territoryById('t5');
+  const t6 = game.territoryById('t6');
+  const t2 = game.territoryById('t2'); t2.armies = 10;
+  const t3 = game.territoryById('t3'); t3.armies = 10;
+  t5.armies = 5;
+  t6.armies = 1;
+  game.performAITurn();
+  expect(t5.armies).toBe(4);
+  expect(t6.armies).toBe(2);
+});
+
 test('continent bonus is added to reinforcements', () => {
   ['t1', 't2', 't3'].forEach(id => { game.territoryById(id).owner = 0; });
   game.calculateReinforcements();

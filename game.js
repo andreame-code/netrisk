@@ -1,3 +1,5 @@
+const ai = require('./ai');
+
 class Game {
   constructor(players, territories, continents, deck) {
     this.players = players || [
@@ -223,57 +225,40 @@ class Game {
 
   performAITurn() {
     if (!this.players[this.currentPlayer].ai || this.phase === 'gameover') return;
-    // Reinforce randomly
-    const owned = this.territories.filter(t => t.owner === this.currentPlayer);
-    while (this.reinforcements > 0 && owned.length > 0) {
-      const t = owned[Math.floor(Math.random() * owned.length)];
-      t.armies += 1;
+
+    // Play cards if a valid set is available
+    const hand = this.hands[this.currentPlayer];
+    const cardSet = ai.findValidCardSet(hand);
+    if (cardSet) {
+      this.playCards(cardSet);
+    }
+
+    // Reinforce using territory priorities
+    while (this.reinforcements > 0) {
+      const target = ai.chooseReinforcement(this);
+      if (!target) break;
+      target.armies += 1;
       this.reinforcements -= 1;
     }
     if (this.phase === 'reinforce' && this.reinforcements === 0) {
       this.phase = 'attack';
     }
-    // Keep attacking while advantageous targets exist
+
+    // Attack while a favorable target exists
     while (this.phase === 'attack') {
-      const options = [];
-      this.territories
-        .filter(t => t.owner === this.currentPlayer)
-        .forEach(from => {
-          if (from.armies > 1) {
-            from.neighbors.forEach(n => {
-              const to = this.territoryById(n);
-              if (to.owner !== this.currentPlayer && from.armies > to.armies) {
-                options.push({ from, to });
-              }
-            });
-          }
-        });
-      if (options.length === 0) break;
-      const { from, to } = options[Math.floor(Math.random() * options.length)];
-      this.attack(from, to);
+      const best = ai.chooseAttack(this);
+      if (!best || best.prob < 0.6) break;
+      this.attack(best.from, best.to);
       if (this.phase === 'gameover') return;
     }
-    // Move to fortify phase and automatically fortify one army
+
+    // Fortify towards weaker friendly territories
     this.endTurn();
     if (this.phase === 'fortify') {
-      const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
-      let best = null;
-      aiOwned.forEach(from => {
-        if (from.armies > 1) {
-          from.neighbors.forEach(n => {
-            const to = this.territoryById(n);
-            if (to.owner === this.currentPlayer) {
-              const diff = from.armies - to.armies;
-              if (diff > 1 && (!best || diff > best.diff)) {
-                best = { from, to, diff };
-              }
-            }
-          });
-        }
-      });
-      if (best) {
-        best.from.armies -= 1;
-        best.to.armies += 1;
+      const move = ai.chooseFortification(this);
+      if (move) {
+        move.from.armies -= 1;
+        move.to.armies += 1;
       }
       this.endTurn();
     }
