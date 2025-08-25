@@ -93,7 +93,7 @@ describe('script DOM interactions', () => {
     expect(t1.classList.contains('selected')).toBe(false);
   });
 
-  test('end turn updates to next player reinforce', () => {
+  test('end turn now requires fortify step', () => {
     const t1 = document.getElementById('t1');
     const endTurnBtn = document.getElementById('endTurn');
     const status = document.getElementById('status');
@@ -102,6 +102,9 @@ describe('script DOM interactions', () => {
     t1.click();
     t1.click();
     t1.click();
+
+    endTurnBtn.click();
+    expect(status.textContent).toContain('fortify');
 
     endTurnBtn.click();
     expect(log.textContent).toContain('termina il turno');

@@ -279,9 +279,10 @@ function attachTerritoryHandlers() {
         logger.info(`Territory clicked: ${el.dataset.id}`);
       }
       try {
+        const prevPlayer = game.currentPlayer;
         const result = game.handleTerritoryClick(el.dataset.id);
         if (result) {
-          const playerName = game.players[game.currentPlayer].name;
+          const playerName = game.players[prevPlayer].name;
           if (result.type === "attack") {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
@@ -314,6 +315,14 @@ function attachTerritoryHandlers() {
             }
             addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
             animateMove(result.from, result.to);
+            const nextName = game.players[game.currentPlayer].name;
+            gameState.turnNumber += 1;
+            addLogEntry(
+              `${playerName} termina il turno. Ora tocca a ${nextName}`,
+            );
+            if (typeof logger !== "undefined") {
+              logger.info(`${playerName} ends turn. Next: ${nextName}`);
+            }
           }
         }
         updateUI();
@@ -341,19 +350,22 @@ document.getElementById("endTurn").addEventListener("click", () => {
     logger.info("End turn clicked");
   }
   try {
-    const prev = game.currentPlayer;
+    const prevPlayer = game.currentPlayer;
+    const prevPhase = game.getPhase();
     game.endTurn();
-    if (game.getPhase() !== "reinforce") {
-      game.endTurn();
-    }
-    if (prev !== game.currentPlayer) {
+    if (prevPhase === "attack" && game.getPhase() === "fortify") {
+      addLogEntry(`${game.players[prevPlayer].name} passa alla fase fortificazioni`);
+      if (typeof logger !== "undefined") {
+        logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
+      }
+    } else if (prevPhase === "fortify" && game.getPhase() === "reinforce") {
       gameState.turnNumber += 1;
       addLogEntry(
-        `${game.players[prev].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
+        `${game.players[prevPlayer].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
       );
       if (typeof logger !== "undefined") {
         logger.info(
-          `${game.players[prev].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
+          `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
         );
       }
     }
