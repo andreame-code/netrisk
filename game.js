@@ -118,14 +118,14 @@ class Game {
           this.selectedFrom = null;
           return { type: 'deselect', territory: id };
         }
-        if (from.owner === this.currentPlayer && to.owner === this.currentPlayer && from.neighbors.includes(to.id)) {
-          from.armies -= 1;
-          to.armies += 1;
+        if (
+          from.owner === this.currentPlayer &&
+          to.owner === this.currentPlayer &&
+          from.neighbors.includes(to.id)
+        ) {
+          const movable = from.armies - 1;
           this.selectedFrom = null;
-          this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
-          this.phase = 'reinforce';
-          this.calculateReinforcements();
-          return { type: 'fortify', from: from.id, to: to.id };
+          return { type: 'fortify', from: from.id, to: to.id, movableArmies: movable };
         }
       }
     }
@@ -149,15 +149,29 @@ class Game {
     }
 
     let conquered = false;
+    let movableArmies = 0;
     if (to.armies <= 0) {
       to.owner = from.owner;
       to.armies = 1;
-      from.armies -= 1;
+      from.armies -= 1; // mandatory move
       conquered = true;
+      movableArmies = from.armies - 1;
       this.conqueredThisTurn = true;
       this.checkVictory();
     }
-    return { attackRolls, defendRolls, conquered };
+    return { attackRolls, defendRolls, conquered, movableArmies };
+  }
+
+  moveArmies(fromId, toId, count) {
+    const from = this.territoryById(fromId);
+    const to = this.territoryById(toId);
+    if (!from || !to) return false;
+    if (from.owner !== this.currentPlayer || to.owner !== this.currentPlayer) return false;
+    if (!from.neighbors.includes(to.id)) return false;
+    if (count < 1 || from.armies <= count) return false;
+    from.armies -= count;
+    to.armies += count;
+    return true;
   }
 
   checkVictory() {
@@ -272,8 +286,7 @@ class Game {
         }
       });
       if (best) {
-        best.from.armies -= 1;
-        best.to.armies += 1;
+        this.moveArmies(best.from.id, best.to.id, 1);
       }
       this.endTurn();
     }

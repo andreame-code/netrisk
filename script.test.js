@@ -28,6 +28,7 @@ describe('script DOM interactions', () => {
       Promise.resolve({ json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
+    global.prompt = jest.fn(() => '1');
     window.Game = Game;
     mod = require('./script.js');
     await Promise.resolve();
@@ -88,7 +89,7 @@ describe('script DOM interactions', () => {
     t1.click();
     expect(t1.classList.contains('selected')).toBe(true);
     t2.click();
-    expect(log.textContent).toContain('sposta da t1 a t2');
+    expect(log.textContent).toContain('sposta 1 da t1 a t2');
     expect(status.textContent).toContain('reinforce');
     expect(t1.classList.contains('selected')).toBe(false);
   });
