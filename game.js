@@ -1,3 +1,5 @@
+const { attackSuccessProbability, territoryPriority } = require("./ai");
+
 class Game {
   constructor(players, territories, continents, deck) {
     this.players = players || [
@@ -227,6 +229,20 @@ class Game {
     return true;
   }
 
+  findValidSet(hand) {
+    for (let i = 0; i < hand.length - 2; i++) {
+      for (let j = i + 1; j < hand.length - 1; j++) {
+        for (let k = j + 1; k < hand.length; k++) {
+          const types = [hand[i].type, hand[j].type, hand[k].type];
+          const allSame = types.every(t => t === types[0]);
+          const allDiff = new Set(types).size === 3;
+          if (allSame || allDiff) return [i, j, k];
+        }
+      }
+    }
+    return null;
+  }
+
   shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -237,55 +253,65 @@ class Game {
 
   performAITurn() {
     if (!this.players[this.currentPlayer].ai || this.phase === 'gameover') return;
-    // Reinforce randomly
-    const owned = this.territories.filter(t => t.owner === this.currentPlayer);
-    while (this.reinforcements > 0 && owned.length > 0) {
-      const t = owned[Math.floor(Math.random() * owned.length)];
-      t.armies += 1;
+    // Play cards if possible
+    const hand = this.hands[this.currentPlayer];
+    const set = this.findValidSet(hand);
+    if (set) this.playCards(set);
+
+    // Reinforce prioritizing territories
+    while (this.reinforcements > 0) {
+      const owned = this.territories.filter(t => t.owner === this.currentPlayer);
+      if (owned.length === 0) break;
+      const target = owned.reduce((best, t) => {
+        const score = territoryPriority(this, t);
+        return !best || score > best.score ? { t, score } : best;
+      }, null).t;
+      target.armies += 1;
       this.reinforcements -= 1;
     }
     if (this.phase === 'reinforce' && this.reinforcements === 0) {
       this.phase = 'attack';
     }
-    // Keep attacking while advantageous targets exist
+
+    // Attack while probabilities favorable
     while (this.phase === 'attack') {
       const options = [];
       this.territories
-        .filter(t => t.owner === this.currentPlayer)
+        .filter(t => t.owner === this.currentPlayer && t.armies > 1)
         .forEach(from => {
-          if (from.armies > 1) {
-            from.neighbors.forEach(n => {
-              const to = this.territoryById(n);
-              if (to.owner !== this.currentPlayer && from.armies > to.armies) {
-                options.push({ from, to });
-              }
-            });
-          }
+          from.neighbors.forEach(n => {
+            const to = this.territoryById(n);
+            if (to.owner !== this.currentPlayer) {
+              const prob = attackSuccessProbability(from, to);
+              options.push({ from, to, prob });
+            }
+          });
         });
       if (options.length === 0) break;
-      const { from, to } = options[Math.floor(Math.random() * options.length)];
-      this.attack(from, to);
+      options.sort((a, b) => b.prob - a.prob);
+      const best = options[0];
+      if (best.prob < 0.6) break;
+      this.attack(best.from, best.to);
       if (this.phase === 'gameover') return;
     }
-    // Move to fortify phase and automatically fortify one army
+
+    // Fortify one army from strong to weak border
     this.endTurn();
     if (this.phase === 'fortify') {
-      const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
       let best = null;
+      const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
       aiOwned.forEach(from => {
         if (from.armies > 1) {
           from.neighbors.forEach(n => {
             const to = this.territoryById(n);
             if (to.owner === this.currentPlayer) {
-              const diff = from.armies - to.armies;
-              if (diff > 1 && (!best || diff > best.diff)) {
-                best = { from, to, diff };
-              }
+              const diff = territoryPriority(this, to) - territoryPriority(this, from);
+              if (!best || diff > best.diff) best = { from, to, diff };
             }
           });
         }
       });
-      if (best) {
+      if (best && best.diff > 0) {
         this.moveArmies(best.from.id, best.to.id, 1);
       }
       this.endTurn();
