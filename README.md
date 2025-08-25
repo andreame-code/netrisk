@@ -6,6 +6,10 @@ The game now calculates reinforcements based on the number of territories a
 player owns and includes a fortify phase for moving troops between adjacent
 friendly territories.
 
+The interface features a simple world map background in place of the old grid,
+and attack or conquest actions trigger short animations and audio cues for
+better feedback.
+
 Combat uses multiple dice rolls for both attacker and defender, with roll results displayed on screen for more strategic play.
 
 ## Development

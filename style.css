@@ -4,29 +4,53 @@ body {
   text-align: center;
 }
 
+
 .board {
-  display: grid;
-  grid-template-columns: repeat(3, 150px);
-  grid-template-rows: repeat(2, 150px);
-  gap: 5px;
-  justify-content: center;
+  position: relative;
+  width: 600px;
+  height: 400px;
+  background: url('map.svg') no-repeat center/cover;
   margin: 20px auto;
 }
 
 .territory {
-  position: relative;
+  position: absolute;
+  width: 40px;
+  height: 40px;
   border: 2px solid #333;
+  border-radius: 50%;
   background: #ddd;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 18px;
   user-select: none;
+  transition: transform 0.3s;
+  transform: translate(-50%, -50%);
 }
 
 .territory.selected {
   outline: 4px solid #ff0;
+}
+
+.territory.attack {
+  animation: attackPulse 0.5s ease-in-out;
+}
+
+.territory.conquer {
+  animation: conquerFlash 1s ease-in-out;
+}
+
+@keyframes attackPulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes conquerFlash {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,0,1); }
+  100% { box-shadow: 0 0 20px 10px rgba(255,255,0,0); }
 }
 
 #status {
