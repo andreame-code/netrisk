@@ -60,3 +60,13 @@ test('endTurn moves from attack to fortify then to next player', () => {
   expect(game.getPhase()).toBe('reinforce');
   expect(game.getCurrentPlayer()).toBe(1);
 });
+
+test('AI player performs its turn and passes play', () => {
+  game.setCurrentPlayer(2);
+  game.calculateReinforcements();
+  jest.spyOn(Math, 'random').mockReturnValue(0.1);
+  game.performAITurn();
+  Math.random.mockRestore();
+  expect(game.getCurrentPlayer()).toBe(0);
+  expect(game.getPhase()).toBe('reinforce');
+});

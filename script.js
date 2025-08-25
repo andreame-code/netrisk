@@ -48,6 +48,13 @@ function updateUI() {
   document.getElementById('status').textContent = status;
 }
 
+function runAI() {
+  while (game.players[game.currentPlayer].ai && game.getPhase() !== 'gameover') {
+    game.performAITurn();
+    updateUI();
+  }
+}
+
 document.querySelectorAll('.territory').forEach(el => {
   el.addEventListener('click', () => {
     const result = game.handleTerritoryClick(el.dataset.id);
@@ -74,16 +81,19 @@ document.querySelectorAll('.territory').forEach(el => {
     if (result && result.type === 'select') {
       document.getElementById(result.territory).classList.add('selected');
     }
+    runAI();
   });
 });
 
 document.getElementById('endTurn').addEventListener('click', () => {
   game.endTurn();
   updateUI();
+  runAI();
 });
 
 updateUI();
+runAI();
 
 if (typeof module !== 'undefined') {
-  module.exports = { game, updateUI, territoryPositions };
+  module.exports = { game, updateUI, territoryPositions, runAI };
 }

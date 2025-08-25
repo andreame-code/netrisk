@@ -2,15 +2,16 @@ class Game {
   constructor(players, territories) {
     this.players = players || [
       { name: 'Player 1', color: '#e74c3c' },
-      { name: 'Player 2', color: '#3498db' }
+      { name: 'Player 2', color: '#3498db' },
+      { name: 'AI', color: '#2ecc71', ai: true }
     ];
     this.territories = territories || [
       { id: 't1', neighbors: ['t2', 't4'], owner: 0, armies: 3 },
       { id: 't2', neighbors: ['t1', 't3', 't5'], owner: 0, armies: 3 },
-      { id: 't3', neighbors: ['t2', 't6'], owner: 0, armies: 3 },
+      { id: 't3', neighbors: ['t2', 't6'], owner: 1, armies: 3 },
       { id: 't4', neighbors: ['t1', 't5'], owner: 1, armies: 3 },
-      { id: 't5', neighbors: ['t2', 't4', 't6'], owner: 1, armies: 3 },
-      { id: 't6', neighbors: ['t3', 't5'], owner: 1, armies: 3 }
+      { id: 't5', neighbors: ['t2', 't4', 't6'], owner: 2, armies: 3 },
+      { id: 't6', neighbors: ['t3', 't5'], owner: 2, armies: 3 }
     ];
     this.currentPlayer = 0;
     this.phase = 'reinforce';
@@ -136,6 +137,37 @@ class Game {
       this.phase = 'reinforce';
       this.calculateReinforcements();
     }
+  }
+
+  performAITurn() {
+    if (!this.players[this.currentPlayer].ai || this.phase === 'gameover') return;
+    // Reinforce randomly
+    const owned = this.territories.filter(t => t.owner === this.currentPlayer);
+    while (this.reinforcements > 0 && owned.length > 0) {
+      const t = owned[Math.floor(Math.random() * owned.length)];
+      t.armies += 1;
+      this.reinforcements -= 1;
+    }
+    if (this.phase === 'reinforce' && this.reinforcements === 0) {
+      this.phase = 'attack';
+    }
+    // Attempt a single random attack
+    const options = [];
+    owned.forEach(from => {
+      if (from.armies > 1) {
+        from.neighbors.forEach(n => {
+          const to = this.territoryById(n);
+          if (to.owner !== this.currentPlayer) options.push({ from, to });
+        });
+      }
+    });
+    if (options.length > 0) {
+      const { from, to } = options[Math.floor(Math.random() * options.length)];
+      this.attack(from, to);
+    }
+    // End turn
+    this.endTurn();
+    if (this.phase === 'fortify') this.endTurn();
   }
 
   getPhase() { return this.phase; }
