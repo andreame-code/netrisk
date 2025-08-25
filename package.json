@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "eslint .",
     "start": "http-server .",
-    "test": "jest"
+    "test": "jest",
+    "build": "node build.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
