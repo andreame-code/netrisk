@@ -15,6 +15,43 @@ if (typeof logger !== "undefined") {
   logger.info("Game initialised");
 }
 
+const gameState = {
+  turnNumber: 1,
+  currentPlayer: game.currentPlayer,
+  players: game.players,
+  territories: game.territories,
+  selectedTerritory: null,
+  tokenPosition: null,
+  phase: game.getPhase(),
+  log: [],
+};
+
+function updateGameState(selected = null) {
+  gameState.currentPlayer = game.currentPlayer;
+  gameState.players = game.players;
+  gameState.territories = game.territories;
+  gameState.phase = game.getPhase();
+  gameState.selectedTerritory = selected;
+  gameState.tokenPosition = selected ? territoryPositions[selected] : null;
+}
+
+function updateInfoPanel() {
+  const cp = document.getElementById("currentPlayer");
+  if (cp) cp.textContent = game.players[gameState.currentPlayer].name;
+  const tn = document.getElementById("turnNumber");
+  if (tn) tn.textContent = gameState.turnNumber;
+}
+
+function addLogEntry(msg) {
+  gameState.log.push(msg);
+  if (gameState.log.length > 10) gameState.log.shift();
+  const logEl = document.getElementById("actionLog");
+  if (logEl) {
+    logEl.innerHTML = gameState.log.map((l) => `<div>${l}</div>`).join("");
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+}
+
 const territoryPositions = {
   t1: { x: 120, y: 100 },
   t2: { x: 340, y: 110 },
@@ -83,6 +120,7 @@ document.querySelectorAll(".territory").forEach((el) => {
   el.addEventListener("click", () => {
     const result = game.handleTerritoryClick(el.dataset.id);
     if (result) {
+      const playerName = game.players[game.currentPlayer].name;
       if (result.type === "attack") {
         playAttackSound();
         const fromEl = document.getElementById(result.from);
@@ -100,19 +138,38 @@ document.querySelectorAll(".territory").forEach((el) => {
           toEl.classList.add("conquer");
           setTimeout(() => toEl.classList.remove("conquer"), 1000);
         }
+        addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
+      } else if (result.type === "reinforce") {
+        addLogEntry(`${playerName} rinforza ${result.territory}`);
+      } else if (result.type === "fortify") {
+        addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
       }
     }
     updateUI();
     if (result && result.type === "select") {
       document.getElementById(result.territory).classList.add("selected");
     }
+    updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
+    updateInfoPanel();
     runAI();
   });
 });
 
 document.getElementById("endTurn").addEventListener("click", () => {
+  const prev = game.currentPlayer;
   game.endTurn();
+  if (game.getPhase() !== "reinforce") {
+    game.endTurn();
+  }
+  if (prev !== game.currentPlayer) {
+    gameState.turnNumber += 1;
+    addLogEntry(
+      `${game.players[prev].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
+    );
+  }
   updateUI();
+  updateGameState();
+  updateInfoPanel();
   runAI();
 });
 
@@ -125,6 +182,10 @@ if (forceErrorBtn) {
 
 updateUI();
 runAI();
+
+updateGameState();
+updateInfoPanel();
+addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
 if (typeof module !== "undefined") {
   module.exports = { game, updateUI, territoryPositions, runAI };
