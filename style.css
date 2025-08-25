@@ -13,9 +13,12 @@ body {
   border: 1px solid #ccc;
 }
 
-#quickInstructions {
+#howToPlayBox {
   margin-top: 5px;
   font-size: 14px;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: #f9f9f9;
 }
 
 .log {
