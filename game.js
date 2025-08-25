@@ -185,7 +185,10 @@ class Game {
     } else if (this.phase === 'fortify') {
       const prev = this.currentPlayer;
       this.selectedFrom = null;
-      this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
+      // Move to the next player, skipping any who have been eliminated
+      do {
+        this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
+      } while (!this.territories.some(t => t.owner === this.currentPlayer));
       if (this.conqueredThisTurn) {
         this.drawCard(prev);
         this.conqueredThisTurn = false;

@@ -164,3 +164,27 @@ test('playing valid card set grants reinforcements', () => {
   expect(game.reinforcements).toBe(5);
   expect(game.hands[0].length).toBe(0);
 });
+
+test('players with no territories are skipped on turn rotation', () => {
+  // Setup: player 1 has a single territory that will be conquered
+  const t2 = game.territoryById('t2');
+  const t3 = game.territoryById('t3');
+  const t4 = game.territoryById('t4');
+  t2.armies = 5; // attacker
+  t3.owner = 1; t3.armies = 1; // defender's last territory
+  t4.owner = 2; // ensure player 1 has no other territories
+  game.setPhase('attack');
+  // Ensure deterministic conquest
+  jest.spyOn(Math, 'random').mockReturnValueOnce(0.9)
+    .mockReturnValueOnce(0.9)
+    .mockReturnValueOnce(0.9)
+    .mockReturnValueOnce(0.1);
+  game.attack(t2, t3);
+  Math.random.mockRestore();
+  // End current player's turn completely
+  game.endTurn(); // to fortify
+  game.endTurn(); // to next player
+  // Player 1 had no territories, so it should now be player 2's turn
+  expect(game.getCurrentPlayer()).toBe(2);
+  expect(game.getPhase()).toBe('reinforce');
+});
