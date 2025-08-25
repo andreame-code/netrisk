@@ -40,12 +40,39 @@ class Game {
     this.phase = 'reinforce';
     this.selectedFrom = null;
     this.reinforcements = 0;
+    this.continents = [
+      { name: 'north', territories: ['t1', 't2', 't3'], bonus: 2 },
+      { name: 'south', territories: ['t4', 't5', 't6'], bonus: 2 }
+    ];
+    this.deck = [
+      { territory: 't1', type: 'infantry' },
+      { territory: 't2', type: 'cavalry' },
+      { territory: 't3', type: 'artillery' },
+      { territory: 't4', type: 'infantry' },
+      { territory: 't5', type: 'cavalry' },
+      { territory: 't6', type: 'artillery' }
+    ];
+    this.shuffle(this.deck);
+    this.hands = Array.from({ length: this.players.length }, () => []);
+    this.discard = [];
+    this.conqueredThisTurn = false;
     this.calculateReinforcements();
   }
 
   calculateReinforcements() {
     const owned = this.territories.filter(t => t.owner === this.currentPlayer).length;
-    this.reinforcements = Math.max(3, Math.floor(owned / 3));
+    let reinf = Math.max(3, Math.floor(owned / 3));
+    this.continents.forEach(c => {
+      if (
+        c.territories.every(id => {
+          const terr = this.territoryById(id);
+          return terr && terr.owner === this.currentPlayer;
+        })
+      ) {
+        reinf += c.bonus;
+      }
+    });
+    this.reinforcements = reinf;
   }
 
   territoryById(id) {
@@ -133,6 +160,7 @@ class Game {
       to.armies = 1;
       from.armies -= 1;
       conquered = true;
+      this.conqueredThisTurn = true;
       this.checkVictory();
     }
     return { attackRolls, defendRolls, conquered };
@@ -155,11 +183,45 @@ class Game {
       this.selectedFrom = null;
       this.phase = 'fortify';
     } else if (this.phase === 'fortify') {
+      const prev = this.currentPlayer;
       this.selectedFrom = null;
       this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
+      if (this.conqueredThisTurn) {
+        this.drawCard(prev);
+        this.conqueredThisTurn = false;
+      }
       this.phase = 'reinforce';
       this.calculateReinforcements();
     }
+  }
+
+  drawCard(player) {
+    if (this.deck.length === 0) return null;
+    const card = this.deck.shift();
+    this.hands[player].push(card);
+    return card;
+  }
+
+  playCards(indices) {
+    const hand = this.hands[this.currentPlayer];
+    if (indices.length !== 3) return false;
+    const cards = indices.map(i => hand[i]);
+    if (cards.some(c => !c)) return false;
+    const types = cards.map(c => c.type);
+    const allSame = types.every(t => t === types[0]);
+    const allDiff = new Set(types).size === 3;
+    if (!allSame && !allDiff) return false;
+    indices.sort((a, b) => b - a).forEach(i => this.discard.push(hand.splice(i, 1)[0]));
+    this.reinforcements += 5;
+    return true;
+  }
+
+  shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
 
   performAITurn() {
