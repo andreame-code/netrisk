@@ -1,4 +1,5 @@
 /* global logger */
+import Game from "./game.js";
 import initTerritorySelection from "./territory-selection.js";
 import { playAttackSound, playConquerSound } from "./audio.js";
 import {
@@ -107,7 +108,11 @@ async function loadGame() {
     acc[t.id] = { x: t.x, y: t.y };
     return acc;
   }, {});
-  const GameClass = window.Game;
+  const GameClass =
+    (typeof window !== "undefined" && window.Game) || Game;
+  if (typeof GameClass !== "function") {
+    throw new Error("Game class not available");
+  }
   if (typeof localStorage !== "undefined") {
     try {
       const saved = localStorage.getItem("netriskGame");
