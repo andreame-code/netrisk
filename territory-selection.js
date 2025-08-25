@@ -66,6 +66,21 @@ fetch('map.svg')
     tokenEl.id = 'token';
     tokenEl.className = 'token';
     boardEl.appendChild(tokenEl);
+    if (typeof game !== 'undefined') {
+      game.territories.forEach((t) => {
+        const terrEl = document.createElement('div');
+        terrEl.id = t.id;
+        terrEl.className = 'territory';
+        terrEl.dataset.id = t.id;
+        boardEl.appendChild(terrEl);
+      });
+      if (typeof attachTerritoryHandlers === 'function') {
+        attachTerritoryHandlers();
+      }
+      if (typeof updateUI === 'function') {
+        updateUI();
+      }
+    }
     if (typeof gameState !== 'undefined' && gameState.tokenPosition) {
       tokenEl.style.left = `${gameState.tokenPosition.x}px`;
       tokenEl.style.top = `${gameState.tokenPosition.y}px`;

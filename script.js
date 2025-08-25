@@ -91,11 +91,14 @@ function playConquerSound() {
 function updateUI() {
   game.territories.forEach((t) => {
     const el = document.getElementById(t.id);
+    if (!el) return;
     el.style.background = game.players[t.owner].color;
     el.textContent = t.armies;
     const pos = territoryPositions[t.id];
-    el.style.left = pos.x + "px";
-    el.style.top = pos.y + "px";
+    if (pos) {
+      el.style.left = pos.x + "px";
+      el.style.top = pos.y + "px";
+    }
     el.classList.remove("selected");
   });
   let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
@@ -115,44 +118,46 @@ function runAI() {
   }
 }
 
-document.querySelectorAll(".territory").forEach((el) => {
-  el.addEventListener("click", () => {
-    const result = game.handleTerritoryClick(el.dataset.id);
-    if (result) {
-      const playerName = game.players[game.currentPlayer].name;
-      if (result.type === "attack") {
-        playAttackSound();
-        const fromEl = document.getElementById(result.from);
-        const toEl = document.getElementById(result.to);
-        fromEl.classList.add("attack");
-        toEl.classList.add("attack");
-        setTimeout(() => {
-          fromEl.classList.remove("attack");
-          toEl.classList.remove("attack");
-        }, 500);
-        document.getElementById("diceResults").textContent =
-          `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
-        if (result.conquered) {
-          playConquerSound();
-          toEl.classList.add("conquer");
-          setTimeout(() => toEl.classList.remove("conquer"), 1000);
+function attachTerritoryHandlers() {
+  document.querySelectorAll(".territory").forEach((el) => {
+    el.addEventListener("click", () => {
+      const result = game.handleTerritoryClick(el.dataset.id);
+      if (result) {
+        const playerName = game.players[game.currentPlayer].name;
+        if (result.type === "attack") {
+          playAttackSound();
+          const fromEl = document.getElementById(result.from);
+          const toEl = document.getElementById(result.to);
+          fromEl.classList.add("attack");
+          toEl.classList.add("attack");
+          setTimeout(() => {
+            fromEl.classList.remove("attack");
+            toEl.classList.remove("attack");
+          }, 500);
+          document.getElementById("diceResults").textContent =
+            `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
+          if (result.conquered) {
+            playConquerSound();
+            toEl.classList.add("conquer");
+            setTimeout(() => toEl.classList.remove("conquer"), 1000);
+          }
+          addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
+        } else if (result.type === "reinforce") {
+          addLogEntry(`${playerName} rinforza ${result.territory}`);
+        } else if (result.type === "fortify") {
+          addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
         }
-        addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
-      } else if (result.type === "reinforce") {
-        addLogEntry(`${playerName} rinforza ${result.territory}`);
-      } else if (result.type === "fortify") {
-        addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
       }
-    }
-    updateUI();
-    if (result && result.type === "select") {
-      document.getElementById(result.territory).classList.add("selected");
-    }
-    updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
-    updateInfoPanel();
-    runAI();
+      updateUI();
+      if (result && result.type === "select") {
+        document.getElementById(result.territory).classList.add("selected");
+      }
+      updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
+      updateInfoPanel();
+      runAI();
+    });
   });
-});
+}
 
 document.getElementById("endTurn").addEventListener("click", () => {
   const prev = game.currentPlayer;
@@ -187,5 +192,5 @@ updateInfoPanel();
 addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
 if (typeof module !== "undefined") {
-  module.exports = { game, updateUI, territoryPositions, runAI };
+  module.exports = { game, updateUI, territoryPositions, runAI, attachTerritoryHandlers };
 }
