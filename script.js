@@ -59,6 +59,71 @@ function addLogEntry(msg) {
   }
 }
 
+function animateMove(from, to) {
+  const board = document.getElementById("board");
+  if (!board) return;
+  const fromPos = territoryPositions[from];
+  const toPos = territoryPositions[to];
+  if (!fromPos || !toPos) return;
+  const token = document.createElement("div");
+  token.className = "token move-token";
+  token.style.left = fromPos.x + "px";
+  token.style.top = fromPos.y + "px";
+  board.appendChild(token);
+  requestAnimationFrame(() => {
+    token.style.left = toPos.x + "px";
+    token.style.top = toPos.y + "px";
+  });
+  token.addEventListener(
+    "transitionend",
+    () => {
+      token.classList.add("animate__animated", "animate__fadeOut");
+      token.addEventListener("animationend", () => token.remove(), { once: true });
+    },
+    { once: true },
+  );
+}
+
+function showVictoryModal(winnerIdx) {
+  const modal = document.getElementById("victoryModal");
+  if (!modal) return;
+  const title = document.getElementById("victoryTitle");
+  const stats = document.getElementById("victoryStats");
+  if (title) title.textContent = `${game.players[winnerIdx].name} ha vinto!`;
+  if (stats) {
+    const terr = game.players.map((p, idx) => {
+      const count = game.territories.filter((t) => t.owner === idx).length;
+      return `<li>${p.name}: ${count} territori</li>`;
+    });
+    stats.innerHTML = `<p>Turni: ${gameState.turnNumber}</p><ul>${terr.join("")}</ul>`;
+  }
+  modal.classList.add("show");
+}
+
+function checkForVictory() {
+  const winner = game.checkVictory();
+  if (winner !== null) {
+    showVictoryModal(winner);
+  }
+}
+
+async function startNewGame() {
+  const modal = document.getElementById("victoryModal");
+  if (modal) modal.classList.remove("show");
+  await loadGame();
+  gameState.turnNumber = 1;
+  gameState.log = [];
+  const logEl = document.getElementById("actionLog");
+  if (logEl) logEl.innerHTML = "";
+  selectedCards = [];
+  updateUI();
+  updateGameState();
+  updateInfoPanel();
+  addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
+  runAI();
+  checkForVictory();
+}
+
 async function loadGame() {
   const res = await fetch("./src/data/map.json");
   const map = await res.json();
@@ -198,11 +263,11 @@ function attachTerritoryHandlers() {
             playAttackSound();
             const fromEl = document.getElementById(result.from);
             const toEl = document.getElementById(result.to);
-            fromEl.classList.add("attack");
-            toEl.classList.add("attack");
+            fromEl.classList.add("attack", "animate__animated", "animate__shakeX");
+            toEl.classList.add("attack", "animate__animated", "animate__shakeX");
             setTimeout(() => {
-              fromEl.classList.remove("attack");
-              toEl.classList.remove("attack");
+              fromEl.classList.remove("attack", "animate__animated", "animate__shakeX");
+              toEl.classList.remove("attack", "animate__animated", "animate__shakeX");
             }, 500);
             document.getElementById("diceResults").textContent =
               `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
@@ -222,6 +287,7 @@ function attachTerritoryHandlers() {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
             }
             addLogEntry(`${playerName} sposta da ${result.from} a ${result.to}`);
+            animateMove(result.from, result.to);
           }
         }
         updateUI();
@@ -234,6 +300,7 @@ function attachTerritoryHandlers() {
         updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
         updateInfoPanel();
         runAI();
+        checkForVictory();
       } catch (err) {
         if (typeof logger !== "undefined") {
           logger.error(err);
@@ -268,6 +335,7 @@ document.getElementById("endTurn").addEventListener("click", () => {
     updateGameState();
     updateInfoPanel();
     runAI();
+    checkForVictory();
   } catch (err) {
     if (typeof logger !== "undefined") {
       logger.error(err);
@@ -284,6 +352,15 @@ if (forceErrorBtn) {
 
 async function init() {
   await loadGame();
+  const modal = document.createElement("div");
+  modal.id = "victoryModal";
+  modal.className = "modal";
+  modal.innerHTML =
+    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn">Nuova partita</button></div>';
+  document.body.appendChild(modal);
+  document
+    .getElementById("newGameBtn")
+    .addEventListener("click", startNewGame);
   const ui = document.getElementById("uiPanel");
   const cardPanel = document.createElement("div");
   cardPanel.id = "cardPanel";
@@ -315,6 +392,7 @@ async function init() {
 
   updateUI();
   runAI();
+  checkForVictory();
 
   updateGameState();
   updateInfoPanel();
