@@ -14,7 +14,16 @@ function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
 }
 
-const assets = ['map.svg', 'style.css', 'logger.js', 'game.js', 'script.js', 'territory-selection.js'];
+const assets = [
+  'map.svg',
+  'style.css',
+  'logger.js',
+  'game.js',
+  'main.js',
+  'territory-selection.js',
+  'audio.js',
+  'ui.js',
+];
 const hashed = {};
 
 // First process map.svg to know its hashed name
