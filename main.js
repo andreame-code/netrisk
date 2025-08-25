@@ -121,15 +121,20 @@ async function loadGame() {
     }
   }
   if (!game) {
-    let players = null;
+    let players = [];
     if (typeof localStorage !== "undefined") {
       try {
-        players = JSON.parse(localStorage.getItem("netriskPlayers"));
+        players = JSON.parse(localStorage.getItem("netriskPlayers")) || [];
       } catch (err) {
-        players = null;
+        players = [];
       }
     }
-    game = new GameClass(players, map.territories, map.continents, map.deck);
+    game = new GameClass(
+      players.length ? players : null,
+      map.territories,
+      map.continents,
+      map.deck,
+    );
     if (typeof logger !== "undefined") {
       logger.info("Game initialised");
     }

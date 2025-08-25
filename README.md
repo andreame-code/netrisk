@@ -2,8 +2,9 @@
 
 A simple browser-based strategy game inspired by the classic game of Risk.
 
-The game now supports three players by default, with the third controlled by a
-basic AI to enable solo play. Reinforcements are calculated based on the number
+The setup interface allows choosing how many human players and AI opponents
+participate in each match, making both solo and multiplayer games possible.
+Reinforcements are calculated based on the number
 of territories a player owns and the fortify phase allows moving troops between
 adjacent friendly territories.
 
