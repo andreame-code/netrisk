@@ -56,6 +56,27 @@ test('attack phase resolves battle between territories', () => {
   Math.random.mockRestore();
 });
 
+test('attack returns movable armies after conquest and moveArmies transfers them', () => {
+  game.setPhase('attack');
+  const from = game.territoryById('t2');
+  const to = game.territoryById('t3');
+  from.armies = 5;
+  to.owner = 1; to.armies = 1;
+  jest.spyOn(Math, 'random')
+    .mockReturnValueOnce(0.9)
+    .mockReturnValueOnce(0.8)
+    .mockReturnValueOnce(0.7)
+    .mockReturnValueOnce(0.1);
+  const res = game.attack(from, to);
+  Math.random.mockRestore();
+  expect(res.conquered).toBe(true);
+  expect(res.movableArmies).toBe(3);
+  const moved = game.moveArmies('t2', 't3', 2);
+  expect(moved).toBe(true);
+  expect(from.armies).toBe(2);
+  expect(to.armies).toBe(3);
+});
+
 test('gameover phase when one player owns all territories', () => {
   game.territories.forEach(t => { t.owner = 0; });
   game.checkVictory();
