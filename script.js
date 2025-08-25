@@ -4,18 +4,39 @@ const players = [
 ];
 
 const territories = [
-  { id: 't1', neighbors: ['t2', 't4'], owner: 0, armies: 3 },
-  { id: 't2', neighbors: ['t1', 't3', 't5'], owner: 0, armies: 3 },
-  { id: 't3', neighbors: ['t2', 't6'], owner: 0, armies: 3 },
-  { id: 't4', neighbors: ['t1', 't5'], owner: 1, armies: 3 },
-  { id: 't5', neighbors: ['t2', 't4', 't6'], owner: 1, armies: 3 },
-  { id: 't6', neighbors: ['t3', 't5'], owner: 1, armies: 3 }
+  { id: 't1', neighbors: ['t2', 't4'], owner: 0, armies: 3, x: 120, y: 100 },
+  { id: 't2', neighbors: ['t1', 't3', 't5'], owner: 0, armies: 3, x: 340, y: 110 },
+  { id: 't3', neighbors: ['t2', 't6'], owner: 0, armies: 3, x: 500, y: 140 },
+  { id: 't4', neighbors: ['t1', 't5'], owner: 1, armies: 3, x: 150, y: 260 },
+  { id: 't5', neighbors: ['t2', 't4', 't6'], owner: 1, armies: 3, x: 360, y: 220 },
+  { id: 't6', neighbors: ['t3', 't5'], owner: 1, armies: 3, x: 520, y: 300 }
 ];
 
 let currentPlayer = 0;
 let phase = 'reinforce'; // reinforce, attack, fortify, gameover
 let selectedFrom = null;
 let reinforcements = 0;
+
+let audioCtx;
+function playTone(freq, duration = 0.2) {
+  if (typeof window === 'undefined') return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  if (!audioCtx) audioCtx = new AudioContext();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playAttackSound() { playTone(300); }
+function playConquerSound() { playTone(600, 0.3); }
 
 function calculateReinforcements() {
   const owned = territories.filter(t => t.owner === currentPlayer).length;
@@ -27,6 +48,8 @@ function updateUI() {
     const el = document.getElementById(t.id);
     el.style.background = players[t.owner].color;
     el.textContent = t.armies;
+    el.style.left = t.x + 'px';
+    el.style.top = t.y + 'px';
     el.classList.remove('selected');
   });
   let status = `${players[currentPlayer].name} - ${phase}`;
@@ -101,6 +124,16 @@ function handleTerritoryClick(e) {
 }
 
 function attack(from, to) {
+  playAttackSound();
+  const fromEl = document.getElementById(from.id);
+  const toEl = document.getElementById(to.id);
+  if (fromEl) fromEl.classList.add('attack');
+  if (toEl) toEl.classList.add('attack');
+  setTimeout(() => {
+    if (fromEl) fromEl.classList.remove('attack');
+    if (toEl) toEl.classList.remove('attack');
+  }, 500);
+
   const attackDice = Math.min(3, from.armies - 1);
   const defendDice = Math.min(2, to.armies);
 
@@ -120,6 +153,11 @@ function attack(from, to) {
   document.getElementById('diceResults').textContent = resultText;
 
   if (to.armies <= 0) {
+    playConquerSound();
+    if (toEl) {
+      toEl.classList.add('conquer');
+      setTimeout(() => toEl.classList.remove('conquer'), 1000);
+    }
     to.owner = from.owner;
     to.armies = 1;
     from.armies -= 1;
