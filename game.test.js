@@ -70,3 +70,59 @@ test('AI player performs its turn and passes play', () => {
   expect(game.getCurrentPlayer()).toBe(0);
   expect(game.getPhase()).toBe('reinforce');
 });
+
+test('AI performs multiple advantageous attacks', () => {
+  game.setCurrentPlayer(2);
+  game.setPhase('attack');
+  game.reinforcements = 0;
+  const t5 = game.territoryById('t5');
+  const t6 = game.territoryById('t6');
+  const t2 = game.territoryById('t2');
+  const t3 = game.territoryById('t3');
+  const t4 = game.territoryById('t4');
+  t5.armies = 5;
+  t6.armies = 4;
+  t2.armies = 1;
+  t3.armies = 1;
+  t4.armies = 1;
+  const attack = jest.spyOn(game, 'attack').mockImplementation((from, to) => {
+    to.owner = from.owner;
+    to.armies = 1;
+    from.armies -= 1;
+    return { conquered: true, attackRolls: [], defendRolls: [] };
+  });
+  jest.spyOn(Math, 'random').mockReturnValue(0);
+  game.performAITurn();
+  expect(attack).toHaveBeenCalledTimes(3);
+  expect(t2.owner).toBe(2);
+  expect(t3.owner).toBe(2);
+  expect(t4.owner).toBe(2);
+  Math.random.mockRestore();
+  attack.mockRestore();
+});
+
+test('AI fortifies at end of turn', () => {
+  game.setCurrentPlayer(2);
+  game.setPhase('attack');
+  game.reinforcements = 0;
+  const t5 = game.territoryById('t5');
+  const t6 = game.territoryById('t6');
+  const t2 = game.territoryById('t2');
+  const t3 = game.territoryById('t3');
+  const t4 = game.territoryById('t4');
+  t5.armies = 3;
+  t6.armies = 1;
+  t2.armies = 3; t2.owner = 0;
+  t3.armies = 3; t3.owner = 1;
+  t4.armies = 3; t4.owner = 1;
+  const attack = jest.spyOn(game, 'attack');
+  jest.spyOn(Math, 'random').mockReturnValue(0);
+  game.performAITurn();
+  Math.random.mockRestore();
+  expect(attack).not.toHaveBeenCalled();
+  expect(t5.armies).toBe(2);
+  expect(t6.armies).toBe(2);
+  expect(game.getCurrentPlayer()).toBe(0);
+  expect(game.getPhase()).toBe('reinforce');
+  attack.mockRestore();
+});
