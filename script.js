@@ -140,7 +140,7 @@ async function loadGame() {
       players = null;
     }
   }
-  game = new GameClass(players, map.territories);
+  game = new GameClass(players, map.territories, map.continents, map.deck);
   if (typeof logger !== "undefined") {
     logger.info("Game initialised");
   }
