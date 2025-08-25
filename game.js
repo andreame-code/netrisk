@@ -1,26 +1,30 @@
 class Game {
-  constructor(players, territories) {
+  constructor(players, territories, continents, deck) {
     this.players = players || [
       { name: 'Player 1', color: '#e74c3c' },
       { name: 'Player 2', color: '#3498db' },
       { name: 'AI', color: '#2ecc71', ai: true }
     ];
 
-    if (!territories) {
+    let map;
+    if (!territories || !continents || !deck) {
       try {
-        // Load default territory data from JSON when none provided
-        const map = require('./src/data/map.json');
-        territories = map.territories.map((t, i) => ({
-          id: t.id,
-          neighbors: t.neighbors,
-          x: t.x,
-          y: t.y,
-          owner: Math.floor((i * this.players.length) / map.territories.length),
-          armies: 3,
-        }));
+        map = require('./src/data/map.json');
       } catch (err) {
-        territories = [];
+        map = { territories: [], continents: [], deck: [] };
       }
+    }
+
+    if (!territories) {
+      // Load default territory data from JSON when none provided
+      territories = map.territories.map((t, i) => ({
+        id: t.id,
+        neighbors: t.neighbors,
+        x: t.x,
+        y: t.y,
+        owner: Math.floor((i * this.players.length) / map.territories.length),
+        armies: 3,
+      }));
     } else {
       territories = territories.map((t, i) => ({
         id: t.id,
@@ -40,18 +44,8 @@ class Game {
     this.phase = 'reinforce';
     this.selectedFrom = null;
     this.reinforcements = 0;
-    this.continents = [
-      { name: 'north', territories: ['t1', 't2', 't3'], bonus: 2 },
-      { name: 'south', territories: ['t4', 't5', 't6'], bonus: 2 }
-    ];
-    this.deck = [
-      { territory: 't1', type: 'infantry' },
-      { territory: 't2', type: 'cavalry' },
-      { territory: 't3', type: 'artillery' },
-      { territory: 't4', type: 'infantry' },
-      { territory: 't5', type: 'cavalry' },
-      { territory: 't6', type: 'artillery' }
-    ];
+    this.continents = continents || (map ? map.continents : []) || [];
+    this.deck = (deck || (map ? map.deck : []) || []).map(c => ({ ...c }));
     this.shuffle(this.deck);
     this.hands = Array.from({ length: this.players.length }, () => []);
     this.discard = [];
