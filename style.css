@@ -9,7 +9,7 @@ body {
   position: relative;
   width: 600px;
   height: 400px;
-  background: url('map.svg') no-repeat center/cover;
+  background: url('./map.svg?v=2') no-repeat center/cover;
   margin: 20px auto;
 }
 

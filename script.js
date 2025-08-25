@@ -1,4 +1,11 @@
 /* global logger */
+// Remove any previously registered service workers to avoid stale caches
+if (typeof navigator !== "undefined" && navigator.serviceWorker) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => regs.forEach((reg) => reg.unregister()));
+}
+
 const Game =
   typeof window !== "undefined" && window.Game
     ? window.Game
