@@ -26,7 +26,7 @@ const mapMock = {
 beforeEach(() => {
   jest.resetModules();
   jest.doMock('./src/data/map.json', () => mapMock, { virtual: true });
-  Game = require('./game');
+  Game = require('./game.js').default;
   game = new Game();
 });
 
