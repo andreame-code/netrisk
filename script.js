@@ -32,7 +32,6 @@ function updateGameState(selected = null) {
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
   gameState.selectedTerritory = selected;
-  gameState.tokenPosition = selected ? territoryPositions[selected] : null;
 }
 
 function updateInfoPanel() {

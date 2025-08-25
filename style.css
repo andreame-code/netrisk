@@ -52,6 +52,17 @@ body {
   stroke-width: 3;
 }
 
+.token {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  background: #fff;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 .territory {
   position: absolute;
   width: 40px;
