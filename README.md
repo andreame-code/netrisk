@@ -6,6 +6,8 @@ The game now calculates reinforcements based on the number of territories a
 player owns and includes a fortify phase for moving troops between adjacent
 friendly territories.
 
+Combat uses multiple dice rolls for both attacker and defender, with roll results displayed on screen for more strategic play.
+
 ## Development
 
 Install dependencies and run the game locally:
