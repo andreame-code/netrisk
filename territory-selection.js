@@ -1,6 +1,7 @@
 export default function initTerritorySelection({
   logger,
   game,
+  territories,
   addLogEntry,
   gameState,
   attachTerritoryHandlers,
@@ -83,8 +84,9 @@ export default function initTerritorySelection({
       tokenEl.id = "token";
       tokenEl.className = "token";
       boardEl.appendChild(tokenEl);
-      if (game) {
-        game.territories.forEach((t) => {
+      const terrs = territories || game?.territories;
+      if (terrs) {
+        terrs.forEach((t) => {
           const terrEl = document.createElement("div");
           terrEl.id = t.id;
           terrEl.className = "territory";

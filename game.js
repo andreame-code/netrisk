@@ -5,14 +5,37 @@ class Game {
       { name: 'Player 2', color: '#3498db' },
       { name: 'AI', color: '#2ecc71', ai: true }
     ];
-    this.territories = territories || [
-      { id: 't1', neighbors: ['t2', 't4'], owner: 0, armies: 3 },
-      { id: 't2', neighbors: ['t1', 't3', 't5'], owner: 0, armies: 3 },
-      { id: 't3', neighbors: ['t2', 't6'], owner: 1, armies: 3 },
-      { id: 't4', neighbors: ['t1', 't5'], owner: 1, armies: 3 },
-      { id: 't5', neighbors: ['t2', 't4', 't6'], owner: 2, armies: 3 },
-      { id: 't6', neighbors: ['t3', 't5'], owner: 2, armies: 3 }
-    ];
+
+    if (!territories) {
+      try {
+        // Load default territory data from JSON when none provided
+        const map = require('./src/data/map.json');
+        territories = map.territories.map((t, i) => ({
+          id: t.id,
+          neighbors: t.neighbors,
+          x: t.x,
+          y: t.y,
+          owner: Math.floor((i * this.players.length) / map.territories.length),
+          armies: 3,
+        }));
+      } catch (err) {
+        territories = [];
+      }
+    } else {
+      territories = territories.map((t, i) => ({
+        id: t.id,
+        neighbors: t.neighbors,
+        x: t.x,
+        y: t.y,
+        owner:
+          typeof t.owner === 'number'
+            ? t.owner
+            : Math.floor((i * this.players.length) / territories.length),
+        armies: t.armies || 3,
+      }));
+    }
+
+    this.territories = territories;
     this.currentPlayer = 0;
     this.phase = 'reinforce';
     this.selectedFrom = null;
