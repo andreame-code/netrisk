@@ -6,11 +6,9 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
     .then((regs) => regs.forEach((reg) => reg.unregister()));
 }
 
-const Game =
-  typeof window !== "undefined" && window.Game
-    ? window.Game
-    : require("./game");
-const game = new Game();
+const GameClass =
+  typeof module !== "undefined" ? require("./game") : window.Game;
+const game = new GameClass();
 if (typeof logger !== "undefined") {
   logger.info("Game initialised");
 }
