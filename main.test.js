@@ -3,8 +3,9 @@ const Game = require('./game');
 
 jest.mock('./territory-selection.js', () => jest.fn());
 
-describe('script DOM interactions', () => {
-  let mod;
+describe('main DOM interactions', () => {
+  let main;
+  let ui;
   beforeEach(async () => {
     jest.resetModules();
     if (typeof localStorage !== 'undefined') {
@@ -30,9 +31,10 @@ describe('script DOM interactions', () => {
     global.logger = { info: jest.fn(), error: jest.fn() };
     global.prompt = jest.fn(() => '1');
     window.Game = Game;
-    mod = require('./script.js');
+    main = require('./main.js');
+    ui = require('./ui.js');
     await Promise.resolve();
-    mod.attachTerritoryHandlers();
+    main.attachTerritoryHandlers();
     jest.useFakeTimers();
   });
 
@@ -77,7 +79,8 @@ describe('script DOM interactions', () => {
     const t2 = document.getElementById('t2');
     const log = document.getElementById('actionLog');
     const status = document.getElementById('status');
-    const { game, updateUI } = mod;
+    const { game } = main;
+    const { updateUI } = ui;
 
     t1.click();
     t1.click();
@@ -118,8 +121,8 @@ describe('script DOM interactions', () => {
     t1.click();
     t1.click();
     t1.click();
-    const armies = mod.game.territoryById('t1').armies;
-    const phase = mod.game.getPhase();
+    const armies = main.game.territoryById('t1').armies;
+    const phase = main.game.getPhase();
     const saved = localStorage.getItem('netriskGame');
     expect(saved).toBeTruthy();
 
@@ -144,11 +147,12 @@ describe('script DOM interactions', () => {
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
     window.Game = Game;
-    const mod2 = require('./script.js');
+    const main2 = require('./main.js');
+    require('./ui.js');
     await Promise.resolve();
     await Promise.resolve();
-    expect(mod2.game.territoryById('t1').armies).toBe(armies);
-    expect(mod2.game.getPhase()).toBe(phase);
+    expect(main2.game.territoryById('t1').armies).toBe(armies);
+    expect(main2.game.getPhase()).toBe(phase);
   });
 });
 

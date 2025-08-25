@@ -1,5 +1,16 @@
 /* global logger */
 import initTerritorySelection from "./territory-selection.js";
+import { playAttackSound, playConquerSound } from "./audio.js";
+import {
+  initUI,
+  updateInfoPanel,
+  addLogEntry,
+  animateMove,
+  showVictoryModal,
+  updateUI,
+  resetSelectedCards,
+  getSelectedCards,
+} from "./ui.js";
 
 // Remove any previously registered service workers to avoid stale caches
 // and log their status so that we know if any were present.
@@ -21,7 +32,6 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
 
 let game;
 let territoryPositions = {};
-let selectedCards = [];
 
 const gameState = {
   turnNumber: 1,
@@ -51,48 +61,6 @@ function updateGameState(selected = null) {
   }
 }
 
-function updateInfoPanel() {
-  const cp = document.getElementById("currentPlayer");
-  if (cp) cp.textContent = game.players[gameState.currentPlayer].name;
-  const tn = document.getElementById("turnNumber");
-  if (tn) tn.textContent = gameState.turnNumber;
-}
-
-function addLogEntry(msg) {
-  gameState.log.push(msg);
-  if (gameState.log.length > 10) gameState.log.shift();
-  const logEl = document.getElementById("actionLog");
-  if (logEl) {
-    logEl.innerHTML = gameState.log.map((l) => `<div>${l}</div>`).join("");
-    logEl.scrollTop = logEl.scrollHeight;
-  }
-}
-
-function animateMove(from, to) {
-  const board = document.getElementById("board");
-  if (!board) return;
-  const fromPos = territoryPositions[from];
-  const toPos = territoryPositions[to];
-  if (!fromPos || !toPos) return;
-  const token = document.createElement("div");
-  token.className = "token move-token";
-  token.style.left = fromPos.x + "px";
-  token.style.top = fromPos.y + "px";
-  board.appendChild(token);
-  requestAnimationFrame(() => {
-    token.style.left = toPos.x + "px";
-    token.style.top = toPos.y + "px";
-  });
-  token.addEventListener(
-    "transitionend",
-    () => {
-      token.classList.add("animate__animated", "animate__fadeOut");
-      token.addEventListener("animationend", () => token.remove(), { once: true });
-    },
-    { once: true },
-  );
-}
-
 function askArmiesToMove(max, min = 0) {
   if (max <= 0) return 0;
   let input = null;
@@ -103,22 +71,6 @@ function askArmiesToMove(max, min = 0) {
   if (isNaN(count)) count = min;
   count = Math.max(min, Math.min(max, count));
   return count;
-}
-
-function showVictoryModal(winnerIdx) {
-  const modal = document.getElementById("victoryModal");
-  if (!modal) return;
-  const title = document.getElementById("victoryTitle");
-  const stats = document.getElementById("victoryStats");
-  if (title) title.textContent = `${game.players[winnerIdx].name} ha vinto!`;
-  if (stats) {
-    const terr = game.players.map((p, idx) => {
-      const count = game.territories.filter((t) => t.owner === idx).length;
-      return `<li>${p.name}: ${count} territori</li>`;
-    });
-    stats.innerHTML = `<p>Turni: ${gameState.turnNumber}</p><ul>${terr.join("")}</ul>`;
-  }
-  modal.classList.add("show");
 }
 
 function checkForVictory() {
@@ -139,7 +91,7 @@ async function startNewGame() {
   gameState.log = [];
   const logEl = document.getElementById("actionLog");
   if (logEl) logEl.innerHTML = "";
-  selectedCards = [];
+  resetSelectedCards();
   updateUI();
   updateGameState();
   updateInfoPanel();
@@ -186,92 +138,7 @@ async function loadGame() {
   gameState.players = game.players;
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
-}
-
-let audioCtx;
-function playTone(freq, duration = 0.2) {
-  if (typeof window === "undefined") return;
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return;
-  if (!audioCtx) audioCtx = new AudioContext();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(
-    0.0001,
-    audioCtx.currentTime + duration,
-  );
-  osc.stop(audioCtx.currentTime + duration);
-}
-
-function playAttackSound() {
-  playTone(300);
-}
-function playConquerSound() {
-  playTone(600, 0.3);
-}
-
-function updateBonusInfo() {
-  const bonusEl = document.getElementById("bonusInfo");
-  if (!bonusEl) return;
-  const bonuses = game.continents
-    .filter((c) =>
-      c.territories.every((id) => game.territoryById(id).owner === game.currentPlayer),
-    )
-    .map((c) => `${c.name} +${c.bonus}`);
-  bonusEl.textContent = bonuses.length ? `Bonus: ${bonuses.join(", ")}` : "";
-}
-
-function updateCardsUI() {
-  const container = document.getElementById("cards");
-  if (!container) return;
-  container.innerHTML = "";
-  const hand = game.hands[game.currentPlayer] || [];
-  selectedCards = [];
-  hand.forEach((card, idx) => {
-    const el = document.createElement("span");
-    el.textContent = card.type;
-    el.dataset.idx = idx;
-    el.className = "card";
-    if (selectedCards.includes(idx)) el.classList.add("selected-card");
-    el.addEventListener("click", () => {
-      if (selectedCards.includes(idx)) {
-        selectedCards = selectedCards.filter((i) => i !== idx);
-        el.classList.remove("selected-card");
-      } else if (selectedCards.length < 3) {
-        selectedCards.push(idx);
-        el.classList.add("selected-card");
-      }
-    });
-    container.appendChild(el);
-  });
-}
-
-function updateUI() {
-  game.territories.forEach((t) => {
-    const el = document.getElementById(t.id);
-    if (!el) return;
-    el.style.background = game.players[t.owner].color;
-    el.textContent = t.armies;
-    const pos = territoryPositions[t.id];
-    if (pos) {
-      el.style.left = pos.x + "px";
-      el.style.top = pos.y + "px";
-    }
-    el.classList.remove("selected");
-  });
-  let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
-  if (game.getPhase() === "reinforce") {
-    status += ` (${game.reinforcements} reinforcements)`;
-  }
-  document.getElementById("status").textContent = status;
-  updateBonusInfo();
-  updateCardsUI();
+  initUI({ game, gameState, territoryPositions });
 }
 
 function runAI() {
@@ -436,13 +303,13 @@ async function init() {
     '<div id="bonusInfo"></div>';
   ui.appendChild(cardPanel);
   document.getElementById("playCardsBtn").addEventListener("click", () => {
-    if (selectedCards.length === 3) {
-      if (game.playCards(selectedCards)) {
+    const cards = getSelectedCards();
+    if (cards.length === 3) {
+      if (game.playCards(cards)) {
         addLogEntry(`${game.players[game.currentPlayer].name} gioca carte`);
-        selectedCards = [];
+        resetSelectedCards();
         game.calculateReinforcements();
         updateUI();
-        updateCardsUI();
       }
     }
   });
@@ -483,10 +350,8 @@ init();
 
 export {
   game,
-  updateUI,
   territoryPositions,
   runAI,
   attachTerritoryHandlers,
-  addLogEntry,
   startNewGame,
 };
