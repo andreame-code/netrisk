@@ -1,0 +1,35 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  text-align: center;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 150px);
+  grid-template-rows: repeat(2, 150px);
+  gap: 5px;
+  justify-content: center;
+  margin: 20px auto;
+}
+
+.territory {
+  position: relative;
+  border: 2px solid #333;
+  background: #ddd;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  user-select: none;
+}
+
+.territory.selected {
+  outline: 4px solid #ff0;
+}
+
+#status {
+  margin-top: 10px;
+  font-weight: bold;
+}
