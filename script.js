@@ -1,4 +1,6 @@
 /* global logger */
+import initTerritorySelection from "./territory-selection.js";
+
 // Remove any previously registered service workers to avoid stale caches
 // and log their status so that we know if any were present.
 if (typeof navigator !== "undefined" && navigator.serviceWorker) {
@@ -17,8 +19,7 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
     });
 }
 
-const GameClass =
-  typeof module !== "undefined" ? require("./game") : window.Game;
+const GameClass = window.Game;
 const game = new GameClass();
 if (typeof logger !== "undefined") {
   logger.info("Game initialised");
@@ -228,6 +229,15 @@ if (forceErrorBtn) {
   });
 }
 
+initTerritorySelection({
+  logger,
+  game,
+  addLogEntry,
+  gameState,
+  attachTerritoryHandlers,
+  updateUI,
+});
+
 updateUI();
 runAI();
 
@@ -248,7 +258,11 @@ if (toggleHowToPlay) {
       : "Mostra dettagli";
   });
 }
-
-if (typeof module !== "undefined") {
-  module.exports = { game, updateUI, territoryPositions, runAI, attachTerritoryHandlers };
-}
+export {
+  game,
+  updateUI,
+  territoryPositions,
+  runAI,
+  attachTerritoryHandlers,
+  addLogEntry,
+};
