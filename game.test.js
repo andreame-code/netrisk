@@ -1,6 +1,3 @@
-/**
- * @jest-environment jsdom
- */
 let Game, game;
 
 beforeEach(() => {
@@ -40,4 +37,26 @@ test('gameover phase when one player owns all territories', () => {
   game.checkVictory();
   expect(game.getPhase()).toBe('gameover');
   expect(game.winner).toBe(0);
+});
+
+test('calculateReinforcements enforces minimum of three armies', () => {
+  const territories = [
+    { id: 'a', neighbors: [], owner: 0, armies: 1 },
+    { id: 'b', neighbors: [], owner: 0, armies: 1 },
+    { id: 'c', neighbors: [], owner: 0, armies: 1 }
+  ];
+  const g = new Game(null, territories);
+  expect(g.reinforcements).toBe(3);
+});
+
+test('endTurn moves from attack to fortify then to next player', () => {
+  game.handleTerritoryClick('t1');
+  game.handleTerritoryClick('t1');
+  game.handleTerritoryClick('t1');
+  expect(game.getPhase()).toBe('attack');
+  game.endTurn();
+  expect(game.getPhase()).toBe('fortify');
+  game.endTurn();
+  expect(game.getPhase()).toBe('reinforce');
+  expect(game.getCurrentPlayer()).toBe(1);
 });
