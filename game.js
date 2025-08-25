@@ -151,23 +151,50 @@ class Game {
     if (this.phase === 'reinforce' && this.reinforcements === 0) {
       this.phase = 'attack';
     }
-    // Attempt a single random attack
-    const options = [];
-    owned.forEach(from => {
-      if (from.armies > 1) {
-        from.neighbors.forEach(n => {
-          const to = this.territoryById(n);
-          if (to.owner !== this.currentPlayer) options.push({ from, to });
+    // Keep attacking while advantageous targets exist
+    while (this.phase === 'attack') {
+      const options = [];
+      this.territories
+        .filter(t => t.owner === this.currentPlayer)
+        .forEach(from => {
+          if (from.armies > 1) {
+            from.neighbors.forEach(n => {
+              const to = this.territoryById(n);
+              if (to.owner !== this.currentPlayer && from.armies > to.armies) {
+                options.push({ from, to });
+              }
+            });
+          }
         });
-      }
-    });
-    if (options.length > 0) {
+      if (options.length === 0) break;
       const { from, to } = options[Math.floor(Math.random() * options.length)];
       this.attack(from, to);
+      if (this.phase === 'gameover') return;
     }
-    // End turn
+    // Move to fortify phase and automatically fortify one army
     this.endTurn();
-    if (this.phase === 'fortify') this.endTurn();
+    if (this.phase === 'fortify') {
+      const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
+      let best = null;
+      aiOwned.forEach(from => {
+        if (from.armies > 1) {
+          from.neighbors.forEach(n => {
+            const to = this.territoryById(n);
+            if (to.owner === this.currentPlayer) {
+              const diff = from.armies - to.armies;
+              if (diff > 1 && (!best || diff > best.diff)) {
+                best = { from, to, diff };
+              }
+            }
+          });
+        }
+      });
+      if (best) {
+        best.from.armies -= 1;
+        best.to.armies += 1;
+      }
+      this.endTurn();
+    }
   }
 
   getPhase() { return this.phase; }
