@@ -1,4 +1,4 @@
-/* global logger */
+/* global logger game addLogEntry gameState */
 let selectedTerritory = null;
 const infoPanel = document.getElementById('selectedTerritory');
 
