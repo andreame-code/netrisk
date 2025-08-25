@@ -21,6 +21,7 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
 
 let game;
 let territoryPositions = {};
+let selectedCards = [];
 
 const gameState = {
   turnNumber: 1,
@@ -104,6 +105,42 @@ function playConquerSound() {
   playTone(600, 0.3);
 }
 
+function updateBonusInfo() {
+  const bonusEl = document.getElementById("bonusInfo");
+  if (!bonusEl) return;
+  const bonuses = game.continents
+    .filter((c) =>
+      c.territories.every((id) => game.territoryById(id).owner === game.currentPlayer),
+    )
+    .map((c) => `${c.name} +${c.bonus}`);
+  bonusEl.textContent = bonuses.length ? `Bonus: ${bonuses.join(", ")}` : "";
+}
+
+function updateCardsUI() {
+  const container = document.getElementById("cards");
+  if (!container) return;
+  container.innerHTML = "";
+  const hand = game.hands[game.currentPlayer] || [];
+  selectedCards = [];
+  hand.forEach((card, idx) => {
+    const el = document.createElement("span");
+    el.textContent = card.type;
+    el.dataset.idx = idx;
+    el.className = "card";
+    if (selectedCards.includes(idx)) el.classList.add("selected-card");
+    el.addEventListener("click", () => {
+      if (selectedCards.includes(idx)) {
+        selectedCards = selectedCards.filter((i) => i !== idx);
+        el.classList.remove("selected-card");
+      } else if (selectedCards.length < 3) {
+        selectedCards.push(idx);
+        el.classList.add("selected-card");
+      }
+    });
+    container.appendChild(el);
+  });
+}
+
 function updateUI() {
   game.territories.forEach((t) => {
     const el = document.getElementById(t.id);
@@ -122,6 +159,8 @@ function updateUI() {
     status += ` (${game.reinforcements} reinforcements)`;
   }
   document.getElementById("status").textContent = status;
+  updateBonusInfo();
+  updateCardsUI();
 }
 
 function runAI() {
@@ -237,6 +276,25 @@ if (forceErrorBtn) {
 
 async function init() {
   await loadGame();
+  const ui = document.getElementById("uiPanel");
+  const cardPanel = document.createElement("div");
+  cardPanel.id = "cardPanel";
+  cardPanel.innerHTML =
+    '<div><strong>Carte:</strong> <span id="cards"></span></div>' +
+    '<button id="playCardsBtn">Gioca carte</button>' +
+    '<div id="bonusInfo"></div>';
+  ui.appendChild(cardPanel);
+  document.getElementById("playCardsBtn").addEventListener("click", () => {
+    if (selectedCards.length === 3) {
+      if (game.playCards(selectedCards)) {
+        addLogEntry(`${game.players[game.currentPlayer].name} gioca carte`);
+        selectedCards = [];
+        game.calculateReinforcements();
+        updateUI();
+        updateCardsUI();
+      }
+    }
+  });
   initTerritorySelection({
     logger,
     game,

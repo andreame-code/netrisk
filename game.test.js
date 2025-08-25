@@ -126,3 +126,41 @@ test('AI fortifies at end of turn', () => {
   expect(game.getPhase()).toBe('reinforce');
   attack.mockRestore();
 });
+
+test('continent bonus is added to reinforcements', () => {
+  ['t1', 't2', 't3'].forEach(id => { game.territoryById(id).owner = 0; });
+  game.calculateReinforcements();
+  expect(game.reinforcements).toBe(5); // 3 base +2 continent
+});
+
+test('player draws a card after conquering a territory', () => {
+  game.setPhase('attack');
+  const from = game.territoryById('t2');
+  const to = game.territoryById('t3');
+  from.armies = 5;
+  to.armies = 1; to.owner = 1;
+  jest.spyOn(Math, 'random')
+    .mockReturnValueOnce(0.9)
+    .mockReturnValueOnce(0.8)
+    .mockReturnValueOnce(0.7)
+    .mockReturnValueOnce(0.1);
+  game.handleTerritoryClick('t2');
+  game.handleTerritoryClick('t3');
+  Math.random.mockRestore();
+  game.endTurn();
+  game.endTurn();
+  expect(game.hands[0].length).toBe(1);
+});
+
+test('playing valid card set grants reinforcements', () => {
+  game.hands[0] = [
+    { territory: 'a', type: 'infantry' },
+    { territory: 'b', type: 'cavalry' },
+    { territory: 'c', type: 'artillery' }
+  ];
+  game.reinforcements = 0;
+  const played = game.playCards([0, 1, 2]);
+  expect(played).toBe(true);
+  expect(game.reinforcements).toBe(5);
+  expect(game.hands[0].length).toBe(0);
+});
