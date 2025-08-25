@@ -2,9 +2,10 @@
 
 A simple browser-based strategy game inspired by the classic game of Risk.
 
-The game now calculates reinforcements based on the number of territories a
-player owns and includes a fortify phase for moving troops between adjacent
-friendly territories.
+The game now supports three players by default, with the third controlled by a
+basic AI to enable solo play. Reinforcements are calculated based on the number
+of territories a player owns and the fortify phase allows moving troops between
+adjacent friendly territories.
 
 The interface features a simple world map background in place of the old grid,
 and attack or conquest actions trigger short animations and audio cues for
