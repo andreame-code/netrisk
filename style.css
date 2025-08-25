@@ -4,6 +4,28 @@ body {
   text-align: center;
 }
 
+#uiPanel {
+  width: 600px;
+  margin: 10px auto;
+  text-align: left;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+#quickInstructions {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.log {
+  max-height: 120px;
+  overflow-y: auto;
+  background: #eee;
+  padding: 5px;
+  font-size: 14px;
+}
+
 
 .board {
   position: relative;
