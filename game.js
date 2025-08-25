@@ -1,4 +1,4 @@
-const { attackSuccessProbability, territoryPriority } = require("./ai");
+import { attackSuccessProbability, territoryPriority } from "./ai.js";
 
 class Game {
   constructor(players, territories, continents, deck) {
@@ -357,8 +357,4 @@ class Game {
   setSelectedFrom(s) { this.selectedFrom = s; }
 }
 
-if (typeof module !== 'undefined') {
-  module.exports = Game;
-} else {
-  window.Game = Game;
-}
+export default Game;
