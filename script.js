@@ -40,6 +40,15 @@ function updateGameState(selected = null) {
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
   gameState.selectedTerritory = selected;
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem("netriskGame", game.serialize());
+    } catch (err) {
+      if (typeof logger !== "undefined") {
+        logger.error("Failed to save game", err);
+      }
+    }
+  }
 }
 
 function updateInfoPanel() {
@@ -110,6 +119,9 @@ function checkForVictory() {
 async function startNewGame() {
   const modal = document.getElementById("victoryModal");
   if (modal) modal.classList.remove("show");
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem("netriskGame");
+  }
   await loadGame();
   gameState.turnNumber = 1;
   gameState.log = [];
@@ -132,17 +144,31 @@ async function loadGame() {
     return acc;
   }, {});
   const GameClass = window.Game;
-  let players = null;
   if (typeof localStorage !== "undefined") {
     try {
-      players = JSON.parse(localStorage.getItem("netriskPlayers"));
+      const saved = localStorage.getItem("netriskGame");
+      if (saved) {
+        game = GameClass.deserialize(saved);
+      }
     } catch (err) {
-      players = null;
+      if (typeof logger !== "undefined") {
+        logger.error("Failed to load saved game", err);
+      }
     }
   }
-  game = new GameClass(players, map.territories, map.continents, map.deck);
-  if (typeof logger !== "undefined") {
-    logger.info("Game initialised");
+  if (!game) {
+    let players = null;
+    if (typeof localStorage !== "undefined") {
+      try {
+        players = JSON.parse(localStorage.getItem("netriskPlayers"));
+      } catch (err) {
+        players = null;
+      }
+    }
+    game = new GameClass(players, map.territories, map.continents, map.deck);
+    if (typeof logger !== "undefined") {
+      logger.info("Game initialised");
+    }
   }
   gameState.currentPlayer = game.currentPlayer;
   gameState.players = game.players;
@@ -352,6 +378,11 @@ if (forceErrorBtn) {
 
 async function init() {
   await loadGame();
+  const resetBtn = document.createElement("button");
+  resetBtn.id = "resetGame";
+  resetBtn.textContent = "Nuova partita";
+  resetBtn.addEventListener("click", startNewGame);
+  document.body.appendChild(resetBtn);
   const modal = document.createElement("div");
   modal.id = "victoryModal";
   modal.className = "modal";
@@ -422,4 +453,5 @@ export {
   runAI,
   attachTerritoryHandlers,
   addLogEntry,
+  startNewGame,
 };

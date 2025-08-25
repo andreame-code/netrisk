@@ -46,7 +46,7 @@ class Game {
     this.reinforcements = 0;
     this.continents = continents || (map ? map.continents : []) || [];
     this.deck = (deck || (map ? map.deck : []) || []).map(c => ({ ...c }));
-    this.shuffle(this.deck);
+    if (!deck) this.shuffle(this.deck);
     this.hands = Array.from({ length: this.players.length }, () => []);
     this.discard = [];
     this.conqueredThisTurn = false;
@@ -277,6 +277,37 @@ class Game {
       }
       this.endTurn();
     }
+  }
+
+  serialize() {
+    return JSON.stringify({
+      players: this.players,
+      territories: this.territories,
+      continents: this.continents,
+      deck: this.deck,
+      hands: this.hands,
+      discard: this.discard,
+      currentPlayer: this.currentPlayer,
+      phase: this.phase,
+      reinforcements: this.reinforcements,
+      selectedFrom: this.selectedFrom ? this.selectedFrom.id : null,
+      conqueredThisTurn: this.conqueredThisTurn,
+      winner: this.winner,
+    });
+  }
+
+  static deserialize(str) {
+    const data = typeof str === 'string' ? JSON.parse(str) : str;
+    const game = new Game(data.players, data.territories, data.continents, data.deck);
+    game.hands = data.hands;
+    game.discard = data.discard || [];
+    game.currentPlayer = data.currentPlayer;
+    game.phase = data.phase;
+    game.reinforcements = data.reinforcements;
+    game.selectedFrom = data.selectedFrom ? game.territoryById(data.selectedFrom) : null;
+    game.conqueredThisTurn = data.conqueredThisTurn || false;
+    game.winner = data.winner;
+    return game;
   }
 
   getPhase() { return this.phase; }

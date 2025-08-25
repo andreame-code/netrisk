@@ -212,3 +212,16 @@ test('players with no territories are skipped on turn rotation', () => {
   expect(game.getCurrentPlayer()).toBe(2);
   expect(game.getPhase()).toBe('reinforce');
 });
+
+test('serialize and deserialize restores game state', () => {
+  game.handleTerritoryClick('t1');
+  game.handleTerritoryClick('t1');
+  game.handleTerritoryClick('t1');
+  const saved = game.serialize();
+  const restored = Game.deserialize(saved);
+  expect(restored.territoryById('t1').armies).toBe(
+    game.territoryById('t1').armies
+  );
+  expect(restored.getPhase()).toBe(game.getPhase());
+  expect(restored.getCurrentPlayer()).toBe(game.getCurrentPlayer());
+});
