@@ -8,8 +8,12 @@
     <h1>Setup Giocatori</h1>
     <form id="setupForm">
       <label>
-        Numero giocatori:
-        <input type="number" id="playerCount" min="2" max="6" />
+        Numero giocatori umani:
+        <input type="number" id="humanCount" min="1" max="6" />
+      </label>
+      <label>
+        Numero giocatori IA:
+        <input type="number" id="aiCount" min="0" max="5" />
       </label>
       <div id="players"></div>
       <button type="submit">Start</button>

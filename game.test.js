@@ -200,6 +200,32 @@ test('playing valid card set grants reinforcements', () => {
   expect(game.hands[0].length).toBe(0);
 });
 
+test('initialises with 1 human and 2 AI players and executes AI turn', () => {
+  const players = [
+    { name: 'Human', color: '#000000' },
+    { name: 'AI 1', color: '#2ecc71', ai: true },
+    { name: 'AI 2', color: '#2ecc71', ai: true }
+  ];
+  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck);
+  expect(g.players.filter(p => p.ai).length).toBe(2);
+  g.setCurrentPlayer(1);
+  g.performAITurn();
+  expect(g.getCurrentPlayer()).toBe(2);
+});
+
+test('initialises with three human players and no AI', () => {
+  const players = [
+    { name: 'P1', color: '#000000' },
+    { name: 'P2', color: '#111111' },
+    { name: 'P3', color: '#222222' }
+  ];
+  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck);
+  expect(g.players.every(p => !p.ai)).toBe(true);
+  const current = g.getCurrentPlayer();
+  g.performAITurn();
+  expect(g.getCurrentPlayer()).toBe(current);
+});
+
 test('players with no territories are skipped on turn rotation', () => {
   // Setup: player 1 has a single territory that will be conquered
   const t2 = game.territoryById('t2');

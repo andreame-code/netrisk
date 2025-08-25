@@ -1,10 +1,11 @@
 const form = document.getElementById("setupForm");
-const playerCountInput = document.getElementById("playerCount");
+const humanCountInput = document.getElementById("humanCount");
+const aiCountInput = document.getElementById("aiCount");
 const playersContainer = document.getElementById("players");
 
-function renderPlayerInputs(count) {
+function renderPlayerInputs(humanCount) {
   playersContainer.innerHTML = "";
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < humanCount; i += 1) {
     const wrapper = document.createElement("div");
     wrapper.innerHTML = `
       <label>Nome Giocatore ${i + 1}: <input type="text" id="name${i}" /></label>
@@ -21,11 +22,17 @@ function loadFromStorage() {
   } catch (err) {
     saved = null;
   }
-  const count = saved ? saved.length : 3;
-  playerCountInput.value = count;
-  renderPlayerInputs(count);
+  let humanCount = 2;
+  let aiCount = 1;
+  if (saved && Array.isArray(saved)) {
+    humanCount = saved.filter((p) => !p.ai).length;
+    aiCount = saved.filter((p) => p.ai).length;
+  }
+  humanCountInput.value = humanCount;
+  aiCountInput.value = aiCount;
+  renderPlayerInputs(humanCount);
   if (saved) {
-    saved.forEach((p, i) => {
+    saved.filter((p) => !p.ai).forEach((p, i) => {
       const nameInput = document.getElementById(`name${i}`);
       const colorInput = document.getElementById(`color${i}`);
       if (nameInput) nameInput.value = p.name;
@@ -34,20 +41,24 @@ function loadFromStorage() {
   }
 }
 
-playerCountInput.addEventListener("change", () => {
-  const count = parseInt(playerCountInput.value, 10);
-  if (Number.isNaN(count) || count < 2) return;
+humanCountInput.addEventListener("change", () => {
+  const count = parseInt(humanCountInput.value, 10);
+  if (Number.isNaN(count) || count < 1) return;
   renderPlayerInputs(count);
 });
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const count = parseInt(playerCountInput.value, 10);
+  const humanCount = parseInt(humanCountInput.value, 10) || 0;
+  const aiCount = parseInt(aiCountInput.value, 10) || 0;
   const players = [];
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < humanCount; i += 1) {
     const name = document.getElementById(`name${i}`).value || `Player ${i + 1}`;
     const color = document.getElementById(`color${i}`).value || "#000000";
     players.push({ name, color });
+  }
+  for (let i = 0; i < aiCount; i += 1) {
+    players.push({ name: `AI ${i + 1}`, color: "#2ecc71", ai: true });
   }
   try {
     localStorage.setItem("netriskPlayers", JSON.stringify(players));
