@@ -148,3 +148,21 @@ document.getElementById('endTurn').addEventListener('click', endTurn);
 
 calculateReinforcements();
 updateUI();
+if (typeof module !== 'undefined') {
+  module.exports = {
+    players,
+    territories,
+    updateUI,
+    territoryById,
+    handleTerritoryClick,
+    attack,
+    checkVictory,
+    endTurn,
+    getPhase: () => phase,
+    setPhase: (p) => { phase = p; },
+    getCurrentPlayer: () => currentPlayer,
+    setCurrentPlayer: (p) => { currentPlayer = p; },
+    getSelectedFrom: () => selectedFrom,
+    setSelectedFrom: (s) => { selectedFrom = s; }
+  };
+}

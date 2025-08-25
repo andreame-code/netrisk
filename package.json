@@ -4,9 +4,11 @@
   "description": "Simple browser-based Risk-inspired game",
   "scripts": {
     "start": "http-server .",
-    "test": "echo \"No tests\" && exit 0"
+    "test": "jest"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.0.5"
   }
 }
