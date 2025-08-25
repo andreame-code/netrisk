@@ -19,20 +19,17 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
     });
 }
 
-const GameClass = window.Game;
-const game = new GameClass();
-if (typeof logger !== "undefined") {
-  logger.info("Game initialised");
-}
+let game;
+let territoryPositions = {};
 
 const gameState = {
   turnNumber: 1,
-  currentPlayer: game.currentPlayer,
-  players: game.players,
-  territories: game.territories,
+  currentPlayer: 0,
+  players: [],
+  territories: [],
   selectedTerritory: null,
   tokenPosition: null,
-  phase: game.getPhase(),
+  phase: "reinforce",
   log: [],
 };
 
@@ -61,14 +58,23 @@ function addLogEntry(msg) {
   }
 }
 
-const territoryPositions = {
-  t1: { x: 120, y: 100 },
-  t2: { x: 340, y: 110 },
-  t3: { x: 500, y: 140 },
-  t4: { x: 150, y: 260 },
-  t5: { x: 360, y: 220 },
-  t6: { x: 520, y: 300 },
-};
+async function loadGame() {
+  const res = await fetch("./src/data/map.json");
+  const map = await res.json();
+  territoryPositions = map.territories.reduce((acc, t) => {
+    acc[t.id] = { x: t.x, y: t.y };
+    return acc;
+  }, {});
+  const GameClass = window.Game;
+  game = new GameClass(null, map.territories);
+  if (typeof logger !== "undefined") {
+    logger.info("Game initialised");
+  }
+  gameState.currentPlayer = game.currentPlayer;
+  gameState.players = game.players;
+  gameState.territories = game.territories;
+  gameState.phase = game.getPhase();
+}
 
 let audioCtx;
 function playTone(freq, duration = 0.2) {
@@ -229,35 +235,42 @@ if (forceErrorBtn) {
   });
 }
 
-initTerritorySelection({
-  logger,
-  game,
-  addLogEntry,
-  gameState,
-  attachTerritoryHandlers,
-  updateUI,
-});
-
-updateUI();
-runAI();
-
-updateGameState();
-updateInfoPanel();
-addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
-
-const toggleHowToPlay = document.getElementById("toggleHowToPlay");
-if (toggleHowToPlay) {
-  toggleHowToPlay.addEventListener("click", (e) => {
-    e.preventDefault();
-    const steps = document.getElementById("howToPlaySteps");
-    if (!steps) return;
-    const hidden = steps.style.display === "none";
-    steps.style.display = hidden ? "block" : "none";
-    toggleHowToPlay.textContent = hidden
-      ? "Nascondi dettagli"
-      : "Mostra dettagli";
+async function init() {
+  await loadGame();
+  initTerritorySelection({
+    logger,
+    game,
+    territories: game.territories,
+    addLogEntry,
+    gameState,
+    attachTerritoryHandlers,
+    updateUI,
   });
+
+  updateUI();
+  runAI();
+
+  updateGameState();
+  updateInfoPanel();
+  addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
+
+  const toggleHowToPlay = document.getElementById("toggleHowToPlay");
+  if (toggleHowToPlay) {
+    toggleHowToPlay.addEventListener("click", (e) => {
+      e.preventDefault();
+      const steps = document.getElementById("howToPlaySteps");
+      if (!steps) return;
+      const hidden = steps.style.display === "none";
+      steps.style.display = hidden ? "block" : "none";
+      toggleHowToPlay.textContent = hidden
+        ? "Nascondi dettagli"
+        : "Mostra dettagli";
+    });
+  }
 }
+
+init();
+
 export {
   game,
   updateUI,
