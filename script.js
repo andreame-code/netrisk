@@ -13,8 +13,14 @@ const territories = [
 ];
 
 let currentPlayer = 0;
-let phase = 'reinforce'; // reinforce, attack, gameover
+let phase = 'reinforce'; // reinforce, attack, fortify, gameover
 let selectedFrom = null;
+let reinforcements = 0;
+
+function calculateReinforcements() {
+  const owned = territories.filter(t => t.owner === currentPlayer).length;
+  reinforcements = Math.max(3, Math.floor(owned / 3));
+}
 
 function updateUI() {
   territories.forEach(t => {
@@ -23,7 +29,11 @@ function updateUI() {
     el.textContent = t.armies;
     el.classList.remove('selected');
   });
-  document.getElementById('status').textContent = `${players[currentPlayer].name} - ${phase}`;
+  let status = `${players[currentPlayer].name} - ${phase}`;
+  if (phase === 'reinforce') {
+    status += ` (${reinforcements} reinforcements)`;
+  }
+  document.getElementById('status').textContent = status;
 }
 
 function territoryById(id) {
@@ -34,9 +44,12 @@ function handleTerritoryClick(e) {
   const id = e.currentTarget.dataset.id;
   const territory = territoryById(id);
   if (phase === 'reinforce') {
-    if (territory.owner === currentPlayer) {
+    if (territory.owner === currentPlayer && reinforcements > 0) {
       territory.armies += 1;
-      phase = 'attack';
+      reinforcements -= 1;
+      if (reinforcements === 0) {
+        phase = 'attack';
+      }
       updateUI();
     }
   } else if (phase === 'attack') {
@@ -57,6 +70,30 @@ function handleTerritoryClick(e) {
       if (from.owner === currentPlayer && to.owner !== currentPlayer && from.neighbors.includes(to.id)) {
         attack(from, to);
         selectedFrom = null;
+        updateUI();
+      }
+    }
+  } else if (phase === 'fortify') {
+    if (!selectedFrom) {
+      if (territory.owner === currentPlayer && territory.armies > 1) {
+        selectedFrom = territory;
+        e.currentTarget.classList.add('selected');
+      }
+    } else {
+      const from = selectedFrom;
+      const to = territory;
+      if (from.id === to.id) {
+        selectedFrom = null;
+        updateUI();
+        return;
+      }
+      if (from.owner === currentPlayer && to.owner === currentPlayer && from.neighbors.includes(to.id)) {
+        from.armies -= 1;
+        to.armies += 1;
+        selectedFrom = null;
+        currentPlayer = (currentPlayer + 1) % players.length;
+        phase = 'reinforce';
+        calculateReinforcements();
         updateUI();
       }
     }
@@ -90,10 +127,17 @@ function checkVictory() {
 
 function endTurn() {
   if (phase === 'gameover') return;
-  selectedFrom = null;
-  currentPlayer = (currentPlayer + 1) % players.length;
-  phase = 'reinforce';
-  updateUI();
+  if (phase === 'attack') {
+    selectedFrom = null;
+    phase = 'fortify';
+    updateUI();
+  } else if (phase === 'fortify') {
+    selectedFrom = null;
+    currentPlayer = (currentPlayer + 1) % players.length;
+    phase = 'reinforce';
+    calculateReinforcements();
+    updateUI();
+  }
 }
 
 document.querySelectorAll('.territory').forEach(el => {
@@ -102,4 +146,5 @@ document.querySelectorAll('.territory').forEach(el => {
 
 document.getElementById('endTurn').addEventListener('click', endTurn);
 
+calculateReinforcements();
 updateUI();
