@@ -67,7 +67,15 @@ async function loadGame() {
     return acc;
   }, {});
   const GameClass = window.Game;
-  game = new GameClass(null, map.territories);
+  let players = null;
+  if (typeof localStorage !== "undefined") {
+    try {
+      players = JSON.parse(localStorage.getItem("netriskPlayers"));
+    } catch (err) {
+      players = null;
+    }
+  }
+  game = new GameClass(players, map.territories);
   if (typeof logger !== "undefined") {
     logger.info("Game initialised");
   }
