@@ -189,6 +189,20 @@ updateGameState();
 updateInfoPanel();
 addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
+const toggleHowToPlay = document.getElementById("toggleHowToPlay");
+if (toggleHowToPlay) {
+  toggleHowToPlay.addEventListener("click", (e) => {
+    e.preventDefault();
+    const steps = document.getElementById("howToPlaySteps");
+    if (!steps) return;
+    const hidden = steps.style.display === "none";
+    steps.style.display = hidden ? "block" : "none";
+    toggleHowToPlay.textContent = hidden
+      ? "Nascondi dettagli"
+      : "Mostra dettagli";
+  });
+}
+
 if (typeof module !== "undefined") {
   module.exports = { game, updateUI, territoryPositions, runAI, attachTerritoryHandlers };
 }

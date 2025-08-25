@@ -10,8 +10,16 @@
     <div id="uiPanel">
       <div>Turno corrente: <span id="turnNumber">1</span></div>
       <div>Giocatore corrente: <span id="currentPlayer"></span></div>
-      <div id="quickInstructions">
-        Istruzioni rapide: clicca un territorio per agire, poi premi "End Turn".
+      <div id="howToPlayBox">
+        <div>
+          <strong>Come si gioca (alpha)</strong>
+          <a href="#" id="toggleHowToPlay">Mostra dettagli</a>
+        </div>
+        <ol id="howToPlaySteps" style="display: none">
+          <li>Clicca un territorio / Click a territory</li>
+          <li>Scegli l'azione / Choose action</li>
+          <li>Premi "End Turn" / Press "End Turn"</li>
+        </ol>
       </div>
       <div><strong>Log azioni:</strong></div>
       <div id="actionLog" class="log"></div>
