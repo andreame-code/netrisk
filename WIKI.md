@@ -37,6 +37,7 @@ connected player, allowing shared matches.
 
 ## Gameplay
 - Use the setup screen to select human and AI players and to choose the board layout.
+  Options include the world map, a Roman Empire-themed map, and a grid-based layout.
 - Players receive reinforcements based on the number of territories they control.
 - Attack adjacent territories to expand your empire.
 - Fortify your position by moving troops between friendly territories at the end of each turn.

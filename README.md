@@ -10,8 +10,8 @@ of territories a player owns and the fortify phase allows moving troops between
 adjacent friendly territories.
 
 Before starting a game you can now choose between different board layouts via
-the setup screen, enabling matches on alternative maps such as a Roman Empire
-era board.
+the setup screen. Available boards include the classic world map, a Roman
+Empire era map, and a new grid-based layout for abstract play.
 
 The interface features a simple world map background in place of the old grid,
 and attack or conquest actions trigger short animations and audio cues for
