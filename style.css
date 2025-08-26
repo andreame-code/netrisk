@@ -35,6 +35,11 @@ button:active {
   transform: translateY(2px);
 }
 
+/* Utility classes */
+.hidden {
+  display: none;
+}
+
 #mainMenu {
   display: flex;
   flex-direction: column;
