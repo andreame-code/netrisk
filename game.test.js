@@ -227,6 +227,22 @@ test('player draws a card after conquering a territory', () => {
   expect(awarded).toHaveBeenCalled();
 });
 
+test('Game.create falls back to empty map when map data cannot be loaded', async () => {
+  const original = localStorage.getItem('netriskMap');
+  localStorage.setItem('netriskMap', 'nonexistent');
+  const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  const g = await Game.create();
+  expect(g.territories.length).toBe(0);
+  expect(g.continents.length).toBe(0);
+  expect(spy).toHaveBeenCalled();
+  spy.mockRestore();
+  if (original === null) {
+    localStorage.removeItem('netriskMap');
+  } else {
+    localStorage.setItem('netriskMap', original);
+  }
+});
+
 test('playing valid card set grants reinforcements', () => {
   game.hands[0] = [
     { territory: 'a', type: 'infantry' },

@@ -15,16 +15,21 @@ async function loadMapData() {
   const jsonPath = `./src/data/${mapName}.json`;
   try {
     if (typeof fetch === "function") {
-      const res = await fetch(jsonPath);
-      if (res.ok) return await res.json();
+      try {
+        const res = await fetch(jsonPath);
+        if (res.ok) return await res.json();
+      } catch {
+        // Ignore fetch errors and fall back to fs
+      }
     }
     const fs = await import("fs/promises");
     const pathMod = await import("path");
     const filePath = pathMod.resolve(`src/data/${mapName}.json`);
     const data = await fs.readFile(filePath, "utf-8");
     return JSON.parse(data);
-  } catch {
-    return { territories: [], continents: [], deck: [] };
+  } catch (err) {
+    console.error(`Failed to load map data from ${jsonPath}`, err);
+    throw new Error(`Map data file not found: ${jsonPath}`);
   }
 }
 
@@ -100,13 +105,31 @@ class Game {
     if (territories && continents && deck) {
       return new Game(players, territories, continents, deck);
     }
-    const map = await loadMapData();
-    return new Game(
-      players,
-      territories || map.territories,
-      continents || map.continents,
-      deck || map.deck
-    );
+    try {
+      const map = await loadMapData();
+      return new Game(
+        players,
+        territories || map.territories,
+        continents || map.continents,
+        deck || map.deck
+      );
+    } catch (err) {
+      console.error("Unable to load map data, starting with empty map.", err);
+      if (typeof alert === "function") {
+        try {
+          alert("Unable to load map data. Starting with empty map.");
+        } catch (alertErr) {
+          // In non-browser environments alert may not be available
+          console.error("Failed to display alert", alertErr);
+        }
+      }
+      return new Game(
+        players,
+        territories || [],
+        continents || [],
+        deck || []
+      );
+    }
   }
 
   calculateReinforcements() {
