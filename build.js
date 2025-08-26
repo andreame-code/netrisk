@@ -31,8 +31,14 @@ for (const asset of assets) {
 }
 
 for (const asset of plainAssets) {
-  fs.copyFileSync(path.join(root, asset), path.join(dist, asset));
+  const srcPath = path.join(root, asset);
+  const destPath = path.join(dist, asset);
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.copyFileSync(srcPath, destPath);
 }
+
+// Copy additional data files (e.g., map.json)
+fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
 let indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
