@@ -19,12 +19,12 @@ describe('main menu', () => {
         <div id="diceResults"></div>
         <div id="uiPanel"></div>
         <button id="endTurn"></button>
-        <div id="t1" class="territory" data-id="t1"></div>
-        <div id="t2" class="territory" data-id="t2"></div>
-        <div id="t3" class="territory" data-id="t3"></div>
-        <div id="t4" class="territory" data-id="t4"></div>
-        <div id="t5" class="territory" data-id="t5"></div>
-        <div id="t6" class="territory" data-id="t6"></div>
+        <button type="button" id="t1" class="territory" data-id="t1"></button>
+        <button type="button" id="t2" class="territory" data-id="t2"></button>
+        <button type="button" id="t3" class="territory" data-id="t3"></button>
+        <button type="button" id="t4" class="territory" data-id="t4"></button>
+        <button type="button" id="t5" class="territory" data-id="t5"></button>
+        <button type="button" id="t6" class="territory" data-id="t6"></button>
       </div>`;
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })

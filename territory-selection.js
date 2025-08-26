@@ -88,6 +88,13 @@ export default function initTerritorySelection({
     .then((svg) => {
       const boardEl = document.getElementById("board");
       boardEl.innerHTML = svg;
+      const map = boardEl.querySelector("#map");
+      map
+        ?.querySelectorAll(".map-territory")
+        .forEach((el) => {
+          el.setAttribute("tabindex", "0");
+          el.setAttribute("role", "button");
+        });
       const tokenEl = document.createElement("div");
       tokenEl.id = "token";
       tokenEl.className = "token";
@@ -95,10 +102,14 @@ export default function initTerritorySelection({
       const terrs = territories || game?.territories;
       if (terrs) {
         terrs.forEach((t) => {
-          const terrEl = document.createElement("div");
+          const terrEl = document.createElement("button");
+          terrEl.type = "button";
           terrEl.id = t.id;
           terrEl.className = "territory";
           terrEl.dataset.id = t.id;
+          if (t.name) {
+            terrEl.setAttribute("aria-label", t.name);
+          }
           boardEl.appendChild(terrEl);
         });
         attachTerritoryHandlers?.();
@@ -109,8 +120,8 @@ export default function initTerritorySelection({
         tokenEl.style.left = `${gameState.tokenPosition.x * scale.x}px`;
         tokenEl.style.top = `${gameState.tokenPosition.y * scale.y}px`;
       }
-        const map = boardEl.querySelector("#map");
-        map.addEventListener("pointerdown", (e) => {
+      if (map) {
+        map.addEventListener("click", (e) => {
           const target = e.target.closest(".map-territory");
           if (target) {
             selectTerritory(target);
@@ -118,6 +129,17 @@ export default function initTerritorySelection({
             selectTerritory(null);
           }
           e.stopPropagation();
+        });
+        map.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            const target = e.target.closest(".map-territory");
+            if (target) {
+              selectTerritory(target);
+              if (e.key === " ") {
+                e.preventDefault();
+              }
+            }
+          }
         });
         map.addEventListener("dblclick", (e) => {
           const target = e.target.closest(".map-territory");
@@ -132,6 +154,7 @@ export default function initTerritorySelection({
             selectTerritory(null);
           }
         });
+      }
       })
       .catch((err) => {
         logger?.error(err);

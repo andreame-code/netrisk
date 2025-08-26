@@ -21,12 +21,12 @@ describe('main DOM interactions', () => {
       <div id="diceResults"></div>
       <div id="uiPanel"></div>
       <button id="endTurn"></button>
-      <div id="t1" class="territory" data-id="t1"></div>
-      <div id="t2" class="territory" data-id="t2"></div>
-      <div id="t3" class="territory" data-id="t3"></div>
-      <div id="t4" class="territory" data-id="t4"></div>
-      <div id="t5" class="territory" data-id="t5"></div>
-      <div id="t6" class="territory" data-id="t6"></div>`;
+      <button type="button" id="t1" class="territory" data-id="t1"></button>
+      <button type="button" id="t2" class="territory" data-id="t2"></button>
+      <button type="button" id="t3" class="territory" data-id="t3"></button>
+      <button type="button" id="t4" class="territory" data-id="t4"></button>
+      <button type="button" id="t5" class="territory" data-id="t5"></button>
+      <button type="button" id="t6" class="territory" data-id="t6"></button>`;
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
@@ -45,8 +45,8 @@ describe('main DOM interactions', () => {
     }
   });
 
-  function pointerDown(el) {
-    el.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  function clickTerritory(el) {
+    el.dispatchEvent(new window.Event('click', { bubbles: true }));
   }
 
   test('reinforcement updates status and log', () => {
@@ -54,12 +54,12 @@ describe('main DOM interactions', () => {
     const status = document.getElementById('status');
     const log = document.getElementById('actionLog');
 
-    pointerDown(t1);
+    clickTerritory(t1);
     expect(log.textContent).toContain('reinforces t1');
     expect(status.textContent).toContain(REINFORCE);
 
-    pointerDown(t1);
-    pointerDown(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
     expect(status.textContent).toContain(ATTACK);
   });
 
@@ -68,14 +68,14 @@ describe('main DOM interactions', () => {
     const t4 = document.getElementById('t4');
     const log = document.getElementById('actionLog');
 
-    pointerDown(t1);
-    pointerDown(t1);
-    pointerDown(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
 
-    pointerDown(t1);
+    clickTerritory(t1);
     expect(t1.classList.contains('selected')).toBe(true);
 
-    pointerDown(t4);
+    clickTerritory(t4);
     expect(log.textContent).toContain('attacks t4 from t1');
     expect(t1.classList.contains('attack')).toBe(true);
     expect(t4.classList.contains('attack')).toBe(true);
@@ -89,16 +89,16 @@ describe('main DOM interactions', () => {
     const { game } = main;
     const { updateUI } = ui;
 
-    pointerDown(t1);
-    pointerDown(t1);
-    pointerDown(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
 
     game.endTurn();
     updateUI();
 
-    pointerDown(t1);
+    clickTerritory(t1);
     expect(t1.classList.contains('selected')).toBe(true);
-    pointerDown(t2);
+    clickTerritory(t2);
     await Promise.resolve();
     expect(log.textContent).toContain('moves 1 from t1 to t2');
     expect(status.textContent).toContain(REINFORCE);
@@ -111,9 +111,9 @@ describe('main DOM interactions', () => {
     const status = document.getElementById('status');
     const log = document.getElementById('actionLog');
 
-    pointerDown(t1);
-    pointerDown(t1);
-    pointerDown(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
 
     endTurnBtn.click();
     expect(status.textContent).toContain(FORTIFY);
@@ -126,9 +126,9 @@ describe('main DOM interactions', () => {
 
   test('state is saved and restored from localStorage', async () => {
     const t1 = document.getElementById('t1');
-    pointerDown(t1);
-    pointerDown(t1);
-    pointerDown(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
+    clickTerritory(t1);
     const armies = main.game.territoryById('t1').armies;
     const phase = main.game.getPhase();
     const saved = localStorage.getItem('netriskGame');
@@ -144,12 +144,12 @@ describe('main DOM interactions', () => {
       <div id="diceResults"></div>
       <div id="uiPanel"></div>
       <button id="endTurn"></button>
-      <div id="t1" class="territory" data-id="t1"></div>
-      <div id="t2" class="territory" data-id="t2"></div>
-      <div id="t3" class="territory" data-id="t3"></div>
-      <div id="t4" class="territory" data-id="t4"></div>
-      <div id="t5" class="territory" data-id="t5"></div>
-      <div id="t6" class="territory" data-id="t6"></div>`;
+      <button type="button" id="t1" class="territory" data-id="t1"></button>
+      <button type="button" id="t2" class="territory" data-id="t2"></button>
+      <button type="button" id="t3" class="territory" data-id="t3"></button>
+      <button type="button" id="t4" class="territory" data-id="t4"></button>
+      <button type="button" id="t5" class="territory" data-id="t5"></button>
+      <button type="button" id="t6" class="territory" data-id="t6"></button>`;
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
