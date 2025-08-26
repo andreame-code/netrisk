@@ -308,9 +308,11 @@ class Game {
       }, null).t;
       target.armies += 1;
       this.reinforcements -= 1;
+      this.emit(REINFORCE, { territory: target.id, player: this.currentPlayer });
     }
     if (this.phase === REINFORCE && this.reinforcements === 0) {
       this.phase = ATTACK;
+      this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
     }
 
     // Attack while probabilities favorable
@@ -331,7 +333,8 @@ class Game {
       options.sort((a, b) => b.prob - a.prob);
       const best = options[0];
       if (best.prob < 0.6) break;
-      this.attack(best.from, best.to);
+      const result = this.attack(best.from, best.to);
+      this.emit(ATTACK, { from: best.from.id, to: best.to.id, result });
       if (this.phase === GAME_OVER) return;
     }
 
