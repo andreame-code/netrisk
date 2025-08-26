@@ -70,6 +70,19 @@ button:active {
   background: #daa520;
 }
 
+#setupForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+#setupForm label {
+  display: flex;
+  justify-content: space-between;
+}
+
 #gameContainer {
   display: grid;
   grid-template-columns: 1fr;
@@ -95,6 +108,12 @@ button:active {
   button {
     padding: 10px;
     font-size: 16px;
+  }
+
+  #setupForm label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 
