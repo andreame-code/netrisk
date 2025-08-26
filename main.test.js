@@ -1,4 +1,5 @@
 const mapData = require('./src/data/map.json');
+const { REINFORCE, ATTACK, FORTIFY, GAME_OVER } = require('./phases.js');
 
 jest.mock('./territory-selection.js', () => jest.fn());
 jest.mock('./move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
@@ -51,11 +52,11 @@ describe('main DOM interactions', () => {
 
     t1.click();
     expect(log.textContent).toContain('rinforza t1');
-    expect(status.textContent).toContain('reinforce');
+    expect(status.textContent).toContain(REINFORCE);
 
     t1.click();
     t1.click();
-    expect(status.textContent).toContain('attack');
+    expect(status.textContent).toContain(ATTACK);
   });
 
   test('attack updates log and highlights', () => {
@@ -96,7 +97,7 @@ describe('main DOM interactions', () => {
     t2.click();
     await Promise.resolve();
     expect(log.textContent).toContain('sposta 1 da t1 a t2');
-    expect(status.textContent).toContain('reinforce');
+    expect(status.textContent).toContain(REINFORCE);
     expect(t1.classList.contains('selected')).toBe(false);
   });
 
@@ -111,12 +112,12 @@ describe('main DOM interactions', () => {
     t1.click();
 
     endTurnBtn.click();
-    expect(status.textContent).toContain('fortify');
+    expect(status.textContent).toContain(FORTIFY);
 
     endTurnBtn.click();
     expect(log.textContent).toContain('termina il turno');
     expect(status.textContent).toContain('Player 2');
-    expect(status.textContent).toContain('reinforce');
+    expect(status.textContent).toContain(REINFORCE);
   });
 
   test('state is saved and restored from localStorage', async () => {
@@ -189,7 +190,7 @@ describe('main DOM interactions', () => {
     const perform = jest
       .spyOn(main.game, 'performAITurn')
       .mockImplementation(() => {
-        main.game.setPhase('gameover');
+        main.game.setPhase(GAME_OVER);
       });
     const uiSpy = jest.spyOn(ui, 'updateUI').mockImplementation(() => {});
     main.runAI();

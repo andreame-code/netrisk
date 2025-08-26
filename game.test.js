@@ -1,4 +1,5 @@
 import Game from "./game.js";
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "./phases.js";
 
 let game;
 
@@ -35,7 +36,7 @@ test('reinforce phase allows adding army and moves to attack', () => {
   game.handleTerritoryClick('t1');
   game.handleTerritoryClick('t1');
   expect(game.territories[0].armies).toBe(initial + 3);
-  expect(game.getPhase()).toBe('attack');
+  expect(game.getPhase()).toBe(ATTACK);
 });
 
 test('attack phase resolves battle between territories', () => {
@@ -51,12 +52,12 @@ test('attack phase resolves battle between territories', () => {
   game.handleTerritoryClick('t1');
   game.handleTerritoryClick('t4');
   expect(game.territories[3].armies).toBe(2);
-  expect(game.getPhase()).toBe('attack');
+  expect(game.getPhase()).toBe(ATTACK);
   Math.random.mockRestore();
 });
 
 test('attack returns movable armies after conquest and moveArmies transfers them', () => {
-  game.setPhase('attack');
+  game.setPhase(ATTACK);
   const from = game.territoryById('t2');
   const to = game.territoryById('t3');
   from.armies = 5;
@@ -79,7 +80,7 @@ test('attack returns movable armies after conquest and moveArmies transfers them
 test('gameover phase when one player owns all territories', () => {
   game.territories.forEach(t => { t.owner = 0; });
   game.checkVictory();
-  expect(game.getPhase()).toBe('gameover');
+  expect(game.getPhase()).toBe(GAME_OVER);
   expect(game.winner).toBe(0);
 });
 
@@ -97,11 +98,11 @@ test('endTurn moves from attack to fortify then to next player', () => {
   game.handleTerritoryClick('t1');
   game.handleTerritoryClick('t1');
   game.handleTerritoryClick('t1');
-  expect(game.getPhase()).toBe('attack');
+  expect(game.getPhase()).toBe(ATTACK);
   game.endTurn();
-  expect(game.getPhase()).toBe('fortify');
+  expect(game.getPhase()).toBe(FORTIFY);
   game.endTurn();
-  expect(game.getPhase()).toBe('reinforce');
+  expect(game.getPhase()).toBe(REINFORCE);
   expect(game.getCurrentPlayer()).toBe(1);
 });
 
@@ -134,7 +135,7 @@ test('AI plays cards before reinforcing', () => {
 
 test('AI chooses attacks with highest probability', () => {
   game.setCurrentPlayer(2);
-  game.setPhase('attack');
+  game.setPhase(ATTACK);
   game.reinforcements = 0;
   const t5 = game.territoryById('t5'); t5.owner = 2; t5.armies = 5;
   const t2 = game.territoryById('t2'); t2.owner = 0; t2.armies = 1;
@@ -150,7 +151,7 @@ test('AI chooses attacks with highest probability', () => {
 
 test('AI fortifies toward strategic territory', () => {
   game.setCurrentPlayer(2);
-  game.setPhase('attack');
+  game.setPhase(ATTACK);
   game.reinforcements = 0;
   const t5 = game.territoryById('t5'); t5.owner = 2; t5.armies = 3;
   const t6 = game.territoryById('t6'); t6.owner = 2; t6.armies = 3;
@@ -168,7 +169,7 @@ test('continent bonus is added to reinforcements', () => {
 });
 
 test('player draws a card after conquering a territory', () => {
-  game.setPhase('attack');
+  game.setPhase(ATTACK);
   const from = game.territoryById('t2');
   const to = game.territoryById('t3');
   from.armies = 5;
@@ -233,7 +234,7 @@ test('players with no territories are skipped on turn rotation', () => {
   t2.armies = 5; // attacker
   t3.owner = 1; t3.armies = 1; // defender's last territory
   t4.owner = 2; // ensure player 1 has no other territories
-  game.setPhase('attack');
+  game.setPhase(ATTACK);
   // Ensure deterministic conquest
   jest.spyOn(Math, 'random').mockReturnValueOnce(0.9)
     .mockReturnValueOnce(0.9)
@@ -246,7 +247,7 @@ test('players with no territories are skipped on turn rotation', () => {
   game.endTurn(); // to next player
   // Player 1 had no territories, so it should now be player 2's turn
   expect(game.getCurrentPlayer()).toBe(2);
-  expect(game.getPhase()).toBe('reinforce');
+  expect(game.getPhase()).toBe(REINFORCE);
 });
 
 test('serialize and deserialize restores game state', () => {

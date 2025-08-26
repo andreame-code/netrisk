@@ -1,5 +1,7 @@
+import { REINFORCE } from "../../phases.js";
+
 export default function loggerPlugin(game, logger = console) {
-  game.on('reinforce', ({ territory, player }) => {
+  game.on(REINFORCE, ({ territory, player }) => {
     logger.log(`Player ${player} reinforces ${territory}`);
   });
   game.on('attackResolved', ({ from, to, result }) => {
