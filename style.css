@@ -87,7 +87,6 @@ button:hover {
 
 .board {
   position: relative;
-  max-width: 600px;
   width: 100%;
   aspect-ratio: 3 / 2;
   margin: 20px;
