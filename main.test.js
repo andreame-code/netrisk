@@ -28,7 +28,7 @@ describe('main DOM interactions', () => {
       <div id="t5" class="territory" data-id="t5"></div>
       <div id="t6" class="territory" data-id="t6"></div>`;
     global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(mapData) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
     main = require('./main.js');
@@ -147,7 +147,7 @@ describe('main DOM interactions', () => {
       <div id="t5" class="territory" data-id="t5"></div>
       <div id="t6" class="territory" data-id="t6"></div>`;
     global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(mapData) })
+      Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
     const main2 = require('./main.js');
