@@ -1,5 +1,8 @@
 /* global logger */
-import Game from "./game.js";
+import { loadGame } from "./game-loader.js";
+import { updateGameState, startNewGame } from "./persistence.js";
+import { attachAIActionLogging } from "./ai-logger.js";
+import { runAI } from "./ai-runner.js";
 import initTerritorySelection from "./territory-selection.js";
 import {
   playAttackSound,
@@ -10,12 +13,10 @@ import {
   getVolume,
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
-import { navigateTo } from "./navigation.js";
 import {
   REINFORCE,
   ATTACK,
   FORTIFY,
-  GAME_OVER,
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
 import {
@@ -62,97 +63,11 @@ const gameState = {
   log: [],
 };
 
-function updateGameState(selected = null) {
-  gameState.currentPlayer = game.currentPlayer;
-  gameState.players = game.players;
-  gameState.territories = game.territories;
-  gameState.phase = game.getPhase();
-  gameState.selectedTerritory = selected;
-  if (typeof localStorage !== "undefined") {
-    try {
-      localStorage.setItem("netriskGame", game.serialize());
-    } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to save game", err);
-      }
-    }
-  }
-}
-
 function checkForVictory() {
   const winner = game.checkVictory();
   if (winner !== null) {
     showVictoryModal(winner);
   }
-}
-
-async function startNewGame() {
-  const modal = document.getElementById("victoryModal");
-  if (modal) modal.classList.remove("show");
-  if (typeof localStorage !== "undefined") {
-    localStorage.removeItem("netriskGame");
-    localStorage.removeItem("netriskPlayers");
-  }
-  navigateTo("setup.html");
-}
-
-async function loadMap(mapName) {
-  try {
-    const res = await fetch(`./src/data/${mapName}.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch map data: ${res.status}`);
-    }
-    const map = await res.json();
-    territoryPositions = map.territories.reduce((acc, t) => {
-      acc[t.id] = { x: t.x, y: t.y };
-      return acc;
-    }, {});
-    return map;
-  } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error("Failed to load map data", err);
-    }
-    if (typeof alert !== "undefined") {
-      alert("Unable to load game data. Please try again later.");
-    }
-    return null;
-  }
-}
-
-function restoreGameState(GameClass, map) {
-  let loadedGame = null;
-  if (typeof localStorage !== "undefined") {
-    try {
-      const saved = localStorage.getItem("netriskGame");
-      if (saved) {
-        loadedGame = GameClass.deserialize(saved);
-      }
-    } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to load saved game", err);
-      }
-    }
-  }
-  if (!loadedGame) {
-    let players = [];
-    if (typeof localStorage !== "undefined") {
-      try {
-        players = JSON.parse(localStorage.getItem("netriskPlayers")) || [];
-      } catch (err) {
-        players = [];
-      }
-    }
-    loadedGame = new GameClass(
-      players.length ? players : null,
-      map.territories,
-      map.continents,
-      map.deck,
-    );
-    if (typeof logger !== "undefined") {
-      logger.info("Game initialised");
-    }
-  }
-  return loadedGame;
 }
 
 function initialiseUI(game) {
@@ -161,108 +76,7 @@ function initialiseUI(game) {
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
   initUI({ game, gameState, territoryPositions });
-  attachAIActionLogging();
-}
-
-function loadGame() {
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
-  return loadMap(mapName).then((map) => {
-    if (!map) return;
-    const GameClass =
-      (typeof window !== "undefined" && window.Game) || Game;
-    if (typeof GameClass !== "function") {
-      throw new Error("Game class not available");
-    }
-    game = restoreGameState(GameClass, map);
-    initialiseUI(game);
-  });
-}
-
-function runAI() {
-  if (
-    game.players[game.currentPlayer].ai &&
-    game.getPhase() !== GAME_OVER
-  ) {
-    setTimeout(() => {
-      game.performAITurn();
-      updateUI();
-      runAI();
-    }, 0);
-  }
-}
-
-let lastPlayer;
-
-function attachAIActionLogging() {
-  lastPlayer = game.currentPlayer;
-
-  game.on(REINFORCE, ({ territory, player }) => {
-    if (game.players[player].ai) {
-      const name = game.players[player].name;
-      addLogEntry(`${name} reinforces ${territory}`);
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} reinforces ${territory}`);
-      }
-    }
-  });
-
-  game.on(ATTACK, ({ from, to }) => {
-    if (game.players[game.currentPlayer].ai) {
-      const name = game.players[game.currentPlayer].name;
-      addLogEntry(`${name} attacks ${to} from ${from}`);
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} attacks ${to} from ${from}`);
-      }
-    }
-  });
-
-  game.on("move", ({ from, to, count }) => {
-    if (game.players[game.currentPlayer].ai) {
-      const name = game.players[game.currentPlayer].name;
-      addLogEntry(`${name} moves ${count} from ${from} to ${to}`);
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} moves ${count} from ${from} to ${to}`);
-      }
-    }
-  });
-
-  game.on("cardsPlayed", ({ player }) => {
-    if (game.players[player].ai) {
-      const name = game.players[player].name;
-      addLogEntry(`${name} plays cards`);
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} plays cards`);
-      }
-    }
-  });
-
-  game.on("cardAwarded", ({ player, card }) => {
-    const name = game.players[player].name;
-    const icons = { infantry: "🪖", cavalry: "🐎", artillery: "💣" };
-    addLogEntry(`${name} receives a card ${icons[card.type] || card.type}`);
-    if (typeof logger !== "undefined") {
-      logger.info(`${name} receives card ${card.type}`);
-    }
-  });
-
-  game.on("turnStart", ({ player }) => {
-    const prev = lastPlayer;
-    const prevName = game.players[prev].name;
-    const nextName = game.players[player].name;
-    if (game.players[prev].ai) {
-      addLogEntry(`${prevName} ends turn. Next: ${nextName}`);
-      if (typeof logger !== "undefined") {
-        logger.info(`${prevName} ends turn. Next: ${nextName}`);
-      }
-      gameState.turnNumber += 1;
-    }
-    lastPlayer = player;
-    updateGameState();
-    updateInfoPanel();
-  });
+  attachAIActionLogging(game, gameState);
 }
 
 function attachTerritoryHandlers() {
@@ -336,9 +150,9 @@ function attachTerritoryHandlers() {
           }
           document.getElementById(result.territory).classList.add("selected");
         }
-        updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
+        updateGameState(gameState, game, game.selectedFrom ? game.selectedFrom.id : null);
         updateInfoPanel();
-        runAI();
+        runAI(game, updateUI);
         checkForVictory();
       } catch (err) {
         if (typeof logger !== "undefined") {
@@ -374,9 +188,9 @@ document.getElementById("endTurn").addEventListener("click", () => {
       }
     }
     updateUI();
-    updateGameState();
+    updateGameState(gameState, game);
     updateInfoPanel();
-    runAI();
+    runAI(game, updateUI);
     checkForVictory();
   } catch (err) {
     if (typeof logger !== "undefined") {
@@ -418,7 +232,15 @@ async function initGame() {
     window.location.href = "setup.html";
     return;
   }
-  await loadGame();
+  const { game: loadedGame, territoryPositions: positions } = await loadGame();
+  if (!loadedGame) return;
+  game = loadedGame;
+  territoryPositions = positions;
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports.game = game;
+    module.exports.territoryPositions = territoryPositions;
+  }
+  initialiseUI(game);
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
   resetBtn.textContent = "New Game";
@@ -480,10 +302,10 @@ async function initGame() {
   });
 
   updateUI();
-  runAI();
+  runAI(game, updateUI);
   checkForVictory();
 
-  updateGameState();
+  updateGameState(gameState, game);
   updateInfoPanel();
   addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
@@ -520,10 +342,12 @@ function init() {
 init();
 initThemeToggle();
 
+const runAIWrapper = () => runAI(game, updateUI);
+
 export {
   game,
   territoryPositions,
-  runAI,
+  runAIWrapper as runAI,
   attachTerritoryHandlers,
   startNewGame,
 };
