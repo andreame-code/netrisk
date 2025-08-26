@@ -396,6 +396,11 @@ function updateStatus() {
   if (statusEl) statusEl.textContent = status;
 }
 
+function updateUndoButton() {
+  const btn = getElement("undo");
+  if (btn) btn.disabled = !game.canUndo();
+}
+
 function updateUI() {
   const scale = getBoardScale();
   const playerColorClasses = game.players.map((p) => getColorClass(p.color));
@@ -403,6 +408,7 @@ function updateUI() {
   updateTerritories(scale, playerColorClasses);
   updateToken(scale);
   updateStatus();
+  updateUndoButton();
   updateBonusInfo();
   updateCardsUI();
 }
