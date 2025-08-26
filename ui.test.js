@@ -9,6 +9,7 @@ import {
   updateCardsUI,
   getBoardScale,
   destroyUI,
+  updateInfoPanel,
 } from './ui.js';
 
 describe('ui utilities', () => {
@@ -17,6 +18,8 @@ describe('ui utilities', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <div id="board"></div>
+      <div id="currentPlayer"></div>
+      <div id="turnNumber"></div>
       <div id="victoryModal"><div id="victoryTitle"></div><div id="victoryStats"></div></div>
       <div id="bonusInfo"></div>
       <div id="cards"></div>
@@ -116,5 +119,13 @@ describe('ui utilities', () => {
 
     removeSpy.mockRestore();
     getSpy.mockRestore();
+  });
+
+  test('updateInfoPanel displays AI profile', () => {
+    game.players[0].ai = true;
+    game.players[0].difficulty = 'easy';
+    game.players[0].style = 'aggressive';
+    updateInfoPanel();
+    expect(document.getElementById('currentPlayer').textContent).toBe('P1 (Easy/Aggressive)');
   });
 });

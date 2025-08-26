@@ -61,9 +61,17 @@ function resetSelectedCards() {
   selectedCards = [];
 }
 
+function formatPlayerName(player) {
+  if (!player.ai) return player.name;
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const diff = cap(player.difficulty || "normal");
+  const style = cap(player.style || "balanced");
+  return `${player.name} (${diff}/${style})`;
+}
+
 function updateInfoPanel() {
   const cp = getElement("currentPlayer");
-  if (cp) cp.textContent = game.players[gameState.currentPlayer].name;
+  if (cp) cp.textContent = formatPlayerName(game.players[gameState.currentPlayer]);
   const tn = getElement("turnNumber");
   if (tn) tn.textContent = gameState.turnNumber;
 }

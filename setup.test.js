@@ -6,6 +6,16 @@ function setupDOM() {
       <form id="setupForm">
         <input id="humanCount" />
         <input id="aiCount" />
+        <select id="aiDifficulty">
+          <option value="easy">easy</option>
+          <option value="normal">normal</option>
+          <option value="hard">hard</option>
+        </select>
+        <select id="aiStyle">
+          <option value="aggressive">aggressive</option>
+          <option value="balanced">balanced</option>
+          <option value="defensive">defensive</option>
+        </select>
         <div id="players"></div>
         <input type="hidden" id="mapSelect" />
         <div id="mapGrid"></div>
@@ -64,5 +74,21 @@ describe('setup map selection', () => {
     const img = document.querySelector('.map-item img');
     img.dispatchEvent(new Event('error'));
     expect(document.querySelector('.map-item .placeholder')).not.toBeNull();
+  });
+
+  test('saves AI difficulty and style', async () => {
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' }] };
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('./setup.js');
+    await mapLoadPromise;
+    document.getElementById('humanCount').value = '1';
+    document.getElementById('aiCount').value = '1';
+    document.getElementById('aiDifficulty').value = 'hard';
+    document.getElementById('aiStyle').value = 'aggressive';
+    document.getElementById('name0').value = 'P1';
+    document.getElementById('color0').value = colorPalette[0];
+    document.getElementById('setupForm').dispatchEvent(new Event('submit'));
+    const saved = JSON.parse(localStorage.getItem('netriskPlayers'));
+    expect(saved[1]).toEqual(expect.objectContaining({ ai: true, difficulty: 'hard', style: 'aggressive' }));
   });
 });

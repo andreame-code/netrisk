@@ -1,19 +1,45 @@
 import { attackSuccessProbability, territoryPriority } from "../../ai.js";
 import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../../phases.js";
 
+function getProfile(player) {
+  const diffSettings = {
+    easy: { attackThreshold: 0.8, target: "random", card: 0.5 },
+    normal: { attackThreshold: 0.6, target: "best", card: 1 },
+    hard: { attackThreshold: 0.5, target: "best", card: 1 },
+  };
+  const styleMod = {
+    aggressive: -0.1,
+    defensive: 0.1,
+    balanced: 0,
+  };
+  const difficulty = diffSettings[player.difficulty] || diffSettings.normal;
+  const style = player.style || "balanced";
+  return {
+    attackThreshold: Math.max(
+      0,
+      difficulty.attackThreshold + (styleMod[style] || 0),
+    ),
+    target: difficulty.target,
+    card: difficulty.card,
+    style,
+  };
+}
+
 export function performAITurn(game) {
-  if (!game.players[game.currentPlayer].ai || game.phase === GAME_OVER) return;
+  const player = game.players[game.currentPlayer];
+  if (!player.ai || game.phase === GAME_OVER) return;
+  const profile = getProfile(player);
   // Play cards if possible
   const hand = game.hands[game.currentPlayer];
   const set = game.findValidSet(hand);
-  if (set) game.playCards(set);
+  if (set && Math.random() < profile.card) game.playCards(set);
 
   // Reinforce prioritizing territories
   while (game.reinforcements > 0) {
     const owned = game.territories.filter(t => t.owner === game.currentPlayer);
     if (owned.length === 0) break;
     const target = owned.reduce((best, t) => {
-      const score = territoryPriority(game, t);
+      const score = territoryPriority(game, t, profile);
       return !best || score > best.score ? { t, score } : best;
     }, null).t;
     target.armies += 1;
@@ -40,11 +66,17 @@ export function performAITurn(game) {
         });
       });
     if (options.length === 0) break;
-    options.sort((a, b) => b.prob - a.prob);
-    const best = options[0];
-    if (best.prob < 0.6) break;
-    const result = game.attack(best.from, best.to);
-    game.emit(ATTACK, { from: best.from.id, to: best.to.id, result });
+    const candidates = options.filter(o => o.prob >= profile.attackThreshold);
+    if (candidates.length === 0) break;
+    let choice;
+    if (profile.target === "random") {
+      choice = candidates[Math.floor(Math.random() * candidates.length)];
+    } else {
+      candidates.sort((a, b) => b.prob - a.prob);
+      choice = candidates[0];
+    }
+    const result = game.attack(choice.from, choice.to);
+    game.emit(ATTACK, { from: choice.from.id, to: choice.to.id, result });
     if (game.phase === GAME_OVER) return;
   }
 
@@ -58,7 +90,9 @@ export function performAITurn(game) {
         from.neighbors.forEach(n => {
           const to = game.territoryById(n);
           if (to.owner === game.currentPlayer) {
-            const diff = territoryPriority(game, to) - territoryPriority(game, from);
+            const diff =
+              territoryPriority(game, to, profile) -
+              territoryPriority(game, from, profile);
             if (!best || diff > best.diff) best = { from, to, diff };
           }
         });
