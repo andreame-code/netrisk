@@ -1,18 +1,19 @@
+import { setMasterVolume, getMasterVolume, setMuted, isMuted } from './audio.js';
+import { initThemeToggle } from './theme.js';
+
 const lang = navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
 
 const texts = {
   en: {
-    title: 'About & Help',
-    search: 'Search...',
+    title: 'About & Settings',
     sections: {
-      rules: {
-        title: 'Rules',
+      settings: {
+        title: 'Settings',
         content:
-          'Each player deploys armies, attacks adjacent territories and ends the turn. Conquer all territories to win.',
-      },
-      tips: {
-        title: 'Tips',
-        content: 'Expand early, defend borders and watch your opponents.',
+          '<label for="volumeSetting">Volume:</label>' +
+          '<input type="range" id="volumeSetting" min="0" max="1" step="0.01" />' +
+          '<button id="muteBtn" class="btn">Mute</button>' +
+          '<button id="themeToggle" class="btn">High Contrast</button>',
       },
       credits: {
         title: 'Credits',
@@ -27,25 +28,18 @@ const texts = {
         content:
           '<a href="https://github.com" target="_blank" rel="noopener">Source code on GitHub</a>',
       },
-      privacy: {
-        title: 'Privacy',
-        content:
-          'Game saves are stored locally in your browser. No tracking cookies are used. Audio preferences remain local.',
-      },
     },
   },
   it: {
-    title: 'Info e Aiuto',
-    search: 'Cerca...',
+    title: 'Info e Impostazioni',
     sections: {
-      rules: {
-        title: 'Regole',
+      settings: {
+        title: 'Impostazioni',
         content:
-          'Ogni giocatore schiera gli eserciti, attacca territori adiacenti e termina il turno. Chi conquista tutte le terre vince.',
-      },
-      tips: {
-        title: 'Suggerimenti',
-        content: 'Espandi all\'inizio, difendi i confini e osserva gli avversari.',
+          '<label for="volumeSetting">Volume:</label>' +
+          '<input type="range" id="volumeSetting" min="0" max="1" step="0.01" />' +
+          '<button id="muteBtn" class="btn">Mute</button>' +
+          '<button id="themeToggle" class="btn">High Contrast</button>',
       },
       credits: {
         title: 'Credits',
@@ -59,11 +53,6 @@ const texts = {
         title: 'GitHub',
         content:
           '<a href="https://github.com" target="_blank" rel="noopener">Codice sorgente su GitHub</a>',
-      },
-      privacy: {
-        title: 'Privacy',
-        content:
-          'I salvataggi sono memorizzati localmente nel browser. Nessun cookie di tracciamento viene utilizzato. Le preferenze audio restano locali.',
       },
     },
   },
@@ -84,15 +73,29 @@ export function initAbout(doc = document) {
   const t = texts[lang];
   doc.getElementById('pageTitle').textContent = t.title;
   doc.title = `${t.title} - NetRisk`;
-  const searchInput = doc.getElementById('helpSearch');
-  searchInput.placeholder = t.search;
-  searchInput.addEventListener('input', (e) => filterSections(e.target.value, doc));
   Object.entries(t.sections).forEach(([id, data]) => {
     const section = doc.getElementById(id);
     if (!section) return;
     section.querySelector('h2').textContent = data.title;
     section.querySelector('.content').innerHTML = data.content;
   });
+  initThemeToggle();
+  const vol = doc.getElementById('volumeSetting');
+  if (vol) {
+    vol.value = getMasterVolume();
+    vol.addEventListener('input', (e) => setMasterVolume(parseFloat(e.target.value)));
+  }
+  const muteBtn = doc.getElementById('muteBtn');
+  if (muteBtn) {
+    const updateMuteText = () => {
+      muteBtn.textContent = isMuted() ? 'Unmute' : 'Mute';
+    };
+    updateMuteText();
+    muteBtn.addEventListener('click', () => {
+      setMuted(!isMuted());
+      updateMuteText();
+    });
+  }
 }
 
 if (typeof window !== 'undefined') {

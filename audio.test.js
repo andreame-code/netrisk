@@ -11,6 +11,12 @@ import {
 } from "./audio.js";
 
 describe("audio helpers", () => {
+  beforeEach(() => {
+    if (typeof localStorage !== "undefined") {
+      localStorage.clear();
+    }
+  });
+
   test("playEffect is safe when Audio is undefined", () => {
     const original = global.Audio;
     // eslint-disable-next-line no-undefined
@@ -39,6 +45,18 @@ describe("audio helpers", () => {
     expect(isMusicEnabled()).toBe(false);
     setMusicEnabled(true);
     expect(isMusicEnabled()).toBe(true);
+  });
+
+  test("settings persist via localStorage", () => {
+    setMasterVolume(0.33);
+    setMuted(true);
+    const stored = localStorage.getItem("audioSettings");
+    expect(stored).toContain('"master":0.33');
+    expect(stored).toContain('"muted":true');
+    jest.resetModules();
+    const reloaded = require("./audio.js");
+    expect(reloaded.getMasterVolume()).toBeCloseTo(0.33);
+    expect(reloaded.isMuted()).toBe(true);
   });
 });
 

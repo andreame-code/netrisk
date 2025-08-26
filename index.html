@@ -19,7 +19,7 @@
     </button>
     <h1>NetRisk</h1>
     <nav>
-      <a href="about.html" id="aboutLink">About/Help</a>
+      <a href="about.html" id="aboutLink">About/Settings</a>
     </nav>
     <div id="mainMenu">
       <button id="startGame" class="btn" aria-label="Start Game" accesskey="s">
@@ -143,7 +143,7 @@
         <script>
       const lang = navigator.language && navigator.language.startsWith("it") ? "it" : "en";
       const link = document.getElementById("aboutLink");
-      if (link) link.textContent = lang === "it" ? "Info/Aiuto" : "About/Help";
+      if (link) link.textContent = lang === "it" ? "Info/Impostazioni" : "About/Settings";
     </script>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>
