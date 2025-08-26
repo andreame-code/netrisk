@@ -2,6 +2,7 @@ const mapData = require('./src/data/map.json');
 
 jest.mock('./territory-selection.js', () => jest.fn());
 jest.mock('./move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
+jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
 
 describe('main DOM interactions', () => {
   let main;
@@ -179,6 +180,8 @@ describe('main DOM interactions', () => {
     expect(() => main.startNewGame()).not.toThrow();
     expect(localStorage.getItem('netriskPlayers')).toBeNull();
     expect(localStorage.getItem('netriskGame')).toBeNull();
+    const navigation = require('./navigation.js');
+    expect(navigation.navigateTo).toHaveBeenCalledWith('setup.html');
   });
 
   test('runAI processes AI turns', () => {
