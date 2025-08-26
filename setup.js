@@ -1,5 +1,5 @@
 import { colorPalette } from "./colors.js";
-import { navigateTo, goHome } from "./navigation.js";
+import { navigateTo } from "./navigation.js";
 
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
@@ -9,7 +9,6 @@ const aiStyleInput = document.getElementById("aiStyle");
 const playersContainer = document.getElementById("players");
 const mapSelect = document.getElementById("mapSelect");
 const mapGrid = document.getElementById("mapGrid");
-const backHomeBtn = document.getElementById("backHome");
 
 const thumbnailCache = new Map();
 let selectedMap = null;
@@ -24,12 +23,6 @@ function getCachedImage(src) {
   return img.cloneNode(true);
 }
 
-if (backHomeBtn) {
-  backHomeBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    goHome();
-  });
-}
 
 export async function loadMapData() {
   if (!mapGrid) return;

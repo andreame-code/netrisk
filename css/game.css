@@ -159,7 +159,9 @@ body.game-page {
 body.game-page #gameHeader {
   display: flex;
   justify-content: space-between;
-  padding: 10px;
+  align-items: center;
+  height: 48px;
+  padding: 0 10px;
   background: rgba(245, 231, 198, 0.9);
   border-bottom: 2px solid #8b4513;
 }
@@ -198,7 +200,6 @@ body.game-page #uiPanel {
 }
 
 /* Game theme */
-#gameHeader { background: rgba(245, 231, 198, 0.9); border-bottom: 2px solid #8b4513; }
 #uiPanel {
   background: #f5e7c6;
   padding: 15px;

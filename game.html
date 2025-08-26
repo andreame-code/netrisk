@@ -13,14 +13,12 @@
   </head>
   <body class="game-page">
     <header id="gameHeader">
-      <a href="index.html" class="btn" id="backHome">Back to Home</a>
       <button id="exitGame" class="btn">Exit Game</button>
+      <div id="turnStatus">Turn <span id="turnNumber">1</span> - <span id="currentPlayer"></span></div>
     </header>
     <div id="gameContainer">
       <div id="board" class="board"></div>
       <div id="uiPanel">
-        <div>Current turn: <span id="turnNumber">1</span></div>
-        <div>Current player: <span id="currentPlayer"></span></div>
         <div id="howToPlayBox">
           <div>
             <strong>How to play (alpha)</strong>

@@ -97,9 +97,9 @@ describe('setup map selection', () => {
     expect(saved[1]).toEqual(expect.objectContaining({ ai: true, difficulty: 'hard', style: 'aggressive' }));
   });
 
-  test('has back to home link', () => {
+  test('has header navigation', () => {
     const html = readFileSync('./setup.html', 'utf8');
-    expect(html).toMatch(/id="backHome"/);
-    expect(html).toMatch(/Back to Home/);
+    expect(html).toMatch(/<header class="main-header">/);
+    expect(html).toMatch(/href="index.html"/);
   });
 });
