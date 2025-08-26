@@ -1,5 +1,6 @@
 import { attackSuccessProbability, territoryPriority } from "./ai.js";
 import { colorPalette } from "./colors.js";
+import EventBus from "./src/core/event-bus.js";
 
 async function loadMapData() {
   try {
@@ -25,6 +26,8 @@ class Game {
         { name: 'Player 2', color: colorPalette[1] },
         { name: 'AI', color: colorPalette[2], ai: true },
       ];
+
+    this.events = new EventBus();
 
     const total = territories.length || 1;
     territories = territories.map((t, i) => ({
@@ -80,6 +83,10 @@ class Game {
       }
     });
     this.reinforcements = reinf;
+    this.emit('reinforcementsCalculated', {
+      player: this.currentPlayer,
+      amount: this.reinforcements,
+    });
   }
 
   territoryById(id) {
@@ -94,8 +101,10 @@ class Game {
       if (territory.owner === this.currentPlayer && this.reinforcements > 0) {
         territory.armies += 1;
         this.reinforcements -= 1;
+        this.emit('reinforce', { territory: id, player: this.currentPlayer });
         if (this.reinforcements === 0) {
           this.phase = 'attack';
+          this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
         }
         return { type: 'reinforce', territory: id };
       }
@@ -114,6 +123,7 @@ class Game {
         }
         if (from.owner === this.currentPlayer && to.owner !== this.currentPlayer && from.neighbors.includes(to.id)) {
           const result = this.attack(from, to);
+          this.emit('attack', { from: from.id, to: to.id, result });
           this.selectedFrom = null;
           return Object.assign({ type: 'attack', from: from.id, to: to.id }, result);
         }
@@ -172,7 +182,9 @@ class Game {
       this.conqueredThisTurn = true;
       this.checkVictory();
     }
-    return { attackRolls, defendRolls, conquered, movableArmies };
+    const result = { attackRolls, defendRolls, conquered, movableArmies };
+    this.emit('attackResolved', { from: from.id, to: to.id, result });
+    return result;
   }
 
   moveArmies(fromId, toId, count) {
@@ -184,6 +196,7 @@ class Game {
     if (count < 1 || from.armies <= count) return false;
     from.armies -= count;
     to.armies += count;
+    this.emit('move', { from: fromId, to: toId, count });
     return true;
   }
 
@@ -203,6 +216,7 @@ class Game {
     if (this.phase === 'attack') {
       this.selectedFrom = null;
       this.phase = 'fortify';
+      this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
     } else if (this.phase === 'fortify') {
       const prev = this.currentPlayer;
       this.selectedFrom = null;
@@ -211,11 +225,16 @@ class Game {
         this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
       } while (!this.territories.some(t => t.owner === this.currentPlayer));
       if (this.conqueredThisTurn) {
-        this.drawCard(prev);
+        const card = this.drawCard(prev);
         this.conqueredThisTurn = false;
+        if (card) {
+          this.emit('cardAwarded', { player: prev, card });
+        }
       }
       this.phase = 'reinforce';
       this.calculateReinforcements();
+      this.emit('turnStart', { player: this.currentPlayer });
+      this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
     }
   }
 
@@ -223,6 +242,7 @@ class Game {
     if (this.deck.length === 0) return null;
     const card = this.deck.shift();
     this.hands[player].push(card);
+    this.emit('cardDrawn', { player, card });
     return card;
   }
 
@@ -237,6 +257,7 @@ class Game {
     if (!allSame && !allDiff) return false;
     indices.sort((a, b) => b - a).forEach(i => this.discard.push(hand.splice(i, 1)[0]));
     this.reinforcements += 5;
+    this.emit('cardsPlayed', { player: this.currentPlayer, cards });
     return true;
   }
 
@@ -372,6 +393,24 @@ class Game {
   setCurrentPlayer(p) { this.currentPlayer = p; }
   getSelectedFrom() { return this.selectedFrom; }
   setSelectedFrom(s) { this.selectedFrom = s; }
+
+  on(event, handler) {
+    return this.events.on(event, handler);
+  }
+
+  off(event, handler) {
+    this.events.off(event, handler);
+  }
+
+  emit(event, payload) {
+    this.events.emit(event, payload);
+  }
+
+  use(plugin) {
+    if (typeof plugin === 'function') {
+      plugin(this);
+    }
+  }
 }
 
 export default Game;
