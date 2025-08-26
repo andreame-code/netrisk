@@ -132,12 +132,15 @@ async function loadGame() {
 }
 
 function runAI() {
-  while (
+  if (
     game.players[game.currentPlayer].ai &&
     game.getPhase() !== "gameover"
   ) {
-    game.performAITurn();
-    updateUI();
+    setTimeout(() => {
+      game.performAITurn();
+      updateUI();
+      runAI();
+    }, 0);
   }
 }
 
