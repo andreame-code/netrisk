@@ -19,15 +19,9 @@
         Number of AI players:
         <input type="number" id="aiCount" min="0" max="5" required value="2" />
       </label>
-      <label>
-        Map:
-        <select id="mapSelect">
-          <option value="map">Classic</option>
-          <option value="map2">Desert</option>
-          <option value="map3">Grid</option>
-          <option value="map-roman">Roman Empire</option>
-        </select>
-      </label>
+      <p>Map:</p>
+      <input type="hidden" id="mapSelect" />
+      <div id="mapGrid"></div>
       <div id="players"></div>
       <button type="submit" class="btn">Start</button>
     </form>
