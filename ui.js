@@ -16,9 +16,10 @@ function getElement(id) {
 function getBoardScale() {
   const board = getElement("board");
   if (!board) return { x: 1, y: 1 };
-  const rect = board.getBoundingClientRect();
-  const x = rect.width ? rect.width / BOARD_WIDTH : 1;
-  const y = rect.height ? rect.height / BOARD_HEIGHT : 1;
+  const width = board.clientWidth || board.getBoundingClientRect().width;
+  const height = board.clientHeight || board.getBoundingClientRect().height;
+  const x = width ? width / BOARD_WIDTH : 1;
+  const y = height ? height / BOARD_HEIGHT : 1;
   return { x, y };
 }
 
