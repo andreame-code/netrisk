@@ -16,8 +16,8 @@ function renderPlayerInputs(humanCount) {
       )
       .join("");
     wrapper.innerHTML = `
-      <label>Player Name ${i + 1}: <input type="text" id="name${i}" /></label>
-      <label>Color: <select id="color${i}">${options}</select></label>
+      <label>Player Name ${i + 1}: <input type="text" id="name${i}" required /></label>
+      <label>Color: <select id="color${i}" required>${options}</select></label>
     `;
     playersContainer.appendChild(wrapper);
   }
