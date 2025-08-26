@@ -19,6 +19,14 @@ better feedback.
 
 Combat uses multiple dice rolls for both attacker and defender, with roll results displayed on screen for more strategic play.
 
+## AI Profiles
+
+During setup you can choose how computer opponents behave. Select a difficulty
+level (Easy, Normal, or Hard) and a style (Aggressive, Balanced, or Defensive).
+Difficulty influences how risky the AI plays and how often it uses cards, while
+style adjusts reinforcement priorities and aggression. The chosen profile is
+shown next to each AI's name during the game.
+
 ## Development
 
 Install dependencies and run the game locally:
@@ -37,6 +45,12 @@ Run the test suite and lint checks to verify changes:
 ```bash
 npm test
 npm run lint
+```
+
+To evaluate AI balance, run a batch of automated games:
+
+```
+npm run simulate
 ```
 
 ## Multiplayer

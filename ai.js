@@ -71,11 +71,14 @@ export function attackSuccessProbability(from, to) {
   return winProb(attack, defend);
 }
 
-export function territoryPriority(game, territory) {
+export function territoryPriority(game, territory, profile = {}) {
   const enemyNeighbors = territory.neighbors.filter(id => {
     const neighbor = game.territoryById(id);
     return neighbor && neighbor.owner !== territory.owner;
   }).length;
-  return enemyNeighbors * 10 - territory.armies;
+  let score = enemyNeighbors * 10 - territory.armies;
+  if (profile.style === "aggressive") score += territory.armies;
+  if (profile.style === "defensive") score -= territory.armies;
+  return score;
 }
 

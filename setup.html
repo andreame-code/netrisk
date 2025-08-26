@@ -19,6 +19,22 @@
         Number of AI players:
         <input type="number" id="aiCount" min="0" max="5" required value="2" />
       </label>
+      <label>
+        AI Difficulty:
+        <select id="aiDifficulty">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+      <label>
+        AI Style:
+        <select id="aiStyle">
+          <option value="aggressive">Aggressive</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="defensive">Defensive</option>
+        </select>
+      </label>
       <p>Map:</p>
       <input type="hidden" id="mapSelect" />
       <div id="mapGrid"></div>

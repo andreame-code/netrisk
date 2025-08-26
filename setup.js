@@ -5,6 +5,8 @@ import { navigateTo } from "./navigation.js";
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
 const aiCountInput = document.getElementById("aiCount");
+const aiDifficultyInput = document.getElementById("aiDifficulty");
+const aiStyleInput = document.getElementById("aiStyle");
 const playersContainer = document.getElementById("players");
 const mapSelect = document.getElementById("mapSelect");
 const mapGrid = document.getElementById("mapGrid");
@@ -111,6 +113,11 @@ function loadFromStorage() {
   if (saved && Array.isArray(saved)) {
     humanCount = saved.filter((p) => !p.ai).length;
     aiCount = saved.filter((p) => p.ai).length;
+    const firstAI = saved.find((p) => p.ai);
+    if (firstAI) {
+      if (aiDifficultyInput) aiDifficultyInput.value = firstAI.difficulty || "normal";
+      if (aiStyleInput) aiStyleInput.value = firstAI.style || "balanced";
+    }
   }
   humanCountInput.value = humanCount;
   aiCountInput.value = aiCount;
@@ -145,6 +152,8 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   const humanCount = parseInt(humanCountInput.value, 10) || 0;
   const aiCount = parseInt(aiCountInput.value, 10) || 0;
+  const difficulty = aiDifficultyInput ? aiDifficultyInput.value : "normal";
+  const style = aiStyleInput ? aiStyleInput.value : "balanced";
   const players = [];
   const usedColors = new Set();
   for (let i = 0; i < humanCount; i += 1) {
@@ -160,7 +169,7 @@ form.addEventListener("submit", (e) => {
   for (let i = 0; i < aiCount; i += 1) {
     const color = colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
     usedColors.add(color);
-    players.push({ name: `AI ${i + 1}`, color, ai: true });
+    players.push({ name: `AI ${i + 1}`, color, ai: true, difficulty, style });
   }
   try {
     localStorage.setItem("netriskPlayers", JSON.stringify(players));

@@ -7,7 +7,8 @@
     "start": "http-server .",
     "test": "jest",
     "build": "node build.js",
-    "server": "node multiplayer-server.js"
+    "server": "node multiplayer-server.js",
+    "simulate": "node simulate.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
