@@ -18,6 +18,7 @@ import {
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
 import { initTutorialButtons } from "./tutorial.js";
+import { attachStatsListeners, exportStats } from "./stats.js";
 import {
   initUI,
   updateInfoPanel,
@@ -98,6 +99,7 @@ async function loadGame() {
   if (!result || !result.game) return;
   game = result.game;
   territoryPositions = result.territoryPositions;
+  attachStatsListeners(game);
   initialiseUI(game);
   if (typeof module !== "undefined") {
     module.exports.game = game;
@@ -399,11 +401,41 @@ async function initGame() {
   modal.id = "victoryModal";
   modal.className = "modal";
   modal.innerHTML =
-    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn" class="btn">New Game</button></div>';
+    '<div class="modal-content"><h2 id="victoryTitle"></h2>' +
+    '<div id="victoryStats"></div>' +
+    '<canvas id="territoryChart" aria-label="Territories per turn" role="img"></canvas>' +
+    '<canvas id="armiesChart" aria-label="Armies placed per turn" role="img"></canvas>' +
+    '<canvas id="attackChart" aria-label="Attacks won and lost" role="img"></canvas>' +
+    '<div class="modal-buttons">' +
+    '<button id="shareResults" class="btn">Share Results</button>' +
+    '<button id="exportStats" class="btn">Export JSON</button>' +
+    '<button id="newGameBtn" class="btn">New Game</button>' +
+    '</div></div>';
   document.body.appendChild(modal);
-  document
-    .getElementById("newGameBtn")
-    .addEventListener("click", startNewGame);
+  document.getElementById("newGameBtn").addEventListener("click", startNewGame);
+  document.getElementById("shareResults").addEventListener("click", () => {
+    const canvas = document.getElementById("territoryChart");
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "netrisk-results.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+  document.getElementById("exportStats").addEventListener("click", () => {
+    const data = exportStats();
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "netrisk-stats.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
   const ui = document.getElementById("uiPanel");
   const cardPanel = document.createElement("div");
   cardPanel.id = "cardPanel";

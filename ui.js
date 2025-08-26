@@ -1,5 +1,6 @@
 import { getContrastingColor } from "./colors.js";
 import { REINFORCE } from "./phases.js";
+import { getStats } from "./stats.js";
 
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 400;
@@ -189,24 +190,88 @@ function showVictoryModal(winnerIdx) {
   const modal = getElement("victoryModal");
   if (!modal) return;
   const title = getElement("victoryTitle");
-  const stats = getElement("victoryStats");
+  const statsEl = getElement("victoryStats");
   if (title) title.textContent = `${game.players[winnerIdx].name} has won!`;
-  if (stats) {
-    // clear previous stats
-    while (stats.firstChild) stats.removeChild(stats.firstChild);
-
+  if (statsEl) {
+    while (statsEl.firstChild) statsEl.removeChild(statsEl.firstChild);
     const turns = document.createElement("p");
     turns.textContent = `Turns: ${gameState.turnNumber}`;
-    stats.appendChild(turns);
-
-    const ul = document.createElement("ul");
-    game.players.forEach((p, idx) => {
-      const count = game.territories.filter((t) => t.owner === idx).length;
+    statsEl.appendChild(turns);
+    const duration = getStats().startTime
+      ? Math.round((Date.now() - getStats().startTime) / 1000)
+      : 0;
+    const durationEl = document.createElement("p");
+    durationEl.textContent = `Duration: ${duration}s`;
+    statsEl.appendChild(durationEl);
+    const ranking = game.players
+      .map((p, idx) => ({
+        name: p.name,
+        territories: game.territories.filter((t) => t.owner === idx).length,
+      }))
+      .sort((a, b) => b.territories - a.territories);
+    const ol = document.createElement("ol");
+    ranking.forEach((r) => {
       const li = document.createElement("li");
-      li.textContent = `${p.name}: ${count} territories`;
-      ul.appendChild(li);
+      li.textContent = `${r.name}: ${r.territories} territories`;
+      ol.appendChild(li);
     });
-    stats.appendChild(ul);
+    statsEl.appendChild(ol);
+    const s = getStats();
+    if (s.territories.length && typeof window !== 'undefined' && window.Chart) {
+      const labels = s.territories[0].map((_, i) => `Turn ${i + 1}`);
+      const terrCtx = document
+        .getElementById("territoryChart")
+        ?.getContext("2d");
+      if (terrCtx) {
+        new window.Chart(terrCtx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: game.players.map((p, idx) => ({
+              label: p.name,
+              data: s.territories[idx],
+              fill: false,
+            })),
+          },
+          options: { responsive: true },
+        });
+      }
+      const armCtx = document
+        .getElementById("armiesChart")
+        ?.getContext("2d");
+      if (armCtx) {
+        new window.Chart(armCtx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: game.players.map((p, idx) => ({
+              label: p.name,
+              data: s.armies[idx],
+              fill: false,
+            })),
+          },
+          options: { responsive: true },
+        });
+      }
+      const attCtx = document
+        .getElementById("attackChart")
+        ?.getContext("2d");
+      if (attCtx) {
+        const wins = s.attacksWon.map((a) => a.reduce((sum, n) => sum + n, 0));
+        const losses = s.attacksLost.map((a) => a.reduce((sum, n) => sum + n, 0));
+        new window.Chart(attCtx, {
+          type: "bar",
+          data: {
+            labels: game.players.map((p) => p.name),
+            datasets: [
+              { label: "Wins", data: wins, backgroundColor: "#4caf50" },
+              { label: "Losses", data: losses, backgroundColor: "#f44336" },
+            ],
+          },
+          options: { responsive: true },
+        });
+      }
+    }
   }
   modal.classList.add("show");
 }
