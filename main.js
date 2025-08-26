@@ -197,16 +197,16 @@ function attachTerritoryHandlers() {
               const move = await askArmiesToMove(result.movableArmies, 0);
               if (move > 0) {
                 game.moveArmies(result.from, result.to, move);
-                addLogEntry(`${playerName} sposta ${move} da ${result.from} a ${result.to}`);
+                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`);
                 animateMove(result.from, result.to);
               }
             }
-            addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
+            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`);
           } else if (result.type === REINFORCE) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} reinforces ${result.territory}`);
             }
-            addLogEntry(`${playerName} rinforza ${result.territory}`);
+            addLogEntry(`${playerName} reinforces ${result.territory}`);
           } else if (result.type === FORTIFY) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
@@ -214,14 +214,14 @@ function attachTerritoryHandlers() {
             const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
-              addLogEntry(`${playerName} sposta ${move} da ${result.from} a ${result.to}`);
+              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`);
               animateMove(result.from, result.to);
             }
             game.endTurn();
             const nextName = game.players[game.currentPlayer].name;
             gameState.turnNumber += 1;
             addLogEntry(
-              `${playerName} termina il turno. Ora tocca a ${nextName}`,
+              `${playerName} ends turn. Next: ${nextName}`,
             );
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} ends turn. Next: ${nextName}`);
@@ -257,14 +257,14 @@ document.getElementById("endTurn").addEventListener("click", () => {
     const prevPhase = game.getPhase();
     game.endTurn();
     if (prevPhase === ATTACK && game.getPhase() === FORTIFY) {
-      addLogEntry(`${game.players[prevPlayer].name} passa alla fase fortificazioni`);
+      addLogEntry(`${game.players[prevPlayer].name} enters fortify phase`);
       if (typeof logger !== "undefined") {
         logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
       }
     } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
       gameState.turnNumber += 1;
       addLogEntry(
-        `${game.players[prevPlayer].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,
+        `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
       );
       if (typeof logger !== "undefined") {
         logger.info(
@@ -304,14 +304,14 @@ async function init() {
   await loadGame();
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
-  resetBtn.textContent = "Nuova partita";
+  resetBtn.textContent = "New Game";
   resetBtn.addEventListener("click", startNewGame);
   document.body.appendChild(resetBtn);
   const modal = document.createElement("div");
   modal.id = "victoryModal";
   modal.className = "modal";
   modal.innerHTML =
-    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn">Nuova partita</button></div>';
+    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn">New Game</button></div>';
   document.body.appendChild(modal);
   document
     .getElementById("newGameBtn")
@@ -320,15 +320,15 @@ async function init() {
   const cardPanel = document.createElement("div");
   cardPanel.id = "cardPanel";
   cardPanel.innerHTML =
-    '<div><strong>Carte:</strong> <span id="cards"></span></div>' +
-    '<button id="playCardsBtn">Gioca carte</button>' +
+    '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
+    '<button id="playCardsBtn">Play cards</button>' +
     '<div id="bonusInfo"></div>';
   ui.appendChild(cardPanel);
   document.getElementById("playCardsBtn").addEventListener("click", () => {
     const cards = getSelectedCards();
     if (cards.length === 3) {
       if (game.playCards(cards)) {
-        addLogEntry(`${game.players[game.currentPlayer].name} gioca carte`);
+        addLogEntry(`${game.players[game.currentPlayer].name} plays cards`);
         resetSelectedCards();
         game.calculateReinforcements();
         updateUI();
@@ -351,7 +351,7 @@ async function init() {
 
   updateGameState();
   updateInfoPanel();
-  addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
+  addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
   const toggleHowToPlay = document.getElementById("toggleHowToPlay");
   if (toggleHowToPlay) {
@@ -362,8 +362,8 @@ async function init() {
       const hidden = steps.style.display === "none";
       steps.style.display = hidden ? "block" : "none";
       toggleHowToPlay.textContent = hidden
-        ? "Nascondi dettagli"
-        : "Mostra dettagli";
+        ? "Hide details"
+        : "Show details";
     });
   }
 }

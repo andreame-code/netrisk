@@ -16,8 +16,8 @@ function renderPlayerInputs(humanCount) {
       )
       .join("");
     wrapper.innerHTML = `
-      <label>Nome Giocatore ${i + 1}: <input type="text" id="name${i}" /></label>
-      <label>Colore: <select id="color${i}">${options}</select></label>
+      <label>Player Name ${i + 1}: <input type="text" id="name${i}" /></label>
+      <label>Color: <select id="color${i}">${options}</select></label>
     `;
     playersContainer.appendChild(wrapper);
   }
@@ -65,7 +65,7 @@ form.addEventListener("submit", (e) => {
     const name = document.getElementById(`name${i}`).value || `Player ${i + 1}`;
     const color = document.getElementById(`color${i}`).value || colorPalette[0];
     if (usedColors.has(color)) {
-      window.alert("I colori dei giocatori devono essere unici");
+      window.alert("Player colors must be unique");
       return;
     }
     usedColors.add(color);

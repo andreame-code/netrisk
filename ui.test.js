@@ -59,7 +59,7 @@ describe('ui utilities', () => {
     showVictoryModal(0);
     const modal = document.getElementById('victoryModal');
     expect(modal.classList.contains('show')).toBe(true);
-    expect(document.getElementById('victoryTitle').textContent).toContain('P1 ha vinto');
+    expect(document.getElementById('victoryTitle').textContent).toContain('P1 has won');
   });
 
   test('updateBonusInfo shows continent bonus', () => {

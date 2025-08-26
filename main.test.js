@@ -51,7 +51,7 @@ describe('main DOM interactions', () => {
     const log = document.getElementById('actionLog');
 
     t1.click();
-    expect(log.textContent).toContain('rinforza t1');
+    expect(log.textContent).toContain('reinforces t1');
     expect(status.textContent).toContain(REINFORCE);
 
     t1.click();
@@ -72,7 +72,7 @@ describe('main DOM interactions', () => {
     expect(t1.classList.contains('selected')).toBe(true);
 
     t4.click();
-    expect(log.textContent).toContain('attacca t4 da t1');
+    expect(log.textContent).toContain('attacks t4 from t1');
     expect(t1.classList.contains('attack')).toBe(true);
     expect(t4.classList.contains('attack')).toBe(true);
   });
@@ -96,7 +96,7 @@ describe('main DOM interactions', () => {
     expect(t1.classList.contains('selected')).toBe(true);
     t2.click();
     await Promise.resolve();
-    expect(log.textContent).toContain('sposta 1 da t1 a t2');
+    expect(log.textContent).toContain('moves 1 from t1 to t2');
     expect(status.textContent).toContain(REINFORCE);
     expect(t1.classList.contains('selected')).toBe(false);
   });
@@ -115,7 +115,7 @@ describe('main DOM interactions', () => {
     expect(status.textContent).toContain(FORTIFY);
 
     endTurnBtn.click();
-    expect(log.textContent).toContain('termina il turno');
+    expect(log.textContent).toContain('ends turn');
     expect(status.textContent).toContain('Player 2');
     expect(status.textContent).toContain(REINFORCE);
   });

@@ -36,7 +36,7 @@ export default function initTerritorySelection({
     if (!el) return;
     const phase = game?.getPhase();
     if (phase && ![ATTACK, FORTIFY].includes(phase)) {
-      addLogEntry?.(`Movimento non consentito nella fase ${phase}`);
+      addLogEntry?.(`Move not allowed during ${phase} phase`);
       return;
     }
     const box = el.getBBox();
@@ -53,7 +53,7 @@ export default function initTerritorySelection({
     if (addLogEntry && game) {
       const name = el.dataset.name || el.id;
       addLogEntry(
-        `${game.players[game.currentPlayer].name} muove il segnalino su ${name}`,
+        `${game.players[game.currentPlayer].name} moves token to ${name}`,
       );
       logger?.info(
         `${game.players[game.currentPlayer].name} moves token to ${name}`,
@@ -69,7 +69,7 @@ export default function initTerritorySelection({
         if (selectedTerritory) {
           moveToken(selectedTerritory.el);
         } else {
-          addLogEntry?.("Nessun territorio selezionato");
+          addLogEntry?.("No territory selected");
         }
       } catch (err) {
         logger?.error(err);
