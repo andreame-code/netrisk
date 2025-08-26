@@ -33,6 +33,18 @@
         <div id="status"></div>
         <div id="diceResults"></div>
         <div id="selectedTerritory"></div>
+        <div id="audioSettings">
+          <label for="volumeControl">Volume:</label>
+          <input
+            type="range"
+            id="volumeControl"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.2"
+          />
+          <button id="muteBtn">Mute</button>
+        </div>
         <button id="moveToken">Move Token</button>
         <button id="endTurn">End Turn</button>
         <button id="forceError">Force Error</button>

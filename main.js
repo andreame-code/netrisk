@@ -1,7 +1,14 @@
 /* global logger */
 import Game from "./game.js";
 import initTerritorySelection from "./territory-selection.js";
-import { playAttackSound, playConquerSound } from "./audio.js";
+import {
+  playAttackSound,
+  playConquerSound,
+  setVolume,
+  setMuted,
+  isMuted,
+  getVolume,
+} from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
 import { navigateTo } from "./navigation.js";
 import {
@@ -411,6 +418,23 @@ async function initGame() {
       }
     }
   });
+
+  const volumeControl = document.getElementById("volumeControl");
+  const muteBtn = document.getElementById("muteBtn");
+  if (volumeControl) {
+    volumeControl.value = getVolume();
+    volumeControl.addEventListener("input", (e) => {
+      setVolume(parseFloat(e.target.value));
+    });
+  }
+  if (muteBtn) {
+    muteBtn.textContent = isMuted() ? "Unmute" : "Mute";
+    muteBtn.addEventListener("click", () => {
+      const muted = isMuted();
+      setMuted(!muted);
+      muteBtn.textContent = muted ? "Mute" : "Unmute";
+    });
+  }
   initTerritorySelection({
     logger,
     game,

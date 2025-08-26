@@ -42,4 +42,20 @@ describe('audio helpers', () => {
     expect(() => audio.playTone(440, 0.1)).not.toThrow();
     global.window = originalWindow;
   });
+
+  test('setVolume clamps between 0 and 1', () => {
+    audio.setVolume(2);
+    expect(audio.getVolume()).toBe(1);
+    audio.setVolume(-1);
+    expect(audio.getVolume()).toBe(0);
+    audio.setVolume(0.5);
+    expect(audio.getVolume()).toBe(0.5);
+  });
+
+  test('setMuted controls mute state', () => {
+    audio.setMuted(true);
+    expect(audio.isMuted()).toBe(true);
+    audio.setMuted(false);
+    expect(audio.isMuted()).toBe(false);
+  });
 });
