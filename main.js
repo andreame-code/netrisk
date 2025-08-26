@@ -24,6 +24,8 @@ import {
   updateInfoPanel,
   addLogEntry,
   animateMove,
+  animateAttack,
+  animateReinforce,
   showVictoryModal,
   updateUI,
   destroyUI,
@@ -31,6 +33,7 @@ import {
   getSelectedCards,
   exportLog,
 } from "./ui.js";
+import initPhaseTimer from "./phase-timer.js";
 import { loadGame as loadGameData } from "./src/init/game-loader.js";
 import {
   updateGameState,
@@ -59,6 +62,7 @@ if (typeof navigator !== "undefined" && navigator.serviceWorker) {
 
 let game;
 let territoryPositions = {};
+let phaseTimer;
 
 const gameState = {
   turnNumber: 1,
@@ -82,6 +86,9 @@ async function startNewGame() {
   const modal = document.getElementById("victoryModal");
   if (modal) modal.classList.remove("show");
   clearSavedData();
+  if (phaseTimer && typeof phaseTimer.stop === "function") {
+    phaseTimer.stop();
+  }
   destroyUI();
   navigateTo("setup.html");
 }
@@ -91,6 +98,7 @@ function initialiseUI(game) {
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
   initUI({ game, gameState, territoryPositions });
+  phaseTimer = initPhaseTimer({ game });
   attachAIActionLogging();
 }
 
@@ -238,35 +246,37 @@ function attachTerritoryHandlers() {
             }, 500);
             document.getElementById("diceResults").textContent =
               `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
-            if (result.conquered) {
-              playConquerSound();
-              toEl.classList.add("conquer");
-              setTimeout(() => toEl.classList.remove("conquer"), 1000);
-              const move = await askArmiesToMove(result.movableArmies, 0);
-              if (move > 0) {
-                game.moveArmies(result.from, result.to, move);
-                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
-                  player: playerName,
-                  type: "move",
-                  territories: [result.from, result.to],
-                });
-                animateMove(result.from, result.to);
-              }
+          if (result.conquered) {
+            playConquerSound();
+            toEl.classList.add("conquer");
+            setTimeout(() => toEl.classList.remove("conquer"), 1000);
+            const move = await askArmiesToMove(result.movableArmies, 0);
+            if (move > 0) {
+              game.moveArmies(result.from, result.to, move);
+              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                player: playerName,
+                type: "move",
+                territories: [result.from, result.to],
+              });
+              animateMove(result.from, result.to);
             }
-            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
-              player: playerName,
-              type: "attack",
-              territories: [result.from, result.to],
-            });
-          } else if (result.type === REINFORCE) {
-            if (typeof logger !== "undefined") {
-              logger.info(`${playerName} reinforces ${result.territory}`);
-            }
-            addLogEntry(`${playerName} reinforces ${result.territory}`, {
-              player: playerName,
-              type: "reinforce",
-              territories: [result.territory],
-            });
+          }
+          animateAttack(result.from, result.to);
+          addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
+            player: playerName,
+            type: "attack",
+            territories: [result.from, result.to],
+          });
+        } else if (result.type === REINFORCE) {
+          if (typeof logger !== "undefined") {
+            logger.info(`${playerName} reinforces ${result.territory}`);
+          }
+          animateReinforce(result.territory);
+          addLogEntry(`${playerName} reinforces ${result.territory}`, {
+            player: playerName,
+            type: "reinforce",
+            territories: [result.territory],
+          });
           } else if (result.type === FORTIFY) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
