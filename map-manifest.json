@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "maps": [
+    {
+      "id": "map",
+      "name": "Classic",
+      "difficulty": "Medium",
+      "territories": 42,
+      "bonuses": {"North America": 5, "Europe": 5, "Asia": 7, "Africa": 3, "South America": 2, "Australia": 2},
+      "thumbnail": "map.svg",
+      "description": "Classic world domination map."
+    },
+    {
+      "id": "map2",
+      "name": "Desert",
+      "difficulty": "Hard",
+      "territories": 30,
+      "bonuses": {"North": 4, "South": 3},
+      "thumbnail": "map2.svg",
+      "description": "Battles across the arid desert."
+    },
+    {
+      "id": "map3",
+      "name": "Grid",
+      "difficulty": "Easy",
+      "territories": 20,
+      "bonuses": {"A": 2, "B": 2},
+      "thumbnail": "map3.svg",
+      "description": "Simple grid-based battlefield."
+    },
+    {
+      "id": "map-roman",
+      "name": "Roman Empire",
+      "difficulty": "Medium",
+      "territories": 35,
+      "bonuses": {"Italia": 5, "Gallia": 4},
+      "thumbnail": "map-roman.svg",
+      "description": "Conquer the ancient Roman world."
+    }
+  ]
+}

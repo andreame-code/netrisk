@@ -7,35 +7,62 @@ function setupDOM() {
         <input id="humanCount" />
         <input id="aiCount" />
         <div id="players"></div>
-        <select id="mapSelect">
-          <option value="map">Classic</option>
-          <option value="map2">Desert</option>
-          <option value="map3">Grid</option>
-          <option value="map-roman">Roman Empire</option>
-        </select>
+        <input type="hidden" id="mapSelect" />
+        <div id="mapGrid"></div>
       </form>`;
-  }
+}
 
 describe('setup map selection', () => {
   beforeEach(() => {
     setupDOM();
     localStorage.clear();
-    // mock colorPalette usage
     window.alert = jest.fn();
+    jest.resetModules();
   });
 
-  test('saves selected map to localStorage and navigates to game', () => {
+  afterEach(() => {
+    delete global.fetch;
+  });
+
+  test('saves selected map to localStorage and navigates to game', async () => {
+    const manifest = {
+      version: 1,
+      maps: [
+        { id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' },
+        { id: 'map3', name: 'Grid', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map3.svg', description: '' },
+      ],
+    };
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
     const { navigateTo } = require('./navigation.js');
-    require('./setup.js');
+    const { mapLoadPromise } = require('./setup.js');
+    await mapLoadPromise;
     document.getElementById('humanCount').value = '1';
     document.getElementById('aiCount').value = '0';
-    // setup.js rendered player input
     document.getElementById('name0').value = 'P1';
     document.getElementById('color0').value = colorPalette[0];
-      const mapSel = document.getElementById('mapSelect');
-      mapSel.value = 'map3';
-      document.getElementById('setupForm').dispatchEvent(new Event('submit'));
-      expect(localStorage.getItem('netriskMap')).toBe('map3');
-      expect(navigateTo).toHaveBeenCalledWith('index.html');
-    });
+    document.querySelector('.map-item[data-id="map3"]').click();
+    document.getElementById('setupForm').dispatchEvent(new Event('submit'));
+    expect(localStorage.getItem('netriskMap')).toBe('map3');
+    expect(navigateTo).toHaveBeenCalledWith('index.html');
   });
+
+  test('renders responsive grid', async () => {
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' }] };
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('./setup.js');
+    await mapLoadPromise;
+    const grid = document.getElementById('mapGrid');
+    expect(grid.style.display).toBe('grid');
+    expect(grid.style.gridTemplateColumns).toContain('auto-fit');
+  });
+
+  test('shows placeholder when thumbnail missing', async () => {
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'missing.svg', description: '' }] };
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('./setup.js');
+    await mapLoadPromise;
+    const img = document.querySelector('.map-item img');
+    img.dispatchEvent(new Event('error'));
+    expect(document.querySelector('.map-item .placeholder')).not.toBeNull();
+  });
+});
