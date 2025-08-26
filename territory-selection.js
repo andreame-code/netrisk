@@ -11,12 +11,14 @@ export default function initTerritorySelection({
   updateUI,
 }) {
   let selectedTerritory = null;
+  let possibleMoveEls = [];
   const infoPanel = document.getElementById("selectedTerritory");
 
   function selectTerritory(el) {
     if (selectedTerritory && selectedTerritory.el) {
       selectedTerritory.el.classList.remove("selected");
     }
+    clearPossibleMoves();
     if (el) {
       const name = el.dataset.name || el.id;
       el.classList.add("selected");
@@ -27,10 +29,40 @@ export default function initTerritorySelection({
           `Selected territory: ${selectedTerritory.id} (${selectedTerritory.name})`,
         );
       }
+      highlightPossibleMoves(el.id);
     } else {
       selectedTerritory = null;
       infoPanel.textContent = "";
     }
+  }
+
+  function clearPossibleMoves() {
+    possibleMoveEls.forEach((el) => el.classList.remove("possible-move"));
+    possibleMoveEls = [];
+  }
+
+  function highlightPossibleMoves(id) {
+    if (!game) return;
+    const terr = game.territoryById ? game.territoryById(id) : null;
+    if (!terr) return;
+    const phase = game.getPhase ? game.getPhase() : null;
+    let targets = [];
+    if (phase === ATTACK) {
+      targets = terr.neighbors.filter(
+        (n) => game.territoryById(n)?.owner !== game.currentPlayer,
+      );
+    } else if (phase === FORTIFY) {
+      targets = terr.neighbors.filter(
+        (n) => game.territoryById(n)?.owner === game.currentPlayer,
+      );
+    }
+    targets.forEach((tid) => {
+      const btn = document.getElementById(tid);
+      if (btn) {
+        btn.classList.add("possible-move");
+        possibleMoveEls.push(btn);
+      }
+    });
   }
 
   function moveToken(el) {

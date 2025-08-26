@@ -253,12 +253,20 @@ h1 {
   outline: 4px solid #ff0;
 }
 
+.territory.possible-move {
+  outline: 4px dashed #0f0;
+}
+
 .territory.attack {
   animation: attackPulse 0.5s ease-in-out;
 }
 
 .territory.conquer {
   animation: conquerFlash 1s ease-in-out;
+}
+
+.territory.reinforce {
+  animation: reinforcePulse 0.5s ease-in-out;
 }
 
 @keyframes attackPulse {
@@ -270,6 +278,12 @@ h1 {
 @keyframes conquerFlash {
   0% { box-shadow: 0 0 0 0 rgba(255,255,0,1); }
   100% { box-shadow: 0 0 20px 10px rgba(255,255,0,0); }
+}
+
+@keyframes reinforcePulse {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
 }
 
 #status {

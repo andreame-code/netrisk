@@ -185,6 +185,28 @@ function animateMove(from, to) {
   );
 }
 
+function animateAttack(from, to) {
+  [from, to]
+    .map((id) => getElement(id))
+    .filter(Boolean)
+    .forEach((el) => {
+      el.classList.add("attack");
+      el.addEventListener("animationend", () => el.classList.remove("attack"), {
+        once: true,
+      });
+    });
+  animateMove(from, to);
+}
+
+function animateReinforce(id) {
+  const el = getElement(id);
+  if (!el) return;
+  el.classList.add("reinforce");
+  el.addEventListener("animationend", () => el.classList.remove("reinforce"), {
+    once: true,
+  });
+}
+
 function showVictoryModal(winnerIdx) {
   const modal = getElement("victoryModal");
   if (!modal) return;
@@ -355,6 +377,8 @@ function destroyUI() {
     updateInfoPanel,
     addLogEntry,
     animateMove,
+    animateAttack,
+    animateReinforce,
     showVictoryModal,
     updateBonusInfo,
     updateCardsUI,
