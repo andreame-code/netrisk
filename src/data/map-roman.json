@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "territories": [
     { "id": "t1", "neighbors": ["t2", "t4"], "x": 100, "y": 170 },
     { "id": "t2", "neighbors": ["t1", "t3", "t5"], "x": 170, "y": 140 },
