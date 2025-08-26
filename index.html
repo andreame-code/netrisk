@@ -20,9 +20,15 @@
         <div id="howToPlayBox">
           <div>
             <strong>How to play (alpha)</strong>
-            <a href="#" id="toggleHowToPlay">Show details</a>
+            <button
+              id="toggleHowToPlay"
+              aria-expanded="false"
+              aria-controls="howToPlaySteps"
+            >
+              Show details
+            </button>
           </div>
-          <ol id="howToPlaySteps" style="display: none">
+          <ol id="howToPlaySteps" hidden>
             <li>Click a territory</li>
             <li>Choose an action</li>
             <li>Press "End Turn"</li>
