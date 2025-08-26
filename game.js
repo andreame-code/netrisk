@@ -89,6 +89,12 @@ class Game {
     this.discard = [];
     this.conqueredThisTurn = false;
     this.calculateReinforcements();
+
+    this.phaseHandlers = {
+      [REINFORCE]: this.handleReinforcePhase.bind(this),
+      [ATTACK]: this.handleAttackPhase.bind(this),
+      [FORTIFY]: this.handleFortifyPhase.bind(this),
+    };
   }
 
   static async create(players, territories, continents, deck) {
@@ -128,66 +134,86 @@ class Game {
     return this.territories.find(t => t.id === id);
   }
 
+  handleReinforcePhase(territory) {
+    if (territory.owner === this.currentPlayer && this.reinforcements > 0) {
+      territory.armies += 1;
+      this.reinforcements -= 1;
+      this.emit(REINFORCE, { territory: territory.id, player: this.currentPlayer });
+      if (this.reinforcements === 0) {
+        this.phase = ATTACK;
+        this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
+      }
+      return { type: REINFORCE, territory: territory.id };
+    }
+    return null;
+  }
+
+  handleAttackPhase(territory) {
+    const id = territory.id;
+    if (!this.selectedFrom) {
+      if (territory.owner === this.currentPlayer && territory.armies > 1) {
+        this.selectedFrom = territory;
+        return { type: 'select', territory: id };
+      }
+    } else {
+      const from = this.selectedFrom;
+      const to = territory;
+      if (from.id === to.id) {
+        this.selectedFrom = null;
+        return { type: 'deselect', territory: id };
+      }
+      if (
+        from.owner === this.currentPlayer &&
+        to.owner !== this.currentPlayer &&
+        from.neighbors.includes(to.id)
+      ) {
+        const result = this.attack(from, to);
+        this.emit(ATTACK, { from: from.id, to: to.id, result });
+        this.selectedFrom = null;
+        return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
+      }
+    }
+    return null;
+  }
+
+  handleFortifyPhase(territory) {
+    const id = territory.id;
+    if (!this.selectedFrom) {
+      if (territory.owner === this.currentPlayer && territory.armies > 1) {
+        this.selectedFrom = territory;
+        return { type: 'select', territory: id };
+      }
+    } else {
+      const from = this.selectedFrom;
+      const to = territory;
+      if (from.id === to.id) {
+        this.selectedFrom = null;
+        return { type: 'deselect', territory: id };
+      }
+      if (
+        from.owner === this.currentPlayer &&
+        to.owner === this.currentPlayer &&
+        from.neighbors.includes(to.id)
+      ) {
+        const movable = from.armies - 1;
+        this.selectedFrom = null;
+        return {
+          type: FORTIFY,
+          from: from.id,
+          to: to.id,
+          movableArmies: movable,
+        };
+      }
+    }
+    return null;
+  }
+
   handleTerritoryClick(id) {
     const territory = this.territoryById(id);
     if (!territory) return null;
 
-    if (this.phase === REINFORCE) {
-      if (territory.owner === this.currentPlayer && this.reinforcements > 0) {
-        territory.armies += 1;
-        this.reinforcements -= 1;
-        this.emit(REINFORCE, { territory: id, player: this.currentPlayer });
-        if (this.reinforcements === 0) {
-          this.phase = ATTACK;
-          this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
-        }
-        return { type: REINFORCE, territory: id };
-      }
-    } else if (this.phase === ATTACK) {
-      if (!this.selectedFrom) {
-        if (territory.owner === this.currentPlayer && territory.armies > 1) {
-          this.selectedFrom = territory;
-          return { type: 'select', territory: id };
-        }
-      } else {
-        const from = this.selectedFrom;
-        const to = territory;
-        if (from.id === to.id) {
-          this.selectedFrom = null;
-          return { type: 'deselect', territory: id };
-        }
-        if (from.owner === this.currentPlayer && to.owner !== this.currentPlayer && from.neighbors.includes(to.id)) {
-          const result = this.attack(from, to);
-          this.emit(ATTACK, { from: from.id, to: to.id, result });
-          this.selectedFrom = null;
-          return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
-        }
-      }
-    } else if (this.phase === FORTIFY) {
-      if (!this.selectedFrom) {
-        if (territory.owner === this.currentPlayer && territory.armies > 1) {
-          this.selectedFrom = territory;
-          return { type: 'select', territory: id };
-        }
-      } else {
-        const from = this.selectedFrom;
-        const to = territory;
-        if (from.id === to.id) {
-          this.selectedFrom = null;
-          return { type: 'deselect', territory: id };
-        }
-        if (
-          from.owner === this.currentPlayer &&
-          to.owner === this.currentPlayer &&
-          from.neighbors.includes(to.id)
-        ) {
-          const movable = from.armies - 1;
-          this.selectedFrom = null;
-          return { type: FORTIFY, from: from.id, to: to.id, movableArmies: movable };
-        }
-      }
-    }
-    return null;
+    const handler = this.phaseHandlers[this.phase];
+    return handler ? handler(territory) : null;
   }
 
   attack(from, to) {
