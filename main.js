@@ -85,6 +85,9 @@ async function startNewGame() {
   const modal = document.getElementById("victoryModal");
   if (modal) modal.classList.remove("show");
   clearSavedData();
+  if (phaseTimer && typeof phaseTimer.stop === "function") {
+    phaseTimer.stop();
+  }
   destroyUI();
   navigateTo("setup.html");
 }
