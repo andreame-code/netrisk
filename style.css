@@ -1,23 +1,44 @@
 @import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel&display=swap');
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
+  font-family: 'Cinzel', serif;
+  background: #e8dcc0;
+  color: #3b2b16;
   text-align: center;
 }
 
+h1 {
+  font-family: 'Cinzel', serif;
+  color: #8b0000;
+  text-shadow: 2px 2px #000;
+  margin-bottom: 20px;
+}
+
+button {
+  font-family: 'Cinzel', serif;
+  background: #b8860b;
+  color: #fff;
+  border: 2px solid #8b4513;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #daa520;
+}
+
 #gameContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 20px;
+  justify-items: center;
 }
 
 @media (min-width: 768px) {
   #gameContainer {
-    flex-direction: row;
+    grid-template-columns: 3fr 1fr;
     align-items: flex-start;
-    justify-content: center;
   }
 }
 
@@ -40,9 +61,11 @@ body {
   width: 100%;
   margin: 10px;
   text-align: left;
-  background: #fff;
-  padding: 10px;
-  border: 1px solid #ccc;
+  background: #f5e7c6;
+  padding: 15px;
+  border: 2px solid #8b4513;
+  border-radius: 4px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 #howToPlayBox {
@@ -68,6 +91,9 @@ body {
   width: 100%;
   aspect-ratio: 3 / 2;
   margin: 20px;
+  border: 4px solid #8b4513;
+  background: #6b8e23;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 #map {
