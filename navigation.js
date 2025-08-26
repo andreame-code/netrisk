@@ -1,9 +1,9 @@
-export function navigateTo(url) {
-  if (typeof window !== "undefined") {
-    if (typeof window.location.assign === "function") {
-      window.location.assign(url);
+export function navigateTo(url, win = typeof window !== "undefined" ? window : undefined) {
+  if (win) {
+    if (typeof win.location.assign === "function") {
+      win.location.assign(url);
     } else {
-      window.location.href = url;
+      win.location.href = url;
     }
   }
 }
