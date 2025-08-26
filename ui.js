@@ -137,11 +137,12 @@ function updateCardsUI() {
   while (container.firstChild) container.removeChild(container.firstChild);
   const hand = game.hands[game.currentPlayer] || [];
   selectedCards = [];
+  const icons = { infantry: "🪖", cavalry: "🐎", artillery: "💣" };
   hand.forEach((card, idx) => {
     const el = document.createElement("span");
-    el.textContent = card.type;
+    el.innerHTML = icons[card.type] || card.type;
     el.dataset.idx = idx;
-    el.className = "card";
+    el.className = `card ${card.type}`;
     if (selectedCards.includes(idx)) el.classList.add("selected-card");
     el.addEventListener("click", () => {
       if (selectedCards.includes(idx)) {

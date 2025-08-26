@@ -162,3 +162,32 @@ body {
   max-width: 300px;
   text-align: center;
 }
+
+.card {
+  display: inline-block;
+  width: 32px;
+  height: 40px;
+  line-height: 40px;
+  margin: 0 4px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 24px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.card.infantry {
+  background: #e8f5e9;
+}
+
+.card.cavalry {
+  background: #e3f2fd;
+}
+
+.card.artillery {
+  background: #ffebee;
+}
+
+.selected-card {
+  outline: 2px solid #f00;
+}
