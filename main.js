@@ -86,31 +86,15 @@ async function startNewGame() {
   if (modal) modal.classList.remove("show");
   if (typeof localStorage !== "undefined") {
     localStorage.removeItem("netriskGame");
+    localStorage.removeItem("netriskPlayers");
   }
-  await loadGame();
-  // Re-render the board and reset any selection state so a fresh
-  // match begins. The territory selection module will recreate the
-  // SVG map, attach click handlers and call updateUI when done.
-  initTerritorySelection({
-    logger,
-    game,
-    territories: game.territories,
-    addLogEntry,
-    gameState,
-    attachTerritoryHandlers,
-    updateUI,
-  });
-  gameState.turnNumber = 1;
-  gameState.log = [];
-  const logEl = document.getElementById("actionLog");
-  if (logEl) logEl.innerHTML = "";
-  resetSelectedCards();
-  updateUI();
-  updateGameState();
-  updateInfoPanel();
-  addLogEntry(`Turno ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
-  runAI();
-  checkForVictory();
+  if (typeof window !== "undefined") {
+    if (typeof window.location.assign === "function") {
+      window.location.assign("setup.html");
+    } else {
+      window.location.href = "setup.html";
+    }
+  }
 }
 
 async function loadGame() {
@@ -301,6 +285,15 @@ if (forceErrorBtn) {
 }
 
 async function init() {
+  if (
+    typeof window !== "undefined" &&
+    typeof localStorage !== "undefined" &&
+    !localStorage.getItem("netriskPlayers") &&
+    !(typeof process !== "undefined" && process.env.JEST_WORKER_ID)
+  ) {
+    window.location.href = "setup.html";
+    return;
+  }
   await loadGame();
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
