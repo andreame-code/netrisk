@@ -9,14 +9,19 @@ import { colorPalette } from "./colors.js";
 import EventBus from "./src/core/event-bus.js";
 
 async function loadMapData() {
+  const mapName =
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("netriskMap")) ||
+    "map";
+  const jsonPath = `./src/data/${mapName}.json`;
   try {
     if (typeof fetch === "function") {
-      const res = await fetch("./src/data/map.json");
+      const res = await fetch(jsonPath);
       if (res.ok) return await res.json();
     }
     const fs = await import("fs/promises");
     const pathMod = await import("path");
-    const filePath = pathMod.resolve("src/data/map.json");
+    const filePath = pathMod.resolve(`src/data/${mapName}.json`);
     const data = await fs.readFile(filePath, "utf-8");
     return JSON.parse(data);
   } catch {

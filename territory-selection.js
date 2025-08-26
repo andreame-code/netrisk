@@ -79,7 +79,11 @@ export default function initTerritorySelection({
     });
   }
 
-  fetch("map.svg")
+  const mapName =
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("netriskMap")) ||
+    "map";
+  fetch(`${mapName}.svg`)
     .then((r) => r.text())
     .then((svg) => {
       const boardEl = document.getElementById("board");

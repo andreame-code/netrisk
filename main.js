@@ -89,8 +89,12 @@ async function startNewGame() {
 
 async function loadGame() {
   let map;
+  const mapName =
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("netriskMap")) ||
+    "map";
   try {
-    const res = await fetch("./src/data/map.json");
+    const res = await fetch(`./src/data/${mapName}.json`);
     if (!res.ok) {
       throw new Error(`Failed to fetch map data: ${res.status}`);
     }

@@ -4,6 +4,7 @@ const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
 const aiCountInput = document.getElementById("aiCount");
 const playersContainer = document.getElementById("players");
+const mapSelect = document.getElementById("mapSelect");
 
 function renderPlayerInputs(humanCount) {
   playersContainer.innerHTML = "";
@@ -38,6 +39,15 @@ function loadFromStorage() {
   }
   humanCountInput.value = humanCount;
   aiCountInput.value = aiCount;
+  let savedMap = null;
+  try {
+    savedMap = localStorage.getItem("netriskMap");
+  } catch {
+    savedMap = null;
+  }
+  if (savedMap && mapSelect) {
+    mapSelect.value = savedMap;
+  }
   renderPlayerInputs(humanCount);
   if (saved) {
     saved.filter((p) => !p.ai).forEach((p, i) => {
@@ -78,6 +88,9 @@ form.addEventListener("submit", (e) => {
   }
   try {
     localStorage.setItem("netriskPlayers", JSON.stringify(players));
+    if (mapSelect) {
+      localStorage.setItem("netriskMap", mapSelect.value);
+    }
   } catch (err) {
     // ignore storage errors
   }
