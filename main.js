@@ -17,6 +17,7 @@ import {
   GAME_OVER,
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
+import { initTutorialButtons } from "./tutorial.js";
 import {
   initUI,
   updateInfoPanel,
@@ -447,6 +448,7 @@ function init() {
 
 init();
 initThemeToggle();
+initTutorialButtons();
 
 export {
   game,
