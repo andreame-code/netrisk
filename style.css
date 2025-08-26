@@ -37,7 +37,7 @@ button:hover {
 
 @media (min-width: 768px) {
   #gameContainer {
-    grid-template-columns: 3fr 1fr;
+    grid-template-columns: 1fr 3fr;
     align-items: flex-start;
   }
 }
