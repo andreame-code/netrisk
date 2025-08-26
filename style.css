@@ -231,3 +231,48 @@ button:hover {
 .selected-card {
   outline: 2px solid #f00;
 }
+
+/* High contrast theme */
+body.high-contrast {
+  background: #000;
+  color: #fff;
+}
+
+body.high-contrast h1 {
+  color: #ff0;
+  text-shadow: none;
+}
+
+body.high-contrast button {
+  background: #000;
+  color: #ff0;
+  border: 2px solid #ff0;
+}
+
+body.high-contrast #uiPanel {
+  background: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+body.high-contrast .log {
+  background: #000;
+  color: #fff;
+}
+
+body.high-contrast .board {
+  background: #000;
+  border-color: #fff;
+}
+
+body.high-contrast .territory {
+  background: #555;
+  border-color: #fff;
+  color: #fff;
+}
+
+body.high-contrast .modal-content {
+  background: #000;
+  color: #fff;
+  border: 2px solid #fff;
+}
