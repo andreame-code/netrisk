@@ -169,5 +169,20 @@ describe('main DOM interactions', () => {
     expect(localStorage.getItem('netriskPlayers')).toBeNull();
     expect(localStorage.getItem('netriskGame')).toBeNull();
   });
+
+  test('runAI processes AI turns', () => {
+    main.game.setCurrentPlayer(2); // ensure AI player
+    const perform = jest
+      .spyOn(main.game, 'performAITurn')
+      .mockImplementation(() => {
+        main.game.setPhase('gameover');
+      });
+    const uiSpy = jest.spyOn(ui, 'updateUI').mockImplementation(() => {});
+    main.runAI();
+    expect(perform).toHaveBeenCalled();
+    expect(uiSpy).toHaveBeenCalled();
+    perform.mockRestore();
+    uiSpy.mockRestore();
+  });
 });
 
