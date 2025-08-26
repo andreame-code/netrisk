@@ -1,5 +1,4 @@
 /* global logger */
-import Game from "./game.js";
 import initTerritorySelection from "./territory-selection.js";
 import {
   playAttackSound,
@@ -18,7 +17,6 @@ import {
   GAME_OVER,
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
-import aiTurnManager from "./src/ai/turn-manager.js";
 import {
   initUI,
   updateInfoPanel,
@@ -31,6 +29,13 @@ import {
   getSelectedCards,
   getLog,
 } from "./ui.js";
+import { loadGame as loadGameData } from "./src/init/game-loader.js";
+import {
+  updateGameState,
+  clearSavedData,
+  hasSavedPlayers,
+  hasSavedGame,
+} from "./src/state/storage.js";
 
 // Remove any previously registered service workers to avoid stale caches
 // and log their status so that we know if any were present.
@@ -64,23 +69,6 @@ const gameState = {
   log: [],
 };
 
-function updateGameState(selected = null) {
-  gameState.currentPlayer = game.currentPlayer;
-  gameState.players = game.players;
-  gameState.territories = game.territories;
-  gameState.phase = game.getPhase();
-  gameState.selectedTerritory = selected;
-  if (typeof localStorage !== "undefined") {
-    try {
-      localStorage.setItem("netriskGame", game.serialize());
-    } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to save game", err);
-      }
-    }
-  }
-}
-
 function checkForVictory() {
   const winner = game.checkVictory();
   if (winner !== null) {
@@ -91,73 +79,10 @@ function checkForVictory() {
 async function startNewGame() {
   const modal = document.getElementById("victoryModal");
   if (modal) modal.classList.remove("show");
-  if (typeof localStorage !== "undefined") {
-    localStorage.removeItem("netriskGame");
-    localStorage.removeItem("netriskPlayers");
-  }
+  clearSavedData();
   destroyUI();
   navigateTo("setup.html");
 }
-
-async function loadMap(mapName) {
-  try {
-    const res = await fetch(`./src/data/${mapName}.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch map data: ${res.status}`);
-    }
-    const map = await res.json();
-    territoryPositions = map.territories.reduce((acc, t) => {
-      acc[t.id] = { x: t.x, y: t.y };
-      return acc;
-    }, {});
-    return map;
-  } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error("Failed to load map data", err);
-    }
-    if (typeof alert !== "undefined") {
-      alert("Unable to load game data. Please try again later.");
-    }
-    return null;
-  }
-}
-
-function restoreGameState(GameClass, map) {
-  let loadedGame = null;
-  if (typeof localStorage !== "undefined") {
-    try {
-      const saved = localStorage.getItem("netriskGame");
-      if (saved) {
-        loadedGame = GameClass.deserialize(saved);
-      }
-    } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to load saved game", err);
-      }
-    }
-  }
-  if (!loadedGame) {
-    let players = [];
-    if (typeof localStorage !== "undefined") {
-      try {
-        players = JSON.parse(localStorage.getItem("netriskPlayers")) || [];
-      } catch (err) {
-        players = [];
-      }
-    }
-    loadedGame = new GameClass(
-      players.length ? players : null,
-      map.territories,
-      map.continents,
-      map.deck,
-    );
-    if (typeof logger !== "undefined") {
-      logger.info("Game initialised");
-    }
-  }
-  return loadedGame;
-}
-
 function initialiseUI(game) {
   gameState.currentPlayer = game.currentPlayer;
   gameState.players = game.players;
@@ -167,22 +92,16 @@ function initialiseUI(game) {
   attachAIActionLogging();
 }
 
-function loadGame() {
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
-  return loadMap(mapName).then((map) => {
-    if (!map) return;
-    const GameClass =
-      (typeof window !== "undefined" && window.Game) || Game;
-    if (typeof GameClass !== "function") {
-      throw new Error("Game class not available");
-    }
-    game = restoreGameState(GameClass, map);
-    game.use(aiTurnManager);
-    initialiseUI(game);
-  });
+async function loadGame() {
+  const result = await loadGameData();
+  if (!result || !result.game) return;
+  game = result.game;
+  territoryPositions = result.territoryPositions;
+  initialiseUI(game);
+  if (typeof module !== "undefined") {
+    module.exports.game = game;
+    module.exports.territoryPositions = territoryPositions;
+  }
 }
 
 function runAI() {
@@ -264,7 +183,7 @@ function attachAIActionLogging() {
       gameState.turnNumber += 1;
     }
     lastPlayer = player;
-    updateGameState();
+    updateGameState(gameState, game);
     updateInfoPanel();
   });
 }
@@ -340,7 +259,11 @@ function attachTerritoryHandlers() {
           }
           document.getElementById(result.territory).classList.add("selected");
         }
-        updateGameState(game.selectedFrom ? game.selectedFrom.id : null);
+        updateGameState(
+          gameState,
+          game,
+          game.selectedFrom ? game.selectedFrom.id : null,
+        );
         updateInfoPanel();
         runAI();
         checkForVictory();
@@ -378,7 +301,7 @@ document.getElementById("endTurn").addEventListener("click", () => {
       }
     }
     updateUI();
-    updateGameState();
+    updateGameState(gameState, game);
     updateInfoPanel();
     runAI();
     checkForVictory();
@@ -415,8 +338,8 @@ if (exportLogBtn) {
 async function initGame() {
   if (
     typeof window !== "undefined" &&
-    typeof localStorage !== "undefined" &&
-    !localStorage.getItem("netriskPlayers") &&
+    !hasSavedPlayers() &&
+    !hasSavedGame() &&
     !(typeof process !== "undefined" && process.env.JEST_WORKER_ID)
   ) {
     window.location.href = "setup.html";
@@ -488,7 +411,7 @@ async function initGame() {
   runAI();
   checkForVictory();
 
-  updateGameState();
+  updateGameState(gameState, game);
   updateInfoPanel();
   addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
 
