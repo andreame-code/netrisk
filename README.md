@@ -2,6 +2,9 @@
 
 A simple browser-based strategy game inspired by the classic game of Risk.
 
+The entry point is a full-screen home menu that lets you start a match,
+read the tutorial, or learn more about the project before diving in.
+
 Use the setup interface (`setup.html` or the "Set up players" link on the
 main page) to choose how many human players and AI opponents participate in
 each match, making both solo and multiplayer games possible.
@@ -99,6 +102,16 @@ game.use(loggerPlugin);
 
 This structure keeps the engine small while making it straightforward to add
 new behaviours or UI integrations without touching the core logic.
+
+## Contributing
+
+Contributions are welcome! Fork the repository and open a pull request with
+your changes. Please run the test suite and linter before submitting:
+
+```bash
+npm test
+npm run lint
+```
 
 ## Wiki
 

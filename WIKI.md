@@ -10,6 +10,11 @@ NetRisk is a simple browser-based strategy game inspired by the classic Risk boa
 2. Run the development server using `npm start`.
 3. Open `http://localhost:8080` to launch the game in your browser.
 
+## Home Menu
+
+When the game loads it presents a full-screen home menu. From here you can
+start a new match, read the tutorial, or view project information.
+
 ## Multiplayer
 NetRisk includes an experimental WebSocket-based multiplayer mode.
 
@@ -42,8 +47,17 @@ connected player, allowing shared matches.
 - Attack adjacent territories to expand your empire.
 - Fortify your position by moving troops between friendly territories at the end of each turn.
 
+## AI Profiles
+During setup you can tailor how computer opponents behave. Choose a difficulty
+level (Easy, Normal, or Hard) and a style (Aggressive, Balanced, or Defensive)
+to adjust risk tolerance and reinforcement priorities.
+
 ## Development
 The project is built with modular JavaScript. The `Game` class exposes a plugin system and event bus to allow new features without modifying the core engine.
+
+## Contributing
+Feel free to fork the repository and submit pull requests. Run `npm test` and
+`npm run lint` before proposing changes to keep the codebase healthy.
 
 ## Further Resources
 Refer to the [README](README.md) for testing instructions and additional details.
