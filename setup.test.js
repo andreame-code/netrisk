@@ -1,4 +1,5 @@
 import { colorPalette } from './colors.js';
+jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
 
 function setupDOM() {
   document.body.innerHTML = `
@@ -21,7 +22,8 @@ describe('setup map selection', () => {
     window.alert = jest.fn();
   });
 
-  test('saves selected map to localStorage', () => {
+  test('saves selected map to localStorage and navigates to game', () => {
+    const { navigateTo } = require('./navigation.js');
     require('./setup.js');
     document.getElementById('humanCount').value = '1';
     document.getElementById('aiCount').value = '0';
@@ -32,5 +34,6 @@ describe('setup map selection', () => {
     mapSel.value = 'map2';
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
     expect(localStorage.getItem('netriskMap')).toBe('map2');
+    expect(navigateTo).toHaveBeenCalledWith('index.html');
   });
 });

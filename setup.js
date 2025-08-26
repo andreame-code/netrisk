@@ -1,5 +1,6 @@
 import { colorPalette } from "./colors.js";
 import { initThemeToggle } from "./theme.js";
+import { navigateTo } from "./navigation.js";
 
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
@@ -95,7 +96,7 @@ form.addEventListener("submit", (e) => {
   } catch (err) {
     // ignore storage errors
   }
-  window.location.href = "index.html";
+  navigateTo("index.html");
 });
 
 loadFromStorage();
