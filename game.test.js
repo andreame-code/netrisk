@@ -1,5 +1,6 @@
 import Game from "./game.js";
 import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "./phases.js";
+import aiTurnManager from "./src/ai/turn-manager.js";
 
 let game;
 
@@ -28,6 +29,7 @@ const mapMock = {
 
 beforeEach(() => {
   game = new Game(null, mapMock.territories, mapMock.continents, mapMock.deck, false);
+  game.use(aiTurnManager);
 });
 
 test('reinforce phase allows adding army and moves to attack', () => {
@@ -216,6 +218,7 @@ test('initialises with 1 human and 2 AI players and executes AI turn', () => {
     { name: 'AI 2', color: '#2ecc71', ai: true }
   ];
   const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck, false);
+  g.use(aiTurnManager);
   expect(g.players.filter(p => p.ai).length).toBe(2);
   g.setCurrentPlayer(1);
   g.performAITurn();
@@ -229,6 +232,7 @@ test('initialises with three human players and no AI', () => {
     { name: 'P3', color: '#222222' }
   ];
   const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck, false);
+  g.use(aiTurnManager);
   expect(g.players.every(p => !p.ai)).toBe(true);
   const current = g.getCurrentPlayer();
   g.performAITurn();
