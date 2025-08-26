@@ -1,55 +1,152 @@
-let audioCtx;
-let volume = 0.2;
-let muted = false;
+const SETTINGS_KEY = "audioSettings";
 
-function playTone(freq, duration = 0.2) {
-  if (typeof window === "undefined") return;
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return;
-  if (!audioCtx) audioCtx = new AudioContext();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  const gainValue = muted ? 0 : volume;
-  gain.gain.setValueAtTime(gainValue, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-  osc.stop(audioCtx.currentTime + duration);
+// Default settings
+let settings = {
+  master: 0.5,
+  effects: 1,
+  muted: false,
+  music: true,
+};
+
+// Load persisted settings
+if (typeof localStorage !== "undefined") {
+  try {
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    if (stored) Object.assign(settings, JSON.parse(stored));
+  } catch {
+    // ignore storage errors
+  }
 }
 
-function playAttackSound() {
-  playTone(300);
+function saveSettings() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore storage errors
+  }
 }
 
-function playConquerSound() {
-  playTone(600, 0.3);
+const EFFECT_FILES = {
+  reinforce: "assets/reinforce.mp3",
+  attackWin: "assets/attack-win.mp3",
+  attackLoss: "assets/attack-loss.mp3",
+  conquer: "assets/conquer.mp3",
+  endTurn: "assets/end-turn.mp3",
+};
+
+const cache = new Map();
+let musicAudio;
+
+function clamp(v) {
+  return Math.min(Math.max(v, 0), 1);
 }
 
-function setVolume(v) {
-  volume = Math.min(Math.max(v, 0), 1);
+function loadAudio(src) {
+  if (cache.has(src)) return cache.get(src);
+  if (typeof Audio === "undefined") {
+    cache.set(src, null);
+    return null;
+  }
+  const a = new Audio();
+  a.src = src;
+  cache.set(src, a);
+  return a;
 }
 
-function getVolume() {
-  return volume;
+function playEffect(name) {
+  if (settings.muted) return;
+  if (settings.master === 0 || settings.effects === 0) return;
+  const src = EFFECT_FILES[name];
+  if (!src) return;
+  const audio = loadAudio(src);
+  if (!audio) return;
+  audio.volume = settings.master * settings.effects;
+  try {
+    audio.currentTime = 0;
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {});
+    }
+  } catch {
+    // ignore play errors
+  }
+}
+
+function ensureMusic() {
+  if (musicAudio || typeof Audio === "undefined") return musicAudio;
+  musicAudio = new Audio();
+  musicAudio.src = "assets/music.mp3";
+  musicAudio.loop = true;
+  return musicAudio;
+}
+
+function setMasterVolume(v) {
+  settings.master = clamp(v);
+  if (musicAudio) musicAudio.volume = settings.master;
+  saveSettings();
+}
+
+function getMasterVolume() {
+  return settings.master;
+}
+
+function setEffectsVolume(v) {
+  settings.effects = clamp(v);
+  saveSettings();
+}
+
+function getEffectsVolume() {
+  return settings.effects;
 }
 
 function setMuted(m) {
-  muted = m;
+  settings.muted = m;
+  if (musicAudio) musicAudio.muted = m;
+  saveSettings();
 }
 
 function isMuted() {
-  return muted;
+  return settings.muted;
+}
+
+function setMusicEnabled(on) {
+  settings.music = on;
+  const music = ensureMusic();
+  if (!music) return saveSettings();
+  if (on && !settings.muted) {
+    music.volume = settings.master;
+    try {
+      const p = music.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {
+      // ignore play errors
+    }
+  } else {
+    music.pause();
+  }
+  saveSettings();
+}
+
+function isMusicEnabled() {
+  return settings.music;
+}
+
+function preloadEffects() {
+  Object.values(EFFECT_FILES).forEach(loadAudio);
+  if (settings.music) ensureMusic();
 }
 
 export {
-  playTone,
-  playAttackSound,
-  playConquerSound,
-  setVolume,
-  getVolume,
+  playEffect,
+  preloadEffects,
+  setMasterVolume,
+  getMasterVolume,
+  setEffectsVolume,
+  getEffectsVolume,
   setMuted,
   isMuted,
+  setMusicEnabled,
+  isMusicEnabled,
 };
+
