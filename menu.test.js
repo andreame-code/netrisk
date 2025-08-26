@@ -1,4 +1,8 @@
-jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
+jest.mock('./navigation.js', () => ({
+  navigateTo: jest.fn(),
+  goHome: jest.fn(),
+  exitGame: jest.fn(),
+}));
 
 describe('home navigation', () => {
   beforeEach(() => {

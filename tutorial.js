@@ -140,12 +140,6 @@ export function initTutorialButtons() {
       btn.classList.add('hidden');
     }
     btn.addEventListener('click', () => {
-      const menu = document.getElementById('mainMenu');
-      const container = document.getElementById('gameContainer');
-      if (menu && container) {
-        menu.classList.add('hidden');
-        container.classList.remove('hidden');
-      }
       startTutorial();
     });
   }
