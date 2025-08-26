@@ -56,6 +56,11 @@ game.use(loggerPlugin);
 This structure keeps the engine small while making it straightforward to add
 new behaviours or UI integrations without touching the core logic.
 
+## Wiki
+
+More detailed documentation, including gameplay notes and development tips,
+is available in the [project wiki](WIKI.md).
+
 ## UAT Debug
 
 The client exposes a basic logger wrapping the browser console with `info`, `warn` and `error` levels. An error overlay appears at the top of the page when an uncaught exception or unhandled promise rejection occurs.
