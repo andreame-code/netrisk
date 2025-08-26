@@ -18,6 +18,7 @@ import {
   GAME_OVER,
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
+import loadMapData from "./src/load-map-data.js";
 import {
   initUI,
   updateInfoPanel,
@@ -98,16 +99,8 @@ async function startNewGame() {
 
 async function loadGame() {
   let map;
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
   try {
-    const res = await fetch(`./src/data/${mapName}.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch map data: ${res.status}`);
-    }
-    map = await res.json();
+    map = await loadMapData();
   } catch (err) {
     if (typeof logger !== "undefined") {
       logger.error("Failed to load map data", err);
