@@ -98,7 +98,6 @@ export default function initTerritorySelection({
       const tokenEl = document.createElement("div");
       tokenEl.id = "token";
       tokenEl.className = "token";
-      boardEl.appendChild(tokenEl);
       const terrs = territories || game?.territories;
       if (terrs) {
         terrs.forEach((t) => {
@@ -115,6 +114,8 @@ export default function initTerritorySelection({
         attachTerritoryHandlers?.();
         updateUI?.();
       }
+      // Append token after territory buttons so it appears above them
+      boardEl.appendChild(tokenEl);
       if (gameState?.tokenPosition) {
         const scale = getBoardScale();
         tokenEl.style.left = `${gameState.tokenPosition.x * scale.x}px`;
