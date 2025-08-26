@@ -8,6 +8,7 @@ import {
   updateBonusInfo,
   updateCardsUI,
   getBoardScale,
+  destroyUI,
 } from './ui.js';
 
 describe('ui utilities', () => {
@@ -98,5 +99,22 @@ describe('ui utilities', () => {
     board.getBoundingClientRect = () => ({ width: 620, height: 420 });
     const scale = getBoardScale();
     expect(scale).toEqual({ x: 1, y: 1 });
+  });
+
+  test('destroyUI removes resize listener and clears cache', () => {
+    const removeSpy = jest.spyOn(window, 'removeEventListener');
+    const getSpy = jest.spyOn(document, 'getElementById');
+
+    updateBonusInfo();
+    expect(getSpy).toHaveBeenCalledTimes(1);
+
+    destroyUI();
+    expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function));
+
+    updateBonusInfo();
+    expect(getSpy).toHaveBeenCalledTimes(2);
+
+    removeSpy.mockRestore();
+    getSpy.mockRestore();
   });
 });
