@@ -4,8 +4,17 @@ import { REINFORCE } from "./phases.js";
 const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 400;
 
+// cache DOM lookups to avoid repetitive queries
+const elementCache = {};
+function getElement(id) {
+  if (!elementCache[id]) {
+    elementCache[id] = document.getElementById(id);
+  }
+  return elementCache[id];
+}
+
 function getBoardScale() {
-  const board = document.getElementById("board");
+  const board = getElement("board");
   if (!board) return { x: 1, y: 1 };
   const rect = board.getBoundingClientRect();
   const x = rect.width ? rect.width / BOARD_WIDTH : 1;
@@ -22,6 +31,7 @@ function initUI({ game: g, gameState: gs, territoryPositions: tp }) {
   game = g;
   gameState = gs;
   territoryPositions = tp;
+  Object.keys(elementCache).forEach((k) => delete elementCache[k]);
   window.addEventListener("resize", updateUI);
 }
 
@@ -34,24 +44,32 @@ function resetSelectedCards() {
 }
 
 function updateInfoPanel() {
-  const cp = document.getElementById("currentPlayer");
+  const cp = getElement("currentPlayer");
   if (cp) cp.textContent = game.players[gameState.currentPlayer].name;
-  const tn = document.getElementById("turnNumber");
+  const tn = getElement("turnNumber");
   if (tn) tn.textContent = gameState.turnNumber;
 }
 
 function addLogEntry(msg) {
   gameState.log.push(msg);
   if (gameState.log.length > 10) gameState.log.shift();
-  const logEl = document.getElementById("actionLog");
+  const logEl = getElement("actionLog");
   if (logEl) {
-    logEl.innerHTML = gameState.log.map((l) => `<div>${l}</div>`).join("");
+    // rebuild log using DOM nodes to avoid innerHTML
+    while (logEl.firstChild) logEl.removeChild(logEl.firstChild);
+    const fragment = document.createDocumentFragment();
+    gameState.log.forEach((l) => {
+      const div = document.createElement("div");
+      div.textContent = l;
+      fragment.appendChild(div);
+    });
+    logEl.appendChild(fragment);
     logEl.scrollTop = logEl.scrollHeight;
   }
 }
 
 function animateMove(from, to) {
-  const board = document.getElementById("board");
+  const board = getElement("board");
   if (!board) return;
   const fromPos = territoryPositions[from];
   const toPos = territoryPositions[to];
@@ -77,23 +95,33 @@ function animateMove(from, to) {
 }
 
 function showVictoryModal(winnerIdx) {
-  const modal = document.getElementById("victoryModal");
+  const modal = getElement("victoryModal");
   if (!modal) return;
-  const title = document.getElementById("victoryTitle");
-  const stats = document.getElementById("victoryStats");
+  const title = getElement("victoryTitle");
+  const stats = getElement("victoryStats");
   if (title) title.textContent = `${game.players[winnerIdx].name} has won!`;
   if (stats) {
-    const terr = game.players.map((p, idx) => {
+    // clear previous stats
+    while (stats.firstChild) stats.removeChild(stats.firstChild);
+
+    const turns = document.createElement("p");
+    turns.textContent = `Turns: ${gameState.turnNumber}`;
+    stats.appendChild(turns);
+
+    const ul = document.createElement("ul");
+    game.players.forEach((p, idx) => {
       const count = game.territories.filter((t) => t.owner === idx).length;
-      return `<li>${p.name}: ${count} territories</li>`;
+      const li = document.createElement("li");
+      li.textContent = `${p.name}: ${count} territories`;
+      ul.appendChild(li);
     });
-    stats.innerHTML = `<p>Turns: ${gameState.turnNumber}</p><ul>${terr.join("")}</ul>`;
+    stats.appendChild(ul);
   }
   modal.classList.add("show");
 }
 
 function updateBonusInfo() {
-  const bonusEl = document.getElementById("bonusInfo");
+  const bonusEl = getElement("bonusInfo");
   if (!bonusEl) return;
   const bonuses = game.continents
     .filter((c) =>
@@ -104,9 +132,9 @@ function updateBonusInfo() {
 }
 
 function updateCardsUI() {
-  const container = document.getElementById("cards");
+  const container = getElement("cards");
   if (!container) return;
-  container.innerHTML = "";
+  while (container.firstChild) container.removeChild(container.firstChild);
   const hand = game.hands[game.currentPlayer] || [];
   selectedCards = [];
   hand.forEach((card, idx) => {
@@ -156,7 +184,7 @@ function getColorClass(color) {
 function updateUI() {
   const scale = getBoardScale();
   game.territories.forEach((t) => {
-    const el = document.getElementById(t.id);
+    const el = getElement(t.id);
     if (!el) return;
 
     const colorClass = getColorClass(game.players[t.owner].color);
@@ -177,7 +205,7 @@ function updateUI() {
     el.classList.remove("selected");
   });
   if (gameState.tokenPosition) {
-    const token = document.getElementById("token");
+    const token = getElement("token");
     if (token) {
       token.style.left = gameState.tokenPosition.x * scale.x + "px";
       token.style.top = gameState.tokenPosition.y * scale.y + "px";
@@ -187,7 +215,8 @@ function updateUI() {
   if (game.getPhase() === REINFORCE) {
     status += ` (${game.reinforcements} reinforcements)`;
   }
-  document.getElementById("status").textContent = status;
+  const statusEl = getElement("status");
+  if (statusEl) statusEl.textContent = status;
   updateBonusInfo();
   updateCardsUI();
 }
