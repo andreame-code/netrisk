@@ -96,18 +96,18 @@ async function startNewGame() {
   navigateTo("setup.html");
 }
 
-async function loadGame() {
-  let map;
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
+async function loadMap(mapName) {
   try {
     const res = await fetch(`./src/data/${mapName}.json`);
     if (!res.ok) {
       throw new Error(`Failed to fetch map data: ${res.status}`);
     }
-    map = await res.json();
+    const map = await res.json();
+    territoryPositions = map.territories.reduce((acc, t) => {
+      acc[t.id] = { x: t.x, y: t.y };
+      return acc;
+    }, {});
+    return map;
   } catch (err) {
     if (typeof logger !== "undefined") {
       logger.error("Failed to load map data", err);
@@ -115,22 +115,17 @@ async function loadGame() {
     if (typeof alert !== "undefined") {
       alert("Unable to load game data. Please try again later.");
     }
-    return;
+    return null;
   }
-  territoryPositions = map.territories.reduce((acc, t) => {
-    acc[t.id] = { x: t.x, y: t.y };
-    return acc;
-  }, {});
-  const GameClass =
-    (typeof window !== "undefined" && window.Game) || Game;
-  if (typeof GameClass !== "function") {
-    throw new Error("Game class not available");
-  }
+}
+
+function restoreGameState(GameClass, map) {
+  let loadedGame = null;
   if (typeof localStorage !== "undefined") {
     try {
       const saved = localStorage.getItem("netriskGame");
       if (saved) {
-        game = GameClass.deserialize(saved);
+        loadedGame = GameClass.deserialize(saved);
       }
     } catch (err) {
       if (typeof logger !== "undefined") {
@@ -138,7 +133,7 @@ async function loadGame() {
       }
     }
   }
-  if (!game) {
+  if (!loadedGame) {
     let players = [];
     if (typeof localStorage !== "undefined") {
       try {
@@ -147,7 +142,7 @@ async function loadGame() {
         players = [];
       }
     }
-    game = new GameClass(
+    loadedGame = new GameClass(
       players.length ? players : null,
       map.territories,
       map.continents,
@@ -157,12 +152,33 @@ async function loadGame() {
       logger.info("Game initialised");
     }
   }
+  return loadedGame;
+}
+
+function initialiseUI(game) {
   gameState.currentPlayer = game.currentPlayer;
   gameState.players = game.players;
   gameState.territories = game.territories;
   gameState.phase = game.getPhase();
   initUI({ game, gameState, territoryPositions });
   attachAIActionLogging();
+}
+
+function loadGame() {
+  const mapName =
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("netriskMap")) ||
+    "map";
+  return loadMap(mapName).then((map) => {
+    if (!map) return;
+    const GameClass =
+      (typeof window !== "undefined" && window.Game) || Game;
+    if (typeof GameClass !== "function") {
+      throw new Error("Game class not available");
+    }
+    game = restoreGameState(GameClass, map);
+    initialiseUI(game);
+  });
 }
 
 function runAI() {
