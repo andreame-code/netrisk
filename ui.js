@@ -67,13 +67,13 @@ function showVictoryModal(winnerIdx) {
   if (!modal) return;
   const title = document.getElementById("victoryTitle");
   const stats = document.getElementById("victoryStats");
-  if (title) title.textContent = `${game.players[winnerIdx].name} ha vinto!`;
+  if (title) title.textContent = `${game.players[winnerIdx].name} has won!`;
   if (stats) {
     const terr = game.players.map((p, idx) => {
       const count = game.territories.filter((t) => t.owner === idx).length;
-      return `<li>${p.name}: ${count} territori</li>`;
+      return `<li>${p.name}: ${count} territories</li>`;
     });
-    stats.innerHTML = `<p>Turni: ${gameState.turnNumber}</p><ul>${terr.join("")}</ul>`;
+    stats.innerHTML = `<p>Turns: ${gameState.turnNumber}</p><ul>${terr.join("")}</ul>`;
   }
   modal.classList.add("show");
 }

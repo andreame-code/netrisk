@@ -2,7 +2,7 @@
 
 A simple browser-based strategy game inspired by the classic game of Risk.
 
-Use the setup interface (`setup.html` or the "Imposta giocatori" link on the
+Use the setup interface (`setup.html` or the "Set up players" link on the
 main page) to choose how many human players and AI opponents participate in
 each match, making both solo and multiplayer games possible.
 Reinforcements are calculated based on the number
