@@ -6,7 +6,8 @@
     "lint": "eslint .",
     "start": "http-server .",
     "test": "jest",
-    "build": "node build.js"
+    "build": "node build.js",
+    "server": "node multiplayer-server.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
@@ -16,6 +17,7 @@
     "jest-environment-jsdom": "^30.0.5",
     "prettier": "^3.2.5",
     "babel-jest": "^29.7.0",
-    "@babel/preset-env": "^7.24.0"
+    "@babel/preset-env": "^7.24.0",
+    "ws": "^8.17.0"
   }
 }
