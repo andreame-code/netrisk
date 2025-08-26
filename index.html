@@ -8,13 +8,16 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <button id="themeToggle">High Contrast</button>
-    <h1>NetRisk</h1>
-    <div id="mainMenu">
-      <button id="startGame">Start Game</button>
-      <a href="setup.html">Set up players</a>
-    </div>
-    <div id="gameContainer" style="display: none">
+    <header>
+      <h1>NetRisk</h1>
+      <button id="themeToggle">High Contrast</button>
+    </header>
+    <main>
+      <div id="mainMenu">
+        <button id="startGame">Start Game</button>
+        <a href="setup.html">Set up players</a>
+      </div>
+      <div id="gameContainer" style="display: none">
       <div id="uiPanel">
         <div>Current turn: <span id="turnNumber">1</span></div>
         <div>Current player: <span id="currentPlayer"></span></div>
@@ -59,6 +62,7 @@
       </div>
       <div id="board" class="board"></div>
     </div>
+    </main>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
