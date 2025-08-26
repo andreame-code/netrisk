@@ -210,6 +210,15 @@ function attachAIActionLogging() {
     }
   });
 
+  game.on("cardAwarded", ({ player, card }) => {
+    const name = game.players[player].name;
+    const icons = { infantry: "🪖", cavalry: "🐎", artillery: "💣" };
+    addLogEntry(`${name} receives a card ${icons[card.type] || card.type}`);
+    if (typeof logger !== "undefined") {
+      logger.info(`${name} receives card ${card.type}`);
+    }
+  });
+
   game.on("turnStart", ({ player }) => {
     const prev = lastPlayer;
     const prevName = game.players[prev].name;

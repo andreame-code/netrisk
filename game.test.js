@@ -175,6 +175,8 @@ test('continent bonus is added to reinforcements', () => {
 });
 
 test('player draws a card after conquering a territory', () => {
+  const awarded = jest.fn();
+  game.on('cardAwarded', awarded);
   game.setPhase(ATTACK);
   const from = game.territoryById('t2');
   const to = game.territoryById('t3');
@@ -191,6 +193,7 @@ test('player draws a card after conquering a territory', () => {
   game.endTurn();
   game.endTurn();
   expect(game.hands[0].length).toBe(1);
+  expect(awarded).toHaveBeenCalled();
 });
 
 test('playing valid card set grants reinforcements', () => {
