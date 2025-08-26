@@ -2,7 +2,7 @@ const lang = navigator.language && navigator.language.startsWith('it') ? 'it' : 
 
 const texts = {
   en: {
-    title: 'About & Help',
+    title: 'About & Settings',
     search: 'Search...',
     sections: {
       rules: {
@@ -35,7 +35,7 @@ const texts = {
     },
   },
   it: {
-    title: 'Info e Aiuto',
+    title: 'Info e Impostazioni',
     search: 'Cerca...',
     sections: {
       rules: {
