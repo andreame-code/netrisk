@@ -45,6 +45,7 @@ import {
   hasSavedPlayers,
   hasSavedGame,
 } from "./src/state/storage.js";
+import { gameState, initGameState } from "./src/state/game.js";
 
 // Remove any previously registered service workers to avoid stale caches
 // and log their status so that we know if any were present.
@@ -68,17 +69,6 @@ let game;
 let territoryPositions = {};
 let phaseTimer;
 
-const gameState = {
-  turnNumber: 1,
-  currentPlayer: 0,
-  players: [],
-  territories: [],
-  selectedTerritory: null,
-  tokenPosition: null,
-  phase: REINFORCE,
-  log: [],
-};
-
 function checkForVictory() {
   const winner = game.checkVictory();
   if (winner !== null) {
@@ -97,10 +87,7 @@ async function startNewGame() {
   navigateTo("setup.html");
 }
 function initialiseUI(game) {
-  gameState.currentPlayer = game.currentPlayer;
-  gameState.players = game.players;
-  gameState.territories = game.territories;
-  gameState.phase = game.getPhase();
+  initGameState(game);
   initUI({ game, gameState, territoryPositions });
   phaseTimer = initPhaseTimer({ game });
   attachAIActionLogging();
