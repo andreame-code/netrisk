@@ -88,8 +88,22 @@ async function startNewGame() {
 }
 
 async function loadGame() {
-  const res = await fetch("./src/data/map.json");
-  const map = await res.json();
+  let map;
+  try {
+    const res = await fetch("./src/data/map.json");
+    if (!res.ok) {
+      throw new Error(`Failed to fetch map data: ${res.status}`);
+    }
+    map = await res.json();
+  } catch (err) {
+    if (typeof logger !== "undefined") {
+      logger.error("Failed to load map data", err);
+    }
+    if (typeof alert !== "undefined") {
+      alert("Unable to load game data. Please try again later.");
+    }
+    return;
+  }
   territoryPositions = map.territories.reduce((acc, t) => {
     acc[t.id] = { x: t.x, y: t.y };
     return acc;
