@@ -1,6 +1,18 @@
 import { getContrastingColor } from "./colors.js";
 import { REINFORCE } from "./phases.js";
 
+const BOARD_WIDTH = 600;
+const BOARD_HEIGHT = 400;
+
+function getBoardScale() {
+  const board = document.getElementById("board");
+  if (!board) return { x: 1, y: 1 };
+  const rect = board.getBoundingClientRect();
+  const x = rect.width ? rect.width / BOARD_WIDTH : 1;
+  const y = rect.height ? rect.height / BOARD_HEIGHT : 1;
+  return { x, y };
+}
+
 let game;
 let gameState;
 let territoryPositions = {};
@@ -10,6 +22,7 @@ function initUI({ game: g, gameState: gs, territoryPositions: tp }) {
   game = g;
   gameState = gs;
   territoryPositions = tp;
+  window.addEventListener("resize", updateUI);
 }
 
 function getSelectedCards() {
@@ -45,12 +58,13 @@ function animateMove(from, to) {
   if (!fromPos || !toPos) return;
   const token = document.createElement("div");
   token.className = "token move-token";
-  token.style.left = fromPos.x + "px";
-  token.style.top = fromPos.y + "px";
+  const scale = getBoardScale();
+  token.style.left = fromPos.x * scale.x + "px";
+  token.style.top = fromPos.y * scale.y + "px";
   board.appendChild(token);
   requestAnimationFrame(() => {
-    token.style.left = toPos.x + "px";
-    token.style.top = toPos.y + "px";
+    token.style.left = toPos.x * scale.x + "px";
+    token.style.top = toPos.y * scale.y + "px";
   });
   token.addEventListener(
     "transitionend",
@@ -140,6 +154,7 @@ function getColorClass(color) {
 }
 
 function updateUI() {
+  const scale = getBoardScale();
   game.territories.forEach((t) => {
     const el = document.getElementById(t.id);
     if (!el) return;
@@ -156,11 +171,18 @@ function updateUI() {
     el.textContent = t.armies;
     const pos = territoryPositions[t.id];
     if (pos) {
-      el.style.left = pos.x + "px";
-      el.style.top = pos.y + "px";
+      el.style.left = pos.x * scale.x + "px";
+      el.style.top = pos.y * scale.y + "px";
     }
     el.classList.remove("selected");
   });
+  if (gameState.tokenPosition) {
+    const token = document.getElementById("token");
+    if (token) {
+      token.style.left = gameState.tokenPosition.x * scale.x + "px";
+      token.style.top = gameState.tokenPosition.y * scale.y + "px";
+    }
+  }
   let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
   if (game.getPhase() === REINFORCE) {
     status += ` (${game.reinforcements} reinforcements)`;
@@ -181,4 +203,5 @@ export {
   updateUI,
   getSelectedCards,
   resetSelectedCards,
+  getBoardScale,
 };

@@ -1,4 +1,5 @@
 import { ATTACK, FORTIFY } from "./phases.js";
+import { getBoardScale } from "./ui.js";
 
 export default function initTerritorySelection({
   logger,
@@ -43,9 +44,10 @@ export default function initTerritorySelection({
     const x = box.x + box.width / 2;
     const y = box.y + box.height / 2;
     const token = document.getElementById("token");
+    const scale = getBoardScale();
     if (token) {
-      token.style.left = `${x}px`;
-      token.style.top = `${y}px`;
+      token.style.left = `${x * scale.x}px`;
+      token.style.top = `${y * scale.y}px`;
     }
     if (gameState) {
       gameState.tokenPosition = { x, y };
@@ -99,8 +101,9 @@ export default function initTerritorySelection({
         updateUI?.();
       }
       if (gameState?.tokenPosition) {
-        tokenEl.style.left = `${gameState.tokenPosition.x}px`;
-        tokenEl.style.top = `${gameState.tokenPosition.y}px`;
+        const scale = getBoardScale();
+        tokenEl.style.left = `${gameState.tokenPosition.x * scale.x}px`;
+        tokenEl.style.top = `${gameState.tokenPosition.y * scale.y}px`;
       }
       const map = boardEl.querySelector("#map");
       map.addEventListener("click", (e) => {

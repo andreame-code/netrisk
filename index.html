@@ -9,30 +9,32 @@
   <body>
     <h1>NetRisk</h1>
     <div><a href="setup.html">Set up players</a></div>
-    <div id="uiPanel">
-      <div>Current turn: <span id="turnNumber">1</span></div>
-      <div>Current player: <span id="currentPlayer"></span></div>
-      <div id="howToPlayBox">
-        <div>
-          <strong>How to play (alpha)</strong>
-          <a href="#" id="toggleHowToPlay">Show details</a>
+    <div id="gameContainer">
+      <div id="uiPanel">
+        <div>Current turn: <span id="turnNumber">1</span></div>
+        <div>Current player: <span id="currentPlayer"></span></div>
+        <div id="howToPlayBox">
+          <div>
+            <strong>How to play (alpha)</strong>
+            <a href="#" id="toggleHowToPlay">Show details</a>
+          </div>
+          <ol id="howToPlaySteps" style="display: none">
+            <li>Click a territory</li>
+            <li>Choose an action</li>
+            <li>Press "End Turn"</li>
+          </ol>
         </div>
-        <ol id="howToPlaySteps" style="display: none">
-          <li>Click a territory</li>
-          <li>Choose an action</li>
-          <li>Press "End Turn"</li>
-        </ol>
+        <div><strong>Action log:</strong></div>
+        <div id="actionLog" class="log"></div>
+        <div id="status"></div>
+        <div id="diceResults"></div>
+        <div id="selectedTerritory"></div>
+        <button id="moveToken">Move Token</button>
+        <button id="endTurn">End Turn</button>
+        <button id="forceError">Force Error</button>
       </div>
-      <div><strong>Action log:</strong></div>
-      <div id="actionLog" class="log"></div>
+      <div id="board" class="board"></div>
     </div>
-    <div id="status"></div>
-    <div id="diceResults"></div>
-    <div id="selectedTerritory"></div>
-    <div id="board" class="board"></div>
-    <button id="moveToken">Move Token</button>
-    <button id="endTurn">End Turn</button>
-    <button id="forceError">Force Error</button>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
