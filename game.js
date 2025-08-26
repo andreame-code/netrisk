@@ -134,78 +134,101 @@ class Game {
     return this.territories.find(t => t.id === id);
   }
 
-  handleReinforcePhase(territory) {
-    if (territory.owner === this.currentPlayer && this.reinforcements > 0) {
-      territory.armies += 1;
-      this.reinforcements -= 1;
-      this.emit(REINFORCE, { territory: territory.id, player: this.currentPlayer });
-      if (this.reinforcements === 0) {
-        this.phase = ATTACK;
-        this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
+  processSelection(action, territory) {
+    const id = territory.id;
+    if (action.direct) {
+      if (!action.canSelect || action.canSelect(territory)) {
+        return action.onSelect ? action.onSelect.call(this, territory) : null;
       }
-      return { type: REINFORCE, territory: territory.id };
+      return null;
+    }
+    if (!this.selectedFrom) {
+      if (!action.canSelect || action.canSelect(territory)) {
+        this.selectedFrom = territory;
+        return { type: 'select', territory: id };
+      }
+    } else {
+      const from = this.selectedFrom;
+      const to = territory;
+      if (from.id === to.id) {
+        this.selectedFrom = null;
+        return { type: 'deselect', territory: id };
+      }
+      if (!action.canMove || action.canMove(from, to)) {
+        this.selectedFrom = null;
+        return action.onMove ? action.onMove.call(this, from, to) : null;
+      }
     }
     return null;
+  }
+
+  handleReinforcePhase(territory) {
+    return this.processSelection(
+      {
+        direct: true,
+        canSelect: (t) =>
+          t.owner === this.currentPlayer && this.reinforcements > 0,
+        onSelect: (t) => {
+          t.armies += 1;
+          this.reinforcements -= 1;
+          this.emit(REINFORCE, {
+            territory: t.id,
+            player: this.currentPlayer,
+          });
+          if (this.reinforcements === 0) {
+            this.phase = ATTACK;
+            this.emit('phaseChange', {
+              phase: this.phase,
+              player: this.currentPlayer,
+            });
+          }
+          return { type: REINFORCE, territory: t.id };
+        },
+      },
+      territory,
+    );
   }
 
   handleAttackPhase(territory) {
-    const id = territory.id;
-    if (!this.selectedFrom) {
-      if (territory.owner === this.currentPlayer && territory.armies > 1) {
-        this.selectedFrom = territory;
-        return { type: 'select', territory: id };
-      }
-    } else {
-      const from = this.selectedFrom;
-      const to = territory;
-      if (from.id === to.id) {
-        this.selectedFrom = null;
-        return { type: 'deselect', territory: id };
-      }
-      if (
-        from.owner === this.currentPlayer &&
-        to.owner !== this.currentPlayer &&
-        from.neighbors.includes(to.id)
-      ) {
-        const result = this.attack(from, to);
-        this.emit(ATTACK, { from: from.id, to: to.id, result });
-        this.selectedFrom = null;
-        return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
-      }
-    }
-    return null;
+    return this.processSelection(
+      {
+        canSelect: (t) =>
+          t.owner === this.currentPlayer && t.armies > 1,
+        canMove: (from, to) =>
+          from.owner === this.currentPlayer &&
+          to.owner !== this.currentPlayer &&
+          from.neighbors.includes(to.id),
+        onMove: (from, to) => {
+          const result = this.attack(from, to);
+          this.emit(ATTACK, { from: from.id, to: to.id, result });
+          return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
+        },
+      },
+      territory,
+    );
   }
 
   handleFortifyPhase(territory) {
-    const id = territory.id;
-    if (!this.selectedFrom) {
-      if (territory.owner === this.currentPlayer && territory.armies > 1) {
-        this.selectedFrom = territory;
-        return { type: 'select', territory: id };
-      }
-    } else {
-      const from = this.selectedFrom;
-      const to = territory;
-      if (from.id === to.id) {
-        this.selectedFrom = null;
-        return { type: 'deselect', territory: id };
-      }
-      if (
-        from.owner === this.currentPlayer &&
-        to.owner === this.currentPlayer &&
-        from.neighbors.includes(to.id)
-      ) {
-        const movable = from.armies - 1;
-        this.selectedFrom = null;
-        return {
-          type: FORTIFY,
-          from: from.id,
-          to: to.id,
-          movableArmies: movable,
-        };
-      }
-    }
-    return null;
+    return this.processSelection(
+      {
+        canSelect: (t) =>
+          t.owner === this.currentPlayer && t.armies > 1,
+        canMove: (from, to) =>
+          from.owner === this.currentPlayer &&
+          to.owner === this.currentPlayer &&
+          from.neighbors.includes(to.id),
+        onMove: (from, to) => {
+          const movable = from.armies - 1;
+          return {
+            type: FORTIFY,
+            from: from.id,
+            to: to.id,
+            movableArmies: movable,
+          };
+        },
+      },
+      territory,
+    );
   }
 
   handleTerritoryClick(id) {

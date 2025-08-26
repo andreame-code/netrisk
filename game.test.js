@@ -39,6 +39,35 @@ test('reinforce phase allows adding army and moves to attack', () => {
   expect(game.getPhase()).toBe(ATTACK);
 });
 
+test('processSelection handles select and deselect in attack phase', () => {
+  game.setPhase(ATTACK);
+  const t1 = game.territoryById('t1');
+  t1.armies = 3;
+  const selectRes = game.handleTerritoryClick('t1');
+  expect(selectRes).toEqual({ type: 'select', territory: 't1' });
+  const deselectRes = game.handleTerritoryClick('t1');
+  expect(deselectRes).toEqual({ type: 'deselect', territory: 't1' });
+});
+
+test('processSelection validates fortify moves', () => {
+  game.setPhase(FORTIFY);
+  const t1 = game.territoryById('t1');
+  const t2 = game.territoryById('t2');
+  t1.owner = 0;
+  t2.owner = 0;
+  t1.armies = 3;
+  t2.armies = 2;
+  const selectRes = game.handleTerritoryClick('t1');
+  expect(selectRes).toEqual({ type: 'select', territory: 't1' });
+  const moveRes = game.handleTerritoryClick('t2');
+  expect(moveRes).toEqual({
+    type: FORTIFY,
+    from: 't1',
+    to: 't2',
+    movableArmies: 2,
+  });
+});
+
 test('attack phase resolves battle between territories', () => {
   game.handleTerritoryClick('t1');
   game.handleTerritoryClick('t1');
