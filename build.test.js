@@ -17,5 +17,7 @@ describe('build script', () => {
   test('copies map data file', () => {
     const mapPath = path.join(__dirname, 'dist', 'src', 'data', 'map.json');
     expect(fs.existsSync(mapPath)).toBe(true);
+    const romanPath = path.join(__dirname, 'dist', 'src', 'data', 'map-roman.json');
+    expect(fs.existsSync(romanPath)).toBe(true);
   });
 });

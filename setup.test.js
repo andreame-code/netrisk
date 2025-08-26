@@ -3,16 +3,17 @@ jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
 
 function setupDOM() {
   document.body.innerHTML = `
-    <form id="setupForm">
-      <input id="humanCount" />
-      <input id="aiCount" />
-      <div id="players"></div>
-      <select id="mapSelect">
-        <option value="map">Classic</option>
-        <option value="map2">Desert</option>
-      </select>
-    </form>`;
-}
+      <form id="setupForm">
+        <input id="humanCount" />
+        <input id="aiCount" />
+        <div id="players"></div>
+        <select id="mapSelect">
+          <option value="map">Classic</option>
+          <option value="map2">Desert</option>
+          <option value="map-roman">Roman Empire</option>
+        </select>
+      </form>`;
+  }
 
 describe('setup map selection', () => {
   beforeEach(() => {
@@ -30,10 +31,10 @@ describe('setup map selection', () => {
     // setup.js rendered player input
     document.getElementById('name0').value = 'P1';
     document.getElementById('color0').value = colorPalette[0];
-    const mapSel = document.getElementById('mapSelect');
-    mapSel.value = 'map2';
-    document.getElementById('setupForm').dispatchEvent(new Event('submit'));
-    expect(localStorage.getItem('netriskMap')).toBe('map2');
-    expect(navigateTo).toHaveBeenCalledWith('index.html');
+      const mapSel = document.getElementById('mapSelect');
+      mapSel.value = 'map-roman';
+      document.getElementById('setupForm').dispatchEvent(new Event('submit'));
+      expect(localStorage.getItem('netriskMap')).toBe('map-roman');
+      expect(navigateTo).toHaveBeenCalledWith('index.html');
+    });
   });
-});
