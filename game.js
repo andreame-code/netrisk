@@ -1,4 +1,3 @@
-import { attackSuccessProbability, territoryPriority } from "./ai.js";
 import {
   REINFORCE,
   ATTACK,
@@ -354,76 +353,6 @@ class Game {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }
-
-  performAITurn() {
-    if (!this.players[this.currentPlayer].ai || this.phase === GAME_OVER) return;
-    // Play cards if possible
-    const hand = this.hands[this.currentPlayer];
-    const set = this.findValidSet(hand);
-    if (set) this.playCards(set);
-
-    // Reinforce prioritizing territories
-    while (this.reinforcements > 0) {
-      const owned = this.territories.filter(t => t.owner === this.currentPlayer);
-      if (owned.length === 0) break;
-      const target = owned.reduce((best, t) => {
-        const score = territoryPriority(this, t);
-        return !best || score > best.score ? { t, score } : best;
-      }, null).t;
-      target.armies += 1;
-      this.reinforcements -= 1;
-      this.emit(REINFORCE, { territory: target.id, player: this.currentPlayer });
-    }
-    if (this.phase === REINFORCE && this.reinforcements === 0) {
-      this.phase = ATTACK;
-      this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
-    }
-
-    // Attack while probabilities favorable
-    while (this.phase === ATTACK) {
-      const options = [];
-      this.territories
-        .filter(t => t.owner === this.currentPlayer && t.armies > 1)
-        .forEach(from => {
-          from.neighbors.forEach(n => {
-            const to = this.territoryById(n);
-            if (to.owner !== this.currentPlayer) {
-              const prob = attackSuccessProbability(from, to);
-              options.push({ from, to, prob });
-            }
-          });
-        });
-      if (options.length === 0) break;
-      options.sort((a, b) => b.prob - a.prob);
-      const best = options[0];
-      if (best.prob < 0.6) break;
-      const result = this.attack(best.from, best.to);
-      this.emit(ATTACK, { from: best.from.id, to: best.to.id, result });
-      if (this.phase === GAME_OVER) return;
-    }
-
-    // Fortify one army from strong to weak border
-    this.endTurn();
-    if (this.phase === FORTIFY) {
-      let best = null;
-      const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
-      aiOwned.forEach(from => {
-        if (from.armies > 1) {
-          from.neighbors.forEach(n => {
-            const to = this.territoryById(n);
-            if (to.owner === this.currentPlayer) {
-              const diff = territoryPriority(this, to) - territoryPriority(this, from);
-              if (!best || diff > best.diff) best = { from, to, diff };
-            }
-          });
-        }
-      });
-      if (best && best.diff > 0) {
-        this.moveArmies(best.from.id, best.to.id, 1);
-      }
-      this.endTurn();
-    }
   }
 
   serialize() {

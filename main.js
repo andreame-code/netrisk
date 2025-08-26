@@ -18,6 +18,7 @@ import {
   GAME_OVER,
 } from "./phases.js";
 import { initThemeToggle } from "./theme.js";
+import aiTurnManager from "./src/ai/turn-manager.js";
 import {
   initUI,
   updateInfoPanel,
@@ -177,6 +178,7 @@ function loadGame() {
       throw new Error("Game class not available");
     }
     game = restoreGameState(GameClass, map);
+    game.use(aiTurnManager);
     initialiseUI(game);
   });
 }
