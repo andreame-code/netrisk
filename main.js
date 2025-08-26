@@ -513,10 +513,10 @@ function init() {
     initGame();
     return;
   }
-  container.style.display = "none";
+  container.classList.add("hidden");
   startBtn.addEventListener("click", async () => {
-    menu.style.display = "none";
-    container.style.display = "";
+    menu.classList.add("hidden");
+    container.classList.remove("hidden");
     await initGame();
   });
 }

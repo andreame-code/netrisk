@@ -9,18 +9,18 @@
     background: "rgba(255,0,0,0.9)",
     color: "#fff",
     padding: "4px",
-    display: "none",
     zIndex: "1000",
     fontFamily: "monospace",
     whiteSpace: "pre-wrap",
   });
+  overlay.classList.add("hidden");
   document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(overlay);
   });
 
   function showError(message) {
     overlay.textContent = message;
-    overlay.style.display = "block";
+    overlay.classList.remove("hidden");
   }
 
   window.logger = {
