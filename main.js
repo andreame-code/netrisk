@@ -421,7 +421,6 @@ async function initGame() {
           type: "cards",
         });
         resetSelectedCards();
-        game.calculateReinforcements();
         updateUI();
       }
     }

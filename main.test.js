@@ -63,6 +63,22 @@ describe('main DOM interactions', () => {
     expect(status.textContent).toContain(ATTACK);
   });
 
+  test('playing cards grants additional reinforcements', () => {
+    const { game } = main;
+    game.hands[0] = [
+      { territory: 'a', type: 'infantry' },
+      { territory: 'b', type: 'cavalry' },
+      { territory: 'c', type: 'artillery' },
+    ];
+    const before = game.reinforcements;
+    ui.updateCardsUI();
+    document
+      .querySelectorAll('#cards .card')
+      .forEach((el) => el.dispatchEvent(new window.Event('click')));
+    document.getElementById('playCardsBtn').click();
+    expect(game.reinforcements).toBe(before + 5);
+  });
+
   test('attack updates log and highlights', () => {
     const t1 = document.getElementById('t1');
     const t4 = document.getElementById('t4');
