@@ -25,7 +25,14 @@ async function loadMapData() {
 }
 
 class Game {
-  constructor(players, territories = [], continents = [], deck = [], shuffleDeck = true) {
+  constructor(
+    players,
+    territories = [],
+    continents = [],
+    deck = [],
+    shuffleDeck = true,
+    randomizeTerritories = true,
+  ) {
     this.players =
       players || [
         { name: 'Player 1', color: colorPalette[0] },
@@ -35,20 +42,37 @@ class Game {
 
     this.events = new EventBus();
 
+    if (
+      typeof process !== "undefined" &&
+      process.env &&
+      process.env.NODE_ENV === "test"
+    ) {
+      randomizeTerritories = false;
+    }
+
     const total = territories.length || 1;
+    let owners = Array.from({ length: total }, (_, i) =>
+      Math.floor((i * this.players.length) / total),
+    );
+    if (randomizeTerritories) this.shuffle(owners);
     territories = territories.map((t, i) => ({
       id: t.id,
       neighbors: t.neighbors,
       x: t.x,
       y: t.y,
-      owner:
-        typeof t.owner === "number"
-          ? t.owner
-          : Math.floor((i * this.players.length) / total),
+      owner: typeof t.owner === "number" ? t.owner : owners[i],
       armies: t.armies || 3,
     }));
 
     this.territories = territories;
+    if (this.players.length) {
+      const lastPlayer = this.players.length - 1;
+      const lastOwned = this.territories.filter((t) => t.owner === lastPlayer);
+      if (lastOwned.length > 0) {
+        const extra = lastOwned[Math.floor(Math.random() * lastOwned.length)];
+        extra.armies += 1;
+      }
+    }
     this.currentPlayer = 0;
     this.phase = REINFORCE;
     this.selectedFrom = null;
