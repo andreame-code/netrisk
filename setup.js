@@ -178,7 +178,7 @@ form.addEventListener("submit", (e) => {
   } catch (err) {
     // ignore storage errors
   }
-  navigateTo("index.html");
+  navigateTo("game.html");
 });
 
 loadFromStorage();

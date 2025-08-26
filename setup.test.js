@@ -1,4 +1,5 @@
 import { colorPalette } from './colors.js';
+import { readFileSync } from 'fs';
 jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
 
 function setupDOM() {
@@ -53,7 +54,7 @@ describe('setup map selection', () => {
     document.querySelector('.map-item[data-id="map3"]').click();
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
     expect(localStorage.getItem('netriskMap')).toBe('map3');
-    expect(navigateTo).toHaveBeenCalledWith('index.html');
+    expect(navigateTo).toHaveBeenCalledWith('game.html');
   });
 
   test('renders responsive grid', async () => {
@@ -90,5 +91,11 @@ describe('setup map selection', () => {
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
     const saved = JSON.parse(localStorage.getItem('netriskPlayers'));
     expect(saved[1]).toEqual(expect.objectContaining({ ai: true, difficulty: 'hard', style: 'aggressive' }));
+  });
+
+  test('has back to home link', () => {
+    const html = readFileSync('./setup.html', 'utf8');
+    expect(html).toMatch(/id="backHome"/);
+    expect(html).toMatch(/Back to Home/);
   });
 });
