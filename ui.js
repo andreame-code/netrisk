@@ -115,7 +115,22 @@ function updateUI() {
   game.territories.forEach((t) => {
     const el = document.getElementById(t.id);
     if (!el) return;
-    el.style.background = game.players[t.owner].color;
+
+    const color = game.players[t.owner].color;
+    try {
+      if (
+        typeof CSS !== "undefined" &&
+        CSS.supports &&
+        CSS.supports("color", color)
+      ) {
+        el.style.background = color;
+      } else {
+        el.style.background = "";
+      }
+    } catch {
+      el.style.background = "";
+    }
+
     el.textContent = t.armies;
     const pos = territoryPositions[t.id];
     if (pos) {
