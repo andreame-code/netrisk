@@ -9,12 +9,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <button id="themeToggle" class="btn">High Contrast</button>
+    <div id="accessibilityMenu">
+      <button id="themeToggle" class="btn" aria-label="Toggle high contrast">High Contrast</button>
+      <label for="fontScale">Font size:</label>
+      <select id="fontScale" aria-label="Font size">
+        <option value="1">100%</option>
+        <option value="1.25">125%</option>
+        <option value="1.5">150%</option>
+      </select>
+      <button id="colorBlindToggle" class="btn" aria-label="Toggle color blind palette">Color Blind Mode</button>
+    </div>
     <h1>NetRisk</h1>
     <div id="mainMenu">
-      <button id="startGame" class="btn">Start Game</button>
-      <button id="playTutorial" class="btn">Play Tutorial</button>
-      <a href="setup.html" class="btn">Set up players</a>
+      <button id="startGame" class="btn" aria-label="Start Game">Start Game</button>
+      <button id="playTutorial" class="btn" aria-label="Play Tutorial">Play Tutorial</button>
+      <a href="setup.html" class="btn" aria-label="Set up players">Set up players</a>
     </div>
     <div id="gameContainer" class="hidden">
       <div id="uiPanel">
@@ -28,6 +37,7 @@
               class="btn"
               aria-expanded="false"
               aria-controls="howToPlaySteps"
+              aria-label="Toggle how to play details"
             >
               Show details
             </button>
@@ -37,7 +47,7 @@
             <li>Choose an action</li>
             <li>Press "End Turn"</li>
           </ol>
-          <button id="replayTutorial" class="btn">Play Tutorial</button>
+          <button id="replayTutorial" class="btn" aria-label="Play Tutorial">Play Tutorial</button>
         </div>
         <div><strong>Action log:</strong></div>
         <div id="actionLog" class="log"></div>
@@ -55,14 +65,14 @@
             step="0.01"
             value="0.2"
           />
-          <button id="muteBtn" class="btn">Mute</button>
+          <button id="muteBtn" class="btn" aria-label="Mute audio">Mute</button>
         </div>
-        <button id="moveToken" class="btn">Move Token</button>
-        <button id="endTurn" class="btn">End Turn</button>
-        <button id="forceError" class="btn">Force Error</button>
-        <button id="exportLog" class="btn">Export Log</button>
+        <button id="moveToken" class="btn" aria-label="Move Token">Move Token</button>
+        <button id="endTurn" class="btn" aria-label="End Turn">End Turn</button>
+        <button id="forceError" class="btn" aria-label="Force Error">Force Error</button>
+        <button id="exportLog" class="btn" aria-label="Export Log">Export Log</button>
       </div>
-      <div id="board" class="board"></div>
+      <div id="board" class="board" role="region" aria-label="Game board"></div>
     </div>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>

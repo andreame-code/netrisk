@@ -16,7 +16,7 @@ import {
   FORTIFY,
   GAME_OVER,
 } from "./phases.js";
-import { initThemeToggle } from "./theme.js";
+import { initAccessibility } from "./accessibility.js";
 import { initTutorialButtons } from "./tutorial.js";
 import { attachStatsListeners, exportStats } from "./stats.js";
 import {
@@ -536,7 +536,7 @@ function init() {
 }
 
 init();
-initThemeToggle();
+initAccessibility();
 initTutorialButtons();
 
 export {
