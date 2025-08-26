@@ -207,7 +207,9 @@ class Game {
   }
 
   checkVictory() {
+    if (this.territories.length === 0) return null;
     const owner = this.territories[0].owner;
+    if (owner === undefined) return null;
     const win = this.territories.every(t => t.owner === owner);
     if (win) {
       this.phase = GAME_OVER;
