@@ -3,6 +3,7 @@ import Game from "./game.js";
 import initTerritorySelection from "./territory-selection.js";
 import { playAttackSound, playConquerSound } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
+import { navigateTo } from "./navigation.js";
 import {
   initUI,
   updateInfoPanel,
@@ -77,13 +78,7 @@ async function startNewGame() {
     localStorage.removeItem("netriskGame");
     localStorage.removeItem("netriskPlayers");
   }
-  if (typeof window !== "undefined") {
-    if (typeof window.location.assign === "function") {
-      window.location.assign("setup.html");
-    } else {
-      window.location.href = "setup.html";
-    }
-  }
+  navigateTo("setup.html");
 }
 
 async function loadGame() {
