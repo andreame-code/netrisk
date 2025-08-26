@@ -9,13 +9,12 @@ const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
 describe('Accessibility features', () => {
   test('buttons expose aria-labels and access keys', () => {
-    const html = fs.readFileSync('index.html', 'utf-8');
+    const html = fs.readFileSync('game.html', 'utf-8');
     const dom = new JSDOM(html);
     const document = dom.window.document;
     const ids = [
       'themeToggle',
-      'startGame',
-      'playTutorial',
+      'exitGameBtn',
       'muteBtn',
       'musicToggle',
       'moveToken',

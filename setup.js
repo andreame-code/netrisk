@@ -1,6 +1,6 @@
 import { colorPalette } from "./colors.js";
 import { initThemeToggle } from "./theme.js";
-import { navigateTo } from "./navigation.js";
+import { navigateTo, goHome } from "./navigation.js";
 
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
@@ -179,9 +179,14 @@ form.addEventListener("submit", (e) => {
   } catch (err) {
     // ignore storage errors
   }
-  navigateTo("index.html");
+  navigateTo("game.html");
 });
 
 loadFromStorage();
 initThemeToggle();
 export const mapLoadPromise = loadMapData();
+
+const homeBtn = document.getElementById("homeBtn");
+if (homeBtn) {
+  homeBtn.addEventListener("click", goHome);
+}

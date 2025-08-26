@@ -3,7 +3,11 @@ const { REINFORCE, ATTACK, FORTIFY, GAME_OVER } = require('./phases.js');
 
 jest.mock('./territory-selection.js', () => jest.fn());
 jest.mock('./move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
-jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
+jest.mock('./navigation.js', () => ({
+  navigateTo: jest.fn(),
+  goHome: jest.fn(),
+  exitGame: jest.fn(),
+}));
 
 describe('main DOM interactions', () => {
   let main;

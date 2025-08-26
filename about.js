@@ -1,3 +1,5 @@
+import { goHome } from './navigation.js';
+
 const lang = navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
 
 const texts = {
@@ -96,7 +98,13 @@ export function initAbout(doc = document) {
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => initAbout());
+  window.addEventListener('DOMContentLoaded', () => {
+    initAbout();
+    const homeBtn = document.getElementById('homeBtn');
+    if (homeBtn) {
+      homeBtn.addEventListener('click', goHome);
+    }
+  });
 }
 
 export default { initAbout, filterSections };

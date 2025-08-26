@@ -13,7 +13,7 @@ import {
   isMusicEnabled,
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
-import { navigateTo } from "./navigation.js";
+import { navigateTo, exitGame } from "./navigation.js";
 import {
   REINFORCE,
   ATTACK,
@@ -425,7 +425,7 @@ async function initGame() {
     !hasSavedGame() &&
     !(typeof process !== "undefined" && process.env.JEST_WORKER_ID)
   ) {
-    window.location.href = "setup.html";
+    navigateTo("setup.html");
     return;
   }
   await loadGame();
@@ -580,25 +580,21 @@ async function initGame() {
   }
 }
 
-function init() {
-  const menu = document.getElementById("mainMenu");
-  const startBtn = document.getElementById("startGame");
-  const container = document.getElementById("gameContainer");
-  if (!menu || !startBtn || !container) {
-    initGame();
-    return;
-  }
-  container.classList.add("hidden");
-  startBtn.addEventListener("click", async () => {
-    menu.classList.add("hidden");
-    container.classList.remove("hidden");
-    await initGame();
-  });
-}
-
-init();
+initGame();
 initThemeToggle();
 initTutorialButtons();
+
+const exitBtn = document.getElementById("exitGameBtn");
+if (exitBtn) {
+  exitBtn.addEventListener("click", () => {
+    clearSavedData();
+    if (phaseTimer && typeof phaseTimer.stop === "function") {
+      phaseTimer.stop();
+    }
+    destroyUI();
+    exitGame();
+  });
+}
 
 export {
   game,

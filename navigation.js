@@ -8,4 +8,12 @@ export function navigateTo(url, win = typeof window !== "undefined" ? window : u
   }
 }
 
-export default { navigateTo };
+export function goHome(win = typeof window !== "undefined" ? window : undefined) {
+  navigateTo("index.html", win);
+}
+
+export function exitGame(win = typeof window !== "undefined" ? window : undefined) {
+  goHome(win);
+}
+
+export default { navigateTo, goHome, exitGame };
