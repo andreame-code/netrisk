@@ -105,32 +105,32 @@ export default function initTerritorySelection({
         tokenEl.style.left = `${gameState.tokenPosition.x * scale.x}px`;
         tokenEl.style.top = `${gameState.tokenPosition.y * scale.y}px`;
       }
-      const map = boardEl.querySelector("#map");
-      map.addEventListener("click", (e) => {
-        const target = e.target.closest(".map-territory");
-        if (target) {
-          selectTerritory(target);
-        } else {
-          selectTerritory(null);
-        }
-        e.stopPropagation();
+        const map = boardEl.querySelector("#map");
+        map.addEventListener("pointerdown", (e) => {
+          const target = e.target.closest(".map-territory");
+          if (target) {
+            selectTerritory(target);
+          } else {
+            selectTerritory(null);
+          }
+          e.stopPropagation();
+        });
+        map.addEventListener("dblclick", (e) => {
+          const target = e.target.closest(".map-territory");
+          if (target) {
+            selectTerritory(target);
+            moveToken(target);
+          }
+          e.stopPropagation();
+        });
+        document.addEventListener("pointerdown", (e) => {
+          if (!map.contains(e.target)) {
+            selectTerritory(null);
+          }
+        });
+      })
+      .catch((err) => {
+        logger?.error(err);
       });
-      map.addEventListener("dblclick", (e) => {
-        const target = e.target.closest(".map-territory");
-        if (target) {
-          selectTerritory(target);
-          moveToken(target);
-        }
-        e.stopPropagation();
-      });
-      document.addEventListener("click", (e) => {
-        if (!map.contains(e.target)) {
-          selectTerritory(null);
-        }
-      });
-    })
-    .catch((err) => {
-      logger?.error(err);
-    });
-}
+  }
 

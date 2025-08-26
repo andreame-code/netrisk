@@ -238,7 +238,7 @@ function attachAIActionLogging() {
 
 function attachTerritoryHandlers() {
   document.querySelectorAll(".territory").forEach((el) => {
-    el.addEventListener("click", async () => {
+    el.addEventListener("pointerdown", async () => {
       if (typeof logger !== "undefined") {
         logger.info(`Territory clicked: ${el.dataset.id}`);
       }

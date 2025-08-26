@@ -33,10 +33,10 @@ describe('main DOM interactions', () => {
     global.logger = { info: jest.fn(), error: jest.fn() };
     main = require('./main.js');
     ui = require('./ui.js');
-    await Promise.resolve();
-    main.attachTerritoryHandlers();
-    jest.useFakeTimers();
-  });
+      await Promise.resolve();
+      main.attachTerritoryHandlers();
+      jest.useFakeTimers();
+    });
 
   afterEach(() => {
     jest.useRealTimers();
@@ -45,17 +45,21 @@ describe('main DOM interactions', () => {
     }
   });
 
+  function pointerDown(el) {
+    el.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+  }
+
   test('reinforcement updates status and log', () => {
     const t1 = document.getElementById('t1');
     const status = document.getElementById('status');
     const log = document.getElementById('actionLog');
 
-    t1.click();
+    pointerDown(t1);
     expect(log.textContent).toContain('reinforces t1');
     expect(status.textContent).toContain(REINFORCE);
 
-    t1.click();
-    t1.click();
+    pointerDown(t1);
+    pointerDown(t1);
     expect(status.textContent).toContain(ATTACK);
   });
 
@@ -64,14 +68,14 @@ describe('main DOM interactions', () => {
     const t4 = document.getElementById('t4');
     const log = document.getElementById('actionLog');
 
-    t1.click();
-    t1.click();
-    t1.click();
+    pointerDown(t1);
+    pointerDown(t1);
+    pointerDown(t1);
 
-    t1.click();
+    pointerDown(t1);
     expect(t1.classList.contains('selected')).toBe(true);
 
-    t4.click();
+    pointerDown(t4);
     expect(log.textContent).toContain('attacks t4 from t1');
     expect(t1.classList.contains('attack')).toBe(true);
     expect(t4.classList.contains('attack')).toBe(true);
@@ -85,16 +89,16 @@ describe('main DOM interactions', () => {
     const { game } = main;
     const { updateUI } = ui;
 
-    t1.click();
-    t1.click();
-    t1.click();
+    pointerDown(t1);
+    pointerDown(t1);
+    pointerDown(t1);
 
     game.endTurn();
     updateUI();
 
-    t1.click();
+    pointerDown(t1);
     expect(t1.classList.contains('selected')).toBe(true);
-    t2.click();
+    pointerDown(t2);
     await Promise.resolve();
     expect(log.textContent).toContain('moves 1 from t1 to t2');
     expect(status.textContent).toContain(REINFORCE);
@@ -107,9 +111,9 @@ describe('main DOM interactions', () => {
     const status = document.getElementById('status');
     const log = document.getElementById('actionLog');
 
-    t1.click();
-    t1.click();
-    t1.click();
+    pointerDown(t1);
+    pointerDown(t1);
+    pointerDown(t1);
 
     endTurnBtn.click();
     expect(status.textContent).toContain(FORTIFY);
@@ -122,9 +126,9 @@ describe('main DOM interactions', () => {
 
   test('state is saved and restored from localStorage', async () => {
     const t1 = document.getElementById('t1');
-    t1.click();
-    t1.click();
-    t1.click();
+    pointerDown(t1);
+    pointerDown(t1);
+    pointerDown(t1);
     const armies = main.game.territoryById('t1').armies;
     const phase = main.game.getPhase();
     const saved = localStorage.getItem('netriskGame');
