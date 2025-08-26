@@ -12,18 +12,7 @@ describe('Accessibility features', () => {
     const html = fs.readFileSync('index.html', 'utf-8');
     const dom = new JSDOM(html);
     const document = dom.window.document;
-    const ids = [
-      'themeToggle',
-      'startGame',
-      'playTutorial',
-      'muteBtn',
-      'musicToggle',
-      'moveToken',
-      'undo',
-      'endTurn',
-      'forceError',
-      'exportLog',
-    ];
+    const ids = ['themeToggle', 'playBtn', 'setupBtn', 'howToPlayBtn', 'aboutBtn'];
     ids.forEach((id) => {
       const el = document.getElementById(id);
       expect(el).not.toBeNull();
