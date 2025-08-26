@@ -10,6 +10,7 @@ function setupDOM() {
         <select id="mapSelect">
           <option value="map">Classic</option>
           <option value="map2">Desert</option>
+          <option value="map3">Grid</option>
           <option value="map-roman">Roman Empire</option>
         </select>
       </form>`;
@@ -32,9 +33,9 @@ describe('setup map selection', () => {
     document.getElementById('name0').value = 'P1';
     document.getElementById('color0').value = colorPalette[0];
       const mapSel = document.getElementById('mapSelect');
-      mapSel.value = 'map-roman';
+      mapSel.value = 'map3';
       document.getElementById('setupForm').dispatchEvent(new Event('submit'));
-      expect(localStorage.getItem('netriskMap')).toBe('map-roman');
+      expect(localStorage.getItem('netriskMap')).toBe('map3');
       expect(navigateTo).toHaveBeenCalledWith('index.html');
     });
   });
