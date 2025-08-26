@@ -28,7 +28,7 @@ import {
   destroyUI,
   resetSelectedCards,
   getSelectedCards,
-  getLog,
+  exportLog,
 } from "./ui.js";
 import { loadGame as loadGameData } from "./src/init/game-loader.js";
 import {
@@ -126,7 +126,11 @@ function attachAIActionLogging() {
   game.on(REINFORCE, ({ territory, player }) => {
     if (game.players[player].ai) {
       const name = game.players[player].name;
-      addLogEntry(`${name} reinforces ${territory}`);
+      addLogEntry(`${name} reinforces ${territory}`, {
+        player: name,
+        type: "reinforce",
+        territories: [territory],
+      });
       if (typeof logger !== "undefined") {
         logger.info(`${name} reinforces ${territory}`);
       }
@@ -136,7 +140,11 @@ function attachAIActionLogging() {
   game.on(ATTACK, ({ from, to }) => {
     if (game.players[game.currentPlayer].ai) {
       const name = game.players[game.currentPlayer].name;
-      addLogEntry(`${name} attacks ${to} from ${from}`);
+      addLogEntry(`${name} attacks ${to} from ${from}`, {
+        player: name,
+        type: "attack",
+        territories: [from, to],
+      });
       if (typeof logger !== "undefined") {
         logger.info(`${name} attacks ${to} from ${from}`);
       }
@@ -146,7 +154,11 @@ function attachAIActionLogging() {
   game.on("move", ({ from, to, count }) => {
     if (game.players[game.currentPlayer].ai) {
       const name = game.players[game.currentPlayer].name;
-      addLogEntry(`${name} moves ${count} from ${from} to ${to}`);
+      addLogEntry(`${name} moves ${count} from ${from} to ${to}`, {
+        player: name,
+        type: "move",
+        territories: [from, to],
+      });
       if (typeof logger !== "undefined") {
         logger.info(`${name} moves ${count} from ${from} to ${to}`);
       }
@@ -156,7 +168,10 @@ function attachAIActionLogging() {
   game.on("cardsPlayed", ({ player }) => {
     if (game.players[player].ai) {
       const name = game.players[player].name;
-      addLogEntry(`${name} plays cards`);
+      addLogEntry(`${name} plays cards`, {
+        player: name,
+        type: "cards",
+      });
       if (typeof logger !== "undefined") {
         logger.info(`${name} plays cards`);
       }
@@ -166,7 +181,10 @@ function attachAIActionLogging() {
   game.on("cardAwarded", ({ player, card }) => {
     const name = game.players[player].name;
     const icons = { infantry: "🪖", cavalry: "🐎", artillery: "💣" };
-    addLogEntry(`${name} receives a card ${icons[card.type] || card.type}`);
+    addLogEntry(`${name} receives a card ${icons[card.type] || card.type}`, {
+      player: name,
+      type: "card",
+    });
     if (typeof logger !== "undefined") {
       logger.info(`${name} receives card ${card.type}`);
     }
@@ -177,7 +195,10 @@ function attachAIActionLogging() {
     const prevName = game.players[prev].name;
     const nextName = game.players[player].name;
     if (game.players[prev].ai) {
-      addLogEntry(`${prevName} ends turn. Next: ${nextName}`);
+      addLogEntry(`${prevName} ends turn. Next: ${nextName}`, {
+        player: prevName,
+        type: "endTurn",
+      });
       if (typeof logger !== "undefined") {
         logger.info(`${prevName} ends turn. Next: ${nextName}`);
       }
@@ -222,16 +243,28 @@ function attachTerritoryHandlers() {
               const move = await askArmiesToMove(result.movableArmies, 0);
               if (move > 0) {
                 game.moveArmies(result.from, result.to, move);
-                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`);
+                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                  player: playerName,
+                  type: "move",
+                  territories: [result.from, result.to],
+                });
                 animateMove(result.from, result.to);
               }
             }
-            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`);
+            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
+              player: playerName,
+              type: "attack",
+              territories: [result.from, result.to],
+            });
           } else if (result.type === REINFORCE) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} reinforces ${result.territory}`);
             }
-            addLogEntry(`${playerName} reinforces ${result.territory}`);
+            addLogEntry(`${playerName} reinforces ${result.territory}`, {
+              player: playerName,
+              type: "reinforce",
+              territories: [result.territory],
+            });
           } else if (result.type === FORTIFY) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
@@ -239,15 +272,20 @@ function attachTerritoryHandlers() {
             const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
-              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`);
+                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                  player: playerName,
+                  type: "move",
+                  territories: [result.from, result.to],
+                });
               animateMove(result.from, result.to);
             }
             game.endTurn();
             const nextName = game.players[game.currentPlayer].name;
             gameState.turnNumber += 1;
-            addLogEntry(
-              `${playerName} ends turn. Next: ${nextName}`,
-            );
+              addLogEntry(
+                `${playerName} ends turn. Next: ${nextName}`,
+                { player: playerName, type: "endTurn" },
+              );
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} ends turn. Next: ${nextName}`);
             }
@@ -286,15 +324,19 @@ document.getElementById("endTurn").addEventListener("click", () => {
     const prevPhase = game.getPhase();
     game.endTurn();
     if (prevPhase === ATTACK && game.getPhase() === FORTIFY) {
-      addLogEntry(`${game.players[prevPlayer].name} enters fortify phase`);
+        addLogEntry(`${game.players[prevPlayer].name} enters fortify phase`, {
+          player: game.players[prevPlayer].name,
+          type: "phase",
+        });
       if (typeof logger !== "undefined") {
         logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
       }
     } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
       gameState.turnNumber += 1;
-      addLogEntry(
-        `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
-      );
+        addLogEntry(
+          `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
+          { player: game.players[prevPlayer].name, type: "endTurn" },
+        );
       if (typeof logger !== "undefined") {
         logger.info(
           `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
@@ -323,12 +365,12 @@ if (forceErrorBtn) {
 const exportLogBtn = document.getElementById("exportLog");
 if (exportLogBtn) {
   exportLogBtn.addEventListener("click", () => {
-    const logData = getLog();
-    const blob = new Blob([logData.join("\n")], { type: "text/plain" });
+    const logData = exportLog("json");
+    const blob = new Blob([logData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "netrisk-log.txt";
+    a.download = "netrisk-log.json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -374,7 +416,10 @@ async function initGame() {
     const cards = getSelectedCards();
     if (cards.length === 3) {
       if (game.playCards(cards)) {
-        addLogEntry(`${game.players[game.currentPlayer].name} plays cards`);
+        addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
+          player: game.players[game.currentPlayer].name,
+          type: "cards",
+        });
         resetSelectedCards();
         game.calculateReinforcements();
         updateUI();
@@ -414,7 +459,10 @@ async function initGame() {
 
   updateGameState(gameState, game);
   updateInfoPanel();
-  addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`);
+    addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`, {
+      player: game.players[game.currentPlayer].name,
+      type: "turn",
+    });
 
   const toggleHowToPlay = document.getElementById("toggleHowToPlay");
   if (toggleHowToPlay) {

@@ -37,7 +37,7 @@ export default function initTerritorySelection({
     if (!el) return;
     const phase = game?.getPhase();
     if (phase && ![ATTACK, FORTIFY].includes(phase)) {
-      addLogEntry?.(`Move not allowed during ${phase} phase`);
+      addLogEntry?.(`Move not allowed during ${phase} phase`, { type: "error" });
       return;
     }
     const box = el.getBBox();
@@ -56,6 +56,11 @@ export default function initTerritorySelection({
       const name = el.dataset.name || el.id;
       addLogEntry(
         `${game.players[game.currentPlayer].name} moves token to ${name}`,
+        {
+          player: game.players[game.currentPlayer].name,
+          type: "token",
+          territories: [el.id],
+        },
       );
       logger?.info(
         `${game.players[game.currentPlayer].name} moves token to ${name}`,
@@ -71,7 +76,7 @@ export default function initTerritorySelection({
         if (selectedTerritory) {
           moveToken(selectedTerritory.el);
         } else {
-          addLogEntry?.("No territory selected");
+          addLogEntry?.("No territory selected", { type: "error" });
         }
       } catch (err) {
         logger?.error(err);

@@ -10,6 +10,9 @@ import {
   getBoardScale,
   destroyUI,
   updateInfoPanel,
+  getLog,
+  exportLog,
+  copyLog,
 } from './ui.js';
 
 describe('ui utilities', () => {
@@ -24,6 +27,8 @@ describe('ui utilities', () => {
       <div id="bonusInfo"></div>
       <div id="cards"></div>
       <div id="actionLog"></div>
+      <button id="t1" class="territory"></button>
+      <button id="t2" class="territory"></button>
     `;
     game = {
       players: [
@@ -93,6 +98,40 @@ describe('ui utilities', () => {
     expect(logEl.children.length).toBe(10);
     expect(logEl.firstChild.textContent).toBe('msg3');
     expect(logEl.lastChild.textContent).toBe('msg12');
+  });
+
+  test('getLog filters by player and type', () => {
+    addLogEntry('P1 attacks', { player: 'P1', type: 'attack' });
+    addLogEntry('P2 reinforces', { player: 'P2', type: 'reinforce' });
+    expect(getLog({ player: 'P1' })).toHaveLength(1);
+    expect(getLog({ type: 'reinforce' })).toHaveLength(1);
+  });
+
+  test('exportLog outputs JSON and CSV', () => {
+    addLogEntry('P1 attacks', { player: 'P1', type: 'attack', territories: ['t1', 't2'] });
+    const json = exportLog('json');
+    expect(json).toContain('"P1"');
+    const csv = exportLog('csv');
+    expect(csv.split('\n')[1]).toContain('P1');
+  });
+
+  test('copyLog writes to clipboard', async () => {
+    const writeText = jest.fn().mockResolvedValue();
+    Object.assign(navigator, { clipboard: { writeText } });
+    await copyLog('json');
+    expect(writeText).toHaveBeenCalled();
+  });
+
+  test('go to move link highlights territories', () => {
+    jest.useFakeTimers();
+    addLogEntry('P1 attacks t2 from t1', { player: 'P1', type: 'attack', territories: ['t1', 't2'] });
+    const logEl = document.getElementById('actionLog');
+    const link = logEl.querySelector('a');
+    link.dispatchEvent(new window.Event('click'));
+    expect(document.getElementById('t1').classList.contains('highlight')).toBe(true);
+    jest.runAllTimers();
+    expect(document.getElementById('t1').classList.contains('highlight')).toBe(false);
+    jest.useRealTimers();
   });
 
   test('getBoardScale uses client size to align armies with map', () => {
