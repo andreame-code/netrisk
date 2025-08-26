@@ -205,11 +205,14 @@ describe('main DOM interactions', () => {
   test('startNewGame clears saved data', () => {
     localStorage.setItem('netriskPlayers', JSON.stringify([{ name: 'P1', color: '#000' }]));
     localStorage.setItem('netriskGame', 'dummy');
+    const destroySpy = jest.spyOn(ui, 'destroyUI');
     expect(() => main.startNewGame()).not.toThrow();
+    expect(destroySpy).toHaveBeenCalled();
     expect(localStorage.getItem('netriskPlayers')).toBeNull();
     expect(localStorage.getItem('netriskGame')).toBeNull();
     const navigation = require('./navigation.js');
     expect(navigation.navigateTo).toHaveBeenCalledWith('setup.html');
+    destroySpy.mockRestore();
   });
 
   test('runAI processes AI turns', () => {

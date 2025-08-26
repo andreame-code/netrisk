@@ -26,6 +26,7 @@ import {
   animateMove,
   showVictoryModal,
   updateUI,
+  destroyUI,
   resetSelectedCards,
   getSelectedCards,
   getLog,
@@ -94,6 +95,7 @@ async function startNewGame() {
     localStorage.removeItem("netriskGame");
     localStorage.removeItem("netriskPlayers");
   }
+  destroyUI();
   navigateTo("setup.html");
 }
 

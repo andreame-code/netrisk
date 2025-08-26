@@ -5,12 +5,24 @@ const BOARD_WIDTH = 600;
 const BOARD_HEIGHT = 400;
 
 // cache DOM lookups to avoid repetitive queries
-const elementCache = {};
+function createElementCache() {
+  let cache = {};
+  return {
+    get(id) {
+      if (!cache[id]) {
+        cache[id] = document.getElementById(id);
+      }
+      return cache[id];
+    },
+    clear() {
+      cache = {};
+    },
+  };
+}
+
+const elementCache = createElementCache();
 function getElement(id) {
-  if (!elementCache[id]) {
-    elementCache[id] = document.getElementById(id);
-  }
-  return elementCache[id];
+  return elementCache.get(id);
 }
 
 function getBoardScale() {
@@ -27,13 +39,18 @@ let game;
 let gameState;
 let territoryPositions = {};
 let selectedCards = [];
+let resizeHandler;
 
 function initUI({ game: g, gameState: gs, territoryPositions: tp }) {
   game = g;
   gameState = gs;
   territoryPositions = tp;
-  Object.keys(elementCache).forEach((k) => delete elementCache[k]);
-  window.addEventListener("resize", updateUI);
+  elementCache.clear();
+  if (resizeHandler) {
+    window.removeEventListener("resize", resizeHandler);
+  }
+  resizeHandler = () => updateUI();
+  window.addEventListener("resize", resizeHandler);
 }
 
 function getSelectedCards() {
@@ -203,10 +220,7 @@ function cleanupColorClasses(activeClasses) {
   }
 }
 
-function updateUI() {
-  const scale = getBoardScale();
-  const playerColorClasses = game.players.map((p) => getColorClass(p.color));
-  cleanupColorClasses(playerColorClasses.filter(Boolean));
+function updateTerritories(scale, playerColorClasses) {
   game.territories.forEach((t) => {
     const el = getElement(t.id);
     if (!el) return;
@@ -228,21 +242,43 @@ function updateUI() {
     }
     el.classList.remove("selected");
   });
-  if (gameState.tokenPosition) {
-    const token = getElement("token");
-    if (token) {
-      token.style.left = gameState.tokenPosition.x * scale.x + "px";
-      token.style.top = gameState.tokenPosition.y * scale.y + "px";
-    }
+}
+
+function updateToken(scale) {
+  if (!gameState.tokenPosition) return;
+  const token = getElement("token");
+  if (token) {
+    token.style.left = gameState.tokenPosition.x * scale.x + "px";
+    token.style.top = gameState.tokenPosition.y * scale.y + "px";
   }
+}
+
+function updateStatus() {
   let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
   if (game.getPhase() === REINFORCE) {
     status += ` (${game.reinforcements} reinforcements)`;
   }
   const statusEl = getElement("status");
   if (statusEl) statusEl.textContent = status;
+}
+
+function updateUI() {
+  const scale = getBoardScale();
+  const playerColorClasses = game.players.map((p) => getColorClass(p.color));
+  cleanupColorClasses(playerColorClasses.filter(Boolean));
+  updateTerritories(scale, playerColorClasses);
+  updateToken(scale);
+  updateStatus();
   updateBonusInfo();
   updateCardsUI();
+}
+
+function destroyUI() {
+  if (resizeHandler) {
+    window.removeEventListener("resize", resizeHandler);
+    resizeHandler = null;
+  }
+  elementCache.clear();
 }
 
 export {
@@ -254,6 +290,7 @@ export {
   updateBonusInfo,
   updateCardsUI,
   updateUI,
+  destroyUI,
   getSelectedCards,
   resetSelectedCards,
   getBoardScale,
