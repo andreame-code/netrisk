@@ -7,6 +7,7 @@ import {
   showVictoryModal,
   updateBonusInfo,
   updateCardsUI,
+  getBoardScale,
 } from './ui.js';
 
 describe('ui utilities', () => {
@@ -88,5 +89,14 @@ describe('ui utilities', () => {
     expect(logEl.children.length).toBe(10);
     expect(logEl.firstChild.textContent).toBe('msg3');
     expect(logEl.lastChild.textContent).toBe('msg12');
+  });
+
+  test('getBoardScale uses client size to align armies with map', () => {
+    const board = document.getElementById('board');
+    Object.defineProperty(board, 'clientWidth', { value: 600, configurable: true });
+    Object.defineProperty(board, 'clientHeight', { value: 400, configurable: true });
+    board.getBoundingClientRect = () => ({ width: 620, height: 420 });
+    const scale = getBoardScale();
+    expect(scale).toEqual({ x: 1, y: 1 });
   });
 });
