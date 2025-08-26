@@ -425,8 +425,8 @@ async function initGame() {
     !hasSavedGame() &&
     !(typeof process !== "undefined" && process.env.JEST_WORKER_ID)
   ) {
-    window.location.href = "setup.html";
-    return;
+      navigateTo("setup.html");
+      return;
   }
   await loadGame();
   preloadEffects();

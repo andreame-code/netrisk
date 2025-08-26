@@ -1,5 +1,5 @@
 import { colorPalette } from "./colors.js";
-import { navigateTo } from "./navigation.js";
+import { navigateTo, goHome } from "./navigation.js";
 
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
@@ -147,7 +147,7 @@ humanCountInput.addEventListener("change", () => {
   renderPlayerInputs(count);
 });
 
-form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", (e) => {
   e.preventDefault();
   const humanCount = parseInt(humanCountInput.value, 10) || 0;
   const aiCount = parseInt(aiCountInput.value, 10) || 0;
@@ -183,3 +183,11 @@ form.addEventListener("submit", (e) => {
 
 loadFromStorage();
 export const mapLoadPromise = loadMapData();
+
+const backHome = document.getElementById("backHome");
+if (backHome) {
+  backHome.addEventListener("click", (e) => {
+    e.preventDefault();
+    goHome();
+  });
+}

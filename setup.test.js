@@ -1,6 +1,6 @@
 import { colorPalette } from './colors.js';
 import { readFileSync } from 'fs';
-jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
+jest.mock('./navigation.js', () => ({ navigateTo: jest.fn(), goHome: jest.fn() }));
 
 function setupDOM() {
   document.body.innerHTML = `

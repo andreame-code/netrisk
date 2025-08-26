@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="./style.css" >
   </head>
   <body>
-    <nav>
-      <a href="index.html" id="homeLink">Home</a>
-    </nav>
+  <nav>
+        <a href="index.html" id="homeLink">Home</a>
+      </nav>
     <h1 id="pageTitle">About &amp; Help</h1>
     <input type="search" id="helpSearch" aria-label="Search" >
     <div id="helpContent">
@@ -38,6 +38,16 @@
         <div class="content"></div>
       </section>
     </div>
-    <script type="module" src="./about.js"></script>
-  </body>
-</html>
+      <script type="module" src="./about.js"></script>
+      <script type="module">
+        import { goHome } from "./navigation.js";
+        const link = document.getElementById("homeLink");
+        if (link) {
+          link.addEventListener("click", (e) => {
+            e.preventDefault();
+            goHome();
+          });
+        }
+      </script>
+    </body>
+  </html>

@@ -7,14 +7,24 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <nav>
-      <a href="index.html" id="homeLink">Home</a>
-    </nav>
+      <nav>
+        <a href="index.html" id="homeLink">Home</a>
+      </nav>
     <h1>How to Play</h1>
     <ol>
       <li>Click a territory</li>
       <li>Choose an action</li>
       <li>Press "End Turn"</li>
     </ol>
-  </body>
-</html>
+      <script type="module">
+        import { goHome } from "./navigation.js";
+        const link = document.getElementById("homeLink");
+        if (link) {
+          link.addEventListener("click", (e) => {
+            e.preventDefault();
+            goHome();
+          });
+        }
+      </script>
+    </body>
+  </html>

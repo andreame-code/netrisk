@@ -16,7 +16,7 @@
         <li><a href="#shortcuts" id="tocShortcuts">Keyboard Shortcuts</a></li>
         <li><a href="#faq" id="tocFAQ">FAQ</a></li>
       </ul>
-    </nav>
+  </nav>
     <h1 id="title">How to Play</h1>
     <main>
       <section id="objective">
@@ -166,6 +166,16 @@
         renderFaq('faqList', t('faqList'));
       }
       render();
+    </script>
+    <script type="module">
+      import { goHome } from "./navigation.js";
+      const link = document.getElementById("navLink");
+      if (link) {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          goHome();
+        });
+      }
     </script>
   </body>
 </html>
