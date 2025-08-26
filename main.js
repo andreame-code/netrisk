@@ -431,15 +431,14 @@ async function initGame() {
 
   const toggleHowToPlay = document.getElementById("toggleHowToPlay");
   if (toggleHowToPlay) {
-    toggleHowToPlay.addEventListener("click", (e) => {
-      e.preventDefault();
+    toggleHowToPlay.addEventListener("click", () => {
       const steps = document.getElementById("howToPlaySteps");
       if (!steps) return;
-      const hidden = steps.style.display === "none";
-      steps.style.display = hidden ? "block" : "none";
-      toggleHowToPlay.textContent = hidden
-        ? "Hide details"
-        : "Show details";
+      const nowHidden = steps.toggleAttribute("hidden");
+      toggleHowToPlay.setAttribute("aria-expanded", (!nowHidden).toString());
+      toggleHowToPlay.textContent = nowHidden
+        ? "Show details"
+        : "Hide details";
     });
   }
 }
