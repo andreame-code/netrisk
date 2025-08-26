@@ -271,3 +271,36 @@ test('serialize and deserialize restores game state', () => {
   expect(restored.getPhase()).toBe(game.getPhase());
   expect(restored.getCurrentPlayer()).toBe(game.getCurrentPlayer());
 });
+
+test('drawCard reshuffles discard pile when deck is empty', () => {
+  const deck = [{ territory: 't1', type: 'infantry' }];
+  const g = new Game(null, mapMock.territories, mapMock.continents, deck, false);
+  g.discard = [{ territory: 't2', type: 'cavalry' }];
+  const first = g.drawCard(0);
+  expect(first.territory).toBe('t1');
+  const second = g.drawCard(0);
+  expect(second.territory).toBe('t2');
+  expect(g.deck.length).toBe(0);
+});
+
+test('players must trade a set when holding more than five cards', () => {
+  const players = [
+    { name: 'P1', color: '#000000' },
+    { name: 'P2', color: '#111111' },
+  ];
+  const deck = [];
+  const g = new Game(players, mapMock.territories, mapMock.continents, deck, false);
+  g.hands[1] = [
+    { territory: 'a', type: 'infantry' },
+    { territory: 'b', type: 'infantry' },
+    { territory: 'c', type: 'infantry' },
+    { territory: 'd', type: 'cavalry' },
+    { territory: 'e', type: 'cavalry' },
+    { territory: 'f', type: 'cavalry' },
+  ];
+  g.setPhase(FORTIFY);
+  g.endTurn();
+  expect(g.getCurrentPlayer()).toBe(1);
+  expect(g.hands[1].length).toBe(3);
+  expect(g.reinforcements).toBe(10);
+});
