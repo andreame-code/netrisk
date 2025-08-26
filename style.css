@@ -88,11 +88,27 @@ button:hover {
 .board {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  height: auto;
+  max-width: 100vw;
+  max-height: 100vh;
   margin: 20px;
   border: 4px solid #8b4513;
   background: #6b8e23;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+@media (orientation: portrait) {
+  .board {
+    height: 100vh;
+    width: auto;
+  }
+}
+
+@media (orientation: landscape) {
+  .board {
+    width: 100vw;
+    height: auto;
+  }
 }
 
 #map {
