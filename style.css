@@ -3,7 +3,8 @@
 
 body {
   font-family: 'Cinzel', serif;
-  background: #e8dcc0;
+  background: #e8dcc0
+    url('https://www.transparenttextures.com/patterns/aged-paper.png');
   color: #3b2b16;
   text-align: center;
 }
@@ -22,9 +23,45 @@ button {
   border: 2px solid #8b4513;
   padding: 8px 16px;
   cursor: pointer;
+  box-shadow: 0 2px #8b4513;
 }
 
 button:hover {
+  background: #daa520;
+}
+
+button:active {
+  box-shadow: none;
+  transform: translateY(2px);
+}
+
+#mainMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 220px;
+  margin: 40px auto;
+  padding: 20px;
+  background: rgba(245, 231, 198, 0.9);
+  border: 4px solid #8b4513;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#mainMenu button,
+#mainMenu a {
+  display: block;
+  width: 100%;
+  font-family: 'Cinzel', serif;
+  background: #b8860b;
+  color: #fff;
+  border: 2px solid #8b4513;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+#mainMenu button:hover,
+#mainMenu a:hover {
   background: #daa520;
 }
 
