@@ -2,6 +2,7 @@
 import Game from "./game.js";
 import initTerritorySelection from "./territory-selection.js";
 import { playAttackSound, playConquerSound } from "./audio.js";
+import askArmiesToMove from "./move-prompt.js";
 import {
   initUI,
   updateInfoPanel,
@@ -60,18 +61,6 @@ function updateGameState(selected = null) {
       }
     }
   }
-}
-
-function askArmiesToMove(max, min = 0) {
-  if (max <= 0) return 0;
-  let input = null;
-  if (typeof window !== "undefined" && typeof window.prompt === "function") {
-    input = window.prompt(`Quante armate spostare? (${min}-${max})`, String(max));
-  }
-  let count = parseInt(input, 10);
-  if (isNaN(count)) count = min;
-  count = Math.max(min, Math.min(max, count));
-  return count;
 }
 
 function checkForVictory() {
@@ -159,7 +148,7 @@ function runAI() {
 
 function attachTerritoryHandlers() {
   document.querySelectorAll(".territory").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("click", async () => {
       if (typeof logger !== "undefined") {
         logger.info(`Territory clicked: ${el.dataset.id}`);
       }
@@ -187,7 +176,7 @@ function attachTerritoryHandlers() {
               playConquerSound();
               toEl.classList.add("conquer");
               setTimeout(() => toEl.classList.remove("conquer"), 1000);
-              const move = askArmiesToMove(result.movableArmies, 0);
+              const move = await askArmiesToMove(result.movableArmies, 0);
               if (move > 0) {
                 game.moveArmies(result.from, result.to, move);
                 addLogEntry(`${playerName} sposta ${move} da ${result.from} a ${result.to}`);
@@ -204,7 +193,7 @@ function attachTerritoryHandlers() {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
             }
-            const move = askArmiesToMove(result.movableArmies, 1);
+            const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
               addLogEntry(`${playerName} sposta ${move} da ${result.from} a ${result.to}`);

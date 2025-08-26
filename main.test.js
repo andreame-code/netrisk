@@ -1,6 +1,7 @@
 const mapData = require('./src/data/map.json');
 
 jest.mock('./territory-selection.js', () => jest.fn());
+jest.mock('./move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
 
 describe('main DOM interactions', () => {
   let main;
@@ -28,7 +29,6 @@ describe('main DOM interactions', () => {
       Promise.resolve({ json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
-    global.prompt = jest.fn(() => '1');
     main = require('./main.js');
     ui = require('./ui.js');
     await Promise.resolve();
@@ -75,7 +75,7 @@ describe('main DOM interactions', () => {
     expect(t4.classList.contains('attack')).toBe(true);
   });
 
-  test('fortify moves army and updates status/log', () => {
+  test('fortify moves army and updates status/log', async () => {
     const t1 = document.getElementById('t1');
     const t2 = document.getElementById('t2');
     const log = document.getElementById('actionLog');
@@ -93,6 +93,7 @@ describe('main DOM interactions', () => {
     t1.click();
     expect(t1.classList.contains('selected')).toBe(true);
     t2.click();
+    await Promise.resolve();
     expect(log.textContent).toContain('sposta 1 da t1 a t2');
     expect(status.textContent).toContain('reinforce');
     expect(t1.classList.contains('selected')).toBe(false);
