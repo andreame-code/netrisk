@@ -117,7 +117,12 @@ class Game {
     } catch (err) {
       console.error("Unable to load map data, starting with empty map.", err);
       if (typeof alert === "function") {
-        try { alert("Unable to load map data. Starting with empty map."); } catch {}
+        try {
+          alert("Unable to load map data. Starting with empty map.");
+        } catch (alertErr) {
+          // In non-browser environments alert may not be available
+          console.error("Failed to display alert", alertErr);
+        }
       }
       return new Game(
         players,
