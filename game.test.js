@@ -1,4 +1,6 @@
-let Game, game;
+import Game from "./game.js";
+
+let game;
 
 const mapMock = {
   territories: [
@@ -24,10 +26,7 @@ const mapMock = {
 };
 
 beforeEach(() => {
-  jest.resetModules();
-  jest.doMock('./src/data/map.json', () => mapMock, { virtual: true });
-  Game = require('./game.js').default;
-  game = new Game();
+  game = new Game(null, mapMock.territories, mapMock.continents, mapMock.deck, false);
 });
 
 test('reinforce phase allows adding army and moves to attack', () => {
@@ -90,7 +89,7 @@ test('calculateReinforcements enforces minimum of three armies', () => {
     { id: 'b', neighbors: [], owner: 0, armies: 1 },
     { id: 'c', neighbors: [], owner: 0, armies: 1 }
   ];
-  const g = new Game(null, territories);
+  const g = new Game(null, territories, [], [], false);
   expect(g.reinforcements).toBe(3);
 });
 
@@ -206,7 +205,7 @@ test('initialises with 1 human and 2 AI players and executes AI turn', () => {
     { name: 'AI 1', color: '#2ecc71', ai: true },
     { name: 'AI 2', color: '#2ecc71', ai: true }
   ];
-  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck);
+  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck, false);
   expect(g.players.filter(p => p.ai).length).toBe(2);
   g.setCurrentPlayer(1);
   g.performAITurn();
@@ -219,7 +218,7 @@ test('initialises with three human players and no AI', () => {
     { name: 'P2', color: '#111111' },
     { name: 'P3', color: '#222222' }
   ];
-  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck);
+  const g = new Game(players, mapMock.territories, mapMock.continents, mapMock.deck, false);
   expect(g.players.every(p => !p.ai)).toBe(true);
   const current = g.getCurrentPlayer();
   g.performAITurn();
