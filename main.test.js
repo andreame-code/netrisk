@@ -20,7 +20,7 @@ describe('main DOM interactions', () => {
       <div id="actionLog"></div>
       <div id="diceResults"></div>
       <div id="uiPanel"></div>
-      <button id="endTurn"></button>
+      <button id="endTurn" class="btn"></button>
       <button type="button" id="t1" class="territory" data-id="t1"></button>
       <button type="button" id="t2" class="territory" data-id="t2"></button>
       <button type="button" id="t3" class="territory" data-id="t3"></button>
@@ -143,7 +143,7 @@ describe('main DOM interactions', () => {
       <div id="actionLog"></div>
       <div id="diceResults"></div>
       <div id="uiPanel"></div>
-      <button id="endTurn"></button>
+      <button id="endTurn" class="btn"></button>
       <button type="button" id="t1" class="territory" data-id="t1"></button>
       <button type="button" id="t2" class="territory" data-id="t2"></button>
       <button type="button" id="t3" class="territory" data-id="t3"></button>

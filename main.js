@@ -426,13 +426,14 @@ async function initGame() {
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
   resetBtn.textContent = "New Game";
+  resetBtn.classList.add("btn");
   resetBtn.addEventListener("click", startNewGame);
   document.body.appendChild(resetBtn);
   const modal = document.createElement("div");
   modal.id = "victoryModal";
   modal.className = "modal";
   modal.innerHTML =
-    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn">New Game</button></div>';
+    '<div class="modal-content"><h2 id="victoryTitle"></h2><div id="victoryStats"></div><button id="newGameBtn" class="btn">New Game</button></div>';
   document.body.appendChild(modal);
   document
     .getElementById("newGameBtn")
@@ -442,7 +443,7 @@ async function initGame() {
   cardPanel.id = "cardPanel";
   cardPanel.innerHTML =
     '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
-    '<button id="playCardsBtn">Play cards</button>' +
+    '<button id="playCardsBtn" class="btn">Play cards</button>' +
     '<div id="bonusInfo"></div>';
   ui.appendChild(cardPanel);
   document.getElementById("playCardsBtn").addEventListener("click", () => {

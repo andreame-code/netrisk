@@ -16,7 +16,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-button {
+.btn {
   font-family: 'Cinzel', serif;
   background: #b8860b;
   color: #fff;
@@ -24,13 +24,14 @@ button {
   padding: 8px 16px;
   cursor: pointer;
   box-shadow: 0 2px #8b4513;
+  text-decoration: none;
 }
 
-button:hover {
+.btn:hover {
   background: #daa520;
 }
 
-button:active {
+.btn:active {
   box-shadow: none;
   transform: translateY(2px);
 }
@@ -48,21 +49,9 @@ button:active {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
-#mainMenu button,
-#mainMenu a {
+#mainMenu .btn {
   display: block;
   width: 100%;
-  font-family: 'Cinzel', serif;
-  background: #b8860b;
-  color: #fff;
-  border: 2px solid #8b4513;
-  padding: 8px 16px;
-  text-decoration: none;
-}
-
-#mainMenu button:hover,
-#mainMenu a:hover {
-  background: #daa520;
 }
 
 #gameContainer {
@@ -87,7 +76,7 @@ button:active {
   .board {
     margin: 10px 0;
   }
-  button {
+  .btn {
     padding: 10px;
     font-size: 16px;
   }
@@ -283,7 +272,7 @@ body.high-contrast h1 {
   text-shadow: none;
 }
 
-body.high-contrast button {
+body.high-contrast .btn {
   background: #000;
   color: #ff0;
   border: 2px solid #ff0;

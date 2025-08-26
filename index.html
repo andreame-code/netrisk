@@ -8,11 +8,11 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <button id="themeToggle">High Contrast</button>
+    <button id="themeToggle" class="btn">High Contrast</button>
     <h1>NetRisk</h1>
     <div id="mainMenu">
-      <button id="startGame">Start Game</button>
-      <a href="setup.html">Set up players</a>
+      <button id="startGame" class="btn">Start Game</button>
+      <a href="setup.html" class="btn">Set up players</a>
     </div>
     <div id="gameContainer" style="display: none">
       <div id="uiPanel">
@@ -23,6 +23,7 @@
             <strong>How to play (alpha)</strong>
             <button
               id="toggleHowToPlay"
+              class="btn"
               aria-expanded="false"
               aria-controls="howToPlaySteps"
             >
@@ -50,12 +51,12 @@
             step="0.01"
             value="0.2"
           />
-          <button id="muteBtn">Mute</button>
+          <button id="muteBtn" class="btn">Mute</button>
         </div>
-        <button id="moveToken">Move Token</button>
-        <button id="endTurn">End Turn</button>
-        <button id="forceError">Force Error</button>
-        <button id="exportLog">Export Log</button>
+        <button id="moveToken" class="btn">Move Token</button>
+        <button id="endTurn" class="btn">End Turn</button>
+        <button id="forceError" class="btn">Force Error</button>
+        <button id="exportLog" class="btn">Export Log</button>
       </div>
       <div id="board" class="board"></div>
     </div>

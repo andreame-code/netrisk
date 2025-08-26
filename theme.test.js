@@ -2,7 +2,7 @@ import { initThemeToggle } from './theme.js';
 
 describe('theme toggle', () => {
   beforeEach(() => {
-    document.body.innerHTML = '<button id="themeToggle">High Contrast</button>';
+    document.body.innerHTML = '<button id="themeToggle" class="btn">High Contrast</button>';
     if (typeof localStorage !== 'undefined') {
       localStorage.clear();
     }
