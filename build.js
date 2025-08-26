@@ -40,11 +40,14 @@ for (const asset of plainAssets) {
 // Copy additional data files (e.g., map.json)
 fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
-let indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-for (const [orig, hashedName] of Object.entries(hashed)) {
-  indexHtml = indexHtml.replace(new RegExp(orig, 'g'), hashedName);
+
+const htmlFiles = ['index.html', 'game.html', 'setup.html', 'about.html', 'how-to-play.html'];
+
+for (const file of htmlFiles) {
+  let html = fs.readFileSync(path.join(root, file), 'utf8');
+  for (const [orig, hashedName] of Object.entries(hashed)) {
+    html = html.replace(new RegExp(orig, 'g'), hashedName);
+  }
+  fs.writeFileSync(path.join(dist, file), html);
 }
-
-fs.writeFileSync(path.join(dist, 'index.html'), indexHtml);
-

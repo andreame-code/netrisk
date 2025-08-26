@@ -53,7 +53,7 @@ describe('setup map selection', () => {
     document.querySelector('.map-item[data-id="map3"]').click();
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
     expect(localStorage.getItem('netriskMap')).toBe('map3');
-    expect(navigateTo).toHaveBeenCalledWith('index.html');
+    expect(navigateTo).toHaveBeenCalledWith('game.html');
   });
 
   test('renders responsive grid', async () => {

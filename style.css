@@ -22,6 +22,7 @@ h1 {
   color: #fff;
   border: 2px solid #8b4513;
   padding: 8px 16px;
+  min-height: 44px;
   cursor: pointer;
   box-shadow: 0 2px #8b4513;
   text-decoration: none;
@@ -36,12 +37,17 @@ h1 {
   transform: translateY(2px);
 }
 
+.btn:focus {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+
 /* Utility classes */
 .hidden {
   display: none;
 }
 
-#mainMenu {
+#mainMenu, #homeMenu {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -54,7 +60,7 @@ h1 {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
-#mainMenu .btn {
+#mainMenu .btn, #homeMenu .btn {
   display: block;
   width: 100%;
 }

@@ -9,23 +9,23 @@ const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
 describe('Accessibility features', () => {
   test('buttons expose aria-labels and access keys', () => {
-    const html = fs.readFileSync('index.html', 'utf-8');
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
-    const ids = [
-      'themeToggle',
-      'startGame',
-      'playTutorial',
-      'muteBtn',
-      'musicToggle',
-      'moveToken',
-      'undo',
-      'endTurn',
-      'forceError',
-      'exportLog',
-    ];
+    const homeHtml = fs.readFileSync('index.html', 'utf-8');
+    const homeDom = new JSDOM(homeHtml);
+    const homeDoc = homeDom.window.document;
+    const homeIds = ['themeToggle','playBtn','setupBtn','howToPlayBtn','aboutBtn'];
+    homeIds.forEach((id) => {
+      const el = homeDoc.getElementById(id);
+      expect(el).not.toBeNull();
+      expect(el.getAttribute('aria-label')).toBeTruthy();
+      expect(el.getAttribute('accesskey')).toBeTruthy();
+    });
+
+    const gameHtml = fs.readFileSync('game.html', 'utf-8');
+    const gameDom = new JSDOM(gameHtml);
+    const doc = gameDom.window.document;
+    const ids = ['muteBtn','musicToggle','moveToken','undo','endTurn','forceError','exportLog'];
     ids.forEach((id) => {
-      const el = document.getElementById(id);
+      const el = doc.getElementById(id);
       expect(el).not.toBeNull();
       expect(el.getAttribute('aria-label')).toBeTruthy();
       expect(el.getAttribute('accesskey')).toBeTruthy();

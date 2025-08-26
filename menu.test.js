@@ -10,7 +10,6 @@ describe('main menu', () => {
       localStorage.clear();
     }
     document.body.innerHTML = `
-      <div id="mainMenu"><button id="startGame" class="btn"></button></div>
       <div id="gameContainer">
         <div id="status"></div>
         <div id="currentPlayer"></div>
@@ -32,10 +31,9 @@ describe('main menu', () => {
     global.logger = { info: jest.fn(), error: jest.fn() };
   });
 
-  test('initializes game after start button clicked', async () => {
+  test('initializes game automatically', async () => {
     const main = require('./main.js');
     expect(main.game).toBeUndefined();
-    document.getElementById('startGame').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(main.game).toBeDefined();
   });
