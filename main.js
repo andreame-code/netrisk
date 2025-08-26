@@ -363,7 +363,7 @@ if (forceErrorBtn) {
   });
 }
 
-async function init() {
+async function initGame() {
   if (
     typeof window !== "undefined" &&
     typeof localStorage !== "undefined" &&
@@ -438,6 +438,22 @@ async function init() {
         : "Show details";
     });
   }
+}
+
+function init() {
+  const menu = document.getElementById("mainMenu");
+  const startBtn = document.getElementById("startGame");
+  const container = document.getElementById("gameContainer");
+  if (!menu || !startBtn || !container) {
+    initGame();
+    return;
+  }
+  container.style.display = "none";
+  startBtn.addEventListener("click", async () => {
+    menu.style.display = "none";
+    container.style.display = "";
+    await initGame();
+  });
 }
 
 init();
