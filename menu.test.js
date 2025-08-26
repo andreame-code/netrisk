@@ -36,8 +36,7 @@ describe('main menu', () => {
     const main = require('./main.js');
     expect(main.game).toBeUndefined();
     document.getElementById('startGame').click();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(main.game).toBeDefined();
   });
 });

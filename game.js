@@ -7,27 +7,7 @@ import {
 } from "./phases.js";
 import { colorPalette } from "./colors.js";
 import EventBus from "./src/core/event-bus.js";
-
-async function loadMapData() {
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
-  const jsonPath = `./src/data/${mapName}.json`;
-  try {
-    if (typeof fetch === "function") {
-      const res = await fetch(jsonPath);
-      if (res.ok) return await res.json();
-    }
-    const fs = await import("fs/promises");
-    const pathMod = await import("path");
-    const filePath = pathMod.resolve(`src/data/${mapName}.json`);
-    const data = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch {
-    return { territories: [], continents: [], deck: [] };
-  }
-}
+import loadMapData from "./src/load-map-data.js";
 
 class Game {
   constructor(
@@ -95,7 +75,10 @@ class Game {
     if (territories && continents && deck) {
       return new Game(players, territories, continents, deck);
     }
-    const map = await loadMapData();
+    let map = { territories: [], continents: [], deck: [] };
+    try {
+      map = await loadMapData();
+    } catch {}
     return new Game(
       players,
       territories || map.territories,

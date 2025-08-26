@@ -158,6 +158,7 @@ describe('main DOM interactions', () => {
     require('./ui.js');
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
     expect(main2.game.territoryById('t1').armies).toBe(armies);
     expect(main2.game.getPhase()).toBe(phase);
   });

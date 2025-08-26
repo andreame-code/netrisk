@@ -97,30 +97,6 @@ async function startNewGame() {
 }
 
 async function loadGame() {
-  let map;
-  const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
-  try {
-    const res = await fetch(`./src/data/${mapName}.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch map data: ${res.status}`);
-    }
-    map = await res.json();
-  } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error("Failed to load map data", err);
-    }
-    if (typeof alert !== "undefined") {
-      alert("Unable to load game data. Please try again later.");
-    }
-    return;
-  }
-  territoryPositions = map.territories.reduce((acc, t) => {
-    acc[t.id] = { x: t.x, y: t.y };
-    return acc;
-  }, {});
   const GameClass =
     (typeof window !== "undefined" && window.Game) || Game;
   if (typeof GameClass !== "function") {
@@ -147,16 +123,15 @@ async function loadGame() {
         players = [];
       }
     }
-    game = new GameClass(
-      players.length ? players : null,
-      map.territories,
-      map.continents,
-      map.deck,
-    );
+    game = await GameClass.create(players.length ? players : null);
     if (typeof logger !== "undefined") {
       logger.info("Game initialised");
     }
   }
+  territoryPositions = game.territories.reduce((acc, t) => {
+    acc[t.id] = { x: t.x, y: t.y };
+    return acc;
+  }, {});
   gameState.currentPlayer = game.currentPlayer;
   gameState.players = game.players;
   gameState.territories = game.territories;
