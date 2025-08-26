@@ -21,6 +21,20 @@ body {
   }
 }
 
+@media (max-width: 480px) {
+  #uiPanel {
+    margin: 5px;
+    padding: 5px;
+  }
+  .board {
+    margin: 10px 0;
+  }
+  button {
+    padding: 10px;
+    font-size: 16px;
+  }
+}
+
 #uiPanel {
   max-width: 600px;
   width: 100%;
