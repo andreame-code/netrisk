@@ -1,12 +1,16 @@
 /* global logger */
 import initTerritorySelection from "./territory-selection.js";
 import {
-  playAttackSound,
-  playConquerSound,
-  setVolume,
+  playEffect,
+  preloadEffects,
+  setMasterVolume,
+  getMasterVolume,
+  setEffectsVolume,
+  getEffectsVolume,
   setMuted,
   isMuted,
-  getVolume,
+  setMusicEnabled,
+  isMusicEnabled,
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
 import { navigateTo } from "./navigation.js";
@@ -235,7 +239,6 @@ function attachTerritoryHandlers() {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
             }
-            playAttackSound();
             const fromEl = document.getElementById(result.from);
             const toEl = document.getElementById(result.to);
             fromEl.classList.add("attack", "animate__animated", "animate__shakeX");
@@ -246,37 +249,36 @@ function attachTerritoryHandlers() {
             }, 500);
             document.getElementById("diceResults").textContent =
               `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
-          if (result.conquered) {
-            playConquerSound();
-            toEl.classList.add("conquer");
-            setTimeout(() => toEl.classList.remove("conquer"), 1000);
-            const move = await askArmiesToMove(result.movableArmies, 0);
-            if (move > 0) {
-              game.moveArmies(result.from, result.to, move);
-              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
-                player: playerName,
-                type: "move",
-                territories: [result.from, result.to],
-              });
-              animateMove(result.from, result.to);
+            if (result.conquered) {
+              toEl.classList.add("conquer");
+              setTimeout(() => toEl.classList.remove("conquer"), 1000);
+              const move = await askArmiesToMove(result.movableArmies, 0);
+              if (move > 0) {
+                game.moveArmies(result.from, result.to, move);
+                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                  player: playerName,
+                  type: "move",
+                  territories: [result.from, result.to],
+                });
+                animateMove(result.from, result.to);
+              }
             }
-          }
-          animateAttack(result.from, result.to);
-          addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
-            player: playerName,
-            type: "attack",
-            territories: [result.from, result.to],
-          });
-        } else if (result.type === REINFORCE) {
-          if (typeof logger !== "undefined") {
-            logger.info(`${playerName} reinforces ${result.territory}`);
-          }
-          animateReinforce(result.territory);
-          addLogEntry(`${playerName} reinforces ${result.territory}`, {
-            player: playerName,
-            type: "reinforce",
-            territories: [result.territory],
-          });
+            animateAttack(result.from, result.to);
+            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
+              player: playerName,
+              type: "attack",
+              territories: [result.from, result.to],
+            });
+          } else if (result.type === REINFORCE) {
+            if (typeof logger !== "undefined") {
+              logger.info(`${playerName} reinforces ${result.territory}`);
+            }
+            animateReinforce(result.territory);
+            addLogEntry(`${playerName} reinforces ${result.territory}`, {
+              player: playerName,
+              type: "reinforce",
+              territories: [result.territory],
+            });
           } else if (result.type === FORTIFY) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
@@ -401,6 +403,23 @@ async function initGame() {
     return;
   }
   await loadGame();
+  preloadEffects();
+
+  let firstTurn = true;
+  game.on(REINFORCE, () => playEffect("reinforce"));
+  game.on("attackResolved", ({ result }) => {
+    if (result.conquered) {
+      playEffect("conquer");
+    } else if (result.defenderLosses > result.attackerLosses) {
+      playEffect("attackWin");
+    } else {
+      playEffect("attackLoss");
+    }
+  });
+  game.on("turnStart", () => {
+    if (!firstTurn) playEffect("endTurn");
+    firstTurn = false;
+  });
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
   resetBtn.textContent = "New Game";
@@ -468,12 +487,20 @@ async function initGame() {
     }
   });
 
-  const volumeControl = document.getElementById("volumeControl");
+  const masterVolume = document.getElementById("masterVolume");
+  const effectsVolume = document.getElementById("effectsVolume");
   const muteBtn = document.getElementById("muteBtn");
-  if (volumeControl) {
-    volumeControl.value = getVolume();
-    volumeControl.addEventListener("input", (e) => {
-      setVolume(parseFloat(e.target.value));
+  const musicToggle = document.getElementById("musicToggle");
+  if (masterVolume) {
+    masterVolume.value = getMasterVolume();
+    masterVolume.addEventListener("input", (e) => {
+      setMasterVolume(parseFloat(e.target.value));
+    });
+  }
+  if (effectsVolume) {
+    effectsVolume.value = getEffectsVolume();
+    effectsVolume.addEventListener("input", (e) => {
+      setEffectsVolume(parseFloat(e.target.value));
     });
   }
   if (muteBtn) {
@@ -482,6 +509,14 @@ async function initGame() {
       const muted = isMuted();
       setMuted(!muted);
       muteBtn.textContent = muted ? "Mute" : "Unmute";
+    });
+  }
+  if (musicToggle) {
+    musicToggle.textContent = isMusicEnabled() ? "Music Off" : "Music On";
+    musicToggle.addEventListener("click", () => {
+      const on = isMusicEnabled();
+      setMusicEnabled(!on);
+      musicToggle.textContent = on ? "Music On" : "Music Off";
     });
   }
   initTerritorySelection({

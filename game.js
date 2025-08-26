@@ -269,11 +269,15 @@ class Game {
     const defendRolls = Array.from({ length: defendDice }, () => Math.ceil(Math.random() * 6)).sort((a, b) => b - a);
 
     const comparisons = Math.min(attackRolls.length, defendRolls.length);
+    let attackerLosses = 0;
+    let defenderLosses = 0;
     for (let i = 0; i < comparisons; i++) {
       if (attackRolls[i] > defendRolls[i]) {
         to.armies -= 1;
+        defenderLosses += 1;
       } else {
         from.armies -= 1;
+        attackerLosses += 1;
       }
     }
 
@@ -288,7 +292,7 @@ class Game {
       this.conqueredThisTurn = true;
       this.checkVictory();
     }
-    const result = { attackRolls, defendRolls, conquered, movableArmies };
+    const result = { attackRolls, defendRolls, conquered, movableArmies, attackerLosses, defenderLosses };
     this.emit('attackResolved', { from: from.id, to: to.id, result });
     return result;
   }
