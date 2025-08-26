@@ -84,6 +84,12 @@ test('gameover phase when one player owns all territories', () => {
   expect(game.winner).toBe(0);
 });
 
+test('checkVictory returns null when there are no territories', () => {
+  const g = new Game(null, [], [], [], false);
+  expect(() => g.checkVictory()).not.toThrow();
+  expect(g.checkVictory()).toBeNull();
+});
+
 test('calculateReinforcements enforces minimum of three armies', () => {
   const territories = [
     { id: 'a', neighbors: [], owner: 0, armies: 1 },
