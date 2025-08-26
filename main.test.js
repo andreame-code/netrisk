@@ -151,5 +151,12 @@ describe('main DOM interactions', () => {
     expect(main2.game.territoryById('t1').armies).toBe(armies);
     expect(main2.game.getPhase()).toBe(phase);
   });
+
+  test('invalid player color does not crash updateUI', () => {
+    const t1 = document.getElementById('t1');
+    main.game.players[0].color = '#notacolor';
+    expect(() => ui.updateUI()).not.toThrow();
+    expect(t1.style.background).toBe('');
+  });
 });
 
