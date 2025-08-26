@@ -24,43 +24,25 @@ async function loadMap(mapName) {
   }
 }
 
-function restoreGameState(GameClass, map) {
-  let loadedGame = null;
-  if (typeof localStorage !== "undefined") {
+export async function loadGame() {
+  const saved =
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("netriskGame");
+  if (saved) {
     try {
-      const saved = localStorage.getItem("netriskGame");
-      if (saved) {
-        loadedGame = GameClass.deserialize(saved);
-      }
+      const game = Game.deserialize(saved);
+      const territoryPositions = game.territories.reduce((acc, t) => {
+        acc[t.id] = { x: t.x, y: t.y };
+        return acc;
+      }, {});
+      return { game, territoryPositions };
     } catch (err) {
       if (typeof logger !== "undefined") {
         logger.error("Failed to load saved game", err);
       }
     }
   }
-  if (!loadedGame) {
-    let players = [];
-    if (typeof localStorage !== "undefined") {
-      try {
-        players = JSON.parse(localStorage.getItem("netriskPlayers")) || [];
-      } catch (err) {
-        players = [];
-      }
-    }
-    loadedGame = new GameClass(
-      players.length ? players : null,
-      map.territories,
-      map.continents,
-      map.deck,
-    );
-    if (typeof logger !== "undefined") {
-      logger.info("Game initialised");
-    }
-  }
-  return loadedGame;
-}
 
-export async function loadGame() {
   const mapName =
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
@@ -72,6 +54,22 @@ export async function loadGame() {
   if (typeof GameClass !== "function") {
     throw new Error("Game class not available");
   }
-  const game = restoreGameState(GameClass, map);
+  let players = [];
+  if (typeof localStorage !== "undefined") {
+    try {
+      players = JSON.parse(localStorage.getItem("netriskPlayers")) || [];
+    } catch (err) {
+      players = [];
+    }
+  }
+  const game = new GameClass(
+    players.length ? players : null,
+    map.territories,
+    map.continents,
+    map.deck,
+  );
+  if (typeof logger !== "undefined") {
+    logger.info("Game initialised");
+  }
   return { game, territoryPositions };
 }

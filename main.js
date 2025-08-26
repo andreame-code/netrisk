@@ -1,6 +1,5 @@
 /* global logger */
 import { loadGame } from "./game-loader.js";
-import Game from "./game.js";
 import { updateGameState, startNewGame } from "./persistence.js";
 import { attachAIActionLogging } from "./ai-logger.js";
 import { runAI } from "./ai-runner.js";
@@ -234,23 +233,8 @@ async function initGame() {
     return;
   }
 
-  let loadedGame;
-  let positions = {};
-  const saved =
-    typeof localStorage !== "undefined" &&
-    localStorage.getItem("netriskGame");
-  if (saved) {
-    loadedGame = Game.deserialize(saved);
-    positions = loadedGame.territories.reduce((acc, t) => {
-      acc[t.id] = { x: t.x, y: t.y };
-      return acc;
-    }, {});
-  } else {
-    const result = await loadGame();
-    loadedGame = result.game;
-    positions = result.territoryPositions;
-    if (!loadedGame) return;
-  }
+  const { game: loadedGame, territoryPositions: positions } = await loadGame();
+  if (!loadedGame) return;
   game = loadedGame;
   territoryPositions = positions;
   if (typeof module !== "undefined" && module.exports) {
