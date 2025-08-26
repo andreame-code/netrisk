@@ -11,6 +11,9 @@
   <body>
     <button id="themeToggle" class="btn">High Contrast</button>
     <h1>NetRisk</h1>
+    <nav>
+      <a href="about.html" id="aboutLink">About/Help</a>
+    </nav>
     <div id="mainMenu">
       <button id="startGame" class="btn">Start Game</button>
       <button id="playTutorial" class="btn">Play Tutorial</button>
@@ -64,6 +67,11 @@
       </div>
       <div id="board" class="board"></div>
     </div>
+        <script>
+      const lang = navigator.language && navigator.language.startsWith("it") ? "it" : "en";
+      const link = document.getElementById("aboutLink");
+      if (link) link.textContent = lang === "it" ? "Info/Aiuto" : "About/Help";
+    </script>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>
   </body>
