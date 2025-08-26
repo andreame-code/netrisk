@@ -168,6 +168,25 @@ describe('main DOM interactions', () => {
     expect(colorClasses).toHaveLength(0);
   });
 
+  test('unused player color classes are cleaned up', () => {
+    const getSheet = () =>
+      Array.from(document.styleSheets).find((s) =>
+        Array.from(s.cssRules).some(
+          (r) => r.selectorText && r.selectorText.startsWith('.player-color-'),
+        ),
+      );
+    const t1 = document.getElementById('t1');
+    const sheet = getSheet();
+    const initialCount = sheet ? sheet.cssRules.length : 0;
+    expect(t1.classList.contains('player-color-e6194b')).toBe(true);
+    main.game.players[0].color = '#00ff00';
+    ui.updateUI();
+    expect(t1.classList.contains('player-color-00ff00')).toBe(true);
+    expect(t1.classList.contains('player-color-e6194b')).toBe(false);
+    const sheetAfter = getSheet();
+    expect(sheetAfter.cssRules.length).toBe(initialCount);
+  });
+
   test('army count text contrasts with player color', () => {
     const t1 = document.getElementById('t1');
     main.game.players[0].color = '#000000';

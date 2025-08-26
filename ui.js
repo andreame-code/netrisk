@@ -181,13 +181,31 @@ function getColorClass(color) {
   return className;
 }
 
+function cleanupColorClasses(activeClasses) {
+  if (!colorStyleSheet) return;
+  const allowed = new Set(activeClasses.map((c) => `.${c}`));
+  for (let i = colorStyleSheet.cssRules.length - 1; i >= 0; i--) {
+    const rule = colorStyleSheet.cssRules[i];
+    const sel = rule.selectorText;
+    if (sel && sel.startsWith(".player-color-") && !allowed.has(sel)) {
+      colorStyleSheet.deleteRule(i);
+    }
+  }
+  if (colorStyleSheet.cssRules.length === 0) {
+    colorStyleSheet.ownerNode.remove();
+    colorStyleSheet = null;
+  }
+}
+
 function updateUI() {
   const scale = getBoardScale();
+  const playerColorClasses = game.players.map((p) => getColorClass(p.color));
+  cleanupColorClasses(playerColorClasses.filter(Boolean));
   game.territories.forEach((t) => {
     const el = getElement(t.id);
     if (!el) return;
 
-    const colorClass = getColorClass(game.players[t.owner].color);
+    const colorClass = playerColorClasses[t.owner];
     const colorClasses = Array.from(el.classList).filter((c) =>
       c.startsWith("player-color-"),
     );
