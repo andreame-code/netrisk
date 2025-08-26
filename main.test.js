@@ -38,6 +38,9 @@ describe('main DOM interactions', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    if (typeof window !== 'undefined') {
+      window.location.href = 'http://localhost/';
+    }
   });
 
   test('reinforcement updates status and log', () => {
@@ -157,6 +160,14 @@ describe('main DOM interactions', () => {
     main.game.players[0].color = '#notacolor';
     expect(() => ui.updateUI()).not.toThrow();
     expect(t1.style.background).toBe('');
+  });
+
+  test('startNewGame clears saved data', () => {
+    localStorage.setItem('netriskPlayers', JSON.stringify([{ name: 'P1', color: '#000' }]));
+    localStorage.setItem('netriskGame', 'dummy');
+    expect(() => main.startNewGame()).not.toThrow();
+    expect(localStorage.getItem('netriskPlayers')).toBeNull();
+    expect(localStorage.getItem('netriskGame')).toBeNull();
   });
 });
 
