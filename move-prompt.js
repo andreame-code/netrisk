@@ -11,7 +11,7 @@ function askArmiesToMove(max, min = 0) {
       <div class="modal-content">
         <label>How many armies to move? (${min}-${max})</label>
         <input type="number" id="moveArmiesInput" min="${min}" max="${max}" value="${max}" />
-        <button id="moveArmiesOk">OK</button>
+        <button id="moveArmiesOk" class="btn">OK</button>
       </div>`;
     document.body.appendChild(modal);
     modal.classList.add('show');
