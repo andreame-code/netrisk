@@ -1,3 +1,5 @@
+import { colorPalette } from "./colors.js";
+
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
 const aiCountInput = document.getElementById("aiCount");
@@ -7,9 +9,15 @@ function renderPlayerInputs(humanCount) {
   playersContainer.innerHTML = "";
   for (let i = 0; i < humanCount; i += 1) {
     const wrapper = document.createElement("div");
+    const options = colorPalette
+      .map(
+        (c, idx) =>
+          `<option value="${c}" ${idx === i ? "selected" : ""}>${c}</option>`
+      )
+      .join("");
     wrapper.innerHTML = `
       <label>Nome Giocatore ${i + 1}: <input type="text" id="name${i}" /></label>
-      <label>Colore: <input type="color" id="color${i}" /></label>
+      <label>Colore: <select id="color${i}">${options}</select></label>
     `;
     playersContainer.appendChild(wrapper);
   }
@@ -52,13 +60,21 @@ form.addEventListener("submit", (e) => {
   const humanCount = parseInt(humanCountInput.value, 10) || 0;
   const aiCount = parseInt(aiCountInput.value, 10) || 0;
   const players = [];
+  const usedColors = new Set();
   for (let i = 0; i < humanCount; i += 1) {
     const name = document.getElementById(`name${i}`).value || `Player ${i + 1}`;
-    const color = document.getElementById(`color${i}`).value || "#000000";
+    const color = document.getElementById(`color${i}`).value || colorPalette[0];
+    if (usedColors.has(color)) {
+      window.alert("I colori dei giocatori devono essere unici");
+      return;
+    }
+    usedColors.add(color);
     players.push({ name, color });
   }
   for (let i = 0; i < aiCount; i += 1) {
-    players.push({ name: `AI ${i + 1}`, color: "#2ecc71", ai: true });
+    const color = colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
+    usedColors.add(color);
+    players.push({ name: `AI ${i + 1}`, color, ai: true });
   }
   try {
     localStorage.setItem("netriskPlayers", JSON.stringify(players));

@@ -162,6 +162,16 @@ describe('main DOM interactions', () => {
     expect(t1.style.background).toBe('');
   });
 
+  test('army count text contrasts with player color', () => {
+    const t1 = document.getElementById('t1');
+    main.game.players[0].color = '#000000';
+    ui.updateUI();
+    expect(t1.style.color).toBe('rgb(255, 255, 255)');
+    main.game.players[0].color = '#ffffff';
+    ui.updateUI();
+    expect(t1.style.color).toBe('rgb(0, 0, 0)');
+  });
+
   test('startNewGame clears saved data', () => {
     localStorage.setItem('netriskPlayers', JSON.stringify([{ name: 'P1', color: '#000' }]));
     localStorage.setItem('netriskGame', 'dummy');
