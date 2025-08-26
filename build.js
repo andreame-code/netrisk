@@ -15,7 +15,7 @@ function hashContent(content) {
 }
 
 const assets = ['style.css', 'logger.js', 'main.js'];
-const plainAssets = ['map.svg', 'map2.svg', 'game.js', 'territory-selection.js', 'audio.js', 'ui.js'];
+const plainAssets = ['map.svg', 'map2.svg', 'map-roman.svg', 'game.js', 'territory-selection.js', 'audio.js', 'ui.js'];
 const hashed = {};
 
 for (const asset of assets) {
