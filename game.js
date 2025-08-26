@@ -1,58 +1,67 @@
 import { attackSuccessProbability, territoryPriority } from "./ai.js";
 
+async function loadMapData() {
+  try {
+    if (typeof fetch === "function") {
+      const res = await fetch("./src/data/map.json");
+      if (res.ok) return await res.json();
+    }
+    const fs = await import("fs/promises");
+    const pathMod = await import("path");
+    const filePath = pathMod.resolve("src/data/map.json");
+    const data = await fs.readFile(filePath, "utf-8");
+    return JSON.parse(data);
+  } catch {
+    return { territories: [], continents: [], deck: [] };
+  }
+}
+
 class Game {
-  constructor(players, territories, continents, deck) {
+  constructor(players, territories = [], continents = [], deck = [], shuffleDeck = true) {
     this.players = players || [
       { name: 'Player 1', color: '#e74c3c' },
       { name: 'Player 2', color: '#3498db' },
       { name: 'AI', color: '#2ecc71', ai: true }
     ];
 
-    let map;
-    if (!territories || !continents || !deck) {
-      try {
-        map = require('./src/data/map.json');
-      } catch (err) {
-        map = { territories: [], continents: [], deck: [] };
-      }
-    }
-
-    if (!territories) {
-      // Load default territory data from JSON when none provided
-      territories = map.territories.map((t, i) => ({
-        id: t.id,
-        neighbors: t.neighbors,
-        x: t.x,
-        y: t.y,
-        owner: Math.floor((i * this.players.length) / map.territories.length),
-        armies: 3,
-      }));
-    } else {
-      territories = territories.map((t, i) => ({
-        id: t.id,
-        neighbors: t.neighbors,
-        x: t.x,
-        y: t.y,
-        owner:
-          typeof t.owner === 'number'
-            ? t.owner
-            : Math.floor((i * this.players.length) / territories.length),
-        armies: t.armies || 3,
-      }));
-    }
+    const total = territories.length || 1;
+    territories = territories.map((t, i) => ({
+      id: t.id,
+      neighbors: t.neighbors,
+      x: t.x,
+      y: t.y,
+      owner:
+        typeof t.owner === "number"
+          ? t.owner
+          : Math.floor((i * this.players.length) / total),
+      armies: t.armies || 3,
+    }));
 
     this.territories = territories;
     this.currentPlayer = 0;
     this.phase = 'reinforce';
     this.selectedFrom = null;
     this.reinforcements = 0;
-    this.continents = continents || (map ? map.continents : []) || [];
-    this.deck = (deck || (map ? map.deck : []) || []).map(c => ({ ...c }));
-    if (!deck) this.shuffle(this.deck);
+    this.continents = continents;
+    this.deck = (deck || []).map((c) => ({ ...c }));
+    if (shuffleDeck) this.shuffle(this.deck);
     this.hands = Array.from({ length: this.players.length }, () => []);
     this.discard = [];
     this.conqueredThisTurn = false;
     this.calculateReinforcements();
+  }
+
+  static async create(players, territories, continents, deck) {
+    if (territories && continents && deck) {
+      return new Game(players, territories, continents, deck);
+    }
+    const map = await loadMapData();
+    return new Game(
+      players,
+      territories || map.territories,
+      continents || map.continents,
+      deck || map.deck
+    );
   }
 
   calculateReinforcements() {
@@ -337,7 +346,13 @@ class Game {
 
   static deserialize(str) {
     const data = typeof str === 'string' ? JSON.parse(str) : str;
-    const game = new Game(data.players, data.territories, data.continents, data.deck);
+    const game = new Game(
+      data.players,
+      data.territories,
+      data.continents,
+      data.deck,
+      false
+    );
     game.hands = data.hands;
     game.discard = data.discard || [];
     game.currentPlayer = data.currentPlayer;
