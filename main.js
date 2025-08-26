@@ -327,6 +327,32 @@ function attachTerritoryHandlers() {
   });
 }
 
+const undoBtn = document.getElementById("undo");
+if (undoBtn) {
+  undoBtn.addEventListener("click", () => {
+    try {
+      if (game.undo()) {
+        const playerName = game.players[game.currentPlayer].name;
+        addLogEntry(`${playerName} undoes last action`, {
+          player: playerName,
+          type: "undo",
+        });
+        updateUI();
+        updateGameState(
+          gameState,
+          game,
+          game.selectedFrom ? game.selectedFrom.id : null,
+        );
+        updateInfoPanel();
+      }
+    } catch (err) {
+      if (typeof logger !== "undefined") {
+        logger.error(err);
+      }
+    }
+  });
+}
+
 document.getElementById("endTurn").addEventListener("click", () => {
   if (typeof logger !== "undefined") {
     logger.info("End turn clicked");

@@ -41,6 +41,7 @@ class Game {
     deck = [],
     shuffleDeck = true,
     randomizeTerritories = true,
+    maxUndoSteps = 10,
   ) {
     this.players =
       players || [
@@ -99,11 +100,15 @@ class Game {
       [ATTACK]: this.handleAttackPhase.bind(this),
       [FORTIFY]: this.handleFortifyPhase.bind(this),
     };
+
+    this.maxUndo = maxUndoSteps;
+    this.undoStack = [];
+    this.redoStack = [];
   }
 
-  static async create(players, territories, continents, deck) {
+  static async create(players, territories, continents, deck, maxUndoSteps) {
     if (territories && continents && deck) {
-      return new Game(players, territories, continents, deck);
+      return new Game(players, territories, continents, deck, true, true, maxUndoSteps);
     }
     try {
       const map = await loadMapData();
@@ -111,7 +116,10 @@ class Game {
         players,
         territories || map.territories,
         continents || map.continents,
-        deck || map.deck
+        deck || map.deck,
+        true,
+        true,
+        maxUndoSteps
       );
     } catch (err) {
       console.error("Unable to load map data, starting with empty map.", err);
@@ -127,7 +135,10 @@ class Game {
         players,
         territories || [],
         continents || [],
-        deck || []
+        deck || [],
+        true,
+        true,
+        maxUndoSteps
       );
     }
   }
@@ -166,6 +177,7 @@ class Game {
     }
     if (!this.selectedFrom) {
       if (!action.canSelect || action.canSelect(territory)) {
+        this.pushUndoState();
         this.selectedFrom = territory;
         return { type: 'select', territory: id };
       }
@@ -173,6 +185,7 @@ class Game {
       const from = this.selectedFrom;
       const to = territory;
       if (from.id === to.id) {
+        this.pushUndoState();
         this.selectedFrom = null;
         return { type: 'deselect', territory: id };
       }
@@ -191,6 +204,7 @@ class Game {
         canSelect: (t) =>
           t.owner === this.currentPlayer && this.reinforcements > 0,
         onSelect: (t) => {
+          this.pushUndoState();
           t.armies += 1;
           this.reinforcements -= 1;
           this.emit(REINFORCE, {
@@ -300,9 +314,57 @@ class Game {
     if (from.owner !== this.currentPlayer || to.owner !== this.currentPlayer) return false;
     if (!from.neighbors.includes(to.id)) return false;
     if (count < 1 || from.armies <= count) return false;
+    this.pushUndoState();
     from.armies -= count;
     to.armies += count;
     this.emit('move', { from: fromId, to: toId, count });
+    return true;
+  }
+
+  pushUndoState() {
+    this.undoStack.push(this.serialize());
+    if (this.undoStack.length > this.maxUndo) this.undoStack.shift();
+    this.redoStack = [];
+  }
+
+  canUndo() {
+    return this.undoStack.length > 0;
+  }
+
+  canRedo() {
+    return this.redoStack.length > 0;
+  }
+
+  restoreState(stateStr) {
+    const data = JSON.parse(stateStr);
+    this.players = data.players;
+    this.territories = data.territories;
+    this.continents = data.continents;
+    this.deck = data.deck;
+    this.hands = data.hands;
+    this.discard = data.discard || [];
+    this.currentPlayer = data.currentPlayer;
+    this.phase = data.phase;
+    this.reinforcements = data.reinforcements;
+    this.selectedFrom =
+      data.selectedFrom != null ? this.territoryById(data.selectedFrom) : null;
+    this.conqueredThisTurn = data.conqueredThisTurn || false;
+    this.winner = data.winner;
+  }
+
+  undo() {
+    if (!this.canUndo()) return false;
+    const prev = this.undoStack.pop();
+    this.redoStack.push(this.serialize());
+    this.restoreState(prev);
+    return true;
+  }
+
+  redo() {
+    if (!this.canRedo()) return false;
+    const next = this.redoStack.pop();
+    this.undoStack.push(this.serialize());
+    this.restoreState(next);
     return true;
   }
 
@@ -328,6 +390,8 @@ class Game {
     } else if (this.phase === FORTIFY) {
       const prev = this.currentPlayer;
       this.selectedFrom = null;
+      this.undoStack = [];
+      this.redoStack = [];
       // Move to the next player, skipping any who have been eliminated
       do {
         this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
