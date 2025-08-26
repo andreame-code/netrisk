@@ -11,6 +11,11 @@ test('attackSuccessProbability favors larger armies', () => {
   expect(high).toBeGreaterThan(low);
 });
 
+test('attackSuccessProbability matches simple dice odds', () => {
+  const prob = attackSuccessProbability({ armies: 2 }, { armies: 1 });
+  expect(prob).toBeCloseTo(5 / 12, 5);
+});
+
 test('territoryPriority increases with enemy neighbors', () => {
   const map = {
     b: { owner: 1 },
