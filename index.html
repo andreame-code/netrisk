@@ -6,146 +6,38 @@
     <title>NetRisk</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
     <link rel="stylesheet" href="./style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-  <body>
-    <button
-      id="themeToggle"
-      class="btn"
-      aria-label="Toggle high contrast mode"
-      accesskey="h"
-    >
-      High Contrast
-    </button>
-    <h1>NetRisk</h1>
-    <nav>
-      <a href="about.html" id="aboutLink">About/Help</a>
-    </nav>
-    <div id="mainMenu">
-      <button id="startGame" class="btn" aria-label="Start Game" accesskey="s">
-        Start Game
+  <body class="home-page">
+    <header class="home-header">
+      <button
+        id="themeToggle"
+        class="btn"
+        aria-label="Toggle high contrast mode"
+        accesskey="c"
+      >
+        High Contrast
+      </button>
+    </header>
+    <main id="mainMenu">
+      <h1>NetRisk</h1>
+      <button id="playBtn" class="btn" aria-label="Play game" accesskey="p">
+        Play
+      </button>
+      <button id="setupBtn" class="btn" aria-label="Player setup" accesskey="s">
+        Setup
       </button>
       <button
-        id="playTutorial"
+        id="howToPlayBtn"
         class="btn"
-        aria-label="Play Tutorial"
-        accesskey="t"
+        aria-label="How to play"
+        accesskey="h"
       >
-        Play Tutorial
+        How to Play
       </button>
-      <a
-        href="setup.html"
-        class="btn"
-        aria-label="Set up players"
-        accesskey="p"
-      >
-        Set up players
-      </a>
-    </div>
-    <div id="gameContainer" class="hidden">
-      <div id="uiPanel">
-        <div>Current turn: <span id="turnNumber">1</span></div>
-        <div>Current player: <span id="currentPlayer"></span></div>
-        <div id="howToPlayBox">
-          <div>
-            <strong>How to play (alpha)</strong>
-            <button
-              id="toggleHowToPlay"
-              class="btn"
-              aria-expanded="false"
-              aria-controls="howToPlaySteps"
-            >
-              Show details
-            </button>
-          </div>
-          <ol id="howToPlaySteps" hidden>
-            <li>Click a territory</li>
-            <li>Choose an action</li>
-            <li>Press "End Turn"</li>
-          </ol>
-          <button id="replayTutorial" class="btn">Play Tutorial</button>
-        </div>
-        <div><strong>Action log:</strong></div>
-        <div id="actionLog" class="log"></div>
-        <div id="status"></div>
-        <div>Phase time: <span id="phaseTimer"></span></div>
-        <div id="diceResults"></div>
-        <div id="selectedTerritory"></div>
-        <div id="audioSettings">
-          <label for="masterVolume">Master:</label>
-          <input
-            type="range"
-            id="masterVolume"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.5"
-          />
-          <label for="effectsVolume">Effects:</label>
-          <input
-            type="range"
-            id="effectsVolume"
-            min="0"
-            max="1"
-            step="0.01"
-            value="1"
-          />
-          <button
-            id="muteBtn"
-            class="btn"
-            aria-label="Toggle mute"
-            accesskey="m"
-          >
-            Mute
-          </button>
-          <button
-            id="musicToggle"
-            class="btn"
-            aria-label="Toggle music"
-            accesskey="i"
-          >
-            Music Off
-          </button>
-        </div>
-        <button
-          id="moveToken"
-          class="btn"
-          aria-label="Move Token"
-          accesskey="v"
-        >
-          Move Token
-        </button>
-        <button id="undo" class="btn" aria-label="Undo" accesskey="u" disabled>
-          Undo
-        </button>
-        <button id="endTurn" class="btn" aria-label="End Turn" accesskey="e">
-          End Turn
-        </button>
-        <button
-          id="forceError"
-          class="btn"
-          aria-label="Force Error"
-          accesskey="f"
-        >
-          Force Error
-        </button>
-        <button
-          id="exportLog"
-          class="btn"
-          aria-label="Export Log"
-          accesskey="x"
-        >
-          Export Log
-        </button>
-      </div>
-      <div id="board" class="board"></div>
-    </div>
-        <script>
-      const lang = navigator.language && navigator.language.startsWith("it") ? "it" : "en";
-      const link = document.getElementById("aboutLink");
-      if (link) link.textContent = lang === "it" ? "Info/Aiuto" : "About/Help";
-    </script>
-    <script src="./logger.js"></script>
-    <script type="module" src="./main.js"></script>
+      <button id="aboutBtn" class="btn" aria-label="About and settings" accesskey="a">
+        About/Settings
+      </button>
+    </main>
+    <script type="module" src="./home.js"></script>
   </body>
 </html>
