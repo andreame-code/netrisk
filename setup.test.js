@@ -3,6 +3,7 @@ jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
 
 function setupDOM() {
   document.body.innerHTML = `
+      <button id="homeBtn"></button>
       <form id="setupForm">
         <input id="humanCount" />
         <input id="aiCount" />
@@ -52,9 +53,9 @@ describe('setup map selection', () => {
     document.getElementById('color0').value = colorPalette[0];
     document.querySelector('.map-item[data-id="map3"]').click();
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
-    expect(localStorage.getItem('netriskMap')).toBe('map3');
-    expect(navigateTo).toHaveBeenCalledWith('index.html');
-  });
+      expect(localStorage.getItem('netriskMap')).toBe('map3');
+      expect(navigateTo).toHaveBeenCalledWith('game.html');
+    });
 
   test('renders responsive grid', async () => {
     const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' }] };
@@ -66,7 +67,7 @@ describe('setup map selection', () => {
     expect(grid.style.gridTemplateColumns).toContain('auto-fit');
   });
 
-  test('shows placeholder when thumbnail missing', async () => {
+    test('shows placeholder when thumbnail missing', async () => {
     const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'missing.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
     const { mapLoadPromise } = require('./setup.js');
@@ -90,5 +91,15 @@ describe('setup map selection', () => {
     document.getElementById('setupForm').dispatchEvent(new Event('submit'));
     const saved = JSON.parse(localStorage.getItem('netriskPlayers'));
     expect(saved[1]).toEqual(expect.objectContaining({ ai: true, difficulty: 'hard', style: 'aggressive' }));
+    });
+
+    test('home button navigates to index', async () => {
+      const manifest = { version: 1, maps: [] };
+      global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+      const { mapLoadPromise } = require('./setup.js');
+      await mapLoadPromise;
+      const { navigateTo } = require('./navigation.js');
+      document.getElementById('homeBtn').click();
+      expect(navigateTo).toHaveBeenCalledWith('index.html');
+    });
   });
-});

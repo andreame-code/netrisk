@@ -10,6 +10,7 @@ const aiStyleInput = document.getElementById("aiStyle");
 const playersContainer = document.getElementById("players");
 const mapSelect = document.getElementById("mapSelect");
 const mapGrid = document.getElementById("mapGrid");
+const homeBtn = document.getElementById("homeBtn");
 
 const thumbnailCache = new Map();
 let selectedMap = null;
@@ -148,8 +149,16 @@ humanCountInput.addEventListener("change", () => {
   renderPlayerInputs(count);
 });
 
+if (homeBtn) {
+  homeBtn.addEventListener("click", () => navigateTo("index.html"));
+}
+
 form.addEventListener("submit", (e) => {
   e.preventDefault();
+  if (!form.checkValidity()) {
+    if (typeof form.reportValidity === "function") form.reportValidity();
+    return;
+  }
   const humanCount = parseInt(humanCountInput.value, 10) || 0;
   const aiCount = parseInt(aiCountInput.value, 10) || 0;
   const difficulty = aiDifficultyInput ? aiDifficultyInput.value : "normal";
@@ -179,7 +188,7 @@ form.addEventListener("submit", (e) => {
   } catch (err) {
     // ignore storage errors
   }
-  navigateTo("index.html");
+  navigateTo("game.html");
 });
 
 loadFromStorage();
