@@ -3,8 +3,8 @@ import { initAccessibility } from './accessibility.js';
 describe('accessibility controls', () => {
   beforeEach(() => {
     document.body.innerHTML = `
+      <button id="themeToggle" class="btn">High Contrast</button>
       <div id="accessibilityMenu">
-        <button id="themeToggle" class="btn">High Contrast</button>
         <label for="fontScale">Font size:</label>
         <select id="fontScale">
           <option value="1">100%</option>
