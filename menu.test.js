@@ -12,18 +12,18 @@ describe('main menu', () => {
     document.body.innerHTML = `
       <header>
         <h1>NetRisk</h1>
-        <button id="themeToggle"></button>
+        <button id="themeToggle" class="btn"></button>
       </header>
       <main>
-        <div id="mainMenu"><button id="startGame"></button></div>
-        <div id="gameContainer">
+        <div id="mainMenu"><button id="startGame" class="btn"></button></div>
+        <div id="gameContainer" class="hidden">
           <div id="status"></div>
           <div id="currentPlayer"></div>
           <div id="turnNumber"></div>
           <div id="actionLog"></div>
           <div id="diceResults"></div>
           <div id="uiPanel"></div>
-          <button id="endTurn"></button>
+          <button id="endTurn" class="btn"></button>
           <button type="button" id="t1" class="territory" data-id="t1"></button>
           <button type="button" id="t2" class="territory" data-id="t2"></button>
           <button type="button" id="t3" class="territory" data-id="t3"></button>

@@ -10,58 +10,59 @@
   <body>
     <header>
       <h1>NetRisk</h1>
-      <button id="themeToggle">High Contrast</button>
+      <button id="themeToggle" class="btn">High Contrast</button>
     </header>
     <main>
       <div id="mainMenu">
-        <button id="startGame">Start Game</button>
-        <a href="setup.html">Set up players</a>
+        <button id="startGame" class="btn">Start Game</button>
+        <a href="setup.html" class="btn">Set up players</a>
       </div>
-      <div id="gameContainer" style="display: none">
-      <div id="uiPanel">
-        <div>Current turn: <span id="turnNumber">1</span></div>
-        <div>Current player: <span id="currentPlayer"></span></div>
-        <div id="howToPlayBox">
-          <div>
-            <strong>How to play (alpha)</strong>
-            <button
-              id="toggleHowToPlay"
-              aria-expanded="false"
-              aria-controls="howToPlaySteps"
-            >
-              Show details
-            </button>
+      <div id="gameContainer" class="hidden">
+        <div id="uiPanel">
+          <div>Current turn: <span id="turnNumber">1</span></div>
+          <div>Current player: <span id="currentPlayer"></span></div>
+          <div id="howToPlayBox">
+            <div>
+              <strong>How to play (alpha)</strong>
+              <button
+                id="toggleHowToPlay"
+                class="btn"
+                aria-expanded="false"
+                aria-controls="howToPlaySteps"
+              >
+                Show details
+              </button>
+            </div>
+            <ol id="howToPlaySteps" hidden>
+              <li>Click a territory</li>
+              <li>Choose an action</li>
+              <li>Press "End Turn"</li>
+            </ol>
           </div>
-          <ol id="howToPlaySteps" hidden>
-            <li>Click a territory</li>
-            <li>Choose an action</li>
-            <li>Press "End Turn"</li>
-          </ol>
+          <div><strong>Action log:</strong></div>
+          <div id="actionLog" class="log"></div>
+          <div id="status"></div>
+          <div id="diceResults"></div>
+          <div id="selectedTerritory"></div>
+          <div id="audioSettings">
+            <label for="volumeControl">Volume:</label>
+            <input
+              type="range"
+              id="volumeControl"
+              min="0"
+              max="1"
+              step="0.01"
+              value="0.2"
+            />
+            <button id="muteBtn" class="btn">Mute</button>
+          </div>
+          <button id="moveToken" class="btn">Move Token</button>
+          <button id="endTurn" class="btn">End Turn</button>
+          <button id="forceError" class="btn">Force Error</button>
+          <button id="exportLog" class="btn">Export Log</button>
         </div>
-        <div><strong>Action log:</strong></div>
-        <div id="actionLog" class="log"></div>
-        <div id="status"></div>
-        <div id="diceResults"></div>
-        <div id="selectedTerritory"></div>
-        <div id="audioSettings">
-          <label for="volumeControl">Volume:</label>
-          <input
-            type="range"
-            id="volumeControl"
-            min="0"
-            max="1"
-            step="0.01"
-            value="0.2"
-          />
-          <button id="muteBtn">Mute</button>
-        </div>
-        <button id="moveToken">Move Token</button>
-        <button id="endTurn">End Turn</button>
-        <button id="forceError">Force Error</button>
-        <button id="exportLog">Export Log</button>
+        <div id="board" class="board"></div>
       </div>
-      <div id="board" class="board"></div>
-    </div>
     </main>
     <script src="./logger.js"></script>
     <script type="module" src="./main.js"></script>
