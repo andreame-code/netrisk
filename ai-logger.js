@@ -1,5 +1,5 @@
 /* global logger */
-import { REINFORCE, ATTACK, FORTIFY } from "./phases.js";
+import { REINFORCE, ATTACK } from "./phases.js";
 import { addLogEntry, updateInfoPanel } from "./ui.js";
 import { updateGameState } from "./persistence.js";
 
