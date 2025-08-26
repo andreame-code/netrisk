@@ -114,18 +114,43 @@ function updateCardsUI() {
   });
 }
 
+let colorStyleSheet;
+function getColorClass(color) {
+  if (!colorStyleSheet) {
+    const styleEl = document.createElement("style");
+    document.head.appendChild(styleEl);
+    colorStyleSheet = styleEl.sheet;
+  }
+  const testEl = document.createElement("div");
+  testEl.style.color = color;
+  if (!testEl.style.color) return null;
+  const className = `player-color-${color.replace(/[^a-z0-9]/gi, "")}`;
+  const selector = `.${className}`;
+  const exists = Array.from(colorStyleSheet.cssRules).some(
+    (r) => r.selectorText === selector,
+  );
+  if (!exists) {
+    const textColor = getContrastingColor(color);
+    colorStyleSheet.insertRule(
+      `${selector}{background:${color};color:${textColor};}`,
+      colorStyleSheet.cssRules.length,
+    );
+  }
+  return className;
+}
+
 function updateUI() {
   game.territories.forEach((t) => {
     const el = document.getElementById(t.id);
     if (!el) return;
 
-    const color = game.players[t.owner].color;
-    el.style.background = "";
-    el.style.background = color;
-    if (el.style.background) {
-      el.style.color = getContrastingColor(color);
-    } else {
-      el.style.color = "";
+    const colorClass = getColorClass(game.players[t.owner].color);
+    const colorClasses = Array.from(el.classList).filter((c) =>
+      c.startsWith("player-color-"),
+    );
+    colorClasses.forEach((c) => el.classList.remove(c));
+    if (colorClass) {
+      el.classList.add(colorClass);
     }
 
     el.textContent = t.armies;
