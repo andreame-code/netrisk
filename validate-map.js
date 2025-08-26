@@ -1,5 +1,6 @@
-const Ajv = require('ajv/dist/2020').default;
+const Ajv = require('ajv');
 const schema = require('./src/data/map-schema.json');
+delete schema.$schema;
 
 const ajv = new Ajv();
 const validate = ajv.compile(schema);
