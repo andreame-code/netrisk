@@ -76,8 +76,21 @@ function updateInfoPanel() {
   if (tn) tn.textContent = gameState.turnNumber;
 }
 
-function addLogEntry(msg) {
-  gameState.log.push(msg);
+function highlightTerritories(ids) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add("highlight");
+      setTimeout(() => el.classList.remove("highlight"), 1000);
+    }
+  });
+}
+
+function addLogEntry(entry, meta = {}) {
+  const logEntry =
+    typeof entry === "string" ? { message: entry, ...meta } : entry;
+  if (logEntry.turn == null) logEntry.turn = gameState?.turnNumber;
+  gameState.log.push(logEntry);
   const logEl = getElement("actionLog");
   if (logEl) {
     // rebuild log using DOM nodes to avoid innerHTML
@@ -86,16 +99,64 @@ function addLogEntry(msg) {
     const recent = gameState.log.slice(-10);
     recent.forEach((l) => {
       const div = document.createElement("div");
-      div.textContent = l;
+      div.textContent = l.message;
+      if (l.territories && l.territories.length) {
+        const link = document.createElement("a");
+        link.href = "#";
+        link.textContent = " go to move";
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          highlightTerritories(l.territories);
+        });
+        div.appendChild(link);
+      }
       fragment.appendChild(div);
     });
     logEl.appendChild(fragment);
     logEl.scrollTop = logEl.scrollHeight;
   }
+  return logEntry;
 }
 
-function getLog() {
-  return gameState.log;
+function getLog(filter = {}) {
+  if (!filter.player && !filter.type && !filter.turn) {
+    return gameState.log;
+  }
+  return gameState.log.filter((e) => {
+    if (filter.player != null && e.player !== filter.player) return false;
+    if (filter.type && e.type !== filter.type) return false;
+    if (filter.turn != null && e.turn !== filter.turn) return false;
+    return true;
+  });
+}
+
+function exportLog(format = "json", filter) {
+  const entries = getLog(filter);
+  if (format === "json") {
+    return JSON.stringify(entries);
+  }
+  if (format === "csv") {
+    const header = ["turn", "player", "type", "message", "territories"].join(",");
+    const rows = entries.map((e) =>
+      [
+        e.turn,
+        e.player || "",
+        e.type || "",
+        `"${e.message.replace(/"/g, '""')}"`,
+        (e.territories || []).join("|")
+      ].join(","),
+    );
+    return [header, ...rows].join("\n");
+  }
+  throw new Error("Unsupported format");
+}
+
+async function copyLog(format = "json", filter) {
+  const data = exportLog(format, filter);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(data);
+  }
+  return data;
 }
 
 function animateMove(from, to) {
@@ -289,18 +350,20 @@ function destroyUI() {
   elementCache.clear();
 }
 
-export {
-  initUI,
-  updateInfoPanel,
-  addLogEntry,
-  animateMove,
-  showVictoryModal,
-  updateBonusInfo,
-  updateCardsUI,
-  updateUI,
-  destroyUI,
-  getSelectedCards,
-  resetSelectedCards,
-  getBoardScale,
-  getLog,
-};
+  export {
+    initUI,
+    updateInfoPanel,
+    addLogEntry,
+    animateMove,
+    showVictoryModal,
+    updateBonusInfo,
+    updateCardsUI,
+    updateUI,
+    destroyUI,
+    getSelectedCards,
+    resetSelectedCards,
+    getBoardScale,
+    getLog,
+    exportLog,
+    copyLog,
+  };
