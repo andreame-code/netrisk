@@ -1,5 +1,6 @@
 import {
   initUI,
+  addLogEntry,
   getSelectedCards,
   resetSelectedCards,
   animateMove,
@@ -17,6 +18,7 @@ describe('ui utilities', () => {
       <div id="victoryModal"><div id="victoryTitle"></div><div id="victoryStats"></div></div>
       <div id="bonusInfo"></div>
       <div id="cards"></div>
+      <div id="actionLog"></div>
     `;
     game = {
       players: [
@@ -75,5 +77,16 @@ describe('ui utilities', () => {
     expect(getSelectedCards()).toEqual([0]);
     resetSelectedCards();
     expect(getSelectedCards()).toEqual([]);
+  });
+
+  test('addLogEntry retains full history and displays last 10', () => {
+    for (let i = 1; i <= 12; i++) {
+      addLogEntry(`msg${i}`);
+    }
+    expect(gameState.log.length).toBe(12);
+    const logEl = document.getElementById('actionLog');
+    expect(logEl.children.length).toBe(10);
+    expect(logEl.firstChild.textContent).toBe('msg3');
+    expect(logEl.lastChild.textContent).toBe('msg12');
   });
 });

@@ -19,6 +19,7 @@ import {
   updateUI,
   resetSelectedCards,
   getSelectedCards,
+  getLog,
 } from "./ui.js";
 
 // Remove any previously registered service workers to avoid stale caches
@@ -364,6 +365,22 @@ const forceErrorBtn = document.getElementById("forceError");
 if (forceErrorBtn) {
   forceErrorBtn.addEventListener("click", () => {
     throw new Error("Forced error for testing");
+  });
+}
+
+const exportLogBtn = document.getElementById("exportLog");
+if (exportLogBtn) {
+  exportLogBtn.addEventListener("click", () => {
+    const logData = getLog();
+    const blob = new Blob([logData.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "netrisk-log.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
 }
 

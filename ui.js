@@ -52,13 +52,13 @@ function updateInfoPanel() {
 
 function addLogEntry(msg) {
   gameState.log.push(msg);
-  if (gameState.log.length > 10) gameState.log.shift();
   const logEl = getElement("actionLog");
   if (logEl) {
     // rebuild log using DOM nodes to avoid innerHTML
     while (logEl.firstChild) logEl.removeChild(logEl.firstChild);
     const fragment = document.createDocumentFragment();
-    gameState.log.forEach((l) => {
+    const recent = gameState.log.slice(-10);
+    recent.forEach((l) => {
       const div = document.createElement("div");
       div.textContent = l;
       fragment.appendChild(div);
@@ -66,6 +66,10 @@ function addLogEntry(msg) {
     logEl.appendChild(fragment);
     logEl.scrollTop = logEl.scrollHeight;
   }
+}
+
+function getLog() {
+  return gameState.log;
 }
 
 function animateMove(from, to) {
@@ -252,4 +256,5 @@ export {
   getSelectedCards,
   resetSelectedCards,
   getBoardScale,
+  getLog,
 };
