@@ -241,13 +241,23 @@ class Game {
       }
       this.phase = REINFORCE;
       this.calculateReinforcements();
+      while (this.hands[this.currentPlayer].length > 5) {
+        const set = this.findValidSet(this.hands[this.currentPlayer]);
+        if (!set) break;
+        this.playCards(set);
+      }
       this.emit('turnStart', { player: this.currentPlayer });
       this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
     }
   }
 
   drawCard(player) {
-    if (this.deck.length === 0) return null;
+    if (this.deck.length === 0) {
+      if (this.discard.length === 0) return null;
+      this.shuffle(this.discard);
+      this.deck = this.discard;
+      this.discard = [];
+    }
     const card = this.deck.shift();
     this.hands[player].push(card);
     this.emit('cardDrawn', { player, card });
