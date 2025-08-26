@@ -10,22 +10,28 @@ describe('main menu', () => {
       localStorage.clear();
     }
     document.body.innerHTML = `
-      <div id="mainMenu"><button id="startGame"></button></div>
-      <div id="gameContainer">
-        <div id="status"></div>
-        <div id="currentPlayer"></div>
-        <div id="turnNumber"></div>
-        <div id="actionLog"></div>
-        <div id="diceResults"></div>
-        <div id="uiPanel"></div>
-        <button id="endTurn"></button>
-        <button type="button" id="t1" class="territory" data-id="t1"></button>
-        <button type="button" id="t2" class="territory" data-id="t2"></button>
-        <button type="button" id="t3" class="territory" data-id="t3"></button>
-        <button type="button" id="t4" class="territory" data-id="t4"></button>
-        <button type="button" id="t5" class="territory" data-id="t5"></button>
-        <button type="button" id="t6" class="territory" data-id="t6"></button>
-      </div>`;
+      <header>
+        <h1>NetRisk</h1>
+        <button id="themeToggle"></button>
+      </header>
+      <main>
+        <div id="mainMenu"><button id="startGame"></button></div>
+        <div id="gameContainer">
+          <div id="status"></div>
+          <div id="currentPlayer"></div>
+          <div id="turnNumber"></div>
+          <div id="actionLog"></div>
+          <div id="diceResults"></div>
+          <div id="uiPanel"></div>
+          <button id="endTurn"></button>
+          <button type="button" id="t1" class="territory" data-id="t1"></button>
+          <button type="button" id="t2" class="territory" data-id="t2"></button>
+          <button type="button" id="t3" class="territory" data-id="t3"></button>
+          <button type="button" id="t4" class="territory" data-id="t4"></button>
+          <button type="button" id="t5" class="territory" data-id="t5"></button>
+          <button type="button" id="t6" class="territory" data-id="t6"></button>
+        </div>
+      </main>`;
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
