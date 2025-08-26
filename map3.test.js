@@ -51,4 +51,17 @@ describe('territory-selection with map3', () => {
     const buttons = document.querySelectorAll('button.territory');
     expect(buttons).toHaveLength(map.territories.length);
   });
+
+  test('token is appended after territory buttons', async () => {
+    document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
+    localStorage.setItem('netriskMap', 'map3');
+    const svg = fs.readFileSync('map3.svg', 'utf8');
+    global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
+    const init = require('./territory-selection.js').default;
+    init({ territories: map.territories });
+    await flushPromises();
+    const board = document.getElementById('board');
+    const token = document.getElementById('token');
+    expect(board.lastElementChild).toBe(token);
+  });
 });
