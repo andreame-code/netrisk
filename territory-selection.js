@@ -1,3 +1,5 @@
+import { ATTACK, FORTIFY } from "./phases.js";
+
 export default function initTerritorySelection({
   logger,
   game,
@@ -33,7 +35,7 @@ export default function initTerritorySelection({
   function moveToken(el) {
     if (!el) return;
     const phase = game?.getPhase();
-    if (phase && !["attack", "fortify"].includes(phase)) {
+    if (phase && ![ATTACK, FORTIFY].includes(phase)) {
       addLogEntry?.(`Movimento non consentito nella fase ${phase}`);
       return;
     }

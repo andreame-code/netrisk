@@ -5,6 +5,12 @@ import { playAttackSound, playConquerSound } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
 import { navigateTo } from "./navigation.js";
 import {
+  REINFORCE,
+  ATTACK,
+  FORTIFY,
+  GAME_OVER,
+} from "./phases.js";
+import {
   initUI,
   updateInfoPanel,
   addLogEntry,
@@ -43,7 +49,7 @@ const gameState = {
   territories: [],
   selectedTerritory: null,
   tokenPosition: null,
-  phase: "reinforce",
+  phase: REINFORCE,
   log: [],
 };
 
@@ -134,7 +140,7 @@ async function loadGame() {
 function runAI() {
   if (
     game.players[game.currentPlayer].ai &&
-    game.getPhase() !== "gameover"
+    game.getPhase() !== GAME_OVER
   ) {
     setTimeout(() => {
       game.performAITurn();
@@ -155,7 +161,7 @@ function attachTerritoryHandlers() {
         const result = game.handleTerritoryClick(el.dataset.id);
         if (result) {
           const playerName = game.players[prevPlayer].name;
-          if (result.type === "attack") {
+          if (result.type === ATTACK) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
             }
@@ -182,12 +188,12 @@ function attachTerritoryHandlers() {
               }
             }
             addLogEntry(`${playerName} attacca ${result.to} da ${result.from}`);
-          } else if (result.type === "reinforce") {
+          } else if (result.type === REINFORCE) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} reinforces ${result.territory}`);
             }
             addLogEntry(`${playerName} rinforza ${result.territory}`);
-          } else if (result.type === "fortify") {
+          } else if (result.type === FORTIFY) {
             if (typeof logger !== "undefined") {
               logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
             }
@@ -236,12 +242,12 @@ document.getElementById("endTurn").addEventListener("click", () => {
     const prevPlayer = game.currentPlayer;
     const prevPhase = game.getPhase();
     game.endTurn();
-    if (prevPhase === "attack" && game.getPhase() === "fortify") {
+    if (prevPhase === ATTACK && game.getPhase() === FORTIFY) {
       addLogEntry(`${game.players[prevPlayer].name} passa alla fase fortificazioni`);
       if (typeof logger !== "undefined") {
         logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
       }
-    } else if (prevPhase === "fortify" && game.getPhase() === "reinforce") {
+    } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
       gameState.turnNumber += 1;
       addLogEntry(
         `${game.players[prevPlayer].name} termina il turno. Ora tocca a ${game.players[game.currentPlayer].name}`,

@@ -1,4 +1,10 @@
 import { attackSuccessProbability, territoryPriority } from "./ai.js";
+import {
+  REINFORCE,
+  ATTACK,
+  FORTIFY,
+  GAME_OVER,
+} from "./phases.js";
 import { colorPalette } from "./colors.js";
 import EventBus from "./src/core/event-bus.js";
 
@@ -44,7 +50,7 @@ class Game {
 
     this.territories = territories;
     this.currentPlayer = 0;
-    this.phase = 'reinforce';
+    this.phase = REINFORCE;
     this.selectedFrom = null;
     this.reinforcements = 0;
     this.continents = continents;
@@ -97,18 +103,18 @@ class Game {
     const territory = this.territoryById(id);
     if (!territory) return null;
 
-    if (this.phase === 'reinforce') {
+    if (this.phase === REINFORCE) {
       if (territory.owner === this.currentPlayer && this.reinforcements > 0) {
         territory.armies += 1;
         this.reinforcements -= 1;
-        this.emit('reinforce', { territory: id, player: this.currentPlayer });
+        this.emit(REINFORCE, { territory: id, player: this.currentPlayer });
         if (this.reinforcements === 0) {
-          this.phase = 'attack';
+          this.phase = ATTACK;
           this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
         }
-        return { type: 'reinforce', territory: id };
+        return { type: REINFORCE, territory: id };
       }
-    } else if (this.phase === 'attack') {
+    } else if (this.phase === ATTACK) {
       if (!this.selectedFrom) {
         if (territory.owner === this.currentPlayer && territory.armies > 1) {
           this.selectedFrom = territory;
@@ -123,12 +129,12 @@ class Game {
         }
         if (from.owner === this.currentPlayer && to.owner !== this.currentPlayer && from.neighbors.includes(to.id)) {
           const result = this.attack(from, to);
-          this.emit('attack', { from: from.id, to: to.id, result });
+          this.emit(ATTACK, { from: from.id, to: to.id, result });
           this.selectedFrom = null;
-          return Object.assign({ type: 'attack', from: from.id, to: to.id }, result);
+          return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
         }
       }
-    } else if (this.phase === 'fortify') {
+    } else if (this.phase === FORTIFY) {
       if (!this.selectedFrom) {
         if (territory.owner === this.currentPlayer && territory.armies > 1) {
           this.selectedFrom = territory;
@@ -148,7 +154,7 @@ class Game {
         ) {
           const movable = from.armies - 1;
           this.selectedFrom = null;
-          return { type: 'fortify', from: from.id, to: to.id, movableArmies: movable };
+          return { type: FORTIFY, from: from.id, to: to.id, movableArmies: movable };
         }
       }
     }
@@ -204,7 +210,7 @@ class Game {
     const owner = this.territories[0].owner;
     const win = this.territories.every(t => t.owner === owner);
     if (win) {
-      this.phase = 'gameover';
+      this.phase = GAME_OVER;
       this.winner = owner;
       return owner;
     }
@@ -212,12 +218,12 @@ class Game {
   }
 
   endTurn() {
-    if (this.phase === 'gameover') return;
-    if (this.phase === 'attack') {
+    if (this.phase === GAME_OVER) return;
+    if (this.phase === ATTACK) {
       this.selectedFrom = null;
-      this.phase = 'fortify';
+      this.phase = FORTIFY;
       this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
-    } else if (this.phase === 'fortify') {
+    } else if (this.phase === FORTIFY) {
       const prev = this.currentPlayer;
       this.selectedFrom = null;
       // Move to the next player, skipping any who have been eliminated
@@ -231,7 +237,7 @@ class Game {
           this.emit('cardAwarded', { player: prev, card });
         }
       }
-      this.phase = 'reinforce';
+      this.phase = REINFORCE;
       this.calculateReinforcements();
       this.emit('turnStart', { player: this.currentPlayer });
       this.emit('phaseChange', { phase: this.phase, player: this.currentPlayer });
@@ -284,7 +290,7 @@ class Game {
   }
 
   performAITurn() {
-    if (!this.players[this.currentPlayer].ai || this.phase === 'gameover') return;
+    if (!this.players[this.currentPlayer].ai || this.phase === GAME_OVER) return;
     // Play cards if possible
     const hand = this.hands[this.currentPlayer];
     const set = this.findValidSet(hand);
@@ -301,12 +307,12 @@ class Game {
       target.armies += 1;
       this.reinforcements -= 1;
     }
-    if (this.phase === 'reinforce' && this.reinforcements === 0) {
-      this.phase = 'attack';
+    if (this.phase === REINFORCE && this.reinforcements === 0) {
+      this.phase = ATTACK;
     }
 
     // Attack while probabilities favorable
-    while (this.phase === 'attack') {
+    while (this.phase === ATTACK) {
       const options = [];
       this.territories
         .filter(t => t.owner === this.currentPlayer && t.armies > 1)
@@ -324,12 +330,12 @@ class Game {
       const best = options[0];
       if (best.prob < 0.6) break;
       this.attack(best.from, best.to);
-      if (this.phase === 'gameover') return;
+      if (this.phase === GAME_OVER) return;
     }
 
     // Fortify one army from strong to weak border
     this.endTurn();
-    if (this.phase === 'fortify') {
+    if (this.phase === FORTIFY) {
       let best = null;
       const aiOwned = this.territories.filter(t => t.owner === this.currentPlayer);
       aiOwned.forEach(from => {

@@ -1,4 +1,5 @@
 import Game from "./game.js";
+import { REINFORCE } from "./phases.js";
 
 describe('Event bus', () => {
   const mapMock = {
@@ -14,7 +15,7 @@ describe('Event bus', () => {
     const game = new Game(null, mapMock.territories, mapMock.continents, mapMock.deck, false);
     let called = false;
     const plugin = (g) => {
-      g.on('reinforce', () => {
+      g.on(REINFORCE, () => {
         called = true;
       });
     };

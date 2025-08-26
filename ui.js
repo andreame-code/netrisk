@@ -1,4 +1,5 @@
 import { getContrastingColor } from "./colors.js";
+import { REINFORCE } from "./phases.js";
 
 let game;
 let gameState;
@@ -136,7 +137,7 @@ function updateUI() {
     el.classList.remove("selected");
   });
   let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
-  if (game.getPhase() === "reinforce") {
+  if (game.getPhase() === REINFORCE) {
     status += ` (${game.reinforcements} reinforcements)`;
   }
   document.getElementById("status").textContent = status;
