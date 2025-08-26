@@ -237,10 +237,6 @@ async function initGame() {
   if (!loadedGame) return;
   game = loadedGame;
   territoryPositions = positions;
-  if (typeof module !== "undefined" && module.exports) {
-    module.exports.game = game;
-    module.exports.territoryPositions = territoryPositions;
-  }
   initialiseUI(game);
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
