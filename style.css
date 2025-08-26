@@ -187,6 +187,17 @@ h1 {
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+body.dark-theme {
+  background: #222;
+  color: #eee;
+}
+
+body.dark-theme .btn {
+  background: #444;
+  color: #fff;
+  border-color: #666;
+}
+
 #howToPlayBox {
   margin-top: 5px;
   font-size: 14px;
