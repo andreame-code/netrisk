@@ -1,0 +1,32 @@
+@import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel&display=swap');
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Cinzel', serif;
+  background: #e8dcc0 url('https://www.transparenttextures.com/patterns/aged-paper.png');
+  color: #3b2b16;
+  text-align: center;
+  line-height: 1.4;
+}
+
+h1 {
+  font-family: 'Cinzel', serif;
+  color: #8b0000;
+  text-shadow: 2px 2px #000;
+  margin-bottom: 20px;
+}
+
+a {
+  color: inherit;
+}

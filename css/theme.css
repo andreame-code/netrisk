@@ -1,0 +1,32 @@
+/* Theme and high contrast mode */
+
+body.high-contrast {
+  background: #000;
+  color: #fff;
+}
+
+body.high-contrast h1 {
+  color: #ff0;
+  text-shadow: none;
+}
+
+body.high-contrast .btn {
+  background: #000;
+  color: #ff0;
+  border: 2px solid #ff0;
+}
+
+body.high-contrast .log,
+body.high-contrast #uiPanel,
+body.high-contrast .board,
+body.high-contrast .modal-content {
+  background: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+body.high-contrast .territory {
+  fill: #555;
+  stroke: #fff;
+  color: #fff;
+}
