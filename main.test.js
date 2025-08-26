@@ -193,6 +193,7 @@ describe('main DOM interactions', () => {
       });
     const uiSpy = jest.spyOn(ui, 'updateUI').mockImplementation(() => {});
     main.runAI();
+    jest.runOnlyPendingTimers();
     expect(perform).toHaveBeenCalled();
     expect(uiSpy).toHaveBeenCalled();
     perform.mockRestore();
