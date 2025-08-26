@@ -162,17 +162,20 @@ describe('main DOM interactions', () => {
     const t1 = document.getElementById('t1');
     main.game.players[0].color = '#notacolor';
     expect(() => ui.updateUI()).not.toThrow();
-    expect(t1.style.background).toBe('');
+    const colorClasses = Array.from(t1.classList).filter((c) =>
+      c.startsWith('player-color-'),
+    );
+    expect(colorClasses).toHaveLength(0);
   });
 
   test('army count text contrasts with player color', () => {
     const t1 = document.getElementById('t1');
     main.game.players[0].color = '#000000';
     ui.updateUI();
-    expect(t1.style.color).toBe('rgb(255, 255, 255)');
+    expect(getComputedStyle(t1).color).toBe('rgb(255, 255, 255)');
     main.game.players[0].color = '#ffffff';
     ui.updateUI();
-    expect(t1.style.color).toBe('rgb(0, 0, 0)');
+    expect(getComputedStyle(t1).color).toBe('rgb(0, 0, 0)');
   });
 
   test('startNewGame clears saved data', () => {
