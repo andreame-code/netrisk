@@ -1,19 +1,17 @@
+import {
+  setMasterVolume,
+  getMasterVolume,
+  setMuted,
+  isMuted,
+} from './audio.js';
+import { initThemeToggle, initThemeSelect } from './theme.js';
+
 const lang = navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
 
 const texts = {
   en: {
-    title: 'About & Help',
-    search: 'Search...',
+    title: 'About & Settings',
     sections: {
-      rules: {
-        title: 'Rules',
-        content:
-          'Each player deploys armies, attacks adjacent territories and ends the turn. Conquer all territories to win.',
-      },
-      tips: {
-        title: 'Tips',
-        content: 'Expand early, defend borders and watch your opponents.',
-      },
       credits: {
         title: 'Credits',
         content: 'Created by the NetRisk team.',
@@ -27,26 +25,12 @@ const texts = {
         content:
           '<a href="https://github.com" target="_blank" rel="noopener">Source code on GitHub</a>',
       },
-      privacy: {
-        title: 'Privacy',
-        content:
-          'Game saves are stored locally in your browser. No tracking cookies are used. Audio preferences remain local.',
-      },
+      settings: { title: 'Settings', content: '' },
     },
   },
   it: {
-    title: 'Info e Aiuto',
-    search: 'Cerca...',
+    title: 'Info e Impostazioni',
     sections: {
-      rules: {
-        title: 'Regole',
-        content:
-          'Ogni giocatore schiera gli eserciti, attacca territori adiacenti e termina il turno. Chi conquista tutte le terre vince.',
-      },
-      tips: {
-        title: 'Suggerimenti',
-        content: 'Espandi all\'inizio, difendi i confini e osserva gli avversari.',
-      },
       credits: {
         title: 'Credits',
         content: 'Creato dal team NetRisk.',
@@ -60,11 +44,7 @@ const texts = {
         content:
           '<a href="https://github.com" target="_blank" rel="noopener">Codice sorgente su GitHub</a>',
       },
-      privacy: {
-        title: 'Privacy',
-        content:
-          'I salvataggi sono memorizzati localmente nel browser. Nessun cookie di tracciamento viene utilizzato. Le preferenze audio restano locali.',
-      },
+      settings: { title: 'Impostazioni', content: '' },
     },
   },
 };
@@ -84,15 +64,32 @@ export function initAbout(doc = document) {
   const t = texts[lang];
   doc.getElementById('pageTitle').textContent = t.title;
   doc.title = `${t.title} - NetRisk`;
-  const searchInput = doc.getElementById('helpSearch');
-  searchInput.placeholder = t.search;
-  searchInput.addEventListener('input', (e) => filterSections(e.target.value, doc));
   Object.entries(t.sections).forEach(([id, data]) => {
     const section = doc.getElementById(id);
     if (!section) return;
     section.querySelector('h2').textContent = data.title;
-    section.querySelector('.content').innerHTML = data.content;
+    if (data.content) {
+      section.querySelector('.content').innerHTML = data.content;
+    }
   });
+  initThemeToggle(doc);
+  initThemeSelect(doc);
+  const vol = doc.getElementById('masterVolume');
+  if (vol) {
+    vol.value = getMasterVolume();
+    vol.addEventListener('input', (e) => {
+      setMasterVolume(parseFloat(e.target.value));
+    });
+  }
+  const muteBtn = doc.getElementById('muteBtn');
+  if (muteBtn) {
+    muteBtn.textContent = isMuted() ? 'Unmute' : 'Mute';
+    muteBtn.addEventListener('click', () => {
+      const muted = isMuted();
+      setMuted(!muted);
+      muteBtn.textContent = muted ? 'Mute' : 'Unmute';
+    });
+  }
 }
 
 if (typeof window !== 'undefined') {

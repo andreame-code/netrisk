@@ -1,4 +1,4 @@
-import { initThemeToggle } from './theme.js';
+import { initThemeToggle, initThemeSelect } from './theme.js';
 
 describe('theme toggle', () => {
   beforeEach(() => {
@@ -25,5 +25,26 @@ describe('theme toggle', () => {
     localStorage.setItem('theme', 'high-contrast');
     initThemeToggle();
     expect(document.body.classList.contains('high-contrast')).toBe(true);
+  });
+});
+
+describe('theme select', () => {
+  beforeEach(() => {
+    document.body.innerHTML =
+      '<select id="themeSelect"><option value="light">Light</option><option value="dark">Dark</option></select>';
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+  });
+
+  test('applies stored theme and saves changes', () => {
+    localStorage.setItem('colorTheme', 'dark');
+    initThemeSelect();
+    expect(document.body.classList.contains('dark-theme')).toBe(true);
+    const sel = document.getElementById('themeSelect');
+    sel.value = 'light';
+    sel.dispatchEvent(new Event('change'));
+    expect(document.body.classList.contains('dark-theme')).toBe(false);
+    expect(localStorage.getItem('colorTheme')).toBe('light');
   });
 });

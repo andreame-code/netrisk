@@ -3,24 +3,15 @@
   <head>
     <meta charset="UTF-8" >
     <meta name="viewport" content="width=device-width, initial-scale=1.0" >
-    <title>About &amp; Help - NetRisk</title>
+    <title>About &amp; Settings - NetRisk</title>
     <link rel="stylesheet" href="./style.css" >
   </head>
   <body>
     <nav>
       <a href="index.html" id="homeLink">Home</a>
     </nav>
-    <h1 id="pageTitle">About &amp; Help</h1>
-    <input type="search" id="helpSearch" aria-label="Search" >
+    <h1 id="pageTitle">About &amp; Settings</h1>
     <div id="helpContent">
-      <section id="rules">
-        <h2>Rules</h2>
-        <div class="content"></div>
-      </section>
-      <section id="tips">
-        <h2>Tips</h2>
-        <div class="content"></div>
-      </section>
       <section id="credits">
         <h2>Credits</h2>
         <div class="content"></div>
@@ -33,9 +24,32 @@
         <h2>GitHub</h2>
         <div class="content"></div>
       </section>
-      <section id="privacy">
-        <h2>Privacy</h2>
-        <div class="content"></div>
+      <section id="settings">
+        <h2>Settings</h2>
+        <div class="content">
+          <label for="themeSelect">Theme:</label>
+          <select id="themeSelect" aria-label="Theme selection">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <button
+            id="themeToggle"
+            class="btn"
+            aria-label="Toggle high contrast mode"
+          >
+            High Contrast
+          </button>
+          <label for="masterVolume">Volume:</label>
+          <input
+            type="range"
+            id="masterVolume"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.5"
+          />
+          <button id="muteBtn" class="btn" aria-label="Toggle mute">Mute</button>
+        </div>
       </section>
     </div>
     <script type="module" src="./about.js"></script>
