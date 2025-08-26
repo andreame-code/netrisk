@@ -1,4 +1,5 @@
 import { colorPalette } from "./colors.js";
+import { initThemeToggle } from "./theme.js";
 
 const form = document.getElementById("setupForm");
 const humanCountInput = document.getElementById("humanCount");
@@ -98,3 +99,4 @@ form.addEventListener("submit", (e) => {
 });
 
 loadFromStorage();
+initThemeToggle();

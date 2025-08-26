@@ -17,6 +17,7 @@ import {
   FORTIFY,
   GAME_OVER,
 } from "./phases.js";
+import { initThemeToggle } from "./theme.js";
 import {
   initUI,
   updateInfoPanel,
@@ -484,6 +485,7 @@ function init() {
 }
 
 init();
+initThemeToggle();
 
 export {
   game,
