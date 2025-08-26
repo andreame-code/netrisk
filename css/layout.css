@@ -1,16 +1,28 @@
 body.home-page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
   margin: 0;
 }
 
-.home-header {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 10px;
+  background: rgba(245, 231, 198, 0.9);
+  border-bottom: 2px solid #8b4513;
+}
+
+.main-header nav a {
+  margin-left: 10px;
+}
+
+body.high-contrast .main-header {
+  background: #000;
+  color: #fff;
+  border-color: #fff;
 }
 
 #mainMenu {

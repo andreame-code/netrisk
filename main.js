@@ -13,7 +13,7 @@ import {
   isMusicEnabled,
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
-import { navigateTo, goHome, exitGame } from "./navigation.js";
+import { navigateTo, exitGame } from "./navigation.js";
 import {
   REINFORCE,
   ATTACK,
@@ -581,13 +581,6 @@ async function initGame() {
 }
 
 function attachNavigationHandlers() {
-  const back = document.getElementById("backHome");
-  if (back) {
-    back.addEventListener("click", (e) => {
-      e.preventDefault();
-      goHome();
-    });
-  }
   const exit = document.getElementById("exitGame");
   if (exit) {
     exit.addEventListener("click", (e) => {
