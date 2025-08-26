@@ -1,4 +1,5 @@
 import { attackSuccessProbability, territoryPriority } from "./ai.js";
+import { colorPalette } from "./colors.js";
 
 async function loadMapData() {
   try {
@@ -18,11 +19,12 @@ async function loadMapData() {
 
 class Game {
   constructor(players, territories = [], continents = [], deck = [], shuffleDeck = true) {
-    this.players = players || [
-      { name: 'Player 1', color: '#e74c3c' },
-      { name: 'Player 2', color: '#3498db' },
-      { name: 'AI', color: '#2ecc71', ai: true }
-    ];
+    this.players =
+      players || [
+        { name: 'Player 1', color: colorPalette[0] },
+        { name: 'Player 2', color: colorPalette[1] },
+        { name: 'AI', color: colorPalette[2], ai: true },
+      ];
 
     const total = territories.length || 1;
     territories = territories.map((t, i) => ({

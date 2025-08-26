@@ -1,3 +1,5 @@
+import { getContrastingColor } from "./colors.js";
+
 let game;
 let gameState;
 let territoryPositions = {};
@@ -117,18 +119,12 @@ function updateUI() {
     if (!el) return;
 
     const color = game.players[t.owner].color;
-    try {
-      if (
-        typeof CSS !== "undefined" &&
-        CSS.supports &&
-        CSS.supports("color", color)
-      ) {
-        el.style.background = color;
-      } else {
-        el.style.background = "";
-      }
-    } catch {
-      el.style.background = "";
+    el.style.background = "";
+    el.style.background = color;
+    if (el.style.background) {
+      el.style.color = getContrastingColor(color);
+    } else {
+      el.style.color = "";
     }
 
     el.textContent = t.armies;
