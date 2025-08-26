@@ -14,27 +14,13 @@ function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
 }
 
-const assets = [
-  'map.svg',
-  'style.css',
-  'logger.js',
-  'game.js',
-  'main.js',
-  'territory-selection.js',
-  'audio.js',
-  'ui.js',
-];
+const assets = ['style.css', 'logger.js', 'main.js'];
+const plainAssets = ['map.svg', 'game.js', 'territory-selection.js', 'audio.js', 'ui.js'];
 const hashed = {};
 
-// First process map.svg to know its hashed name
 for (const asset of assets) {
   let filePath = path.join(root, asset);
   let content = fs.readFileSync(filePath, 'utf8');
-
-  if (asset === 'territory-selection.js') {
-    // replace map.svg reference with hashed name
-    content = content.replace(/map\.svg/g, hashed['map.svg']);
-  }
 
   const hash = hashContent(content);
   const ext = path.extname(asset);
@@ -42,6 +28,10 @@ for (const asset of assets) {
   const newName = `${base}.${hash}${ext}`;
   fs.writeFileSync(path.join(dist, newName), content);
   hashed[asset] = newName;
+}
+
+for (const asset of plainAssets) {
+  fs.copyFileSync(path.join(root, asset), path.join(dist, asset));
 }
 
 let indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
