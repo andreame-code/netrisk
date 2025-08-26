@@ -38,6 +38,35 @@ npm test
 npm run lint
 ```
 
+## Multiplayer
+
+NetRisk ships with a very small WebSocket relay and a plugin that keeps the
+game state in sync across browser tabs or machines.
+
+1. Start the regular development server:
+
+   ```bash
+   npm start
+   ```
+
+2. In another terminal, launch the relay server (defaults to port 8081):
+
+   ```bash
+   npm run server
+   ```
+
+3. Open `http://localhost:8080` in each player's browser.
+
+4. In the developer console of every client, enable the multiplayer plugin:
+
+   ```js
+   const { default: createWebSocketMultiplayer } = await import("./src/plugins/websocket-multiplayer-plugin.js");
+   game.use(createWebSocketMultiplayer("ws://localhost:8081"));
+   ```
+
+Once the snippet runs in each browser, any action taken by one player will
+propagate to all connected clients in real time.
+
 ## Extensibility
 
 The core `Game` class exposes a lightweight event bus and plugin system to
