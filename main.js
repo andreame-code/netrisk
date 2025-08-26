@@ -88,6 +88,18 @@ async function startNewGame() {
     localStorage.removeItem("netriskGame");
   }
   await loadGame();
+  // Re-render the board and reset any selection state so a fresh
+  // match begins. The territory selection module will recreate the
+  // SVG map, attach click handlers and call updateUI when done.
+  initTerritorySelection({
+    logger,
+    game,
+    territories: game.territories,
+    addLogEntry,
+    gameState,
+    attachTerritoryHandlers,
+    updateUI,
+  });
   gameState.turnNumber = 1;
   gameState.log = [];
   const logEl = document.getElementById("actionLog");
