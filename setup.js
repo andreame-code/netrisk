@@ -30,8 +30,8 @@ function loadFromStorage() {
   } catch (err) {
     saved = null;
   }
-  let humanCount = 2;
-  let aiCount = 1;
+  let humanCount = 1;
+  let aiCount = 2;
   if (saved && Array.isArray(saved)) {
     humanCount = saved.filter((p) => !p.ai).length;
     aiCount = saved.filter((p) => p.ai).length;

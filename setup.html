@@ -2,18 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./style.css" />
     <title>Setup NetRisk</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
   </head>
   <body>
     <h1>Player Setup</h1>
     <form id="setupForm">
       <label>
         Number of human players:
-        <input type="number" id="humanCount" min="1" max="6" required value="2" />
+        <input type="number" id="humanCount" min="1" max="6" required value="1" />
       </label>
       <label>
         Number of AI players:
-        <input type="number" id="aiCount" min="0" max="5" required value="1" />
+        <input type="number" id="aiCount" min="0" max="5" required value="2" />
       </label>
       <div id="players"></div>
       <button type="submit">Start</button>
