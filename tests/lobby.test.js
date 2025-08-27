@@ -19,6 +19,10 @@ describe('lobby screen', () => {
           <input id="roomName" />
           <input id="maxPlayers" />
           <select id="map"></select>
+          <menu>
+            <button type="button" id="cancelCreate" value="cancel">Cancel</button>
+            <button id="submitCreate" value="default">Create</button>
+          </menu>
         </form>
       </dialog>
       <ul id="chatMessages"></ul>
@@ -77,6 +81,23 @@ describe('lobby screen', () => {
     const text = document.getElementById('lobbyList').textContent;
     expect(text).toContain('abc');
     expect(text).toContain('1/4');
+    delete global.WebSocket;
+  });
+
+  test('cancel closes dialog and does not send message', async () => {
+    const wsInstance = { send: jest.fn(), readyState: 1 };
+    global.WebSocket = jest.fn(() => wsInstance);
+    global.WebSocket.OPEN = 1;
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    expect(document.getElementById('createDialog').hasAttribute('open')).toBe(true);
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
+    await new Promise(r => setTimeout(r, 0));
+    document.getElementById('map').value = 'map';
+    document.getElementById('cancelCreate').click();
+    expect(document.getElementById('createDialog').hasAttribute('open')).toBe(false);
+    expect(WebSocket).not.toHaveBeenCalled();
     delete global.WebSocket;
   });
 

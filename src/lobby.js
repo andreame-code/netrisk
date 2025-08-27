@@ -54,6 +54,7 @@ export function initLobby() {
   if (backBtn) backBtn.addEventListener('click', () => goHome());
   const createBtn = document.getElementById('createBtn');
   const dialog = document.getElementById('createDialog');
+  const cancelBtn = document.getElementById('cancelCreate');
   const form = document.getElementById('createForm');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
@@ -83,6 +84,12 @@ export function initLobby() {
     createBtn.addEventListener('click', () => {
       if (dialog.showModal) dialog.showModal();
       else dialog.setAttribute('open', '');
+    });
+  }
+  if (cancelBtn && dialog) {
+    cancelBtn.addEventListener('click', () => {
+      if (dialog.close) dialog.close();
+      else dialog.removeAttribute('open');
     });
   }
   if (form) {
