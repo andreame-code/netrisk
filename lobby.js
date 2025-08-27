@@ -40,6 +40,23 @@ export function initLobby() {
   const createBtn = document.getElementById('createBtn');
   const dialog = document.getElementById('createDialog');
   const form = document.getElementById('createForm');
+  // populate map select from manifest
+  (async () => {
+    const select = document.getElementById('map');
+    if (!select) return;
+    try {
+      const res = await fetch('./map-manifest.json');
+      const data = await res.json();
+      data.maps.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        select.appendChild(opt);
+      });
+    } catch {
+      // ignore fetch errors
+    }
+  })();
   if (createBtn && dialog) {
     createBtn.addEventListener('click', () => {
       if (dialog.showModal) dialog.showModal();

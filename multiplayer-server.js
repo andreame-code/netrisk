@@ -1,6 +1,18 @@
 import { WebSocketServer } from "ws";
 import { randomBytes } from "crypto";
+import fs from "fs";
 import supabase from "./src/init/supabase-client.js";
+
+// Load available map ids from manifest
+let validMaps = [];
+try {
+  const manifest = JSON.parse(fs.readFileSync("map-manifest.json", "utf8"));
+  validMaps = manifest.maps?.map(m => m.id) || [];
+} catch {
+  validMaps = [];
+}
+
+const isValidMap = id => validMaps.includes(id);
 
 /**
  * Creates a multiplayer lobby server. The server supports creating and joining
@@ -112,6 +124,10 @@ export function createLobbyServer({
 
       switch (msg.type) {
         case "createLobby": {
+          if (msg.map && !isValidMap(msg.map)) {
+            ws.send(JSON.stringify({ type: "error", error: "invalidMap" }));
+            break;
+          }
           const code = createCode();
           const player = {
             id: msg.player?.id || createCode(),
@@ -236,6 +252,10 @@ export function createLobbyServer({
         case "selectMap": {
           const lobby = await loadLobby(msg.code);
           if (!lobby || lobby.host !== msg.id || lobby.started) return;
+          if (msg.map && !isValidMap(msg.map)) {
+            ws.send(JSON.stringify({ type: "error", error: "invalidMap" }));
+            return;
+          }
           lobby.map = msg.map || null;
           await persistLobby(lobby);
           broadcast(lobby, {
@@ -256,7 +276,7 @@ export function createLobbyServer({
           lobby.started = true;
           lobby.currentPlayer = msg.state?.currentPlayer ?? null;
           await persistLobby(lobby);
-          broadcast(lobby, { type: "start", state: lobby.state });
+          broadcast(lobby, { type: "start", state: lobby.state, map: lobby.map });
           break;
         }
         case "state": {

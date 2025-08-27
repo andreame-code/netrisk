@@ -73,15 +73,22 @@ test("lobby server manages lifecycle", async () => {
   q3.shift();
 
   ws1.send(
-    JSON.stringify({ type: "selectMap", code, id: "p1", map: "test" })
+    JSON.stringify({ type: "selectMap", code, id: "p1", map: "map" })
   );
   await wait(50);
   const map1 = q1.shift();
   const map2 = q2.shift();
   const map3 = q3.shift();
-  expect(map1.map).toBe("test");
-  expect(map2.map).toBe("test");
-  expect(map3.map).toBe("test");
+  expect(map1.map).toBe("map");
+  expect(map2.map).toBe("map");
+  expect(map3.map).toBe("map");
+
+  ws1.send(
+    JSON.stringify({ type: "selectMap", code, id: "p1", map: "invalid" })
+  );
+  await wait(50);
+  const errMap = q1.shift();
+  expect(errMap.error).toBe("invalidMap");
 
   ws1.send(JSON.stringify({ type: "ready", code, id: "p1", ready: true }));
   ws2.send(JSON.stringify({ type: "ready", code, id: "p2", ready: true }));
@@ -104,6 +111,7 @@ test("lobby server manages lifecycle", async () => {
   expect(start2.type).toBe("start");
   expect(start3.state.currentPlayer).toBe("p1");
   expect(start1.type).toBe("start");
+  expect(start2.map).toBe("map");
 
   ws1.send(
     JSON.stringify({
@@ -139,6 +147,27 @@ test("lobby server manages lifecycle", async () => {
   ws1.close();
   ws2.close();
   ws3b.close();
+  server.close();
+});
+
+test("rejects invalid map on create", async () => {
+  const port = 12348;
+  const server = createLobbyServer({ port });
+  const url = `ws://localhost:${port}`;
+  const ws1 = new WebSocket(url);
+  await onceOpen(ws1);
+  const q1 = messageQueue(ws1);
+  ws1.send(
+    JSON.stringify({
+      type: "createLobby",
+      player: { id: "p1", name: "P1", color: "#f00" },
+      map: "invalid",
+    })
+  );
+  await wait(50);
+  const err = q1.shift();
+  expect(err.error).toBe("invalidMap");
+  ws1.close();
   server.close();
 });
 
