@@ -84,7 +84,13 @@ async function startNewGame() {
     phaseTimer.stop();
   }
   destroyUI();
-  navigateTo("setup.html");
+  const params =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  if (params && params.get("multiplayer")) {
+    navigateTo("lobby.html");
+  } else {
+    navigateTo("setup.html");
+  }
 }
 function initialiseUI(game) {
   initGameState(game);
