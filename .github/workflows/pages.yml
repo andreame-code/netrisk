@@ -50,31 +50,30 @@ jobs:
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r *.html css map*.svg map-manifest.json src supabase dist/
-          # [ -f env.js ] && cp -f env.js dist/env.js || true  # removed to avoid overriding runtime env.js
 
       - name: Create runtime env.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          set -e
           mkdir -p dist
+          # Estrai l'host da SUPABASE_URL e rimuovi eventuale slash finale
+          WS_HOST="$(echo "$SUPABASE_URL" | sed -E 's#^https?://([^/]+)/?$#\1#')"
+          WS_URL="wss://${WS_HOST}/functions/v1/netrisk"
+
           cat > dist/env.js <<EOF
           window.__ENV = {
             SUPABASE_URL: '${SUPABASE_URL}',
             SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}',
-            WS_URL: (function() {
-              try {
-                const u = new URL('${SUPABASE_URL}');
-                return `wss://${u.host}/functions/v1/netrisk`;
-              } catch(e) { return ''; }
-            })()
+            WS_URL: '${WS_URL}'
           };
           EOF
 
-      - name: Sanity check env.js (no secrets printed)
+      - name: Sanity check env.js (masked)
         run: |
-          echo "=== dist/env.js preview (first lines, masked) ==="
-          head -n 5 dist/env.js | sed -E "s/('[^']{4})[^']*'/\1***'/g"
+          echo '--- dist/env.js ---'
+          sed -E "s/('[^']{4})[^']*'/\1***'/g" dist/env.js | sed -n '1,8p'
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
