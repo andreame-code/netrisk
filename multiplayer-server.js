@@ -5,8 +5,9 @@ import supabase from "./src/init/supabase-client.js";
 /**
  * Creates a multiplayer lobby server. The server supports creating and joining
  * lobbies, ready states, basic chat and synchronized turn based game state
- * updates. All state is kept in memory and broadcast to connected clients
- * through WebSocket messages.
+ * updates. State is persisted to Supabase and cached in memory while
+ * the server relays messages between clients. There is no direct
+ * client-to-client communication.
  *
  * @param {object} [opts]
  * @param {number} [opts.port] Port to listen on
@@ -17,7 +18,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
 
   /**
    * Active lobbies keyed by lobby code
-   * @type {Map<string, {code:string, players:Array, host:string, state:any, started:boolean, currentPlayer?:string}>}
+   * @type {Map<string, {code:string, players:Array, host:string, state:any, started:boolean, currentPlayer?:string, map?:string|null}>}
    */
   const lobbies = new Map();
 
@@ -28,10 +29,62 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
   const publicPlayers = lobby =>
     lobby.players.map(({ ws, ...p }) => ({ ...p, connected: !!ws }));
 
-  const broadcast = (lobby, msg, except) => {
+  // Persist lobby to Supabase if available
+  const persistLobby = async lobby => {
+    if (!supabase) return;
+    const row = {
+      code: lobby.code,
+      host: lobby.host,
+      players: lobby.players.map(({ id, name, color, ready }) => ({
+        id,
+        name,
+        color,
+        ready,
+      })),
+      started: lobby.started,
+      currentPlayer: lobby.currentPlayer,
+      state: lobby.state,
+      map: lobby.map,
+    };
+    await supabase.from("lobbies").upsert(row, { onConflict: "code" }).catch(err => {
+      // eslint-disable-next-line no-console
+      console.error("Supabase upsert error", err);
+    });
+  };
+
+  // Load lobby from cache or Supabase
+  const loadLobby = async code => {
+    let lobby = lobbies.get(code);
+    if (!lobby && supabase) {
+      const { data, error } = await supabase
+        .from("lobbies")
+        .select()
+        .eq("code", code)
+        .maybeSingle();
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("Supabase load error", error);
+      }
+      if (data) {
+        lobby = {
+          code: data.code,
+          host: data.host,
+          players: (data.players || []).map(p => ({ ...p, ws: null })),
+          state: data.state || null,
+          started: data.started || false,
+          currentPlayer: data.currentPlayer || null,
+          map: data.map || null,
+        };
+        lobbies.set(code, lobby);
+      }
+    }
+    return lobby;
+  };
+
+  const broadcast = (lobby, msg) => {
     const data = JSON.stringify(msg);
     lobby.players.forEach(p => {
-      if (p.ws && p.ws.readyState === 1 && p.ws !== except) {
+      if (p.ws && p.ws.readyState === 1) {
         p.ws.send(data);
       }
     });
@@ -41,7 +94,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
     let currentLobby = null;
     let currentPlayer = null;
 
-    ws.on("message", raw => {
+    ws.on("message", async raw => {
       let msg;
       try {
         msg = JSON.parse(raw);
@@ -66,31 +119,25 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             state: null,
             started: false,
             currentPlayer: null,
+            map: msg.map || null,
           };
           lobbies.set(code, lobby);
           currentLobby = lobby;
           currentPlayer = player;
-          if (supabase) {
-            supabase
-              .from("lobbies")
-              .insert({ code, host: player.id })
-              .catch(err => {
-                // eslint-disable-next-line no-console
-                console.error("Supabase insert error", err);
-              });
-          }
+          await persistLobby(lobby);
           ws.send(
             JSON.stringify({
               type: "lobby",
               code,
               host: player.id,
               players: publicPlayers(lobby),
+              map: lobby.map,
             })
           );
           break;
         }
         case "joinLobby": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby || lobby.started) {
             ws.send(JSON.stringify({ type: "error", error: "lobbyNotFound" }));
             return;
@@ -108,50 +155,79 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
           ws.send(
             JSON.stringify({ type: "joined", code: lobby.code, id: player.id })
           );
+          await persistLobby(lobby);
           broadcast(lobby, {
             type: "lobby",
             code: lobby.code,
             host: lobby.host,
             players: publicPlayers(lobby),
+            map: lobby.map,
           });
           break;
         }
         case "ready": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby) return;
           const player = lobby.players.find(p => p.id === msg.id);
           if (!player) return;
           player.ready = !!msg.ready;
+          await persistLobby(lobby);
           broadcast(lobby, {
             type: "lobby",
             code: lobby.code,
             host: lobby.host,
             players: publicPlayers(lobby),
+            map: lobby.map,
+          });
+          break;
+        }
+        case "selectMap": {
+          const lobby = await loadLobby(msg.code);
+          if (!lobby || lobby.host !== msg.id || lobby.started) return;
+          lobby.map = msg.map || null;
+          await persistLobby(lobby);
+          broadcast(lobby, {
+            type: "lobby",
+            code: lobby.code,
+            host: lobby.host,
+            players: publicPlayers(lobby),
+            map: lobby.map,
           });
           break;
         }
         case "start": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby || lobby.host !== msg.id) return;
           if (!lobby.players.every(p => p.ready)) return;
           lobby.state = msg.state;
           lobby.started = true;
           lobby.currentPlayer = msg.state?.currentPlayer ?? null;
+          await persistLobby(lobby);
           broadcast(lobby, { type: "start", state: lobby.state });
           break;
         }
         case "state": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby || !lobby.started) return;
           if (lobby.state && msg.id !== lobby.state.currentPlayer) return;
           lobby.state = msg.state;
           lobby.currentPlayer = msg.state?.currentPlayer ?? null;
-          broadcast(lobby, { type: "state", state: lobby.state }, ws);
+          await persistLobby(lobby);
+          broadcast(lobby, { type: "state", state: lobby.state });
           break;
         }
         case "chat": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby) return;
+          if (supabase) {
+            supabase
+              .from("lobby_chat")
+              .insert({ code: lobby.code, id: msg.id, text: msg.text })
+              .catch(err => {
+                // eslint-disable-next-line no-console
+                console.error("Supabase chat error", err);
+              });
+          }
           broadcast(lobby, {
             type: "chat",
             id: msg.id,
@@ -160,7 +236,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
           break;
         }
         case "reconnect": {
-          const lobby = lobbies.get(msg.code);
+          const lobby = await loadLobby(msg.code);
           if (!lobby) return;
           const player = lobby.players.find(p => p.id === msg.id);
           if (!player) return;
@@ -178,6 +254,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
                 ready: player.ready,
               },
               state: lobby.state,
+              map: lobby.map,
             })
           );
           break;
@@ -187,15 +264,17 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
       }
     });
 
-    ws.on("close", () => {
+    ws.on("close", async () => {
       if (currentLobby && currentPlayer) {
         currentPlayer.ws = null;
         currentPlayer.ready = false;
+        await persistLobby(currentLobby);
         broadcast(currentLobby, {
           type: "lobby",
           code: currentLobby.code,
           host: currentLobby.host,
           players: publicPlayers(currentLobby),
+          map: currentLobby.map,
         });
       }
     });
