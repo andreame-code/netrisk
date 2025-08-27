@@ -1,12 +1,13 @@
 import { initThemeToggle } from './theme.js';
 import { goHome } from './navigation.js';
-import supabase from './init/supabase-client.js';
+import { WS_URL } from './config.js';
 import EventBus from './core/event-bus.js';
 
 const bus = new EventBus();
 
 let ws = null;
 let heartbeatInterval = null;
+let supabase = null;
 
 const currentLobbies = [];
 const playerNames = new Map();
@@ -79,8 +80,9 @@ export function initLobby() {
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const map = document.getElementById('map').value.trim();
       if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) return;
+      const url = WS_URL || 'ws://localhost:8081';
       if (!ws || ws.readyState !== WebSocket.OPEN) {
-        ws = new WebSocket('ws://localhost:8081');
+        ws = new WebSocket(url);
         ws.onopen = () => {
           ws.send(
             JSON.stringify({
@@ -121,22 +123,32 @@ export function initLobby() {
   const storedCode = localStorage.getItem('lobbyCode');
   const storedId = localStorage.getItem('playerId');
   if (storedCode && storedId) {
-    ws = new WebSocket('ws://localhost:8081');
+    const url = WS_URL || 'ws://localhost:8081';
+    ws = new WebSocket(url);
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
     };
     ws.onmessage = e => handleMessage(e, null);
   }
   fetchLobbies();
-  if (supabase) {
-    supabase
-      .channel('public:lobbies')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies' }, () => {
-        bus.emit('lobbiesChanged');
-      })
-      .subscribe();
-    bus.on('lobbiesChanged', fetchLobbies);
-  }
+  import('./init/supabase-client.js')
+    .then(mod => {
+      if (mod && Object.prototype.hasOwnProperty.call(mod, 'default')) {
+        supabase = mod.default;
+      } else {
+        supabase = mod;
+      }
+      if (!supabase) return;
+      fetchLobbies();
+      supabase
+        .channel('public:lobbies')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies' }, () => {
+          bus.emit('lobbiesChanged');
+        })
+        .subscribe();
+      bus.on('lobbiesChanged', fetchLobbies);
+    })
+    .catch(() => {});
 
   function addChatMessage(id, text, time = new Date()) {
     if (!chatMessages) return;
