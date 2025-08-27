@@ -5,6 +5,9 @@ jest.mock('./src/init/supabase-client.js', () => null);
 describe('lobby screen', () => {
   beforeEach(() => {
     jest.resetModules();
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ json: () => Promise.resolve({ maps: [{ id: 'map', name: 'Classic' }] }) })
+    );
     document.body.innerHTML = `
       <button id="backBtn" class="btn"></button>
       <button id="createBtn" class="btn"></button>
@@ -13,10 +16,14 @@ describe('lobby screen', () => {
         <form id="createForm">
           <input id="roomName" />
           <input id="maxPlayers" />
-          <input id="map" />
+          <select id="map"></select>
         </form>
       </dialog>
     `;
+  });
+
+  afterEach(() => {
+    delete global.fetch;
   });
 
   test('back button goes home', () => {
@@ -29,18 +36,18 @@ describe('lobby screen', () => {
   test('renderLobbies displays info', () => {
     const { renderLobbies } = require('./lobby.js');
     const data = [
-      { code: 'abc', host: 'host', players: [{}, {}], map: 'earth', started: false, maxPlayers: 5 },
+      { code: 'abc', host: 'host', players: [{}, {}], map: 'map', started: false, maxPlayers: 5 },
     ];
     renderLobbies(data);
     const text = document.getElementById('lobbyList').textContent;
     expect(text).toContain('abc');
     expect(text).toContain('host');
     expect(text).toContain('2/5');
-    expect(text).toContain('earth');
+    expect(text).toContain('map');
     expect(text).toContain('open');
   });
 
-  test('create game flow validates and sends message', () => {
+  test('create game flow validates and sends message', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
@@ -49,7 +56,8 @@ describe('lobby screen', () => {
     expect(document.getElementById('createDialog').hasAttribute('open')).toBe(true);
     document.getElementById('roomName').value = 'Room';
     document.getElementById('maxPlayers').value = '4';
-    document.getElementById('map').value = 'earth';
+    await new Promise(r => setTimeout(r, 0));
+    document.getElementById('map').value = 'map';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
     expect(WebSocket).toHaveBeenCalled();
     wsInstance.onopen();
@@ -58,8 +66,8 @@ describe('lobby screen', () => {
     expect(msg.type).toBe('createLobby');
     expect(msg.player.name).toBe('Room');
     expect(msg.maxPlayers).toBe(4);
-    expect(msg.map).toBe('earth');
-    wsInstance.onmessage({ data: JSON.stringify({ type: 'lobby', code: 'abc', host: 'p1', players: [{ id: 'p1' }], map: 'earth', maxPlayers: 4 }) });
+    expect(msg.map).toBe('map');
+    wsInstance.onmessage({ data: JSON.stringify({ type: 'lobby', code: 'abc', host: 'p1', players: [{ id: 'p1' }], map: 'map', maxPlayers: 4 }) });
     const text = document.getElementById('lobbyList').textContent;
     expect(text).toContain('abc');
     expect(text).toContain('1/4');
