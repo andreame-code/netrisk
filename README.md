@@ -96,6 +96,33 @@ game state in sync across browser tabs or machines.
 Once the snippet runs in each browser, any action taken by one player will
 propagate to all connected clients in real time.
 
+### Lobby server API
+
+`multiplayer-server.js` also provides a simple lobby system used to create
+matches and keep players synchronized. Clients exchange JSON messages over a
+WebSocket connection. The most important message types are:
+
+- `createLobby` – `{ type, player, map? }` creates a new lobby and returns a
+  `lobby` message containing the lobby `code`, `host`, current `players` and the
+  selected `map` if any.
+- `joinLobby` – `{ type, code, player }` joins an existing lobby.
+- `selectMap` – `{ type, code, id, map }` can be sent by the host to choose the
+  board; all clients receive an updated `lobby` message with the `map` field.
+- `ready` – `{ type, code, id, ready }` toggles a player's ready state.
+- `start` – `{ type, code, id, state }` starts the match once everyone is
+  ready.
+- `state` – `{ type, code, id, state }` updates the authoritative game state
+  during play.
+- `chat` – `{ type, code, id, text }` broadcasts a chat message.
+- `reconnect` – `{ type, code, id }` lets a disconnected player rejoin and
+  receive the latest state.
+
+Every `lobby` broadcast includes the lobby `code`, host id, list of players with
+their readiness and the selected `map`.
+
+All lobby information is persisted in Supabase and relayed by the server so
+that peers never communicate directly with one another.
+
 ## Supabase
 
 Per un backend server authoritativo è disponibile una integrazione con [Supabase](https://supabase.com/).

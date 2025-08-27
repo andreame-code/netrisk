@@ -70,6 +70,17 @@ test("lobby server manages lifecycle", async () => {
   q2.shift();
   q3.shift();
 
+  ws1.send(
+    JSON.stringify({ type: "selectMap", code, id: "p1", map: "test" })
+  );
+  await wait(50);
+  const map1 = q1.shift();
+  const map2 = q2.shift();
+  const map3 = q3.shift();
+  expect(map1.map).toBe("test");
+  expect(map2.map).toBe("test");
+  expect(map3.map).toBe("test");
+
   ws1.send(JSON.stringify({ type: "ready", code, id: "p1", ready: true }));
   ws2.send(JSON.stringify({ type: "ready", code, id: "p2", ready: true }));
   ws3.send(JSON.stringify({ type: "ready", code, id: "p3", ready: true }));
