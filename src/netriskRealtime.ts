@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
-const supabaseUrl = 'https://kdrfohrmfppyzzywhmsn.supabase.co';
-const anonKey = process.env.SUPABASE_KEY || '';
-const client = createClient(supabaseUrl, anonKey);
+const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export function subscribeToMatch(
   matchId: string,
