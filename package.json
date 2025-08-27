@@ -15,6 +15,7 @@
     "@babel/preset-env": "^7.24.0",
     "ajv": "^8.17.1",
     "babel-jest": "^29.7.0",
+    "babel-plugin-transform-vite-meta-env": "^1.0.3",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "http-server": "^14.1.1",
