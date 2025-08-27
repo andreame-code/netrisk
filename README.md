@@ -39,6 +39,15 @@ npm install
 npm start
 ```
 
+If your environment blocks browser downloads (for example, in restricted CI
+systems), prevent Playwright from fetching its browser binaries during
+installation by setting an environment variable:
+
+```bash
+export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+npm ci
+```
+
 Open `http://localhost:8080` in your browser.
 
 ## Testing
