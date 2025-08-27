@@ -98,7 +98,12 @@ export function initLobby() {
       const name = document.getElementById('roomName').value.trim();
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const map = document.getElementById('map').value.trim();
-      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) return;
+      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
+        if (typeof form.reportValidity === 'function') {
+          form.reportValidity();
+        }
+        return;
+      }
       const url = WS_URL;
       if (!url) {
         notifyUser('WebSocket server is not available.');
