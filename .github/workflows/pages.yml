@@ -46,12 +46,11 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Normalize artifact to dist/
+      - name: Stage static files
         run: |
-          if [ -d dist ]; then exit 0; fi
-          if [ -d build ]; then mv build dist; exit 0; fi
-          if [ -d out ]; then mv out dist; exit 0; fi
-          mkdir -p dist
+          if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
+          cp -r *.html css map*.svg map-manifest.json src supabase dist/
+          # [ -f env.js ] && cp -f env.js dist/env.js || true  # removed to avoid overriding runtime env.js
 
       - name: Create runtime env.js
         env:
