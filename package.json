@@ -5,6 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "start": "http-server .",
+    "dev": "http-server .",
     "test": "jest",
     "e2e": "playwright test",
     "e2e:ci": "npx playwright install --with-deps && playwright test --reporter=github",

@@ -30,40 +30,42 @@ Difficulty influences how risky the AI plays and how often it uses cards, while
 style adjusts reinforcement priorities and aggression. The chosen profile is
 shown next to each AI's name during the game.
 
-## Development
+## Sviluppo locale
 
-Install dependencies and run the game locally:
-
-```bash
-npm install
-npm start
-```
-
-If your environment blocks browser downloads (for example, in restricted CI
-systems), prevent Playwright from fetching its browser binaries during
-installation by setting an environment variable:
+Per configurare e avviare l'ambiente di sviluppo locale:
 
 ```bash
 export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 npm ci
+npm run dev
 ```
 
-Open `http://localhost:8080` in your browser.
+Apri `http://localhost:8080` nel browser.
 
-## Testing
+## Test
 
-Run the test suite and lint checks to verify changes:
+Esegui la suite di test e i controlli di lint per verificare le modifiche:
 
 ```bash
 npm test
 npm run lint
 ```
 
-To evaluate AI balance, run a batch of automated games:
+Per valutare l'equilibrio dell'IA, esegui una serie di partite automatizzate:
 
 ```
 npm run simulate
 ```
+
+## Deploy
+
+Genera la build destinata alla produzione:
+
+```bash
+npm run build
+```
+
+Il deploy su GitHub Pages è gestito automaticamente tramite GitHub Actions.
 
 ## Multiplayer
 
@@ -73,7 +75,7 @@ game state in sync across browser tabs or machines.
 1. Start the regular development server:
 
    ```bash
-   npm start
+   npm run dev
    ```
 
 2. In another terminal, launch the relay server (defaults to port 8081):
