@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function generateEnv(targetDir) {
+  fs.mkdirSync(targetDir, { recursive: true });
   const envContent = `window.__ENV = window.__ENV || {\n  SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',\n  SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}',\n  WS_URL: '${process.env.WS_URL || ''}'\n};\n`;
   fs.writeFileSync(path.join(targetDir, 'env.js'), envContent);
 }
