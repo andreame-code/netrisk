@@ -36,6 +36,13 @@
           </menu>
         </form>
       </dialog>
+      <section class="chat">
+        <ul id="chatMessages" class="chat-messages"></ul>
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <input id="chatInput" maxlength="200" aria-label="Chat message" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
     </main>
     <script type="module" src="./src/lobby.js"></script>
   </body>

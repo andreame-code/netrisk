@@ -8,6 +8,11 @@ const bus = new EventBus();
 let ws = null;
 
 const currentLobbies = [];
+const playerNames = new Map();
+let currentCode = null;
+let currentPlayerId = null;
+let chatHistoryLoaded = false;
+const MAX_CHAT_LENGTH = 200;
 
 export function renderLobbies(lobbies) {
   const list = document.getElementById('lobbyList');
@@ -40,6 +45,9 @@ export function initLobby() {
   const createBtn = document.getElementById('createBtn');
   const dialog = document.getElementById('createDialog');
   const form = document.getElementById('createForm');
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  const chatMessages = document.getElementById('chatMessages');
   // populate map select from manifest
   (async () => {
     const select = document.getElementById('map');
@@ -82,20 +90,7 @@ export function initLobby() {
             })
           );
         };
-        ws.onmessage = e => {
-          let msg;
-          try {
-            msg = JSON.parse(e.data);
-          } catch {
-            return;
-          }
-          if (msg.type === 'lobby') {
-            currentLobbies.push(msg);
-            renderLobbies(currentLobbies);
-            if (dialog.close) dialog.close();
-            else dialog.removeAttribute('open');
-          }
-        };
+        ws.onmessage = e => handleMessage(e, dialog);
       } else {
         ws.send(
           JSON.stringify({
@@ -108,6 +103,20 @@ export function initLobby() {
       }
     });
   }
+
+  if (chatForm && chatInput) {
+    chatForm.addEventListener('submit', ev => {
+      ev.preventDefault();
+      let text = chatInput.value.trim();
+      if (!text) return;
+      if (text.length > MAX_CHAT_LENGTH) text = text.slice(0, MAX_CHAT_LENGTH);
+      if (!ws || ws.readyState !== WebSocket.OPEN || !currentCode || !currentPlayerId) return;
+      ws.send(
+        JSON.stringify({ type: 'chat', code: currentCode, id: currentPlayerId, text })
+      );
+      chatInput.value = '';
+    });
+  }
   fetchLobbies();
   if (supabase) {
     supabase
@@ -117,6 +126,67 @@ export function initLobby() {
       })
       .subscribe();
     bus.on('lobbiesChanged', fetchLobbies);
+  }
+
+  function addChatMessage(id, text, time = new Date()) {
+    if (!chatMessages) return;
+    const li = document.createElement('li');
+    const name = playerNames.get(id) || id;
+    const ts = time instanceof Date ? time.toLocaleTimeString() : new Date(time).toLocaleTimeString();
+    li.textContent = `[${ts}] ${name}: ${text}`;
+    chatMessages.appendChild(li);
+  }
+
+  async function loadChatHistory() {
+    if (chatHistoryLoaded || !supabase || !currentCode) return;
+    chatHistoryLoaded = true;
+    try {
+      const { data } = await supabase
+        .from('lobby_chat')
+        .select()
+        .eq('code', currentCode)
+        .order('created_at', { ascending: true });
+      (data || []).forEach(row => addChatMessage(row.id, row.text, new Date(row.created_at)));
+    } catch {
+      // ignore fetch errors
+    }
+  }
+
+  function handleMessage(e, dlg) {
+    let msg;
+    try {
+      msg = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    switch (msg.type) {
+      case 'joined': {
+        currentCode = msg.code;
+        currentPlayerId = msg.id;
+        loadChatHistory();
+        break;
+      }
+      case 'lobby': {
+        currentCode = msg.code;
+        if (!currentPlayerId) currentPlayerId = msg.host;
+        playerNames.clear();
+        (msg.players || []).forEach(p => {
+          playerNames.set(p.id, p.name || p.id);
+        });
+        loadChatHistory();
+        currentLobbies.push(msg);
+        renderLobbies(currentLobbies);
+        if (dlg && dlg.close) dlg.close();
+        else if (dlg) dlg.removeAttribute('open');
+        break;
+      }
+      case 'chat': {
+        addChatMessage(msg.id, msg.text, new Date());
+        break;
+      }
+      default:
+        break;
+    }
   }
 }
 

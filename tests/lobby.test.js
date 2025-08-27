@@ -19,6 +19,8 @@ describe('lobby screen', () => {
           <select id="map"></select>
         </form>
       </dialog>
+      <ul id="chatMessages"></ul>
+      <form id="chatForm"><input id="chatInput" /></form>
     `;
   });
 
@@ -84,6 +86,31 @@ describe('lobby screen', () => {
     document.getElementById('maxPlayers').value = '10';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
     expect(WebSocket).not.toHaveBeenCalled();
+    delete global.WebSocket;
+  });
+
+  test('chat sends and renders messages', async () => {
+    const wsInstance = { send: jest.fn(), readyState: 1 };
+    global.WebSocket = jest.fn(() => wsInstance);
+    global.WebSocket.OPEN = 1;
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
+    await new Promise(r => setTimeout(r, 0));
+    document.getElementById('map').value = '';
+    document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    wsInstance.onopen();
+    wsInstance.onmessage({ data: JSON.stringify({ type: 'lobby', code: 'abc', host: 'p1', players: [{ id: 'p1', name: 'Host' }], map: null, maxPlayers: 2 }) });
+    document.getElementById('chatInput').value = 'hello';
+    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    expect(wsInstance.send).toHaveBeenLastCalledWith(
+      JSON.stringify({ type: 'chat', code: 'abc', id: 'p1', text: 'hello' })
+    );
+    wsInstance.onmessage({ data: JSON.stringify({ type: 'chat', id: 'p1', text: 'hello' }) });
+    const text = document.getElementById('chatMessages').textContent;
+    expect(text).toContain('Host');
+    expect(text).toContain('hello');
     delete global.WebSocket;
   });
 });
