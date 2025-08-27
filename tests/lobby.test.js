@@ -107,10 +107,13 @@ describe('lobby screen', () => {
     global.WebSocket.OPEN = 1;
     require('../src/lobby.js');
     document.getElementById('createBtn').click();
+    const form = document.getElementById('createForm');
+    form.reportValidity = jest.fn();
     document.getElementById('roomName').value = '';
     document.getElementById('maxPlayers').value = '10';
-    document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    form.dispatchEvent(new Event('submit'));
     expect(WebSocket).not.toHaveBeenCalled();
+    expect(form.reportValidity).toHaveBeenCalled();
     delete global.WebSocket;
   });
 
