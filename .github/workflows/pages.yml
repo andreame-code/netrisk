@@ -59,17 +59,23 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           mkdir -p dist
-          node - <<'NODE'
-          const fs = require('fs');
-          const url = process.env.SUPABASE_URL;
-          const anon = process.env.SUPABASE_ANON_KEY;
-          let ws = '';
-          try {
-            const u = new URL(url);
-            ws = 'wss://' + u.host + '/functions/v1/netrisk';
-          } catch(e) {}
-          fs.writeFileSync('dist/env.js', `window.__ENV = {\n  SUPABASE_URL: '${url}',\n  SUPABASE_ANON_KEY: '${anon}',\n  WS_URL: '${ws}'\n};`);
-          NODE
+          cat > dist/env.js <<EOF
+          window.__ENV = {
+            SUPABASE_URL: '${SUPABASE_URL}',
+            SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}',
+            WS_URL: (function() {
+              try {
+                const u = new URL('${SUPABASE_URL}');
+                return `wss://${u.host}/functions/v1/netrisk`;
+              } catch(e) { return ''; }
+            })()
+          };
+          EOF
+
+      - name: Sanity check env.js (no secrets printed)
+        run: |
+          echo "=== dist/env.js preview (first lines, masked) ==="
+          head -n 5 dist/env.js | sed -E "s/('[^']{4})[^']*'/\1***'/g"
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
