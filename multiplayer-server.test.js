@@ -33,11 +33,13 @@ test("lobby server manages lifecycle", async () => {
     JSON.stringify({
       type: "createLobby",
       player: { id: "p1", name: "P1", color: "#f00" },
+      maxPlayers: 5,
     })
   );
   await wait(50);
   const lobbyMsg = q1.shift();
   const code = lobbyMsg.code;
+  expect(lobbyMsg.maxPlayers).toBe(5);
 
   const ws2 = new WebSocket(url);
   await onceOpen(ws2);

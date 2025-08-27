@@ -45,6 +45,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
       currentPlayer: lobby.currentPlayer,
       state: lobby.state,
       map: lobby.map,
+      maxPlayers: lobby.maxPlayers,
     };
     await supabase.from("lobbies").upsert(row, { onConflict: "code" }).catch(err => {
       // eslint-disable-next-line no-console
@@ -74,6 +75,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
           started: data.started || false,
           currentPlayer: data.currentPlayer || null,
           map: data.map || null,
+          maxPlayers: data.maxPlayers || 6,
         };
         lobbies.set(code, lobby);
       }
@@ -112,6 +114,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             ready: false,
             ws,
           };
+          const maxPlayers = Math.max(2, Math.min(6, msg.maxPlayers || 6));
           const lobby = {
             code,
             players: [player],
@@ -120,6 +123,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             started: false,
             currentPlayer: null,
             map: msg.map || null,
+            maxPlayers,
           };
           lobbies.set(code, lobby);
           currentLobby = lobby;
@@ -132,6 +136,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
               host: player.id,
               players: publicPlayers(lobby),
               map: lobby.map,
+              maxPlayers: lobby.maxPlayers,
             })
           );
           break;
@@ -162,6 +167,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             host: lobby.host,
             players: publicPlayers(lobby),
             map: lobby.map,
+            maxPlayers: lobby.maxPlayers,
           });
           break;
         }
@@ -178,6 +184,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             host: lobby.host,
             players: publicPlayers(lobby),
             map: lobby.map,
+            maxPlayers: lobby.maxPlayers,
           });
           break;
         }
@@ -192,6 +199,7 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             host: lobby.host,
             players: publicPlayers(lobby),
             map: lobby.map,
+            maxPlayers: lobby.maxPlayers,
           });
           break;
         }
