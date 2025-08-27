@@ -111,7 +111,7 @@ WebSocket connection. The most important message types are:
   board; all clients receive an updated `lobby` message with the `map` field.
 - `ready` – `{ type, code, id, ready }` toggles a player's ready state.
 - `start` – `{ type, code, id, state }` starts the match once everyone is
-  ready.
+  ready and at least two players have joined.
 - `state` – `{ type, code, id, state }` updates the authoritative game state
   during play.
 - `chat` – `{ type, code, id, text }` broadcasts a chat message.
