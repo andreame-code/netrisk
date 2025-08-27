@@ -41,15 +41,44 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: |
-          VITE_SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-          VITE_SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-          npm run build
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run build
 
       - name: Stage static files
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r *.html css map*.svg map-manifest.json src supabase dist/
+
+      - name: Create runtime env.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -e
+          mkdir -p dist
+          # Estrai l'host da SUPABASE_URL e rimuovi eventuale slash finale
+          WS_HOST="$(echo "$SUPABASE_URL" | sed -E 's#^https?://([^/]+)/?$#\1#')"
+          WS_URL="wss://${WS_HOST}/functions/v1/netrisk"
+
+          cat > dist/env.js <<EOF
+          window.__ENV = {
+            SUPABASE_URL: '${SUPABASE_URL}',
+            SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}',
+            WS_URL: '${WS_URL}'
+          };
+          EOF
+
+      - name: Sanity check env.js (masked)
+        run: |
+          echo '--- dist/env.js ---'
+          sed -E "s/('[^']{4})[^']*'/\1***'/g" dist/env.js | sed -n '1,8p'
+
+      - name: Debug dist/env.js
+        run: |
+          echo '=== ENV.JS FINAL ==='
+          cat dist/env.js | sed -E "s/('[^']{4})[^']*'/\1***'/g"
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
