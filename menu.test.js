@@ -9,6 +9,7 @@ describe('home navigation', () => {
     jest.resetModules();
     document.body.innerHTML = `
       <button id="playBtn" class="btn"></button>
+      <button id="multiplayerBtn" class="btn"></button>
       <button id="setupBtn" class="btn"></button>
       <button id="howToPlayBtn" class="btn"></button>
       <button id="aboutBtn" class="btn"></button>
@@ -19,12 +20,14 @@ describe('home navigation', () => {
     const { navigateTo } = require('./navigation.js');
     require('./home.js');
     document.getElementById('playBtn').click();
+    document.getElementById('multiplayerBtn').click();
     document.getElementById('setupBtn').click();
     document.getElementById('howToPlayBtn').click();
     document.getElementById('aboutBtn').click();
     expect(navigateTo).toHaveBeenNthCalledWith(1, 'game.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(2, 'setup.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(3, 'how-to-play.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(4, 'about.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(2, 'game.html?multiplayer=1');
+    expect(navigateTo).toHaveBeenNthCalledWith(3, 'setup.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(4, 'how-to-play.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(5, 'about.html');
   });
 });
