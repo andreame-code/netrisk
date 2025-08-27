@@ -1,21 +1,35 @@
 /* eslint-env browser */
 import Game from "../../game.js";
-import { REINFORCE, ATTACK, FORTIFY } from "../../phases.js";
 
 export default function createWebSocketMultiplayer(url) {
-  return game => {
+  return (game) => {
     const ws = new WebSocket(url);
 
-    const sync = () => {
+    const originalEmit = game.emit.bind(game);
+
+    const sync = (event, payload) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(
-          JSON.stringify({ type: "state", state: game.serialize() })
+          JSON.stringify({
+            type: "state",
+            state: game.serialize(),
+            event,
+            payload,
+          }),
         );
       }
     };
 
-    ws.addEventListener("open", sync);
-    ws.addEventListener("message", event => {
+    game.emit = (event, payload) => {
+      const result = originalEmit(event, payload);
+      if (event !== "stateUpdated") {
+        sync(event, payload);
+      }
+      return result;
+    };
+
+    ws.addEventListener("open", () => sync());
+    ws.addEventListener("message", (event) => {
       const msg = JSON.parse(event.data);
       if (msg.type === "state") {
         const preserved = game.events;
@@ -35,13 +49,11 @@ export default function createWebSocketMultiplayer(url) {
           winner: updated.winner,
         });
         game.events = preserved;
-        game.emit("stateUpdated", { player: game.currentPlayer });
+        if (msg.event && msg.event !== "stateUpdated") {
+          originalEmit(msg.event, msg.payload);
+        }
+        originalEmit("stateUpdated", { player: game.currentPlayer });
       }
     });
-
-    game.on("phaseChange", sync);
-    game.on(REINFORCE, sync);
-    game.on(ATTACK, sync);
-    game.on(FORTIFY, sync);
   };
 }
