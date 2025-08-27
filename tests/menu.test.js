@@ -24,10 +24,10 @@ describe('home navigation', () => {
     document.getElementById('setupBtn').click();
     document.getElementById('howToPlayBtn').click();
     document.getElementById('aboutBtn').click();
-    expect(navigateTo).toHaveBeenNthCalledWith(1, 'game.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(2, 'lobby.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(3, 'setup.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(4, 'how-to-play.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(5, 'about.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(1, './game.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(2, './lobby.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(3, './setup.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(4, './how-to-play.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(5, './about.html');
   });
 });

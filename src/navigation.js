@@ -1,16 +1,18 @@
 export function navigateTo(url, win = typeof window !== "undefined" ? window : undefined) {
   if (!win) return;
+  const base = win.location?.pathname?.replace(/[^/]*$/, "") ?? "";
+  const target = base + url;
   if (win.history && typeof win.history.pushState === "function") {
     try {
-      win.history.pushState({}, "", url);
+      win.history.pushState({}, "", target);
     } catch {
       // ignore history errors
     }
   }
   if (typeof win.location.assign === "function") {
-    win.location.assign(url);
+    win.location.assign(target);
   } else {
-    win.location.href = url;
+    win.location.href = target;
   }
 }
 
