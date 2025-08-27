@@ -36,11 +36,6 @@ for (const asset of plainAssets) {
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
   fs.copyFileSync(srcPath, destPath);
 }
-
-// Generate env.js dynamically from environment variables
-const generateEnv = require('./generate-env');
-generateEnv(dist);
-
 // Copy additional data files (e.g., map.json)
 fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 

@@ -93,10 +93,6 @@ export function initLobby() {
     });
   }
   async function createGame(payload, dlg) {
-    console.log('window.__ENV:', window.__ENV); // eslint-disable-line no-console
-    if (!window.__ENV || Object.keys(window.__ENV).length === 0) {
-      notifyUser('Configuration error: env.js not loaded');
-    }
     try {
       const session = supabase ? await supabase.auth.getSession() : null;
       console.log('Supabase session:', session); // eslint-disable-line no-console
