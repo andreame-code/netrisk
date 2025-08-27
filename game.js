@@ -1,3 +1,4 @@
+/* global logger */
 import {
   REINFORCE,
   ATTACK,
@@ -6,6 +7,7 @@ import {
 } from "./phases.js";
 import { colorPalette } from "./colors.js";
 import EventBus from "./src/core/event-bus.js";
+import loadJson from "./src/utils/load-json.js";
 
 async function loadMapData() {
   const mapName =
@@ -14,21 +16,14 @@ async function loadMapData() {
     "map";
   const jsonPath = `./src/data/${mapName}.json`;
   try {
-    if (typeof fetch === "function") {
-      try {
-        const res = await fetch(jsonPath);
-        if (res.ok) return await res.json();
-      } catch {
-        // Ignore fetch errors and fall back to fs
-      }
-    }
-    const fs = await import("fs/promises");
-    const pathMod = await import("path");
-    const filePath = pathMod.resolve(`src/data/${mapName}.json`);
-    const data = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(data);
+    return await loadJson(jsonPath);
   } catch (err) {
-    console.error(`Failed to load map data from ${jsonPath}`, err);
+    const msg = `Failed to load map data from ${jsonPath}`;
+    if (typeof logger !== "undefined") {
+      logger.error(msg, err);
+    } else {
+      console.error(msg, err);
+    }
     throw new Error(`Map data file not found: ${jsonPath}`);
   }
 }
