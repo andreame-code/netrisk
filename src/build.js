@@ -15,7 +15,7 @@ function hashContent(content) {
 }
 
 const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'src/main.js'];
-const plainAssets = ['map.svg', 'map2.svg', 'map3.svg', 'map-roman.svg', 'src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js', 'env.js'];
+const plainAssets = ['map.svg', 'map2.svg', 'map3.svg', 'map-roman.svg', 'src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
 const hashed = {};
 
 for (const asset of assets) {
@@ -36,6 +36,10 @@ for (const asset of plainAssets) {
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
   fs.copyFileSync(srcPath, destPath);
 }
+
+// Generate env.js dynamically from environment variables
+const envContent = `window.__ENV = window.__ENV || {\n  SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',\n  SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}',\n  WS_URL: '${process.env.WS_URL || ''}'\n};\n`;
+fs.writeFileSync(path.join(dist, 'env.js'), envContent);
 
 // Copy additional data files (e.g., map.json)
 fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
