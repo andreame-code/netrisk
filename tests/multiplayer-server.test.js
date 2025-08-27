@@ -165,6 +165,54 @@ test("lobby server manages lifecycle", async () => {
   server.close();
 });
 
+test("removes disconnected players after timeout", async () => {
+  const port = 12350;
+  const server = createLobbyServer({ port, offlinePlayerTimeout: 50 });
+  const url = `ws://localhost:${port}`;
+
+  const host = new WebSocket(url);
+  await onceOpen(host);
+  const qHost = messageQueue(host);
+  host.send(
+    JSON.stringify({
+      type: "createLobby",
+      player: { id: "p1", name: "P1", color: "#f00" },
+    })
+  );
+  await wait(50);
+  const lobbyMsg = qHost.shift();
+  const code = lobbyMsg.code;
+
+  const ws2 = new WebSocket(url);
+  await onceOpen(ws2);
+  const q2 = messageQueue(ws2);
+  ws2.send(
+    JSON.stringify({
+      type: "joinLobby",
+      code,
+      player: { id: "p2", name: "P2", color: "#0f0" },
+    })
+  );
+  await wait(50);
+  q2.shift();
+  qHost.shift();
+  q2.shift();
+
+  ws2.close();
+  await onceClose(ws2);
+  await wait(20);
+  const offlineMsg = qHost.shift();
+  expect(offlineMsg.players.find(p => p.id === "p2")).toBeTruthy();
+
+  await wait(80);
+  const removedMsg = qHost.shift();
+  expect(removedMsg).toBeDefined();
+  expect(removedMsg.players.find(p => p.id === "p2")).toBeFalsy();
+
+  host.close();
+  server.close();
+});
+
 test("rejects invalid map on create", async () => {
   const port = 12348;
   const server = createLobbyServer({ port });
