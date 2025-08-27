@@ -11,6 +11,7 @@ on:
 jobs:
   deploy-functions:
     runs-on: ubuntu-latest
+    environment: github-pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +33,7 @@ jobs:
         run: |
           [ -n "$SUPABASE_PROJECT_REF" ] || { echo "❌ Missing secret SUPABASE_PROJECT_REF"; exit 1; }
           [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "❌ Missing secret SUPABASE_ACCESS_TOKEN"; exit 1; }
-          echo "✅ Secrets present"
+          echo "✅ Secrets present (environment: github-pages)"
 
       - name: Supabase login
         env:
