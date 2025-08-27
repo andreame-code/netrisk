@@ -92,6 +92,64 @@ export function initLobby() {
       else dialog.removeAttribute('open');
     });
   }
+  async function createGame(payload, dlg) {
+    console.log('window.__ENV:', window.__ENV); // eslint-disable-line no-console
+    if (!window.__ENV || Object.keys(window.__ENV).length === 0) {
+      notifyUser('Configuration error: env.js not loaded');
+    }
+    try {
+      const session = supabase ? await supabase.auth.getSession() : null;
+      console.log('Supabase session:', session); // eslint-disable-line no-console
+    } catch (err) {
+      console.error('Supabase getSession error:', err); // eslint-disable-line no-console
+    }
+    const url = WS_URL;
+    console.log('Create Game URL:', url); // eslint-disable-line no-console
+    console.log('Create Game payload:', payload); // eslint-disable-line no-console
+    try {
+      if (!url) {
+        notifyUser('WebSocket server is not available.');
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+          try {
+            ws.send(
+              JSON.stringify({
+                type: 'createLobby',
+                player: { name: payload.name },
+                maxPlayers: payload.maxPlayers,
+                ...(payload.map ? { map: payload.map } : {}),
+              })
+            );
+          } catch (err2) {
+            console.error('WebSocket send error:', err2); // eslint-disable-line no-console
+            notifyUser(err2 instanceof Error ? err2.message : String(err2));
+          }
+        };
+        ws.onmessage = e => handleMessage(e, dlg);
+        ws.onerror = errEvent => {
+          console.error('WebSocket connection error:', errEvent); // eslint-disable-line no-console
+          notifyUser('WebSocket connection error.');
+        };
+        ws.onclose = () => notifyUser('WebSocket connection closed.');
+      } else {
+        ws.send(
+          JSON.stringify({
+            type: 'createLobby',
+            player: { name: payload.name },
+            maxPlayers: payload.maxPlayers,
+            ...(payload.map ? { map: payload.map } : {}),
+          })
+        );
+      }
+    } catch (err) {
+      console.error('createGame failed:', err); // eslint-disable-line no-console
+      notifyUser(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   if (form) {
     form.addEventListener('submit', ev => {
       ev.preventDefault();
@@ -104,36 +162,7 @@ export function initLobby() {
         }
         return;
       }
-      const url = WS_URL;
-      if (!url) {
-        notifyUser('WebSocket server is not available.');
-        return;
-      }
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        ws = new WebSocket(url);
-        ws.onopen = () => {
-          ws.send(
-            JSON.stringify({
-              type: 'createLobby',
-              player: { name },
-              maxPlayers,
-              ...(map ? { map } : {}),
-            })
-          );
-        };
-        ws.onmessage = e => handleMessage(e, dialog);
-        ws.onerror = () => notifyUser('WebSocket connection error.');
-        ws.onclose = () => notifyUser('WebSocket connection closed.');
-      } else {
-        ws.send(
-          JSON.stringify({
-            type: 'createLobby',
-            player: { name },
-            maxPlayers,
-            ...(map ? { map } : {}),
-          })
-        );
-      }
+      createGame({ name, maxPlayers, map }, dialog);
     });
   }
 
@@ -217,6 +246,7 @@ export function initLobby() {
     } catch {
       return;
     }
+    console.log('WS response:', msg); // eslint-disable-line no-console
     switch (msg.type) {
       case 'joined': {
         currentCode = msg.code;
