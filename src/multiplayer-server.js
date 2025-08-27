@@ -29,7 +29,7 @@ const isValidMap = id => validMaps.includes(id);
  * @returns {WebSocketServer} the running WebSocketServer instance
  */
 export function createLobbyServer({
-  port = process.env.PORT || 8081,
+  port = 8081,
   maxPlayers = 6,
   closeEmptyLobbiesAfter = 5000,
   offlinePlayerTimeout = 2 * 60_000,
@@ -406,7 +406,7 @@ export function createLobbyServer({
 
 // If this module is executed directly, start the server immediately
 if (typeof require !== "undefined" && require.main === module) {
-  const port = process.env.PORT || 8081;
+  const port = 8081;
   createLobbyServer({ port });
   // eslint-disable-next-line no-console
   console.log(`Multiplayer server listening on port ${port}`);

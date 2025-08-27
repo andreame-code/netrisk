@@ -150,8 +150,6 @@ Per configurarla:
    supabase link --project-ref <project-ref>
    ```
 
-   L'istanza pubblica usata da NetRisk ha `project-ref` `kdrfohrmfppyzzywhmsn`.
-
 3. **Applica le migrazioni**
 
    ```bash

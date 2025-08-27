@@ -38,7 +38,7 @@ import {
   exportLog,
 } from "./ui.js";
 import initPhaseTimer from "./phase-timer.js";
-import { WS_URL } from "./config.js";
+import { WS_URL, IS_TEST } from "./config.js";
 import { loadGame as loadGameData } from "./init/game-loader.js";
 import {
   updateGameState,
@@ -417,7 +417,7 @@ async function initGame() {
     typeof window !== "undefined" &&
     !hasSavedPlayers() &&
     !hasSavedGame() &&
-    !(typeof process !== "undefined" && process.env.JEST_WORKER_ID)
+    !IS_TEST
   ) {
     navigateTo("setup.html");
     return;
