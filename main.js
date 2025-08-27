@@ -416,6 +416,21 @@ async function initGame() {
     return;
   }
   await loadGame();
+
+  const params =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  if (params && params.get("multiplayer")) {
+    const url =
+      params.get("server") ||
+      `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8081`;
+    const { default: createWebSocketMultiplayer } = await import(
+      "./src/plugins/websocket-multiplayer-plugin.js"
+    );
+    game.use(createWebSocketMultiplayer(url));
+  }
+
   preloadEffects();
 
   let firstTurn = true;
