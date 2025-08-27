@@ -50,6 +50,14 @@ Deno.serve(async req => {
       }
       case 'join_match': {
         const { matchId, player } = body;
+        const { data: match } = await supabase
+          .from('matches')
+          .select('status')
+          .eq('id', matchId)
+          .single();
+        if (!match || match.status !== 'pending') {
+          return jsonResponse({ error: 'matchNotOpen' }, { status: 400 });
+        }
         const { data: p } = await supabase
           .from('players')
           .insert({ match_id: matchId, name: player.name, color: player.color })

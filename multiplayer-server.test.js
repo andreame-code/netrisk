@@ -113,6 +113,21 @@ test("lobby server manages lifecycle", async () => {
   expect(start1.type).toBe("start");
   expect(start2.map).toBe("map");
 
+  const ws4 = new WebSocket(url);
+  await onceOpen(ws4);
+  const q4 = messageQueue(ws4);
+  ws4.send(
+    JSON.stringify({
+      type: "joinLobby",
+      code,
+      player: { id: "p4", name: "P4", color: "#ff0" },
+    })
+  );
+  await wait(50);
+  const joinErr = q4.shift();
+  expect(joinErr.error).toBe("lobbyNotOpen");
+  ws4.close();
+
   ws1.send(
     JSON.stringify({
       type: "state",
