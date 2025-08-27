@@ -1,4 +1,4 @@
-import { REINFORCE } from "../../phases.js";
+import { REINFORCE } from "../phases.js";
 
 // Centralized game state object used by the application.
 // Keeping this in a dedicated module decouples the game's
