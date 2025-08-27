@@ -4,9 +4,8 @@
   "description": "Simple browser-based Risk-inspired game",
   "scripts": {
     "lint": "eslint .",
-    "generate-env": "node src/generate-env.js",
-    "start": "npm run generate-env && http-server .",
-    "dev": "npm run generate-env && http-server .",
+    "start": "http-server .",
+    "dev": "http-server .",
     "build": "node src/build.js",
     "server": "node src/multiplayer-server.js",
     "simulate": "node src/simulate.js",
