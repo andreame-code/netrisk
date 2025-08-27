@@ -35,7 +35,7 @@ NetRisk includes an experimental WebSocket-based multiplayer mode.
    ```js
    const { WS_URL } = await import("./src/config.js");
    const { default: createWebSocketMultiplayer } = await import("./src/plugins/websocket-multiplayer-plugin.js");
-   game.use(createWebSocketMultiplayer(WS_URL || "ws://localhost:8081"));
+   game.use(createWebSocketMultiplayer(WS_URL));
   ```
 
 After all clients execute the snippet, game actions are broadcast to every

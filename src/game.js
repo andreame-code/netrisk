@@ -5,7 +5,6 @@ import {
   FORTIFY,
   GAME_OVER,
 } from "./phases.js";
-import { IS_TEST } from "./config.js";
 import { colorPalette } from "./colors.js";
 import EventBus from "./core/event-bus.js";
 import loadJson from "./utils/load-json.js";
@@ -48,6 +47,7 @@ class Game {
 
     this.events = new EventBus();
 
+    const IS_TEST = typeof jest !== "undefined";
     if (IS_TEST) {
       randomizeTerritories = false;
     }

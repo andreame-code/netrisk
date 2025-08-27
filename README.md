@@ -91,7 +91,7 @@ game state in sync across browser tabs or machines.
    ```js
    const { WS_URL } = await import("./src/config.js");
    const { default: createWebSocketMultiplayer } = await import("./src/plugins/websocket-multiplayer-plugin.js");
-   game.use(createWebSocketMultiplayer(WS_URL || "ws://localhost:8081"));
+   game.use(createWebSocketMultiplayer(WS_URL));
    ```
 
 Once the snippet runs in each browser, any action taken by one player will
