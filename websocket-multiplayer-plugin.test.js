@@ -34,6 +34,9 @@ test("syncs game state over websocket", async () => {
   const game1 = new Game(players, territories, [], [], false, false);
   const game2 = new Game(players, territories, [], [], false, false);
 
+  const events2 = [];
+  game2.on("turnStart", e => events2.push(e));
+
   createWebSocketMultiplayer("ws://localhost:12345")(game1);
   createWebSocketMultiplayer("ws://localhost:12345")(game2);
 
@@ -43,6 +46,7 @@ test("syncs game state over websocket", async () => {
   await wait(100);
 
   expect(game2.getCurrentPlayer()).toBe(1);
+  expect(events2).toEqual([{ player: 1 }]);
 
   wss.close();
   delete global.WebSocket;
