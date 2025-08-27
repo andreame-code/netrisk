@@ -1,14 +1,14 @@
-const supabaseUrl = 'https://kdrfohrmfppyzzywhmsn.supabase.co';
-const anonKey = process.env.SUPABASE_KEY || '';
-const functionUrl = `${supabaseUrl}/functions/v1/netrisk`;
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+
+const functionUrl = `${SUPABASE_URL}/functions/v1/netrisk`;
 
 async function call(body: any) {
   const res = await fetch(functionUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
     },
     body: JSON.stringify(body),
   });
