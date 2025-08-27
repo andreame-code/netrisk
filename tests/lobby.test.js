@@ -5,6 +5,8 @@ jest.mock('../src/init/supabase-client.js', () => null);
 describe('lobby screen', () => {
   beforeEach(() => {
     jest.resetModules();
+    jest.doMock('../src/config.js', () => ({ WS_URL: 'ws://test' }));
+    global.alert = jest.fn();
     global.fetch = jest.fn(() =>
       Promise.resolve({ json: () => Promise.resolve({ maps: [{ id: 'map', name: 'Classic' }] }) })
     );
@@ -26,6 +28,7 @@ describe('lobby screen', () => {
 
   afterEach(() => {
     delete global.fetch;
+    delete global.alert;
     localStorage.clear();
   });
 
@@ -126,6 +129,31 @@ describe('lobby screen', () => {
     expect(wsInstance.send).toHaveBeenCalledWith(
       JSON.stringify({ type: 'reconnect', code: 'abc', id: 'p1' })
     );
+    delete global.WebSocket;
+  });
+
+  test('disables create button when WS_URL missing', () => {
+    jest.resetModules();
+    jest.doMock('../src/config.js', () => ({ WS_URL: '' }));
+    require('../src/lobby.js');
+    expect(document.getElementById('createBtn').disabled).toBe(true);
+    expect(global.alert).toHaveBeenCalled();
+  });
+
+  test('notifies user on websocket error', async () => {
+    const wsInstance = { send: jest.fn(), readyState: 1 };
+    global.WebSocket = jest.fn(() => wsInstance);
+    global.WebSocket.OPEN = 1;
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
+    await new Promise(r => setTimeout(r, 0));
+    document.getElementById('map').value = '';
+    document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    wsInstance.onopen();
+    wsInstance.onerror();
+    expect(global.alert).toHaveBeenCalled();
     delete global.WebSocket;
   });
 });

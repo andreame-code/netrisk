@@ -16,6 +16,14 @@ let currentPlayerId = null;
 let chatHistoryLoaded = false;
 const MAX_CHAT_LENGTH = 200;
 
+function notifyUser(msg) {
+  if (typeof alert === 'function') {
+    alert(msg);
+  } else {
+    console.error(msg); // eslint-disable-line no-console
+  }
+}
+
 export function renderLobbies(lobbies) {
   const list = document.getElementById('lobbyList');
   if (!list) return;
@@ -67,6 +75,10 @@ export function initLobby() {
       // ignore fetch errors
     }
   })();
+  if (!WS_URL && createBtn) {
+    createBtn.disabled = true;
+    notifyUser('WebSocket server is not available.');
+  }
   if (createBtn && dialog) {
     createBtn.addEventListener('click', () => {
       if (dialog.showModal) dialog.showModal();
@@ -81,6 +93,10 @@ export function initLobby() {
       const map = document.getElementById('map').value.trim();
       if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) return;
       const url = WS_URL;
+      if (!url) {
+        notifyUser('WebSocket server is not available.');
+        return;
+      }
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         ws = new WebSocket(url);
         ws.onopen = () => {
@@ -94,6 +110,8 @@ export function initLobby() {
           );
         };
         ws.onmessage = e => handleMessage(e, dialog);
+        ws.onerror = () => notifyUser('WebSocket connection error.');
+        ws.onclose = () => notifyUser('WebSocket connection closed.');
       } else {
         ws.send(
           JSON.stringify({
@@ -124,11 +142,17 @@ export function initLobby() {
   const storedId = localStorage.getItem('playerId');
   if (storedCode && storedId) {
     const url = WS_URL;
-    ws = new WebSocket(url);
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
-    };
-    ws.onmessage = e => handleMessage(e, null);
+    if (url) {
+      ws = new WebSocket(url);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
+      };
+      ws.onmessage = e => handleMessage(e, null);
+      ws.onerror = () => notifyUser('WebSocket connection error.');
+      ws.onclose = () => notifyUser('WebSocket connection closed.');
+    } else {
+      notifyUser('WebSocket server is not available.');
+    }
   }
   fetchLobbies();
   import('./init/supabase-client.js')
