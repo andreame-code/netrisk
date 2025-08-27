@@ -26,6 +26,7 @@ describe('lobby screen', () => {
 
   afterEach(() => {
     delete global.fetch;
+    localStorage.clear();
   });
 
   test('back button goes home', () => {
@@ -111,6 +112,20 @@ describe('lobby screen', () => {
     const text = document.getElementById('chatMessages').textContent;
     expect(text).toContain('Host');
     expect(text).toContain('hello');
+    delete global.WebSocket;
+  });
+
+  test('reconnects when stored credentials are present', () => {
+    const wsInstance = { send: jest.fn(), readyState: 1 };
+    global.WebSocket = jest.fn(() => wsInstance);
+    global.WebSocket.OPEN = 1;
+    localStorage.setItem('lobbyCode', 'abc');
+    localStorage.setItem('playerId', 'p1');
+    require('../src/lobby.js');
+    wsInstance.onopen();
+    expect(wsInstance.send).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'reconnect', code: 'abc', id: 'p1' })
+    );
     delete global.WebSocket;
   });
 });

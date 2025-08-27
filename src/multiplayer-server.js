@@ -25,12 +25,14 @@ const isValidMap = id => validMaps.includes(id);
  * @param {number} [opts.port] Port to listen on
  * @param {number} [opts.maxPlayers] Maximum players per lobby
  * @param {number} [opts.closeEmptyLobbiesAfter] Delay in ms before closing empty lobbies
-* @returns {WebSocketServer} the running WebSocketServer instance
-*/
+ * @param {number} [opts.offlinePlayerTimeout] Delay in ms before removing disconnected players
+ * @returns {WebSocketServer} the running WebSocketServer instance
+ */
 export function createLobbyServer({
   port = process.env.PORT || 8081,
   maxPlayers = 6,
   closeEmptyLobbiesAfter = 5000,
+  offlinePlayerTimeout = 2 * 60_000,
 } = {}) {
   const wss = new WebSocketServer({ port });
 
@@ -45,7 +47,10 @@ export function createLobbyServer({
 
   // Remove websocket instances when broadcasting lobby data
   const publicPlayers = lobby =>
-    lobby.players.map(({ ws, ...p }) => ({ ...p, connected: !!ws }));
+    lobby.players.map(({ ws, ...p }) => {
+      delete p.offlineTimer;
+      return { ...p, connected: !!ws };
+    });
 
   // Persist lobby to Supabase if available
   const persistLobby = async lobby => {
@@ -53,11 +58,12 @@ export function createLobbyServer({
     const row = {
       code: lobby.code,
       host: lobby.host,
-      players: lobby.players.map(({ id, name, color, ready }) => ({
+      players: lobby.players.map(({ id, name, color, ready, lastSeen }) => ({
         id,
         name,
         color,
         ready,
+        ...(lastSeen ? { lastSeen } : {}),
       })),
       started: lobby.started,
       currentPlayer: lobby.currentPlayer,
@@ -95,6 +101,8 @@ export function createLobbyServer({
           map: data.map || null,
           maxPlayers: data.maxPlayers || 6,
         };
+        const cutoff = Date.now() - offlinePlayerTimeout;
+        lobby.players = lobby.players.filter(p => !p.lastSeen || p.lastSeen > cutoff);
         lobbies.set(code, lobby);
       }
     }
@@ -315,8 +323,11 @@ export function createLobbyServer({
           const player = lobby.players.find(p => p.id === msg.id);
           if (!player) return;
           player.ws = ws;
+          player.lastSeen = null;
+          if (player.offlineTimer) clearTimeout(player.offlineTimer);
           currentLobby = lobby;
           currentPlayer = player;
+          await persistLobby(lobby);
           ws.send(
             JSON.stringify({
               type: "reconnected",
@@ -331,6 +342,22 @@ export function createLobbyServer({
               map: lobby.map,
             })
           );
+          broadcast(lobby, {
+            type: "lobby",
+            code: lobby.code,
+            host: lobby.host,
+            players: publicPlayers(lobby),
+            map: lobby.map,
+            maxPlayers: lobby.maxPlayers,
+          });
+          break;
+        }
+        case "heartbeat": {
+          const lobby = await loadLobby(msg.code);
+          if (!lobby) return;
+          const player = lobby.players.find(p => p.id === msg.id);
+          if (!player) return;
+          player.lastSeen = Date.now();
           break;
         }
         default:
@@ -342,6 +369,7 @@ export function createLobbyServer({
       if (currentLobby && currentPlayer) {
         currentPlayer.ws = null;
         currentPlayer.ready = false;
+        currentPlayer.lastSeen = Date.now();
         await persistLobby(currentLobby);
         broadcast(currentLobby, {
           type: "lobby",
@@ -349,7 +377,26 @@ export function createLobbyServer({
           host: currentLobby.host,
           players: publicPlayers(currentLobby),
           map: currentLobby.map,
+          maxPlayers: currentLobby.maxPlayers,
         });
+        currentPlayer.offlineTimer = setTimeout(async () => {
+          if (!currentPlayer.ws && currentLobby.players.includes(currentPlayer)) {
+            const idx = currentLobby.players.indexOf(currentPlayer);
+            currentLobby.players.splice(idx, 1);
+            if (currentLobby.host === currentPlayer.id) {
+              currentLobby.host = currentLobby.players[0]?.id || null;
+            }
+            await persistLobby(currentLobby);
+            broadcast(currentLobby, {
+              type: "lobby",
+              code: currentLobby.code,
+              host: currentLobby.host,
+              players: publicPlayers(currentLobby),
+              map: currentLobby.map,
+              maxPlayers: currentLobby.maxPlayers,
+            });
+          }
+        }, offlinePlayerTimeout);
       }
     });
   });

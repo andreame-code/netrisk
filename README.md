@@ -117,9 +117,13 @@ WebSocket connection. The most important message types are:
 - `chat` – `{ type, code, id, text }` broadcasts a chat message.
 - `reconnect` – `{ type, code, id }` lets a disconnected player rejoin and
   receive the latest state.
+- `heartbeat` – `{ type, code, id }` keeps a connection alive; absence of
+  heartbeats or a closed socket marks players offline.
 
 Every `lobby` broadcast includes the lobby `code`, host id, list of players with
-their readiness, the selected `map` and the configured `maxPlayers`.
+their readiness and connection status, the selected `map` and the configured
+`maxPlayers`. Disconnected players stay visible as offline for a few minutes to
+allow reconnection.
 
 If a lobby fills up (max 6 players) a `joinLobby` request will return an
 `error` message with `error: "lobbyFull"`. Joining a lobby that has started or

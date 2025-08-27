@@ -6,6 +6,7 @@ import EventBus from './core/event-bus.js';
 const bus = new EventBus();
 
 let ws = null;
+let heartbeatInterval = null;
 
 const currentLobbies = [];
 const playerNames = new Map();
@@ -117,6 +118,15 @@ export function initLobby() {
       chatInput.value = '';
     });
   }
+  const storedCode = localStorage.getItem('lobbyCode');
+  const storedId = localStorage.getItem('playerId');
+  if (storedCode && storedId) {
+    ws = new WebSocket('ws://localhost:8081');
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
+    };
+    ws.onmessage = e => handleMessage(e, null);
+  }
   fetchLobbies();
   if (supabase) {
     supabase
@@ -163,6 +173,9 @@ export function initLobby() {
       case 'joined': {
         currentCode = msg.code;
         currentPlayerId = msg.id;
+        localStorage.setItem('lobbyCode', currentCode);
+        localStorage.setItem('playerId', currentPlayerId);
+        startHeartbeat();
         loadChatHistory();
         break;
       }
@@ -180,6 +193,16 @@ export function initLobby() {
         else if (dlg) dlg.removeAttribute('open');
         break;
       }
+      case 'reconnected': {
+        currentCode = msg.code;
+        currentPlayerId = msg.player?.id || null;
+        if (currentCode && currentPlayerId) {
+          localStorage.setItem('lobbyCode', currentCode);
+          localStorage.setItem('playerId', currentPlayerId);
+          startHeartbeat();
+        }
+        break;
+      }
       case 'chat': {
         addChatMessage(msg.id, msg.text, new Date());
         break;
@@ -188,6 +211,23 @@ export function initLobby() {
         break;
     }
   }
+}
+
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (!ws) return;
+  heartbeatInterval = setInterval(() => {
+    if (
+      ws &&
+      ws.readyState === WebSocket.OPEN &&
+      currentCode &&
+      currentPlayerId
+    ) {
+      ws.send(
+        JSON.stringify({ type: 'heartbeat', code: currentCode, id: currentPlayerId })
+      );
+    }
+  }, 30000);
 }
 
 initLobby();
