@@ -10,3 +10,13 @@ export const WS_URL = (() => {
     return '';
   }
 })();
+
+if (typeof window !== 'undefined') {
+  // Non stampare la key in chiaro
+  // eslint-disable-next-line no-console
+  console.info('[ENV]', {
+    SUPABASE_URL,
+    SUPABASE_KEY: SUPABASE_KEY ? '***present***' : '(empty)',
+    WS_URL
+  });
+}
