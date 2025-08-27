@@ -1,7 +1,9 @@
-name: Deploy GitHub Pages
+name: Deploy to GitHub Pages
+
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -10,28 +12,68 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Normalize artifact to dist/
+        run: |
+          if [ -d dist ]; then exit 0; fi
+          if [ -d build ]; then mv build dist; exit 0; fi
+          if [ -d out ]; then mv out dist; exit 0; fi
+          mkdir -p dist
+
+      - name: Create runtime env.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          mkdir -p dist
+          cat > dist/env.js <<'EOF'
+          window.__ENV = {
+            SUPABASE_URL: '${SUPABASE_URL}',
+            SUPABASE_ANON_KEY: '${SUPABASE_ANON_KEY}',
+            WS_URL: (function() {
+              try {
+                const u = new URL('${SUPABASE_URL}');
+                return `wss://${u.host}/functions/v1/netrisk`;
+              } catch(e) { return ''; }
+            })()
+          };
+          EOF
+
+      - name: Upload artifact (Pages)
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
+
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
     steps:
-      - id: deployment
+      - name: Deploy to Pages
+        id: deployment
         uses: actions/deploy-pages@v4
