@@ -38,8 +38,8 @@ for (const asset of plainAssets) {
 }
 
 // Generate env.js dynamically from environment variables
-const envContent = `window.__ENV = window.__ENV || {\n  SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',\n  SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}',\n  WS_URL: '${process.env.WS_URL || ''}'\n};\n`;
-fs.writeFileSync(path.join(dist, 'env.js'), envContent);
+const generateEnv = require('./generate-env');
+generateEnv(dist);
 
 // Copy additional data files (e.g., map.json)
 fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
