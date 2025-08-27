@@ -1,0 +1,39 @@
+name: Supabase Functions Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "supabase/functions/**"
+
+jobs:
+  deploy-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://cli.supabase.com/install | sh
+          echo "${HOME}/.supabase/bin" >> $GITHUB_PATH
+
+      - name: Deploy function "netrisk"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --access-token "$SUPABASE_ACCESS_TOKEN"
+          supabase functions deploy netrisk --no-verify-jwt --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Print Function URL
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          echo "wss://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/netrisk"
