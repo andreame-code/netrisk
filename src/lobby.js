@@ -250,6 +250,10 @@ export function initLobby() {
         addChatMessage(msg.id, msg.text, new Date());
         break;
       }
+      case 'error': {
+        notifyUser(msg.error || 'An error occurred.');
+        break;
+      }
       default:
         break;
     }

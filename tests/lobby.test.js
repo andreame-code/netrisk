@@ -177,4 +177,16 @@ describe('lobby screen', () => {
     expect(global.alert).toHaveBeenCalled();
     delete global.WebSocket;
   });
+
+  test('notifies user when server sends error message', () => {
+    const wsInstance = { send: jest.fn(), readyState: 1 };
+    global.WebSocket = jest.fn(() => wsInstance);
+    global.WebSocket.OPEN = 1;
+    localStorage.setItem('lobbyCode', 'abc');
+    localStorage.setItem('playerId', 'p1');
+    require('../src/lobby.js');
+    wsInstance.onmessage({ data: JSON.stringify({ type: 'error', error: 'oops' }) });
+    expect(global.alert).toHaveBeenCalledWith('oops');
+    delete global.WebSocket;
+  });
 });
