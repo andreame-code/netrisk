@@ -3,7 +3,7 @@ const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 const { JSDOM } = require('jsdom');
-const initTerritorySelection = require('./territory-selection.js').default;
+const initTerritorySelection = require('../territory-selection.js').default;
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 

@@ -4,7 +4,7 @@ import {
   listSavedGames,
   renameSavedGame,
   deleteSavedGame,
-} from "./src/state/storage.js";
+} from "../src/state/storage.js";
 
 class DummyGame {
   constructor(state) {

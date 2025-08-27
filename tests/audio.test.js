@@ -8,7 +8,7 @@ import {
   isMuted,
   setMusicEnabled,
   isMusicEnabled,
-} from "./audio.js";
+} from "../audio.js";
 
 describe("audio helpers", () => {
   test("playEffect is safe when Audio is undefined", () => {

@@ -1,11 +1,11 @@
-const validateMap = require('./validate-map.js');
+const validateMap = require('../validate-map.js');
 
 const maps = ['map.json', 'map2.json', 'map3.json', 'map-roman.json'];
 
 describe('map schema validation', () => {
   test.each(maps)('%s matches schema', (file) => {
     // eslint-disable-next-line global-require
-    const data = require(`./src/data/${file}`);
+    const data = require(`../src/data/${file}`);
     expect(() => validateMap(data)).not.toThrow();
   });
 

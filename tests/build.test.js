@@ -11,15 +11,15 @@ describe('build script', () => {
   });
 
   afterAll(() => {
-    fs.rmSync(path.join(__dirname, 'dist'), { recursive: true, force: true });
+    fs.rmSync(path.join(__dirname, '..', 'dist'), { recursive: true, force: true });
   });
 
   test('copies map data file', () => {
-    const mapPath = path.join(__dirname, 'dist', 'src', 'data', 'map.json');
+    const mapPath = path.join(__dirname, '..', 'dist', 'src', 'data', 'map.json');
     expect(fs.existsSync(mapPath)).toBe(true);
-    const romanPath = path.join(__dirname, 'dist', 'src', 'data', 'map-roman.json');
+    const romanPath = path.join(__dirname, '..', 'dist', 'src', 'data', 'map-roman.json');
     expect(fs.existsSync(romanPath)).toBe(true);
-    const map3Path = path.join(__dirname, 'dist', 'src', 'data', 'map3.json');
+    const map3Path = path.join(__dirname, '..', 'dist', 'src', 'data', 'map3.json');
     expect(fs.existsSync(map3Path)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
-jest.mock('./navigation.js', () => ({ goHome: jest.fn() }));
-jest.mock('./theme.js', () => ({ initThemeToggle: jest.fn() }));
-jest.mock('./src/init/supabase-client.js', () => null);
+jest.mock('../navigation.js', () => ({ goHome: jest.fn() }));
+jest.mock('../theme.js', () => ({ initThemeToggle: jest.fn() }));
+jest.mock('../src/init/supabase-client.js', () => null);
 
 describe('lobby screen', () => {
   beforeEach(() => {
@@ -27,14 +27,14 @@ describe('lobby screen', () => {
   });
 
   test('back button goes home', () => {
-    const { goHome } = require('./navigation.js');
-    require('./lobby.js');
+    const { goHome } = require('../navigation.js');
+    require('../lobby.js');
     document.getElementById('backBtn').click();
     expect(goHome).toHaveBeenCalled();
   });
 
   test('renderLobbies displays info', () => {
-    const { renderLobbies } = require('./lobby.js');
+    const { renderLobbies } = require('../lobby.js');
     const data = [
       { code: 'abc', host: 'host', players: [{}, {}], map: 'map', started: false, maxPlayers: 5 },
     ];
@@ -51,7 +51,7 @@ describe('lobby screen', () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require('./lobby.js');
+    require('../lobby.js');
     document.getElementById('createBtn').click();
     expect(document.getElementById('createDialog').hasAttribute('open')).toBe(true);
     document.getElementById('roomName').value = 'Room';
@@ -78,7 +78,7 @@ describe('lobby screen', () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require('./lobby.js');
+    require('../lobby.js');
     document.getElementById('createBtn').click();
     document.getElementById('roomName').value = '';
     document.getElementById('maxPlayers').value = '10';

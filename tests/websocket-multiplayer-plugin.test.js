@@ -1,7 +1,7 @@
 /** @jest-environment node */
-import Game from "./game.js";
-import { FORTIFY } from "./phases.js";
-import createWebSocketMultiplayer from "./src/plugins/websocket-multiplayer-plugin.js";
+import Game from "../game.js";
+import { FORTIFY } from "../phases.js";
+import createWebSocketMultiplayer from "../src/plugins/websocket-multiplayer-plugin.js";
 import WebSocket, { WebSocketServer } from "ws";
 
 function wait(ms) {

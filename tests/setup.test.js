@@ -1,6 +1,7 @@
-import { colorPalette } from './colors.js';
+import { colorPalette } from '../colors.js';
 import { readFileSync } from 'fs';
-jest.mock('./navigation.js', () => ({
+import path from 'path';
+jest.mock('../navigation.js', () => ({
   navigateTo: jest.fn(),
   goHome: jest.fn(),
   exitGame: jest.fn(),
@@ -48,8 +49,8 @@ describe('setup map selection', () => {
       ],
     };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
-    const { navigateTo } = require('./navigation.js');
-    const { mapLoadPromise } = require('./setup.js');
+    const { navigateTo } = require('../navigation.js');
+    const { mapLoadPromise } = require('../setup.js');
     await mapLoadPromise;
     document.getElementById('humanCount').value = '1';
     document.getElementById('aiCount').value = '0';
@@ -64,7 +65,7 @@ describe('setup map selection', () => {
   test('renders responsive grid', async () => {
     const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
-    const { mapLoadPromise } = require('./setup.js');
+    const { mapLoadPromise } = require('../setup.js');
     await mapLoadPromise;
     const grid = document.getElementById('mapGrid');
     expect(grid.style.display).toBe('grid');
@@ -74,7 +75,7 @@ describe('setup map selection', () => {
   test('shows placeholder when thumbnail missing', async () => {
     const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'missing.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
-    const { mapLoadPromise } = require('./setup.js');
+    const { mapLoadPromise } = require('../setup.js');
     await mapLoadPromise;
     const img = document.querySelector('.map-item img');
     img.dispatchEvent(new Event('error'));
@@ -84,7 +85,7 @@ describe('setup map selection', () => {
   test('saves AI difficulty and style', async () => {
     const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'map.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
-    const { mapLoadPromise } = require('./setup.js');
+    const { mapLoadPromise } = require('../setup.js');
     await mapLoadPromise;
     document.getElementById('humanCount').value = '1';
     document.getElementById('aiCount').value = '1';
@@ -98,7 +99,7 @@ describe('setup map selection', () => {
   });
 
   test('has header navigation', () => {
-    const html = readFileSync('./setup.html', 'utf8');
+    const html = readFileSync(path.join(__dirname, '..', 'setup.html'), 'utf8');
     expect(html).toMatch(/<header class="main-header">/);
     expect(html).toMatch(/href="index.html"/);
   });

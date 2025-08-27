@@ -1,5 +1,5 @@
-import Game from "./game.js";
-import { REINFORCE } from "./phases.js";
+import Game from "../game.js";
+import { REINFORCE } from "../phases.js";
 
 describe('Event bus', () => {
   const mapMock = {

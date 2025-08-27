@@ -1,5 +1,5 @@
-import { attachStatsListeners, getStats } from './stats.js';
-import { REINFORCE } from './phases.js';
+import { attachStatsListeners, getStats } from '../stats.js';
+import { REINFORCE } from '../phases.js';
 
 describe('stats tracking', () => {
   test('records armies and attacks per turn', () => {

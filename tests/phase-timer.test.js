@@ -1,5 +1,5 @@
-import initPhaseTimer from './phase-timer.js';
-import EventBus from './src/core/event-bus.js';
+import initPhaseTimer from '../phase-timer.js';
+import EventBus from '../src/core/event-bus.js';
 
 jest.useFakeTimers();
 

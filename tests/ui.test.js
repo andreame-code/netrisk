@@ -13,7 +13,7 @@ import {
   getLog,
   exportLog,
   copyLog,
-} from './ui.js';
+} from '../ui.js';
 
 describe('ui utilities', () => {
   let game;

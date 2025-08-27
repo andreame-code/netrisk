@@ -10,8 +10,8 @@ describe('settings persistence between pages', () => {
   });
 
   test('audio and theme survive reload', () => {
-    const audio1 = require('./audio.js');
-    const theme1 = require('./theme.js');
+    const audio1 = require('../audio.js');
+    const theme1 = require('../theme.js');
     audio1.setMasterVolume(0.25);
     audio1.setMuted(true);
     document.body.innerHTML = '<button id="themeToggle" class="btn">High Contrast</button>';
@@ -20,8 +20,8 @@ describe('settings persistence between pages', () => {
 
     jest.resetModules();
     document.body.innerHTML = '';
-    const audio2 = require('./audio.js');
-    const theme2 = require('./theme.js');
+    const audio2 = require('../audio.js');
+    const theme2 = require('../theme.js');
     theme2.initThemeToggle();
     expect(audio2.getMasterVolume()).toBe(0.25);
     expect(audio2.isMuted()).toBe(true);

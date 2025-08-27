@@ -1,4 +1,4 @@
-import askArmiesToMove from './move-prompt.js';
+import askArmiesToMove from '../move-prompt.js';
 
 describe('askArmiesToMove', () => {
   afterEach(() => {

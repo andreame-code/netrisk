@@ -1,4 +1,4 @@
-import { attackSuccessProbability, territoryPriority } from './ai.js';
+import { attackSuccessProbability, territoryPriority } from '../ai.js';
 
 class MockGame {
   constructor(map) { this.map = map; }

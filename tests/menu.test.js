@@ -1,4 +1,4 @@
-jest.mock('./navigation.js', () => ({
+jest.mock('../navigation.js', () => ({
   navigateTo: jest.fn(),
   goHome: jest.fn(),
   exitGame: jest.fn(),
@@ -17,8 +17,8 @@ describe('home navigation', () => {
   });
 
   test('buttons navigate to pages', () => {
-    const { navigateTo } = require('./navigation.js');
-    require('./home.js');
+    const { navigateTo } = require('../navigation.js');
+    require('../home.js');
     document.getElementById('playBtn').click();
     document.getElementById('multiplayerBtn').click();
     document.getElementById('setupBtn').click();

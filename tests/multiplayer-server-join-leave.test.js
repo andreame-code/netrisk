@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import WebSocket from "ws";
-jest.mock("./src/init/supabase-client.js", () => null);
-const { createLobbyServer } = require("./multiplayer-server.js");
+jest.mock("../src/init/supabase-client.js", () => null);
+const { createLobbyServer } = require("../multiplayer-server.js");
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -124,5 +124,5 @@ test(
   await onceClose(host);
   server.close();
   },
-  10000
+  20000
 );

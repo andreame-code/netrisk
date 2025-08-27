@@ -1,4 +1,4 @@
-import { navigateTo, goHome, exitGame } from "./navigation.js";
+import { navigateTo, goHome, exitGame } from "../navigation.js";
 
 describe("navigateTo", () => {
   test("uses location.assign when available", () => {

@@ -1,9 +1,9 @@
-const mapData = require('./src/data/map.json');
-const { REINFORCE, ATTACK, FORTIFY, GAME_OVER } = require('./phases.js');
+const mapData = require('../src/data/map.json');
+const { REINFORCE, ATTACK, FORTIFY, GAME_OVER } = require('../phases.js');
 
-jest.mock('./territory-selection.js', () => jest.fn());
-jest.mock('./move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
-jest.mock('./navigation.js', () => ({
+jest.mock('../territory-selection.js', () => jest.fn());
+jest.mock('../move-prompt.js', () => jest.fn(() => Promise.resolve(1)));
+jest.mock('../navigation.js', () => ({
   navigateTo: jest.fn(),
   goHome: jest.fn(),
   exitGame: jest.fn(),
@@ -35,8 +35,8 @@ describe('main DOM interactions', () => {
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
-    main = require('./main.js');
-    ui = require('./ui.js');
+    main = require('../main.js');
+    ui = require('../ui.js');
       await Promise.resolve();
       main.attachTerritoryHandlers();
       jest.useFakeTimers();
@@ -174,8 +174,8 @@ describe('main DOM interactions', () => {
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
     global.logger = { info: jest.fn(), error: jest.fn() };
-    const main2 = require('./main.js');
-    require('./ui.js');
+    const main2 = require('../main.js');
+    require('../ui.js');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -230,7 +230,7 @@ describe('main DOM interactions', () => {
     expect(destroySpy).toHaveBeenCalled();
     expect(localStorage.getItem('netriskPlayers')).toBeNull();
     expect(localStorage.getItem('netriskGame')).toBeNull();
-    const navigation = require('./navigation.js');
+    const navigation = require('../navigation.js');
     expect(navigation.navigateTo).toHaveBeenCalledWith('setup.html');
     destroySpy.mockRestore();
   });

@@ -1,5 +1,5 @@
-import initTerritorySelection from './territory-selection.js';
-import { ATTACK } from './phases.js';
+import initTerritorySelection from '../territory-selection.js';
+import { ATTACK } from '../phases.js';
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 

@@ -1,5 +1,5 @@
-jest.mock('./theme.js', () => ({ initThemeToggle: jest.fn() }));
-jest.mock('./navigation.js', () => ({ navigateTo: jest.fn() }));
+jest.mock('../theme.js', () => ({ initThemeToggle: jest.fn() }));
+jest.mock('../navigation.js', () => ({ navigateTo: jest.fn() }));
 
 describe('home page initialization', () => {
   beforeEach(() => {
@@ -15,9 +15,9 @@ describe('home page initialization', () => {
   });
 
   test('initHome sets up theme and navigation handlers', () => {
-    const { initThemeToggle } = require('./theme.js');
-    const { navigateTo } = require('./navigation.js');
-    require('./home.js');
+    const { initThemeToggle } = require('../theme.js');
+    const { navigateTo } = require('../navigation.js');
+    require('../home.js');
 
     document.getElementById('playBtn').click();
     document.getElementById('aboutBtn').click();

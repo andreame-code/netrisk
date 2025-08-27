@@ -1,4 +1,4 @@
-const { startEditorTutorial } = require('./editor-tutorial.js');
+const { startEditorTutorial } = require('../editor-tutorial.js');
 
 describe('editor tutorial', () => {
   beforeEach(() => {

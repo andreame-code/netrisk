@@ -1,4 +1,4 @@
-import { initThemeToggle, initThemeSelect } from './theme.js';
+import { initThemeToggle, initThemeSelect } from '../theme.js';
 
 describe('theme toggle', () => {
   beforeEach(() => {

@@ -1,4 +1,4 @@
-const { filterSections } = require('./about.js');
+const { filterSections } = require('../about.js');
 
 describe('about page search', () => {
   test('filters sections based on query', () => {

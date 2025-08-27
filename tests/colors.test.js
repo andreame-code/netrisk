@@ -1,4 +1,4 @@
-import { colorPalette, getContrastingColor } from "./colors.js";
+import { colorPalette, getContrastingColor } from "../colors.js";
 
 describe("getContrastingColor", () => {
   test("returns black for light colors", () => {

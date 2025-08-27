@@ -1,5 +1,5 @@
-import Game from "./game.js";
-import { ATTACK, FORTIFY } from "./phases.js";
+import Game from "../game.js";
+import { ATTACK, FORTIFY } from "../phases.js";
 
 describe("undo functionality", () => {
   const createGame = (maxUndo = 10) => {

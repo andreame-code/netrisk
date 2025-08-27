@@ -1,5 +1,5 @@
 const fs = require('fs');
-const map = require('./src/data/map3.json');
+const map = require('../src/data/map3.json');
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
@@ -44,7 +44,7 @@ describe('territory-selection with map3', () => {
     localStorage.setItem('netriskMap', 'map3');
     const svg = fs.readFileSync('map3.svg', 'utf8');
     global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
-    const init = require('./territory-selection.js').default;
+    const init = require('../territory-selection.js').default;
     init({ territories: map.territories });
     await flushPromises();
     expect(fetch).toHaveBeenCalledWith('map3.svg');
@@ -57,7 +57,7 @@ describe('territory-selection with map3', () => {
     localStorage.setItem('netriskMap', 'map3');
     const svg = fs.readFileSync('map3.svg', 'utf8');
     global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
-    const init = require('./territory-selection.js').default;
+    const init = require('../territory-selection.js').default;
     init({ territories: map.territories });
     await flushPromises();
     const board = document.getElementById('board');
