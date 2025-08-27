@@ -11,9 +11,15 @@ import supabase from "./src/init/supabase-client.js";
  *
  * @param {object} [opts]
  * @param {number} [opts.port] Port to listen on
- * @returns {WebSocketServer} the running WebSocketServer instance
- */
-export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
+ * @param {number} [opts.maxPlayers] Maximum players per lobby
+ * @param {number} [opts.closeEmptyLobbiesAfter] Delay in ms before closing empty lobbies
+* @returns {WebSocketServer} the running WebSocketServer instance
+*/
+export function createLobbyServer({
+  port = process.env.PORT || 8081,
+  maxPlayers = 6,
+  closeEmptyLobbiesAfter = 5000,
+} = {}) {
   const wss = new WebSocketServer({ port });
 
   /**
@@ -144,7 +150,11 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
         case "joinLobby": {
           const lobby = await loadLobby(msg.code);
           if (!lobby || lobby.started) {
-            ws.send(JSON.stringify({ type: "error", error: "lobbyNotFound" }));
+            ws.send(JSON.stringify({ type: "error", error: "lobbyNotOpen" }));
+            return;
+          }
+          if (lobby.players.length >= maxPlayers) {
+            ws.send(JSON.stringify({ type: "error", error: "lobbyFull" }));
             return;
           }
           const player = {
@@ -169,6 +179,41 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
             map: lobby.map,
             maxPlayers: lobby.maxPlayers,
           });
+          break;
+        }
+        case "leaveLobby": {
+          const lobby = await loadLobby(msg.code);
+          if (!lobby) return;
+          const idx = lobby.players.findIndex(p => p.id === msg.id);
+          if (idx === -1) return;
+          const [player] = lobby.players.splice(idx, 1);
+          if (currentPlayer === player) {
+            currentPlayer = null;
+            currentLobby = null;
+          }
+          if (lobby.host === player.id) {
+            lobby.host = lobby.players[0]?.id || null;
+          }
+          await persistLobby(lobby);
+          broadcast(lobby, {
+            type: "lobby",
+            code: lobby.code,
+            host: lobby.host,
+            players: publicPlayers(lobby),
+            map: lobby.map,
+          });
+          ws.send(JSON.stringify({ type: "left", code: lobby.code }));
+          if (lobby.players.length === 0) {
+            setTimeout(async () => {
+              const still = lobbies.get(lobby.code);
+              if (still && still.players.length === 0) {
+                lobbies.delete(lobby.code);
+                if (supabase) {
+                  await supabase.from("lobbies").delete().eq("code", lobby.code);
+                }
+              }
+            }, closeEmptyLobbiesAfter);
+          }
           break;
         }
         case "ready": {

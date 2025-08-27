@@ -106,6 +106,7 @@ WebSocket connection. The most important message types are:
   returns a `lobby` message containing the lobby `code`, `host`, current
   `players`, `maxPlayers` and the selected `map` if any.
 - `joinLobby` – `{ type, code, player }` joins an existing lobby.
+- `leaveLobby` – `{ type, code, id }` removes a player from a lobby.
 - `selectMap` – `{ type, code, id, map }` can be sent by the host to choose the
   board; all clients receive an updated `lobby` message with the `map` field.
 - `ready` – `{ type, code, id, ready }` toggles a player's ready state.
@@ -119,6 +120,10 @@ WebSocket connection. The most important message types are:
 
 Every `lobby` broadcast includes the lobby `code`, host id, list of players with
 their readiness, the selected `map` and the configured `maxPlayers`.
+
+If a lobby fills up (max 6 players) a `joinLobby` request will return an
+`error` message with `error: "lobbyFull"`. Joining a lobby that has started or
+was closed results in `error: "lobbyNotOpen"`.
 
 All lobby information is persisted in Supabase and relayed by the server so
 that peers never communicate directly with one another.
