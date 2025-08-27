@@ -5,7 +5,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "supabase/functions/**"
+      - "supabase/**"
+      - ".github/workflows/supabase-deploy.yml"
 
 jobs:
   deploy-functions:
@@ -14,26 +15,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Installa Deno (alcune versioni della CLI lo usano per il bundle)
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
           deno-version: v1.x
 
-      - name: Install Supabase CLI
-        run: |
-          curl -fsSL https://cli.supabase.com/install | sh
-          echo "${HOME}/.supabase/bin" >> $GITHUB_PATH
+      # Installa la Supabase CLI e la aggiunge al PATH
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Deploy function "netrisk"
+      - name: Check supabase version
+        run: supabase --version
+
+      - name: Link project and deploy function
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          supabase link --project-ref "$SUPABASE_PROJECT_ID" --access-token "$SUPABASE_ACCESS_TOKEN"
-          supabase functions deploy netrisk --no-verify-jwt --project-ref "$SUPABASE_PROJECT_ID"
+          supabase link --project-ref "$SUPABASE_PROJECT_REF" --access-token "$SUPABASE_ACCESS_TOKEN"
+          supabase functions deploy netrisk --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Print Function URL
         env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          echo "wss://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/netrisk"
+          echo "wss://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/netrisk"
