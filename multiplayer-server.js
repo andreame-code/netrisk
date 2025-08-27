@@ -1,5 +1,6 @@
 import { WebSocketServer } from "ws";
 import { randomBytes } from "crypto";
+import supabase from "./src/init/supabase-client.js";
 
 /**
  * Creates a multiplayer lobby server. The server supports creating and joining
@@ -69,6 +70,15 @@ export function createLobbyServer({ port = process.env.PORT || 8081 } = {}) {
           lobbies.set(code, lobby);
           currentLobby = lobby;
           currentPlayer = player;
+          if (supabase) {
+            supabase
+              .from("lobbies")
+              .insert({ code, host: player.id })
+              .catch(err => {
+                // eslint-disable-next-line no-console
+                console.error("Supabase insert error", err);
+              });
+          }
           ws.send(
             JSON.stringify({
               type: "lobby",

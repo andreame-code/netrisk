@@ -25,5 +25,8 @@
     "jest-environment-jsdom": "^30.0.5",
     "prettier": "^3.2.5",
     "ws": "^8.17.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.0"
   }
 }
