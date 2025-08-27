@@ -5,7 +5,7 @@ export function initHome() {
   initThemeToggle();
   const mapping = [
     ["playBtn", "game.html"],
-    ["multiplayerBtn", "game.html?multiplayer=1"],
+    ["multiplayerBtn", "lobby.html"],
     ["setupBtn", "setup.html"],
     ["howToPlayBtn", "how-to-play.html"],
     ["aboutBtn", "about.html"],
