@@ -192,11 +192,26 @@ body.game-page #uiPanel {
 }
 
 @media (max-width: 1023px) {
-  body.game-page #uiPanel .btn {
+body.game-page #uiPanel .btn {
     width: 100%;
     padding: 14px;
     font-size: 18px;
   }
+}
+
+#gameActions,
+#otherControls {
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: #f9f9f9;
+}
+
+#gameActions .btn,
+#otherControls .btn {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
 }
 
 /* Game theme */
