@@ -271,6 +271,7 @@ export function createLobbyServer({
         case "start": {
           const lobby = await loadLobby(msg.code);
           if (!lobby || lobby.host !== msg.id) return;
+          if (lobby.players.length < 2) return;
           if (!lobby.players.every(p => p.ready)) return;
           lobby.state = msg.state;
           lobby.started = true;

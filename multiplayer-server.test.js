@@ -171,3 +171,88 @@ test("rejects invalid map on create", async () => {
   server.close();
 });
 
+test("requires at least two ready players to start", async () => {
+  const port = 12349;
+  const server = createLobbyServer({ port });
+  const url = `ws://localhost:${port}`;
+
+  const host = new WebSocket(url);
+  await onceOpen(host);
+  const qHost = messageQueue(host);
+  host.send(
+    JSON.stringify({
+      type: "createLobby",
+      player: { id: "p1", name: "P1" },
+    })
+  );
+  await wait(50);
+  const { code } = qHost.shift();
+
+  host.send(JSON.stringify({ type: "ready", code, id: "p1", ready: true }));
+  await wait(50);
+  const ready1 = qHost.shift();
+  expect(ready1.players.find(p => p.id === "p1").ready).toBe(true);
+
+  host.send(
+    JSON.stringify({
+      type: "start",
+      code,
+      id: "p1",
+      state: { currentPlayer: "p1" },
+    })
+  );
+  await wait(50);
+  expect(qHost.length).toBe(0);
+
+  const ws2 = new WebSocket(url);
+  await onceOpen(ws2);
+  const q2 = messageQueue(ws2);
+  ws2.send(
+    JSON.stringify({
+      type: "joinLobby",
+      code,
+      player: { id: "p2", name: "P2" },
+    })
+  );
+  await wait(50);
+  q2.shift();
+  qHost.shift();
+  q2.shift();
+
+  host.send(
+    JSON.stringify({
+      type: "start",
+      code,
+      id: "p1",
+      state: { currentPlayer: "p1" },
+    })
+  );
+  await wait(50);
+  expect(qHost.length).toBe(0);
+  expect(q2.length).toBe(0);
+
+  ws2.send(JSON.stringify({ type: "ready", code, id: "p2", ready: true }));
+  await wait(50);
+  const ready2 = qHost.shift();
+  expect(ready2.players.find(p => p.id === "p2").ready).toBe(true);
+  q2.shift();
+
+  host.send(
+    JSON.stringify({
+      type: "start",
+      code,
+      id: "p1",
+      state: { currentPlayer: "p1" },
+    })
+  );
+  await wait(50);
+  const startHost = qHost.shift();
+  const start2 = q2.shift();
+  expect(startHost.type).toBe("start");
+  expect(start2.type).toBe("start");
+
+  host.close();
+  ws2.close();
+  server.close();
+});
+
