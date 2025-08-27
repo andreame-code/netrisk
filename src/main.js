@@ -38,6 +38,7 @@ import {
   exportLog,
 } from "./ui.js";
 import initPhaseTimer from "./phase-timer.js";
+import { WS_URL } from "./config.js";
 import { loadGame as loadGameData } from "./init/game-loader.js";
 import {
   updateGameState,
@@ -428,13 +429,10 @@ async function initGame() {
       ? new URLSearchParams(window.location.search)
       : null;
   if (params && params.get("multiplayer")) {
-    const url =
-      params.get("server") ||
-      `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.hostname}:8081`;
     const { default: createWebSocketMultiplayer } = await import(
       "./plugins/websocket-multiplayer-plugin.js"
     );
-    game.use(createWebSocketMultiplayer(url));
+    game.use(createWebSocketMultiplayer(WS_URL));
   }
 
   preloadEffects();
