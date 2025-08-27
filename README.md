@@ -96,6 +96,53 @@ game state in sync across browser tabs or machines.
 Once the snippet runs in each browser, any action taken by one player will
 propagate to all connected clients in real time.
 
+## Supabase
+
+Per un backend server authoritativo è disponibile una integrazione con [Supabase](https://supabase.com/).
+Per configurarla:
+
+1. **Installa e autentica la CLI**
+
+   ```bash
+   npm install -g supabase
+   supabase login
+   ```
+
+2. **Collega la CLI al progetto**
+
+   ```bash
+   supabase link --project-ref <project-ref>
+   ```
+
+   L'istanza pubblica usata da NetRisk ha `project-ref` `kdrfohrmfppyzzywhmsn`.
+
+3. **Applica le migrazioni**
+
+   ```bash
+   supabase db push
+   ```
+
+   Questo crea le tabelle definite in `supabase/migrations`.
+
+4. **Distribuisci la funzione Edge**
+
+   ```bash
+   supabase functions deploy netrisk
+   ```
+
+5. **Imposta la chiave anon**
+
+   Prima di avviare il client fornisci la chiave anon del progetto
+   (Dashboard → Settings → API):
+
+   ```bash
+   export SUPABASE_KEY=<anon-key>
+   npm run dev
+   ```
+
+Facoltativamente puoi avviare tutto in locale con `supabase start` e
+`supabase functions serve netrisk`.
+
 ## Extensibility
 
 The core `Game` class exposes a lightweight event bus and plugin system to
