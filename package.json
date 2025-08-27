@@ -6,7 +6,7 @@
     "lint": "eslint .",
     "start": "http-server .",
     "dev": "http-server .",
-    "build": "node src/build.js",
+    "build": "VITE_SUPABASE_URL=$SUPABASE_URL VITE_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY vite build",
     "server": "node src/multiplayer-server.js",
     "simulate": "node src/simulate.js",
     "test": "jest"
