@@ -23,8 +23,8 @@ describe('home page initialization', () => {
     document.getElementById('aboutBtn').click();
 
     expect(initThemeToggle).toHaveBeenCalledTimes(1);
-    expect(navigateTo).toHaveBeenCalledWith('game.html');
-    expect(navigateTo).toHaveBeenCalledWith('about.html');
+    expect(navigateTo).toHaveBeenCalledWith('./game.html');
+    expect(navigateTo).toHaveBeenCalledWith('./about.html');
     expect(navigateTo).toHaveBeenCalledTimes(2);
   });
 });
