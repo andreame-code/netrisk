@@ -8,7 +8,8 @@
     "dev": "http-server .",
     "test": "jest",
     "e2e": "playwright test",
-    "e2e:ci": "npx playwright install --with-deps && playwright test --reporter=github",
+    "e2e:ci": "playwright test --reporter=github",
+    "e2e:install": "playwright install --with-deps",
     "build": "node build.js",
     "server": "node multiplayer-server.js",
     "simulate": "node simulate.js"

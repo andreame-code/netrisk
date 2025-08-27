@@ -8,6 +8,11 @@ export default defineConfig({
     headless: true,
     trace: 'on-first-retry',
   },
+  webServer: {
+    command: 'npx http-server . -p 4173',
+    port: 4173,
+    reuseExistingServer: !process.env.CI,
+  },
   projects: [
     {
       name: 'chromium',
