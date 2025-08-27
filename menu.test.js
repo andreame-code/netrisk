@@ -25,7 +25,7 @@ describe('home navigation', () => {
     document.getElementById('howToPlayBtn').click();
     document.getElementById('aboutBtn').click();
     expect(navigateTo).toHaveBeenNthCalledWith(1, 'game.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(2, 'game.html?multiplayer=1');
+    expect(navigateTo).toHaveBeenNthCalledWith(2, 'lobby.html');
     expect(navigateTo).toHaveBeenNthCalledWith(3, 'setup.html');
     expect(navigateTo).toHaveBeenNthCalledWith(4, 'how-to-play.html');
     expect(navigateTo).toHaveBeenNthCalledWith(5, 'about.html');
