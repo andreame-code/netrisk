@@ -38,6 +38,13 @@ const EFFECT_FILES = {
 const cache = new Map();
 let musicAudio;
 
+const MUSIC_FILES = {
+  default: "assets/music.mp3",
+  map3: "assets/fairy-music.mp3",
+};
+
+let musicSrc = MUSIC_FILES.default;
+
 function clamp(v) {
   return Math.min(Math.max(v, 0), 1);
 }
@@ -76,9 +83,20 @@ function playEffect(name) {
 function ensureMusic() {
   if (musicAudio || typeof Audio === "undefined") return musicAudio;
   musicAudio = new Audio();
-  musicAudio.src = "assets/music.mp3";
+  musicAudio.src = musicSrc;
   musicAudio.loop = true;
   return musicAudio;
+}
+
+function setLevelMusic(levelId) {
+  musicSrc = MUSIC_FILES[levelId] || MUSIC_FILES.default;
+  if (musicAudio) {
+    musicAudio.src = musicSrc;
+  }
+}
+
+function getLevelMusic(levelId) {
+  return MUSIC_FILES[levelId] || MUSIC_FILES.default;
 }
 
 function setMasterVolume(v) {
@@ -148,5 +166,7 @@ export {
   isMuted,
   setMusicEnabled,
   isMusicEnabled,
+  setLevelMusic,
+  getLevelMusic,
 };
 
