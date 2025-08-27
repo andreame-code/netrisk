@@ -1,4 +1,4 @@
-import { REINFORCE } from "../../phases.js";
+import { REINFORCE } from "../phases.js";
 
 export default function loggerPlugin(game, logger = console) {
   game.on(REINFORCE, ({ territory, player }) => {

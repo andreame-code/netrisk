@@ -1,5 +1,5 @@
 /* global logger */
-import Game from "../../game.js";
+import Game from "../game.js";
 import aiTurnManager from "../ai/turn-manager.js";
 import { getMapName, getSavedGame, getSavedPlayers } from "../state/storage.js";
 

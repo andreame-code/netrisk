@@ -6,9 +6,9 @@
     "lint": "eslint .",
     "start": "http-server .",
     "dev": "http-server .",
-    "build": "node build.js",
-    "server": "node multiplayer-server.js",
-    "simulate": "node simulate.js",
+    "build": "node src/build.js",
+    "server": "node src/multiplayer-server.js",
+    "simulate": "node src/simulate.js",
     "test": "jest"
   },
   "devDependencies": {

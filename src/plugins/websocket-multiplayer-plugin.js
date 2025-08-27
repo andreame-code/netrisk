@@ -1,5 +1,5 @@
 /* eslint-env browser */
-import Game from "../../game.js";
+import Game from "../game.js";
 
 export default function createWebSocketMultiplayer(url) {
   return (game) => {
