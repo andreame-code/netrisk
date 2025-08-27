@@ -23,7 +23,19 @@
     <main>
       <h1>Lobby</h1>
       <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">Back</button>
+      <button id="createBtn" class="btn" aria-label="Create new game" accesskey="n">Create game</button>
       <ul id="lobbyList" class="lobby-list"></ul>
+      <dialog id="createDialog">
+        <form method="dialog" id="createForm">
+          <label>Room name <input id="roomName" required /></label>
+          <label>Max players <input id="maxPlayers" type="number" min="2" max="6" value="2" required /></label>
+          <label>Map <input id="map" /></label>
+          <menu>
+            <button value="cancel" id="cancelCreate">Cancel</button>
+            <button id="submitCreate" value="default">Create</button>
+          </menu>
+        </form>
+      </dialog>
     </main>
     <script type="module" src="./lobby.js"></script>
   </body>

@@ -102,9 +102,9 @@ propagate to all connected clients in real time.
 matches and keep players synchronized. Clients exchange JSON messages over a
 WebSocket connection. The most important message types are:
 
-- `createLobby` – `{ type, player, map? }` creates a new lobby and returns a
-  `lobby` message containing the lobby `code`, `host`, current `players` and the
-  selected `map` if any.
+- `createLobby` – `{ type, player, maxPlayers, map? }` creates a new lobby and
+  returns a `lobby` message containing the lobby `code`, `host`, current
+  `players`, `maxPlayers` and the selected `map` if any.
 - `joinLobby` – `{ type, code, player }` joins an existing lobby.
 - `selectMap` – `{ type, code, id, map }` can be sent by the host to choose the
   board; all clients receive an updated `lobby` message with the `map` field.
@@ -118,7 +118,7 @@ WebSocket connection. The most important message types are:
   receive the latest state.
 
 Every `lobby` broadcast includes the lobby `code`, host id, list of players with
-their readiness and the selected `map`.
+their readiness, the selected `map` and the configured `maxPlayers`.
 
 All lobby information is persisted in Supabase and relayed by the server so
 that peers never communicate directly with one another.

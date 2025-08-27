@@ -5,6 +5,10 @@ import EventBus from './src/core/event-bus.js';
 
 const bus = new EventBus();
 
+let ws = null;
+
+const currentLobbies = [];
+
 export function renderLobbies(lobbies) {
   const list = document.getElementById('lobbyList');
   if (!list) return;
@@ -12,8 +16,9 @@ export function renderLobbies(lobbies) {
   lobbies.forEach(lobby => {
     const li = document.createElement('li');
     const playerCount = Array.isArray(lobby.players) ? lobby.players.length : 0;
+    const max = lobby.maxPlayers || 6;
     const status = lobby.started ? 'started' : 'open';
-    li.textContent = `${lobby.code} – host: ${lobby.host} – players: ${playerCount}/6 – map: ${lobby.map || '-' } – status: ${status}`;
+    li.textContent = `${lobby.code} – host: ${lobby.host} – players: ${playerCount}/${max} – map: ${lobby.map || '-' } – status: ${status}`;
     list.appendChild(li);
   });
 }
@@ -24,13 +29,68 @@ async function fetchLobbies() {
     return;
   }
   const { data } = await supabase.from('lobbies').select();
-  renderLobbies(data || []);
+  currentLobbies.splice(0, currentLobbies.length, ...(data || []));
+  renderLobbies(currentLobbies);
 }
 
 export function initLobby() {
   initThemeToggle();
   const backBtn = document.getElementById('backBtn');
   if (backBtn) backBtn.addEventListener('click', () => goHome());
+  const createBtn = document.getElementById('createBtn');
+  const dialog = document.getElementById('createDialog');
+  const form = document.getElementById('createForm');
+  if (createBtn && dialog) {
+    createBtn.addEventListener('click', () => {
+      if (dialog.showModal) dialog.showModal();
+      else dialog.setAttribute('open', '');
+    });
+  }
+  if (form) {
+    form.addEventListener('submit', ev => {
+      ev.preventDefault();
+      const name = document.getElementById('roomName').value.trim();
+      const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
+      const map = document.getElementById('map').value.trim();
+      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) return;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        ws = new WebSocket('ws://localhost:8081');
+        ws.onopen = () => {
+          ws.send(
+            JSON.stringify({
+              type: 'createLobby',
+              player: { name },
+              maxPlayers,
+              ...(map ? { map } : {}),
+            })
+          );
+        };
+        ws.onmessage = e => {
+          let msg;
+          try {
+            msg = JSON.parse(e.data);
+          } catch {
+            return;
+          }
+          if (msg.type === 'lobby') {
+            currentLobbies.push(msg);
+            renderLobbies(currentLobbies);
+            if (dialog.close) dialog.close();
+            else dialog.removeAttribute('open');
+          }
+        };
+      } else {
+        ws.send(
+          JSON.stringify({
+            type: 'createLobby',
+            player: { name },
+            maxPlayers,
+            ...(map ? { map } : {}),
+          })
+        );
+      }
+    });
+  }
   fetchLobbies();
   if (supabase) {
     supabase
