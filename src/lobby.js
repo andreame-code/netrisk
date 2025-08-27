@@ -80,7 +80,7 @@ export function initLobby() {
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const map = document.getElementById('map').value.trim();
       if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) return;
-      const url = WS_URL || 'ws://localhost:8081';
+      const url = WS_URL;
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         ws = new WebSocket(url);
         ws.onopen = () => {
@@ -123,7 +123,7 @@ export function initLobby() {
   const storedCode = localStorage.getItem('lobbyCode');
   const storedId = localStorage.getItem('playerId');
   if (storedCode && storedId) {
-    const url = WS_URL || 'ws://localhost:8081';
+    const url = WS_URL;
     ws = new WebSocket(url);
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));

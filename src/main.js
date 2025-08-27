@@ -38,7 +38,7 @@ import {
   exportLog,
 } from "./ui.js";
 import initPhaseTimer from "./phase-timer.js";
-import { WS_URL, IS_TEST } from "./config.js";
+import { WS_URL } from "./config.js";
 import { loadGame as loadGameData } from "./init/game-loader.js";
 import {
   updateGameState,
@@ -413,6 +413,7 @@ if (exportLogBtn) {
 }
 
 async function initGame() {
+  const IS_TEST = typeof jest !== "undefined";
   if (
     typeof window !== "undefined" &&
     !hasSavedPlayers() &&
