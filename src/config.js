@@ -1,15 +1,12 @@
-export const SUPABASE_URL = '';
-export const SUPABASE_KEY = '';
-export const WS_URL = (function(){
-  if (SUPABASE_URL) {
-    try {
-      const u = new URL(SUPABASE_URL);
-      return `wss://${u.host}/functions/v1/netrisk`;
-    } catch {
-      // invalid SUPABASE_URL
-    }
-  }
-  console.error('[ENV] Missing SUPABASE_URL/ANON_KEY');
-  return '';
-})();
+export const SUPABASE_URL = (import.meta.env?.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+export const SUPABASE_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || '';
 
+export const WS_URL = (() => {
+  if (!SUPABASE_URL) return '';
+  try {
+    const u = new URL(SUPABASE_URL);
+    return `wss://${u.host}/functions/v1/netrisk`;
+  } catch {
+    return '';
+  }
+})();
