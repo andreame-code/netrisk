@@ -11,6 +11,7 @@ import {
   isMuted,
   setMusicEnabled,
   isMusicEnabled,
+  setLevelMusic,
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
 import { navigateTo, exitGame } from "./navigation.js";
@@ -45,7 +46,9 @@ import {
   clearSavedData,
   hasSavedPlayers,
   hasSavedGame,
+  getMapName,
 } from "./state/storage.js";
+import { applyLevelAccessibility } from "./data/level-accessibility.js";
 import { gameState, initGameState } from "./state/game.js";
 
 // Remove any previously registered service workers to avoid stale caches
@@ -424,6 +427,9 @@ async function initGame() {
     return;
   }
   await loadGame();
+  const mapName = getMapName();
+  setLevelMusic(mapName);
+  applyLevelAccessibility(mapName);
 
   const params =
     typeof window !== "undefined"

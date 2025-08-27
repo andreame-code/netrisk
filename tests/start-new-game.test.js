@@ -8,6 +8,7 @@ jest.mock("../src/state/storage.js", () => ({
   hasSavedPlayers: jest.fn(() => true),
   hasSavedGame: jest.fn(() => true),
   updateGameState: jest.fn(),
+  getMapName: jest.fn(() => 'map'),
 }));
 
 jest.mock("../src/ui.js", () => ({
@@ -68,6 +69,7 @@ jest.mock("../src/audio.js", () => ({
   isMuted: jest.fn(() => false),
   setMusicEnabled: jest.fn(),
   isMusicEnabled: jest.fn(() => false),
+  setLevelMusic: jest.fn(),
 }));
 
 jest.mock("../src/state/game.js", () => ({
