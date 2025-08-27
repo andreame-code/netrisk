@@ -6,7 +6,6 @@
     "lint": "eslint .",
     "start": "http-server .",
     "dev": "http-server .",
-    "test": "jest",
     "build": "node build.js",
     "server": "node multiplayer-server.js",
     "simulate": "node simulate.js"

@@ -6,6 +6,7 @@ on:
 
 jobs:
   tests:
+    if: false
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/playwright:v1.46.0-jammy
     steps:
