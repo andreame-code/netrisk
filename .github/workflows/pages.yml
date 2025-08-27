@@ -22,6 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Guard: no env.js refs
+        run: |
+          ! grep -RIn "<script src=[\"']env.js" . || (echo "❌ Found <script src=\"env.js\"> in HTML"; exit 1)
+          ! grep -RIn "window.__ENV" src || (echo "❌ Found window.__ENV in src"; exit 1)
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -50,7 +55,6 @@ jobs:
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r *.html css map*.svg map-manifest.json src supabase dist/
-
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
