@@ -44,13 +44,14 @@ if (require.main === module) {
   // Copy additional data files (e.g., map.json)
   fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
-  // Copy all HTML files, replacing references to hashed assets
+  // Copy all HTML files from the public directory, replacing references to hashed assets
+  const publicDir = path.join(root, 'public');
   const htmlFiles = fs
-    .readdirSync(root)
+    .readdirSync(publicDir)
     .filter((file) => file.endsWith('.html'));
 
   for (const file of htmlFiles) {
-    let html = fs.readFileSync(path.join(root, file), 'utf8');
+    let html = fs.readFileSync(path.join(publicDir, file), 'utf8');
     for (const [orig, hashedName] of Object.entries(hashed)) {
       html = html.replace(new RegExp(orig, 'g'), hashedName);
     }

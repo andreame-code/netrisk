@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "start": "vite build && http-server dist",
-    "dev": "vite",
+    "dev": "vite public",
     "build": "vite build",
     "preview": "vite preview",
     "server": "node src/multiplayer-server.js",
