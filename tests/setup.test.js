@@ -99,7 +99,7 @@ describe('setup map selection', () => {
   });
 
   test('has header navigation', () => {
-    const html = readFileSync(path.join(__dirname, '..', 'setup.html'), 'utf8');
+    const html = readFileSync(path.join(__dirname, '..', 'pages', 'setup.html'), 'utf8');
     expect(html).toMatch(/<header class="main-header">/);
     expect(html).toMatch(/href="index.html"/);
   });

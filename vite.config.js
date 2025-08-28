@@ -5,13 +5,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: 'index.html',
-        about: 'about.html',
-        game: 'game.html',
-        lobby: 'lobby.html',
-        setup: 'setup.html',
-        howToPlay: 'how-to-play.html',
-        howto: 'howto.html'
+        main: 'pages/index.html',
+        about: 'pages/about.html',
+        game: 'pages/game.html',
+        lobby: 'pages/lobby.html',
+        setup: 'pages/setup.html',
+        howToPlay: 'pages/how-to-play.html',
+        howto: 'pages/howto.html'
       }
     }
   },

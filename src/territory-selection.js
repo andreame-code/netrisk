@@ -118,7 +118,7 @@ export default function initTerritorySelection({
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
     "map";
-  fetch(`${mapName}.svg`)
+  fetch(`/maps/${mapName}.svg`)
     .then((r) => r.text())
     .then((svg) => {
       const boardEl = document.getElementById("board");

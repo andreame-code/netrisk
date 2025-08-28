@@ -17,13 +17,25 @@ if (require.main === module) {
   }
   fs.mkdirSync(dist);
 
-  const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'main.js'];
-  const plainAssets = ['map.svg', 'map2.svg', 'map3.svg', 'map-roman.svg', 'src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
+  const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'src/main.js'];
+  const plainAssets = [
+    'maps/map.svg',
+    'maps/map2.svg',
+    'maps/map3.svg',
+    'maps/map-roman.svg',
+    'maps/map-manifest.json',
+    'src/game.js',
+    'src/territory-selection.js',
+    'src/audio.js',
+    'src/ui.js',
+  ];
   const hashed = {};
 
   for (const asset of assets) {
-    let filePath = path.join(root, asset);
-    let content = fs.readFileSync(filePath, 'utf8');
+    const filePath = asset.startsWith('src')
+      ? path.join(root, asset)
+      : path.join(root, 'public', asset);
+    const content = fs.readFileSync(filePath, 'utf8');
 
     const hash = hashContent(content);
     const ext = path.extname(asset);
@@ -34,7 +46,9 @@ if (require.main === module) {
   }
 
   for (const asset of plainAssets) {
-    const srcPath = path.join(root, asset);
+    const srcPath = asset.startsWith('src')
+      ? path.join(root, asset)
+      : path.join(root, 'public', asset);
     const destPath = path.join(dist, asset);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
     fs.copyFileSync(srcPath, destPath);
@@ -43,16 +57,19 @@ if (require.main === module) {
   fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
   // Copy all HTML files, replacing references to hashed assets
+  const pagesDir = path.join(root, 'pages');
   const htmlFiles = fs
-    .readdirSync(root)
+    .readdirSync(pagesDir)
     .filter((file) => file.endsWith('.html'));
 
   for (const file of htmlFiles) {
-    let html = fs.readFileSync(path.join(root, file), 'utf8');
+    let html = fs.readFileSync(path.join(pagesDir, file), 'utf8');
     for (const [orig, hashedName] of Object.entries(hashed)) {
       html = html.replace(new RegExp(orig, 'g'), hashedName);
     }
-    fs.writeFileSync(path.join(dist, file), html);
+    const dest = path.join(dist, 'pages', file);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, html);
   }
 }
 

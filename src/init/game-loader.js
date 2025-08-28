@@ -7,7 +7,7 @@ let territoryPositions = {};
 
 async function loadMap(mapName) {
   try {
-    const res = await fetch(`./src/data/${mapName}.json`);
+    const res = await fetch(`/maps/${mapName}.json`);
     if (!res.ok) {
       throw new Error(`Failed to fetch map data: ${res.status}`);
     }

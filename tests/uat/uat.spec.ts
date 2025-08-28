@@ -13,7 +13,7 @@ test.describe('UAT checklist', () => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
-    await page.goto('/game.html');
+    await page.goto('/pages/game.html');
     await page.waitForSelector('#north-america');
 
     const terrs = ['#north-america', '#south-america', '#africa'];
@@ -59,7 +59,7 @@ test.describe('UAT checklist', () => {
       localStorage.setItem('netriskMap', 'map3');
     });
 
-    await page.goto('/game.html');
+    await page.goto('/pages/game.html');
     await page.waitForSelector('#board');
 
     await expect(page.locator('body')).toHaveClass(/high-contrast/);

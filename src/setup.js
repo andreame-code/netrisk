@@ -26,7 +26,7 @@ function getCachedImage(src) {
 
 export async function loadMapData() {
   if (!mapGrid) return;
-  const res = await fetch("./map-manifest.json");
+  const res = await fetch("/maps/map-manifest.json");
   const data = await res.json();
   mapGrid.innerHTML = "";
   mapGrid.style.display = "grid";
@@ -35,7 +35,7 @@ export async function loadMapData() {
     const item = document.createElement("div");
     item.className = "map-item";
     item.dataset.id = m.id;
-    const img = getCachedImage(m.thumbnail);
+    const img = getCachedImage(`/maps/${m.thumbnail}`);
     img.alt = m.name;
     img.addEventListener("error", () => {
       item.classList.add("missing");
@@ -61,7 +61,7 @@ export async function loadMapData() {
     const detail = document.createElement("div");
     detail.className = "map-detail hidden";
     detail.innerHTML = `<p>${m.description || ""}</p>`;
-    const layout = getCachedImage(m.thumbnail);
+    const layout = getCachedImage(`/maps/${m.thumbnail}`);
     layout.alt = `${m.name} layout`;
     layout.className = "layout";
     detail.appendChild(layout);

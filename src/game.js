@@ -35,7 +35,7 @@ async function loadMapData() {
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
     "map";
-  const jsonPath = `./src/data/${mapName}.json`;
+  const jsonPath = `/maps/${mapName}.json`;
   try {
     return await loadJson(jsonPath);
   } catch (err) {

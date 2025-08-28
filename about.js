@@ -1,1 +1,0 @@
-import './src/about.js';

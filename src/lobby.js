@@ -64,7 +64,7 @@ export function initLobby() {
     const select = document.getElementById('map');
     if (!select) return;
     try {
-      const res = await fetch('./map-manifest.json');
+      const res = await fetch('/maps/map-manifest.json');
       const data = await res.json();
       data.maps.forEach(m => {
         const opt = document.createElement('option');

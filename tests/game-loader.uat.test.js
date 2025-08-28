@@ -46,7 +46,7 @@ describe("game loader", () => {
     );
 
     const { game, territoryPositions } = await loadGame();
-    expect(global.fetch).toHaveBeenCalledWith("./src/data/custom.json");
+    expect(global.fetch).toHaveBeenCalledWith("/maps/custom.json");
     expect(game).toBeTruthy();
     expect(game.players[0].name).toBe("Red");
     expect(territoryPositions).toEqual({ t1: { x: 1, y: 2 } });
