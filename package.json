@@ -4,15 +4,15 @@
   "description": "Simple browser-based Risk-inspired game",
   "scripts": {
     "lint": "eslint .",
-    "start": "vite build && http-server dist",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "start": "vite build --config config/vite.config.js && http-server dist",
+    "dev": "vite --config config/vite.config.js",
+    "build": "vite build --config config/vite.config.js",
+    "preview": "vite preview --config config/vite.config.js",
     "server": "node src/multiplayer-server.js",
     "simulate": "node src/simulate.js",
-    "test": "jest",
-    "type-check": "tsc --noEmit",
-    "test:uat": "playwright test"
+    "test": "jest --config config/jest.config.js",
+    "type-check": "tsc --noEmit -p config/tsconfig.json",
+    "test:uat": "playwright test -c config/playwright.config.ts"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.0",
