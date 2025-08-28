@@ -289,6 +289,9 @@ async function initGame() {
     !hasSavedGame() &&
     !IS_TEST
   ) {
+    if (typeof window.alert === "function") {
+      window.alert("No saved players or map found. Redirecting to setup.");
+    }
     navigateTo("setup.html");
     return;
   }
