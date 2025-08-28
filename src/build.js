@@ -18,8 +18,8 @@ if (require.main === module) {
   }
   fs.mkdirSync(dist);
 
-  const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'public/main.js'];
-  const plainAssets = ['map.svg', 'map2.svg', 'map3.svg', 'map-roman.svg', 'src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
+    const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'public/main.js'];
+    const plainAssets = ['src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
   const hashed = {};
 
   for (const asset of assets) {
@@ -41,14 +41,16 @@ if (require.main === module) {
     }
   }
 
-  for (const asset of plainAssets) {
-    const srcPath = path.join(root, asset);
-    const destPath = path.join(dist, asset);
-    fs.mkdirSync(path.dirname(destPath), { recursive: true });
-    fs.copyFileSync(srcPath, destPath);
-  }
-  // Copy additional data files (e.g., map.json)
-  fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
+    for (const asset of plainAssets) {
+      const srcPath = path.join(root, asset);
+      const destPath = path.join(dist, asset);
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      fs.copyFileSync(srcPath, destPath);
+    }
+    // Copy map assets
+    fs.cpSync(path.join(publicDir, 'assets/maps'), path.join(dist, 'assets/maps'), { recursive: true });
+    // Copy additional data files (e.g., map.json)
+    fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
   // Copy non-hashed JS entry files from public/
   const publicJs = fs
