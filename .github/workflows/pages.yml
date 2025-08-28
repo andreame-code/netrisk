@@ -24,8 +24,8 @@ jobs:
 
       - name: Guard: no env.js refs
         run: |
-          ! grep -RIn "<script src=[\"']env.js" . || (echo "❌ Found <script src=\"env.js\"> in HTML"; exit 1)
-          ! grep -RIn "window.__ENV" src || (echo "❌ Found window.__ENV in src"; exit 1)
+          if grep -RIn "<script src=['"]env.js" .; then echo "❌ Found <script src=\"env.js\"> in HTML"; exit 1; fi
+          if grep -RIn "window.__ENV" src; then echo "❌ Found window.__ENV in src"; exit 1; fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
