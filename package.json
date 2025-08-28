@@ -4,7 +4,7 @@
   "description": "Simple browser-based Risk-inspired game",
   "scripts": {
     "lint": "eslint .",
-    "start": "http-server .",
+      "start": "vite build && http-server dist",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
