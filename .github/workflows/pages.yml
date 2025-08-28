@@ -18,6 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: github-pages
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,28 +42,22 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Verify secrets presence
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Verify env vars presence
         run: |
-          [ -n "$SUPABASE_URL" ] || { echo "❌ Missing SUPABASE_URL"; exit 1; }
-          [ -n "$SUPABASE_ANON_KEY" ] || { echo "❌ Missing SUPABASE_ANON_KEY"; exit 1; }
-          echo "✅ Secrets present (pages build)"
+          [ -n "$VITE_SUPABASE_URL" ] || { echo "❌ Missing VITE_SUPABASE_URL"; exit 1; }
+          [ -n "$VITE_SUPABASE_ANON_KEY" ] || { echo "❌ Missing VITE_SUPABASE_ANON_KEY"; exit 1; }
+          echo "✅ VITE env vars present"
 
       - name: Install deps
         run: npm ci
 
       - name: Build
-        run: |
-          VITE_SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-          VITE_SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-          npm run build
+        run: npm run build
 
       - name: Stage static files
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
-          cp -r *.html css map*.svg map-manifest.json src supabase dist/
+          cp -r map*.svg map-manifest.json supabase dist/
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
