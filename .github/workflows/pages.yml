@@ -25,16 +25,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: "Guard: no env.js refs"
+      - name: Guard: no legacy env and src scripts
+        shell: bash
         run: |
-            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "<script src['\"]env.js" .; then
-              echo '❌ Found <script src="env.js"> in HTML'
-              exit 1
-            fi
-            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "window.__ENV" .; then
-              echo '❌ Found window.__ENV in repository'
-              exit 1
-            fi
+          set -e
+          grep -RIn '<script[^>]*src="env.js"' . && { echo '❌ env.js reference'; exit 1; } || true
+          grep -RIn '<script[^>]*src="src/' . && { echo '❌ direct src/ script reference'; exit 1; } || true
+          echo '✅ Guard passed'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,8 +48,15 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Write .env.production for Vite
+        run: |
+          cat > .env.production <<EOF
+          VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
+
+      - name: Build (Vite, production mode)
+        run: npm run build -- --mode production
 
       - name: Stage static files
         run: |
