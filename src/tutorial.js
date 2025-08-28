@@ -100,6 +100,13 @@ function showStep() {
     box.appendChild(nextBtn);
     box.appendChild(skipBtn);
     overlay.appendChild(box);
+    const boxRect = box.getBoundingClientRect();
+    if (boxRect.right > window.innerWidth) {
+      box.style.left = Math.max(10, window.innerWidth - boxRect.width - 10) + 'px';
+    }
+    if (boxRect.bottom > window.innerHeight) {
+      box.style.top = Math.max(10, rect.top - boxRect.height - 10) + 'px';
+    }
   } else {
     finishTutorial();
   }

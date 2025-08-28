@@ -76,4 +76,29 @@ describe('tutorial', () => {
     expect(document.getElementById('tutorialOverlay')).not.toBeNull();
     logSpy.mockRestore();
   });
+
+  test('positions tutorial box within viewport', () => {
+    window.innerHeight = 600;
+    const board = document.getElementById('board');
+    board.dataset.rect = JSON.stringify({ top: 560, left: 0, right: 100, bottom: 590, width: 100, height: 30 });
+    const original = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.dataset && this.dataset.rect) {
+        return JSON.parse(this.dataset.rect);
+      }
+      const top = parseInt(this.style.top || '0');
+      const left = parseInt(this.style.left || '0');
+      const width = parseInt(this.style.width || '100');
+      const height = parseInt(this.style.height || '40');
+      return { top, left, right: left + width, bottom: top + height, width, height };
+    };
+    const { startTutorial } = require('../src/tutorial.js');
+    startTutorial();
+    const overlay = document.getElementById('tutorialOverlay');
+    const boxes = overlay.querySelectorAll('div');
+    const box = Array.from(boxes).find(el => el.id !== 'tutorialHighlight');
+    const boardRect = JSON.parse(board.dataset.rect);
+    expect(parseInt(box.style.top)).toBeLessThan(boardRect.bottom);
+    HTMLElement.prototype.getBoundingClientRect = original;
+  });
 });
