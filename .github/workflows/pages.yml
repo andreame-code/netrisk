@@ -61,7 +61,7 @@ jobs:
       - name: Stage static files
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
-          cp -r map*.svg map-manifest.json supabase dist/
+          cp -r supabase dist/
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
