@@ -1,12 +1,10 @@
-function applyColorTheme(doc = document) {
+export function applyColorTheme(doc = document) {
   const body = doc.body;
   if (!body) return;
   const stored =
     (typeof localStorage !== 'undefined' && localStorage.getItem('colorTheme')) ||
     'light';
-  if (stored === 'dark') {
-    body.classList.add('dark-theme');
-  }
+  body.classList.toggle('dark-theme', stored === 'dark');
 }
 
 export function initThemeToggle(doc = document) {
