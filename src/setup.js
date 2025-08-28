@@ -26,7 +26,7 @@ function getCachedImage(src) {
 
 export async function loadMapData() {
   if (!mapGrid) return;
-  const res = await fetch("./map-manifest.json");
+  const res = await fetch("./assets/maps/map-manifest.json");
   const data = await res.json();
   mapGrid.innerHTML = "";
   mapGrid.style.display = "grid";
