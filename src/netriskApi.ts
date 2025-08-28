@@ -25,7 +25,7 @@ export const startMatch = (matchId: string) =>
 export const sendAction = (
   matchId: string,
   playerId: string,
-  action: any
-) => call({ action: 'action', matchId, playerId, action });
+  payload: any
+) => call({ action: 'action', matchId, playerId, payload });
 
 export default { createMatch, joinMatch, startMatch, sendAction };

@@ -13,7 +13,7 @@ export function subscribeToMatch(
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'game_states', filter: `match_id=eq.${matchId}` },
-      payload => handlers.onState?.(payload.new.state)
+      (payload: any) => handlers.onState?.(payload.new.state)
     );
   }
 
@@ -21,7 +21,7 @@ export function subscribeToMatch(
     channel.on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'events', filter: `match_id=eq.${matchId}` },
-      payload => handlers.onEvent?.(payload.new)
+      (payload: any) => handlers.onEvent?.(payload.new)
     );
   }
 
