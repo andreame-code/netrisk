@@ -16,4 +16,11 @@ describe('level item availability', () => {
       expect(items.rainbowPortal).toBe(false);
     });
   });
+
+  test('unknown levels default to no special items', () => {
+    const items = getLevelItems('unknown');
+    expect(items.starDust).toBe(0);
+    expect(items.crystalKey).toBe(false);
+    expect(items.rainbowPortal).toBe(false);
+  });
 });
