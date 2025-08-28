@@ -1,4 +1,10 @@
-import { createMatch, joinMatch, startMatch, sendAction } from '../src/netriskApi.ts';
+import {
+  createMatch,
+  joinMatch,
+  startMatch,
+  sendAction,
+  type CreateMatchResponse,
+} from '../src/netriskApi.ts';
 
 jest.mock('../src/config.js', () => ({
   SUPABASE_URL: 'https://example.supabase.co',
@@ -24,7 +30,7 @@ describe('netriskApi', () => {
 
   test('createMatch sends correct payload', async () => {
     const player = { id: 'p1' };
-    const res = await createMatch(player);
+    const res: CreateMatchResponse = await createMatch(player);
     expect(fetchMock).toHaveBeenCalledWith(functionUrl, {
       method: 'POST',
       headers,
