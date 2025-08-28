@@ -57,6 +57,19 @@ describe('lobby screen', () => {
     expect(text).toContain('open');
   });
 
+  test('renderLobbies handles eight-player lobby', () => {
+    const { renderLobbies } = require('../src/lobby.js');
+    const players = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}` }));
+    const data = [
+      { code: 'xyz', host: 'p0', players, map: 'world8', started: false, maxPlayers: 8 },
+    ];
+    renderLobbies(data);
+    const text = document.getElementById('lobbyList').textContent;
+    expect(text).toContain('xyz');
+    expect(text).toContain('8/8');
+    expect(text).toContain('world8');
+  });
+
   test('create game flow validates and sends message', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);

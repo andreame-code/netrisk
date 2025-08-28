@@ -164,4 +164,39 @@ describe("server handlers", () => {
     await handleHeartbeat(ctx, {}, { type: "heartbeat", code: "c", id: "p1" });
     expect(player.lastSeen).toBeDefined();
   });
+
+  test("allows eight players to join and start", async () => {
+    const lobbies = new Map();
+    const lobby = {
+      code: "c",
+      players: [],
+      host: "p0",
+      started: false,
+      map: "world8",
+      maxPlayers: 8,
+    };
+    lobbies.set("c", lobby);
+    const ctx = {
+      lobbies,
+      createCode: () => "x",
+      maxPlayers: 8,
+      offlinePlayerTimeout: 0,
+      isValidMap: () => true,
+    };
+    for (let i = 0; i < 8; i++) {
+      const ws = { send: jest.fn(), readyState: 1 };
+      await handleJoinLobby(
+        ctx,
+        ws,
+        { type: "joinLobby", code: "c", player: { id: `p${i}` } },
+        {},
+      );
+    }
+    expect(lobby.players).toHaveLength(8);
+    for (const p of lobby.players) {
+      await handleReady(ctx, {}, { type: "ready", code: "c", id: p.id, ready: true });
+    }
+    await handleStart(ctx, {}, { type: "start", code: "c", id: "p0", state: { currentPlayer: "p0" } });
+    expect(lobby.started).toBe(true);
+  });
 });
