@@ -42,6 +42,10 @@ let territoryPositions = {};
 let selectedCards = [];
 let resizeHandler;
 
+/**
+ * Initialize UI state and attach a resize listener that refreshes
+ * rendering when the window size changes.
+ */
 function initUI({ game: g, gameState: gs, territoryPositions: tp }) {
   game = g;
   gameState = gs;
@@ -87,6 +91,10 @@ function highlightTerritories(ids) {
   });
 }
 
+/**
+ * Record a log entry in game state and update the on-screen log if
+ * the corresponding DOM element exists.
+ */
 function addLogEntry(entry, meta = {}) {
   const logEntry =
     typeof entry === "string" ? { message: entry, ...meta } : entry;
@@ -160,6 +168,11 @@ async function copyLog(format = "json", filter) {
   return data;
 }
 
+/**
+ * Create a transient token and animate its movement between two
+ * territories. Tokens fade out and remove themselves when the
+ * animation completes.
+ */
 function animateMove(from, to) {
   const board = getElement("board");
   if (!board) return;
@@ -423,6 +436,10 @@ function updateUndoButton() {
   if (btn) btn.disabled = !game.canUndo();
 }
 
+/**
+ * Refresh all dynamic board elements including territories, token
+ * position, status text, and player utilities.
+ */
 function updateUI() {
   const scale = getBoardScale();
   const playerColorClasses = game.players.map((p) => getColorClass(p.color));
@@ -435,6 +452,10 @@ function updateUI() {
   updateCardsUI();
 }
 
+/**
+ * Remove global listeners and clear cached DOM lookups, returning the
+ * module to an initial state.
+ */
 function destroyUI() {
   if (resizeHandler) {
     window.removeEventListener("resize", resizeHandler);
