@@ -28,8 +28,8 @@ jobs:
             echo '❌ Found <script src="env.js"> in HTML'
             exit 1
           fi
-          if grep -RIn -E "window.__ENV" src; then
-            echo '❌ Found window.__ENV in src'
+          if grep -RIn --exclude-dir=.git -E "window.__ENV" .; then
+            echo '❌ Found window.__ENV in repository'
             exit 1
           fi
 
