@@ -23,4 +23,9 @@ const distDir = path.join(__dirname, '..', 'dist');
     const map3Path = path.join(distDir, 'src', 'data', 'map3.json');
     expect(fs.existsSync(map3Path)).toBe(true);
   });
+
+  test('copies html files', () => {
+    const indexPath = path.join(distDir, 'index.html');
+    expect(fs.existsSync(indexPath)).toBe(true);
+  });
 });

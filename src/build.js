@@ -10,6 +10,7 @@ module.exports = { hashContent };
 
 if (require.main === module) {
   const root = path.join(__dirname, '..');
+  const publicDir = path.join(root, 'public');
   const dist = path.join(root, 'dist');
 
   if (fs.existsSync(dist)) {
@@ -31,6 +32,7 @@ if (require.main === module) {
     const newName = `${base}.${hash}${ext}`;
     fs.writeFileSync(path.join(dist, newName), content);
     hashed[asset] = newName;
+    hashed[`../${asset}`] = newName;
   }
 
   for (const asset of plainAssets) {
@@ -42,13 +44,13 @@ if (require.main === module) {
   // Copy additional data files (e.g., map.json)
   fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 
-  // Copy all HTML files, replacing references to hashed assets
+  // Copy all HTML files from public/, replacing references to hashed assets
   const htmlFiles = fs
-    .readdirSync(root)
+    .readdirSync(publicDir)
     .filter((file) => file.endsWith('.html'));
 
   for (const file of htmlFiles) {
-    let html = fs.readFileSync(path.join(root, file), 'utf8');
+    let html = fs.readFileSync(path.join(publicDir, file), 'utf8');
     for (const [orig, hashedName] of Object.entries(hashed)) {
       html = html.replace(new RegExp(orig, 'g'), hashedName);
     }
