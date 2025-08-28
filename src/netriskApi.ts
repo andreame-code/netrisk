@@ -1,6 +1,34 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 import type { Match, Player, GameState, Event } from './types/netrisk';
 
+// Request/response types for the NetRisk API
+export interface CreateMatchRequest {
+  action: 'create_match';
+  player: Player;
+}
+export type CreateMatchResponse = Match;
+
+export interface JoinMatchRequest {
+  action: 'join_match';
+  matchId: string;
+  player: Player;
+}
+export type JoinMatchResponse = Match;
+
+export interface StartMatchRequest {
+  action: 'start_match';
+  matchId: string;
+}
+export type StartMatchResponse = GameState;
+
+export interface ActionRequest<TAction extends Record<string, unknown>> {
+  action: 'action';
+  matchId: string;
+  playerId: string;
+  payload: TAction;
+}
+export type ActionResponse<TAction, TResult> = Event<TAction, TResult>;
+
 const functionUrl = `${SUPABASE_URL}/functions/v1/netrisk`;
 
 async function call<TResponse, TBody extends object>(body: TBody): Promise<TResponse> {
@@ -18,25 +46,24 @@ async function call<TResponse, TBody extends object>(body: TBody): Promise<TResp
 }
 
 export const createMatch = (player: Player) =>
-  call<Match, { action: string; player: Player }>({ action: 'create_match', player });
+  call<CreateMatchResponse, CreateMatchRequest>({ action: 'create_match', player });
 
 export const joinMatch = (matchId: string, player: Player) =>
-  call<Match, { action: string; matchId: string; player: Player }>({
-    action: 'join_match',
-    matchId,
-    player,
-  });
+  call<JoinMatchResponse, JoinMatchRequest>({ action: 'join_match', matchId, player });
 
 export const startMatch = (matchId: string) =>
-  call<GameState, { action: string; matchId: string }>({ action: 'start_match', matchId });
+  call<StartMatchResponse, StartMatchRequest>({ action: 'start_match', matchId });
 
 export const sendAction = <TAction extends Record<string, unknown>, TResult = unknown>(
   matchId: string,
   playerId: string,
   payload: TAction
 ) =>
-  call<Event<TAction, TResult>, { action: string; matchId: string; playerId: string; payload: TAction }>(
-    { action: 'action', matchId, playerId, payload }
-  );
+  call<ActionResponse<TAction, TResult>, ActionRequest<TAction>>({
+    action: 'action',
+    matchId,
+    playerId,
+    payload,
+  });
 
 export default { createMatch, joinMatch, startMatch, sendAction };
