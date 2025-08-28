@@ -40,7 +40,7 @@ describe('main DOM interactions', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
-    main = require('../src/main.js');
+    main = require('../main.js');
     ui = require('../src/ui.js');
       await Promise.resolve();
       main.attachTerritoryHandlers();
@@ -178,7 +178,7 @@ describe('main DOM interactions', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
-    const main2 = require('../src/main.js');
+    const main2 = require('../main.js');
     require('../src/ui.js');
     await Promise.resolve();
     await Promise.resolve();

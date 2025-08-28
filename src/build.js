@@ -14,7 +14,7 @@ function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
 }
 
-const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'src/main.js'];
+const assets = ['css/base.css', 'css/layout.css', 'css/components.css', 'css/theme.css', 'css/game.css', 'src/logger.js', 'main.js'];
 const plainAssets = ['map.svg', 'map2.svg', 'map3.svg', 'map-roman.svg', 'src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
 const hashed = {};
 
