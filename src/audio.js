@@ -55,10 +55,23 @@ function loadAudio(src) {
     cache.set(src, null);
     return null;
   }
-  const a = new Audio();
-  a.src = src;
-  cache.set(src, a);
-  return a;
+  try {
+    const a = new Audio();
+    cache.set(src, a);
+    a.addEventListener(
+      "error",
+      () => {
+        console.warn(`Missing audio file: ${src}`);
+        cache.set(src, null);
+      },
+      { once: true }
+    );
+    a.src = src;
+    return a;
+  } catch {
+    cache.set(src, null);
+    return null;
+  }
 }
 
 function playEffect(name) {
@@ -156,8 +169,12 @@ function preloadEffects() {
 }
 
 export {
+  saveSettings,
+  loadAudio,
   playEffect,
-  preloadEffects,
+  ensureMusic,
+  setLevelMusic,
+  getLevelMusic,
   setMasterVolume,
   getMasterVolume,
   setEffectsVolume,
@@ -166,7 +183,6 @@ export {
   isMuted,
   setMusicEnabled,
   isMusicEnabled,
-  setLevelMusic,
-  getLevelMusic,
+  preloadEffects,
 };
 
