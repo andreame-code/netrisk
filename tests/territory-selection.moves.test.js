@@ -6,7 +6,9 @@ const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 test('selecting territory highlights possible moves', async () => {
   document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
   const svg = '<svg id="map"><path id="A" class="map-territory"/><path id="B" class="map-territory"/><path id="C" class="map-territory"/></svg>';
-  global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
+  global.fetch = jest.fn(() =>
+    Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
+  );
   const territories = [
     { id: 'A', neighbors: ['B'], owner: 0 },
     { id: 'B', neighbors: ['A', 'C'], owner: 1 },

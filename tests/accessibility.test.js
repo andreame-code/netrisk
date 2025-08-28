@@ -26,7 +26,7 @@ describe('Accessibility features', () => {
     const svg =
       '<svg id="map"><path id="A" class="map-territory"/><path id="B" class="map-territory"/></svg>';
     global.fetch = jest.fn(() =>
-      Promise.resolve({ text: () => Promise.resolve(svg) }),
+      Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
     const territories = [
       { id: 'A', name: 'Alpha' },

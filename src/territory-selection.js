@@ -119,7 +119,14 @@ export default function initTerritorySelection({
       localStorage.getItem("netriskMap")) ||
     "map";
   fetch(`assets/maps/${mapName}.svg`)
-    .then((r) => r.text())
+    .then((r) => {
+      if (!r.ok) {
+        const boardEl = document.getElementById("board");
+        boardEl.textContent = "Error loading map";
+        throw new Error(`Failed to load map: ${r.status}`);
+      }
+      return r.text();
+    })
     .then((svg) => {
       const boardEl = document.getElementById("board");
       boardEl.innerHTML = svg;

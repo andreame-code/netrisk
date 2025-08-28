@@ -43,7 +43,9 @@ describe('territory-selection with map3', () => {
     document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
     localStorage.setItem('netriskMap', 'map3');
     const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
-    global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
+    );
     const init = require('../src/territory-selection.js').default;
     init({ territories: map.territories });
     await flushPromises();
@@ -56,7 +58,9 @@ describe('territory-selection with map3', () => {
     document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
     localStorage.setItem('netriskMap', 'map3');
     const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
-    global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(svg) }));
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
+    );
     const init = require('../src/territory-selection.js').default;
     init({ territories: map.territories });
     await flushPromises();
