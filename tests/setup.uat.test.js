@@ -80,8 +80,8 @@ describe('setup loadFromStorage and caching', () => {
     const manifest = {
       version: 1,
       maps: [
-        { id: 'mapA', name: 'A', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'thumb.svg', description: '' },
-        { id: 'mapB', name: 'B', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'thumb.svg', description: '' },
+        { id: 'mapA', name: 'A', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/thumb.svg', description: '' },
+        { id: 'mapB', name: 'B', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/thumb.svg', description: '' },
       ],
     };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
