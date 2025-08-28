@@ -22,16 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: "Guard: no env.js refs"
+      - name: Guard: no legacy env and src scripts
+        shell: bash
         run: |
-            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "<script src['\"]env.js" .; then
-              echo '❌ Found <script src="env.js"> in HTML'
-              exit 1
-            fi
-            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "window.__ENV" .; then
-              echo '❌ Found window.__ENV in repository'
-              exit 1
-            fi
+          set -e
+          grep -RIn --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules --exclude-dir=dist '<script[^>]*src="env.js"' . \
+            && { echo '❌ env.js reference'; exit 1; } || true
+          grep -RIn --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules --exclude-dir=dist '<script[^>]*src="src/' . \
+            && { echo '❌ direct src/ script reference'; exit 1; } || true
+          echo '✅ Guard passed'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,16 +50,20 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Build
+      - name: Write .env.production for Vite
         run: |
-          VITE_SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-          VITE_SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}" \
-          npm run build
+          cat > .env.production <<EOF
+          VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
+
+      - name: Build (Vite, production mode)
+        run: npm run build -- --mode production
 
       - name: Stage static files
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
-          cp -r *.html css map*.svg map-manifest.json src supabase dist/
+          cp -r css map*.svg map-manifest.json supabase dist/
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
