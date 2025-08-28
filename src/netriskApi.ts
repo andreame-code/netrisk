@@ -1,8 +1,9 @@
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import type { Match, Player, GameState, Event } from './types/netrisk';
 
 const functionUrl = `${SUPABASE_URL}/functions/v1/netrisk`;
 
-async function call(body: any) {
+async function call<TResponse, TBody extends object>(body: TBody): Promise<TResponse> {
   const res = await fetch(functionUrl, {
     method: 'POST',
     headers: {
@@ -16,16 +17,26 @@ async function call(body: any) {
   return res.json();
 }
 
-export const createMatch = (player: any) =>
-  call({ action: 'create_match', player });
-export const joinMatch = (matchId: string, player: any) =>
-  call({ action: 'join_match', matchId, player });
+export const createMatch = (player: Player) =>
+  call<Match, { action: string; player: Player }>({ action: 'create_match', player });
+
+export const joinMatch = (matchId: string, player: Player) =>
+  call<Match, { action: string; matchId: string; player: Player }>({
+    action: 'join_match',
+    matchId,
+    player,
+  });
+
 export const startMatch = (matchId: string) =>
-  call({ action: 'start_match', matchId });
-export const sendAction = (
+  call<GameState, { action: string; matchId: string }>({ action: 'start_match', matchId });
+
+export const sendAction = <TAction extends Record<string, unknown>, TResult = unknown>(
   matchId: string,
   playerId: string,
-  payload: any
-) => call({ action: 'action', matchId, playerId, payload });
+  payload: TAction
+) =>
+  call<Event<TAction, TResult>, { action: string; matchId: string; playerId: string; payload: TAction }>(
+    { action: 'action', matchId, playerId, payload }
+  );
 
 export default { createMatch, joinMatch, startMatch, sendAction };

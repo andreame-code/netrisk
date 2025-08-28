@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+import type { GameState, Event } from './types/netrisk';
 
 const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-export function subscribeToMatch(
+export function subscribeToMatch<S extends GameState = GameState, A = unknown, R = unknown>(
   matchId: string,
-  handlers: { onState?: (state: any) => void; onEvent?: (ev: any) => void }
+  handlers: { onState?: (state: S) => void; onEvent?: (ev: Event<A, R>) => void }
 ) {
   const channel = client.channel(`netrisk:${matchId}`);
 
@@ -13,7 +14,7 @@ export function subscribeToMatch(
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'game_states', filter: `match_id=eq.${matchId}` },
-      (payload: any) => handlers.onState?.(payload.new.state)
+      (payload) => handlers.onState?.((payload.new as { state: S }).state)
     );
   }
 
@@ -21,7 +22,7 @@ export function subscribeToMatch(
     channel.on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'events', filter: `match_id=eq.${matchId}` },
-      (payload: any) => handlers.onEvent?.(payload.new)
+      (payload) => handlers.onEvent?.(payload.new as Event<A, R>)
     );
   }
 
