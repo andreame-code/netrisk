@@ -1,6 +1,6 @@
 const validateMap = require('../src/validate-map.js');
 
-const maps = ['map.json', 'map2.json', 'map3.json', 'map-roman.json'];
+const maps = ['map.json', 'map2.json', 'map3.json', 'map-roman.json', 'world8.json'];
 
 describe('map schema validation', () => {
   test.each(maps)('%s matches schema', (file) => {
