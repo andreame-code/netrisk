@@ -49,4 +49,4 @@ alter table lobby_chat enable row level security;
 create policy "allow_select_lobby_chat" on lobby_chat
   for select using (true);
 create policy "allow_insert_lobby_chat" on lobby_chat
-  for insert with check (true);
+  for insert to authenticated, service_role with check (true);
