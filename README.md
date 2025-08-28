@@ -49,6 +49,7 @@ Esegui la suite di test e i controlli di lint per verificare le modifiche:
 ```bash
 npm test
 npm run lint
+npm run test:uat
 ```
 
 Per valutare l'equilibrio dell'IA, esegui una serie di partite automatizzate:
