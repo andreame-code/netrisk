@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Guard: no legacy env and src scripts
+      - name: "Guard: no legacy env and src scripts"
         shell: bash
         run: |
           set -e
