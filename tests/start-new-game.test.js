@@ -85,7 +85,7 @@ jest.mock("../src/logger.js", () => ({
 
 document.body.innerHTML = '<div id="uiPanel"></div><button id="exitGame"></button><button id="endTurn"></button>';
 
-const { startNewGame } = require("../src/main.js");
+const { startNewGame } = require("../src/main.ts");
 const { navigateTo } = require("../src/navigation.js");
 
 describe("startNewGame navigation", () => {

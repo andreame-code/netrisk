@@ -14,5 +14,8 @@ export default defineConfig({
         howto: 'howto.html'
       }
     }
+  },
+  resolve: {
+    extensions: ['.js', '.ts']
   }
 });

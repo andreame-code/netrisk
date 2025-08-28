@@ -9,6 +9,27 @@ import EventBus from "./core/event-bus.js";
 import loadJson from "./utils/load-json.js";
 import * as logger from "./logger.js";
 
+/**
+ * @typedef {Object} Player
+ * @property {string} name
+ * @property {string} color
+ * @property {boolean} [ai]
+ */
+
+/**
+ * @typedef {Object} Territory
+ * @property {string} id
+ * @property {string[]} neighbors
+ * @property {number} x
+ * @property {number} y
+ * @property {number} [owner]
+ * @property {number} [armies]
+ */
+
+/**
+ * Load map data based on the current map selection.
+ * @returns {Promise<any>}
+ */
 async function loadMapData() {
   const mapName =
     (typeof localStorage !== "undefined" &&
@@ -24,7 +45,19 @@ async function loadMapData() {
   }
 }
 
+/**
+ * Core game state and logic.
+ */
 class Game {
+  /**
+   * @param {Player[]} [players]
+   * @param {Territory[]} [territories=[]]
+   * @param {Array} [continents=[]]
+   * @param {Array} [deck=[]]
+   * @param {boolean} [shuffleDeck=true]
+   * @param {boolean} [randomizeTerritories=true]
+   * @param {number} [maxUndoSteps=10]
+   */
   constructor(
     players,
     territories = [],
