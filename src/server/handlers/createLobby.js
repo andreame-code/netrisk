@@ -13,7 +13,7 @@ export async function handleCreateLobby(ctx, ws, msg, state) {
     ready: false,
     ws,
   };
-  const maxPlayers = Math.max(2, Math.min(6, msg.maxPlayers || 6));
+  const maxPlayers = Math.max(2, Math.min(8, msg.maxPlayers || 8));
   const lobby = {
     code,
     players: [player],

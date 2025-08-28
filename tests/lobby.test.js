@@ -17,7 +17,7 @@ describe('lobby screen', () => {
       <dialog id="createDialog">
         <form id="createForm">
           <input id="roomName" />
-          <input id="maxPlayers" />
+          <input id="maxPlayers" max="8" />
           <select id="map"></select>
           <menu>
             <button type="button" id="cancelCreate" value="cancel">Cancel</button>
@@ -110,7 +110,7 @@ describe('lobby screen', () => {
     const form = document.getElementById('createForm');
     form.reportValidity = jest.fn();
     document.getElementById('roomName').value = '';
-    document.getElementById('maxPlayers').value = '10';
+    document.getElementById('maxPlayers').value = '9';
     form.dispatchEvent(new Event('submit'));
     expect(WebSocket).not.toHaveBeenCalled();
     expect(form.reportValidity).toHaveBeenCalled();

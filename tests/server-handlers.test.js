@@ -29,19 +29,19 @@ describe("server handlers", () => {
 
   test("handleJoinLobby adds player", async () => {
     const lobbies = new Map();
-    const lobby = {
-      code: "code",
-      players: [],
-      host: "h",
-      started: false,
-      map: null,
-      maxPlayers: 6,
-    };
+      const lobby = {
+        code: "code",
+        players: [],
+        host: "h",
+        started: false,
+        map: null,
+        maxPlayers: 8,
+      };
     lobbies.set("code", lobby);
     const ctx = {
       lobbies,
       createCode: () => "p2",
-      maxPlayers: 6,
+        maxPlayers: 8,
       offlinePlayerTimeout: 0,
     };
       const ws = { send: jest.fn(), readyState: 1 };
@@ -77,7 +77,7 @@ describe("server handlers", () => {
 
   test("handleReady toggles ready", async () => {
     const lobbies = new Map();
-    const lobby = { code: "c", players: [{ id: "p1", ready: false }], host: "p1", map: null, maxPlayers:6 };
+    const lobby = { code: "c", players: [{ id: "p1", ready: false }], host: "p1", map: null, maxPlayers:8 };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
     await handleReady(ctx, {}, { type: "ready", code: "c", id: "p1", ready: true });
@@ -86,7 +86,7 @@ describe("server handlers", () => {
 
   test("handleSelectMap updates map", async () => {
     const lobbies = new Map();
-    const lobby = { code: "c", players: [], host: "h", started: false, map: null, maxPlayers:6 };
+    const lobby = { code: "c", players: [], host: "h", started: false, map: null, maxPlayers:8 };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0, isValidMap: () => true };
     await handleSelectMap(ctx, {}, { type: "selectMap", code: "c", id: "h", map: "m1" });
@@ -144,7 +144,7 @@ describe("server handlers", () => {
       players: [{ id: "p1", ws: null, ready: false }],
       host: "p1",
       map: null,
-      maxPlayers:6,
+      maxPlayers:8,
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
