@@ -94,7 +94,7 @@ export default function attachAIActionLogging(game) {
         type: "endTurn",
       });
       logInfo(`${prevName} ends turn. Next: ${nextName}`);
-      gameState.turnNumber += 1;
+      gameState.incrementTurnNumber();
     }
     lastPlayer = player;
     updateGameState(gameState, game);

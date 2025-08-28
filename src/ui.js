@@ -99,7 +99,7 @@ function addLogEntry(entry, meta = {}) {
   const logEntry =
     typeof entry === "string" ? { message: entry, ...meta } : entry;
   if (logEntry.turn == null) logEntry.turn = gameState?.turnNumber;
-  gameState.log.push(logEntry);
+  gameState.addLogEntry(logEntry);
   const logEl = getElement("actionLog");
   if (logEl) {
     // rebuild log using DOM nodes to avoid innerHTML

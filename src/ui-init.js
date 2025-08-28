@@ -174,7 +174,7 @@ function attachTerritoryHandlers() {
             }
             game.endTurn();
             const nextName = game.players[game.currentPlayer].name;
-            gameState.turnNumber += 1;
+            gameState.incrementTurnNumber();
             addLogEntry(
               `${playerName} ends turn. Next: ${nextName}`,
               { player: playerName, type: "endTurn" },
@@ -239,7 +239,7 @@ document.getElementById("endTurn").addEventListener("click", () => {
       });
       logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
     } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
-      gameState.turnNumber += 1;
+      gameState.incrementTurnNumber();
       addLogEntry(
         `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
         { player: game.players[prevPlayer].name, type: "endTurn" },

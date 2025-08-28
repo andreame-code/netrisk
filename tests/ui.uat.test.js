@@ -1,4 +1,5 @@
 import * as ui from '../src/ui.js';
+import { GameState } from "../src/state/game.js";
 
 const { initUI, addLogEntry, updateUI, animateMove, destroyUI } = ui;
 
@@ -18,7 +19,7 @@ describe('ui integration', () => {
       reinforcements: 0,
       canUndo: () => false,
     };
-    gameState = { currentPlayer: 0, turnNumber: 1, log: [] };
+    gameState = new GameState();
   });
 
   afterEach(() => {

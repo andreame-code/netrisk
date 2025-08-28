@@ -80,7 +80,7 @@ export default function initTerritorySelection({
       token.style.top = `${y * scale.y}px`;
     }
     if (gameState) {
-      gameState.tokenPosition = { x, y };
+      gameState.setTokenPosition({ x, y });
     }
     if (addLogEntry && game) {
       const name = el.dataset.name || el.id;

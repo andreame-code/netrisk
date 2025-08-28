@@ -14,6 +14,7 @@ import {
   exportLog,
   copyLog,
 } from '../src/ui.js';
+import { GameState } from "../src/state/game.js";
 
 describe('ui utilities', () => {
   let game;
@@ -50,7 +51,7 @@ describe('ui utilities', () => {
       ],
       territoryById: (id) => game.territories.find(t => t.id === id)
     };
-    gameState = { currentPlayer: 0, turnNumber: 1, log: [] };
+    gameState = new GameState();
     const territoryPositions = { from: { x: 0, y: 0 }, to: { x: 10, y: 10 } };
     initUI({ game, gameState, territoryPositions });
   });

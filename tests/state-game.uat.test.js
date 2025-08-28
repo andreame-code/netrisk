@@ -10,10 +10,11 @@ test("initGameState synchronizes game properties", () => {
   const game = new Game(players, territories, [], [], false, false);
   initGameState(game);
 
-  expect(gameState.currentPlayer).toBe(game.currentPlayer);
-  expect(gameState.players).toBe(game.players);
-  expect(gameState.territories).toBe(game.territories);
-  expect(gameState.phase).toBe(game.getPhase());
+  const snapshot = gameState.getSnapshot();
+  expect(snapshot.currentPlayer).toBe(game.currentPlayer);
+  expect(snapshot.players).toEqual(game.players);
+  expect(snapshot.territories).toEqual(game.territories);
+  expect(snapshot.phase).toBe(game.getPhase());
 });
 
 test("setSelectedTerritory updates selection", () => {
