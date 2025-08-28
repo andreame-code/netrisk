@@ -4,26 +4,21 @@ function askArmiesToMove(max, min = 0) {
       resolve(0);
       return;
     }
-    const modal = document.createElement('div');
-    modal.id = 'moveArmiesModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <label>How many armies to move? (${min}-${max})</label>
-        <input type="number" id="moveArmiesInput" min="${min}" max="${max}" value="${max}" />
-        <button id="moveArmiesOk" class="btn">OK</button>
-      </div>`;
-    document.body.appendChild(modal);
-    modal.classList.add('show');
-    const input = modal.querySelector('#moveArmiesInput');
-    const btn = modal.querySelector('#moveArmiesOk');
-    btn.addEventListener('click', () => {
-      let count = parseInt(input.value, 10);
-      if (isNaN(count)) count = min;
-      count = Math.max(min, Math.min(max, count));
-      modal.remove();
-      resolve(count);
-    });
+
+    const input = window.prompt(
+      `How many armies to move? (${min}-${max})`,
+      String(max),
+    );
+
+    if (input === null) {
+      resolve(0);
+      return;
+    }
+
+    let count = parseInt(input, 10);
+    if (isNaN(count)) count = max;
+    count = Math.max(min, Math.min(max, count));
+    resolve(count);
   });
 }
 
