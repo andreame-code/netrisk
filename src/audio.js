@@ -27,6 +27,9 @@ function saveSettings() {
   }
 }
 
+const SILENCE_SRC =
+  "https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3";
+
 const EFFECT_FILES = {
   reinforce: "assets/reinforce.mp3",
   attackWin: "assets/attack-win.mp3",
@@ -43,6 +46,8 @@ const MUSIC_FILES = {
   map3: "assets/fairy-music.mp3",
 };
 
+const FALLBACK_FILE = SILENCE_SRC;
+
 let musicSrc = MUSIC_FILES.default;
 
 function clamp(v) {
@@ -57,6 +62,13 @@ function loadAudio(src) {
   }
   const a = new Audio();
   a.src = src;
+  a.addEventListener(
+    "error",
+    () => {
+      if (src !== FALLBACK_FILE) a.src = FALLBACK_FILE;
+    },
+    { once: true }
+  );
   cache.set(src, a);
   return a;
 }
