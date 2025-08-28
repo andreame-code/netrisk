@@ -46,7 +46,7 @@ describe('Accessibility features', () => {
   });
 
   test('victory charts include ARIA labels', () => {
-    const js = fs.readFileSync('src/main.js', 'utf-8');
+    const js = fs.readFileSync('src/ui-init.js', 'utf-8');
     expect(js).toMatch(
       'canvas id="territoryChart" aria-label="Territories per turn" role="img"',
     );
