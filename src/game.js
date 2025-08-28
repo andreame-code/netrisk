@@ -99,20 +99,31 @@ class Game {
   }
 
   static async create(players, territories, continents, deck, maxUndoSteps) {
-    if (territories && continents && deck) {
-      return new Game(players, territories, continents, deck, true, true, maxUndoSteps);
-    }
-    try {
-      const map = await loadMapData();
+    const buildGame = (mapData = {}) => {
+      const {
+        territories: mapTerritories = [],
+        continents: mapContinents = [],
+        deck: mapDeck = [],
+      } = mapData;
+
       return new Game(
         players,
-        territories || map.territories,
-        continents || map.continents,
-        deck || map.deck,
+        territories || mapTerritories,
+        continents || mapContinents,
+        deck || mapDeck,
         true,
         true,
         maxUndoSteps
       );
+    };
+
+    if (territories && continents && deck) {
+      return buildGame();
+    }
+
+    try {
+      const map = await loadMapData();
+      return buildGame(map);
     } catch (err) {
       console.error("Unable to load map data, starting with empty map.", err);
       if (typeof alert === "function") {
@@ -123,15 +134,7 @@ class Game {
           console.error("Failed to display alert", alertErr);
         }
       }
-      return new Game(
-        players,
-        territories || [],
-        continents || [],
-        deck || [],
-        true,
-        true,
-        maxUndoSteps
-      );
+      return buildGame();
     }
   }
 
