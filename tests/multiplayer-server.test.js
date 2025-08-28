@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import WebSocket from "ws";
 jest.mock("../src/init/supabase-client.js", () => null);
-const { createLobbyServer } = require("../src/multiplayer-server.js");
+import { createLobbyServer } from "../src/multiplayer-server.js";
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
