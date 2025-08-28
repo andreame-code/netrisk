@@ -1,4 +1,5 @@
 /* global logger */
+import "./logger.js";
 import initTerritorySelection from "./territory-selection.js";
 import {
   playEffect,
