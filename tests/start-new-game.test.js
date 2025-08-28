@@ -77,7 +77,12 @@ jest.mock("../src/state/game.js", () => ({
   initGameState: jest.fn(),
 }));
 
-global.logger = { info: jest.fn(), error: jest.fn() };
+jest.mock("../src/logger.js", () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
+
 document.body.innerHTML = '<div id="uiPanel"></div><button id="exitGame"></button><button id="endTurn"></button>';
 
 const { startNewGame } = require("../src/main.js");

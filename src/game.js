@@ -1,4 +1,3 @@
-/* global logger */
 import {
   REINFORCE,
   ATTACK,
@@ -8,6 +7,7 @@ import {
 import { colorPalette } from "./colors.js";
 import EventBus from "./core/event-bus.js";
 import loadJson from "./utils/load-json.js";
+import * as logger from "./logger.js";
 
 async function loadMapData() {
   const mapName =
@@ -19,11 +19,7 @@ async function loadMapData() {
     return await loadJson(jsonPath);
   } catch (err) {
     const msg = `Failed to load map data from ${jsonPath}`;
-    if (typeof logger !== "undefined") {
-      logger.error(msg, err);
-    } else {
-      console.error(msg, err);
-    }
+    logger.error(msg, err);
     throw new Error(`Map data file not found: ${jsonPath}`);
   }
 }

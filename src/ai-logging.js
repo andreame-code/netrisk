@@ -1,8 +1,8 @@
-/* global logger */
 import { REINFORCE, ATTACK } from "./phases.js";
 import { addLogEntry, updateInfoPanel } from "./ui.js";
 import { updateGameState } from "./state/storage.js";
 import { gameState } from "./state/game.js";
+import * as logger from "./logger.js";
 
 let lastPlayer;
 
@@ -17,9 +17,7 @@ export default function attachAIActionLogging(game) {
         type: "reinforce",
         territories: [territory],
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} reinforces ${territory}`);
-      }
+      logger.info(`${name} reinforces ${territory}`);
     }
   });
 
@@ -31,9 +29,7 @@ export default function attachAIActionLogging(game) {
         type: "attack",
         territories: [from, to],
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} attacks ${to} from ${from}`);
-      }
+      logger.info(`${name} attacks ${to} from ${from}`);
     }
   });
 
@@ -45,9 +41,7 @@ export default function attachAIActionLogging(game) {
         type: "move",
         territories: [from, to],
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} moves ${count} from ${from} to ${to}`);
-      }
+      logger.info(`${name} moves ${count} from ${from} to ${to}`);
     }
   });
 
@@ -58,9 +52,7 @@ export default function attachAIActionLogging(game) {
         player: name,
         type: "cards",
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${name} plays cards`);
-      }
+      logger.info(`${name} plays cards`);
     }
   });
 
@@ -71,9 +63,7 @@ export default function attachAIActionLogging(game) {
       player: name,
       type: "card",
     });
-    if (typeof logger !== "undefined") {
-      logger.info(`${name} receives card ${card.type}`);
-    }
+    logger.info(`${name} receives card ${card.type}`);
   });
 
   game.on("turnStart", ({ player }) => {
@@ -85,9 +75,7 @@ export default function attachAIActionLogging(game) {
         player: prevName,
         type: "endTurn",
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${prevName} ends turn. Next: ${nextName}`);
-      }
+      logger.info(`${prevName} ends turn. Next: ${nextName}`);
       gameState.turnNumber += 1;
     }
     lastPlayer = player;

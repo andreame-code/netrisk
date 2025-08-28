@@ -1,5 +1,6 @@
-(function () {
-  const overlay = document.createElement("div");
+let overlay;
+if (typeof document !== "undefined") {
+  overlay = document.createElement("div");
   overlay.id = "error-overlay";
   Object.assign(overlay.style, {
     position: "fixed",
@@ -17,20 +18,30 @@
   document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(overlay);
   });
+}
 
-  function showError(message) {
+function showError(message) {
+  if (overlay) {
     overlay.textContent = message;
     overlay.classList.remove("hidden");
   }
+}
 
-  window.logger = {
-    info: (...args) => console.log("[INFO]", ...args),
-    warn: (...args) => console.warn("[WARN]", ...args),
-    error: (...args) => console.error("[ERROR]", ...args),
-  };
+export function info(...args) {
+  console.log("[INFO]", ...args);
+}
 
+export function warn(...args) {
+  console.warn("[WARN]", ...args);
+}
+
+export function error(...args) {
+  console.error("[ERROR]", ...args);
+}
+
+if (typeof window !== "undefined") {
   window.onerror = function (msg) {
-    window.logger.error(msg);
+    error(msg);
     showError(msg);
   };
 
@@ -39,7 +50,7 @@
       event.reason && event.reason.message
         ? event.reason.message
         : String(event.reason);
-    window.logger.error(msg);
+    error(msg);
     showError(msg);
   };
-})();
+}
