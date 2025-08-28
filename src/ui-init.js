@@ -296,6 +296,10 @@ async function initGame() {
     return;
   }
   await loadGame();
+  if (!game) {
+    logger.error("Failed to load game");
+    return;
+  }
   const mapName = getMapName();
   setLevelMusic(mapName);
   applyLevelAccessibility(mapName);
