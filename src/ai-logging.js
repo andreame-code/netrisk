@@ -4,13 +4,30 @@ import { addLogEntry, updateInfoPanel } from "./ui.js";
 import { updateGameState } from "./state/storage.js";
 import { gameState } from "./state/game.js";
 import * as logger from "./logger.js";
+import EventBus from "./core/event-bus.js";
 
 let lastPlayer;
 
+function logInfo(message) {
+  if (typeof logger?.info === "function") {
+    logger.info(message);
+  }
+}
+
 export default function attachAIActionLogging(game) {
+  if (!game) return;
+
   lastPlayer = game.currentPlayer;
 
-  game.on(REINFORCE, ({ territory, player }) => {
+  const bus =
+    typeof game.on === "function"
+      ? game
+      : game.events instanceof EventBus
+      ? game.events
+      : null;
+  if (!bus) return;
+
+  bus.on(REINFORCE, ({ territory, player }) => {
     if (game.players[player].ai) {
       const name = game.players[player].name;
       addLogEntry(`${name} reinforces ${territory}`, {
@@ -18,11 +35,11 @@ export default function attachAIActionLogging(game) {
         type: "reinforce",
         territories: [territory],
       });
-      logger.info(`${name} reinforces ${territory}`);
+      logInfo(`${name} reinforces ${territory}`);
     }
   });
 
-  game.on(ATTACK, ({ from, to }) => {
+  bus.on(ATTACK, ({ from, to }) => {
     if (game.players[game.currentPlayer].ai) {
       const name = game.players[game.currentPlayer].name;
       addLogEntry(`${name} attacks ${to} from ${from}`, {
@@ -30,11 +47,11 @@ export default function attachAIActionLogging(game) {
         type: "attack",
         territories: [from, to],
       });
-      logger.info(`${name} attacks ${to} from ${from}`);
+      logInfo(`${name} attacks ${to} from ${from}`);
     }
   });
 
-  game.on("move", ({ from, to, count }) => {
+  bus.on("move", ({ from, to, count }) => {
     if (game.players[game.currentPlayer].ai) {
       const name = game.players[game.currentPlayer].name;
       addLogEntry(`${name} moves ${count} from ${from} to ${to}`, {
@@ -42,32 +59,32 @@ export default function attachAIActionLogging(game) {
         type: "move",
         territories: [from, to],
       });
-      logger.info(`${name} moves ${count} from ${from} to ${to}`);
+      logInfo(`${name} moves ${count} from ${from} to ${to}`);
     }
   });
 
-  game.on("cardsPlayed", ({ player }) => {
+  bus.on("cardsPlayed", ({ player }) => {
     if (game.players[player].ai) {
       const name = game.players[player].name;
       addLogEntry(`${name} plays cards`, {
         player: name,
         type: "cards",
       });
-      logger.info(`${name} plays cards`);
+      logInfo(`${name} plays cards`);
     }
   });
 
-  game.on("cardAwarded", ({ player, card }) => {
+  bus.on("cardAwarded", ({ player, card }) => {
     const name = game.players[player].name;
     const icons = { infantry: "🪖", cavalry: "🐎", artillery: "💣" };
     addLogEntry(`${name} receives a card ${icons[card.type] || card.type}`, {
       player: name,
       type: "card",
     });
-    logger.info(`${name} receives card ${card.type}`);
+    logInfo(`${name} receives card ${card.type}`);
   });
 
-  game.on("turnStart", ({ player }) => {
+  bus.on("turnStart", ({ player }) => {
     const prev = lastPlayer;
     const prevName = game.players[prev].name;
     const nextName = game.players[player].name;
@@ -76,7 +93,7 @@ export default function attachAIActionLogging(game) {
         player: prevName,
         type: "endTurn",
       });
-      logger.info(`${prevName} ends turn. Next: ${nextName}`);
+      logInfo(`${prevName} ends turn. Next: ${nextName}`);
       gameState.turnNumber += 1;
     }
     lastPlayer = player;
