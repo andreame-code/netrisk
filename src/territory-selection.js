@@ -118,17 +118,29 @@ export default function initTerritorySelection({
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
     "map";
-  fetch(`assets/maps/${mapName}.svg`)
-    .then((r) => {
-      if (!r.ok) {
-        const boardEl = document.getElementById("board");
-        boardEl.textContent = "Error loading map";
-        throw new Error(`Failed to load map: ${r.status}`);
-      }
-      return r.text();
-    })
+  const boardEl = document.getElementById("board");
+
+  function loadMap(paths) {
+    if (!paths.length) {
+      boardEl.textContent = "Error loading map";
+      throw new Error("Failed to load map");
+    }
+    const [path, ...rest] = paths;
+    return fetch(path)
+      .then((r) => {
+        if (r.ok) {
+          return r.text();
+        }
+        return loadMap(rest);
+      })
+      .catch(() => loadMap(rest));
+  }
+
+  loadMap([
+    `assets/maps/${mapName}.svg`,
+    `public/assets/maps/${mapName}.svg`,
+  ])
     .then((svg) => {
-      const boardEl = document.getElementById("board");
       boardEl.innerHTML = svg;
       const map = boardEl.querySelector("#map");
       map
@@ -198,9 +210,9 @@ export default function initTerritorySelection({
           }
         });
       }
-      })
-      .catch((err) => {
-        logger.error(err);
-      });
-  }
+    })
+    .catch((err) => {
+      logger.error(err);
+    });
+}
 
