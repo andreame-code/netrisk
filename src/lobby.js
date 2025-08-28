@@ -31,7 +31,7 @@ export function renderLobbies(lobbies) {
   lobbies.forEach(lobby => {
     const li = document.createElement('li');
     const playerCount = Array.isArray(lobby.players) ? lobby.players.length : 0;
-    const max = lobby.maxPlayers || 6;
+    const max = lobby.maxPlayers || 8;
     const status = lobby.started ? 'started' : 'open';
     li.textContent = `${lobby.code} – host: ${lobby.host} – players: ${playerCount}/${max} – map: ${lobby.map || '-' } – status: ${status}`;
     list.appendChild(li);
@@ -152,7 +152,7 @@ export function initLobby() {
       const name = document.getElementById('roomName').value.trim();
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const map = document.getElementById('map').value.trim();
-      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 6) {
+      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 8) {
         if (typeof form.reportValidity === 'function') {
           form.reportValidity();
         }

@@ -78,7 +78,7 @@ export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
         started: data.started || false,
         currentPlayer: data.current_player || null,
         map: data.map || null,
-        maxPlayers: data.max_players || 6,
+        maxPlayers: data.max_players || 8,
       };
       const cutoff = Date.now() - offlinePlayerTimeout;
       lobby.players = lobby.players.filter(

@@ -21,7 +21,7 @@ import { handleHeartbeat } from "./handlers/heartbeat.js";
 
 export function createLobbyServer({
   port = 8081,
-  maxPlayers = 6,
+  maxPlayers = 8,
   closeEmptyLobbiesAfter = 5000,
   offlinePlayerTimeout = 2 * 60_000,
 } = {}) {
