@@ -1,10 +1,12 @@
+const DEFAULT_ITEMS = { starDust: 0, crystalKey: false, rainbowPortal: false };
+
 export const levelItems = {
-  map: { starDust: 0, crystalKey: false, rainbowPortal: false },
-  map2: { starDust: 0, crystalKey: false, rainbowPortal: false },
+  map: { ...DEFAULT_ITEMS },
+  map2: { ...DEFAULT_ITEMS },
   map3: { starDust: 30, crystalKey: true, rainbowPortal: true },
-  "map-roman": { starDust: 0, crystalKey: false, rainbowPortal: false },
+  "map-roman": { ...DEFAULT_ITEMS },
 };
 
 export function getLevelItems(levelId) {
-  return levelItems[levelId] || { starDust: 0, crystalKey: false, rainbowPortal: false };
+  return levelItems[levelId] || { ...DEFAULT_ITEMS };
 }
