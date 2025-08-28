@@ -36,6 +36,15 @@
       "bonuses": {"Italia": 5, "Gallia": 4},
       "thumbnail": "assets/maps/map-roman.svg",
       "description": "Conquer the ancient Roman world."
+    },
+    {
+      "id": "world8",
+      "name": "World (8‑Player)",
+      "difficulty": "Medium",
+      "territories": 8,
+      "bonuses": {"North America": 2, "South America": 2, "Europe": 2, "Asia": 2, "Middle East": 2, "Africa": 2, "Australia": 2, "Antarctica": 2},
+      "thumbnail": "assets/maps/world8.svg",
+      "description": "Balanced world map for up to eight players."
     }
   ]
 }
