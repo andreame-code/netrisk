@@ -1,32 +1,92 @@
 import { REINFORCE } from "../phases.js";
 
-// Centralized game state object used by the application.
-// Keeping this in a dedicated module decouples the game's
-// logic from any particular UI implementation.
-const gameState = {
-  turnNumber: 1,
-  currentPlayer: 0,
-  players: [],
-  territories: [],
-  selectedTerritory: null,
-  tokenPosition: null,
-  phase: REINFORCE,
-  log: [],
-};
+// Factory for encapsulated game state. Consumers interact via
+// getters/setters rather than mutating a shared object directly.
+class GameState {
+  constructor() {
+    this._state = {
+      turnNumber: 1,
+      currentPlayer: 0,
+      players: [],
+      territories: [],
+      selectedTerritory: null,
+      tokenPosition: null,
+      phase: REINFORCE,
+      log: [],
+    };
+  }
 
-// Initialize the game state from a Game instance
+  // --- getters exposing read-only views ---
+  get turnNumber() {
+    return this._state.turnNumber;
+  }
+  get currentPlayer() {
+    return this._state.currentPlayer;
+  }
+  get players() {
+    return [...this._state.players];
+  }
+  get territories() {
+    return [...this._state.territories];
+  }
+  get selectedTerritory() {
+    return this._state.selectedTerritory;
+  }
+  get tokenPosition() {
+    return this._state.tokenPosition;
+  }
+  get phase() {
+    return this._state.phase;
+  }
+  get log() {
+    return [...this._state.log];
+  }
+
+  // Return a frozen snapshot of the current state
+  getSnapshot() {
+    return Object.freeze({
+      ...this._state,
+      players: [...this._state.players],
+      territories: [...this._state.territories],
+      log: [...this._state.log],
+    });
+  }
+
+  // --- mutation helpers ---
+  initFromGame(game) {
+    if (!game) return;
+    this._state.currentPlayer = game.currentPlayer;
+    this._state.players = game.players;
+    this._state.territories = game.territories;
+    this._state.phase = game.getPhase();
+  }
+
+  setSelectedTerritory(selected) {
+    this._state.selectedTerritory = selected;
+  }
+
+  setTokenPosition(pos) {
+    this._state.tokenPosition = pos;
+  }
+
+  incrementTurnNumber() {
+    this._state.turnNumber += 1;
+  }
+
+  addLogEntry(entry) {
+    this._state.log.push(entry);
+  }
+}
+
+const gameState = new GameState();
+
 function initGameState(game) {
-  if (!game) return;
-  gameState.currentPlayer = game.currentPlayer;
-  gameState.players = game.players;
-  gameState.territories = game.territories;
-  gameState.phase = game.getPhase();
+  gameState.initFromGame(game);
 }
 
-// Helper to update only the selected territory reference
 function setSelectedTerritory(selected) {
-  gameState.selectedTerritory = selected;
+  gameState.setSelectedTerritory(selected);
 }
 
-export { gameState, initGameState, setSelectedTerritory };
+export { GameState, gameState, initGameState, setSelectedTerritory };
 export default gameState;

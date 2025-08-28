@@ -142,11 +142,8 @@ function hasSavedGame() {
 
 function updateGameState(gameState, game, selected = null) {
   if (!gameState || !game) return;
-  gameState.currentPlayer = game.currentPlayer;
-  gameState.players = game.players;
-  gameState.territories = game.territories;
-  gameState.phase = game.getPhase();
-  gameState.selectedTerritory = selected;
+  gameState.initFromGame(game);
+  gameState.setSelectedTerritory(selected);
   saveGame(game);
 }
 
