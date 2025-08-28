@@ -24,14 +24,14 @@ jobs:
 
       - name: "Guard: no env.js refs"
         run: |
-          if grep -RIn -E "<script src['\"]env.js" .; then
-            echo '❌ Found <script src="env.js"> in HTML'
-            exit 1
-          fi
-          if grep -RIn --exclude-dir=.git -E "window.__ENV" .; then
-            echo '❌ Found window.__ENV in repository'
-            exit 1
-          fi
+            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "<script src['\"]env.js" .; then
+              echo '❌ Found <script src="env.js"> in HTML'
+              exit 1
+            fi
+            if grep -RIn --exclude-dir=.git --exclude-dir=.github -E "window.__ENV" .; then
+              echo '❌ Found window.__ENV in repository'
+              exit 1
+            fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
