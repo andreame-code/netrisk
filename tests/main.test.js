@@ -15,6 +15,20 @@ jest.mock('../src/logger.js', () => ({
   error: jest.fn(),
 }));
 
+jest.mock('../src/audio.js', () => ({
+  playEffect: jest.fn(),
+  preloadEffects: jest.fn(),
+  setMasterVolume: jest.fn(),
+  getMasterVolume: jest.fn(() => 1),
+  setEffectsVolume: jest.fn(),
+  getEffectsVolume: jest.fn(() => 1),
+  setMuted: jest.fn(),
+  isMuted: jest.fn(() => false),
+  setMusicEnabled: jest.fn(),
+  isMusicEnabled: jest.fn(() => false),
+  setLevelMusic: jest.fn(),
+}));
+
 describe('main DOM interactions', () => {
   let main;
   let ui;

@@ -1,4 +1,6 @@
 import cleanupServiceWorkers from "./src/service-worker-cleanup.js";
+import { initThemeToggle } from "./src/theme.js";
+import { initTutorialButtons } from "./src/tutorial.js";
 import {
   initGame,
   attachNavigationHandlers,
@@ -8,8 +10,6 @@ import {
   attachTerritoryHandlers,
   startNewGame,
 } from "./src/ui-init.js";
-import { initThemeToggle } from "./src/theme.js";
-import { initTutorialButtons } from "./src/tutorial.js";
 
 cleanupServiceWorkers();
 attachNavigationHandlers();

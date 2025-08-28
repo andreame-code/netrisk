@@ -3,6 +3,8 @@ jest.mock("../src/navigation.js", () => ({
   exitGame: jest.fn(),
 }));
 
+jest.mock("../src/service-worker-cleanup.js", () => jest.fn());
+
 jest.mock("../src/state/storage.js", () => ({
   clearSavedData: jest.fn(),
   hasSavedPlayers: jest.fn(() => true),
