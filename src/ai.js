@@ -16,7 +16,7 @@ function enumerateRolls(dice) {
   return rolls;
 }
 
-function battleOutcomeProbs(attDice, defDice) {
+export function battleOutcomeProbs(attDice, defDice) {
   const key = `${attDice}v${defDice}`;
   if (battleCache[key]) return battleCache[key];
   const aRolls = enumerateRolls(attDice);
