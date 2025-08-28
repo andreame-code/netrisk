@@ -1,9 +1,9 @@
-import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils";
+import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
 
-export async function handleReconnect(ctx: any, ws: any, msg: any, state: any) {
+export async function handleReconnect(ctx, ws, msg, state) {
   const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
-  const player = lobby.players.find((p: any) => p.id === msg.id);
+  const player = lobby.players.find((p) => p.id === msg.id);
   if (!player) return;
   player.ws = ws;
   player.lastSeen = null;

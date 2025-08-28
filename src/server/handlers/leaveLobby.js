@@ -1,9 +1,9 @@
-import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils";
+import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
 
-export async function handleLeaveLobby(ctx: any, ws: any, msg: any, state: any) {
+export async function handleLeaveLobby(ctx, ws, msg, state) {
   const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
-  const idx = lobby.players.findIndex((p: any) => p.id === msg.id);
+  const idx = lobby.players.findIndex((p) => p.id === msg.id);
   if (idx === -1) return;
   const [player] = lobby.players.splice(idx, 1);
   if (state.currentPlayer === player) {

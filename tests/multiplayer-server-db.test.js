@@ -1,15 +1,19 @@
 /** @jest-environment node */
 import WebSocket from "ws";
 
-const mockUpsert = jest.fn().mockResolvedValue({});
-const mockFrom = jest.fn(() => ({ upsert: mockUpsert }));
+let createLobbyServer;
+let mockUpsert;
+let mockFrom;
 
-jest.mock("../src/init/supabase-client.js", () => ({
-  __esModule: true,
-  default: { from: mockFrom },
-}));
-
-const { createLobbyServer } = require("../src/multiplayer-server.js");
+beforeAll(async () => {
+  mockUpsert = jest.fn().mockResolvedValue({});
+  mockFrom = jest.fn(() => ({ upsert: mockUpsert }));
+  jest.doMock("../src/init/supabase-client.js", () => ({
+    __esModule: true,
+    default: { from: mockFrom },
+  }));
+  ({ createLobbyServer } = await import("../src/multiplayer-server.js"));
+});
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

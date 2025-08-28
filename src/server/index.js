@@ -7,24 +7,24 @@ import {
   broadcast,
   persistLobby,
   validateMessage,
-} from "./utils";
-import { handleCreateLobby } from "./handlers/createLobby";
-import { handleJoinLobby } from "./handlers/joinLobby";
-import { handleLeaveLobby } from "./handlers/leaveLobby";
-import { handleReady } from "./handlers/ready";
-import { handleSelectMap } from "./handlers/selectMap";
-import { handleStart } from "./handlers/start";
-import { handleState } from "./handlers/state";
-import { handleChat } from "./handlers/chat";
-import { handleReconnect } from "./handlers/reconnect";
-import { handleHeartbeat } from "./handlers/heartbeat";
+} from "./utils.js";
+import { handleCreateLobby } from "./handlers/createLobby.js";
+import { handleJoinLobby } from "./handlers/joinLobby.js";
+import { handleLeaveLobby } from "./handlers/leaveLobby.js";
+import { handleReady } from "./handlers/ready.js";
+import { handleSelectMap } from "./handlers/selectMap.js";
+import { handleStart } from "./handlers/start.js";
+import { handleState } from "./handlers/state.js";
+import { handleChat } from "./handlers/chat.js";
+import { handleReconnect } from "./handlers/reconnect.js";
+import { handleHeartbeat } from "./handlers/heartbeat.js";
 
 export function createLobbyServer({
   port = 8081,
   maxPlayers = 6,
   closeEmptyLobbiesAfter = 5000,
   offlinePlayerTimeout = 2 * 60_000,
-}: any = {}) {
+} = {}) {
   const wss = new WebSocketServer({ port });
   const lobbies = new Map();
   const createCode = () => randomBytes(3).toString("hex");
@@ -39,7 +39,7 @@ export function createLobbyServer({
     supabase,
   };
 
-  const handlers: Record<string, any> = {
+  const handlers = {
     createLobby: handleCreateLobby,
     joinLobby: handleJoinLobby,
     leaveLobby: handleLeaveLobby,
@@ -53,10 +53,10 @@ export function createLobbyServer({
   };
 
   wss.on("connection", ws => {
-    const state: any = { currentLobby: null, currentPlayer: null };
+    const state = { currentLobby: null, currentPlayer: null };
 
     ws.on("message", async raw => {
-      let msg: any;
+      let msg;
       try {
         msg = JSON.parse(raw.toString());
       } catch {

@@ -1,6 +1,6 @@
-import { persistLobby, publicPlayers } from "../utils";
+import { persistLobby, publicPlayers } from "../utils.js";
 
-export async function handleCreateLobby(ctx: any, ws: any, msg: any, state: any) {
+export async function handleCreateLobby(ctx, ws, msg, state) {
   if (msg.map && !ctx.isValidMap(msg.map)) {
     ws.send(JSON.stringify({ type: "error", error: "invalidMap" }));
     return;

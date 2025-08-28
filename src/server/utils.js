@@ -3,38 +3,40 @@ import { z } from "zod";
 import supabase from "../init/supabase-client.js";
 
 // Load available map ids from manifest
-let validMaps: string[] = [];
+let validMaps = [];
 try {
   const manifest = JSON.parse(fs.readFileSync("map-manifest.json", "utf8"));
-  validMaps = manifest.maps?.map((m: any) => m.id) || [];
+  validMaps = manifest.maps?.map((m) => m.id) || [];
 } catch {
   validMaps = [];
 }
 
-export const isValidMap = (id: string) => validMaps.includes(id);
+export const isValidMap = (id) => validMaps.includes(id);
 
 // Remove websocket instances when broadcasting lobby data
-export const publicPlayers = (lobby: any) =>
-  lobby.players.map(({ ws, offlineTimer, ...p }: any) => ({
+export const publicPlayers = (lobby) =>
+  lobby.players.map(
+    // eslint-disable-next-line no-unused-vars
+    ({ ws, offlineTimer, ...p }) => ({
     ...p,
     connected: !!ws,
   }));
 
-export const broadcast = (lobby: any, msg: any) => {
+export const broadcast = (lobby, msg) => {
   const data = JSON.stringify(msg);
-  lobby.players.forEach((p: any) => {
+  lobby.players.forEach((p) => {
     if (p.ws && p.ws.readyState === 1) {
       p.ws.send(data);
     }
   });
 };
 
-export const persistLobby = async (lobby: any) => {
+export const persistLobby = async (lobby) => {
   if (!supabase) return;
   const row = {
     code: lobby.code,
     host: lobby.host,
-    players: lobby.players.map(({ id, name, color, ready, lastSeen }: any) => ({
+    players: lobby.players.map(({ id, name, color, ready, lastSeen }) => ({
       id,
       name,
       color,
@@ -49,17 +51,13 @@ export const persistLobby = async (lobby: any) => {
   };
   try {
     await supabase.from("lobbies").upsert(row, { onConflict: "code" });
-  } catch (err: any) {
+  } catch (err) {
     // eslint-disable-next-line no-console
     console.error("Supabase upsert error", err);
   }
 };
 
-export const loadLobby = async (
-  lobbies: Map<string, any>,
-  code: string,
-  offlinePlayerTimeout: number,
-) => {
+export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
   let lobby = lobbies.get(code);
   if (!lobby && supabase) {
     const { data, error } = await supabase
@@ -75,7 +73,7 @@ export const loadLobby = async (
       lobby = {
         code: data.code,
         host: data.host,
-        players: (data.players || []).map((p: any) => ({ ...p, ws: null })),
+        players: (data.players || []).map((p) => ({ ...p, ws: null })),
         state: data.state || null,
         started: data.started || false,
         currentPlayer: data.currentPlayer || null,
@@ -84,7 +82,7 @@ export const loadLobby = async (
       };
       const cutoff = Date.now() - offlinePlayerTimeout;
       lobby.players = lobby.players.filter(
-        (p: any) => !p.lastSeen || p.lastSeen > cutoff,
+        (p) => !p.lastSeen || p.lastSeen > cutoff,
       );
       lobbies.set(code, lobby);
     }
@@ -170,7 +168,7 @@ export const heartbeatSchema = z.object({
   id: idSchema,
 });
 
-export const schemas: Record<string, z.ZodTypeAny> = {
+export const schemas = {
   createLobby: createLobbySchema,
   joinLobby: joinLobbySchema,
   leaveLobby: leaveLobbySchema,
@@ -183,7 +181,7 @@ export const schemas: Record<string, z.ZodTypeAny> = {
   heartbeat: heartbeatSchema,
 };
 
-export const validateMessage = (msg: any) => {
+export const validateMessage = (msg) => {
   const schema = schemas[msg?.type];
   if (!schema) return { success: false, error: "unknownType" };
   return schema.safeParse(msg);

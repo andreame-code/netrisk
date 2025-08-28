@@ -1,16 +1,16 @@
 import {
   handleCreateLobby,
-} from "../src/server/handlers/createLobby.ts";
-import { handleJoinLobby } from "../src/server/handlers/joinLobby.ts";
-import { handleLeaveLobby } from "../src/server/handlers/leaveLobby.ts";
-import { handleReady } from "../src/server/handlers/ready.ts";
-import { handleSelectMap } from "../src/server/handlers/selectMap.ts";
-import { handleStart } from "../src/server/handlers/start.ts";
-import { handleState } from "../src/server/handlers/state.ts";
-import { handleChat } from "../src/server/handlers/chat.ts";
-import { handleReconnect } from "../src/server/handlers/reconnect.ts";
-import { handleHeartbeat } from "../src/server/handlers/heartbeat.ts";
-import * as utils from "../src/server/utils";
+} from "../src/server/handlers/createLobby.js";
+import { handleJoinLobby } from "../src/server/handlers/joinLobby.js";
+import { handleLeaveLobby } from "../src/server/handlers/leaveLobby.js";
+import { handleReady } from "../src/server/handlers/ready.js";
+import { handleSelectMap } from "../src/server/handlers/selectMap.js";
+import { handleStart } from "../src/server/handlers/start.js";
+import { handleState } from "../src/server/handlers/state.js";
+import { handleChat } from "../src/server/handlers/chat.js";
+import { handleReconnect } from "../src/server/handlers/reconnect.js";
+import { handleHeartbeat } from "../src/server/handlers/heartbeat.js";
+import * as utils from "../src/server/utils.js";
 
 describe("server handlers", () => {
   test("handleCreateLobby creates lobby", async () => {

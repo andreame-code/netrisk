@@ -1,6 +1,6 @@
-import { persistLobby, publicPlayers, broadcast, loadLobby } from "../utils";
+import { persistLobby, publicPlayers, broadcast, loadLobby } from "../utils.js";
 
-export async function handleJoinLobby(ctx: any, ws: any, msg: any, state: any) {
+export async function handleJoinLobby(ctx, ws, msg, state) {
   const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby || lobby.started) {
     ws.send(JSON.stringify({ type: "error", error: "lobbyNotOpen" }));

@@ -1,9 +1,9 @@
-import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils";
+import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
 
-export async function handleReady(ctx: any, ws: any, msg: any) {
+export async function handleReady(ctx, ws, msg) {
   const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
-  const player = lobby.players.find((p: any) => p.id === msg.id);
+  const player = lobby.players.find((p) => p.id === msg.id);
   if (!player) return;
   player.ready = !!msg.ready;
   await persistLobby(lobby);
