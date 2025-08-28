@@ -1,10 +1,16 @@
 import * as logger from "../logger.js";
 
+// Storage keys
+const KEY_MAP = "netriskMap";
+const KEY_PLAYERS = "netriskPlayers";
+const KEY_GAME = "netriskGame";
+const KEY_SAVES = "netriskSaves";
+
 // Helper functions to manage persisted state via localStorage
 
 function getMapName() {
   if (typeof localStorage !== "undefined") {
-    return localStorage.getItem("netriskMap") || "map";
+    return localStorage.getItem(KEY_MAP) || "map";
   }
   return "map";
 }
@@ -12,7 +18,7 @@ function getMapName() {
 function getSavedPlayers() {
   if (typeof localStorage !== "undefined") {
     try {
-      return JSON.parse(localStorage.getItem("netriskPlayers")) || [];
+      return JSON.parse(localStorage.getItem(KEY_PLAYERS)) || [];
     } catch {
       return [];
     }
@@ -23,7 +29,7 @@ function getSavedPlayers() {
 function getSavedGame(GameClass) {
   if (typeof localStorage !== "undefined") {
     try {
-      const saved = localStorage.getItem("netriskGame");
+      const saved = localStorage.getItem(KEY_GAME);
       if (saved && GameClass) {
         return GameClass.deserialize(saved);
       }
@@ -37,7 +43,7 @@ function getSavedGame(GameClass) {
 function saveGame(game) {
   if (typeof localStorage !== "undefined" && game) {
     try {
-      localStorage.setItem("netriskGame", game.serialize());
+      localStorage.setItem(KEY_GAME, game.serialize());
     } catch (err) {
       logger.error("Failed to save game", err);
     }
@@ -49,7 +55,7 @@ function saveGame(game) {
 function getAllSavedGames() {
   if (typeof localStorage === "undefined") return {};
   try {
-    return JSON.parse(localStorage.getItem("netriskSaves")) || {};
+    return JSON.parse(localStorage.getItem(KEY_SAVES)) || {};
   } catch {
     return {};
   }
@@ -58,7 +64,7 @@ function getAllSavedGames() {
 function persistAllSavedGames(saves) {
   if (typeof localStorage === "undefined") return;
   try {
-    localStorage.setItem("netriskSaves", JSON.stringify(saves));
+    localStorage.setItem(KEY_SAVES, JSON.stringify(saves));
   } catch (err) {
     logger.error("Failed to persist saves", err);
   }
@@ -121,21 +127,21 @@ function deleteSavedGame(name) {
 
 function clearSavedData() {
   if (typeof localStorage !== "undefined") {
-    localStorage.removeItem("netriskGame");
-    localStorage.removeItem("netriskPlayers");
+    localStorage.removeItem(KEY_GAME);
+    localStorage.removeItem(KEY_PLAYERS);
   }
 }
 
 function hasSavedPlayers() {
   if (typeof localStorage !== "undefined") {
-    return !!localStorage.getItem("netriskPlayers");
+    return !!localStorage.getItem(KEY_PLAYERS);
   }
   return false;
 }
 
 function hasSavedGame() {
   if (typeof localStorage !== "undefined") {
-    return !!localStorage.getItem("netriskGame");
+    return !!localStorage.getItem(KEY_GAME);
   }
   return false;
 }
@@ -148,6 +154,10 @@ function updateGameState(gameState, game, selected = null) {
 }
 
 export {
+  KEY_MAP,
+  KEY_PLAYERS,
+  KEY_GAME,
+  KEY_SAVES,
   getMapName,
   getSavedGame,
   getSavedPlayers,
