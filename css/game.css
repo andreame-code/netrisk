@@ -199,7 +199,12 @@ body.game-page #uiPanel .btn {
   }
 }
 
+#turnInfo,
 #gameActions,
+#selectedTerritory,
+#cardPanel,
+#logSection,
+#howToPlayBox,
 #otherControls {
   margin-top: 10px;
   border: 1px solid #ccc;
@@ -208,6 +213,8 @@ body.game-page #uiPanel .btn {
 }
 
 #gameActions .btn,
+#cardPanel .btn,
+#howToPlayBox .btn,
 #otherControls .btn {
   display: block;
   width: 100%;

@@ -18,11 +18,41 @@
     </p>
     <header id="gameHeader">
       <button id="exitGame" class="btn">Exit Game</button>
-      <div id="turnStatus">Turn <span id="turnNumber">1</span> - <span id="currentPlayer"></span></div>
     </header>
     <div id="gameContainer">
       <div id="board" class="board"></div>
       <div id="uiPanel">
+        <div id="turnInfo">
+          <div><strong>Turn:</strong> <span id="turnNumber">1</span></div>
+          <div><strong>Player:</strong> <span id="currentPlayer"></span></div>
+          <div><strong>Phase:</strong> <span id="status"></span></div>
+          <div><strong>Reinforcements:</strong> <span id="reinforcements">0</span></div>
+          <div><strong>Dice:</strong> <span id="diceResults"></span></div>
+          <div><strong>Phase time:</strong> <span id="phaseTimer"></span></div>
+        </div>
+        <div id="gameActions">
+          <strong>Game Actions:</strong>
+          <button
+            id="moveToken"
+            class="btn"
+            aria-label="Move Token"
+            accesskey="v"
+          >
+            Move Token
+          </button>
+          <button id="undo" class="btn" aria-label="Undo" accesskey="u" disabled>
+            Undo
+          </button>
+          <button id="endTurn" class="btn" aria-label="End Turn" accesskey="e">
+            End Turn
+          </button>
+        </div>
+        <div id="selectedTerritory"></div>
+        <div id="cardPanel"></div>
+        <div id="logSection">
+          <strong>Action log:</strong>
+          <div id="actionLog" class="log"></div>
+        </div>
         <div id="howToPlayBox">
           <div>
             <strong>How to play (alpha)</strong>
@@ -42,29 +72,6 @@
           </ol>
           <button id="replayTutorial" class="btn">Play Tutorial</button>
         </div>
-        <div id="gameActions">
-          <strong>Game Actions:</strong>
-          <button
-            id="moveToken"
-            class="btn"
-            aria-label="Move Token"
-            accesskey="v"
-          >
-            Move Token
-          </button>
-          <button id="undo" class="btn" aria-label="Undo" accesskey="u" disabled>
-            Undo
-          </button>
-          <button id="endTurn" class="btn" aria-label="End Turn" accesskey="e">
-            End Turn
-          </button>
-        </div>
-        <div id="status"></div>
-        <div>Phase time: <span id="phaseTimer"></span></div>
-        <div id="diceResults"></div>
-        <div id="selectedTerritory"></div>
-        <div><strong>Action log:</strong></div>
-        <div id="actionLog" class="log"></div>
         <div id="otherControls">
           <strong>Other Controls:</strong>
           <div id="audioSettings">

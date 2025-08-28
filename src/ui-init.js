@@ -377,27 +377,26 @@ async function initGame() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
-  const ui = document.getElementById("uiPanel");
-  const cardPanel = document.createElement("div");
-  cardPanel.id = "cardPanel";
-  cardPanel.innerHTML =
-    '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
-    '<button id="playCardsBtn" class="btn">Play cards</button>' +
-    '<div id="bonusInfo"></div>';
-  ui.appendChild(cardPanel);
-  document.getElementById("playCardsBtn").addEventListener("click", () => {
-    const cards = getSelectedCards();
-    if (cards.length === 3) {
-      if (game.playCards(cards)) {
-        addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
-          player: game.players[game.currentPlayer].name,
-          type: "cards",
-        });
-        resetSelectedCards();
-        updateUI();
-      }
+    const cardPanel = document.getElementById("cardPanel");
+    if (cardPanel) {
+      cardPanel.innerHTML =
+        '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
+        '<button id="playCardsBtn" class="btn">Play cards</button>' +
+        '<div id="bonusInfo"></div>';
+      document.getElementById("playCardsBtn").addEventListener("click", () => {
+        const cards = getSelectedCards();
+        if (cards.length === 3) {
+          if (game.playCards(cards)) {
+            addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
+              player: game.players[game.currentPlayer].name,
+              type: "cards",
+            });
+            resetSelectedCards();
+            updateUI();
+          }
+        }
+      });
     }
-  });
 
   const masterVolume = document.getElementById("masterVolume");
   const effectsVolume = document.getElementById("effectsVolume");

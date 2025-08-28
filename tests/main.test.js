@@ -29,6 +29,8 @@ describe('main DOM interactions', () => {
       <div id="turnNumber"></div>
       <div id="actionLog"></div>
       <div id="diceResults"></div>
+      <div id="reinforcements"></div>
+      <div id="cardPanel"></div>
       <div id="uiPanel"></div>
       <button id="endTurn" class="btn"></button>
       <button type="button" id="t1" class="territory" data-id="t1"></button>
@@ -145,8 +147,8 @@ describe('main DOM interactions', () => {
 
     endTurnBtn.click();
     expect(log.textContent).toContain('ends turn');
-    expect(status.textContent).toContain('Player 2');
-    expect(status.textContent).toContain(REINFORCE);
+    expect(document.getElementById('currentPlayer').textContent).toContain('Player 2');
+    expect(status.textContent).toBe(REINFORCE);
   });
 
   test('state is saved and restored from localStorage', async () => {
