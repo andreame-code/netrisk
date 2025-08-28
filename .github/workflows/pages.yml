@@ -56,6 +56,23 @@ jobs:
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r *.html css map*.svg map-manifest.json src supabase dist/
 
+- name: Generate src/config.js for client (anon key only)
+  run: |
+    mkdir -p src
+    cat > src/config.js << 'EOF'
+    // generated at build time
+    export const SUPABASE_URL = "${{ secrets.SUPABASE_URL }}";
+    export const SUPABASE_KEY = "${{ secrets.SUPABASE_ANON_KEY }}";
+    // opzionale per websocket ecc.
+    export const WS_URL = "${{ secrets.WS_URL }}";
+    EOF
+
+- name: Upload artifact
+  uses: actions/upload-pages-artifact@v3
+  with:
+    path: .
+
+
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
