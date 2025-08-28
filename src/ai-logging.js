@@ -1,6 +1,7 @@
 /* global logger */
 import { REINFORCE, ATTACK } from "./phases.js";
-import { addLogEntry, updateGameState, updateInfoPanel } from "./ui.js";
+import { addLogEntry, updateInfoPanel } from "./ui.js";
+import { updateGameState } from "./state/storage.js";
 import { gameState } from "./state/game.js";
 
 let lastPlayer;
