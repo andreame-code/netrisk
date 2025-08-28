@@ -44,7 +44,12 @@ async function fetchLobbies() {
     return;
   }
   const { data } = await supabase.from('lobbies').select();
-  currentLobbies.splice(0, currentLobbies.length, ...(data || []));
+  const normalized = (data || []).map(row => ({
+    ...row,
+    currentPlayer: row.current_player,
+    maxPlayers: row.max_players,
+  }));
+  currentLobbies.splice(0, currentLobbies.length, ...normalized);
   renderLobbies(currentLobbies);
 }
 

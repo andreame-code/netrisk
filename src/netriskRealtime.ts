@@ -22,7 +22,18 @@ export function subscribeToMatch<S extends GameState = GameState, A = unknown, R
     channel.on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'events', filter: `match_id=eq.${matchId}` },
-      (payload) => handlers.onEvent?.(payload.new as Event<A, R>)
+      (payload) => {
+        const row = payload.new as any;
+        const ev: Event<A, R> = {
+          id: row.id,
+          matchId: row.match_id,
+          playerId: row.player_id,
+          action: row.action,
+          result: row.result,
+          createdAt: row.created_at,
+        };
+        handlers.onEvent?.(ev);
+      }
     );
   }
 
