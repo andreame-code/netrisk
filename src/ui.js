@@ -1,5 +1,4 @@
 import { getContrastingColor } from "./colors.js";
-import { REINFORCE } from "./phases.js";
 import { getStats } from "./stats.js";
 
 const BOARD_WIDTH = 600;
@@ -79,6 +78,8 @@ function updateInfoPanel() {
   if (cp) cp.textContent = formatPlayerName(game.players[gameState.currentPlayer]);
   const tn = getElement("turnNumber");
   if (tn) tn.textContent = gameState.turnNumber;
+  const reinf = getElement("reinforcements");
+  if (reinf) reinf.textContent = game.reinforcements;
 }
 
 function highlightTerritories(ids) {
@@ -423,12 +424,8 @@ function updateToken(scale) {
 }
 
 function updateStatus() {
-  let status = `${game.players[game.currentPlayer].name} - ${game.getPhase()}`;
-  if (game.getPhase() === REINFORCE) {
-    status += ` (${game.reinforcements} reinforcements)`;
-  }
   const statusEl = getElement("status");
-  if (statusEl) statusEl.textContent = status;
+  if (statusEl) statusEl.textContent = game.getPhase();
 }
 
 function updateUndoButton() {
@@ -447,6 +444,7 @@ function updateUI() {
   updateTerritories(scale, playerColorClasses);
   updateToken(scale);
   updateStatus();
+  updateInfoPanel();
   updateUndoButton();
   updateBonusInfo();
   updateCardsUI();
