@@ -44,10 +44,10 @@ export const persistLobby = async (lobby) => {
       ...(lastSeen ? { lastSeen } : {}),
     })),
     started: lobby.started,
-    currentPlayer: lobby.currentPlayer,
+    current_player: lobby.currentPlayer,
     state: lobby.state,
     map: lobby.map,
-    maxPlayers: lobby.maxPlayers,
+    max_players: lobby.maxPlayers,
   };
   try {
     await supabase.from("lobbies").upsert(row, { onConflict: "code" });
@@ -76,9 +76,9 @@ export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
         players: (data.players || []).map((p) => ({ ...p, ws: null })),
         state: data.state || null,
         started: data.started || false,
-        currentPlayer: data.currentPlayer || null,
+        currentPlayer: data.current_player || null,
         map: data.map || null,
-        maxPlayers: data.maxPlayers || 6,
+        maxPlayers: data.max_players || 6,
       };
       const cutoff = Date.now() - offlinePlayerTimeout;
       lobby.players = lobby.players.filter(
