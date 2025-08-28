@@ -1,0 +1,27 @@
+<svg id="world8" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <rect width="600" height="400" fill="#87ceeb" />
+  <!-- North America -->
+  <path id="north-america" class="map-territory" data-name="North America"
+    d="M50 60 L150 40 L200 100 L160 140 L120 160 L80 120 Z" fill="#c8e6c9" />
+  <!-- South America -->
+  <path id="south-america" class="map-territory" data-name="South America"
+    d="M120 160 L160 180 L180 260 L140 350 L100 300 Z" fill="#c8e6c9" />
+  <!-- Europe -->
+  <path id="europe" class="map-territory" data-name="Europe"
+    d="M220 60 L340 60 L300 140 L250 100 Z" fill="#c8e6c9" />
+  <!-- Asia -->
+  <path id="asia" class="map-territory" data-name="Asia"
+    d="M340 60 L560 60 L580 140 L520 180 L400 160 L340 120 Z" fill="#c8e6c9" />
+  <!-- Middle East -->
+  <path id="middle-east" class="map-territory" data-name="Middle East"
+    d="M300 140 L400 160 L350 180 L300 170 Z" fill="#c8e6c9" />
+  <!-- Africa -->
+  <path id="africa" class="map-territory" data-name="Africa"
+    d="M300 140 L360 180 L380 260 L340 340 L300 280 L280 200 Z" fill="#c8e6c9" />
+  <!-- Australia -->
+  <path id="australia" class="map-territory" data-name="Australia"
+    d="M470 260 L540 260 L560 300 L520 340 L460 320 Z" fill="#c8e6c9" />
+  <!-- Antarctica -->
+  <path id="antarctica" class="map-territory" data-name="Antarctica"
+    d="M200 360 L400 360 L380 390 L220 390 Z" fill="#c8e6c9" />
+</svg>
