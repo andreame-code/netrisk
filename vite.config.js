@@ -19,5 +19,10 @@ export default defineConfig({
   },
   resolve: {
     extensions: ['.js', '.ts']
+  },
+  server: {
+    fs: {
+      allow: ['..']
+    }
   }
 });
