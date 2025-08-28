@@ -33,8 +33,8 @@ NetRisk includes an experimental WebSocket-based multiplayer mode.
 4. In the console of every browser tab, enable the multiplayer plugin:
 
    ```js
-   const { WS_URL } = await import("./src/config.js");
-   const { default: createWebSocketMultiplayer } = await import("./src/plugins/websocket-multiplayer-plugin.js");
+   const { WS_URL } = await import("../src/config.js");
+   const { default: createWebSocketMultiplayer } = await import("../src/plugins/websocket-multiplayer-plugin.js");
    game.use(createWebSocketMultiplayer(WS_URL));
   ```
 
@@ -61,4 +61,4 @@ Feel free to fork the repository and submit pull requests. Run `npm test` and
 `npm run lint` before proposing changes to keep the codebase healthy.
 
 ## Further Resources
-Refer to the [README](README.md) for testing instructions and additional details.
+Refer to the [README](../README.md) for testing instructions and additional details.
