@@ -224,7 +224,7 @@ npm run lint
 ## Wiki
 
 More detailed documentation, including gameplay notes and development tips,
-is available in the [project wiki](WIKI.md).
+is available in the [project wiki](docs/WIKI.md).
 
 ## UAT Debug
 
