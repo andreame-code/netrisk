@@ -1,5 +1,6 @@
 const fs = require('fs');
 const map = require('../src/data/map3.json');
+const world8 = require('../src/data/world8.json');
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
@@ -33,6 +34,20 @@ describe('map3 data', () => {
     for (const id of Object.keys(counts)) {
       for (const t of types) {
         expect(counts[id][t]).toBe(1);
+      }
+    }
+  });
+});
+
+describe('world8 data', () => {
+  test('territories have unique ids and reciprocal neighbors', () => {
+    const ids = new Set(world8.territories.map((t) => t.id));
+    expect(ids.size).toBe(world8.territories.length);
+    const byId = Object.fromEntries(world8.territories.map((t) => [t.id, t]));
+    for (const t of world8.territories) {
+      for (const n of t.neighbors) {
+        expect(byId[n]).toBeTruthy();
+        expect(byId[n].neighbors).toContain(t.id);
       }
     }
   });

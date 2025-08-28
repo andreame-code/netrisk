@@ -1,5 +1,6 @@
 import * as ui from '../src/ui.js';
 import { GameState } from "../src/state/game.js";
+const world8 = require('../src/data/world8.json');
 
 const { initUI, addLogEntry, updateUI, animateMove, destroyUI } = ui;
 
@@ -79,5 +80,33 @@ describe('ui integration', () => {
     expect(removeSpy).toHaveBeenCalledWith('resize', handler);
     addSpy.mockRestore();
     removeSpy.mockRestore();
+  });
+
+  test('world8 map renders eight starting territories', () => {
+    destroyUI();
+    const territoryDivs = world8.territories
+      .map((t) => `<div id="${t.id}"></div>`)
+      .join('');
+    document.body.innerHTML = `<div id="board"></div>${territoryDivs}`;
+    const gameWorld = {
+      players: world8.territories.map((_, i) => ({ name: `P${i + 1}`, color: '#000' })),
+      currentPlayer: 0,
+      territories: world8.territories.map((t, i) => ({ id: t.id, owner: i, armies: 1 })),
+      hands: Array(world8.territories.length).fill([]),
+      continents: [],
+      territoryById: (id) => gameWorld.territories.find((tt) => tt.id === id),
+      getPhase: () => 'attack',
+      reinforcements: 0,
+      canUndo: () => false,
+    };
+    const positions = Object.fromEntries(
+      world8.territories.map((t) => [t.id, { x: t.x, y: t.y }]),
+    );
+    const gs = new GameState();
+    initUI({ game: gameWorld, gameState: gs, territoryPositions: positions });
+    updateUI();
+    for (const t of world8.territories) {
+      expect(document.getElementById(t.id).textContent).toBe('1');
+    }
   });
 });

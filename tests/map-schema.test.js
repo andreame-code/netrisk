@@ -19,4 +19,17 @@ describe('map schema validation', () => {
     delete bad.territories[0].y;
     expect(() => validateMap(bad)).toThrow('Invalid map data');
   });
+
+  test('world8 territories have unique ids and reciprocal neighbors', () => {
+    const map = require('../src/data/world8.json');
+    const ids = new Set(map.territories.map((t) => t.id));
+    expect(ids.size).toBe(map.territories.length);
+    const byId = Object.fromEntries(map.territories.map((t) => [t.id, t]));
+    for (const terr of map.territories) {
+      for (const n of terr.neighbors) {
+        expect(byId[n]).toBeTruthy();
+        expect(byId[n].neighbors).toContain(terr.id);
+      }
+    }
+  });
 });
