@@ -67,6 +67,20 @@ npm run build
 
 Il deploy su GitHub Pages è gestito automaticamente tramite GitHub Actions.
 
+### Configurare i secret per Supabase
+
+Per permettere al client di connettersi a Supabase durante il deploy, è
+necessario definire alcuni secret in GitHub:
+
+- `SUPABASE_URL` – l'URL del progetto Supabase.
+- `SUPABASE_ANON_KEY` – la chiave anon del progetto.
+
+Questi secret vengono usati durante la build (`VITE_SUPABASE_URL` e
+`VITE_SUPABASE_ANON_KEY`) e devono essere presenti nell'ambiente
+`github-pages`. Se si desidera distribuire anche le Edge Function, è
+necessario configurare inoltre `SUPABASE_PROJECT_REF` e `SUPABASE_ACCESS_TOKEN`
+per il workflow `supabase-deploy.yml`.
+
 ## Multiplayer
 
 NetRisk ships with a very small WebSocket relay and a plugin that keeps the
