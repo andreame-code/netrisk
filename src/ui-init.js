@@ -1,5 +1,5 @@
-/* global logger */
 import initTerritorySelection from "./territory-selection.js";
+import * as logger from "./logger.js";
 import {
   playEffect,
   preloadEffects,
@@ -114,18 +114,14 @@ function runAI() {
 function attachTerritoryHandlers() {
   document.querySelectorAll(".territory").forEach((el) => {
     el.addEventListener("click", async () => {
-      if (typeof logger !== "undefined") {
-        logger.info(`Territory clicked: ${el.dataset.id}`);
-      }
+      logger.info(`Territory clicked: ${el.dataset.id}`);
       try {
         const prevPlayer = game.currentPlayer;
         const result = game.handleTerritoryClick(el.dataset.id);
         if (result) {
           const playerName = game.players[prevPlayer].name;
           if (result.type === ATTACK) {
-            if (typeof logger !== "undefined") {
-              logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
-            }
+            logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
             const fromEl = document.getElementById(result.from);
             const toEl = document.getElementById(result.to);
             fromEl.classList.add("attack", "animate__animated", "animate__shakeX");
@@ -157,9 +153,7 @@ function attachTerritoryHandlers() {
               territories: [result.from, result.to],
             });
           } else if (result.type === REINFORCE) {
-            if (typeof logger !== "undefined") {
-              logger.info(`${playerName} reinforces ${result.territory}`);
-            }
+            logger.info(`${playerName} reinforces ${result.territory}`);
             animateReinforce(result.territory);
             addLogEntry(`${playerName} reinforces ${result.territory}`, {
               player: playerName,
@@ -167,9 +161,7 @@ function attachTerritoryHandlers() {
               territories: [result.territory],
             });
           } else if (result.type === FORTIFY) {
-            if (typeof logger !== "undefined") {
-              logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
-            }
+            logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
             const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
@@ -187,16 +179,12 @@ function attachTerritoryHandlers() {
               `${playerName} ends turn. Next: ${nextName}`,
               { player: playerName, type: "endTurn" },
             );
-            if (typeof logger !== "undefined") {
-              logger.info(`${playerName} ends turn. Next: ${nextName}`);
-            }
+            logger.info(`${playerName} ends turn. Next: ${nextName}`);
           }
         }
         updateUI();
         if (result && result.type === "select") {
-          if (typeof logger !== "undefined") {
-            logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
-          }
+          logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
           document.getElementById(result.territory).classList.add("selected");
         }
         updateGameState(
@@ -208,9 +196,7 @@ function attachTerritoryHandlers() {
         runAI();
         checkForVictory();
       } catch (err) {
-        if (typeof logger !== "undefined") {
-          logger.error(err);
-        }
+        logger.error(err);
       }
     });
   });
@@ -235,17 +221,13 @@ if (undoBtn) {
         updateInfoPanel();
       }
     } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error(err);
-      }
+      logger.error(err);
     }
   });
 }
 
 document.getElementById("endTurn").addEventListener("click", () => {
-  if (typeof logger !== "undefined") {
-    logger.info("End turn clicked");
-  }
+  logger.info("End turn clicked");
   try {
     const prevPlayer = game.currentPlayer;
     const prevPhase = game.getPhase();
@@ -255,20 +237,16 @@ document.getElementById("endTurn").addEventListener("click", () => {
         player: game.players[prevPlayer].name,
         type: "phase",
       });
-      if (typeof logger !== "undefined") {
-        logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
-      }
+      logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
     } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
       gameState.turnNumber += 1;
       addLogEntry(
         `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
         { player: game.players[prevPlayer].name, type: "endTurn" },
       );
-      if (typeof logger !== "undefined") {
-        logger.info(
-          `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
-        );
-      }
+      logger.info(
+        `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
+      );
     }
     updateUI();
     updateGameState(gameState, game);
@@ -276,9 +254,7 @@ document.getElementById("endTurn").addEventListener("click", () => {
     runAI();
     checkForVictory();
   } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error(err);
-    }
+    logger.error(err);
   }
 });
 
@@ -449,7 +425,6 @@ async function initGame() {
     });
   }
   initTerritorySelection({
-    logger,
     game,
     territories: game.territories,
     addLogEntry,

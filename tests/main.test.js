@@ -9,6 +9,12 @@ jest.mock('../src/navigation.js', () => ({
   exitGame: jest.fn(),
 }));
 
+jest.mock('../src/logger.js', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
+
 describe('main DOM interactions', () => {
   let main;
   let ui;
@@ -34,7 +40,6 @@ describe('main DOM interactions', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
-    global.logger = { info: jest.fn(), error: jest.fn() };
     main = require('../src/main.js');
     ui = require('../src/ui.js');
       await Promise.resolve();
@@ -173,7 +178,6 @@ describe('main DOM interactions', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, json: () => Promise.resolve(mapData) })
     );
-    global.logger = { info: jest.fn(), error: jest.fn() };
     const main2 = require('../src/main.js');
     require('../src/ui.js');
     await Promise.resolve();

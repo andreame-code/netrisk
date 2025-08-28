@@ -1,4 +1,4 @@
-/* global logger */
+import * as logger from "../logger.js";
 
 // Helper functions to manage persisted state via localStorage
 
@@ -28,9 +28,7 @@ function getSavedGame(GameClass) {
         return GameClass.deserialize(saved);
       }
     } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to load saved game", err);
-      }
+      logger.error("Failed to load saved game", err);
     }
   }
   return null;
@@ -41,9 +39,7 @@ function saveGame(game) {
     try {
       localStorage.setItem("netriskGame", game.serialize());
     } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to save game", err);
-      }
+      logger.error("Failed to save game", err);
     }
   }
 }
@@ -64,9 +60,7 @@ function persistAllSavedGames(saves) {
   try {
     localStorage.setItem("netriskSaves", JSON.stringify(saves));
   } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error("Failed to persist saves", err);
-    }
+    logger.error("Failed to persist saves", err);
   }
 }
 
@@ -90,9 +84,7 @@ function loadNamedGame(name, GameClass) {
     try {
       return GameClass.deserialize(slot.data);
     } catch (err) {
-      if (typeof logger !== "undefined") {
-        logger.error("Failed to load named game", err);
-      }
+      logger.error("Failed to load named game", err);
     }
   }
   return null;

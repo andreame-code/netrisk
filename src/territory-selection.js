@@ -1,8 +1,8 @@
 import { ATTACK, FORTIFY } from "./phases.js";
 import { getBoardScale } from "./ui.js";
+import * as logger from "./logger.js";
 
 export default function initTerritorySelection({
-  logger,
   game,
   territories,
   addLogEntry,
@@ -24,11 +24,9 @@ export default function initTerritorySelection({
       el.classList.add("selected");
       selectedTerritory = { id: el.id, name, el };
       infoPanel.textContent = name;
-      if (logger) {
-        logger.info(
-          `Selected territory: ${selectedTerritory.id} (${selectedTerritory.name})`,
-        );
-      }
+      logger.info(
+        `Selected territory: ${selectedTerritory.id} (${selectedTerritory.name})`,
+      );
       highlightPossibleMoves(el.id);
     } else {
       selectedTerritory = null;
@@ -94,7 +92,7 @@ export default function initTerritorySelection({
           territories: [el.id],
         },
       );
-      logger?.info(
+      logger.info(
         `${game.players[game.currentPlayer].name} moves token to ${name}`,
       );
     }
@@ -103,7 +101,7 @@ export default function initTerritorySelection({
   const moveBtn = document.getElementById("moveToken");
   if (moveBtn) {
     moveBtn.addEventListener("click", () => {
-      logger?.info("Move token clicked");
+      logger.info("Move token clicked");
       try {
         if (selectedTerritory) {
           moveToken(selectedTerritory.el);
@@ -111,7 +109,7 @@ export default function initTerritorySelection({
           addLogEntry?.("No territory selected", { type: "error" });
         }
       } catch (err) {
-        logger?.error(err);
+        logger.error(err);
       }
     });
   }
@@ -195,7 +193,7 @@ export default function initTerritorySelection({
       }
       })
       .catch((err) => {
-        logger?.error(err);
+        logger.error(err);
       });
   }
 

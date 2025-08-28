@@ -1,4 +1,3 @@
-import "./logger.js";
 import cleanupServiceWorkers from "./service-worker-cleanup.js";
 import {
   initGame,

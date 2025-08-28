@@ -1,7 +1,7 @@
-/* global logger */
 import Game from "../game.js";
 import aiTurnManager from "../ai/turn-manager.js";
 import { getMapName, getSavedGame, getSavedPlayers } from "../state/storage.js";
+import * as logger from "../logger.js";
 
 let territoryPositions = {};
 
@@ -18,9 +18,7 @@ async function loadMap(mapName) {
     }, {});
     return map;
   } catch (err) {
-    if (typeof logger !== "undefined") {
-      logger.error("Failed to load map data", err);
-    }
+    logger.error("Failed to load map data", err);
     if (typeof alert !== "undefined") {
       alert("Unable to load game data. Please try again later.");
     }
@@ -38,9 +36,7 @@ function restoreGameState(GameClass, map) {
       map.continents,
       map.deck,
     );
-    if (typeof logger !== "undefined") {
-      logger.info("Game initialised");
-    }
+    logger.info("Game initialised");
   }
   return loadedGame;
 }
