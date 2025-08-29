@@ -82,14 +82,12 @@ describe("game user flows", () => {
     expect(game.territoryById("c").armies).toBe(3);
   });
 
-  test("undo and redo revert state", () => {
+  test("undo not available outside reinforcement", () => {
     game.setPhase(FORTIFY);
     game.moveArmies("a", "c", 2);
-    expect(game.canUndo()).toBe(true);
-    game.undo();
-    expect(game.territoryById("a").armies).toBe(3);
-    expect(game.territoryById("c").armies).toBe(1);
-    game.redo();
+    expect(game.canUndo()).toBe(false);
+    const result = game.undo();
+    expect(result).toBe(false);
     expect(game.territoryById("a").armies).toBe(1);
     expect(game.territoryById("c").armies).toBe(3);
   });

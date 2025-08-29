@@ -239,6 +239,8 @@ class Game {
             player: this.currentPlayer,
           });
           if (this.reinforcements === 0) {
+            this.undoStack = [];
+            this.redoStack = [];
             this.phase = ATTACK;
             this.emit('phaseChange', {
               phase: this.phase,
@@ -353,17 +355,18 @@ class Game {
   }
 
   pushUndoState() {
+    if (this.phase !== REINFORCE) return;
     this.undoStack.push(this.serialize());
     if (this.undoStack.length > this.maxUndo) this.undoStack.shift();
     this.redoStack = [];
   }
 
   canUndo() {
-    return this.undoStack.length > 0;
+    return this.phase === REINFORCE && this.undoStack.length > 0;
   }
 
   canRedo() {
-    return this.redoStack.length > 0;
+    return this.phase === REINFORCE && this.redoStack.length > 0;
   }
 
   restoreState(stateStr) {
@@ -384,6 +387,10 @@ class Game {
   }
 
   undo() {
+    if (this.phase !== REINFORCE) {
+      this.emit('undoUnavailable', { phase: this.phase });
+      return false;
+    }
     if (!this.canUndo()) return false;
     const prev = this.undoStack.pop();
     this.redoStack.push(this.serialize());
