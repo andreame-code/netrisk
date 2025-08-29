@@ -45,6 +45,10 @@ function getRelatedTests(files) {
   }
 }
 
+function hasPlaywrightTests() {
+  return fs.existsSync('config/playwright.config.ts') && fs.existsSync('tests/uat');
+}
+
 const changedFiles = getChangedFiles();
 const relatedTests = getRelatedTests(changedFiles);
 
@@ -54,4 +58,6 @@ if (relatedTests.length > 0) {
   run('npm run test:smoke');
 }
 
-run('npx playwright test -c config/playwright.config.ts --grep @smoke');
+if (hasPlaywrightTests()) {
+  run('npx playwright test -c config/playwright.config.ts --grep @smoke');
+}
