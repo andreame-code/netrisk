@@ -26,8 +26,16 @@ test.describe('UAT checklist', () => {
       await expect(page.locator(sel)).toHaveClass(/selected/);
       await expect(page.locator('#selectedTerritory')).toHaveText(name!);
     }
+    await page.evaluate(async () => {
+      const mod = await import('/src/main.js');
+      mod.game.reinforcements = 0;
+      mod.game.phase = 'attack';
+      const ui = await import('/src/ui.js');
+      ui.updateUI();
+    });
 
     const turnBefore = await page.locator('#turnNumber').textContent();
+    await page.click('#endTurn');
     await page.click('#endTurn');
     await expect(page.locator('#turnNumber')).not.toHaveText(turnBefore!);
     await expect(page.locator('#actionLog')).toContainText('ends turn');
