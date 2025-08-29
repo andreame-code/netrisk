@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - NetRisk</title>
+    <link rel="stylesheet" href="./css/base.css" />
+    <link rel="stylesheet" href="./css/layout.css" />
+    <link rel="stylesheet" href="./css/components.css" />
+    <link rel="stylesheet" href="./css/theme.css" />
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <a href="login.html">Login</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Login</h1>
+      <form id="loginForm">
+        <label>
+          Username:
+          <input type="text" id="username" required />
+        </label>
+        <label>
+          Password:
+          <input type="password" id="password" required />
+        </label>
+        <button type="submit" class="btn">Login</button>
+        <button type="button" id="registerBtn" class="btn">Register</button>
+      </form>
+      <p id="message" role="alert"></p>
+    </main>
+    <script type="module" src="./login.js"></script>
+  </body>
+</html>
