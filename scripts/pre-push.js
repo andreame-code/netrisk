@@ -4,7 +4,11 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 
 function run(cmd, opts = {}) {
-  execSync(cmd, { stdio: 'inherit', ...opts });
+  try {
+    execSync(cmd, { stdio: 'inherit', ...opts });
+  } catch (err) {
+    process.exit(1);
+  }
 }
 
 function getChangedFiles() {
@@ -40,9 +44,12 @@ function getRelatedTests(files) {
       .map((f) => f.trim())
       .filter(Boolean);
   } catch (err) {
-    // If jest fails while listing tests, treat as failure
     process.exit(1);
   }
+}
+
+function hasJestTests() {
+  return fs.existsSync('config/jest.config.js');
 }
 
 function hasPlaywrightTests() {
@@ -50,14 +57,30 @@ function hasPlaywrightTests() {
 }
 
 const changedFiles = getChangedFiles();
-const relatedTests = getRelatedTests(changedFiles);
-
-if (relatedTests.length > 0) {
-  run(`npx jest --config config/jest.config.js --findRelatedTests ${changedFiles.join(' ')}`);
+console.log('Changed files:');
+if (changedFiles.length === 0) {
+  console.log('  (none)');
 } else {
-  run('npm run test:smoke');
+  changedFiles.forEach((f) => console.log(`  ${f}`));
+}
+
+if (hasJestTests()) {
+  const relatedTests = getRelatedTests(changedFiles);
+  if (relatedTests.length > 0) {
+    console.log('\nRunning related Jest tests:');
+    relatedTests.forEach((t) => console.log(`  ${t}`));
+    run(`npx jest --config config/jest.config.js --findRelatedTests ${changedFiles.join(' ')}`);
+  } else {
+    console.log('\nNo related Jest tests found, running smoke suite');
+    run('npm run test:smoke');
+  }
+} else {
+  console.log('\nJest not detected, skipping unit tests');
 }
 
 if (hasPlaywrightTests()) {
+  console.log('\nRunning Playwright smoke tests');
   run('npx playwright test -c config/playwright.config.ts --grep @smoke');
+} else {
+  console.log('\nPlaywright not detected, skipping smoke tests');
 }
