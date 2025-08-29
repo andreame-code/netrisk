@@ -8,6 +8,7 @@ export default function initTerritorySelection({
   gameState,
   attachTerritoryHandlers,
   updateUI,
+  territoryPositions = {},
 }) {
   let selectedTerritory = null;
   let possibleMoveEls = [];
@@ -98,11 +99,23 @@ export default function initTerritorySelection({
           el.setAttribute("tabindex", "0");
           el.setAttribute("role", "button");
         });
+
+      function computeFallbackPosition(id) {
+        const selector =
+          typeof CSS !== "undefined" && CSS.escape ? `#${CSS.escape(id)}` : `#${id}`;
+        const terrPath = map?.querySelector(selector);
+        if (!terrPath || typeof terrPath.getBBox !== "function") return null;
+        const { x, y, width, height } = terrPath.getBBox();
+        return { x: x + width / 2, y: y + height / 2 };
+      }
+
       const tokenEl = document.createElement("div");
       tokenEl.id = "token";
       tokenEl.className = "token";
       const terrs = territories || game?.territories;
       if (terrs) {
+        const viewBox = map?.viewBox?.baseVal;
+        const margin = 10;
         terrs.forEach((t) => {
           const terrEl = document.createElement("button");
           terrEl.type = "button";
@@ -113,6 +126,17 @@ export default function initTerritorySelection({
             terrEl.setAttribute("aria-label", t.name);
           }
           boardEl.appendChild(terrEl);
+          if (!territoryPositions[t.id]) {
+            const pos = computeFallbackPosition(t.id);
+            if (pos) {
+              let { x, y } = pos;
+              if (viewBox) {
+                x = Math.min(Math.max(x, margin), viewBox.width - margin);
+                y = Math.min(Math.max(y, margin), viewBox.height - margin);
+              }
+              territoryPositions[t.id] = { x, y };
+            }
+          }
         });
         attachTerritoryHandlers?.();
         updateUI?.();

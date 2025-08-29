@@ -464,6 +464,7 @@ async function initGame() {
     gameState,
     attachTerritoryHandlers,
     updateUI,
+    territoryPositions,
   });
 
   updateUI();

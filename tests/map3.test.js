@@ -62,7 +62,7 @@ describe('territory-selection with map3', () => {
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
     const init = require('../src/territory-selection.js').default;
-    init({ territories: map.territories });
+    init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
     expect(fetch).toHaveBeenCalledWith('assets/maps/map3.svg');
     const buttons = document.querySelectorAll('button.territory');
@@ -77,7 +77,7 @@ describe('territory-selection with map3', () => {
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
     const init = require('../src/territory-selection.js').default;
-    init({ territories: map.territories });
+    init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
     const board = document.getElementById('board');
     const token = document.getElementById('token');
