@@ -10,7 +10,13 @@ function createElementCache() {
   return {
     get(id) {
       if (!cache[id]) {
-        cache[id] = document.getElementById(id);
+        const esc =
+          typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(id)
+            : id;
+        cache[id] =
+          document.querySelector(`.territory[data-id="${esc}"]`) ||
+          document.getElementById(id);
       }
       return cache[id];
     },
@@ -499,4 +505,5 @@ function destroyUI() {
     getLog,
     exportLog,
     copyLog,
+    getElement,
   };
