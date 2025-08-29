@@ -6,21 +6,26 @@ import * as logger from "../logger.js";
 let territoryPositions = {};
 
 async function loadMap(mapName) {
-  try {
-    const res = await fetch(`./src/data/${mapName}.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch map data: ${res.status}`);
+  const paths = [`./src/data/${mapName}.json`, `./data/${mapName}.json`];
+  for (const p of paths) {
+    try {
+      const res = await fetch(p);
+      if (!res.ok) {
+        continue;
+      }
+      const map = await res.json();
+      territoryPositions = map.territories.reduce((acc, t) => {
+        acc[t.id] = { x: t.x, y: t.y };
+        return acc;
+      }, {});
+      return map;
+    } catch {
+      // try next path
     }
-    const map = await res.json();
-    territoryPositions = map.territories.reduce((acc, t) => {
-      acc[t.id] = { x: t.x, y: t.y };
-      return acc;
-    }, {});
-    return map;
-  } catch (err) {
-    logger.error("Failed to load map data", err);
-    throw err;
   }
+  const err = new Error("Failed to load map data");
+  logger.error("Failed to load map data", err);
+  throw err;
 }
 
 function restoreGameState(GameClass, map) {

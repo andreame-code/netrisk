@@ -35,14 +35,17 @@ async function loadMapData() {
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
     "map";
-  const jsonPath = `./src/data/${mapName}.json`;
-  try {
-    return await loadJson(jsonPath);
-  } catch (err) {
-    const msg = `Failed to load map data from ${jsonPath}`;
-    logger.error(msg, err);
-    throw new Error(`Map data file not found: ${jsonPath}`);
+  const paths = [`./src/data/${mapName}.json`, `./data/${mapName}.json`];
+  for (const jsonPath of paths) {
+    try {
+      return await loadJson(jsonPath);
+    } catch {
+      // try next path
+    }
   }
+  const msg = `Failed to load map data for ${mapName}`;
+  logger.error(msg);
+  throw new Error(msg);
 }
 
 /**
