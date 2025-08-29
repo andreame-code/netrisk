@@ -102,6 +102,8 @@
   background: #fff;
   pointer-events: none;
   transform: translate(-50%, -50%);
+  transform-origin: center;
+  z-index: 1000;
 }
 
 .territory {
@@ -120,6 +122,8 @@
   user-select: none;
   transition: transform 0.3s;
   transform: translate(-50%, -50%);
+  transform-origin: center;
+  z-index: 1000;
 }
 
 .territory.selected { outline: 4px solid #ff0; }
