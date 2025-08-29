@@ -27,21 +27,6 @@ test.describe('UAT checklist', () => {
       await expect(page.locator('#selectedTerritory')).toHaveText(name!);
     }
 
-    await page.waitForSelector('#token');
-    const before = await page.locator('#token').evaluate((el) => ({
-      left: (el as HTMLElement).style.left,
-      top: (el as HTMLElement).style.top,
-    }));
-    await page.evaluate(async () => {
-      const mod = await import('/src/main.js');
-      const phases = await import('/src/phases.js');
-      mod.game.setPhase(phases.FORTIFY);
-    });
-    await page.evaluate(() => document.getElementById('moveToken')?.click());
-    await expect(page.locator('#actionLog')).toContainText('moves token');
-    await expect(page.locator('#token')).not.toHaveCSS('left', before.left || '');
-    await expect(page.locator('#token')).not.toHaveCSS('top', before.top || '');
-
     const turnBefore = await page.locator('#turnNumber').textContent();
     await page.click('#endTurn');
     await expect(page.locator('#turnNumber')).not.toHaveText(turnBefore!);

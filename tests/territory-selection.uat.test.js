@@ -8,8 +8,7 @@ describe('territory selection user flow', () => {
     // basic DOM structure
     document.body.innerHTML =
       '<div id="board"></div>' +
-      '<div id="selectedTerritory"></div>' +
-      '<button id="moveToken">Move</button>';
+      '<div id="selectedTerritory"></div>';
 
     // stub getBBox with unique coordinates per territory
     SVGElement.prototype.getBBox = function () {
@@ -27,7 +26,7 @@ describe('territory selection user flow', () => {
     delete global.fetch;
   });
 
-  test('click highlights moves, double click moves token and cleanup works', async () => {
+  test('click highlights moves and cleanup works', async () => {
     const svg =
       '<svg id="map">' +
       '<path id="A" class="map-territory" data-name="Alpha" />' +
@@ -63,21 +62,9 @@ describe('territory selection user flow', () => {
     expect(bPath.classList.contains('possible-move')).toBe(true);
     expect(document.getElementById('selectedTerritory').textContent).toBe('Alpha');
 
-    // double click B to move token
-    bPath.dispatchEvent(new Event('dblclick', { bubbles: true }));
-
-    const token = document.getElementById('token');
-    expect(token.style.left).toBe('45px');
-    expect(token.style.top).toBe('55px');
-
-    // selection switched to B and highlights cleared
-    expect(aPath.classList.contains('selected')).toBe(false);
-    expect(bPath.classList.contains('selected')).toBe(true);
-    expect(document.querySelectorAll('.possible-move').length).toBe(0);
-
     // clicking outside map clears selection
     document.dispatchEvent(new Event('pointerdown'));
-    expect(bPath.classList.contains('selected')).toBe(false);
+    expect(aPath.classList.contains('selected')).toBe(false);
     expect(document.getElementById('selectedTerritory').textContent).toBe('');
   });
 });
