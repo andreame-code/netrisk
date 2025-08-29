@@ -2,7 +2,7 @@
   <rect width="600" height="400" fill="#e0d8b0" />
   <!-- Hispania -->
   <path
-    id="hispania"
+    id="t1"
     class="map-territory"
     data-name="Hispania"
     d="M60 170 L120 140 L140 180 L90 200 Z"
@@ -10,7 +10,7 @@
   />
   <!-- Gaul -->
   <path
-    id="gaul"
+    id="t2"
     class="map-territory"
     data-name="Gaul"
     d="M130 120 L190 110 L200 150 L150 170 Z"
@@ -18,7 +18,7 @@
   />
   <!-- Italia -->
   <path
-    id="italia"
+    id="t3"
     class="map-territory"
     data-name="Italia"
     d="M210 130 L250 140 L240 180 L210 170 Z"
@@ -26,7 +26,7 @@
   />
   <!-- Greece -->
   <path
-    id="greece"
+    id="t4"
     class="map-territory"
     data-name="Greece"
     d="M260 170 L300 180 L290 220 L250 210 Z"
@@ -34,7 +34,7 @@
   />
   <!-- Asia Minor -->
   <path
-    id="asia-minor"
+    id="t5"
     class="map-territory"
     data-name="Asia Minor"
     d="M320 150 L380 150 L380 190 L320 190 Z"
@@ -42,7 +42,7 @@
   />
   <!-- Egypt -->
   <path
-    id="egypt"
+    id="t6"
     class="map-territory"
     data-name="Egypt"
     d="M300 220 L360 230 L350 280 L290 270 Z"
