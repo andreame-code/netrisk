@@ -61,6 +61,8 @@ create policy "allow_select_players" on players for select using (true);
 create policy "allow_select_game_states" on game_states for select using (true);
 create policy "allow_select_events" on events for select using (true);
 create policy "allow_select_lobbies" on lobbies for select using (true);
+create policy "allow_insert_lobbies" on lobbies for insert with check (true);
+create policy "allow_update_lobbies" on lobbies for update using (true) with check (true);
 create policy "allow_select_lobby_chat" on lobby_chat for select using (true);
 create policy "allow_insert_lobby_chat" on lobby_chat for insert with check (true);
 
