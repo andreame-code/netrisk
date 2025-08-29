@@ -1,10 +1,7 @@
-import http from 'http';
-import { readFile } from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const http = require('http');
+const { readFile } = require('fs/promises');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const distDir = path.join(__dirname, 'dist');
 
 const routes = {
@@ -28,8 +25,14 @@ const mimeTypes = {
 
 const server = http.createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
-  const fileName = routes[urlPath] || urlPath;
-  const filePath = path.join(distDir, fileName);
+  let fileName = routes[urlPath] || urlPath;
+  fileName = fileName.replace(/^\/+/, '');
+  const filePath = path.resolve(distDir, fileName);
+  if (!filePath.startsWith(distDir)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
   try {
     const data = await readFile(filePath);
     const ext = path.extname(filePath);
