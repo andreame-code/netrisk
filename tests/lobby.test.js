@@ -11,6 +11,7 @@ describe('lobby screen', () => {
       Promise.resolve({ json: () => Promise.resolve({ maps: [{ id: 'map', name: 'Classic' }] }) })
     );
     document.body.innerHTML = `
+      <div id="lobbyError" class="hidden"><p id="lobbyErrorMsg"></p><button id="retryLobby"></button></div>
       <button id="backBtn" class="btn"></button>
       <button id="createBtn" class="btn"></button>
       <ul id="lobbyList"></ul>
@@ -174,7 +175,7 @@ describe('lobby screen', () => {
     jest.doMock('../src/config.js', () => ({ WS_URL: '' }));
     require('../src/lobby.js');
     expect(document.getElementById('createBtn').disabled).toBe(true);
-    expect(global.alert).toHaveBeenCalled();
+    expect(document.getElementById('lobbyError').classList.contains('hidden')).toBe(false);
   });
 
   test('notifies user on websocket error', async () => {
@@ -190,7 +191,9 @@ describe('lobby screen', () => {
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
     wsInstance.onopen();
     wsInstance.onerror();
-    expect(global.alert).toHaveBeenCalled();
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'Unable to connect to multiplayer server. Please try again.'
+    );
     delete global.WebSocket;
   });
 
@@ -202,7 +205,9 @@ describe('lobby screen', () => {
     localStorage.setItem('playerId', 'p1');
     require('../src/lobby.js');
     wsInstance.onmessage({ data: JSON.stringify({ type: 'error', error: 'oops' }) });
-    expect(global.alert).toHaveBeenCalledWith('oops');
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'An error occurred. Please try again.'
+    );
     delete global.WebSocket;
   });
 });
