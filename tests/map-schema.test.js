@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const validateMap = require('../src/validate-map.js');
 
 const maps = ['map.json', 'map2.json', 'map3.json', 'map-roman.json', 'world8.json'];
@@ -31,5 +33,12 @@ describe('map schema validation', () => {
         expect(byId[n].neighbors).toContain(terr.id);
       }
     }
+  });
+
+  test('world8 SVG root element uses expected id', () => {
+    const svgPath = path.join(__dirname, '..', 'public', 'assets', 'maps', 'world8.svg');
+    const svgContent = fs.readFileSync(svgPath, 'utf8');
+    const match = svgContent.match(/<svg[^>]*id="([^"]+)"/);
+    expect(match && match[1]).toBe('map');
   });
 });

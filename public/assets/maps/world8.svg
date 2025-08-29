@@ -1,4 +1,4 @@
-<svg id="world8" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+<svg id="map" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
   <rect width="600" height="400" fill="#87ceeb" />
   <!-- North America -->
   <path id="north-america" class="map-territory" data-name="North America"
