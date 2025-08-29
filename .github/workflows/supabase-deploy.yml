@@ -1,4 +1,6 @@
 name: Supabase Functions Deploy
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
