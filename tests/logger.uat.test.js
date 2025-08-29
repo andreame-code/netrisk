@@ -9,9 +9,11 @@ describe('logger', () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
+    document.body.innerHTML = '';
     if (overlay) {
       overlay.textContent = '';
       overlay.classList.add('hidden');
+      document.body.appendChild(overlay);
     }
   });
 
@@ -49,5 +51,16 @@ describe('logger', () => {
     expect(errSpy).toHaveBeenCalledWith('[ERROR]', 'async boom');
     expect(overlay.textContent).toBe('async boom');
     expect(overlay.classList.contains('hidden')).toBe(false);
+  });
+
+  test('new log entries appear at top of debug log', () => {
+    document.body.innerHTML = '<section id="debugLog"></section>';
+    info('first');
+    info('second');
+    const lines = Array.from(
+      document.querySelectorAll('#debugLog div'),
+      el => el.textContent
+    );
+    expect(lines).toEqual(['[INFO] second', '[INFO] first']);
   });
 });

@@ -38,7 +38,8 @@ function appendLog(level, args) {
     .map(a => (typeof a === "string" ? a : JSON.stringify(a)))
     .join(" ");
   line.textContent = `[${level}] ${text}`;
-  logBox.appendChild(line);
+  if (typeof logBox.prepend === "function") logBox.prepend(line);
+  else logBox.insertBefore(line, logBox.firstChild);
 }
 
 export function info(...args) {
