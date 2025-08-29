@@ -20,14 +20,15 @@ export default function initTerritorySelection({
     }
     clearPossibleMoves();
     if (el) {
-      const name = el.dataset.name || el.id;
+      const id = el.dataset.territory || el.id;
+      const name = el.dataset.name || id;
       el.classList.add("selected");
-      selectedTerritory = { id: el.id, name, el };
+      selectedTerritory = { id, name, el };
       infoPanel.textContent = name;
       logger.info(
         `Selected territory: ${selectedTerritory.id} (${selectedTerritory.name})`,
       );
-      highlightPossibleMoves(el.id);
+      highlightPossibleMoves(id);
     } else {
       selectedTerritory = null;
       infoPanel.textContent = "";
@@ -102,7 +103,9 @@ export default function initTerritorySelection({
 
       function computeFallbackPosition(id) {
         const selector =
-          typeof CSS !== "undefined" && CSS.escape ? `#${CSS.escape(id)}` : `#${id}`;
+          typeof CSS !== "undefined" && CSS.escape
+            ? `[data-territory="${CSS.escape(id)}"]`
+            : `[data-territory="${id}"]`;
         const terrPath = map?.querySelector(selector);
         if (!terrPath || typeof terrPath.getBBox !== "function") return null;
         const { x, y, width, height } = terrPath.getBBox();

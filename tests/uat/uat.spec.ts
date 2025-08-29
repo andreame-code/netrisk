@@ -14,9 +14,9 @@ test.describe('UAT checklist', () => {
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.goto('/game.html');
-    await page.waitForSelector('#north-america');
+    await page.waitForSelector('#t1');
 
-    const terrs = ['#north-america', '#south-america', '#africa'];
+    const terrs = ['#t1', '#t2', '#t4'];
     for (const sel of terrs) {
       await page.evaluate((s) => {
         const el = document.querySelector(s);
