@@ -1,0 +1,66 @@
+name: Preview per branch
+
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Write env file
+        run: |
+          cat > .env.production <<EOF2
+          VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF2
+
+      - name: Build
+        run: npm run build -- --mode production
+
+      - name: Copy supabase and 404
+        run: |
+          cp -r supabase dist/
+          cp public/404.html dist/404.html
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Update preview
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          mkdir -p gh-pages/$BRANCH_NAME
+          rsync -a --delete dist/ gh-pages/$BRANCH_NAME/
+          cp preview-index.html gh-pages/index.html
+
+      - name: Commit and push
+        run: |
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "ci: deploy preview for ${GITHUB_REF_NAME}" || echo "No changes"
+          git push origin gh-pages
