@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('UAT checklist', () => {
-  test('basic gameplay flow', async ({ page }) => {
+  test('@smoke basic gameplay flow', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('netriskPlayers', JSON.stringify([
         { name: 'Red', color: '#f00' },
@@ -35,7 +35,7 @@ test.describe('UAT checklist', () => {
     expect(errors).toEqual([]);
   });
 
-  test('level 3 extras', async ({ page }) => {
+  test('@smoke level 3 extras', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('netriskPlayers', JSON.stringify([
         { name: 'Red', color: '#f00' },
