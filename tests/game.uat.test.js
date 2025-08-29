@@ -82,16 +82,17 @@ describe("game user flows", () => {
     expect(game.territoryById("c").armies).toBe(3);
   });
 
-  test("undo and redo revert state", () => {
-    game.setPhase(FORTIFY);
-    game.moveArmies("a", "c", 2);
+  test("undo and redo revert reinforcement", () => {
+    game.reinforcements = 2;
+    const aBefore = game.territoryById("a").armies;
+    game.handleTerritoryClick("a");
+    expect(game.territoryById("a").armies).toBe(aBefore + 1);
     expect(game.canUndo()).toBe(true);
     game.undo();
-    expect(game.territoryById("a").armies).toBe(3);
-    expect(game.territoryById("c").armies).toBe(1);
+    expect(game.territoryById("a").armies).toBe(aBefore);
+    expect(game.reinforcements).toBe(2);
     game.redo();
-    expect(game.territoryById("a").armies).toBe(1);
-    expect(game.territoryById("c").armies).toBe(3);
+    expect(game.territoryById("a").armies).toBe(aBefore + 1);
   });
 
   test("serialize and deserialize preserve state", () => {

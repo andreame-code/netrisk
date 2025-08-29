@@ -3,7 +3,7 @@ const validateMap = require('../src/validate-map.js');
 describe('validateMap', () => {
   test('returns true for a valid map', () => {
     // eslint-disable-next-line global-require
-    const data = require('../src/data/map.json');
+    const data = require('../src/maps/map/config.json');
     expect(validateMap(data)).toBe(true);
   });
 

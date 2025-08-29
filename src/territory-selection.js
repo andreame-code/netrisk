@@ -87,8 +87,8 @@ export default function initTerritorySelection({
   }
 
   loadMap([
-    `assets/maps/${mapName}.svg`,
-    `public/assets/maps/${mapName}.svg`,
+    `maps/${mapName}/map.svg`,
+    `public/maps/${mapName}/map.svg`,
   ])
     .then((svg) => {
       boardEl.innerHTML = svg;

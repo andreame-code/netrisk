@@ -6,7 +6,7 @@ import { info, error } from "../logger.js";
 // Load available map ids from manifest
 let validMaps = [];
 try {
-  const manifest = JSON.parse(fs.readFileSync("public/assets/maps/map-manifest.json", "utf8"));
+  const manifest = JSON.parse(fs.readFileSync("public/maps/manifest.json", "utf8"));
   validMaps = manifest.maps?.map((m) => m.id) || [];
 } catch {
   validMaps = [];

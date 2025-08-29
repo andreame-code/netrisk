@@ -7,7 +7,7 @@
       "difficulty": "Medium",
       "territories": 42,
       "bonuses": {"North America": 5, "Europe": 5, "Asia": 7, "Africa": 3, "South America": 2, "Australia": 2},
-      "thumbnail": "assets/maps/map.svg",
+      "thumbnail": "maps/map/map.svg",
       "description": "Classic world domination map."
     },
     {
@@ -16,7 +16,7 @@
       "difficulty": "Hard",
       "territories": 30,
       "bonuses": {"North": 4, "South": 3},
-      "thumbnail": "assets/maps/map2.svg",
+      "thumbnail": "maps/map2/map.svg",
       "description": "Battles across the arid desert."
     },
     {
@@ -25,7 +25,7 @@
       "difficulty": "Easy",
       "territories": 20,
       "bonuses": {"A": 2, "B": 2},
-      "thumbnail": "assets/maps/map3.svg",
+      "thumbnail": "maps/map3/map.svg",
       "description": "Simple grid-based battlefield."
     },
     {
@@ -34,7 +34,7 @@
       "difficulty": "Medium",
       "territories": 35,
       "bonuses": {"Italia": 5, "Gallia": 4},
-      "thumbnail": "assets/maps/map-roman.svg",
+      "thumbnail": "maps/map-roman/map.svg",
       "description": "Conquer the ancient Roman world."
     },
     {
@@ -43,7 +43,7 @@
       "difficulty": "Medium",
       "territories": 8,
       "bonuses": {"North America": 2, "South America": 2, "Europe": 2, "Asia": 2, "Middle East": 2, "Africa": 2, "Australia": 2, "Antarctica": 2},
-      "thumbnail": "assets/maps/world8.svg",
+      "thumbnail": "maps/world8/map.svg",
       "description": "Balanced world map for up to eight players."
     }
   ]

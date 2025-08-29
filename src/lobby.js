@@ -107,19 +107,8 @@ export function initLobby() {
   (async () => {
     const select = document.getElementById('map');
     if (!select) return;
-    let res;
     try {
-      res = await fetch('./assets/maps/map-manifest.json');
-      if (res && res.ok === false) throw new Error('not ok');
-    } catch {
-      try {
-        res = await fetch('./public/assets/maps/map-manifest.json');
-        if (res && res.ok === false) throw new Error('not ok');
-      } catch {
-        return;
-      }
-    }
-    try {
+      const res = await fetch('./maps/manifest.json');
       const data = await res.json();
       data.maps.forEach(m => {
         const opt = document.createElement('option');
@@ -128,7 +117,7 @@ export function initLobby() {
         select.appendChild(opt);
       });
     } catch {
-      // ignore fetch errors
+      // ignore
     }
   })();
   if (!WS_URL && createBtn) {
