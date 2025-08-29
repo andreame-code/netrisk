@@ -68,16 +68,17 @@ describe("game loader", () => {
     expect(territoryPositions).toEqual({ a: { x: 5, y: 6 } });
   });
 
-  test("returns null when map file is missing", async () => {
+  test("returns error when map file is missing", async () => {
     global.fetch.mockResolvedValue({ ok: false, status: 404 });
     global.localStorage.setItem("netriskMap", "missing");
     const errSpy = jest.spyOn(logger, "error").mockImplementation(() => {});
 
-    const { game, territoryPositions } = await loadGame();
+    const { game, territoryPositions, error } = await loadGame();
     expect(global.fetch).toHaveBeenCalled();
     expect(errSpy).toHaveBeenCalled();
     expect(game).toBeNull();
     expect(territoryPositions).toEqual({});
+    expect(error).toBeInstanceOf(Error);
   });
 
   test("ignores corrupted saved game and loads map", async () => {

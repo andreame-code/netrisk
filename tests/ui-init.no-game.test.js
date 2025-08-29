@@ -49,7 +49,9 @@ jest.mock("../src/ui.js", () => ({
 jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
 jest.mock("../src/config.js", () => ({ WS_URL: "ws://test" }));
 jest.mock("../src/init/game-loader.js", () => ({
-  loadGame: jest.fn(() => Promise.resolve({ game: null, territoryPositions: {} })),
+  loadGame: jest.fn(() =>
+    Promise.resolve({ game: null, territoryPositions: {}, error: new Error("fail") }),
+  ),
 }));
 jest.mock("../src/state/storage.js", () => ({
   updateGameState: jest.fn(),
@@ -68,11 +70,14 @@ jest.mock("../src/state/game.js", () => ({
 jest.mock("../src/ai-logging.js", () => jest.fn());
 
 describe("initGame handles load failure", () => {
-  test("returns without initializing when game fails to load", async () => {
-    document.body.innerHTML = '<button id="endTurn"></button>';
+  test("shows error message when game fails to load", async () => {
+    document.body.innerHTML =
+      '<div id="loadError" class="hidden"><p id="loadErrorMsg"></p><button id="retryLoad"></button></div><button id="endTurn"></button>';
     const audio = require("../src/audio.js");
     const uiInit = require("../src/ui-init.js");
     await expect(uiInit.initGame()).resolves.toBeUndefined();
+    const errorEl = document.getElementById("loadError");
+    expect(errorEl.classList.contains("hidden")).toBe(false);
     expect(audio.preloadEffects).not.toHaveBeenCalled();
   });
 });

@@ -19,10 +19,7 @@ async function loadMap(mapName) {
     return map;
   } catch (err) {
     logger.error("Failed to load map data", err);
-    if (typeof alert !== "undefined") {
-      alert("Unable to load game data. Please try again later.");
-    }
-    return null;
+    throw err;
   }
 }
 
@@ -58,11 +55,14 @@ async function loadGame() {
   }
 
   const mapName = getMapName();
-  const map = await loadMap(mapName);
-  if (!map) return { game: null, territoryPositions: {} };
-  const game = restoreGameState(GameClass, map);
-  game.use(aiTurnManager);
-  return { game, territoryPositions };
+  try {
+    const map = await loadMap(mapName);
+    const game = restoreGameState(GameClass, map);
+    game.use(aiTurnManager);
+    return { game, territoryPositions };
+  } catch (err) {
+    return { game: null, territoryPositions: {}, error: err };
+  }
 }
 
 export { loadMap, restoreGameState, loadGame, territoryPositions };
