@@ -30,7 +30,12 @@ const mimeTypes = {
 const server = http.createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
 
-  if (req.method === 'POST' && (urlPath === '/api/register' || urlPath === '/api/login')) {
+  if (urlPath === '/api/register' || urlPath === '/api/login') {
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
+    }
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
