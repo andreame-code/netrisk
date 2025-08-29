@@ -12,7 +12,9 @@
     "simulate": "node src/simulate.js",
     "test": "jest --config config/jest.config.js",
     "type-check": "tsc --noEmit -p config/tsconfig.json",
-    "test:uat": "playwright test -c config/playwright.config.ts"
+    "test:uat": "playwright test -c config/playwright.config.ts",
+    "test:smoke": "jest --config config/jest.config.js tests/smoke",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.0",
@@ -24,6 +26,7 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "http-server": "^14.1.1",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.5",
     "prettier": "^3.2.5",
