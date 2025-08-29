@@ -57,21 +57,58 @@ let phaseTimer;
 const loadErrorEl = document.getElementById("loadError");
 const loadErrorMsg = document.getElementById("loadErrorMsg");
 const retryBtn = document.getElementById("retryLoad");
+let retryAction = () => loadGame();
 
-function showLoadError() {
+function showLoadError(
+  message = "Unable to load game data. Check your connection and try again.",
+  action = () => loadGame(),
+) {
   if (loadErrorEl && loadErrorMsg) {
-    loadErrorMsg.textContent =
-      "Unable to load game data. Check your connection and try again.";
+    loadErrorMsg.textContent = message;
     loadErrorEl.classList.remove("hidden");
+    retryAction = action;
   }
 }
 
 if (retryBtn) {
   retryBtn.addEventListener("click", () => {
     if (loadErrorEl) loadErrorEl.classList.add("hidden");
-    loadGame();
+    retryAction();
   });
 }
+
+function handleImageError(event) {
+  const img = event?.target;
+  if (!img) return;
+  showLoadError(
+    "Some game pieces couldn't be loaded. We'll try again automatically. If the problem continues, press Retry.",
+    () => location.reload(),
+  );
+  if (!img.dataset.retry) {
+    img.dataset.retry = "1";
+    img.addEventListener(
+      "load",
+      () => {
+        if (loadErrorEl) loadErrorEl.classList.add("hidden");
+      },
+      { once: true },
+    );
+    setTimeout(() => {
+      const sep = img.src.includes("?") ? "&" : "?";
+      img.src = `${img.src}${sep}retry=${Date.now()}`;
+    }, 1000);
+  }
+}
+
+window.addEventListener(
+  "error",
+  (e) => {
+    if (e?.target?.tagName === "IMG") {
+      handleImageError(e);
+    }
+  },
+  true,
+);
 
 function checkForVictory() {
   const winner = game.checkVictory();
