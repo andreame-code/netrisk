@@ -19,7 +19,7 @@ test('selecting territory highlights possible moves', async () => {
     getPhase: () => ATTACK,
     territoryById: (id) => territories.find((t) => t.id === id),
   };
-  initTerritorySelection({ game, territories });
+  initTerritorySelection({ game, territories, territoryPositions: {} });
   await flushPromises();
   const aPath = document.getElementById('A');
   aPath.dispatchEvent(new Event('click', { bubbles: true }));

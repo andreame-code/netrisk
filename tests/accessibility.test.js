@@ -32,7 +32,7 @@ describe('Accessibility features', () => {
       { id: 'A', name: 'Alpha' },
       { id: 'B', name: 'Beta' },
     ];
-    initTerritorySelection({ territories });
+    initTerritorySelection({ territories, territoryPositions: {} });
     await flushPromises();
     const btnA = document.querySelector('button#A');
     expect(btnA.getAttribute('aria-label')).toBe('Alpha');

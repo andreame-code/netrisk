@@ -51,7 +51,7 @@ describe('territory selection user flow', () => {
       territoryById: (id) => territories.find((t) => t.id === id),
     };
 
-    initTerritorySelection({ game, territories });
+    initTerritorySelection({ game, territories, territoryPositions: {} });
     await flushPromises();
 
     const aPath = document.getElementById('A');
