@@ -287,6 +287,10 @@ if (undoBtn) {
           game.selectedFrom ? game.selectedFrom.id : null,
         );
         updateInfoPanel();
+      } else {
+        addLogEntry("Undo is only available during reinforcement phase", {
+          type: "undo",
+        });
       }
     } catch (err) {
       logger.error(err);
@@ -399,6 +403,11 @@ async function initGame() {
   game.on("turnStart", () => {
     if (!firstTurn) playEffect("endTurn");
     firstTurn = false;
+  });
+  game.on("undoUnavailable", () => {
+    addLogEntry("Undo is only available during reinforcement phase", {
+      type: "undo",
+    });
   });
   const resetBtn = document.createElement("button");
   resetBtn.id = "resetGame";
