@@ -59,3 +59,14 @@
   max-width: 300px;
   text-align: center;
 }
+
+.debug-log {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 150px;
+  overflow-y: auto;
+}

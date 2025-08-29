@@ -1,6 +1,7 @@
 import fs from "fs";
 import { z } from "zod";
 import supabase from "../init/supabase-client.js";
+import { info, error } from "../logger.js";
 
 // Load available map ids from manifest
 let validMaps = [];
@@ -50,24 +51,25 @@ export const persistLobby = async (lobby) => {
     max_players: lobby.maxPlayers,
   };
   try {
+    info(`Persisting lobby ${lobby.code}`);
     await supabase.from("lobbies").upsert(row, { onConflict: "code" });
+    info(`Lobby ${lobby.code} persisted`);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("Supabase upsert error", err);
+    error(`Supabase upsert error for lobby ${lobby.code}`, err?.message);
   }
 };
 
 export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
   let lobby = lobbies.get(code);
   if (!lobby && supabase) {
-    const { data, error } = await supabase
+    info(`Loading lobby ${code} from database`);
+    const { data, error: loadError } = await supabase
       .from("lobbies")
       .select()
       .eq("code", code)
       .maybeSingle();
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("Supabase load error", error);
+    if (loadError) {
+      error(`Supabase load error for lobby ${code}`, loadError?.message);
     }
     if (data) {
       lobby = {
@@ -85,6 +87,7 @@ export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
         (p) => !p.lastSeen || p.lastSeen > cutoff,
       );
       lobbies.set(code, lobby);
+      info(`Lobby ${code} loaded from database`);
     }
   }
   return lobby;

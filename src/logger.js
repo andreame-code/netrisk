@@ -1,4 +1,5 @@
 let overlay;
+let logBox;
 if (typeof document !== "undefined") {
   overlay = document.createElement("div");
   overlay.id = "error-overlay";
@@ -17,6 +18,7 @@ if (typeof document !== "undefined") {
   overlay.classList.add("hidden");
   document.addEventListener("DOMContentLoaded", () => {
     document.body.appendChild(overlay);
+    logBox = document.getElementById("debugLog");
   });
 }
 
@@ -27,16 +29,31 @@ function showError(message) {
   }
 }
 
+function appendLog(level, args) {
+  if (typeof document === "undefined") return;
+  if (!logBox) logBox = document.getElementById("debugLog");
+  if (!logBox) return;
+  const line = document.createElement("div");
+  const text = args
+    .map(a => (typeof a === "string" ? a : JSON.stringify(a)))
+    .join(" ");
+  line.textContent = `[${level}] ${text}`;
+  logBox.appendChild(line);
+}
+
 export function info(...args) {
   console.log("[INFO]", ...args);
+  appendLog("INFO", args);
 }
 
 export function warn(...args) {
   console.warn("[WARN]", ...args);
+  appendLog("WARN", args);
 }
 
 export function error(...args) {
   console.error("[ERROR]", ...args);
+  appendLog("ERROR", args);
 }
 
 if (typeof window !== "undefined") {
