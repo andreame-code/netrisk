@@ -109,4 +109,44 @@ describe('ui integration', () => {
       expect(document.getElementById(t.id).textContent).toBe('1');
     }
   });
+
+  test('world8 map assigns unique color to each of eight players', () => {
+    destroyUI();
+    const territoryDivs = world8.territories
+      .map((t) => `<div id="${t.id}"></div>`)
+      .join('');
+    document.body.innerHTML = `<div id="board"></div>${territoryDivs}`;
+    const colors = [
+      '#e6194b',
+      '#3cb44b',
+      '#ffe119',
+      '#0082c8',
+      '#f58231',
+      '#911eb4',
+      '#46f0f0',
+      '#f032e6',
+    ];
+    const gameWorld = {
+      players: colors.map((c, i) => ({ name: `P${i + 1}`, color: c })),
+      currentPlayer: 0,
+      territories: world8.territories.map((t, i) => ({ id: t.id, owner: i, armies: 1 })),
+      hands: Array(world8.territories.length).fill([]),
+      continents: [],
+      territoryById: (id) => gameWorld.territories.find((tt) => tt.id === id),
+      getPhase: () => 'attack',
+      reinforcements: 0,
+      canUndo: () => false,
+    };
+    const positions = Object.fromEntries(
+      world8.territories.map((t) => [t.id, { x: t.x, y: t.y }]),
+    );
+    const gs = new GameState();
+    initUI({ game: gameWorld, gameState: gs, territoryPositions: positions });
+    updateUI();
+    colors.forEach((c, i) => {
+      const className = `player-color-${c.replace(/[^a-z0-9]/gi, '')}`;
+      const terrId = world8.territories[i].id;
+      expect(document.getElementById(terrId).classList.contains(className)).toBe(true);
+    });
+  });
 });
