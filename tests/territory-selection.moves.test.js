@@ -23,6 +23,6 @@ test('selecting territory highlights possible moves', async () => {
   await flushPromises();
   const aPath = document.getElementById('A');
   aPath.dispatchEvent(new Event('click', { bubbles: true }));
-  const buttonB = document.getElementById('B');
+  const buttonB = document.querySelector('.territory[data-id="B"]');
   expect(buttonB.classList.contains('possible-move')).toBe(true);
 });

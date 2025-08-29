@@ -57,9 +57,9 @@ describe('territory selection user flow', () => {
     const aPath = document.getElementById('A');
     aPath.dispatchEvent(new Event('click', { bubbles: true }));
 
-    const bPath = document.getElementById('B');
+    const bButton = document.querySelector('.territory[data-id="B"]');
     expect(aPath.classList.contains('selected')).toBe(true);
-    expect(bPath.classList.contains('possible-move')).toBe(true);
+    expect(bButton.classList.contains('possible-move')).toBe(true);
     expect(document.getElementById('selectedTerritory').textContent).toBe('Alpha');
 
     // clicking outside map clears selection

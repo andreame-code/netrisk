@@ -35,6 +35,7 @@ import {
   resetSelectedCards,
   getSelectedCards,
   exportLog,
+  getElement,
 } from "./ui.js";
 import initPhaseTimer from "./phase-timer.js";
 import { WS_URL } from "./config.js";
@@ -186,8 +187,8 @@ function attachTerritoryHandlers() {
           const playerName = game.players[prevPlayer].name;
           if (result.type === ATTACK) {
             logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
-            const fromEl = document.getElementById(result.from);
-            const toEl = document.getElementById(result.to);
+            const fromEl = getElement(result.from);
+            const toEl = getElement(result.to);
             fromEl.classList.add("attack", "animate__animated", "animate__shakeX");
             toEl.classList.add("attack", "animate__animated", "animate__shakeX");
             setTimeout(() => {
@@ -249,7 +250,10 @@ function attachTerritoryHandlers() {
         updateUI();
         if (result && result.type === "select") {
           logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
-          document.getElementById(result.territory).classList.add("selected");
+          const selEl = getElement(result.territory);
+          if (selEl) {
+            selEl.classList.add("selected");
+          }
         }
         updateGameState(
           gameState,

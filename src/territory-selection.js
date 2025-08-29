@@ -1,5 +1,5 @@
 import { ATTACK, FORTIFY } from "./phases.js";
-import { getBoardScale } from "./ui.js";
+import { getBoardScale, getElement } from "./ui.js";
 import * as logger from "./logger.js";
 
 export default function initTerritorySelection({
@@ -55,7 +55,7 @@ export default function initTerritorySelection({
       );
     }
     targets.forEach((tid) => {
-      const btn = document.getElementById(tid);
+      const btn = getElement(tid);
       if (btn) {
         btn.classList.add("possible-move");
         possibleMoveEls.push(btn);
