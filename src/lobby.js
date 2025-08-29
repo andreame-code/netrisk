@@ -17,6 +17,33 @@ let currentPlayerId = null;
 let chatHistoryLoaded = false;
 const MAX_CHAT_LENGTH = 200;
 
+const lobbyErrorEl = document.getElementById('lobbyError');
+const lobbyErrorMsg = document.getElementById('lobbyErrorMsg');
+const retryBtn = document.getElementById('retryLobby');
+let retryAction = null;
+
+function showLobbyError(message, action) {
+  if (lobbyErrorEl && lobbyErrorMsg && retryBtn) {
+    lobbyErrorMsg.textContent = message;
+    lobbyErrorEl.classList.remove('hidden');
+    retryAction = action;
+  } else {
+    notifyUser(message);
+  }
+}
+
+function hideLobbyError() {
+  if (lobbyErrorEl) lobbyErrorEl.classList.add('hidden');
+  retryAction = null;
+}
+
+if (retryBtn) {
+  retryBtn.addEventListener('click', () => {
+    hideLobbyError();
+    if (typeof retryAction === 'function') retryAction();
+  });
+}
+
 function notifyUser(msg) {
   if (typeof alert === 'function') {
     alert(msg);
@@ -43,6 +70,7 @@ async function fetchLobbies() {
   if (!supabase) {
     renderLobbies([]);
     logError('Supabase not initialized; cannot fetch lobbies');
+    showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
     return;
   }
   try {
@@ -50,13 +78,16 @@ async function fetchLobbies() {
     const { data, error } = await supabase.from('lobbies').select();
     if (error) {
       logError('Error fetching lobbies', error.message);
+      showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
       return;
     }
     currentLobbies.splice(0, currentLobbies.length, ...(data || []));
     renderLobbies(currentLobbies);
+    hideLobbyError();
     logInfo(`Loaded ${currentLobbies.length} lobbies`);
   } catch (err) {
     logError('Unexpected error fetching lobbies', err?.message);
+    showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
   }
 }
 
@@ -101,7 +132,7 @@ export function initLobby() {
   })();
   if (!WS_URL && createBtn) {
     createBtn.disabled = true;
-    notifyUser('WebSocket server is not available.');
+    showLobbyError('Multiplayer server is not available.', () => location.reload());
   }
   if (createBtn && dialog) {
     createBtn.addEventListener('click', () => {
@@ -128,12 +159,13 @@ export function initLobby() {
     logInfo('Creating new game lobby');
     try {
       if (!url) {
-        notifyUser('WebSocket server is not available.');
+        showLobbyError('Multiplayer server is not available.', () => location.reload());
         return;
       }
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         ws = new WebSocket(url);
         ws.onopen = () => {
+          hideLobbyError();
           try {
             ws.send(
               JSON.stringify({
@@ -145,15 +177,16 @@ export function initLobby() {
             );
           } catch (err2) {
             logError('WebSocket send error', err2?.message);
-            notifyUser(err2 instanceof Error ? err2.message : String(err2));
+            showLobbyError('Unable to connect to multiplayer server. Please try again.', () => createGame(payload, dlg));
           }
         };
         ws.onmessage = e => handleMessage(e, dlg);
         ws.onerror = errEvent => {
           logError('WebSocket connection error', errEvent?.message);
-          notifyUser('WebSocket connection error.');
+          showLobbyError('Unable to connect to multiplayer server. Please try again.', () => createGame(payload, dlg));
         };
-        ws.onclose = () => notifyUser('WebSocket connection closed.');
+        ws.onclose = () =>
+          showLobbyError('Connection to multiplayer server lost. Please try again.', () => createGame(payload, dlg));
       } else {
         ws.send(
           JSON.stringify({
@@ -166,7 +199,7 @@ export function initLobby() {
       }
     } catch (err) {
       logError('createGame failed', err?.message);
-      notifyUser(err instanceof Error ? err.message : String(err));
+      showLobbyError('Unable to create lobby. Please try again.', () => createGame(payload, dlg));
     }
   }
 
@@ -206,13 +239,20 @@ export function initLobby() {
     if (url) {
       ws = new WebSocket(url);
       ws.onopen = () => {
+        hideLobbyError();
         ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
       };
       ws.onmessage = e => handleMessage(e, null);
-      ws.onerror = () => notifyUser('WebSocket connection error.');
-      ws.onclose = () => notifyUser('WebSocket connection closed.');
+      ws.onerror = () =>
+        showLobbyError('Unable to connect to multiplayer server. Please try again.', () => {
+          location.reload();
+        });
+      ws.onclose = () =>
+        showLobbyError('Connection to multiplayer server lost. Please try again.', () => {
+          location.reload();
+        });
     } else {
-      notifyUser('WebSocket server is not available.');
+      showLobbyError('Multiplayer server is not available.', () => location.reload());
     }
   }
   fetchLobbies();
@@ -317,7 +357,7 @@ export function initLobby() {
         break;
       }
       case 'error': {
-        notifyUser(msg.error || 'An error occurred.');
+        showLobbyError('An error occurred. Please try again.', () => location.reload());
         break;
       }
       default:
