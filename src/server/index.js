@@ -1,6 +1,7 @@
 import { WebSocketServer } from "ws";
 import { randomBytes } from "crypto";
 import supabase from "../init/supabase-client.js";
+import { info, error } from "../logger.js";
 import {
   isValidMap,
   publicPlayers,
@@ -39,6 +40,12 @@ export function createLobbyServer({
     supabase,
   };
 
+  if (supabase) {
+    info("Supabase client available for lobby server");
+  } else {
+    error("Supabase client not configured; database features disabled");
+  }
+
   const handlers = {
     createLobby: handleCreateLobby,
     joinLobby: handleJoinLobby,
@@ -54,6 +61,7 @@ export function createLobbyServer({
 
   wss.on("connection", ws => {
     const state = { currentLobby: null, currentPlayer: null };
+    info("Client connected to lobby server");
 
     ws.on("message", async raw => {
       let msg;
@@ -71,6 +79,7 @@ export function createLobbyServer({
       const handler = handlers[data.type];
       if (handler) {
         await handler(ctx, ws, data, state);
+        info(`Handled message of type ${data.type}`);
       }
     });
 
@@ -95,9 +104,9 @@ export function createLobbyServer({
             const idx = lobby.players.indexOf(player);
             lobby.players.splice(idx, 1);
             if (lobby.host === player.id) {
-              lobby.host = lobby.players[0]?.id || null;
-            }
-            await persistLobby(lobby);
+          lobby.host = lobby.players[0]?.id || null;
+        }
+        await persistLobby(lobby);
             broadcast(lobby, {
               type: "lobby",
               code: lobby.code,
@@ -118,6 +127,5 @@ export function createLobbyServer({
 if (typeof require !== "undefined" && require.main === module) {
   const port = 8081;
   createLobbyServer({ port });
-  // eslint-disable-next-line no-console
-  console.log(`Multiplayer server listening on port ${port}`);
+  info(`Multiplayer server listening on port ${port}`);
 }
