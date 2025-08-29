@@ -50,6 +50,10 @@ const FALLBACK_FILE = SILENCE_SRC;
 
 let musicSrc = MUSIC_FILES.default;
 
+// Detect jsdom environment to avoid calling unimplemented media methods
+const IS_JSDOM =
+  typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+
 function clamp(v) {
   return Math.min(Math.max(v, 0), 1);
 }
@@ -79,7 +83,7 @@ function playEffect(name) {
   const src = EFFECT_FILES[name];
   if (!src) return;
   const audio = loadAudio(src);
-  if (!audio) return;
+  if (!audio || IS_JSDOM) return;
   audio.volume = settings.master * settings.effects;
   try {
     audio.currentTime = 0;
@@ -146,14 +150,20 @@ function setMusicEnabled(on) {
   if (!music) return saveSettings();
   if (on && !settings.muted) {
     music.volume = settings.master;
-    try {
-      const p = music.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-    } catch {
-      // ignore play errors
+    if (!IS_JSDOM) {
+      try {
+        const p = music.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch {
+        // ignore play errors
+      }
     }
-  } else {
-    music.pause();
+  } else if (!IS_JSDOM) {
+    try {
+      music.pause();
+    } catch {
+      // ignore pause errors
+    }
   }
   saveSettings();
 }
