@@ -2,6 +2,7 @@ import { initThemeToggle } from './theme.js';
 import { goHome } from './navigation.js';
 import { WS_URL } from './config.js';
 import EventBus from './core/event-bus.js';
+import { info as logInfo, error as logError } from './logger.js';
 
 const bus = new EventBus();
 
@@ -41,11 +42,22 @@ export function renderLobbies(lobbies) {
 async function fetchLobbies() {
   if (!supabase) {
     renderLobbies([]);
+    logError('Supabase not initialized; cannot fetch lobbies');
     return;
   }
-  const { data } = await supabase.from('lobbies').select();
-  currentLobbies.splice(0, currentLobbies.length, ...(data || []));
-  renderLobbies(currentLobbies);
+  try {
+    logInfo('Fetching lobbies from database');
+    const { data, error } = await supabase.from('lobbies').select();
+    if (error) {
+      logError('Error fetching lobbies', error.message);
+      return;
+    }
+    currentLobbies.splice(0, currentLobbies.length, ...(data || []));
+    renderLobbies(currentLobbies);
+    logInfo(`Loaded ${currentLobbies.length} lobbies`);
+  } catch (err) {
+    logError('Unexpected error fetching lobbies', err?.message);
+  }
 }
 
 export function initLobby() {
@@ -105,14 +117,15 @@ export function initLobby() {
   }
   async function createGame(payload, dlg) {
     try {
-      const session = supabase ? await supabase.auth.getSession() : null;
-      console.log('Supabase session:', session); // eslint-disable-line no-console
+      if (supabase) {
+        await supabase.auth.getSession();
+        logInfo('Requested Supabase session');
+      }
     } catch (err) {
-      console.error('Supabase getSession error:', err); // eslint-disable-line no-console
+      logError('Supabase getSession error', err?.message);
     }
     const url = WS_URL;
-    console.log('Create Game URL:', url); // eslint-disable-line no-console
-    console.log('Create Game payload:', payload); // eslint-disable-line no-console
+    logInfo('Creating new game lobby');
     try {
       if (!url) {
         notifyUser('WebSocket server is not available.');
@@ -131,13 +144,13 @@ export function initLobby() {
               })
             );
           } catch (err2) {
-            console.error('WebSocket send error:', err2); // eslint-disable-line no-console
+            logError('WebSocket send error', err2?.message);
             notifyUser(err2 instanceof Error ? err2.message : String(err2));
           }
         };
         ws.onmessage = e => handleMessage(e, dlg);
         ws.onerror = errEvent => {
-          console.error('WebSocket connection error:', errEvent); // eslint-disable-line no-console
+          logError('WebSocket connection error', errEvent?.message);
           notifyUser('WebSocket connection error.');
         };
         ws.onclose = () => notifyUser('WebSocket connection closed.');
@@ -152,7 +165,7 @@ export function initLobby() {
         );
       }
     } catch (err) {
-      console.error('createGame failed:', err); // eslint-disable-line no-console
+      logError('createGame failed', err?.message);
       notifyUser(err instanceof Error ? err.message : String(err));
     }
   }
@@ -210,7 +223,11 @@ export function initLobby() {
       } else {
         supabase = mod;
       }
-      if (!supabase) return;
+      if (!supabase) {
+        logError('Supabase client not initialized');
+        return;
+      }
+      logInfo('Supabase client ready on lobby page');
       fetchLobbies();
       supabase
         .channel('public:lobbies')
@@ -220,7 +237,9 @@ export function initLobby() {
         .subscribe();
       bus.on('lobbiesChanged', fetchLobbies);
     })
-    .catch(() => {});
+    .catch(err => {
+      logError('Failed to load Supabase client', err?.message);
+    });
 
   function addChatMessage(id, text, time = new Date()) {
     if (!chatMessages) return;
@@ -235,14 +254,19 @@ export function initLobby() {
     if (chatHistoryLoaded || !supabase || !currentCode) return;
     chatHistoryLoaded = true;
     try {
-      const { data } = await supabase
+      logInfo(`Loading chat history for ${currentCode}`);
+      const { data, error } = await supabase
         .from('lobby_chat')
         .select()
         .eq('code', currentCode)
         .order('created_at', { ascending: true });
+      if (error) {
+        logError('Error loading chat history', error.message);
+        return;
+      }
       (data || []).forEach(row => addChatMessage(row.id, row.text, new Date(row.created_at)));
-    } catch {
-      // ignore fetch errors
+    } catch (err) {
+      logError('Unexpected error loading chat history', err?.message);
     }
   }
 
@@ -253,7 +277,7 @@ export function initLobby() {
     } catch {
       return;
     }
-    console.log('WS response:', msg); // eslint-disable-line no-console
+    logInfo(`WS response type: ${msg.type}`);
     switch (msg.type) {
       case 'joined': {
         currentCode = msg.code;
