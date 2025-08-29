@@ -75,7 +75,17 @@ function formatPlayerName(player) {
 
 function updateInfoPanel() {
   const cp = getElement("currentPlayer");
-  if (cp) cp.textContent = formatPlayerName(game.players[gameState.currentPlayer]);
+  if (cp) {
+    cp.textContent = formatPlayerName(game.players[gameState.currentPlayer]);
+    const colorClass = getColorClass(game.players[gameState.currentPlayer].color);
+    if (colorClass) {
+      const existing = Array.from(cp.classList).filter((c) =>
+        c.startsWith("player-color-"),
+      );
+      existing.forEach((c) => cp.classList.remove(c));
+      cp.classList.add(colorClass);
+    }
+  }
   const tn = getElement("turnNumber");
   if (tn) tn.textContent = gameState.turnNumber;
   const reinf = getElement("reinforcements");
@@ -239,19 +249,22 @@ function showVictoryModal(winnerIdx) {
     const durationEl = document.createElement("p");
     durationEl.textContent = `Duration: ${duration}s`;
     statsEl.appendChild(durationEl);
-    const ranking = game.players
-      .map((p, idx) => ({
-        name: p.name,
-        territories: game.territories.filter((t) => t.owner === idx).length,
-      }))
-      .sort((a, b) => b.territories - a.territories);
-    const ol = document.createElement("ol");
-    ranking.forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = `${r.name}: ${r.territories} territories`;
-      ol.appendChild(li);
-    });
-    statsEl.appendChild(ol);
+      const ranking = game.players
+        .map((p, idx) => ({
+          name: p.name,
+          color: p.color,
+          territories: game.territories.filter((t) => t.owner === idx).length,
+        }))
+        .sort((a, b) => b.territories - a.territories);
+      const ol = document.createElement("ol");
+      ranking.forEach((r) => {
+        const li = document.createElement("li");
+        li.textContent = `${r.name}: ${r.territories} territories`;
+        const colorClass = getColorClass(r.color);
+        if (colorClass) li.classList.add(colorClass);
+        ol.appendChild(li);
+      });
+      statsEl.appendChild(ol);
     const s = getStats();
     if (s.territories.length && typeof window !== 'undefined' && window.Chart) {
       const labels = s.territories[0].map((_, i) => `Turn ${i + 1}`);
@@ -259,54 +272,60 @@ function showVictoryModal(winnerIdx) {
         .getElementById("territoryChart")
         ?.getContext("2d");
       if (terrCtx) {
-        new window.Chart(terrCtx, {
-          type: "line",
-          data: {
-            labels,
-            datasets: game.players.map((p, idx) => ({
-              label: p.name,
-              data: s.territories[idx],
-              fill: false,
-            })),
-          },
-          options: { responsive: true },
-        });
+          new window.Chart(terrCtx, {
+            type: "line",
+            data: {
+              labels,
+              datasets: game.players.map((p, idx) => ({
+                label: p.name,
+                data: s.territories[idx],
+                fill: false,
+                borderColor: p.color,
+                backgroundColor: p.color,
+              })),
+            },
+            options: { responsive: true },
+          });
       }
       const armCtx = document
         .getElementById("armiesChart")
         ?.getContext("2d");
       if (armCtx) {
-        new window.Chart(armCtx, {
-          type: "line",
-          data: {
-            labels,
-            datasets: game.players.map((p, idx) => ({
-              label: p.name,
-              data: s.armies[idx],
-              fill: false,
-            })),
-          },
-          options: { responsive: true },
-        });
+          new window.Chart(armCtx, {
+            type: "line",
+            data: {
+              labels,
+              datasets: game.players.map((p, idx) => ({
+                label: p.name,
+                data: s.armies[idx],
+                fill: false,
+                borderColor: p.color,
+                backgroundColor: p.color,
+              })),
+            },
+            options: { responsive: true },
+          });
       }
-      const attCtx = document
-        .getElementById("attackChart")
-        ?.getContext("2d");
-      if (attCtx) {
-        const wins = s.attacksWon.map((a) => a.reduce((sum, n) => sum + n, 0));
-        const losses = s.attacksLost.map((a) => a.reduce((sum, n) => sum + n, 0));
-        new window.Chart(attCtx, {
-          type: "bar",
-          data: {
-            labels: game.players.map((p) => p.name),
-            datasets: [
-              { label: "Wins", data: wins, backgroundColor: "#4caf50" },
-              { label: "Losses", data: losses, backgroundColor: "#f44336" },
-            ],
-          },
-          options: { responsive: true },
-        });
-      }
+        const attCtx = document
+          .getElementById("attackChart")
+          ?.getContext("2d");
+        if (attCtx) {
+          const wins = s.attacksWon.map((a) => a.reduce((sum, n) => sum + n, 0));
+          const losses = s.attacksLost.map((a) => a.reduce((sum, n) => sum + n, 0));
+          const playerColors = game.players.map((p) => p.color);
+          const lossColors = playerColors.map((c) => `${c}80`);
+          new window.Chart(attCtx, {
+            type: "bar",
+            data: {
+              labels: game.players.map((p) => p.name),
+              datasets: [
+                { label: "Wins", data: wins, backgroundColor: playerColors },
+                { label: "Losses", data: losses, backgroundColor: lossColors },
+              ],
+            },
+            options: { responsive: true },
+          });
+        }
     }
   }
   modal.classList.add("show");
