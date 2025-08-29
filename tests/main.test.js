@@ -1,4 +1,4 @@
-const mapData = require('../src/data/map.json');
+const mapData = require('../src/maps/map/config.json');
 const { REINFORCE, ATTACK, FORTIFY, GAME_OVER } = require('../src/phases.js');
 
 jest.mock('../src/territory-selection.js', () => jest.fn());

@@ -16,11 +16,11 @@ const distDir = path.join(__dirname, '..', 'dist');
   });
 
   test('copies map data file', () => {
-    const mapPath = path.join(distDir, 'src', 'data', 'map.json');
+    const mapPath = path.join(distDir, 'src', 'maps', 'map', 'config.json');
     expect(fs.existsSync(mapPath)).toBe(true);
-    const romanPath = path.join(distDir, 'src', 'data', 'map-roman.json');
+    const romanPath = path.join(distDir, 'src', 'maps', 'map-roman', 'config.json');
     expect(fs.existsSync(romanPath)).toBe(true);
-    const map3Path = path.join(distDir, 'src', 'data', 'map3.json');
+    const map3Path = path.join(distDir, 'src', 'maps', 'map3', 'config.json');
     expect(fs.existsSync(map3Path)).toBe(true);
   });
 });

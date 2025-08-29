@@ -40,7 +40,7 @@ if (require.main === module) {
     fs.copyFileSync(srcPath, destPath);
   }
   // Copy map assets
-  fs.cpSync(path.join(root, 'public/assets/maps'), path.join(dist, 'assets/maps'), { recursive: true });
+  fs.cpSync(path.join(root, 'public/maps'), path.join(dist, 'maps'), { recursive: true });
   // Copy additional data files (e.g., map.json)
   fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 

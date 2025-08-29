@@ -6,7 +6,7 @@ import * as logger from "../logger.js";
 let territoryPositions = {};
 
 async function loadMap(mapName) {
-  const paths = [`./src/data/${mapName}.json`, `./data/${mapName}.json`];
+  const paths = [`./src/maps/${mapName}/config.json`, `./maps/${mapName}/config.json`];
   for (const p of paths) {
     try {
       const res = await fetch(p);
