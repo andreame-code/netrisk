@@ -42,21 +42,21 @@ export function renderLobbies(lobbies) {
 async function fetchLobbies() {
   if (!supabase) {
     renderLobbies([]);
-    logError('Supabase not initialized; cannot fetch lobbies');
+    logError('[LOBBY] Supabase not initialized; cannot fetch lobbies');
     return;
   }
   try {
-    logInfo('Fetching lobbies from database');
+    logInfo('[LOBBY] Loading lobbies from database');
     const { data, error } = await supabase.from('lobbies').select();
     if (error) {
-      logError('Error fetching lobbies', error.message);
+      logError(`[LOBBY] Error fetching lobbies (status ${error.status})`, error.message);
       return;
     }
     currentLobbies.splice(0, currentLobbies.length, ...(data || []));
     renderLobbies(currentLobbies);
-    logInfo(`Loaded ${currentLobbies.length} lobbies`);
+    logInfo(`[LOBBY] Loaded ${currentLobbies.length} lobbies`);
   } catch (err) {
-    logError('Unexpected error fetching lobbies', err?.message);
+    logError('[LOBBY] Unexpected error fetching lobbies', err?.message);
   }
 }
 
@@ -119,15 +119,22 @@ export function initLobby() {
     try {
       if (supabase) {
         await supabase.auth.getSession();
-        logInfo('Requested Supabase session');
+        logInfo('[LOBBY] Requested Supabase session');
       }
     } catch (err) {
-      logError('Supabase getSession error', err?.message);
+      logError('[LOBBY] Supabase getSession error', err?.message);
     }
     const url = WS_URL;
-    logInfo('Creating new game lobby');
+    const message = JSON.stringify({
+      type: 'createLobby',
+      player: { name: payload.name },
+      maxPlayers: payload.maxPlayers,
+      ...(payload.map ? { map: payload.map } : {}),
+    });
+    logInfo(`[LOBBY] Sending lobby creation request: ${message}`);
     try {
       if (!url) {
+        logError('[LOBBY] WebSocket server is not available');
         notifyUser('WebSocket server is not available.');
         return;
       }
@@ -135,37 +142,26 @@ export function initLobby() {
         ws = new WebSocket(url);
         ws.onopen = () => {
           try {
-            ws.send(
-              JSON.stringify({
-                type: 'createLobby',
-                player: { name: payload.name },
-                maxPlayers: payload.maxPlayers,
-                ...(payload.map ? { map: payload.map } : {}),
-              })
-            );
+            ws.send(message);
           } catch (err2) {
-            logError('WebSocket send error', err2?.message);
+            logError('[LOBBY] WebSocket send error', err2?.message);
             notifyUser(err2 instanceof Error ? err2.message : String(err2));
           }
         };
         ws.onmessage = e => handleMessage(e, dlg);
         ws.onerror = errEvent => {
-          logError('WebSocket connection error', errEvent?.message);
+          logError('[LOBBY] WebSocket connection error', errEvent?.message);
           notifyUser('WebSocket connection error.');
         };
-        ws.onclose = () => notifyUser('WebSocket connection closed.');
+        ws.onclose = () => {
+          logError('[LOBBY] WebSocket connection closed');
+          notifyUser('WebSocket connection closed.');
+        };
       } else {
-        ws.send(
-          JSON.stringify({
-            type: 'createLobby',
-            player: { name: payload.name },
-            maxPlayers: payload.maxPlayers,
-            ...(payload.map ? { map: payload.map } : {}),
-          })
-        );
+        ws.send(message);
       }
     } catch (err) {
-      logError('createGame failed', err?.message);
+      logError('[LOBBY] createGame failed', err?.message);
       notifyUser(err instanceof Error ? err.message : String(err));
     }
   }
@@ -209,13 +205,21 @@ export function initLobby() {
         ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
       };
       ws.onmessage = e => handleMessage(e, null);
-      ws.onerror = () => notifyUser('WebSocket connection error.');
-      ws.onclose = () => notifyUser('WebSocket connection closed.');
+      ws.onerror = errEvent => {
+        logError('[LOBBY] WebSocket connection error', errEvent?.message);
+        notifyUser('WebSocket connection error.');
+      };
+      ws.onclose = () => {
+        logError('[LOBBY] WebSocket connection closed');
+        notifyUser('WebSocket connection closed.');
+      };
     } else {
+      logError('[LOBBY] WebSocket server is not available');
       notifyUser('WebSocket server is not available.');
     }
   }
   fetchLobbies();
+  logInfo('[LOBBY] Initializing Supabase client');
   import('./init/supabase-client.js')
     .then(mod => {
       if (mod && Object.prototype.hasOwnProperty.call(mod, 'default')) {
@@ -224,10 +228,10 @@ export function initLobby() {
         supabase = mod;
       }
       if (!supabase) {
-        logError('Supabase client not initialized');
+        logError('[LOBBY] Supabase client not initialized');
         return;
       }
-      logInfo('Supabase client ready on lobby page');
+      logInfo('[LOBBY] Supabase client initialized');
       fetchLobbies();
       supabase
         .channel('public:lobbies')
@@ -238,7 +242,7 @@ export function initLobby() {
       bus.on('lobbiesChanged', fetchLobbies);
     })
     .catch(err => {
-      logError('Failed to load Supabase client', err?.message);
+      logError('[LOBBY] Failed to load Supabase client', err?.message);
     });
 
   function addChatMessage(id, text, time = new Date()) {
@@ -254,19 +258,20 @@ export function initLobby() {
     if (chatHistoryLoaded || !supabase || !currentCode) return;
     chatHistoryLoaded = true;
     try {
-      logInfo(`Loading chat history for ${currentCode}`);
+      logInfo(`[LOBBY] Loading chat history for ${currentCode}`);
       const { data, error } = await supabase
         .from('lobby_chat')
         .select()
         .eq('code', currentCode)
         .order('created_at', { ascending: true });
       if (error) {
-        logError('Error loading chat history', error.message);
+        logError(`[LOBBY] Error loading chat history (status ${error.status})`, error.message);
         return;
       }
       (data || []).forEach(row => addChatMessage(row.id, row.text, new Date(row.created_at)));
+      logInfo(`[LOBBY] Loaded ${data?.length || 0} chat messages`);
     } catch (err) {
-      logError('Unexpected error loading chat history', err?.message);
+      logError('[LOBBY] Unexpected error loading chat history', err?.message);
     }
   }
 
@@ -277,7 +282,7 @@ export function initLobby() {
     } catch {
       return;
     }
-    logInfo(`WS response type: ${msg.type}`);
+    logInfo(`[LOBBY] WS response type: ${msg.type}`);
     switch (msg.type) {
       case 'joined': {
         currentCode = msg.code;
@@ -286,6 +291,7 @@ export function initLobby() {
         localStorage.setItem('playerId', currentPlayerId);
         startHeartbeat();
         loadChatHistory();
+        logInfo(`[LOBBY] Joined lobby ${msg.code} as ${msg.id}`);
         break;
       }
       case 'lobby': {
@@ -300,6 +306,7 @@ export function initLobby() {
         renderLobbies(currentLobbies);
         if (dlg && dlg.close) dlg.close();
         else if (dlg) dlg.removeAttribute('open');
+        logInfo(`[LOBBY] Lobby ${msg.code} created`);
         break;
       }
       case 'reconnected': {
@@ -310,6 +317,7 @@ export function initLobby() {
           localStorage.setItem('playerId', currentPlayerId);
           startHeartbeat();
         }
+        logInfo(`[LOBBY] Reconnected to lobby ${msg.code}`);
         break;
       }
       case 'chat': {
@@ -317,6 +325,7 @@ export function initLobby() {
         break;
       }
       case 'error': {
+        logError(`[LOBBY] WS error: ${msg.error || 'Unknown error'}`);
         notifyUser(msg.error || 'An error occurred.');
         break;
       }
