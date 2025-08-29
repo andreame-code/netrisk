@@ -1,4 +1,6 @@
 name: CI (Playwright Container)
+permissions:
+  contents: read
 on:
   push:
     branches: [ main ]
