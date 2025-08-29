@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta id="redirect-meta" http-equiv="refresh" />
+    <script>
+      const match = window.location.pathname.match(
+        /^\/netrisk((?:\/(?!game|lobby|login|register|about|how-to-play|setup|index\.html)[^/]+)+)/
+      );
+      const base = match ? `/netrisk${match[1]}` : '/netrisk';
+      const target = `${base}/index.html${window.location.search}${window.location.hash}`;
+      document.getElementById('redirect-meta').setAttribute('content', `0; url=${target}`);
+      window.location.replace(target);
+    </script>
+  </head>
+  <body></body>
+</html>

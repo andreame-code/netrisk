@@ -1,6 +1,6 @@
 import supabase from './init/supabase-client.js';
 
-const form = document.getElementById('loginForm');
+const form = document.getElementById('registerForm');
 const message = document.getElementById('message');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
@@ -13,6 +13,6 @@ form.addEventListener('submit', async (e) => {
     message.textContent = 'Supabase not configured';
     return;
   }
-  const { error } = await supabase.auth.signInWithPassword({ email: username, password });
-  message.textContent = error ? error.message : 'Login successful';
+  const { error } = await supabase.auth.signUp({ email: username, password });
+  message.textContent = error ? error.message : 'Registration successful';
 });
