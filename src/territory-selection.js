@@ -5,7 +5,6 @@ import * as logger from "./logger.js";
 export default function initTerritorySelection({
   game,
   territories,
-  addLogEntry,
   gameState,
   attachTerritoryHandlers,
   updateUI,
@@ -63,56 +62,6 @@ export default function initTerritorySelection({
     });
   }
 
-  function moveToken(el) {
-    if (!el) return;
-    const phase = game?.getPhase();
-    if (phase && ![ATTACK, FORTIFY].includes(phase)) {
-      addLogEntry?.(`Move not allowed during ${phase} phase`, { type: "error" });
-      return;
-    }
-    const box = el.getBBox();
-    const x = box.x + box.width / 2;
-    const y = box.y + box.height / 2;
-    const token = document.getElementById("token");
-    const scale = getBoardScale();
-    if (token) {
-      token.style.left = `${x * scale.x}px`;
-      token.style.top = `${y * scale.y}px`;
-    }
-    if (gameState) {
-      gameState.setTokenPosition({ x, y });
-    }
-    if (addLogEntry && game) {
-      const name = el.dataset.name || el.id;
-      addLogEntry(
-        `${game.players[game.currentPlayer].name} moves token to ${name}`,
-        {
-          player: game.players[game.currentPlayer].name,
-          type: "token",
-          territories: [el.id],
-        },
-      );
-      logger.info(
-        `${game.players[game.currentPlayer].name} moves token to ${name}`,
-      );
-    }
-  }
-
-  const moveBtn = document.getElementById("moveToken");
-  if (moveBtn) {
-    moveBtn.addEventListener("click", () => {
-      logger.info("Move token clicked");
-      try {
-        if (selectedTerritory) {
-          moveToken(selectedTerritory.el);
-        } else {
-          addLogEntry?.("No territory selected", { type: "error" });
-        }
-      } catch (err) {
-        logger.error(err);
-      }
-    });
-  }
 
   const mapName =
     (typeof localStorage !== "undefined" &&
@@ -195,14 +144,6 @@ export default function initTerritorySelection({
               }
             }
           }
-        });
-        map.addEventListener("dblclick", (e) => {
-          const target = e.target.closest(".map-territory");
-          if (target) {
-            selectTerritory(target);
-            moveToken(target);
-          }
-          e.stopPropagation();
         });
         document.addEventListener("pointerdown", (e) => {
           if (!map.contains(e.target)) {
