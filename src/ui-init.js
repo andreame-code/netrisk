@@ -54,6 +54,25 @@ let game;
 let territoryPositions = {};
 let phaseTimer;
 
+const loadErrorEl = document.getElementById("loadError");
+const loadErrorMsg = document.getElementById("loadErrorMsg");
+const retryBtn = document.getElementById("retryLoad");
+
+function showLoadError() {
+  if (loadErrorEl && loadErrorMsg) {
+    loadErrorMsg.textContent =
+      "Unable to load game data. Check your connection and try again.";
+    loadErrorEl.classList.remove("hidden");
+  }
+}
+
+if (retryBtn) {
+  retryBtn.addEventListener("click", () => {
+    if (loadErrorEl) loadErrorEl.classList.add("hidden");
+    loadGame();
+  });
+}
+
 function checkForVictory() {
   const winner = game.checkVictory();
   if (winner !== null) {
@@ -86,15 +105,23 @@ function initialiseUI(gameInstance) {
 }
 
 async function loadGame() {
-  const result = await loadGameData();
-  if (!result || !result.game) return;
-  game = result.game;
-  territoryPositions = result.territoryPositions;
-  attachStatsListeners(game);
-  initialiseUI(game);
-  if (typeof module !== "undefined") {
-    module.exports.game = game;
-    module.exports.territoryPositions = territoryPositions;
+  try {
+    const result = await loadGameData();
+    if (!result || !result.game) {
+      showLoadError();
+      return;
+    }
+    if (loadErrorEl) loadErrorEl.classList.add("hidden");
+    game = result.game;
+    territoryPositions = result.territoryPositions;
+    attachStatsListeners(game);
+    initialiseUI(game);
+    if (typeof module !== "undefined") {
+      module.exports.game = game;
+      module.exports.territoryPositions = territoryPositions;
+    }
+  } catch {
+    showLoadError();
   }
 }
 
