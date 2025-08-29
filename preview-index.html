@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NetRisk Branch Previews</title>
+    <style>
+      body { font-family: sans-serif; padding: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>NetRisk Branch Previews</h1>
+    <ul id="branchList"></ul>
+    <script>
+      async function loadBranches() {
+        const res = await fetch('https://api.github.com/repos/andreame-code/netrisk/branches');
+        const data = await res.json();
+        const list = document.getElementById('branchList');
+        data
+          .filter(b => b.name !== 'gh-pages')
+          .forEach(b => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = './' + b.name + '/';
+            a.textContent = b.name;
+            li.appendChild(a);
+            list.appendChild(li);
+          });
+      }
+      loadBranches();
+    </script>
+  </body>
+</html>
