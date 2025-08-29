@@ -1,6 +1,6 @@
 import * as ui from '../src/ui.js';
 import { GameState } from "../src/state/game.js";
-const world8 = require('../src/data/world8.json');
+const world8 = require('../src/maps/world8/config.json');
 
 const { initUI, addLogEntry, updateUI, animateMove, destroyUI } = ui;
 

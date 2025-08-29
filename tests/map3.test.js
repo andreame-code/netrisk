@@ -1,6 +1,6 @@
 const fs = require('fs');
-const map = require('../src/data/map3.json');
-const world8 = require('../src/data/world8.json');
+const map = require('../src/maps/map3/config.json');
+const world8 = require('../src/maps/world8/config.json');
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
@@ -57,14 +57,14 @@ describe('territory-selection with map3', () => {
   test('fetches svg and creates territory buttons', async () => {
     document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
     localStorage.setItem('netriskMap', 'map3');
-    const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
+    const svg = fs.readFileSync('public/maps/map3/map.svg', 'utf8');
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
     const init = require('../src/territory-selection.js').default;
     init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
-    expect(fetch).toHaveBeenCalledWith('assets/maps/map3.svg');
+    expect(fetch).toHaveBeenCalledWith('maps/map3/map.svg');
     const buttons = document.querySelectorAll('button.territory');
     expect(buttons).toHaveLength(map.territories.length);
   });
@@ -72,7 +72,7 @@ describe('territory-selection with map3', () => {
   test('token is appended after territory buttons', async () => {
     document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
     localStorage.setItem('netriskMap', 'map3');
-    const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
+    const svg = fs.readFileSync('public/maps/map3/map.svg', 'utf8');
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );

@@ -44,8 +44,8 @@ describe('setup map selection', () => {
     const manifest = {
       version: 1,
       maps: [
-        { id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/map.svg', description: '' },
-        { id: 'map3', name: 'Grid', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/map3.svg', description: '' },
+        { id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/map/map.svg', description: '' },
+        { id: 'map3', name: 'Grid', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/map3/map.svg', description: '' },
       ],
     };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
@@ -63,7 +63,7 @@ describe('setup map selection', () => {
   });
 
   test('renders responsive grid', async () => {
-    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/map.svg', description: '' }] };
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/map/map.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
     const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
@@ -73,7 +73,7 @@ describe('setup map selection', () => {
   });
 
   test('shows placeholder when thumbnail missing', async () => {
-    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/missing.svg', description: '' }] };
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/map/missing.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
     const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
@@ -83,7 +83,7 @@ describe('setup map selection', () => {
   });
 
   test('saves AI difficulty and style', async () => {
-    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/map.svg', description: '' }] };
+    const manifest = { version: 1, maps: [{ id: 'map', name: 'Classic', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/map/map.svg', description: '' }] };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
     const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;

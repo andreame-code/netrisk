@@ -2,12 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const validateMap = require('../src/validate-map.js');
 
-const maps = ['map.json', 'map2.json', 'map3.json', 'map-roman.json', 'world8.json'];
+const maps = ['map', 'map2', 'map3', 'map-roman', 'world8'];
 
 describe('map schema validation', () => {
   test.each(maps)('%s matches schema', (file) => {
     // eslint-disable-next-line global-require
-    const data = require(`../src/data/${file}`);
+    const data = require(`../src/maps/${file}/config.json`);
     expect(() => validateMap(data)).not.toThrow();
   });
 
@@ -23,7 +23,7 @@ describe('map schema validation', () => {
   });
 
   test('world8 territories have unique ids and reciprocal neighbors', () => {
-    const map = require('../src/data/world8.json');
+    const map = require('../src/maps/world8/config.json');
     const ids = new Set(map.territories.map((t) => t.id));
     expect(ids.size).toBe(map.territories.length);
     const byId = Object.fromEntries(map.territories.map((t) => [t.id, t]));
@@ -36,7 +36,7 @@ describe('map schema validation', () => {
   });
 
   test('world8 SVG root element uses expected id', () => {
-    const svgPath = path.join(__dirname, '..', 'public', 'assets', 'maps', 'world8.svg');
+    const svgPath = path.join(__dirname, '..', 'public', 'maps', 'world8', 'map.svg');
     const svgContent = fs.readFileSync(svgPath, 'utf8');
     const match = svgContent.match(/<svg[^>]*id="([^"]+)"/);
     expect(match && match[1]).toBe('map');

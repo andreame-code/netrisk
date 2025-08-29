@@ -35,7 +35,7 @@ async function loadMapData() {
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
     "map";
-  const paths = [`./src/data/${mapName}.json`, `./data/${mapName}.json`];
+  const paths = [`./src/maps/${mapName}/config.json`, `./maps/${mapName}/config.json`];
   for (const jsonPath of paths) {
     try {
       return await loadJson(jsonPath);
@@ -353,13 +353,14 @@ class Game {
   }
 
   pushUndoState() {
+    if (this.phase !== REINFORCE) return;
     this.undoStack.push(this.serialize());
     if (this.undoStack.length > this.maxUndo) this.undoStack.shift();
     this.redoStack = [];
   }
 
   canUndo() {
-    return this.undoStack.length > 0;
+    return this.phase === REINFORCE && this.undoStack.length > 0;
   }
 
   canRedo() {

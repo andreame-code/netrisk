@@ -80,8 +80,8 @@ describe('setup loadFromStorage and caching', () => {
     const manifest = {
       version: 1,
       maps: [
-        { id: 'mapA', name: 'A', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/thumb.svg', description: '' },
-        { id: 'mapB', name: 'B', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'assets/maps/thumb.svg', description: '' },
+        { id: 'mapA', name: 'A', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/mapA/thumb.svg', description: '' },
+        { id: 'mapB', name: 'B', difficulty: 'Easy', territories: 1, bonuses: {}, thumbnail: 'maps/mapB/thumb.svg', description: '' },
       ],
     };
     global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
@@ -94,7 +94,7 @@ describe('setup loadFromStorage and caching', () => {
     await setup.loadMapData(); // second load to trigger cache hit
 
     const imgCreates = createSpy.mock.calls.filter((c) => c[0] === 'img').length;
-    expect(imgCreates).toBe(1);
+    expect(imgCreates).toBe(2);
     expect(document.querySelectorAll('#mapGrid img').length).toBe(4);
     createSpy.mockRestore();
   });

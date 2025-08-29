@@ -1,0 +1,41 @@
+name: Preview per branch
+
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test --if-present
+      - run: npm run build --if-present
+      - name: Prepare publish folder
+        run: |
+          mkdir publish
+          mv dist publish/${GITHUB_REF_NAME}
+          branches=$(curl -s https://api.github.com/repos/${GITHUB_REPOSITORY}/branches?per_page=100 | jq -r '.[].name' | grep -v '^gh-pages$' | sort)
+          {
+            echo '<h1>NetRisk Branch Previews</h1><ul>'
+            for b in $branches; do
+              echo "<li><a href=\"$b/\">$b</a></li>"
+            done
+            echo '</ul>'
+          } > publish/index.html
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: publish
+          keep_files: true
