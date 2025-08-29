@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './config.js';
+
 const form = document.getElementById('loginForm');
 const message = document.getElementById('message');
 const usernameInput = document.getElementById('username');
@@ -27,13 +29,13 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
-  const result = await postJson('/api/login', { username, password });
+  const result = await postJson(`${API_BASE_URL}/api/login`, { username, password });
   message.textContent = result.error || 'Login successful';
 });
 
 registerBtn.addEventListener('click', async () => {
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
-  const result = await postJson('/api/register', { username, password });
+  const result = await postJson(`${API_BASE_URL}/api/register`, { username, password });
   message.textContent = result.error || 'Registration successful';
 });
