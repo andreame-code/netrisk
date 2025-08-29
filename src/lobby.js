@@ -63,8 +63,19 @@ export function initLobby() {
   (async () => {
     const select = document.getElementById('map');
     if (!select) return;
+    let res;
     try {
-      const res = await fetch('./assets/maps/map-manifest.json');
+      res = await fetch('./assets/maps/map-manifest.json');
+      if (res && res.ok === false) throw new Error('not ok');
+    } catch {
+      try {
+        res = await fetch('./public/assets/maps/map-manifest.json');
+        if (res && res.ok === false) throw new Error('not ok');
+      } catch {
+        return;
+      }
+    }
+    try {
       const data = await res.json();
       data.maps.forEach(m => {
         const opt = document.createElement('option');
