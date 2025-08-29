@@ -39,8 +39,9 @@ function hideLobbyError() {
 
 if (retryBtn) {
   retryBtn.addEventListener('click', () => {
+    const action = retryAction;
     hideLobbyError();
-    if (typeof retryAction === 'function') retryAction();
+    if (typeof action === 'function') action();
   });
 }
 
