@@ -31,11 +31,24 @@ const server = http.createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
 
   if (urlPath === '/api/register' || urlPath === '/api/login') {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    };
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders);
+      res.end();
+      return;
+    }
+
     if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.writeHead(405, { 'Content-Type': 'application/json', ...corsHeaders });
       res.end(JSON.stringify({ error: 'Method not allowed' }));
       return;
     }
+
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
@@ -44,7 +57,7 @@ const server = http.createServer(async (req, res) => {
       try {
         const { username, password } = JSON.parse(body || '{}');
         if (!username || !password) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.writeHead(400, { 'Content-Type': 'application/json', ...corsHeaders });
           res.end(JSON.stringify({ error: 'Username and password required' }));
           return;
         }
@@ -62,11 +75,11 @@ const server = http.createServer(async (req, res) => {
           });
           if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.writeHead(400, { 'Content-Type': 'application/json', ...corsHeaders });
             res.end(JSON.stringify({ error: err.message || 'Registration failed' }));
             return;
           }
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders });
           res.end(JSON.stringify({ ok: true }));
           return;
         }
@@ -83,14 +96,14 @@ const server = http.createServer(async (req, res) => {
         const rows = await response.json();
         const valid = rows.length > 0 && (await bcrypt.compare(password, rows[0].password_hash));
         if (!valid) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders });
           res.end(JSON.stringify({ error: 'Invalid username or password' }));
           return;
         }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200, { 'Content-Type': 'application/json', ...corsHeaders });
         res.end(JSON.stringify({ ok: true }));
       } catch {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders });
         res.end(JSON.stringify({ error: 'Server error' }));
       }
     });
