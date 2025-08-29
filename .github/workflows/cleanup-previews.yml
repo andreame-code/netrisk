@@ -1,0 +1,49 @@
+name: Cleanup preview deployments
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  delete:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event_name != 'delete' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ github.event.pull_request.head.ref || github.event.ref }}
+    steps:
+      - name: Skip protected branches
+        if: env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'gh-pages'
+        run: |
+          echo "Branch '${BRANCH_NAME}' is protected or uses gh-pages. Skipping cleanup."
+          exit 0
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Remove preview folder
+        id: remove
+        run: |
+          echo "Processing branch '${BRANCH_NAME}'"
+          if [ -d "${BRANCH_NAME}" ]; then
+            echo "Removing preview folder '${BRANCH_NAME}'"
+            git rm -r "${BRANCH_NAME}"
+            echo "removed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Preview folder '${BRANCH_NAME}' not found"
+            echo "removed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push changes
+        if: steps.remove.outputs.removed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "ci: remove preview for ${BRANCH_NAME}"
+          git push origin gh-pages
