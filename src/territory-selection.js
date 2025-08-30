@@ -87,18 +87,22 @@ export default function initTerritorySelection({
   }
 
   loadMap([
+    `/assets/maps/${mapName}.svg`,
     `assets/maps/${mapName}.svg`,
     `public/assets/maps/${mapName}.svg`,
   ])
     .then((svg) => {
       boardEl.innerHTML = svg;
       const map = boardEl.querySelector("#map");
-      map
-        ?.querySelectorAll(".map-territory")
-        .forEach((el) => {
-          el.setAttribute("tabindex", "0");
-          el.setAttribute("role", "button");
-        });
+      const territoryEls = map?.querySelectorAll(".map-territory") || [];
+      if (!territoryEls.length) {
+        boardEl.textContent = "Invalid map";
+        throw new Error("Map SVG missing .map-territory elements");
+      }
+      territoryEls.forEach((el) => {
+        el.setAttribute("tabindex", "0");
+        el.setAttribute("role", "button");
+      });
 
       function computeFallbackPosition(id) {
         const selector =
