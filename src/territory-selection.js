@@ -72,14 +72,25 @@ export default function initTerritorySelection({
 
   function loadMap(paths) {
     if (!paths.length) {
-      boardEl.textContent = "Error loading map";
-      throw new Error("Failed to load map");
+      boardEl.textContent = "Invalid map";
+      throw new Error("Map SVG missing .map-territory elements");
     }
     const [path, ...rest] = paths;
     return fetch(path)
-      .then((r) => {
-        if (r.ok) {
-          return r.text();
+      .then((r) => (r.ok ? r.text() : null))
+      .then((text) => {
+        if (text) {
+          const parser =
+            typeof DOMParser !== "undefined" ? new DOMParser() : null;
+          const doc = parser
+            ? parser.parseFromString(text, "image/svg+xml")
+            : null;
+          const hasTerritories = doc
+            ? doc.querySelector(".map-territory")
+            : text.includes("map-territory");
+          if (hasTerritories) {
+            return text;
+          }
         }
         return loadMap(rest);
       })
@@ -87,18 +98,18 @@ export default function initTerritorySelection({
   }
 
   loadMap([
+    `/assets/maps/${mapName}.svg`,
     `assets/maps/${mapName}.svg`,
     `public/assets/maps/${mapName}.svg`,
   ])
     .then((svg) => {
       boardEl.innerHTML = svg;
       const map = boardEl.querySelector("#map");
-      map
-        ?.querySelectorAll(".map-territory")
-        .forEach((el) => {
-          el.setAttribute("tabindex", "0");
-          el.setAttribute("role", "button");
-        });
+      const territoryEls = map?.querySelectorAll(".map-territory") || [];
+      territoryEls.forEach((el) => {
+        el.setAttribute("tabindex", "0");
+        el.setAttribute("role", "button");
+      });
 
       function computeFallbackPosition(id) {
         const selector =
@@ -119,7 +130,6 @@ export default function initTerritorySelection({
         terrs.forEach((t) => {
           const terrEl = document.createElement("button");
           terrEl.type = "button";
-          terrEl.id = t.id;
           terrEl.className = "territory";
           terrEl.dataset.id = t.id;
           if (t.name) {
