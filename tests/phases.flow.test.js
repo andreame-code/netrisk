@@ -28,6 +28,7 @@ describe("phase flow", () => {
     game.endTurn(); // unavailable in reinforce
     expect(game.phase).toBe(REINFORCE);
     expect(phaseHandler).not.toHaveBeenCalled();
+    expect(turnStartHandler).not.toHaveBeenCalled();
 
     // reinforce: attack not available
     const bBefore = game.territories[1].armies;
@@ -57,7 +58,9 @@ describe("phase flow", () => {
     expect(game.phase).toBe(REINFORCE);
     expect(game.reinforcements).toBeGreaterThan(0);
     expect(turnStartHandler).toHaveBeenCalledWith({ player: game.currentPlayer });
+    expect(turnStartHandler).toHaveBeenCalledTimes(1);
     expect(phaseHandler).toHaveBeenNthCalledWith(3, { phase: REINFORCE, player: game.currentPlayer });
+    expect(phaseHandler).toHaveBeenCalledTimes(3);
   });
 });
 
