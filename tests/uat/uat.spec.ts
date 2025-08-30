@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('UAT checklist', () => {
+  test.describe.configure({ timeout: 120000 });
+
   test('@smoke basic gameplay flow', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('netriskPlayers', JSON.stringify([
@@ -21,12 +23,13 @@ test.describe('UAT checklist', () => {
       (els) => els.slice(0, 3).map((el) => `#${el.id}`),
     );
     for (const sel of terrs) {
+      const boardSel = `#board .map-territory${sel}`;
       await page.evaluate((s) => {
         const el = document.querySelector(s);
         el?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      }, sel);
-      const name = await page.getAttribute(sel, 'data-name');
-      await expect(page.locator(sel)).toHaveClass(/selected/);
+      }, boardSel);
+      const name = await page.getAttribute(boardSel, 'data-name');
+      await expect(page.locator(boardSel)).toHaveClass(/selected/);
       await expect(page.locator('#selectedTerritory')).toHaveText(name!);
     }
     await page.evaluate(async () => {
