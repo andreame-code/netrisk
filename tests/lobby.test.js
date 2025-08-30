@@ -61,6 +61,12 @@ describe('lobby screen', () => {
     localStorage.clear();
   });
 
+  test('does not show error when lobbies load successfully', async () => {
+    require('../src/lobby.js');
+    await new Promise(r => setTimeout(r, 0));
+    expect(document.getElementById('lobbyError').classList.contains('hidden')).toBe(true);
+  });
+
   test('back button goes home', () => {
     const { goHome } = require('../src/navigation.js');
     require('../src/lobby.js');
@@ -220,7 +226,7 @@ describe('lobby screen', () => {
     wsInstance.onopen();
     wsInstance.onerror();
     expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
-      'Unable to connect to multiplayer server. Please try again.'
+      'Impossibile connettersi al server multiplayer. Riprova.'
     );
     delete global.WebSocket;
   });
@@ -234,7 +240,7 @@ describe('lobby screen', () => {
     require('../src/lobby.js');
     wsInstance.onmessage({ data: JSON.stringify({ type: 'error', error: 'oops' }) });
     expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
-      'An error occurred. Please try again.'
+      'Si è verificato un errore. Riprova.'
     );
     delete global.WebSocket;
   });

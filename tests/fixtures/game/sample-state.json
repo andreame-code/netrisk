@@ -1,0 +1,12 @@
+{
+  "players": [
+    { "name": "P1", "color": "#f00" },
+    { "name": "P2", "color": "#0f0" }
+  ],
+  "territories": [
+    { "id": 0, "neighbors": [1], "x": 0, "y": 0, "owner": 0, "armies": 3 },
+    { "id": 1, "neighbors": [0], "x": 1, "y": 0, "owner": 1, "armies": 3 }
+  ],
+  "continents": [],
+  "deck": []
+}
