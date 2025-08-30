@@ -61,7 +61,7 @@ const retryBtn = document.getElementById("retryLoad");
 let retryAction = () => loadGame();
 
 function showLoadError(
-  message = "Unable to load game data. Check your connection and try again.",
+  message = "Impossibile caricare i dati di gioco. Riprova.",
   action = () => loadGame(),
 ) {
   if (loadErrorEl && loadErrorMsg) {
@@ -82,7 +82,7 @@ function handleImageError(event) {
   const img = event?.target;
   if (!img) return;
   showLoadError(
-    "Some game pieces couldn't be loaded. We'll try again automatically. If the problem continues, press Retry.",
+    "Impossibile caricare alcuni elementi del gioco. Riprova.",
     () => location.reload(),
   );
   if (!img.dataset.retry) {

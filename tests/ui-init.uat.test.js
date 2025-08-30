@@ -88,6 +88,7 @@ describe("ui-init game start and navigation", () => {
       endTurn: jest.fn(),
     };
     document.body.innerHTML = `
+      <div id="loadError" class="hidden"><p id="loadErrorMsg"></p><button id="retryLoad"></button></div>
       <div id="uiPanel"></div>
       <div id="actionLog"></div>
       <div id="diceResults"></div>
@@ -123,5 +124,9 @@ describe("ui-init game start and navigation", () => {
     expect(resetBtn).not.toBeNull();
     resetBtn.click();
     expect(navigation.navigateTo).toHaveBeenCalledWith("setup.html");
+  });
+
+  test("initGame does not show error on success", () => {
+    expect(document.getElementById("loadError").classList.contains("hidden")).toBe(true);
   });
 });

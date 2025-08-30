@@ -71,7 +71,7 @@ async function fetchLobbies() {
   if (!supabase) {
     renderLobbies([]);
     logError('Supabase not initialized; cannot fetch lobbies');
-    showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
+    showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
     return;
   }
   try {
@@ -79,7 +79,7 @@ async function fetchLobbies() {
     const { data, error } = await supabase.from('lobbies').select();
     if (error) {
       logError('Error fetching lobbies', error.message);
-      showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
+      showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
       return;
     }
     currentLobbies.splice(0, currentLobbies.length, ...(data || []));
@@ -88,7 +88,7 @@ async function fetchLobbies() {
     logInfo(`Loaded ${currentLobbies.length} lobbies`);
   } catch (err) {
     logError('Unexpected error fetching lobbies', err?.message);
-    showLobbyError('Unable to load lobby list. Check your connection and try again.', fetchLobbies);
+    showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
   }
 }
 
@@ -134,7 +134,7 @@ export function initLobby() {
   if (!WS_URL && createBtn) {
     createBtn.disabled = true;
     showLobbyError(
-      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use multiplayer.',
+      'Supabase non è configurato. Riprova.',
       () => location.reload()
     );
   }
@@ -166,7 +166,7 @@ export function initLobby() {
     logInfo('Creating new game lobby');
     try {
       if (!url) {
-        showLobbyError('Multiplayer server is not available.', () => location.reload());
+        showLobbyError('Server multiplayer non disponibile. Riprova.', () => location.reload());
         return;
       }
       if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -185,16 +185,16 @@ export function initLobby() {
             );
           } catch (err2) {
             logError('WebSocket send error', err2?.message);
-            showLobbyError('Unable to connect to multiplayer server. Please try again.', () => createGame(payload, dlg));
+            showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => createGame(payload, dlg));
           }
         };
         ws.onmessage = e => handleMessage(e, dlg);
         ws.onerror = errEvent => {
           logError('WebSocket connection error', errEvent?.message);
-          showLobbyError('Unable to connect to multiplayer server. Please try again.', () => createGame(payload, dlg));
+          showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => createGame(payload, dlg));
         };
         ws.onclose = () =>
-          showLobbyError('Connection to multiplayer server lost. Please try again.', () => createGame(payload, dlg));
+          showLobbyError('Connessione al server multiplayer persa. Riprova.', () => createGame(payload, dlg));
       } else {
         ws.send(
           JSON.stringify({
@@ -208,7 +208,7 @@ export function initLobby() {
       }
     } catch (err) {
       logError('createGame failed', err?.message);
-      showLobbyError('Unable to create lobby. Please try again.', () => createGame(payload, dlg));
+      showLobbyError('Impossibile creare la lobby. Riprova.', () => createGame(payload, dlg));
     }
   }
 
@@ -253,15 +253,15 @@ export function initLobby() {
       };
       ws.onmessage = e => handleMessage(e, null);
       ws.onerror = () =>
-        showLobbyError('Unable to connect to multiplayer server. Please try again.', () => {
+        showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => {
           location.reload();
         });
       ws.onclose = () =>
-        showLobbyError('Connection to multiplayer server lost. Please try again.', () => {
+        showLobbyError('Connessione al server multiplayer persa. Riprova.', () => {
           location.reload();
         });
     } else {
-      showLobbyError('Multiplayer server is not available.', () => location.reload());
+      showLobbyError('Server multiplayer non disponibile. Riprova.', () => location.reload());
     }
   }
   fetchLobbies();
@@ -366,7 +366,7 @@ export function initLobby() {
         break;
       }
       case 'error': {
-        showLobbyError('An error occurred. Please try again.', () => location.reload());
+        showLobbyError('Si è verificato un errore. Riprova.', () => location.reload());
         break;
       }
       default:
