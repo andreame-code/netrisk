@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('smoke auth', () => {
   test('anonymous auth flow', async ({ page }) => {
-    await page.route('**/src/init/supabase-client.js', (route) =>
+    await page.route('**/src/init/supabase-client.js*', (route) =>
       route.fulfill({
         body: `
           const supabase = {
