@@ -148,15 +148,18 @@ export function initLobby() {
     });
   }
   async function createGame(payload, dlg) {
+    let user = null;
     try {
       if (supabase) {
         await supabase.auth.getSession();
-        logInfo('Requested Supabase session');
+        ({ data: { user } = {} } = await supabase.auth.getUser());
+        logInfo('Requested Supabase session and user');
       }
     } catch (err) {
-      logError('Supabase getSession error', err?.message);
+      logError('Supabase getSession/getUser error', err?.message);
     }
     const url = WS_URL;
+    const playerName = user?.user_metadata?.username || user?.email;
     logInfo('Creating new game lobby');
     try {
       if (!url) {
@@ -171,7 +174,8 @@ export function initLobby() {
             ws.send(
               JSON.stringify({
                 type: 'createLobby',
-                player: { name: payload.name },
+                name: payload.roomName,
+                player: { name: playerName },
                 maxPlayers: payload.maxPlayers,
                 ...(payload.map ? { map: payload.map } : {}),
               })
@@ -192,7 +196,8 @@ export function initLobby() {
         ws.send(
           JSON.stringify({
             type: 'createLobby',
-            player: { name: payload.name },
+            name: payload.roomName,
+            player: { name: playerName },
             maxPlayers: payload.maxPlayers,
             ...(payload.map ? { map: payload.map } : {}),
           })
@@ -207,16 +212,16 @@ export function initLobby() {
   if (form) {
     form.addEventListener('submit', ev => {
       ev.preventDefault();
-      const name = document.getElementById('roomName').value.trim();
+      const roomName = document.getElementById('roomName').value.trim();
       const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
       const map = document.getElementById('map').value.trim();
-      if (!name || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 8) {
+      if (!roomName || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 8) {
         if (typeof form.reportValidity === 'function') {
           form.reportValidity();
         }
         return;
       }
-      createGame({ name, maxPlayers, map }, dialog);
+      createGame({ roomName, maxPlayers, map }, dialog);
     });
   }
 

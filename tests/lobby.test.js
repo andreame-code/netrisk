@@ -1,6 +1,30 @@
 jest.mock('../src/navigation.js', () => ({ goHome: jest.fn() }));
 jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
-jest.mock('../src/init/supabase-client.js', () => null);
+const mockSupabase = {
+  auth: {
+    getSession: jest.fn().mockResolvedValue({}),
+    getUser: jest.fn().mockResolvedValue({
+      data: { user: { user_metadata: { username: 'testuser' }, email: 'test@example.com' } },
+    }),
+  },
+  from: jest.fn(table => {
+    if (table === 'lobby_chat') {
+      const chain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            order: jest.fn().mockResolvedValue({ data: [] }),
+          }),
+        }),
+      };
+      return chain;
+    }
+    return {
+      select: jest.fn().mockResolvedValue({ data: [] }),
+    };
+  }),
+  channel: jest.fn(() => ({ on: jest.fn().mockReturnThis(), subscribe: jest.fn() })),
+};
+jest.mock('../src/init/supabase-client.js', () => ({ __esModule: true, default: mockSupabase }));
 
 describe('lobby screen', () => {
   beforeEach(() => {
@@ -83,12 +107,14 @@ describe('lobby screen', () => {
     await new Promise(r => setTimeout(r, 0));
     document.getElementById('map').value = 'map';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    await new Promise(r => setTimeout(r, 0));
     expect(WebSocket).toHaveBeenCalled();
     wsInstance.onopen();
     expect(wsInstance.send).toHaveBeenCalled();
     const msg = JSON.parse(wsInstance.send.mock.calls[0][0]);
     expect(msg.type).toBe('createLobby');
-    expect(msg.player.name).toBe('Room');
+    expect(msg.name).toBe('Room');
+    expect(msg.player.name).toBe('testuser');
     expect(msg.maxPlayers).toBe(4);
     expect(msg.map).toBe('map');
     wsInstance.onmessage({ data: JSON.stringify({ type: 'lobby', code: 'abc', host: 'p1', players: [{ id: 'p1' }], map: 'map', maxPlayers: 4 }) });
@@ -142,6 +168,7 @@ describe('lobby screen', () => {
     await new Promise(r => setTimeout(r, 0));
     document.getElementById('map').value = '';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    await new Promise(r => setTimeout(r, 0));
     wsInstance.onopen();
     wsInstance.onmessage({ data: JSON.stringify({ type: 'lobby', code: 'abc', host: 'p1', players: [{ id: 'p1', name: 'Host' }], map: null, maxPlayers: 2 }) });
     document.getElementById('chatInput').value = 'hello';
@@ -189,6 +216,7 @@ describe('lobby screen', () => {
     await new Promise(r => setTimeout(r, 0));
     document.getElementById('map').value = '';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
+    await new Promise(r => setTimeout(r, 0));
     wsInstance.onopen();
     wsInstance.onerror();
     expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
