@@ -22,12 +22,24 @@ jobs:
           echo "Branch '${BRANCH_NAME}' is protected or uses gh-pages. Skipping cleanup."
           exit 0
 
+      - name: Check gh-pages branch
+        id: gh-pages
+        run: |
+          REPO_URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code "$REPO_URL" gh-pages; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout gh-pages
+        if: steps.gh-pages.outputs.exists == 'true'
         uses: actions/checkout@v4
         with:
           ref: gh-pages
 
       - name: Remove preview folder
+        if: steps.gh-pages.outputs.exists == 'true'
         id: remove
         run: |
           echo "Processing branch '${BRANCH_NAME}'"
@@ -41,7 +53,7 @@ jobs:
           fi
 
       - name: Commit and push changes
-        if: steps.remove.outputs.removed == 'true'
+        if: steps.gh-pages.outputs.exists == 'true' && steps.remove.outputs.removed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
