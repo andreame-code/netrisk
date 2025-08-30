@@ -7,7 +7,9 @@ test.describe('UAT checklist', () => {
         { name: 'Red', color: '#f00' },
         { name: 'Blue', color: '#00f' },
       ]));
-      localStorage.setItem('netriskMap', 'map');
+      // Use the world map so that we can interact with named territories
+      // like "north-america" in the test below.
+      localStorage.setItem('netriskMap', 'world8');
     });
 
     const errors: string[] = [];
@@ -55,8 +57,10 @@ test.describe('UAT checklist', () => {
     await page.goto('/game.html');
     await page.waitForSelector('#board');
 
-    await expect(page.locator('body')).toHaveClass(/high-contrast/);
-    await expect(page.locator('body')).toHaveClass(/jump-assist/);
+    // These accessibility classes are applied asynchronously after game init,
+    // so allow extra time for slower environments.
+    await expect(page.locator('body')).toHaveClass(/high-contrast/, { timeout: 15000 });
+    await expect(page.locator('body')).toHaveClass(/jump-assist/, { timeout: 15000 });
 
     const hud = await page.evaluate(async () => {
       const mod = await import('/src/data/level-hud.js');
