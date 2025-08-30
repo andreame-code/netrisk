@@ -1,6 +1,7 @@
 const fs = require('fs');
 const map = require('../src/data/map3.json');
-const world8 = require('../src/data/world8.json');
+// eslint-disable-next-line global-require
+const world8 = require('./fixtures/maps/world8.json');
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 

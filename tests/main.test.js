@@ -24,6 +24,7 @@ describe('main DOM interactions', () => {
       localStorage.clear();
     }
     document.body.innerHTML = `
+      <div id="loadError" class="hidden"><p id="loadErrorMsg"></p><button id="retryLoad"></button></div>
       <div id="status"></div>
       <div id="currentPlayer"></div>
       <div id="turnNumber"></div>
@@ -255,6 +256,10 @@ describe('main DOM interactions', () => {
     expect(uiSpy).toHaveBeenCalled();
     perform.mockRestore();
     uiSpy.mockRestore();
+  });
+
+  test('does not show load error on successful init', () => {
+    expect(document.getElementById('loadError').classList.contains('hidden')).toBe(true);
   });
 });
 

@@ -84,7 +84,7 @@ describe("image load errors", () => {
     const errorEl = document.getElementById("loadError");
     expect(errorEl.classList.contains("hidden")).toBe(false);
     const msg = document.getElementById("loadErrorMsg").textContent;
-    expect(/pieces/i.test(msg)).toBe(true);
+    expect(msg).toContain('Riprova');
     jest.runAllTimers();
     expect(img.src).toMatch(/retry=/);
   });

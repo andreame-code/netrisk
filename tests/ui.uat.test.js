@@ -1,6 +1,7 @@
 import * as ui from '../src/ui.js';
 import { GameState } from "../src/state/game.js";
-const world8 = require('../src/data/world8.json');
+// eslint-disable-next-line global-require
+const world8 = require('./fixtures/maps/world8.json');
 
 const { initUI, addLogEntry, updateUI, animateMove, destroyUI } = ui;
 

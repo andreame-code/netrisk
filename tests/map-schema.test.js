@@ -23,7 +23,8 @@ describe('map schema validation', () => {
   });
 
   test('world8 territories have unique ids and reciprocal neighbors', () => {
-    const map = require('../src/data/world8.json');
+    // eslint-disable-next-line global-require
+    const map = require('./fixtures/maps/world8.json');
     const ids = new Set(map.territories.map((t) => t.id));
     expect(ids.size).toBe(map.territories.length);
     const byId = Object.fromEntries(map.territories.map((t) => [t.id, t]));

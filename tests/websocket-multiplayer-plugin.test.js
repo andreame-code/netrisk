@@ -3,6 +3,8 @@ import Game from "../src/game.js";
 import { FORTIFY } from "../src/phases.js";
 import createWebSocketMultiplayer from "../src/plugins/websocket-multiplayer-plugin.js";
 import WebSocket, { WebSocketServer } from "ws";
+// eslint-disable-next-line global-require
+const sampleState = require("./fixtures/game/sample-state.json");
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -22,17 +24,9 @@ test("syncs game state over websocket", async () => {
 
   global.WebSocket = WebSocket;
 
-  const players = [
-    { name: "P1", color: "#f00" },
-    { name: "P2", color: "#0f0" },
-  ];
-  const territories = [
-    { id: 0, neighbors: [1], x: 0, y: 0, owner: 0, armies: 3 },
-    { id: 1, neighbors: [0], x: 1, y: 0, owner: 1, armies: 3 },
-  ];
-
-  const game1 = new Game(players, territories, [], [], false, false);
-  const game2 = new Game(players, territories, [], [], false, false);
+  const { players, territories, continents, deck } = sampleState;
+  const game1 = new Game(players, territories, continents, deck, false, false);
+  const game2 = new Game(players, territories, continents, deck, false, false);
 
   const events2 = [];
   game2.on("turnStart", e => events2.push(e));

@@ -11,6 +11,8 @@ import { handleChat } from "../src/server/handlers/chat.js";
 import { handleReconnect } from "../src/server/handlers/reconnect.js";
 import { handleHeartbeat } from "../src/server/handlers/heartbeat.js";
 import * as utils from "../src/server/utils.js";
+// eslint-disable-next-line global-require
+const baseLobby = require("./fixtures/lobby/default.json");
 
 describe("server handlers", () => {
   test("handleCreateLobby creates lobby", async () => {
@@ -29,38 +31,25 @@ describe("server handlers", () => {
 
   test("handleJoinLobby adds player", async () => {
     const lobbies = new Map();
-      const lobby = {
-        code: "code",
-        players: [],
-        host: "h",
-        started: false,
-        map: null,
-        maxPlayers: 8,
-      };
+    const lobby = { ...baseLobby, code: "code" };
     lobbies.set("code", lobby);
     const ctx = {
       lobbies,
       createCode: () => "p2",
-        maxPlayers: 8,
+      maxPlayers: 8,
       offlinePlayerTimeout: 0,
     };
-      const ws = { send: jest.fn(), readyState: 1 };
-      const state = {};
-      await handleJoinLobby(ctx, ws, { type: "joinLobby", code: "code", player: {} }, state);
-      expect(lobby.players.length).toBe(1);
-      const sent = JSON.parse(ws.send.mock.calls[0][0]);
-      expect(sent).toEqual(expect.objectContaining({ type: "joined", code: "code" }));
+    const ws = { send: jest.fn(), readyState: 1 };
+    const state = {};
+    await handleJoinLobby(ctx, ws, { type: "joinLobby", code: "code", player: {} }, state);
+    expect(lobby.players.length).toBe(1);
+    const sent = JSON.parse(ws.send.mock.calls[0][0]);
+    expect(sent).toEqual(expect.objectContaining({ type: "joined", code: "code" }));
   });
 
   test("handleLeaveLobby removes player", async () => {
     const lobbies = new Map();
-    const lobby = {
-      code: "code",
-      players: [{ id: "p1" }, { id: "p2" }],
-      host: "p1",
-      map: null,
-      started: false,
-    };
+    const lobby = { ...baseLobby, code: "code", players: [{ id: "p1" }, { id: "p2" }], host: "p1" };
     lobbies.set("code", lobby);
     const ctx = {
       lobbies,
@@ -77,7 +66,7 @@ describe("server handlers", () => {
 
   test("handleReady toggles ready", async () => {
     const lobbies = new Map();
-    const lobby = { code: "c", players: [{ id: "p1", ready: false }], host: "p1", map: null, maxPlayers:8 };
+    const lobby = { ...baseLobby, players: [{ id: "p1", ready: false }], host: "p1" };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
     await handleReady(ctx, {}, { type: "ready", code: "c", id: "p1", ready: true });
@@ -86,7 +75,7 @@ describe("server handlers", () => {
 
   test("handleSelectMap updates map", async () => {
     const lobbies = new Map();
-    const lobby = { code: "c", players: [], host: "h", started: false, map: null, maxPlayers:8 };
+    const lobby = { ...baseLobby };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0, isValidMap: () => true };
     await handleSelectMap(ctx, {}, { type: "selectMap", code: "c", id: "h", map: "m1" });
@@ -96,11 +85,9 @@ describe("server handlers", () => {
   test("handleStart starts game", async () => {
     const lobbies = new Map();
     const lobby = {
-      code: "c",
+      ...baseLobby,
       players: [{ id: "h", ready: true }, { id: "p2", ready: true }],
       host: "h",
-      started: false,
-      map: null,
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
@@ -111,11 +98,10 @@ describe("server handlers", () => {
   test("handleState updates state", async () => {
     const lobbies = new Map();
     const lobby = {
-      code: "c",
+      ...baseLobby,
       players: [],
       started: true,
       state: { currentPlayer: "p1" },
-      map: null,
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
@@ -125,7 +111,7 @@ describe("server handlers", () => {
 
   test("handleChat broadcasts", async () => {
     const lobbies = new Map();
-    const lobby = { code: "c", players: [], map: null };
+    const lobby = { ...baseLobby, players: [], map: null };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0, supabase: null };
     const spy = jest.spyOn(utils, "broadcast").mockImplementation(() => {});
@@ -140,11 +126,9 @@ describe("server handlers", () => {
   test("handleReconnect restores player", async () => {
     const lobbies = new Map();
     const lobby = {
-      code: "c",
+      ...baseLobby,
       players: [{ id: "p1", ws: null, ready: false }],
       host: "p1",
-      map: null,
-      maxPlayers:8,
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
@@ -158,7 +142,7 @@ describe("server handlers", () => {
   test("handleHeartbeat updates lastSeen", async () => {
     const lobbies = new Map();
     const player = { id: "p1" };
-    const lobby = { code: "c", players: [player] };
+    const lobby = { ...baseLobby, players: [player] };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
     await handleHeartbeat(ctx, {}, { type: "heartbeat", code: "c", id: "p1" });
@@ -168,12 +152,10 @@ describe("server handlers", () => {
   test("allows eight players to join and start", async () => {
     const lobbies = new Map();
     const lobby = {
-      code: "c",
+      ...baseLobby,
       players: [],
       host: "p0",
-      started: false,
       map: "world8",
-      maxPlayers: 8,
     };
     lobbies.set("c", lobby);
     const ctx = {
