@@ -6,6 +6,20 @@ const bcrypt = require('bcryptjs');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+const allowedOrigins = ['https://andreame-code.github.io'];
+
+const getRequestOrigin = (req) => {
+  if (req.headers.origin) return req.headers.origin;
+  if (req.headers.referer) {
+    try {
+      return new URL(req.headers.referer).origin;
+    } catch {
+      return '';
+    }
+  }
+  return '';
+};
+
 const distDir = path.join(__dirname, 'dist');
 
 const routes = {
@@ -31,11 +45,20 @@ const server = http.createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
 
   if (urlPath === '/api/register' || urlPath === '/api/login') {
+    const origin = getRequestOrigin(req);
+    if (origin && !allowedOrigins.includes(origin)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Origin not allowed' }));
+      return;
+    }
+
     const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
     };
+    if (origin) {
+      corsHeaders['Access-Control-Allow-Origin'] = origin;
+    }
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204, corsHeaders);
@@ -133,4 +156,6 @@ const port = process.env.PORT || 8080;
 server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
+module.exports = server;
 
