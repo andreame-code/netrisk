@@ -8,7 +8,6 @@ on:
 
 jobs:
   tests:
-    if: false
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/playwright:v1.46.0-jammy
     steps:
@@ -18,4 +17,5 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npx playwright test --reporter=github
+      - run: npx playwright install --with-deps
+      - run: npx playwright test --config config/playwright.config.ts --reporter=github

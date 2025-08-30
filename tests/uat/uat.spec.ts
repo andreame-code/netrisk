@@ -15,7 +15,7 @@ test.describe('UAT checklist', () => {
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.goto('/game.html');
-    await page.waitForSelector('#board .map-territory');
+    await page.waitForSelector('#board .map-territory', { timeout: 60000 });
     const terrs = await page.$$eval(
       '#board .map-territory',
       (els) => els.slice(0, 3).map((el) => `#${el.id}`),
@@ -57,7 +57,7 @@ test.describe('UAT checklist', () => {
 
     await page.goto('/game.html');
     // Wait for at least one territory to load so the accessibility hooks run.
-    await page.waitForSelector('#board .map-territory');
+    await page.waitForSelector('#board .map-territory', { timeout: 60000 });
 
     // These accessibility classes are applied asynchronously after game init,
     // so allow extra time for slower environments.
