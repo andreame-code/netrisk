@@ -7,8 +7,7 @@ test.describe('UAT checklist', () => {
         { name: 'Red', color: '#f00' },
         { name: 'Blue', color: '#00f' },
       ]));
-      // Use the simple grid map so that we can reliably interact with
-      // known territories like "t1" below.
+      // Use the simple grid map so the test can interact with a predictable set of territories.
       localStorage.setItem('netriskMap', 'map3');
     });
 
@@ -16,9 +15,11 @@ test.describe('UAT checklist', () => {
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.goto('/game.html');
-    await page.waitForSelector('#t1');
-
-    const terrs = ['#t1', '#t2', '#t3'];
+    await page.waitForSelector('#board .map-territory');
+    const terrs = await page.$$eval(
+      '#board .map-territory',
+      (els) => els.slice(0, 3).map((el) => `#${el.id}`),
+    );
     for (const sel of terrs) {
       await page.evaluate((s) => {
         const el = document.querySelector(s);
