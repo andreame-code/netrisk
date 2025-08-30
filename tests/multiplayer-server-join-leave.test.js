@@ -18,11 +18,18 @@ function messageQueue(ws) {
   return q;
 }
 
-test.skip(
+test(
   "enforces max players and closes empty lobby",
   async () => {
   const port = 12347;
-  const server = createLobbyServer({ port, closeEmptyLobbiesAfter: 50 });
+  // Limit the lobby server to 6 players so we can test the max player
+  // enforcement logic. The host's createLobby message will also set
+  // maxPlayers to ensure the lobby broadcasts the correct limit.
+  const server = createLobbyServer({
+    port,
+    closeEmptyLobbiesAfter: 50,
+    maxPlayers: 6,
+  });
   const url = `ws://localhost:${port}`;
 
   const host = new WebSocket(url);
@@ -32,6 +39,7 @@ test.skip(
     JSON.stringify({
       type: "createLobby",
       player: { id: "p1", name: "P1", color: "#f00" },
+      maxPlayers: 6,
     })
   );
   await wait(50);
