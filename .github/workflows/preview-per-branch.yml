@@ -12,6 +12,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
@@ -26,6 +28,14 @@ jobs:
 
       - name: Install deps
         run: npm ci
+
+      - name: Verify env vars presence
+        run: |
+          [ -n "$VITE_SUPABASE_URL" ] || { echo "❌ Missing VITE_SUPABASE_URL"; exit 1; }
+          [ -n "$VITE_SUPABASE_ANON_KEY" ] || { echo "❌ Missing VITE_SUPABASE_ANON_KEY"; exit 1; }
+          [ -n "$SUPABASE_URL" ] || { echo "❌ Missing SUPABASE_URL"; exit 1; }
+          [ -n "$SUPABASE_ANON_KEY" ] || { echo "❌ Missing SUPABASE_ANON_KEY"; exit 1; }
+          echo "✅ Env vars present"
 
       - name: Write env file
         run: |
