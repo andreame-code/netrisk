@@ -123,7 +123,6 @@ export default function initTerritorySelection({
         terrs.forEach((t) => {
           const terrEl = document.createElement("button");
           terrEl.type = "button";
-          terrEl.id = t.id;
           terrEl.className = "territory";
           terrEl.dataset.id = t.id;
           if (t.name) {

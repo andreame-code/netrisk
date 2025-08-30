@@ -34,7 +34,7 @@ describe('Accessibility features', () => {
     ];
     initTerritorySelection({ territories, territoryPositions: {} });
     await flushPromises();
-    const btnA = document.querySelector('button#A');
+    const btnA = document.querySelector('button.territory[data-id="A"]');
     expect(btnA.getAttribute('aria-label')).toBe('Alpha');
     const pathA = document.querySelector('#map #A');
     expect(pathA.getAttribute('tabindex')).toBe('0');
