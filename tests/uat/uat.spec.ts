@@ -7,18 +7,18 @@ test.describe('UAT checklist', () => {
         { name: 'Red', color: '#f00' },
         { name: 'Blue', color: '#00f' },
       ]));
-      // Use the world map so that we can interact with named territories
-      // like "north-america" in the test below.
-      localStorage.setItem('netriskMap', 'world8');
+      // Use the simple grid map so that we can reliably interact with
+      // known territories like "t1" below.
+      localStorage.setItem('netriskMap', 'map3');
     });
 
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.goto('/game.html');
-    await page.waitForSelector('#north-america');
+    await page.waitForSelector('#t1');
 
-    const terrs = ['#north-america', '#south-america', '#africa'];
+    const terrs = ['#t1', '#t2', '#t3'];
     for (const sel of terrs) {
       await page.evaluate((s) => {
         const el = document.querySelector(s);
@@ -55,7 +55,8 @@ test.describe('UAT checklist', () => {
     });
 
     await page.goto('/game.html');
-    await page.waitForSelector('#board');
+    // Wait for at least one territory to load so the accessibility hooks run.
+    await page.waitForSelector('#board .map-territory');
 
     // These accessibility classes are applied asynchronously after game init,
     // so allow extra time for slower environments.
