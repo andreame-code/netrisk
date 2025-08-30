@@ -17,4 +17,5 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - run: npx playwright install --with-deps
       - run: npx playwright test --config config/playwright.config.ts --reporter=github
