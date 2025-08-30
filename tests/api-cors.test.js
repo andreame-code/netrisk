@@ -14,7 +14,7 @@ describe('API CORS', () => {
     server.close(done);
   });
 
-  const send = (method, origin) =>
+  const send = (method, headers = {}) =>
     new Promise((resolve, reject) => {
       const port = server.address().port;
       const req = http.request(
@@ -23,10 +23,7 @@ describe('API CORS', () => {
           port,
           path: '/api/login',
           method,
-          headers: {
-            'Content-Type': 'application/json',
-            Origin: origin,
-          },
+          headers: { 'Content-Type': 'application/json', ...headers },
         },
         (res) => {
           res.on('data', () => {});
@@ -41,13 +38,36 @@ describe('API CORS', () => {
     });
 
   test('allows requests from whitelisted origin', async () => {
-    const res = await send('POST', 'https://andreame-code.github.io');
+    const res = await send('POST', {
+      Origin: 'https://andreame-code.github.io',
+    });
     expect(res.statusCode).not.toBe(403);
-    expect(res.headers['access-control-allow-origin']).toBe('https://andreame-code.github.io');
+    expect(res.headers['access-control-allow-origin']).toBe(
+      'https://andreame-code.github.io'
+    );
   });
 
   test('rejects requests from unapproved origin', async () => {
-    const res = await send('OPTIONS', 'https://evil.example.com');
+    const res = await send('OPTIONS', {
+      Origin: 'https://evil.example.com',
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  test('allows requests when referer is whitelisted', async () => {
+    const res = await send('POST', {
+      Referer: 'https://andreame-code.github.io/some/page',
+    });
+    expect(res.statusCode).not.toBe(403);
+    expect(res.headers['access-control-allow-origin']).toBe(
+      'https://andreame-code.github.io'
+    );
+  });
+
+  test('rejects requests from unapproved referer', async () => {
+    const res = await send('POST', {
+      Referer: 'https://evil.example.com/path',
+    });
     expect(res.statusCode).toBe(403);
   });
 });
