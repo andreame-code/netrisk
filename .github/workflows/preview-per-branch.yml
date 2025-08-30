@@ -42,6 +42,22 @@ jobs:
           cp -r supabase dist/
           cp public/404.html dist/404.html
 
+      - name: Ensure gh-pages branch exists
+        run: |
+          if ! git ls-remote --exit-code origin gh-pages; then
+            echo "Creating empty gh-pages branch"
+            tmpdir=$(mktemp -d)
+            git init "$tmpdir"
+            cd "$tmpdir"
+            git checkout -b gh-pages
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "ci: initial gh-pages"
+            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git push origin gh-pages
+            cd -
+          fi
+
       - name: Checkout gh-pages
         uses: actions/checkout@v4
         with:
