@@ -11,18 +11,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: github-pages
-    env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://example.supabase.co' }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'dummy-key' }}
-      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://example.supabase.co' }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'dummy-key' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,12 +39,34 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Write .env.production for Vite
+      - name: Generate env file
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SHA: ${{ github.sha }}
         run: |
-          cat > .env.production <<EOF
-          VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-          VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+          set -e
+          [ -n "$SUPABASE_URL" ] || { echo '❌ Missing SUPABASE_URL'; exit 1; }
+          [ -n "$SUPABASE_ANON_KEY" ] || { echo '❌ Missing SUPABASE_ANON_KEY'; exit 1; }
+          rm -f public/env.*.js
+          STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          cat > public/env.$SHA.js <<EOF
+          window.__env = {
+            SUPABASE_URL: "$SUPABASE_URL",
+            SUPABASE_ANON_KEY: "$SUPABASE_ANON_KEY",
+            STAMP: "$STAMP",
+            SHA: "$SHA"
+          };
+          console.log('[ENV]', { STAMP: "$STAMP", SHA: "$SHA" });
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js?v=$SHA').catch(e => console.error('SW registration failed', e));
+          }
           EOF
+          echo "VITE_SUPABASE_URL=$SUPABASE_URL" >> $GITHUB_ENV
+          echo "VITE_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> $GITHUB_ENV
+          echo "VITE_COMMIT_SHA=$SHA" >> $GITHUB_ENV
+          sed -i "s/%VITE_COMMIT_SHA%/$SHA/g" public/sw.js public/404.html preview-index.html
 
       - name: Build (Vite, production mode)
         run: npm run build -- --mode production
@@ -58,6 +75,7 @@ jobs:
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r supabase dist/
+
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
