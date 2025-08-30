@@ -13,6 +13,12 @@ form.addEventListener('submit', async (e) => {
     message.textContent = 'Supabase not configured';
     return;
   }
-  const { error } = await supabase.auth.signUp({ email: username, password });
+  const { error } = await supabase.auth.signUp({
+    email: username,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/login.html`,
+    },
+  });
   message.textContent = error ? error.message : 'Registration successful';
 });
