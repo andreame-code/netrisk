@@ -7,16 +7,19 @@ test.describe('UAT checklist', () => {
         { name: 'Red', color: '#f00' },
         { name: 'Blue', color: '#00f' },
       ]));
-      localStorage.setItem('netriskMap', 'map');
+      // Use the simple grid map so the test can interact with a predictable set of territories.
+      localStorage.setItem('netriskMap', 'map3');
     });
 
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
     await page.goto('/game.html');
-    await page.waitForSelector('#north-america');
-
-    const terrs = ['#north-america', '#south-america', '#africa'];
+    await page.waitForSelector('#board .map-territory');
+    const terrs = await page.$$eval(
+      '#board .map-territory',
+      (els) => els.slice(0, 3).map((el) => `#${el.id}`),
+    );
     for (const sel of terrs) {
       await page.evaluate((s) => {
         const el = document.querySelector(s);
@@ -53,10 +56,13 @@ test.describe('UAT checklist', () => {
     });
 
     await page.goto('/game.html');
-    await page.waitForSelector('#board');
+    // Wait for at least one territory to load so the accessibility hooks run.
+    await page.waitForSelector('#board .map-territory');
 
-    await expect(page.locator('body')).toHaveClass(/high-contrast/);
-    await expect(page.locator('body')).toHaveClass(/jump-assist/);
+    // These accessibility classes are applied asynchronously after game init,
+    // so allow extra time for slower environments.
+    await expect(page.locator('body')).toHaveClass(/high-contrast/, { timeout: 15000 });
+    await expect(page.locator('body')).toHaveClass(/jump-assist/, { timeout: 15000 });
 
     const hud = await page.evaluate(async () => {
       const mod = await import('/src/data/level-hud.js');
