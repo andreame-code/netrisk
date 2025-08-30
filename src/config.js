@@ -18,8 +18,9 @@ if (!SUPABASE_URL) {
 }
 export const SUPABASE_KEY =
   import.meta.env?.VITE_SUPABASE_ANON_KEY ??
-  (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY : '') ??
-  '';
+  (typeof process !== 'undefined'
+    ? process.env.VITE_SUPABASE_ANON_KEY
+    : '') ?? '';
 export const WS_URL = (() => {
   if (!SUPABASE_URL) return '';
   try {

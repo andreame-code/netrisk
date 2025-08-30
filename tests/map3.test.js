@@ -64,7 +64,7 @@ describe('territory-selection with map3', () => {
     const init = require('../src/territory-selection.js').default;
     init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
-    expect(fetch).toHaveBeenCalledWith('assets/maps/map3.svg');
+    expect(fetch).toHaveBeenCalledWith('/assets/maps/map3.svg');
     const buttons = document.querySelectorAll('button.territory');
     expect(buttons).toHaveLength(map.territories.length);
   });
