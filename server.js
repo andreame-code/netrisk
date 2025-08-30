@@ -26,7 +26,8 @@ const routes = {
   '/': 'index.html',
   '/setup': 'setup.html',
   '/how-to-play': 'how-to-play.html',
-  '/game': 'game.html'
+  '/game': 'game.html',
+  '/account': 'account.html'
 };
 
 const mimeTypes = {

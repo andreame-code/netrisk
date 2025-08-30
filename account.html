@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - NetRisk</title>
+    <title>Account - NetRisk</title>
     <link rel="stylesheet" href="./css/base.css" />
     <link rel="stylesheet" href="./css/layout.css" />
     <link rel="stylesheet" href="./css/components.css" />
@@ -21,23 +21,12 @@
       </nav>
     </header>
     <main>
-      <h1>Login</h1>
-      <form id="loginForm">
-        <label>
-          Username:
-          <input type="text" id="username" required />
-        </label>
-        <label>
-          Password:
-          <input type="password" id="password" required />
-        </label>
-        <button type="submit" class="btn">Login</button>
-        <a id="registerBtn" class="btn" href="./register.html">Register</a>
-        <button type="button" id="anonymousBtn" class="btn">Login anonymously</button>
-      </form>
-      <p id="message" role="alert"></p>
+      <h1>Account</h1>
+      <p>Name: <span id="userName"></span></p>
+      <p>Email: <span id="userEmail"></span></p>
+      <button id="logoutBtn" class="btn">Logout</button>
     </main>
     <script type="module" src="./auth.js"></script>
-    <script type="module" src="./login.js"></script>
+    <script type="module" src="./account.js"></script>
   </body>
 </html>
