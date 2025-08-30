@@ -13,6 +13,7 @@
     "test": "jest --config config/jest.config.js",
     "type-check": "tsc --noEmit -p config/tsconfig.json",
     "test:uat": "playwright test -c config/playwright.config.ts",
+    "test:visual": "playwright test -c config/playwright.visual.config.ts",
     "test:smoke": "jest --config config/jest.config.js tests/smoke",
     "prepare": "husky"
   },
