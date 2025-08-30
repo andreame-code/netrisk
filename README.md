@@ -84,6 +84,10 @@ per il workflow `supabase-deploy.yml`.
 
 ## Multiplayer
 
+To enable multiplayer features you must provide both `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY`. Without these environment variables the lobby and
+relay server remain disabled.
+
 NetRisk ships with a very small WebSocket relay and a plugin that keeps the
 game state in sync across browser tabs or machines.
 

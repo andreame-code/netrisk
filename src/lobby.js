@@ -133,7 +133,10 @@ export function initLobby() {
   })();
   if (!WS_URL && createBtn) {
     createBtn.disabled = true;
-    showLobbyError('Multiplayer server is not available.', () => location.reload());
+    showLobbyError(
+      'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to use multiplayer.',
+      () => location.reload()
+    );
   }
   if (createBtn && dialog) {
     createBtn.addEventListener('click', () => {
