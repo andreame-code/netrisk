@@ -7,6 +7,11 @@ const rawSupabaseUrl =
   import.meta.env?.VITE_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
 export const API_BASE_URL = rawApiBaseUrl.replace(/\/+$/, '');
 export const SUPABASE_URL = rawSupabaseUrl.replace(/\/+$/, '');
+if (!SUPABASE_URL) {
+  console.error(
+    '[CONFIG] VITE_SUPABASE_URL is missing. Supabase features are disabled.'
+  );
+}
 export const SUPABASE_KEY =
   import.meta.env?.VITE_SUPABASE_ANON_KEY ??
   process.env.VITE_SUPABASE_ANON_KEY ??
