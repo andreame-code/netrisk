@@ -15,7 +15,11 @@ form.addEventListener('submit', async (e) => {
     return;
   }
   const { error } = await supabase.auth.signInWithPassword({ email: username, password });
-  message.textContent = error ? error.message : 'Login successful';
+  if (error) {
+    message.textContent = error.message;
+  } else {
+    window.location.href = 'account.html';
+  }
 });
 
 anonymousBtn?.addEventListener('click', async () => {
@@ -28,5 +32,9 @@ anonymousBtn?.addEventListener('click', async () => {
     return;
   }
   const { error } = await supabase.auth.signInAnonymously();
-  message.textContent = error ? error.message : 'Login successful';
+  if (error) {
+    message.textContent = error.message;
+  } else {
+    window.location.href = 'account.html';
+  }
 });

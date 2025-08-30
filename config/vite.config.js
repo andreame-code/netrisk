@@ -16,6 +16,7 @@ export default defineConfig({
         howto: resolve(__dirname, '../howto.html'),
         login: resolve(__dirname, '../login.html'),
         register: resolve(__dirname, '../register.html'),
+        account: resolve(__dirname, '../account.html'),
       }
     }
   },
