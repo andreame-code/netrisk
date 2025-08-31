@@ -14,7 +14,6 @@ export default defineConfig({
         lobby: resolve(__dirname, '../lobby.html'),
         setup: resolve(__dirname, '../setup.html'),
         howToPlay: resolve(__dirname, '../how-to-play.html'),
-        howto: resolve(__dirname, '../howto.html'),
         login: resolve(__dirname, '../login.html'),
         forgot: resolve(__dirname, '../forgot.html'),
         register: resolve(__dirname, '../register.html'),
