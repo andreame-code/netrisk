@@ -1,4 +1,4 @@
-import { battleOutcomeProbs, territoryPriority } from '../src/ai.js';
+import { battleOutcomeProbs, territoryPriority } from '../src/game/index.js';
 
 class MockGame {
   constructor(map) {

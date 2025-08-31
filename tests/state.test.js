@@ -1,4 +1,4 @@
-import { initGameState } from "../src/state/game.js";
+import { initGameState } from "../src/game/state/index.js";
 
 // This test ensures that the central game state can be reused
 // across different UI layers (e.g. different layout skins) by
@@ -16,8 +16,8 @@ test("game state is shared across layouts", async () => {
 
   initGameState(dummyGame);
 
-  const { gameState: layout1 } = await import("../src/state/game.js");
-  const { gameState: layout2 } = await import("../src/state/game.js");
+  const { gameState: layout1 } = await import("../src/game/state/index.js");
+  const { gameState: layout2 } = await import("../src/game/state/index.js");
 
   expect(layout1).toBe(layout2);
   expect(layout1.currentPlayer).toBe(2);

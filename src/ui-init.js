@@ -48,7 +48,7 @@ import {
   getMapName,
 } from "./state/storage.js";
 import { applyLevelAccessibility } from "./data/level-accessibility.js";
-import { gameState, initGameState } from "./state/game.js";
+import { gameState, initGameState } from "./game/state/index.js";
 import attachAIActionLogging from "./ai-logging.js";
 
 let game;

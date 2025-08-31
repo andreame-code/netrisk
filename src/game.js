@@ -8,6 +8,7 @@ import { colorPalette } from "./colors.js";
 import EventBus from "./core/event-bus.js";
 import loadJson from "./utils/load-json.js";
 import * as logger from "./logger.js";
+import { attack as attackRule, reinforce as reinforceRule, move as moveRule, playCard as playCardRule } from "./game/rules/index.js";
 
 /**
  * @typedef {Object} Player
@@ -232,12 +233,18 @@ class Game {
           t.owner === this.currentPlayer && this.reinforcements > 0,
         onSelect: (t) => {
           this.pushUndoState();
-          t.armies += 1;
-          this.reinforcements -= 1;
-          this.emit(REINFORCE, {
-            territory: t.id,
-            player: this.currentPlayer,
-          });
+          const { state } = reinforceRule(
+            {
+              territories: this.territories,
+              reinforcements: this.reinforcements,
+              currentPlayer: this.currentPlayer,
+            },
+            t.id,
+          );
+          const updated = state.territories.find((u) => u.id === t.id);
+          if (updated) Object.assign(t, updated);
+          this.reinforcements = state.reinforcements;
+          this.emit(REINFORCE, { territory: t.id, player: this.currentPlayer });
           if (this.reinforcements === 0) {
             this.undoStack = [];
             this.redoStack = [];
@@ -305,37 +312,19 @@ class Game {
   }
 
   attack(from, to) {
-    const attackDice = Math.min(3, from.armies - 1);
-    const defendDice = Math.min(2, to.armies);
-
-    const attackRolls = Array.from({ length: attackDice }, () => Math.ceil(Math.random() * 6)).sort((a, b) => b - a);
-    const defendRolls = Array.from({ length: defendDice }, () => Math.ceil(Math.random() * 6)).sort((a, b) => b - a);
-
-    const comparisons = Math.min(attackRolls.length, defendRolls.length);
-    let attackerLosses = 0;
-    let defenderLosses = 0;
-    for (let i = 0; i < comparisons; i++) {
-      if (attackRolls[i] > defendRolls[i]) {
-        to.armies -= 1;
-        defenderLosses += 1;
-      } else {
-        from.armies -= 1;
-        attackerLosses += 1;
-      }
-    }
-
-    let conquered = false;
-    let movableArmies = 0;
-    if (to.armies <= 0) {
-      to.owner = from.owner;
-      to.armies = 1;
-      from.armies -= 1; // mandatory move
-      conquered = true;
-      movableArmies = from.armies - 1;
+    const { state, result } = attackRule(
+      { territories: this.territories },
+      from.id,
+      to.id,
+    );
+    const updatedFrom = state.territories.find((t) => t.id === from.id);
+    const updatedTo = state.territories.find((t) => t.id === to.id);
+    if (updatedFrom) Object.assign(from, updatedFrom);
+    if (updatedTo) Object.assign(to, updatedTo);
+    if (result.conquered) {
       this.conqueredThisTurn = true;
       this.checkVictory();
     }
-    const result = { attackRolls, defendRolls, conquered, movableArmies, attackerLosses, defenderLosses };
     this.emit('attackResolved', { from: from.id, to: to.id, result });
     return result;
   }
@@ -343,13 +332,18 @@ class Game {
   moveArmies(fromId, toId, count) {
     const from = this.territoryById(fromId);
     const to = this.territoryById(toId);
-    if (!from || !to) return false;
-    if (from.owner !== this.currentPlayer || to.owner !== this.currentPlayer) return false;
-    if (!from.neighbors.includes(to.id)) return false;
-    if (count < 1 || from.armies <= count) return false;
+    const { state, moved } = moveRule(
+      { territories: this.territories, currentPlayer: this.currentPlayer },
+      fromId,
+      toId,
+      count,
+    );
+    if (!moved) return false;
     this.pushUndoState();
-    from.armies -= count;
-    to.armies += count;
+    const updatedFrom = state.territories.find((t) => t.id === fromId);
+    const updatedTo = state.territories.find((t) => t.id === toId);
+    if (updatedFrom) Object.assign(from, updatedFrom);
+    if (updatedTo) Object.assign(to, updatedTo);
     this.emit('move', { from: fromId, to: toId, count });
     return true;
   }
@@ -467,16 +461,19 @@ class Game {
   }
 
   playCards(indices) {
-    const hand = this.hands[this.currentPlayer];
-    if (indices.length !== 3) return false;
-    const cards = indices.map(i => hand[i]);
-    if (cards.some(c => !c)) return false;
-    const types = cards.map(c => c.type);
-    const allSame = types.every(t => t === types[0]);
-    const allDiff = new Set(types).size === 3;
-    if (!allSame && !allDiff) return false;
-    indices.sort((a, b) => b - a).forEach(i => this.discard.push(hand.splice(i, 1)[0]));
-    this.reinforcements += 5;
+    const { state, played, cards } = playCardRule(
+      {
+        hands: this.hands,
+        discard: this.discard,
+        currentPlayer: this.currentPlayer,
+        reinforcements: this.reinforcements,
+      },
+      indices,
+    );
+    if (!played) return false;
+    this.hands = state.hands;
+    this.discard = state.discard;
+    this.reinforcements = state.reinforcements;
     this.emit('cardsPlayed', { player: this.currentPlayer, cards });
     return true;
   }

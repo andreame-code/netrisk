@@ -72,7 +72,7 @@ jest.mock("../src/audio.js", () => ({
   setLevelMusic: jest.fn(),
 }));
 
-jest.mock("../src/state/game.js", () => ({
+jest.mock("../src/game/state/index.js", () => ({
   gameState: {},
   initGameState: jest.fn(),
 }));

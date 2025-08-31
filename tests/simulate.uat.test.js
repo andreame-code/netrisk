@@ -1,5 +1,5 @@
 import Game from '../src/game.js';
-import aiTurnManager from '../src/ai/turn-manager.js';
+import aiTurnManager from '../src/game/ai/turn-manager.js';
 import { GAME_OVER } from '../src/phases.js';
 
 const mapMock = {

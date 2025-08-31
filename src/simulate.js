@@ -1,6 +1,6 @@
 (async () => {
   const { default: Game } = await import('./game.js');
-  const { default: aiTurnManager } = await import('./ai/turn-manager.js');
+  const { default: aiTurnManager } = await import('./game/ai/turn-manager.js');
   const { GAME_OVER } = await import('./phases.js');
 
   async function runSimulations(count = 100) {
