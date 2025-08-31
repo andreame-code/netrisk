@@ -12,6 +12,7 @@ const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const anonymousBtn = document.getElementById('anonymousBtn');
 const submitBtn = form?.querySelector('button[type="submit"]');
+const stayLoggedIn = document.getElementById('stayLoggedIn');
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -23,11 +24,26 @@ form.addEventListener('submit', async (e) => {
   }
   submitBtn.disabled = true;
   message.textContent = '';
-  const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
+  const persistent = stayLoggedIn?.checked;
+  supabase.auth.storage = persistent ? window.localStorage : window.sessionStorage;
+  if (!persistent) {
+    try {
+      window.localStorage.removeItem('supabase.auth.token');
+    } catch {
+      // ignore
+    }
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: username,
+    password,
+  });
   submitBtn.disabled = false;
   if (error) {
     message.textContent = 'Credenziali non valide';
     return;
+  }
+  if (data?.session) {
+    await supabase.auth.setSession(data.session);
   }
   const name = data.user?.email?.split('@')[0] || username;
   message.textContent = `Benvenuto, ${name} 👋`;

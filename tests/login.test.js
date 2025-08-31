@@ -2,6 +2,12 @@ describe('login page', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.clear();
+    }
     document.body.innerHTML = `
       <form id="loginForm">
         <input id="username" />
@@ -21,6 +27,7 @@ describe('login page', () => {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
           signInAnonymously: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -37,6 +44,7 @@ describe('login page', () => {
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -60,6 +68,7 @@ describe('login page', () => {
           signInWithPassword: jest
             .fn()
             .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -87,6 +96,7 @@ describe('login page', () => {
           signInWithPassword: jest
             .fn()
             .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -113,6 +123,7 @@ describe('login page', () => {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
           signInAnonymously: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -125,6 +136,69 @@ describe('login page', () => {
     expect(navigateTo).toHaveBeenCalledWith('lobby.html');
     jest.useRealTimers();
     window.history.pushState({}, '', originalUrl);
+  });
+
+  test('removes localStorage token when not staying logged in', async () => {
+    localStorage.setItem('supabase.auth.token', 'old');
+    jest.doMock('../src/init/supabase-client.js', () => ({
+      __esModule: true,
+      default: {
+        auth: {
+          signInWithPassword: jest
+            .fn()
+            .mockResolvedValue({ data: { user: { email: 'foo@example.com' }, session: {} }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
+        },
+      },
+    }));
+    document.body.innerHTML = `
+      <form id="loginForm">
+        <input id="username" />
+        <input id="password" />
+        <input type="checkbox" id="stayLoggedIn" />
+        <button type="submit">Login</button>
+      </form>
+      <p id="message" role="alert"></p>
+    `;
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    await Promise.resolve();
+    expect(localStorage.getItem('supabase.auth.token')).toBeNull();
+  });
+
+  test('keeps token in localStorage when staying logged in', async () => {
+    const removeSpy = jest.spyOn(Storage.prototype, 'removeItem');
+    jest.doMock('../src/init/supabase-client.js', () => ({
+      __esModule: true,
+      default: {
+        auth: {
+          signInWithPassword: jest
+            .fn()
+            .mockResolvedValue({ data: { user: { email: 'foo@example.com' }, session: {} }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
+        },
+      },
+    }));
+    document.body.innerHTML = `
+      <form id="loginForm">
+        <input id="username" />
+        <input id="password" />
+        <input type="checkbox" id="stayLoggedIn" checked />
+        <button type="submit">Login</button>
+      </form>
+      <p id="message" role="alert"></p>
+    `;
+    const { default: supabase } = require('../src/init/supabase-client.js');
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    await Promise.resolve();
+    expect(supabase.auth.storage).toBe(window.localStorage);
+    expect(removeSpy).not.toHaveBeenCalledWith('supabase.auth.token');
+    removeSpy.mockRestore();
   });
 });
 
