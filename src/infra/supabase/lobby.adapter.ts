@@ -59,6 +59,22 @@ export const createLobbyAdapter = (client: SupabaseClient | null = supabase): Lo
       const { error } = await supa.rpc('leave_lobby', { lobby_id: lobbyId });
       if (error) throw error;
       return leaveLobbyOutputSchema.parse({ lobbyId });
+    },
+    subscribeToLobbyChanges(onChange) {
+      if (!supa) return () => {};
+      const channel = supa
+        .channel('public:lobbies')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies' }, () => {
+          onChange();
+        })
+        .subscribe();
+      return () => {
+        try {
+          channel.unsubscribe();
+        } catch {
+          // ignore unsubscribe errors
+        }
+      };
     }
   };
 };

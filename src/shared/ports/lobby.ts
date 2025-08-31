@@ -48,4 +48,5 @@ export interface LobbyPort {
   listLobbies(input: ListLobbiesInputDto): Promise<ListLobbiesOutputDto>;
   join(input: JoinLobbyInputDto): Promise<JoinLobbyOutputDto>;
   leave(input: LeaveLobbyInputDto): Promise<LeaveLobbyOutputDto>;
+  subscribeToLobbyChanges(onChange: () => void): () => void;
 }
