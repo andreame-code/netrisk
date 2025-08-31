@@ -32,6 +32,5 @@
     </script>
   </head>
   <body>
-    <script src="./env.%VITE_COMMIT_SHA%.js"></script>
-  </body>
+    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>   </body>
 </html>

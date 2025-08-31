@@ -125,7 +125,7 @@
         </div>
       </div>
     </div>
-    <script src="./env.%VITE_COMMIT_SHA%.js"></script>
+    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>
     <script type="module" src="./main.js"></script>
   </body>
 </html>
