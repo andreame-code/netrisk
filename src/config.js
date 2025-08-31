@@ -42,13 +42,32 @@ const showServiceUnavailableBanner = () => {
   banner.style.background = '#fcc';
   banner.style.color = '#000';
   banner.style.padding = '1em';
+  banner.style.paddingRight = '2em';
   banner.style.textAlign = 'center';
-  banner.style.position = 'fixed';
+  banner.style.position = 'sticky';
   banner.style.top = '0';
   banner.style.left = '0';
   banner.style.right = '0';
   banner.style.zIndex = '9999';
-  document.body?.prepend(banner);
+  banner.style.boxSizing = 'border-box';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.style.position = 'absolute';
+  closeBtn.style.right = '0.5em';
+  closeBtn.style.top = '0.5em';
+  closeBtn.style.background = 'transparent';
+  closeBtn.style.border = 'none';
+  closeBtn.style.fontSize = '1em';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.addEventListener('click', () => banner.remove());
+  banner.appendChild(closeBtn);
+
+  const header = document.querySelector('.main-header');
+  header
+    ? header.insertAdjacentElement('afterend', banner)
+    : document.body?.prepend(banner);
 };
 
 if (typeof window !== 'undefined') {
