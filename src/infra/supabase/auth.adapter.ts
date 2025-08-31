@@ -7,12 +7,20 @@ import {
   logoutInputSchema,
   logoutOutputSchema,
   currentUserInputSchema,
-  currentUserOutputSchema
+  currentUserOutputSchema,
+  sessionInputSchema,
+  sessionOutputSchema
 } from '../../shared/ports/auth';
 
 export const createAuthAdapter = (client: SupabaseClient | null = supabase): AuthPort => {
   const supa = client;
   return {
+    async session(input) {
+      sessionInputSchema.parse(input);
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { data } = await supa.auth.getSession();
+      return sessionOutputSchema.parse({ exists: !!(data && data.session) });
+    },
     async login(input) {
       const { email, password } = loginInputSchema.parse(input);
       if (!supa) throw new Error('Supabase client not initialized');
@@ -36,9 +44,9 @@ export const createAuthAdapter = (client: SupabaseClient | null = supabase): Aut
       const { data, error } = await supa.auth.getUser();
       if (error || !data.user) throw error || new Error('No user');
       return currentUserOutputSchema.parse({
-        id: data.user.id,
+        id: data.user.id ?? '',
         email: data.user.email ?? undefined,
-        name: (data.user.user_metadata as any)?.name
+        name: (data.user.user_metadata as any)?.name || (data.user.user_metadata as any)?.username
       });
     }
   };
