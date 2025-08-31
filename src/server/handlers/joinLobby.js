@@ -6,7 +6,7 @@ export async function handleJoinLobby(ctx, ws, msg, state) {
     ws.send(JSON.stringify({ type: "error", error: "lobbyNotOpen" }));
     return;
   }
-  if (lobby.players.length >= ctx.maxPlayers) {
+  if (lobby.players.length >= lobby.maxPlayers) {
     ws.send(JSON.stringify({ type: "error", error: "lobbyFull" }));
     return;
   }

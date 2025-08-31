@@ -1,16 +1,20 @@
 import supabase from './init/supabase-client.js';
 import { navigateTo } from './navigation.js';
 
-export async function renderUserMenu() {
+export async function renderUserMenu(session) {
   const menu = document.getElementById('userMenu');
   if (!menu || !supabase) return;
 
   menu.innerHTML = '';
   menu.classList.add('loading');
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = session?.user;
+  if (session === undefined) {
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    user = fetchedUser;
+  }
 
   menu.classList.remove('loading');
 
@@ -53,8 +57,21 @@ export async function renderUserMenu() {
   }
 }
 
-renderUserMenu();
-supabase?.auth.onAuthStateChange(renderUserMenu);
+async function init() {
+  const nav = document.querySelector('nav');
+  nav?.classList.add('loading');
+
+  const {
+    data: { session },
+  } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+  await renderUserMenu(session);
+
+  nav?.classList.remove('loading');
+
+  supabase?.auth.onAuthStateChange((_event, s) => renderUserMenu(s));
+}
+
+init();
 
 try {
   const msg = sessionStorage.getItem('flashMessage');

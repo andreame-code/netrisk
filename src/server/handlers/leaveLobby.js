@@ -20,6 +20,7 @@ export async function handleLeaveLobby(ctx, ws, msg, state) {
     host: lobby.host,
     players: publicPlayers(lobby),
     map: lobby.map,
+    maxPlayers: lobby.maxPlayers,
   });
   ws.send(JSON.stringify({ type: "left", code: lobby.code }));
   if (lobby.players.length === 0) {
