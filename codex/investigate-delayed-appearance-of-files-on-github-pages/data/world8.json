@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "territories": [
+    { "id": "north-america", "neighbors": ["south-america", "europe"], "x": 110, "y": 90 },
+    { "id": "south-america", "neighbors": ["north-america", "africa", "antarctica"], "x": 140, "y": 260 },
+    { "id": "europe", "neighbors": ["north-america", "asia", "africa", "middle-east"], "x": 280, "y": 90 },
+    { "id": "asia", "neighbors": ["europe", "middle-east", "australia"], "x": 450, "y": 100 },
+    { "id": "middle-east", "neighbors": ["europe", "asia", "africa"], "x": 340, "y": 160 },
+    { "id": "africa", "neighbors": ["south-america", "europe", "middle-east", "antarctica"], "x": 320, "y": 260 },
+    { "id": "australia", "neighbors": ["asia", "antarctica"], "x": 500, "y": 300 },
+    { "id": "antarctica", "neighbors": ["south-america", "africa", "australia"], "x": 300, "y": 380 }
+  ],
+  "continents": [
+    { "name": "North America", "territories": ["north-america"], "bonus": 2 },
+    { "name": "South America", "territories": ["south-america"], "bonus": 2 },
+    { "name": "Europe", "territories": ["europe"], "bonus": 2 },
+    { "name": "Asia", "territories": ["asia"], "bonus": 2 },
+    { "name": "Middle East", "territories": ["middle-east"], "bonus": 2 },
+    { "name": "Africa", "territories": ["africa"], "bonus": 2 },
+    { "name": "Australia", "territories": ["australia"], "bonus": 2 },
+    { "name": "Antarctica", "territories": ["antarctica"], "bonus": 2 }
+  ],
+  "deck": [
+    { "territory": "north-america", "type": "infantry" },
+    { "territory": "north-america", "type": "cavalry" },
+    { "territory": "north-america", "type": "artillery" },
+    { "territory": "south-america", "type": "infantry" },
+    { "territory": "south-america", "type": "cavalry" },
+    { "territory": "south-america", "type": "artillery" },
+    { "territory": "europe", "type": "infantry" },
+    { "territory": "europe", "type": "cavalry" },
+    { "territory": "europe", "type": "artillery" },
+    { "territory": "asia", "type": "infantry" },
+    { "territory": "asia", "type": "cavalry" },
+    { "territory": "asia", "type": "artillery" },
+    { "territory": "middle-east", "type": "infantry" },
+    { "territory": "middle-east", "type": "cavalry" },
+    { "territory": "middle-east", "type": "artillery" },
+    { "territory": "africa", "type": "infantry" },
+    { "territory": "africa", "type": "cavalry" },
+    { "territory": "africa", "type": "artillery" },
+    { "territory": "australia", "type": "infantry" },
+    { "territory": "australia", "type": "cavalry" },
+    { "territory": "australia", "type": "artillery" },
+    { "territory": "antarctica", "type": "infantry" },
+    { "territory": "antarctica", "type": "cavalry" },
+    { "territory": "antarctica", "type": "artillery" }
+  ]
+}
