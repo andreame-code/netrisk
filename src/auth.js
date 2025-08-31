@@ -1,14 +1,11 @@
 import supabase from './init/supabase-client.js';
 import { navigateTo } from './navigation.js';
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
 
 export async function renderUserMenu() {
   const menu = document.getElementById('userMenu');
   if (!menu) return;
 
   const nav = menu.closest('nav') || menu;
-  menu.innerHTML = '';
-  nav.classList.add('loading');
 
   const showLoggedOut = () => {
     menu.innerHTML = '';
@@ -25,24 +22,13 @@ export async function renderUserMenu() {
     menu.classList.remove('loading');
   };
 
-  if (!supabase) {
+  if (supabase === null) {
     showLoggedOut();
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
-      const banner = document.createElement('div');
-      banner.textContent = 'Servizio temporaneamente non disponibile, riprova';
-      banner.style.background = '#fcc';
-      banner.style.color = '#000';
-      banner.style.padding = '1em';
-      banner.style.textAlign = 'center';
-      banner.style.position = 'fixed';
-      banner.style.top = '0';
-      banner.style.left = '0';
-      banner.style.right = '0';
-      banner.style.zIndex = '9999';
-      document.body?.prepend(banner);
-    }
     return;
   }
+
+  menu.innerHTML = '';
+  nav.classList.add('loading');
 
   const timeout = setTimeout(showLoggedOut, 5000);
 
