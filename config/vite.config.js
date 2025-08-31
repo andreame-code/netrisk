@@ -5,6 +5,7 @@ export default defineConfig({
   root: resolve(__dirname, '..'),
   base: './',
   build: {
+    polyfillModulePreload: false,
     rollupOptions: {
       input: {
         main: resolve(__dirname, '../index.html'),
