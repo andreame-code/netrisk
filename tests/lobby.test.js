@@ -1,4 +1,4 @@
-jest.mock('../src/navigation.js', () => ({ goHome: jest.fn() }));
+jest.mock('../src/navigation.js', () => ({ goHome: jest.fn(), navigateTo: jest.fn() }));
 jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 const mockSupabase = {
   auth: {
@@ -59,6 +59,14 @@ describe('lobby screen', () => {
     delete global.fetch;
     delete global.alert;
     localStorage.clear();
+  });
+
+  test('redirects to login when not authenticated', async () => {
+    mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+    const { navigateTo } = require('../src/navigation.js');
+    require('../src/lobby.js');
+    await new Promise(r => setTimeout(r, 0));
+    expect(navigateTo).toHaveBeenCalledWith('login.html?redirect=%2F');
   });
 
   test('does not show error when lobbies load successfully', async () => {

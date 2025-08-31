@@ -1,5 +1,5 @@
 import { initThemeToggle } from './theme.js';
-import { goHome } from './navigation.js';
+import { goHome, navigateTo } from './navigation.js';
 import { WS_URL } from './config.js';
 import EventBus from './core/event-bus.js';
 import { info as logInfo, error as logError } from './logger.js';
@@ -264,7 +264,6 @@ export function initLobby() {
       showLobbyError('Server multiplayer non disponibile. Riprova.', () => location.reload());
     }
   }
-  fetchLobbies();
   import('./init/supabase-client.js')
     .then(async mod => {
       if (mod && Object.prototype.hasOwnProperty.call(mod, 'default')) {
@@ -277,6 +276,19 @@ export function initLobby() {
         return;
       }
       logInfo('Supabase client ready on lobby page');
+      try {
+        const { data: { user } = {} } = await supabase.auth.getUser();
+        if (!user) {
+          const redirectPath = window.location.pathname + window.location.search;
+          navigateTo(`login.html?redirect=${encodeURIComponent(redirectPath)}`);
+          return;
+        }
+      } catch (err) {
+        logError('Supabase getUser error', err?.message);
+        const redirectPath = window.location.pathname + window.location.search;
+        navigateTo(`login.html?redirect=${encodeURIComponent(redirectPath)}`);
+        return;
+      }
       fetchLobbies();
       supabase
         .channel('public:lobbies')
