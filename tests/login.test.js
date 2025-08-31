@@ -43,7 +43,7 @@ describe('login page', () => {
 
     require('../src/login.js');
     document.getElementById('anonymousBtn').click();
-    expect(document.getElementById('message').textContent).toBe('Anonymous login not supported');
+    expect(document.getElementById('message').textContent).toBe('Accesso anonimo non supportato');
   });
 });
 
