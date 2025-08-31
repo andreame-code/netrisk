@@ -5,14 +5,18 @@ export async function renderUserMenu() {
   const menu = document.getElementById('userMenu');
   if (!menu || !supabase) return;
 
+  const nav = menu.closest('nav') || menu;
+
   menu.innerHTML = '';
-  menu.classList.add('loading');
+  nav.classList.add('loading');
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  menu.classList.remove('loading');
+  nav.classList.remove('loading');
+
+  const user = session?.user;
 
   if (user) {
     const avatar = document.createElement('span');
