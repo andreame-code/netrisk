@@ -2,7 +2,7 @@ jest.mock('../src/navigation.js', () => ({ goHome: jest.fn() }));
 jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 const mockSupabase = {
   auth: {
-    getSession: jest.fn().mockResolvedValue({}),
+    getSession: jest.fn().mockResolvedValue({ data: { session: {} } }),
     getUser: jest.fn().mockResolvedValue({
       data: { user: { user_metadata: { username: 'testuser' }, email: 'test@example.com' } },
     }),
@@ -209,6 +209,25 @@ describe('lobby screen', () => {
     require('../src/lobby.js');
     expect(document.getElementById('createBtn').disabled).toBe(true);
     expect(document.getElementById('lobbyError').classList.contains('hidden')).toBe(false);
+  });
+
+  test('disables create button when session is invalid', async () => {
+    jest.resetModules();
+    const noSessionSupabase = {
+      ...mockSupabase,
+      auth: {
+        ...mockSupabase.auth,
+        getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
+      },
+    };
+    jest.doMock('../src/init/supabase-client.js', () => ({ __esModule: true, default: noSessionSupabase }));
+    jest.doMock('../src/config.js', () => ({ WS_URL: 'ws://test' }));
+    require('../src/lobby.js');
+    await new Promise(r => setTimeout(r, 0));
+    expect(document.getElementById('createBtn').disabled).toBe(true);
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'Effettua il login per creare una lobby.'
+    );
   });
 
   test('notifies user on websocket error', async () => {

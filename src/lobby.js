@@ -266,7 +266,7 @@ export function initLobby() {
   }
   fetchLobbies();
   import('./init/supabase-client.js')
-    .then(mod => {
+    .then(async mod => {
       if (mod && Object.prototype.hasOwnProperty.call(mod, 'default')) {
         supabase = mod.default;
       } else {
@@ -285,6 +285,15 @@ export function initLobby() {
         })
         .subscribe();
       bus.on('lobbiesChanged', fetchLobbies);
+      try {
+        const { data: { session } = {} } = await supabase.auth.getSession();
+        if (!session) {
+          if (createBtn) createBtn.disabled = true;
+          showLobbyError('Effettua il login per creare una lobby.');
+        }
+      } catch (err) {
+        logError('Supabase getSession error', err?.message);
+      }
     })
     .catch(err => {
       logError('Failed to load Supabase client', err?.message);
