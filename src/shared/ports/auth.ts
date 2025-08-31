@@ -25,7 +25,17 @@ export const currentUserOutputSchema = z.object({
 export type CurrentUserInputDto = z.infer<typeof currentUserInputSchema>;
 export type CurrentUserOutputDto = z.infer<typeof currentUserOutputSchema>;
 
+export const sessionInputSchema = z.object({});
+export const sessionOutputSchema = z.object({
+  exists: z.boolean()
+});
+export type SessionInputDto = z.infer<typeof sessionInputSchema>;
+export type SessionOutputDto = z.infer<typeof sessionOutputSchema>;
+
+
 export interface AuthPort {
+  session(input: SessionInputDto): Promise<SessionOutputDto>;
+
   login(input: LoginInputDto): Promise<LoginOutputDto>;
   logout(input: LogoutInputDto): Promise<LogoutOutputDto>;
   currentUser(input: CurrentUserInputDto): Promise<CurrentUserOutputDto>;
