@@ -1,6 +1,4 @@
-import {
-  handleCreateLobby,
-} from "../src/server/handlers/createLobby.js";
+import { handleCreateLobby } from "../src/server/handlers/createLobby.js";
 import { handleJoinLobby } from "../src/server/handlers/joinLobby.js";
 import { handleLeaveLobby } from "../src/server/handlers/leaveLobby.js";
 import { handleReady } from "../src/server/handlers/ready.js";
@@ -24,7 +22,12 @@ describe("server handlers", () => {
     };
     const ws = { send: jest.fn(), readyState: 1 };
     const state = {};
-    await handleCreateLobby(ctx, ws, { type: "createLobby", player: {} }, state);
+    await handleCreateLobby(
+      ctx,
+      ws,
+      { type: "createLobby", player: {} },
+      state,
+    );
     expect(lobbies.size).toBe(1);
     expect(ws.send).toHaveBeenCalled();
   });
@@ -41,15 +44,27 @@ describe("server handlers", () => {
     };
     const ws = { send: jest.fn(), readyState: 1 };
     const state = {};
-    await handleJoinLobby(ctx, ws, { type: "joinLobby", code: "code", player: {} }, state);
+    await handleJoinLobby(
+      ctx,
+      ws,
+      { type: "joinLobby", code: "code", player: {} },
+      state,
+    );
     expect(lobby.players.length).toBe(1);
     const sent = JSON.parse(ws.send.mock.calls[0][0]);
-    expect(sent).toEqual(expect.objectContaining({ type: "joined", code: "code" }));
+    expect(sent).toEqual(
+      expect.objectContaining({ type: "joined", code: "code" }),
+    );
   });
 
   test("handleLeaveLobby removes player", async () => {
     const lobbies = new Map();
-    const lobby = { ...baseLobby, code: "code", players: [{ id: "p1" }, { id: "p2" }], host: "p1" };
+    const lobby = {
+      ...baseLobby,
+      code: "code",
+      players: [{ id: "p1" }, { id: "p2" }],
+      host: "p1",
+    };
     lobbies.set("code", lobby);
     const ctx = {
       lobbies,
@@ -58,18 +73,33 @@ describe("server handlers", () => {
       supabase: null,
     };
     const ws = { send: jest.fn() };
-    await handleLeaveLobby(ctx, ws, { type: "leaveLobby", code: "code", id: "p2" }, {});
+    await handleLeaveLobby(
+      ctx,
+      ws,
+      { type: "leaveLobby", code: "code", id: "p2" },
+      {},
+    );
     expect(lobby.players.length).toBe(1);
     const sent = JSON.parse(ws.send.mock.calls[0][0]);
-    expect(sent).toEqual(expect.objectContaining({ type: "left", code: "code" }));
+    expect(sent).toEqual(
+      expect.objectContaining({ type: "left", code: "code" }),
+    );
   });
 
   test("handleReady toggles ready", async () => {
     const lobbies = new Map();
-    const lobby = { ...baseLobby, players: [{ id: "p1", ready: false }], host: "p1" };
+    const lobby = {
+      ...baseLobby,
+      players: [{ id: "p1", ready: false }],
+      host: "p1",
+    };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
-    await handleReady(ctx, {}, { type: "ready", code: "c", id: "p1", ready: true });
+    await handleReady(
+      ctx,
+      {},
+      { type: "ready", code: "c", id: "p1", ready: true },
+    );
     expect(lobby.players[0].ready).toBe(true);
   });
 
@@ -78,7 +108,11 @@ describe("server handlers", () => {
     const lobby = { ...baseLobby };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0, isValidMap: () => true };
-    await handleSelectMap(ctx, {}, { type: "selectMap", code: "c", id: "h", map: "m1" });
+    await handleSelectMap(
+      ctx,
+      {},
+      { type: "selectMap", code: "c", id: "h", map: "m1" },
+    );
     expect(lobby.map).toBe("m1");
   });
 
@@ -86,12 +120,19 @@ describe("server handlers", () => {
     const lobbies = new Map();
     const lobby = {
       ...baseLobby,
-      players: [{ id: "h", ready: true }, { id: "p2", ready: true }],
+      players: [
+        { id: "h", ready: true },
+        { id: "p2", ready: true },
+      ],
       host: "h",
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
-    await handleStart(ctx, {}, { type: "start", code: "c", id: "h", state: { currentPlayer: "h" } });
+    await handleStart(
+      ctx,
+      {},
+      { type: "start", code: "c", id: "h", state: { currentPlayer: "h" } },
+    );
     expect(lobby.started).toBe(true);
   });
 
@@ -105,7 +146,16 @@ describe("server handlers", () => {
     };
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
-    await handleState(ctx, {}, { type: "state", code: "c", id: "p1", state: { foo: "bar", currentPlayer: "p1" } });
+    await handleState(
+      ctx,
+      {},
+      {
+        type: "state",
+        code: "c",
+        id: "p1",
+        state: { foo: "bar", currentPlayer: "p1" },
+      },
+    );
     expect(lobby.state.foo).toBe("bar");
   });
 
@@ -115,7 +165,11 @@ describe("server handlers", () => {
     lobbies.set("c", lobby);
     const ctx = { lobbies, offlinePlayerTimeout: 0, supabase: null };
     const spy = jest.spyOn(utils, "broadcast").mockImplementation(() => {});
-    await handleChat(ctx, {}, { type: "chat", code: "c", id: "p1", text: "hi" });
+    await handleChat(
+      ctx,
+      {},
+      { type: "chat", code: "c", id: "p1", text: "hi" },
+    );
     expect(spy).toHaveBeenCalledWith(
       lobby,
       expect.objectContaining({ type: "chat", text: "hi" }),
@@ -134,7 +188,12 @@ describe("server handlers", () => {
     const ctx = { lobbies, offlinePlayerTimeout: 0 };
     const ws = { send: jest.fn(), readyState: 1 };
     const state = {};
-    await handleReconnect(ctx, ws, { type: "reconnect", code: "c", id: "p1" }, state);
+    await handleReconnect(
+      ctx,
+      ws,
+      { type: "reconnect", code: "c", id: "p1" },
+      state,
+    );
     expect(lobby.players[0].ws).toBe(ws);
     expect(state.currentLobby).toBe(lobby);
   });
@@ -176,9 +235,17 @@ describe("server handlers", () => {
     }
     expect(lobby.players).toHaveLength(8);
     for (const p of lobby.players) {
-      await handleReady(ctx, {}, { type: "ready", code: "c", id: p.id, ready: true });
+      await handleReady(
+        ctx,
+        {},
+        { type: "ready", code: "c", id: p.id, ready: true },
+      );
     }
-    await handleStart(ctx, {}, { type: "start", code: "c", id: "p0", state: { currentPlayer: "p0" } });
+    await handleStart(
+      ctx,
+      {},
+      { type: "start", code: "c", id: "p0", state: { currentPlayer: "p0" } },
+    );
     expect(lobby.started).toBe(true);
   });
 });

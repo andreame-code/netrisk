@@ -38,7 +38,10 @@ describe("phase flow", () => {
     game.handleTerritoryClick("a");
     game.handleTerritoryClick("a");
     expect(game.phase).toBe(ATTACK);
-    expect(phaseHandler).toHaveBeenNthCalledWith(1, { phase: ATTACK, player: 0 });
+    expect(phaseHandler).toHaveBeenNthCalledWith(1, {
+      phase: ATTACK,
+      player: 0,
+    });
 
     // attack: reinforce not available
     const armiesBefore = game.territories[0].armies;
@@ -47,20 +50,30 @@ describe("phase flow", () => {
     expect(game.territories[0].armies).toBe(armiesBefore);
     game.endTurn();
     expect(game.phase).toBe(FORTIFY);
-    expect(phaseHandler).toHaveBeenNthCalledWith(2, { phase: FORTIFY, player: 0 });
+    expect(phaseHandler).toHaveBeenNthCalledWith(2, {
+      phase: FORTIFY,
+      player: 0,
+    });
 
     // fortify: attack not available
-    expect(game.handleTerritoryClick("a")).toEqual({ type: "select", territory: "a" });
+    expect(game.handleTerritoryClick("a")).toEqual({
+      type: "select",
+      territory: "a",
+    });
     expect(game.handleTerritoryClick("b")).toBeNull();
     const prevPlayer = game.currentPlayer;
     game.endTurn();
     expect(game.currentPlayer).toBe((prevPlayer + 1) % 2);
     expect(game.phase).toBe(REINFORCE);
     expect(game.reinforcements).toBeGreaterThan(0);
-    expect(turnStartHandler).toHaveBeenCalledWith({ player: game.currentPlayer });
+    expect(turnStartHandler).toHaveBeenCalledWith({
+      player: game.currentPlayer,
+    });
     expect(turnStartHandler).toHaveBeenCalledTimes(1);
-    expect(phaseHandler).toHaveBeenNthCalledWith(3, { phase: REINFORCE, player: game.currentPlayer });
+    expect(phaseHandler).toHaveBeenNthCalledWith(3, {
+      phase: REINFORCE,
+      player: game.currentPlayer,
+    });
     expect(phaseHandler).toHaveBeenCalledTimes(3);
   });
 });
-

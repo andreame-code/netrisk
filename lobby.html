@@ -28,7 +28,9 @@
         <p id="lobbyErrorMsg"></p>
         <button id="retryLobby" class="btn">Retry</button>
       </div>
-      <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">Back</button>
+      <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">
+        Back
+      </button>
       <button
         id="createBtn"
         class="btn"
@@ -42,11 +44,27 @@
       <dialog id="createDialog">
         <form id="createForm">
           <label>Room name <input id="roomName" required /></label>
-          <label>Max players <input id="maxPlayers" type="number" min="2" max="8" value="2" required /></label>
-          <label>Map <select id="map"></select></label>
+          <label
+            >Max players
+            <input
+              id="maxPlayers"
+              type="number"
+              min="2"
+              max="8"
+              value="2"
+              required
+          /></label>
+          <label
+            >Map
+            <select id="map"></select
+          ></label>
           <menu>
-            <button type="button" value="cancel" id="cancelCreate">Cancel</button>
-            <button type="submit" id="submitCreate" value="default">Create</button>
+            <button type="button" value="cancel" id="cancelCreate">
+              Cancel
+            </button>
+            <button type="submit" id="submitCreate" value="default">
+              Create
+            </button>
           </menu>
         </form>
       </dialog>
@@ -59,7 +77,10 @@
       </section>
       <section id="debugLog" class="debug-log" aria-live="polite"></section>
     </main>
-    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>
+    <script
+      src="./env.js?sha=%VITE_COMMIT_SHA%"
+      onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"
+    ></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./lobby.js"></script>
   </body>

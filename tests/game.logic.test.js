@@ -2,7 +2,9 @@ import Game from "../src/game.js";
 import { ATTACK } from "../src/phases.js";
 
 // Stub network calls made through loadJson
-jest.mock("../src/utils/load-json.js", () => jest.fn(() => Promise.resolve({})));
+jest.mock("../src/utils/load-json.js", () =>
+  jest.fn(() => Promise.resolve({})),
+);
 
 describe("core game logic", () => {
   const createGame = (territories, continents = []) =>
@@ -67,7 +69,10 @@ describe("core game logic", () => {
       let i = 0;
       jest.spyOn(Math, "random").mockImplementation(() => sequence[i++]);
 
-      const result = game.attack(game.territoryById("a"), game.territoryById("b"));
+      const result = game.attack(
+        game.territoryById("a"),
+        game.territoryById("b"),
+      );
 
       expect(result.attackRolls).toHaveLength(0);
       expect(game.territoryById("b").armies).toBe(2);

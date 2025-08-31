@@ -27,7 +27,7 @@ class EventBus {
       } catch (err) {
         // isolate handler errors
         // eslint-disable-next-line no-console
-        console.error('Event handler error', err);
+        console.error("Event handler error", err);
       }
     }
   }

@@ -1,17 +1,17 @@
-import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import supabase from '../../init/supabase-client.js';
+import { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
+import supabase from "../../init/supabase-client.js";
 import {
   RealtimePort,
   subscribeInputSchema,
   subscribeOutputSchema,
   unsubscribeInputSchema,
-  unsubscribeOutputSchema
-} from '../../shared/ports/realtime';
+  unsubscribeOutputSchema,
+} from "../../shared/ports/realtime";
 
 export const createRealtimeAdapter = (
-  client: SupabaseClient | null = supabase
+  client: SupabaseClient | null = supabase,
 ): RealtimePort => {
-  if (!client) throw new Error('Supabase client not initialized');
+  if (!client) throw new Error("Supabase client not initialized");
   const channels = new Map<string, RealtimeChannel>();
 
   return {
@@ -32,7 +32,7 @@ export const createRealtimeAdapter = (
       await client.removeChannel(ch);
       channels.delete(subscriptionId);
       return unsubscribeOutputSchema.parse({ success: true });
-    }
+    },
   };
 };
 

@@ -113,7 +113,9 @@ game state in sync across browser tabs or machines.
 
    ```js
    const { WS_URL } = await import("./src/config.js");
-   const { default: createWebSocketMultiplayer } = await import("./src/plugins/websocket-multiplayer-plugin.js");
+   const { default: createWebSocketMultiplayer } = await import(
+     "./src/plugins/websocket-multiplayer-plugin.js"
+   );
    game.use(createWebSocketMultiplayer(WS_URL));
    ```
 
@@ -209,8 +211,8 @@ instance and can register handlers for events such as `reinforce`,
 `attackResolved` or `phaseChange`.
 
 ```javascript
-import Game from './game.js';
-import loggerPlugin from './src/plugins/logger-plugin.js';
+import Game from "./game.js";
+import loggerPlugin from "./src/plugins/logger-plugin.js";
 
 const game = new Game();
 game.use(loggerPlugin);

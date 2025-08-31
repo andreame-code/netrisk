@@ -1,12 +1,12 @@
-const fs = require('fs');
-const map = require('../src/data/map3.json');
+const fs = require("fs");
+const map = require("../src/data/map3.json");
 // eslint-disable-next-line global-require
-const world8 = require('./fixtures/maps/world8.json');
+const world8 = require("./fixtures/maps/world8.json");
 
 const flushPromises = () => new Promise((res) => setTimeout(res, 0));
 
-describe('map3 data', () => {
-  test('territories have unique ids and reciprocal neighbors', () => {
+describe("map3 data", () => {
+  test("territories have unique ids and reciprocal neighbors", () => {
     const ids = new Set(map.territories.map((t) => t.id));
     expect(ids.size).toBe(map.territories.length);
     const byId = Object.fromEntries(map.territories.map((t) => [t.id, t]));
@@ -18,14 +18,14 @@ describe('map3 data', () => {
     }
   });
 
-  test('continents cover all territories', () => {
+  test("continents cover all territories", () => {
     const terrIds = new Set(map.territories.map((t) => t.id));
     const contIds = new Set(map.continents.flatMap((c) => c.territories));
     expect(contIds).toEqual(terrIds);
   });
 
-  test('deck has one of each type per territory', () => {
-    const types = ['infantry', 'cavalry', 'artillery'];
+  test("deck has one of each type per territory", () => {
+    const types = ["infantry", "cavalry", "artillery"];
     const counts = {};
     for (const card of map.deck) {
       if (!counts[card.territory]) counts[card.territory] = {};
@@ -40,8 +40,8 @@ describe('map3 data', () => {
   });
 });
 
-describe('world8 data', () => {
-  test('territories have unique ids and reciprocal neighbors', () => {
+describe("world8 data", () => {
+  test("territories have unique ids and reciprocal neighbors", () => {
     const ids = new Set(world8.territories.map((t) => t.id));
     expect(ids.size).toBe(world8.territories.length);
     const byId = Object.fromEntries(world8.territories.map((t) => [t.id, t]));
@@ -54,34 +54,36 @@ describe('world8 data', () => {
   });
 });
 
-describe('territory-selection with map3', () => {
-  test('fetches svg and creates territory buttons', async () => {
-    document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
-    localStorage.setItem('netriskMap', 'map3');
-    const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
+describe("territory-selection with map3", () => {
+  test("fetches svg and creates territory buttons", async () => {
+    document.body.innerHTML =
+      '<div id="board"></div><div id="selectedTerritory"></div>';
+    localStorage.setItem("netriskMap", "map3");
+    const svg = fs.readFileSync("public/assets/maps/map3.svg", "utf8");
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
-    const init = require('../src/territory-selection.js').default;
+    const init = require("../src/territory-selection.js").default;
     init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
-    expect(fetch).toHaveBeenCalledWith('/assets/maps/map3.svg');
-    const buttons = document.querySelectorAll('button.territory');
+    expect(fetch).toHaveBeenCalledWith("/assets/maps/map3.svg");
+    const buttons = document.querySelectorAll("button.territory");
     expect(buttons).toHaveLength(map.territories.length);
   });
 
-  test('token is appended after territory buttons', async () => {
-    document.body.innerHTML = '<div id="board"></div><div id="selectedTerritory"></div>';
-    localStorage.setItem('netriskMap', 'map3');
-    const svg = fs.readFileSync('public/assets/maps/map3.svg', 'utf8');
+  test("token is appended after territory buttons", async () => {
+    document.body.innerHTML =
+      '<div id="board"></div><div id="selectedTerritory"></div>';
+    localStorage.setItem("netriskMap", "map3");
+    const svg = fs.readFileSync("public/assets/maps/map3.svg", "utf8");
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, text: () => Promise.resolve(svg) }),
     );
-    const init = require('../src/territory-selection.js').default;
+    const init = require("../src/territory-selection.js").default;
     init({ territories: map.territories, territoryPositions: {} });
     await flushPromises();
-    const board = document.getElementById('board');
-    const token = document.getElementById('token');
+    const board = document.getElementById("board");
+    const token = document.getElementById("token");
     expect(board.lastElementChild).toBe(token);
   });
 });

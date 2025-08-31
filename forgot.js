@@ -1,2 +1,2 @@
-import './src/modulepreload-polyfill.js';
-import './src/forgot.js';
+import "./src/modulepreload-polyfill.js";
+import "./src/forgot.js";

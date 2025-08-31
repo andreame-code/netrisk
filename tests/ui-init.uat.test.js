@@ -50,7 +50,9 @@ jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
 jest.mock("../src/config.js", () => ({ WS_URL: "ws://test" }));
 let mockGame;
 jest.mock("../src/init/game-loader.js", () => ({
-  loadGame: jest.fn(() => Promise.resolve({ game: mockGame, territoryPositions: {} })),
+  loadGame: jest.fn(() =>
+    Promise.resolve({ game: mockGame, territoryPositions: {} }),
+  ),
 }));
 jest.mock("../src/state/storage.js", () => ({
   updateGameState: jest.fn(),
@@ -127,6 +129,8 @@ describe("ui-init game start and navigation", () => {
   });
 
   test("initGame does not show error on success", () => {
-    expect(document.getElementById("loadError").classList.contains("hidden")).toBe(true);
+    expect(
+      document.getElementById("loadError").classList.contains("hidden"),
+    ).toBe(true);
   });
 });

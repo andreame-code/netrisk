@@ -1,17 +1,20 @@
-jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
-jest.mock('../src/navigation.js', () => ({ navigateTo: jest.fn() }));
+jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
+jest.mock("../src/navigation.js", () => ({ navigateTo: jest.fn() }));
 const mockSupabase = {
   auth: { getUser: jest.fn().mockResolvedValue({ data: { user: {} } }) },
 };
-jest.mock('../src/init/supabase-client.js', () => ({ __esModule: true, default: mockSupabase }));
+jest.mock("../src/init/supabase-client.js", () => ({
+  __esModule: true,
+  default: mockSupabase,
+}));
 
-describe('home page UAT', () => {
+describe("home page UAT", () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
   });
 
-  test('initHome wires up all buttons to navigation', async () => {
+  test("initHome wires up all buttons to navigation", async () => {
     document.body.innerHTML = `
       <button id="playBtn"></button>
       <button id="multiplayerBtn"></button>
@@ -20,42 +23,42 @@ describe('home page UAT', () => {
       <button id="aboutBtn"></button>
     `;
 
-    const { navigateTo } = require('../src/navigation.js');
-    require('../src/home.js');
+    const { navigateTo } = require("../src/navigation.js");
+    require("../src/home.js");
 
-    document.getElementById('playBtn').click();
-    document.getElementById('multiplayerBtn').click();
+    document.getElementById("playBtn").click();
+    document.getElementById("multiplayerBtn").click();
     await Promise.resolve();
-    document.getElementById('setupBtn').click();
-    document.getElementById('howToPlayBtn').click();
-    document.getElementById('aboutBtn').click();
+    document.getElementById("setupBtn").click();
+    document.getElementById("howToPlayBtn").click();
+    document.getElementById("aboutBtn").click();
 
-    expect(navigateTo).toHaveBeenNthCalledWith(1, './game.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(2, './lobby.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(3, './setup.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(4, './how-to-play.html');
-    expect(navigateTo).toHaveBeenNthCalledWith(5, './about.html');
+    expect(navigateTo).toHaveBeenNthCalledWith(1, "./game.html");
+    expect(navigateTo).toHaveBeenNthCalledWith(2, "./lobby.html");
+    expect(navigateTo).toHaveBeenNthCalledWith(3, "./setup.html");
+    expect(navigateTo).toHaveBeenNthCalledWith(4, "./how-to-play.html");
+    expect(navigateTo).toHaveBeenNthCalledWith(5, "./about.html");
     expect(navigateTo).toHaveBeenCalledTimes(5);
   });
 
-  test('initHome skips missing buttons without error', () => {
+  test("initHome skips missing buttons without error", () => {
     document.body.innerHTML = `
       <button id="playBtn"></button>
     `;
 
-    const { navigateTo } = require('../src/navigation.js');
-    expect(() => require('../src/home.js')).not.toThrow();
+    const { navigateTo } = require("../src/navigation.js");
+    expect(() => require("../src/home.js")).not.toThrow();
 
-    document.getElementById('playBtn').click();
-    expect(navigateTo).toHaveBeenCalledWith('./game.html');
+    document.getElementById("playBtn").click();
+    expect(navigateTo).toHaveBeenCalledWith("./game.html");
     expect(navigateTo).toHaveBeenCalledTimes(1);
   });
 
-  test('initHome with no buttons does not trigger navigation', () => {
-    document.body.innerHTML = '';
-    const { navigateTo } = require('../src/navigation.js');
+  test("initHome with no buttons does not trigger navigation", () => {
+    document.body.innerHTML = "";
+    const { navigateTo } = require("../src/navigation.js");
 
-    expect(() => require('../src/home.js')).not.toThrow();
+    expect(() => require("../src/home.js")).not.toThrow();
     expect(navigateTo).not.toHaveBeenCalled();
   });
 });

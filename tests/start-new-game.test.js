@@ -8,7 +8,7 @@ jest.mock("../src/state/storage.js", () => ({
   hasSavedPlayers: jest.fn(() => true),
   hasSavedGame: jest.fn(() => true),
   updateGameState: jest.fn(),
-  getMapName: jest.fn(() => 'map'),
+  getMapName: jest.fn(() => "map"),
 }));
 
 jest.mock("../src/ui.js", () => ({
@@ -83,9 +83,10 @@ jest.mock("../src/logger.js", () => ({
   error: jest.fn(),
 }));
 
-document.body.innerHTML = '<div id="uiPanel"></div><button id="exitGame"></button><button id="endTurn"></button>';
+document.body.innerHTML =
+  '<div id="uiPanel"></div><button id="exitGame"></button><button id="endTurn"></button>';
 
-  const { startNewGame } = require("../src/main.js");
+const { startNewGame } = require("../src/main.js");
 const { navigateTo } = require("../src/navigation.js");
 
 describe("startNewGame navigation", () => {

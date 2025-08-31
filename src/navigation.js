@@ -1,4 +1,7 @@
-export function navigateTo(url, win = typeof window !== "undefined" ? window : undefined) {
+export function navigateTo(
+  url,
+  win = typeof window !== "undefined" ? window : undefined,
+) {
   if (!win) return;
   const base = win.location?.pathname?.replace(/[^/]*$/, "") ?? "";
   const target = base + url;
@@ -16,7 +19,9 @@ export function navigateTo(url, win = typeof window !== "undefined" ? window : u
   }
 }
 
-export function goHome(win = typeof window !== "undefined" ? window : undefined) {
+export function goHome(
+  win = typeof window !== "undefined" ? window : undefined,
+) {
   navigateTo("index.html", win);
 }
 
@@ -25,7 +30,8 @@ export function exitGame(
   message = "Exit the game and return to home?",
 ) {
   if (!win) return;
-  const confirmed = typeof win.confirm === "function" ? win.confirm(message) : true;
+  const confirmed =
+    typeof win.confirm === "function" ? win.confirm(message) : true;
   if (confirmed) {
     goHome(win);
   }

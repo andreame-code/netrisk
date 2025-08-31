@@ -1,18 +1,22 @@
 export default function attack(state, fromId, toId) {
   const newState = {
     ...state,
-    territories: state.territories.map(t => ({ ...t })),
+    territories: state.territories.map((t) => ({ ...t })),
   };
-  const from = newState.territories.find(t => t.id === fromId);
-  const to = newState.territories.find(t => t.id === toId);
+  const from = newState.territories.find((t) => t.id === fromId);
+  const to = newState.territories.find((t) => t.id === toId);
   if (!from || !to) {
     return { state: newState, result: null };
   }
   const attackDice = Math.min(3, from.armies - 1);
   const defendDice = Math.min(2, to.armies);
   const roll = () => Math.ceil(Math.random() * 6);
-  const attackRolls = Array.from({ length: attackDice }, () => roll()).sort((a, b) => b - a);
-  const defendRolls = Array.from({ length: defendDice }, () => roll()).sort((a, b) => b - a);
+  const attackRolls = Array.from({ length: attackDice }, () => roll()).sort(
+    (a, b) => b - a,
+  );
+  const defendRolls = Array.from({ length: defendDice }, () => roll()).sort(
+    (a, b) => b - a,
+  );
   const comparisons = Math.min(attackRolls.length, defendRolls.length);
   let attackerLosses = 0;
   let defenderLosses = 0;

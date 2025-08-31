@@ -1,7 +1,11 @@
 import { broadcast, loadLobby } from "../utils.js";
 
 export async function handleChat(ctx, ws, msg) {
-  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
+  const lobby = await loadLobby(
+    ctx.lobbies,
+    msg.code,
+    ctx.offlinePlayerTimeout,
+  );
   if (!lobby) return;
   if (ctx.supabase) {
     ctx.supabase

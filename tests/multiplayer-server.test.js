@@ -4,20 +4,20 @@ jest.mock("../src/init/supabase-client.js", () => null);
 import { createLobbyServer } from "../src/multiplayer-server.js";
 
 function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function onceOpen(ws) {
-  return new Promise(resolve => ws.once("open", resolve));
+  return new Promise((resolve) => ws.once("open", resolve));
 }
 
 function onceClose(ws) {
-  return new Promise(resolve => ws.once("close", resolve));
+  return new Promise((resolve) => ws.once("close", resolve));
 }
 
 function messageQueue(ws) {
   const q = [];
-  ws.on("message", data => q.push(JSON.parse(data.toString())));
+  ws.on("message", (data) => q.push(JSON.parse(data.toString())));
   return q;
 }
 
@@ -34,7 +34,7 @@ test("lobby server manages lifecycle", async () => {
       type: "createLobby",
       player: { id: "p1", name: "P1", color: "#f00" },
       maxPlayers: 5,
-    })
+    }),
   );
   await wait(50);
   const lobbyMsg = q1.shift();
@@ -49,7 +49,7 @@ test("lobby server manages lifecycle", async () => {
       type: "joinLobby",
       code,
       player: { id: "p2", name: "P2", color: "#0f0" },
-    })
+    }),
   );
   await wait(50);
   q2.shift(); // joined
@@ -64,7 +64,7 @@ test("lobby server manages lifecycle", async () => {
       type: "joinLobby",
       code,
       player: { id: "p3", name: "P3", color: "#00f" },
-    })
+    }),
   );
   await wait(50);
   q3.shift();
@@ -72,9 +72,7 @@ test("lobby server manages lifecycle", async () => {
   q2.shift();
   q3.shift();
 
-  ws1.send(
-    JSON.stringify({ type: "selectMap", code, id: "p1", map: "map" })
-  );
+  ws1.send(JSON.stringify({ type: "selectMap", code, id: "p1", map: "map" }));
   await wait(50);
   const map1 = q1.shift();
   const map2 = q2.shift();
@@ -84,7 +82,7 @@ test("lobby server manages lifecycle", async () => {
   expect(map3.map).toBe("map");
 
   ws1.send(
-    JSON.stringify({ type: "selectMap", code, id: "p1", map: "invalid" })
+    JSON.stringify({ type: "selectMap", code, id: "p1", map: "invalid" }),
   );
   await wait(50);
   const errMap = q1.shift();
@@ -94,7 +92,9 @@ test("lobby server manages lifecycle", async () => {
   ws2.send(JSON.stringify({ type: "ready", code, id: "p2", ready: true }));
   ws3.send(JSON.stringify({ type: "ready", code, id: "p3", ready: true }));
   await wait(50);
-  q1.splice(0); q2.splice(0); q3.splice(0);
+  q1.splice(0);
+  q2.splice(0);
+  q3.splice(0);
 
   ws1.send(
     JSON.stringify({
@@ -102,7 +102,7 @@ test("lobby server manages lifecycle", async () => {
       code,
       id: "p1",
       state: { currentPlayer: "p1" },
-    })
+    }),
   );
   await wait(50);
   const start2 = q2.shift();
@@ -121,7 +121,7 @@ test("lobby server manages lifecycle", async () => {
       type: "joinLobby",
       code,
       player: { id: "p4", name: "P4", color: "#ff0" },
-    })
+    }),
   );
   await wait(50);
   const joinErr = q4.shift();
@@ -134,7 +134,7 @@ test("lobby server manages lifecycle", async () => {
       code,
       id: "p1",
       state: { currentPlayer: "p2" },
-    })
+    }),
   );
   await wait(50);
   const stateMsg = q2.shift();
@@ -177,7 +177,7 @@ test("removes disconnected players after timeout", async () => {
     JSON.stringify({
       type: "createLobby",
       player: { id: "p1", name: "P1", color: "#f00" },
-    })
+    }),
   );
   await wait(50);
   const lobbyMsg = qHost.shift();
@@ -191,7 +191,7 @@ test("removes disconnected players after timeout", async () => {
       type: "joinLobby",
       code,
       player: { id: "p2", name: "P2", color: "#0f0" },
-    })
+    }),
   );
   await wait(50);
   q2.shift();
@@ -202,12 +202,12 @@ test("removes disconnected players after timeout", async () => {
   await onceClose(ws2);
   await wait(20);
   const offlineMsg = qHost.shift();
-  expect(offlineMsg.players.find(p => p.id === "p2")).toBeTruthy();
+  expect(offlineMsg.players.find((p) => p.id === "p2")).toBeTruthy();
 
   await wait(80);
   const removedMsg = qHost.shift();
   expect(removedMsg).toBeDefined();
-  expect(removedMsg.players.find(p => p.id === "p2")).toBeFalsy();
+  expect(removedMsg.players.find((p) => p.id === "p2")).toBeFalsy();
 
   host.close();
   server.close();
@@ -225,7 +225,7 @@ test("rejects invalid map on create", async () => {
       type: "createLobby",
       player: { id: "p1", name: "P1", color: "#f00" },
       map: "invalid",
-    })
+    }),
   );
   await wait(50);
   const err = q1.shift();
@@ -246,7 +246,7 @@ test("requires at least two ready players to start", async () => {
     JSON.stringify({
       type: "createLobby",
       player: { id: "p1", name: "P1" },
-    })
+    }),
   );
   await wait(50);
   const { code } = qHost.shift();
@@ -254,7 +254,7 @@ test("requires at least two ready players to start", async () => {
   host.send(JSON.stringify({ type: "ready", code, id: "p1", ready: true }));
   await wait(50);
   const ready1 = qHost.shift();
-  expect(ready1.players.find(p => p.id === "p1").ready).toBe(true);
+  expect(ready1.players.find((p) => p.id === "p1").ready).toBe(true);
 
   host.send(
     JSON.stringify({
@@ -262,7 +262,7 @@ test("requires at least two ready players to start", async () => {
       code,
       id: "p1",
       state: { currentPlayer: "p1" },
-    })
+    }),
   );
   await wait(50);
   expect(qHost.length).toBe(0);
@@ -275,7 +275,7 @@ test("requires at least two ready players to start", async () => {
       type: "joinLobby",
       code,
       player: { id: "p2", name: "P2" },
-    })
+    }),
   );
   await wait(50);
   q2.shift();
@@ -288,7 +288,7 @@ test("requires at least two ready players to start", async () => {
       code,
       id: "p1",
       state: { currentPlayer: "p1" },
-    })
+    }),
   );
   await wait(50);
   expect(qHost.length).toBe(0);
@@ -297,7 +297,7 @@ test("requires at least two ready players to start", async () => {
   ws2.send(JSON.stringify({ type: "ready", code, id: "p2", ready: true }));
   await wait(50);
   const ready2 = qHost.shift();
-  expect(ready2.players.find(p => p.id === "p2").ready).toBe(true);
+  expect(ready2.players.find((p) => p.id === "p2").ready).toBe(true);
   q2.shift();
 
   host.send(
@@ -306,7 +306,7 @@ test("requires at least two ready players to start", async () => {
       code,
       id: "p1",
       state: { currentPlayer: "p1" },
-    })
+    }),
   );
   await wait(50);
   const startHost = qHost.shift();
@@ -318,4 +318,3 @@ test("requires at least two ready players to start", async () => {
   ws2.close();
   server.close();
 });
-

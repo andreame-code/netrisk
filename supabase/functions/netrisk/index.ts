@@ -8,7 +8,8 @@ serve((req: Request) => {
   const cors = {
     "Access-Control-Allow-Origin": "https://andreame-code.github.io",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
   };
 
   if (req.method === "OPTIONS") {
@@ -20,12 +21,19 @@ serve((req: Request) => {
   }
 
   const { socket, response } = Deno.upgradeWebSocket(req);
-  socket.onopen = () => socket.send(JSON.stringify({ type: "hello", ts: Date.now() }));
-  socket.onmessage = (e) => socket.send(JSON.stringify({ type: "echo", data: e.data }));
+  socket.onopen = () =>
+    socket.send(JSON.stringify({ type: "hello", ts: Date.now() }));
+  socket.onmessage = (e) =>
+    socket.send(JSON.stringify({ type: "echo", data: e.data }));
   socket.onclose = () => {};
   socket.onerror = () => {};
 
   // aggiungi CORS alla risposta di handshake
-  try { (response as any).headers?.set?.("Access-Control-Allow-Origin", cors["Access-Control-Allow-Origin"]); } catch {}
+  try {
+    (response as any).headers?.set?.(
+      "Access-Control-Allow-Origin",
+      cors["Access-Control-Allow-Origin"],
+    );
+  } catch {}
   return response;
 });

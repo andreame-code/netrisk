@@ -49,7 +49,9 @@ jest.mock("../src/ui.js", () => ({
 jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
 jest.mock("../src/config.js", () => ({ WS_URL: "ws://test" }));
 jest.mock("../src/init/game-loader.js", () => ({
-  loadGame: jest.fn(() => Promise.resolve({ game: null, territoryPositions: {} })),
+  loadGame: jest.fn(() =>
+    Promise.resolve({ game: null, territoryPositions: {} }),
+  ),
 }));
 jest.mock("../src/state/storage.js", () => ({
   updateGameState: jest.fn(),
@@ -67,7 +69,6 @@ jest.mock("../src/game/state/index.js", () => ({
 }));
 jest.mock("../src/ai-logging.js", () => jest.fn());
 
-
 describe("image load errors", () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -84,7 +85,7 @@ describe("image load errors", () => {
     const errorEl = document.getElementById("loadError");
     expect(errorEl.classList.contains("hidden")).toBe(false);
     const msg = document.getElementById("loadErrorMsg").textContent;
-    expect(msg).toContain('Riprova');
+    expect(msg).toContain("Riprova");
     jest.runAllTimers();
     expect(img.src).toMatch(/retry=/);
   });

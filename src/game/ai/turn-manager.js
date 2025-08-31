@@ -36,7 +36,9 @@ export function performAITurn(game) {
 
   // Reinforce prioritizing territories
   while (game.reinforcements > 0) {
-    const owned = game.territories.filter(t => t.owner === game.currentPlayer);
+    const owned = game.territories.filter(
+      (t) => t.owner === game.currentPlayer,
+    );
     if (owned.length === 0) break;
     const target = owned.reduce((best, t) => {
       const score = territoryPriority(game, t, profile);
@@ -55,9 +57,9 @@ export function performAITurn(game) {
   while (game.phase === ATTACK) {
     const options = [];
     game.territories
-      .filter(t => t.owner === game.currentPlayer && t.armies > 1)
-      .forEach(from => {
-        from.neighbors.forEach(n => {
+      .filter((t) => t.owner === game.currentPlayer && t.armies > 1)
+      .forEach((from) => {
+        from.neighbors.forEach((n) => {
           const to = game.territoryById(n);
           if (to.owner !== game.currentPlayer) {
             const prob = attackSuccessProbability(from, to);
@@ -66,7 +68,7 @@ export function performAITurn(game) {
         });
       });
     if (options.length === 0) break;
-    const candidates = options.filter(o => o.prob >= profile.attackThreshold);
+    const candidates = options.filter((o) => o.prob >= profile.attackThreshold);
     if (candidates.length === 0) break;
     let choice;
     if (profile.target === "random") {
@@ -84,10 +86,12 @@ export function performAITurn(game) {
   game.endTurn();
   if (game.phase === FORTIFY) {
     let best = null;
-    const aiOwned = game.territories.filter(t => t.owner === game.currentPlayer);
-    aiOwned.forEach(from => {
+    const aiOwned = game.territories.filter(
+      (t) => t.owner === game.currentPlayer,
+    );
+    aiOwned.forEach((from) => {
       if (from.armies > 1) {
-        from.neighbors.forEach(n => {
+        from.neighbors.forEach((n) => {
           const to = game.territoryById(n);
           if (to.owner === game.currentPlayer) {
             const diff =
@@ -108,4 +112,3 @@ export function performAITurn(game) {
 export default function aiTurnManager(game) {
   game.performAITurn = () => performAITurn(game);
 }
-

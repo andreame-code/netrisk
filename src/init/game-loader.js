@@ -76,4 +76,3 @@ async function loadGame() {
 }
 
 export { loadMap, restoreGameState, loadGame, territoryPositions };
-

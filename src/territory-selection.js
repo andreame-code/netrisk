@@ -63,7 +63,6 @@ export default function initTerritorySelection({
     });
   }
 
-
   const mapName =
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("netriskMap")) ||
@@ -113,7 +112,9 @@ export default function initTerritorySelection({
 
       function computeFallbackPosition(id) {
         const selector =
-          typeof CSS !== "undefined" && CSS.escape ? `#${CSS.escape(id)}` : `#${id}`;
+          typeof CSS !== "undefined" && CSS.escape
+            ? `#${CSS.escape(id)}`
+            : `#${id}`;
         const terrPath = map?.querySelector(selector);
         if (!terrPath || typeof terrPath.getBBox !== "function") return null;
         const { x, y, width, height } = terrPath.getBBox();
@@ -190,4 +191,3 @@ export default function initTerritorySelection({
       logger.error(err);
     });
 }
-

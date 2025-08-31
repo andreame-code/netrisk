@@ -102,4 +102,3 @@ describe("game loader", () => {
     expect(territoryPositions).toEqual({ b: { x: 7, y: 8 } });
   });
 });
-

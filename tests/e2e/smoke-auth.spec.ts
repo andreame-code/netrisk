@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('smoke auth', () => {
-  test('anonymous auth flow', async ({ page }) => {
-    await page.route('**/src/init/supabase-client.js*', (route) =>
+test.describe("smoke auth", () => {
+  test("anonymous auth flow", async ({ page }) => {
+    await page.route("**/src/init/supabase-client.js*", (route) =>
       route.fulfill({
         body: `
           const supabase = {
@@ -18,27 +18,27 @@ test.describe('smoke auth', () => {
           });
           export default supabase;
         `,
-        contentType: 'application/javascript',
+        contentType: "application/javascript",
       }),
     );
 
-    await page.goto('/index.html');
-    await expect(page.locator('#userMenu')).toContainText('Accedi');
-    await expect(page.locator('#userMenu')).toContainText('Registrati');
-    await expect(page.locator('text=Unable to load data')).toHaveCount(0);
+    await page.goto("/index.html");
+    await expect(page.locator("#userMenu")).toContainText("Accedi");
+    await expect(page.locator("#userMenu")).toContainText("Registrati");
+    await expect(page.locator("text=Unable to load data")).toHaveCount(0);
 
     await page.evaluate(() => {
-      globalThis.__user = { id: 'anon' };
-      globalThis.__auth_cb?.('SIGNED_IN', { user: globalThis.__user });
+      globalThis.__user = { id: "anon" };
+      globalThis.__auth_cb?.("SIGNED_IN", { user: globalThis.__user });
     });
 
-    await expect(page.locator('#userMenu')).toContainText('Profilo');
-    await expect(page.locator('#userMenu')).toContainText('Esci');
-    await expect(page.locator('#playBtn')).toBeVisible();
-    await expect(page.locator('#multiplayerBtn')).toBeVisible();
-    await expect(page.locator('#setupBtn')).toBeVisible();
-    await expect(page.locator('#howToPlayBtn')).toBeVisible();
-    await expect(page.locator('#aboutBtn')).toBeVisible();
-    await expect(page.locator('text=Unable to load data')).toHaveCount(0);
+    await expect(page.locator("#userMenu")).toContainText("Profilo");
+    await expect(page.locator("#userMenu")).toContainText("Esci");
+    await expect(page.locator("#playBtn")).toBeVisible();
+    await expect(page.locator("#multiplayerBtn")).toBeVisible();
+    await expect(page.locator("#setupBtn")).toBeVisible();
+    await expect(page.locator("#howToPlayBtn")).toBeVisible();
+    await expect(page.locator("#aboutBtn")).toBeVisible();
+    await expect(page.locator("text=Unable to load data")).toHaveCount(0);
   });
 });

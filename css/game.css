@@ -21,9 +21,14 @@
   background: rgba(245, 231, 198, 0.9);
 }
 
-.map-item.selected { outline: 2px solid #ff0; }
+.map-item.selected {
+  outline: 2px solid #ff0;
+}
 
-.map-item img { max-width: 100%; height: auto; }
+.map-item img {
+  max-width: 100%;
+  height: auto;
+}
 
 .map-item .map-detail {
   position: absolute;
@@ -35,7 +40,9 @@
   border: 1px solid #8b4513;
 }
 
-.map-item .map-detail.hidden { display: none; }
+.map-item .map-detail.hidden {
+  display: none;
+}
 
 .map-item.missing .placeholder {
   width: 100%;
@@ -47,7 +54,10 @@
   color: #333;
 }
 
-.map-item .layout { width: 100px; height: auto; }
+.map-item .layout {
+  width: 100px;
+  height: auto;
+}
 
 #howToPlayBox {
   margin-top: 5px;
@@ -78,11 +88,16 @@
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-#map { width: 100%; height: auto; }
+#map {
+  width: 100%;
+  height: auto;
+}
 
 .map-territory {
   cursor: pointer;
-  transition: fill 0.2s, stroke 0.2s;
+  transition:
+    fill 0.2s,
+    stroke 0.2s;
   stroke: #333;
   stroke-width: 1;
 }
@@ -126,32 +141,67 @@
   z-index: 1000;
 }
 
-.territory.selected { outline: 4px solid #ff0; }
-.territory.possible-move { outline: 4px dashed #0f0; }
-.territory.attack { animation: attackPulse 0.5s ease-in-out; }
-.territory.conquer { animation: conquerFlash 1s ease-in-out; }
-.territory.reinforce { animation: reinforcePulse 0.5s ease-in-out; }
+.territory.selected {
+  outline: 4px solid #ff0;
+}
+.territory.possible-move {
+  outline: 4px dashed #0f0;
+}
+.territory.attack {
+  animation: attackPulse 0.5s ease-in-out;
+}
+.territory.conquer {
+  animation: conquerFlash 1s ease-in-out;
+}
+.territory.reinforce {
+  animation: reinforcePulse 0.5s ease-in-out;
+}
 
 @keyframes attackPulse {
-  0% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.2); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 @keyframes conquerFlash {
-  0% { box-shadow: 0 0 0 0 rgba(255,255,0,1); }
-  100% { box-shadow: 0 0 20px 10px rgba(255,255,0,0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 0, 1);
+  }
+  100% {
+    box-shadow: 0 0 20px 10px rgba(255, 255, 0, 0);
+  }
 }
 
 @keyframes reinforcePulse {
-  0% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.2); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
-#status { margin-top: 10px; font-weight: bold; }
-#diceResults { margin-top: 10px; }
-.move-token { transition: left 0.5s linear, top 0.5s linear; }
+#status {
+  margin-top: 10px;
+  font-weight: bold;
+}
+#diceResults {
+  margin-top: 10px;
+}
+.move-token {
+  transition:
+    left 0.5s linear,
+    top 0.5s linear;
+}
 
 body.game-page {
   margin: 0;
@@ -190,13 +240,20 @@ body.game-page #uiPanel {
 }
 
 @media (min-width: 1024px) {
-  body.game-page #gameContainer { flex-direction: row; }
-  body.game-page #board { flex: 2; }
-  body.game-page #uiPanel { flex: 1; max-width: 400px; }
+  body.game-page #gameContainer {
+    flex-direction: row;
+  }
+  body.game-page #board {
+    flex: 2;
+  }
+  body.game-page #uiPanel {
+    flex: 1;
+    max-width: 400px;
+  }
 }
 
 @media (max-width: 1023px) {
-body.game-page #uiPanel .btn {
+  body.game-page #uiPanel .btn {
     width: 100%;
     padding: 14px;
     font-size: 18px;
@@ -233,8 +290,19 @@ body.game-page #uiPanel .btn {
   border-radius: 4px;
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
-.board { border: 4px solid #8b4513; background: #6b8e23; box-shadow: 2px 2px 8px rgba(0,0,0,0.5); }
-.log { background: #f5e7c6; border: 1px solid #8b4513; padding: 10px; height: 150px; overflow-y: auto; margin-top: 10px; }
+.board {
+  border: 4px solid #8b4513;
+  background: #6b8e23;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+.log {
+  background: #f5e7c6;
+  border: 1px solid #8b4513;
+  padding: 10px;
+  height: 150px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
 
 /* High contrast overrides */
 body.high-contrast #gameHeader,

@@ -22,7 +22,7 @@ export function initHome() {
     multiBtn.addEventListener("click", async () => {
       let user = null;
       try {
-        ({ data: { user } = {} } = (await supabase.auth.getUser()));
+        ({ data: { user } = {} } = await supabase.auth.getUser());
       } catch {
         user = null;
       }
@@ -39,12 +39,16 @@ export function initHome() {
         </div>
       `;
       document.body.appendChild(dialog);
-      dialog.querySelector("#loginDialogBtn")?.addEventListener("click", () =>
-        navigateTo("login.html?redirect=lobby.html")
-      );
-      dialog.querySelector("#registerDialogBtn")?.addEventListener("click", () =>
-        navigateTo("register.html?redirect=lobby.html")
-      );
+      dialog
+        .querySelector("#loginDialogBtn")
+        ?.addEventListener("click", () =>
+          navigateTo("login.html?redirect=lobby.html"),
+        );
+      dialog
+        .querySelector("#registerDialogBtn")
+        ?.addEventListener("click", () =>
+          navigateTo("register.html?redirect=lobby.html"),
+        );
       if (dialog.showModal) dialog.showModal();
       else dialog.setAttribute("open", "");
     });

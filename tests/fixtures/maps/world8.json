@@ -1,14 +1,54 @@
 {
   "schemaVersion": 1,
   "territories": [
-    { "id": "north-america", "neighbors": ["south-america", "europe"], "x": 110, "y": 90 },
-    { "id": "south-america", "neighbors": ["north-america", "africa", "antarctica"], "x": 140, "y": 260 },
-    { "id": "europe", "neighbors": ["north-america", "asia", "africa", "middle-east"], "x": 280, "y": 90 },
-    { "id": "asia", "neighbors": ["europe", "middle-east", "australia"], "x": 450, "y": 100 },
-    { "id": "middle-east", "neighbors": ["europe", "asia", "africa"], "x": 340, "y": 160 },
-    { "id": "africa", "neighbors": ["south-america", "europe", "middle-east", "antarctica"], "x": 320, "y": 260 },
-    { "id": "australia", "neighbors": ["asia", "antarctica"], "x": 500, "y": 300 },
-    { "id": "antarctica", "neighbors": ["south-america", "africa", "australia"], "x": 300, "y": 380 }
+    {
+      "id": "north-america",
+      "neighbors": ["south-america", "europe"],
+      "x": 110,
+      "y": 90
+    },
+    {
+      "id": "south-america",
+      "neighbors": ["north-america", "africa", "antarctica"],
+      "x": 140,
+      "y": 260
+    },
+    {
+      "id": "europe",
+      "neighbors": ["north-america", "asia", "africa", "middle-east"],
+      "x": 280,
+      "y": 90
+    },
+    {
+      "id": "asia",
+      "neighbors": ["europe", "middle-east", "australia"],
+      "x": 450,
+      "y": 100
+    },
+    {
+      "id": "middle-east",
+      "neighbors": ["europe", "asia", "africa"],
+      "x": 340,
+      "y": 160
+    },
+    {
+      "id": "africa",
+      "neighbors": ["south-america", "europe", "middle-east", "antarctica"],
+      "x": 320,
+      "y": 260
+    },
+    {
+      "id": "australia",
+      "neighbors": ["asia", "antarctica"],
+      "x": 500,
+      "y": 300
+    },
+    {
+      "id": "antarctica",
+      "neighbors": ["south-america", "africa", "australia"],
+      "x": 300,
+      "y": 380
+    }
   ],
   "continents": [
     { "name": "North America", "territories": ["north-america"], "bonus": 2 },

@@ -96,5 +96,12 @@ function deserialize(str) {
   return JSON.parse(str);
 }
 
-export { GameState, gameState, initGameState, setSelectedTerritory, serialize, deserialize };
+export {
+  GameState,
+  gameState,
+  initGameState,
+  setSelectedTerritory,
+  serialize,
+  deserialize,
+};
 export default gameState;

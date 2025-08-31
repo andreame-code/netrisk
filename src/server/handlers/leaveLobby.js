@@ -1,7 +1,11 @@
 import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
 
 export async function handleLeaveLobby(ctx, ws, msg, state) {
-  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
+  const lobby = await loadLobby(
+    ctx.lobbies,
+    msg.code,
+    ctx.offlinePlayerTimeout,
+  );
   if (!lobby) return;
   const idx = lobby.players.findIndex((p) => p.id === msg.id);
   if (idx === -1) return;
