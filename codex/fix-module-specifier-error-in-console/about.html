@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" >
+    <title>About &amp; Settings - NetRisk</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" crossorigin src="./assets/about-ByWZUcZo.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/navigation-Cu4ZKSea.js">
+    <link rel="modulepreload" crossorigin href="./assets/auth-CVSmB2se.js">
+    <link rel="modulepreload" crossorigin href="./assets/audio-6NbL8Y2H.js">
+    <link rel="modulepreload" crossorigin href="./assets/theme-CN2ifeDr.js">
+    <link rel="stylesheet" crossorigin href="./assets/navigation-BaM4L7Wl.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading"></span>
+      </nav>
+    </header>
+    <h1 id="pageTitle">About &amp; Settings</h1>
+    <div id="helpContent">
+      <section id="credits">
+        <h2>Credits</h2>
+        <div class="content"></div>
+      </section>
+      <section id="changelog">
+        <h2>Changelog</h2>
+        <div class="content"></div>
+      </section>
+      <section id="github">
+        <h2>GitHub</h2>
+        <div class="content"></div>
+      </section>
+      <section id="settings">
+        <h2>Settings</h2>
+        <div class="content">
+          <label for="themeSelect">Theme:</label>
+          <select id="themeSelect" aria-label="Theme selection">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <button
+            id="themeToggle"
+            class="btn"
+            aria-label="Toggle high contrast mode"
+          >
+            High Contrast
+          </button>
+          <label for="masterVolume">Volume:</label>
+          <input
+            type="range"
+            id="masterVolume"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0.5"
+          />
+          <button id="muteBtn" class="btn" aria-label="Toggle mute">Mute</button>
+        </div>
+      </section>
+    </div>
+    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>
+  </body>
+</html>
