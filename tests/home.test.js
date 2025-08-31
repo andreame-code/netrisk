@@ -1,5 +1,11 @@
 jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 jest.mock('../src/navigation.js', () => ({ navigateTo: jest.fn() }));
+const mockSupabase = {
+  auth: {
+    getUser: jest.fn().mockResolvedValue({ data: { user: {} } }),
+  },
+};
+jest.mock('../src/init/supabase-client.js', () => ({ __esModule: true, default: mockSupabase }));
 
 describe('home page initialization', () => {
   beforeEach(() => {
@@ -26,5 +32,27 @@ describe('home page initialization', () => {
     expect(navigateTo).toHaveBeenCalledWith('./game.html');
     expect(navigateTo).toHaveBeenCalledWith('./about.html');
     expect(navigateTo).toHaveBeenCalledTimes(2);
+  });
+
+  test('multiplayer click shows auth dialog when not logged in', async () => {
+    const { navigateTo } = require('../src/navigation.js');
+    mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+    require('../src/home.js');
+    document.getElementById('multiplayerBtn').click();
+    await Promise.resolve();
+    expect(navigateTo).not.toHaveBeenCalled();
+    const dlg = document.querySelector('dialog');
+    expect(dlg).not.toBeNull();
+    expect(dlg.textContent).toContain('Serve un account per giocare online');
+    dlg.querySelector('#loginDialogBtn').click();
+    expect(navigateTo).toHaveBeenCalledWith('login.html?redirect=lobby.html');
+  });
+
+  test('multiplayer click navigates when user present', async () => {
+    const { navigateTo } = require('../src/navigation.js');
+    require('../src/home.js');
+    document.getElementById('multiplayerBtn').click();
+    await Promise.resolve();
+    expect(navigateTo).toHaveBeenCalledWith('./lobby.html');
   });
 });

@@ -7,6 +7,7 @@ const message = document.getElementById('message');
 const params = new URLSearchParams(window.location.search);
 const initialMsg = params.get('message');
 if (initialMsg) message.textContent = initialMsg;
+const redirectParam = params.get('redirect');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const anonymousBtn = document.getElementById('anonymousBtn');
@@ -30,10 +31,19 @@ form.addEventListener('submit', async (e) => {
   }
   const name = data.user?.email?.split('@')[0] || username;
   message.textContent = `Benvenuto, ${name} 👋`;
-  const ref = getSafeReferrer();
+  let ref = null;
+  if (redirectParam) {
+    try {
+      const url = new URL(redirectParam, window.location.href);
+      if (url.origin === window.location.origin) ref = url.href;
+    } catch {
+      ref = null;
+    }
+  }
+  if (!ref) ref = getSafeReferrer();
   setTimeout(() => {
     if (ref) {
-      window.location.href = ref;
+      navigateTo(ref);
     } else {
       navigateTo('account.html');
     }
@@ -57,10 +67,19 @@ anonymousBtn?.addEventListener('click', async () => {
     return;
   }
   message.textContent = 'Benvenuto, giocatore 👋';
-  const ref = getSafeReferrer();
+  let ref = null;
+  if (redirectParam) {
+    try {
+      const url = new URL(redirectParam, window.location.href);
+      if (url.origin === window.location.origin) ref = url.href;
+    } catch {
+      ref = null;
+    }
+  }
+  if (!ref) ref = getSafeReferrer();
   setTimeout(() => {
     if (ref) {
-      window.location.href = ref;
+      navigateTo(ref);
     } else {
       navigateTo('account.html');
     }

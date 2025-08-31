@@ -75,5 +75,32 @@ describe('login page', () => {
     jest.useRealTimers();
     Object.defineProperty(document, 'referrer', { value: '', configurable: true });
   });
+
+  test('redirects to path from query after login', async () => {
+    jest.useFakeTimers();
+    const navigateTo = jest.fn();
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
+    jest.doMock('../src/init/supabase-client.js', () => ({
+      __esModule: true,
+      default: {
+        auth: {
+          signInWithPassword: jest
+            .fn()
+            .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+        },
+      },
+    }));
+    const originalUrl = window.location.href;
+    window.history.pushState({}, '', 'http://localhost/login.html?redirect=/lobby.html');
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    await Promise.resolve();
+    jest.runAllTimers();
+    expect(navigateTo).toHaveBeenCalledWith('http://localhost/lobby.html');
+    jest.useRealTimers();
+    window.history.pushState({}, '', originalUrl);
+  });
 });
 
