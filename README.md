@@ -217,12 +217,25 @@ new behaviours or UI integrations without touching the core logic.
 
 ## Contributing
 
-Contributions are welcome! Fork the repository and open a pull request with
-your changes. Please run the test suite and linter before submitting:
+Contributions are welcome! Fork the repository and open a pull request with your changes.
+
+All changes to `main` go through a protected branch:
+
+- At least one approving pull request review is required.
+- The following checks must succeed before merging:
+  - `Lint / eslint`
+  - `CI / tests`
+  - `CI (Playwright Container) / tests`
+  - `UAT / uat`
+- Direct pushes to `main` are disabled.
+- Force pushes to `main` are disabled.
+
+Please run the test suite and linter before submitting:
 
 ```bash
 npm test
 npm run lint
+npm run type-check
 ```
 
 ## Wiki
