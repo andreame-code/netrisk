@@ -20,7 +20,7 @@ const getRequestOrigin = (req) => {
   return '';
 };
 
-const distDir = path.join(__dirname, 'dist');
+const distDir = path.resolve(process.env.DIST_DIR || path.join(__dirname, 'dist'));
 
 const routes = {
   '/': 'index.html',
