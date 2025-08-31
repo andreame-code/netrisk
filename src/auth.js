@@ -92,7 +92,6 @@ export async function renderUserMenu() {
 }
 
 renderUserMenu();
-supabase?.auth.onAuthStateChange(renderUserMenu);
 
 try {
   const msg = sessionStorage.getItem('flashMessage');

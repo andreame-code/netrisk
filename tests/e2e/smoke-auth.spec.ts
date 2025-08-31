@@ -12,6 +12,10 @@ test.describe('smoke auth', () => {
               signOut: async () => { globalThis.__user = null; globalThis.__auth_cb?.('SIGNED_OUT', { user: null }); },
             },
           };
+          supabase.auth.onAuthStateChange(async () => {
+            const { renderUserMenu } = await import('../auth.js');
+            await renderUserMenu();
+          });
           export default supabase;
         `,
         contentType: 'application/javascript',
