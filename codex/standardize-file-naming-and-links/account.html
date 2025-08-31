@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account - NetRisk</title>
+    <script type="module" crossorigin src="./assets/account-DiLcSJZ_.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/navigation-Cu4ZKSea.js">
+    <link rel="modulepreload" crossorigin href="./assets/auth-BlUyWSm1.js">
+    <link rel="stylesheet" crossorigin href="./assets/navigation-BaM4L7Wl.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Account</h1>
+      <div id="profile" class="profile">
+        <div id="userAvatar" class="avatar"></div>
+        <p>Nome: <span id="userName"></span></p>
+        <p>Email: <span id="userEmail"></span></p>
+      </div>
+      <div class="actions">
+        <button id="changePasswordBtn" class="btn">Cambia password</button>
+        <button id="updateNameBtn" class="btn">Aggiorna nome</button>
+        <button id="logoutBtn" class="btn">Esci da tutti i dispositivi</button>
+      </div>
+      <section id="myGame">
+        <h2>Il mio gioco</h2>
+        <div>
+          <h3>Ultime lobby</h3>
+          <ul id="recentLobbies"></ul>
+        </div>
+        <div>
+          <h3>Preferenze salvate</h3>
+          <p>Colore pedine: <span id="prefColor"></span></p>
+          <p>Mappa preferita: <span id="prefMap"></span></p>
+        </div>
+      </section>
+    </main>
+    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>
+  </body>
+</html>
