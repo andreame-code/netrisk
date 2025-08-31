@@ -40,6 +40,10 @@ npm ci
 npm run dev
 ```
 
+## CI/CD
+
+La pipeline è descritta in [docs/ci.md](docs/ci.md). Su ogni PR girano lint, test unitari/integrati e smoke test Playwright; sulla branch `main` girano gli end-to-end completi con regressione visiva e il deploy.
+
 Apri `http://localhost:8080` nel browser.
 
 ## Test
