@@ -63,7 +63,7 @@ jest.mock("../src/state/storage.js", () => ({
 jest.mock("../src/data/level-accessibility.js", () => ({
   applyLevelAccessibility: jest.fn(),
 }));
-jest.mock("../src/state/game.js", () => ({
+jest.mock("../src/game/state/index.js", () => ({
   gameState: { turnNumber: 1 },
   initGameState: jest.fn(),
 }));

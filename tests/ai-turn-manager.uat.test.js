@@ -2,12 +2,12 @@
 let attackProb = 0.6;
 const priorityMap = { A: 2, B: 1 };
 
-jest.mock('../src/ai.js', () => ({
+jest.mock('../src/game/ai/index.js', () => ({
   attackSuccessProbability: jest.fn(() => attackProb),
   territoryPriority: jest.fn((game, t) => priorityMap[t.id] || 0),
 }));
 
-const turnManager = require('../src/ai/turn-manager.js');
+const turnManager = require('../src/game/ai/turn-manager.js');
 const { REINFORCE, ATTACK, FORTIFY } = require('../src/phases.js');
 
 function createGame(style) {

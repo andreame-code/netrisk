@@ -2,7 +2,7 @@ import { REINFORCE, ATTACK } from "./phases.js";
 import { addLogEntry, updateInfoPanel } from "./ui.js";
 // Persist game changes via storage helpers instead of UI exports
 import { updateGameState } from "./state/storage.js";
-import { gameState } from "./state/game.js";
+import { gameState } from "./game/state/index.js";
 import * as logger from "./logger.js";
 import EventBus from "./core/event-bus.js";
 

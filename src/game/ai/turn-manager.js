@@ -1,5 +1,5 @@
-import { attackSuccessProbability, territoryPriority } from "../ai.js";
-import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../phases.js";
+import { attackSuccessProbability, territoryPriority } from "./index.js";
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../../phases.js";
 
 function getProfile(player) {
   const diffSettings = {

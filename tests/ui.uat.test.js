@@ -1,5 +1,5 @@
 import * as ui from '../src/ui.js';
-import { GameState } from "../src/state/game.js";
+import { GameState } from "../src/game/state/index.js";
 // eslint-disable-next-line global-require
 const world8 = require('./fixtures/maps/world8.json');
 
