@@ -1,3 +1,5 @@
+import './modulepreload-polyfill.js';
+
 // Prefer Vite-provided variables but fall back to process.env so that
 // server-side or test environments can inject the same values without
 // relying on the bundler replacement.
