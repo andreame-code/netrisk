@@ -43,7 +43,37 @@ describe('login page', () => {
 
     require('../src/login.js');
     document.getElementById('anonymousBtn').click();
-    expect(document.getElementById('message').textContent).toBe('Anonymous login not supported');
+    expect(document.getElementById('message').textContent).toBe('Accesso anonimo non supportato');
+  });
+
+  test('falls back to account page for external referrer after login', async () => {
+    Object.defineProperty(document, 'referrer', { value: 'https://evil.com/', configurable: true });
+    jest.useFakeTimers();
+
+    const navigateTo = jest.fn();
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
+
+    jest.doMock('../src/init/supabase-client.js', () => ({
+      __esModule: true,
+      default: {
+        auth: {
+          signInWithPassword: jest
+            .fn()
+            .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+        },
+      },
+    }));
+
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    await Promise.resolve();
+    jest.runAllTimers();
+
+    expect(navigateTo).toHaveBeenCalledWith('account.html');
+    jest.useRealTimers();
+    Object.defineProperty(document, 'referrer', { value: '', configurable: true });
   });
 });
 
