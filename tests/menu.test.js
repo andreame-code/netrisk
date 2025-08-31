@@ -3,6 +3,10 @@ jest.mock('../src/navigation.js', () => ({
   goHome: jest.fn(),
   exitGame: jest.fn(),
 }));
+const mockSupabase = {
+  auth: { getUser: jest.fn().mockResolvedValue({ data: { user: {} } }) },
+};
+jest.mock('../src/init/supabase-client.js', () => ({ __esModule: true, default: mockSupabase }));
 
 describe('home navigation', () => {
   beforeEach(() => {
@@ -16,11 +20,12 @@ describe('home navigation', () => {
     `;
   });
 
-  test('buttons navigate to pages', () => {
+  test('buttons navigate to pages', async () => {
     const { navigateTo } = require('../src/navigation.js');
     require('../src/home.js');
     document.getElementById('playBtn').click();
     document.getElementById('multiplayerBtn').click();
+    await Promise.resolve();
     document.getElementById('setupBtn').click();
     document.getElementById('howToPlayBtn').click();
     document.getElementById('aboutBtn').click();

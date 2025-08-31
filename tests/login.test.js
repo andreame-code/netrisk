@@ -21,6 +21,7 @@ describe('login page', () => {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
           signInAnonymously: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -37,6 +38,7 @@ describe('login page', () => {
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -60,6 +62,7 @@ describe('login page', () => {
           signInWithPassword: jest
             .fn()
             .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -87,6 +90,7 @@ describe('login page', () => {
           signInWithPassword: jest
             .fn()
             .mockResolvedValue({ data: { user: { email: 'foo@example.com' } }, error: null }),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
@@ -113,6 +117,7 @@ describe('login page', () => {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({}),
           signInAnonymously: jest.fn().mockResolvedValue({}),
+          setSession: jest.fn().mockResolvedValue({}),
         },
       },
     }));
