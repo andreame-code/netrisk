@@ -4,6 +4,9 @@ import { getSafeReferrer } from './utils/referrer.js';
 
 const form = document.getElementById('loginForm');
 const message = document.getElementById('message');
+const params = new URLSearchParams(window.location.search);
+const initialMsg = params.get('message');
+if (initialMsg) message.textContent = initialMsg;
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const anonymousBtn = document.getElementById('anonymousBtn');
