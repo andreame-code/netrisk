@@ -14,7 +14,7 @@ import {
   exportLog,
   copyLog,
 } from '../src/ui.js';
-import { GameState } from "../src/state/game.js";
+import { GameState } from "../src/game/state/index.js";
 
 describe('ui utilities', () => {
   let game;

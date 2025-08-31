@@ -1,6 +1,6 @@
 import Game from "../src/game.js";
 import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../src/phases.js";
-import aiTurnManager from "../src/ai/turn-manager.js";
+import aiTurnManager from "../src/game/ai/turn-manager.js";
 
 let game;
 

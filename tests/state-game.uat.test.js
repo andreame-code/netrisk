@@ -1,5 +1,5 @@
 import Game from "../src/game.js";
-import { gameState, initGameState, setSelectedTerritory } from "../src/state/game.js";
+import { gameState, initGameState, setSelectedTerritory } from "../src/game/state/index.js";
 
 test("initGameState synchronizes game properties", () => {
   const players = [{ name: "A" }, { name: "B" }];

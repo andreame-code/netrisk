@@ -1,4 +1,4 @@
-import { REINFORCE } from "../phases.js";
+import { REINFORCE } from "../../phases.js";
 
 // Factory for encapsulated game state. Consumers interact via
 // getters/setters rather than mutating a shared object directly.
@@ -88,5 +88,13 @@ function setSelectedTerritory(selected) {
   gameState.setSelectedTerritory(selected);
 }
 
-export { GameState, gameState, initGameState, setSelectedTerritory };
+function serialize(state) {
+  return JSON.stringify(state);
+}
+
+function deserialize(str) {
+  return JSON.parse(str);
+}
+
+export { GameState, gameState, initGameState, setSelectedTerritory, serialize, deserialize };
 export default gameState;
