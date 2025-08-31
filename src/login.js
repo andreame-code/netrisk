@@ -1,29 +1,17 @@
-import supabase from './init/supabase-client.js';
+import { setupAuthForm } from './utils/auth-forms.js';
 import { navigateTo } from './navigation.js';
 import { getSafeReferrer } from './utils/referrer.js';
 
-const form = document.getElementById('loginForm');
-const message = document.getElementById('message');
-const params = new URLSearchParams(window.location.search);
-const initialMsg = params.get('message');
-if (initialMsg) message.textContent = initialMsg;
-const redirectParam = params.get('redirect');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const anonymousBtn = document.getElementById('anonymousBtn');
-const submitBtn = form?.querySelector('button[type="submit"]');
 const stayLoggedIn = document.getElementById('stayLoggedIn');
+const params = new URLSearchParams(window.location.search);
+const redirectParam = params.get('redirect');
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+const { message, supabase } = setupAuthForm('loginForm', async ({ supabase, message }) => {
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
-  if (!supabase) {
-    message.textContent = 'Supabase non configurato';
-    return;
-  }
-  submitBtn.disabled = true;
-  message.textContent = '';
   const persistent = stayLoggedIn?.checked;
   supabase.auth.storage = persistent ? window.localStorage : window.sessionStorage;
   if (!persistent) {
@@ -37,7 +25,6 @@ form.addEventListener('submit', async (e) => {
     email: username,
     password,
   });
-  submitBtn.disabled = false;
   if (error) {
     message.textContent = 'Credenziali non valide';
     return;
