@@ -19,6 +19,25 @@ body.home-page {
   margin-left: 10px;
 }
 
+.main-header nav .user-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 10px;
+}
+
+.main-header nav .user-menu .avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #8b4513;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
 body.high-contrast .main-header {
   background: #000;
   color: #fff;

@@ -19,7 +19,8 @@ test.describe('smoke auth', () => {
     );
 
     await page.goto('/index.html');
-    await expect(page.locator('#authLink')).toHaveText('Login');
+    await expect(page.locator('#userMenu')).toContainText('Accedi');
+    await expect(page.locator('#userMenu')).toContainText('Registrati');
     await expect(page.locator('text=Unable to load data')).toHaveCount(0);
 
     await page.evaluate(() => {
@@ -27,7 +28,8 @@ test.describe('smoke auth', () => {
       globalThis.__auth_cb?.('SIGNED_IN', { user: globalThis.__user });
     });
 
-    await expect(page.locator('#authLink')).toHaveText('Logout');
+    await expect(page.locator('#userMenu')).toContainText('Profilo');
+    await expect(page.locator('#userMenu')).toContainText('Esci');
     await expect(page.locator('#playBtn')).toBeVisible();
     await expect(page.locator('#multiplayerBtn')).toBeVisible();
     await expect(page.locator('#setupBtn')).toBeVisible();
