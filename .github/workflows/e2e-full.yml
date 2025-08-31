@@ -1,12 +1,15 @@
-name: UAT
+name: Main E2E
 permissions:
   contents: read
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 1 * * *'
 
 jobs:
-  uat:
+  e2e:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +25,12 @@ jobs:
             playwright-${{ runner.os }}-
       - run: npm ci
       - run: npx playwright install --with-deps
-      - run: npm run test:uat
-      - name: Preview link
-        run: |
-          echo "Preview: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${GITHUB_REF_NAME}/" >> $GITHUB_STEP_SUMMARY
+      - name: Generate visual baselines
+        run: npx playwright test tests/e2e/visual.spec.ts --config config/playwright.full.config.ts --update-snapshots
+      - run: npm test
+      - run: npm run test:e2e:full
+      - name: Upload visual baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: tests/e2e/__screenshots__

@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+tests/e2e/__screenshots__/
+tests/e2e/*-snapshots/
+test-results/
