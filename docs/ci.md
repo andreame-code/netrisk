@@ -12,11 +12,11 @@
 - `e2e-full.yml`: full Playwright suite with visual regression.
   Baseline screenshots are generated at runtime and uploaded as artifacts.
 - `pages.yml`: deploy to GitHub Pages.
-- `codeql.yml`: CodeQL analysis (also weekly).
+- CodeQL analysis via GitHub's default setup.
 
 ## Scheduled
 - Nightly full E2E (`e2e-full.yml`).
-- Weekly CodeQL (`codeql.yml`).
+- Weekly CodeQL (default setup).
 
 ## Manual UAT
 Start the **UAT** workflow from the Actions tab. The job summary contains the preview link for the current branch.
