@@ -23,7 +23,7 @@ export async function handleLeaveLobby(ctx, ws, msg, state) {
   });
   ws.send(JSON.stringify({ type: "left", code: lobby.code }));
   if (lobby.players.length === 0) {
-    setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const still = ctx.lobbies.get(lobby.code);
       if (still && still.players.length === 0) {
         ctx.lobbies.delete(lobby.code);
@@ -32,5 +32,6 @@ export async function handleLeaveLobby(ctx, ws, msg, state) {
         }
       }
     }, ctx.closeEmptyLobbiesAfter);
+    timer.unref();
   }
 }

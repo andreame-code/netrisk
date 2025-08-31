@@ -11,18 +11,19 @@ export const supabase =
 let authListenerRegistered = false;
 
 if (supabase) {
-  info('Supabase client initialized');
+  info('[AUTH] client init ok');
   if (!authListenerRegistered) {
     authListenerRegistered = true;
     supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        info(`[AUTH] ${event}`);
         const { renderUserMenu } = await import('../auth.js');
         await renderUserMenu();
       }
     });
   }
 } else {
-  error('Supabase client not initialized: missing URL or anon key');
+  error('[AUTH] client init ko');
 }
 
 export default supabase;
