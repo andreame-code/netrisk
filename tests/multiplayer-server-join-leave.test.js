@@ -10,7 +10,9 @@ function onceOpen(ws) {
   return new Promise(resolve => ws.once("open", resolve));
 }
 function onceClose(ws) {
-  return new Promise(resolve => ws.once("close", resolve));
+  return ws.readyState === WebSocket.CLOSED
+    ? Promise.resolve()
+    : new Promise(resolve => ws.once("close", resolve));
 }
 function messageQueue(ws) {
   const q = [];
