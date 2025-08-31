@@ -24,14 +24,25 @@ form.addEventListener('submit', async (e) => {
   }
   submitBtn.disabled = true;
   message.textContent = '';
-  const { data, error } = await supabase.auth.signInWithPassword({ email: username, password });
+  const persistent = stayLoggedIn?.checked;
+  supabase.auth.storage = persistent ? window.localStorage : window.sessionStorage;
+  if (!persistent) {
+    try {
+      window.localStorage.removeItem('supabase.auth.token');
+    } catch {
+      // ignore
+    }
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: username,
+    password,
+  });
   submitBtn.disabled = false;
   if (error) {
     message.textContent = 'Credenziali non valide';
     return;
   }
   if (data?.session) {
-    supabase.auth.storage = stayLoggedIn?.checked ? window.localStorage : window.sessionStorage;
     await supabase.auth.setSession(data.session);
   }
   const name = data.user?.email?.split('@')[0] || username;
