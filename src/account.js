@@ -1,4 +1,6 @@
 import supabase from './init/supabase-client.js';
+import { navigateTo } from './navigation.js';
+import { renderUserMenu } from './auth.js';
 
 const userNameEl = document.getElementById('userName');
 const userEmailEl = document.getElementById('userEmail');
@@ -86,7 +88,13 @@ async function loadUser() {
 logoutBtn?.addEventListener('click', async () => {
   if (!supabase) return;
   await supabase.auth.signOut({ scope: 'global' });
-  window.location.href = 'index.html';
+  await renderUserMenu();
+  try {
+    sessionStorage.setItem('flashMessage', 'Sei uscito dall\'account');
+  } catch {
+    // ignore storage errors
+  }
+  navigateTo('index.html');
 });
 
 changePasswordBtn?.addEventListener('click', async () => {
