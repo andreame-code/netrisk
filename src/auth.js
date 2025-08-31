@@ -1,6 +1,7 @@
 import supabase from './init/supabase-client.js';
+import { navigateTo } from './navigation.js';
 
-async function renderUserMenu() {
+export async function renderUserMenu() {
   const menu = document.getElementById('userMenu');
   if (!menu || !supabase) return;
 
@@ -28,8 +29,14 @@ async function renderUserMenu() {
     logout.textContent = 'Esci';
     logout.addEventListener('click', async (e) => {
       e.preventDefault();
-      await supabase.auth.signOut();
-      window.location.href = 'index.html';
+      await supabase.auth.signOut({ scope: 'global' });
+      await renderUserMenu();
+      try {
+        sessionStorage.setItem('flashMessage', 'Sei uscito dall\'account');
+      } catch {
+        // ignore storage errors
+      }
+      navigateTo('index.html');
     });
 
     menu.append(avatar, profile, logout);
@@ -48,4 +55,25 @@ async function renderUserMenu() {
 
 renderUserMenu();
 supabase?.auth.onAuthStateChange(renderUserMenu);
+
+try {
+  const msg = sessionStorage.getItem('flashMessage');
+  if (msg) {
+    const banner = document.createElement('div');
+    banner.textContent = msg;
+    banner.style.background = '#cfc';
+    banner.style.color = '#000';
+    banner.style.padding = '1em';
+    banner.style.textAlign = 'center';
+    banner.style.position = 'fixed';
+    banner.style.top = '0';
+    banner.style.left = '0';
+    banner.style.right = '0';
+    banner.style.zIndex = '9999';
+    document.body?.prepend(banner);
+    sessionStorage.removeItem('flashMessage');
+  }
+} catch {
+  // ignore storage errors
+}
 
