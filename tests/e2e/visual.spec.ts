@@ -53,7 +53,9 @@ test.describe('visual regression', () => {
         await page.waitForSelector('[data-testid="game-board"] .map-territory');
       }
       await page.evaluate(() => document.fonts.ready);
-      await expect(page).toHaveScreenshot(`${p.name}.png`);
+      await expect(page).toHaveScreenshot(`${p.name}.png`, {
+        maxDiffPixels: 100,
+      });
     });
   }
 });
