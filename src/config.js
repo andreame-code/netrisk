@@ -35,22 +35,26 @@ export const WS_URL = (() => {
     return '';
   }
 })();
-// Log diagnostico e banner se l'ambiente manca
+// Log diagnostico e banner se la configurazione manca
+const showServiceUnavailableBanner = () => {
+  const banner = document.createElement('div');
+  banner.textContent = 'Servizio temporaneamente non disponibile, riprova';
+  banner.style.background = '#fcc';
+  banner.style.color = '#000';
+  banner.style.padding = '1em';
+  banner.style.textAlign = 'center';
+  banner.style.position = 'fixed';
+  banner.style.top = '0';
+  banner.style.left = '0';
+  banner.style.right = '0';
+  banner.style.zIndex = '9999';
+  document.body?.prepend(banner);
+};
+
 if (typeof window !== 'undefined') {
   console.info('[ENV]', { STAMP: ENV_STAMP, SHA: ENV_SHA });
-  if (!window.__env) {
-    const banner = document.createElement('div');
-    banner.textContent = 'Servizio temporaneamente non disponibile, riprova';
-    banner.style.background = '#fcc';
-    banner.style.color = '#000';
-    banner.style.padding = '1em';
-    banner.style.textAlign = 'center';
-    banner.style.position = 'fixed';
-    banner.style.top = '0';
-    banner.style.left = '0';
-    banner.style.right = '0';
-    banner.style.zIndex = '9999';
-    document.body?.prepend(banner);
+  if (!window.__env || !SUPABASE_URL || !SUPABASE_KEY) {
+    showServiceUnavailableBanner();
   }
 }
 
