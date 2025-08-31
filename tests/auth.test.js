@@ -1,11 +1,28 @@
 describe('auth menu', () => {
+  let originalSessionStorage;
+
+  beforeAll(() => {
+    originalSessionStorage = window.sessionStorage;
+  });
+
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
     document.body.innerHTML = '<nav class="loading"><span id="userMenu" class="user-menu loading"></span></nav>';
     Object.defineProperty(window, 'sessionStorage', {
-      value: { getItem: jest.fn(), setItem: jest.fn(), removeItem: jest.fn() },
+      value: {
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+      },
       configurable: true,
+    });
+  });
+
+  afterAll(() => {
+    Object.defineProperty(window, 'sessionStorage', {
+      value: originalSessionStorage,
     });
   });
 
