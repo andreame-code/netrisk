@@ -34,13 +34,21 @@
     </header>
     <main>
       <h1>Lobby</h1>
-      <div id="lobbyError" class="hidden">
+      <div id="lobbyError" class="hidden" data-testid="lobby-error">
         <p id="lobbyErrorMsg"></p>
         <button id="retryLobby" class="btn">Retry</button>
       </div>
       <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">Back</button>
-      <button id="createBtn" class="btn" aria-label="Create new game" accesskey="n">Create game</button>
-      <ul id="lobbyList" class="lobby-list"></ul>
+      <button
+        id="createBtn"
+        class="btn"
+        aria-label="Create new game"
+        accesskey="n"
+        data-testid="create-game"
+      >
+        Create game
+      </button>
+      <ul id="lobbyList" class="lobby-list" data-testid="lobby-list"></ul>
       <dialog id="createDialog">
         <form id="createForm">
           <label>Room name <input id="roomName" required /></label>
