@@ -1,22 +1,11 @@
-import supabase from './init/supabase-client.js';
+import { setupAuthForm } from './utils/auth-forms.js';
 import { navigateTo } from './navigation.js';
 
-const form = document.getElementById('forgotForm');
-const message = document.getElementById('message');
 const emailInput = document.getElementById('email');
-const submitBtn = form?.querySelector('button[type="submit"]');
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+setupAuthForm('forgotForm', async ({ supabase, message }) => {
   const email = emailInput.value.trim();
-  if (!supabase) {
-    message.textContent = 'Supabase non configurato';
-    return;
-  }
-  submitBtn.disabled = true;
-  message.textContent = '';
   const { error } = await supabase.auth.resetPasswordForEmail(email);
-  submitBtn.disabled = false;
   if (error) {
     message.textContent = 'Reset password non riuscito';
     return;

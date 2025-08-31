@@ -1,23 +1,13 @@
-import supabase from './init/supabase-client.js';
+import { setupAuthForm } from './utils/auth-forms.js';
 import { navigateTo } from './navigation.js';
 import { getSafeReferrer } from './utils/referrer.js';
 
-const form = document.getElementById('registerForm');
-const message = document.getElementById('message');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
-const submitBtn = form?.querySelector('button[type="submit"]');
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+setupAuthForm('registerForm', async ({ supabase, message }) => {
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
-  if (!supabase) {
-    message.textContent = 'Supabase non configurato';
-    return;
-  }
-  submitBtn.disabled = true;
-  message.textContent = '';
   const redirectUrl = new URL('login.html', window.location.href).href;
   const { data, error } = await supabase.auth.signUp({
     email: username,
@@ -26,7 +16,6 @@ form.addEventListener('submit', async (e) => {
       emailRedirectTo: redirectUrl,
     },
   });
-  submitBtn.disabled = false;
   if (error) {
     message.textContent = 'Registrazione non riuscita';
     return;
