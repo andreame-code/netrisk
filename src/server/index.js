@@ -104,9 +104,9 @@ export function createLobbyServer({
             const idx = lobby.players.indexOf(player);
             lobby.players.splice(idx, 1);
             if (lobby.host === player.id) {
-          lobby.host = lobby.players[0]?.id || null;
-        }
-        await persistLobby(lobby);
+              lobby.host = lobby.players[0]?.id || null;
+            }
+            await persistLobby(lobby);
             broadcast(lobby, {
               type: "lobby",
               code: lobby.code,
@@ -117,6 +117,7 @@ export function createLobbyServer({
             });
           }
         }, offlinePlayerTimeout);
+        player.offlineTimer.unref();
       }
     });
   });

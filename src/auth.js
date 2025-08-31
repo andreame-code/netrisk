@@ -1,7 +1,9 @@
 import supabase from './init/supabase-client.js';
 import { navigateTo } from './navigation.js';
+import { info, error } from './logger.js';
 
 export async function renderUserMenu() {
+  info('[AUTH] renderMenu');
   const menu = document.getElementById('userMenu');
   if (!menu) return;
 
@@ -33,9 +35,11 @@ export async function renderUserMenu() {
   const timeout = setTimeout(showLoggedOut, 5000);
 
   try {
+    info('[AUTH] getSession start');
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    info('[AUTH] getSession end');
     clearTimeout(timeout);
     nav.classList.remove('loading');
     menu.classList.remove('loading');
@@ -71,7 +75,8 @@ export async function renderUserMenu() {
     } else {
       showLoggedOut();
     }
-  } catch {
+  } catch (err) {
+    error('[AUTH] getSession end', err);
     clearTimeout(timeout);
     showLoggedOut();
   }
