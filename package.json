@@ -13,6 +13,10 @@
     "test": "jest --config config/jest.config.js",
     "type-check": "tsc --noEmit -p config/tsconfig.json",
     "test:uat": "playwright test -c config/playwright.config.ts",
+    "pretest:e2e:smoke": "PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install",
+    "pretest:e2e:full": "PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install",
+    "test:e2e:smoke": "playwright test -c config/playwright.smoke.config.ts",
+    "test:e2e:full": "playwright test -c config/playwright.full.config.ts",
     "test:smoke": "jest --config config/jest.config.js tests/smoke",
     "prepare": "husky"
   },
