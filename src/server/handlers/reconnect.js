@@ -10,7 +10,6 @@ export async function handleReconnect(ctx, ws, msg, state) {
   if (player.offlineTimer) clearTimeout(player.offlineTimer);
   state.currentLobby = lobby;
   state.currentPlayer = player;
-  await persistLobby(lobby);
   ws.send(
     JSON.stringify({
       type: "reconnected",
@@ -33,4 +32,5 @@ export async function handleReconnect(ctx, ws, msg, state) {
     map: lobby.map,
     maxPlayers: lobby.maxPlayers,
   });
+  persistLobby(lobby);
 }

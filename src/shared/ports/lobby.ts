@@ -17,7 +17,11 @@ export const lobbySchema = z.object({
   id: z.string(),
   name: z.string(),
   maxPlayers: z.number().int().positive(),
-  playerCount: z.number().int().nonnegative()
+  playerCount: z.number().int().nonnegative(),
+  host: z.string().optional(),
+  map: z.string().optional(),
+  started: z.boolean().optional(),
+  code: z.string().optional()
 });
 export const listLobbiesOutputSchema = z.object({
   lobbies: z.array(lobbySchema)
@@ -48,4 +52,5 @@ export interface LobbyPort {
   listLobbies(input: ListLobbiesInputDto): Promise<ListLobbiesOutputDto>;
   join(input: JoinLobbyInputDto): Promise<JoinLobbyOutputDto>;
   leave(input: LeaveLobbyInputDto): Promise<LeaveLobbyOutputDto>;
+  subscribeToLobbyChanges(onChange: () => void): () => void;
 }
