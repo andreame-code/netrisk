@@ -1,11 +1,10 @@
 jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
 jest.mock("../src/navigation.js", () => ({ navigateTo: jest.fn() }));
-const mockSupabase = {
-  auth: { getUser: jest.fn().mockResolvedValue({ data: { user: {} } }) },
+const mockAuthPort = {
+  currentUser: jest.fn().mockResolvedValue({ id: "u" }),
 };
-jest.mock("../src/init/supabase-client.js", () => ({
-  __esModule: true,
-  default: mockSupabase,
+jest.mock("../src/infra/supabase/auth.adapter.ts", () => ({
+  createAuthAdapter: () => mockAuthPort,
 }));
 
 describe("home page UAT", () => {

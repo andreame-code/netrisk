@@ -1,7 +1,6 @@
 import { navigateTo } from "./navigation.js";
 import { info, error } from "./logger.js";
 import { createAuthAdapter } from "./infra/supabase/auth.adapter.ts";
-import { createAuthModel } from "./features/auth/model.js";
 import {
   renderUserMenu as renderUserMenuUi,
   showFlashMessage,
@@ -9,10 +8,9 @@ import {
 import { registerAuthListener } from "./init/supabase-client.js";
 
 const authPort = createAuthAdapter();
-const model = createAuthModel(authPort);
 
 export async function renderUserMenu() {
-  await renderUserMenuUi({ model, navigateTo, info, error });
+  await renderUserMenuUi({ authPort, navigateTo, info, error });
 }
 
 renderUserMenu();

@@ -56,7 +56,7 @@ describe("auth menu", () => {
   });
 
   test("shows user menu when session exists and logs out on click", async () => {
-    const model = {
+    const authPort = {
       currentUser: jest.fn().mockResolvedValue({
         id: "u1",
         email: "foo@example.com",
@@ -67,7 +67,7 @@ describe("auth menu", () => {
     const navigateTo = jest.fn();
     const { renderUserMenu } = require("../src/features/auth/ui.js");
 
-    await renderUserMenu({ model, navigateTo });
+    await renderUserMenu({ authPort, navigateTo });
 
     const avatar = document.querySelector("#userMenu .avatar");
     const profile = document.querySelector('#userMenu a[href="account.html"]');
@@ -81,7 +81,7 @@ describe("auth menu", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(model.logout).toHaveBeenCalled();
+    expect(authPort.logout).toHaveBeenCalled();
     expect(sessionStorage.setItem).toHaveBeenCalledWith(
       "flashMessage",
       "Sei uscito dall'account",

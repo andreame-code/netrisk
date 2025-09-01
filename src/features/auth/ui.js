@@ -1,4 +1,4 @@
-export function renderUserMenu({ model, navigateTo, info, error }) {
+export function renderUserMenu({ authPort, navigateTo, info, error }) {
   info?.("[AUTH] renderMenu");
   const menu = document.getElementById("userMenu");
   if (!menu) return;
@@ -36,8 +36,8 @@ export function renderUserMenu({ model, navigateTo, info, error }) {
     logout.addEventListener("click", async (e) => {
       e.preventDefault();
       try {
-        await model.logout();
-        renderUserMenu({ model, navigateTo, info, error });
+        await authPort.logout({});
+        renderUserMenu({ authPort, navigateTo, info, error });
       } catch (err) {
         error?.("[AUTH] logout", err);
         return;
@@ -55,8 +55,8 @@ export function renderUserMenu({ model, navigateTo, info, error }) {
     menu.classList.remove("loading");
   };
 
-  return model
-    .currentUser()
+  return authPort
+    .currentUser({})
     .then((user) => {
       if (user) {
         showLoggedIn(user);
