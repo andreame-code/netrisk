@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import supabase from "../../init/supabase-client.js";
 import {
   LobbyPort,
@@ -27,10 +28,19 @@ export const createLobbyAdapter = (
         .select()
         .single();
       if (error || !data) throw error || new Error("Create lobby failed");
+      const row = z
+        .object({
+          id: z.string().optional(),
+          code: z.string().optional(),
+          name: z.string(),
+          max_players: z.number().int().positive().optional(),
+          maxPlayers: z.number().int().positive().optional(),
+        })
+        .parse(data);
       return createLobbyOutputSchema.parse({
-        id: data.id ?? data.code ?? "",
-        name: data.name,
-        maxPlayers: data.max_players ?? data.maxPlayers,
+        id: row.id ?? row.code,
+        name: row.name,
+        maxPlayers: row.max_players ?? row.maxPlayers,
       });
     },
     async listLobbies(input) {
@@ -40,12 +50,12 @@ export const createLobbyAdapter = (
       if (error || !data) throw error || new Error("List lobbies failed");
       const lobbies = data.map((row: any) =>
         lobbySchema.parse({
-          id: row.code ?? row.id ?? "",
-          name: row.host ?? row.name ?? "",
-          maxPlayers: row.max_players ?? row.maxPlayers ?? 8,
+          id: row.code ?? row.id,
+          name: row.host ?? row.name,
+          maxPlayers: row.max_players ?? row.maxPlayers,
           playerCount: Array.isArray(row.players)
             ? row.players.length
-            : (row.player_count ?? row.playerCount ?? 0),
+            : (row.player_count ?? row.playerCount),
         }),
       );
       return listLobbiesOutputSchema.parse({ lobbies });
