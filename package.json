@@ -11,7 +11,7 @@
     "server": "node src/multiplayer-server.js",
     "simulate": "node src/simulate.js",
     "test": "jest --config config/jest.config.js",
-    "type-check": "tsc --noEmit -p config/tsconfig.json",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "test:uat": "playwright test -c config/playwright.config.ts",
     "pretest:e2e:smoke": "PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install chromium",
     "pretest:e2e:full": "PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install chromium",
