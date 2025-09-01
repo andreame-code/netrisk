@@ -23,5 +23,12 @@ export default defineConfig({
   },
   resolve: {
     extensions: [".js", ".ts"],
+    alias: {
+      "@app": resolve(__dirname, "../src"),
+      "@game": resolve(__dirname, "../src/game"),
+      "@features": resolve(__dirname, "../src/features"),
+      "@shared": resolve(__dirname, "../src/shared"),
+      "@infra": resolve(__dirname, "../src/infra"),
+    },
   },
 });

@@ -1,0 +1,14 @@
+{
+  "extends": "./config/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": "src",
+    "paths": {
+      "@app/*": ["*"],
+      "@game/*": ["game/*"],
+      "@features/*": ["features/*"],
+      "@shared/*": ["shared/*"],
+      "@infra/*": ["infra/*"]
+    }
+  }
+}
