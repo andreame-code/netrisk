@@ -225,6 +225,8 @@ new behaviours or UI integrations without touching the core logic.
 
 Contributions are welcome! Fork the repository and open a pull request with your changes.
 
+All file names should use **kebab-case** (lowercase words separated by hyphens). See [docs/naming-conventions.md](docs/naming-conventions.md) for details.
+
 All changes to `main` go through a protected branch:
 
 - At least one approving pull request review is required.
@@ -247,7 +249,7 @@ npm run type-check
 ## Wiki
 
 More detailed documentation, including gameplay notes and development tips,
-is available in the [project wiki](docs/WIKI.md).
+is available in the [project wiki](docs/wiki.md).
 
 ## UAT Debug
 

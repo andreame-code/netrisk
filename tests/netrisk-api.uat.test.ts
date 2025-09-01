@@ -4,7 +4,7 @@ import {
   startMatch,
   sendAction,
   type CreateMatchResponse,
-} from "../src/netriskApi.ts";
+} from "../src/netrisk-api.ts";
 
 jest.mock("../src/config.js", () => ({
   SUPABASE_URL: "https://example.supabase.co",
