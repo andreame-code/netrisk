@@ -26,7 +26,7 @@ describe("auth menu", () => {
       default: null,
     }));
     await require("../src/auth.js");
-    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
     expect(
       document.querySelector('#userMenu a[href="login.html"]'),
     ).not.toBeNull();
@@ -42,7 +42,7 @@ describe("auth menu", () => {
       default: { auth: { getSession } },
     }));
     await require("../src/auth.js");
-    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
     expect(getSession).toHaveBeenCalled();
     expect(
       document.querySelector('#userMenu a[href="login.html"]'),
@@ -75,7 +75,7 @@ describe("auth menu", () => {
     }));
 
     await require("../src/auth.js");
-    await Promise.resolve();
+    await new Promise((r) => setTimeout(r, 0));
 
     const avatar = document.querySelector("#userMenu .avatar");
     const profile = document.querySelector('#userMenu a[href="account.html"]');
