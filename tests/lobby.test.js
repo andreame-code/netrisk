@@ -104,11 +104,9 @@ describe("lobby screen", () => {
     const { renderLobbies } = require("../src/lobby.js");
     const data = [
       {
-        code: "abc",
-        host: "host",
-        players: [{}, {}],
-        map: "map",
-        started: false,
+        id: "abc",
+        name: "host",
+        playerCount: 2,
         maxPlayers: 5,
       },
     ];

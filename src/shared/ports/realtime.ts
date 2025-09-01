@@ -2,6 +2,10 @@ import { z } from "zod";
 
 export const subscribeInputSchema = z.object({
   channel: z.string(),
+  event: z.enum(["*", "INSERT", "UPDATE", "DELETE"]).default("*"),
+  schema: z.string().default("public"),
+  table: z.string(),
+  callback: z.any(),
 });
 export const subscribeOutputSchema = z.object({
   subscriptionId: z.string(),
