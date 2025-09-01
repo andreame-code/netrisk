@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 import type { GameState, Event } from "./types/netrisk";
+import { deserialize as deserializeGameState } from "./game/state/index.js";
 
 // Types for realtime subscription requests and payloads
 export interface MatchSubscriptionHandlers<S extends GameState, A, R> {
@@ -31,7 +32,9 @@ export function subscribeToMatch<
         filter: `match_id=eq.${matchId}`,
       },
       (payload: RealtimePayload<{ state: S }>) =>
-        handlers.onState?.(payload.new.state),
+        handlers.onState?.(
+          deserializeGameState(payload.new.state) as unknown as S,
+        ),
     );
   }
 

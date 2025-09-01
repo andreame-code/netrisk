@@ -1,4 +1,5 @@
 import { REINFORCE } from "../../phases.js";
+import { z } from "zod";
 
 // Factory for encapsulated game state. Consumers interact via
 // getters/setters rather than mutating a shared object directly.
@@ -80,6 +81,19 @@ class GameState {
 
 const gameState = new GameState();
 
+// --- Serialization helpers ---
+
+const gameStateSchema = z.object({
+  turnNumber: z.number(),
+  currentPlayer: z.number(),
+  players: z.array(z.any()),
+  territories: z.array(z.any()),
+  selectedTerritory: z.any().nullable(),
+  tokenPosition: z.any().nullable(),
+  phase: z.string(),
+  log: z.array(z.any()),
+});
+
 function initGameState(game) {
   gameState.initFromGame(game);
 }
@@ -89,11 +103,17 @@ function setSelectedTerritory(selected) {
 }
 
 function serialize(state) {
-  return JSON.stringify(state);
+  const snapshot =
+    typeof state?.getSnapshot === "function" ? state.getSnapshot() : state;
+  return gameStateSchema.parse(snapshot);
 }
 
-function deserialize(str) {
-  return JSON.parse(str);
+function deserialize(json) {
+  const data = typeof json === "string" ? JSON.parse(json) : json;
+  const parsed = gameStateSchema.parse(data);
+  const gs = new GameState();
+  gs._state = { ...parsed };
+  return gs;
 }
 
 export {

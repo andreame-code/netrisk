@@ -1,5 +1,6 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 import type { Match, Player, GameState, Event } from "./types/netrisk";
+import { deserialize as deserializeGameState } from "./game/state/index.js";
 
 // Request/response types for the NetRisk API
 export interface CreateMatchRequest {
@@ -64,7 +65,7 @@ export const startMatch = (matchId: string) =>
   call<StartMatchResponse, StartMatchRequest>({
     action: "start_match",
     matchId,
-  });
+  }).then((state) => deserializeGameState(state));
 
 export const sendAction = <
   TAction extends Record<string, unknown>,
