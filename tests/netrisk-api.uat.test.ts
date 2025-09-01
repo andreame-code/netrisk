@@ -50,6 +50,19 @@ describe("netriskApi", () => {
   });
 
   test("startMatch sends correct payload", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        turnNumber: 1,
+        currentPlayer: 0,
+        players: [],
+        territories: [],
+        selectedTerritory: null,
+        tokenPosition: null,
+        phase: "lobby",
+        log: [],
+      }),
+    });
     await startMatch("m1");
     expect(fetchMock).toHaveBeenCalledWith(functionUrl, {
       method: "POST",
