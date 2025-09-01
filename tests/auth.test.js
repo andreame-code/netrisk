@@ -27,6 +27,7 @@ describe("auth menu", () => {
     }));
     await require("../src/auth.js");
     await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
     expect(
       document.querySelector('#userMenu a[href="login.html"]'),
     ).not.toBeNull();
@@ -53,29 +54,18 @@ describe("auth menu", () => {
   });
 
   test("shows user menu when session exists and logs out on click", async () => {
-    const signOut = jest.fn().mockResolvedValue({});
-    const getSession = jest
-      .fn()
-      .mockResolvedValueOnce({
-        data: {
-          session: {
-            user: {
-              email: "foo@example.com",
-              user_metadata: { full_name: "Foo Bar" },
-            },
-          },
-        },
-      })
-      .mockResolvedValueOnce({ data: { session: null } });
+    const model = {
+      currentUser: jest.fn().mockResolvedValue({
+        id: "u1",
+        email: "foo@example.com",
+        name: "Foo Bar",
+      }),
+      logout: jest.fn().mockResolvedValue({}),
+    };
     const navigateTo = jest.fn();
-    jest.doMock("../src/navigation.js", () => ({ navigateTo }));
-    jest.doMock("../src/init/supabase-client.js", () => ({
-      __esModule: true,
-      default: { auth: { getSession, signOut } },
-    }));
+    const { renderUserMenu } = require("../src/features/auth/ui.js");
 
-    await require("../src/auth.js");
-    await new Promise((r) => setTimeout(r, 0));
+    await renderUserMenu({ model, navigateTo });
 
     const avatar = document.querySelector("#userMenu .avatar");
     const profile = document.querySelector('#userMenu a[href="account.html"]');
@@ -89,7 +79,7 @@ describe("auth menu", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(signOut).toHaveBeenCalledWith({ scope: "global" });
+    expect(model.logout).toHaveBeenCalled();
     expect(sessionStorage.setItem).toHaveBeenCalledWith(
       "flashMessage",
       "Sei uscito dall'account",

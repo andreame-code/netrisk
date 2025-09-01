@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import supabase from "../../init/supabase-client.js";
 import {
   ProfilePort,
@@ -22,10 +23,19 @@ export const createProfileAdapter = (
         .eq("user_id", userId)
         .single();
       if (error || !data) throw error || new Error("Profile not found");
+      const row = z
+        .object({
+          user_id: z.string().optional(),
+          userId: z.string().optional(),
+          name: z.string().optional().nullable(),
+          avatar_url: z.string().url().optional().nullable(),
+          avatarUrl: z.string().url().optional().nullable(),
+        })
+        .parse(data);
       return getProfileOutputSchema.parse({
-        userId: data.user_id ?? data.userId,
-        name: data.name,
-        avatarUrl: data.avatar_url ?? data.avatarUrl,
+        userId: row.userId ?? (row as any).user_id,
+        name: row.name ?? undefined,
+        avatarUrl: row.avatarUrl ?? row.avatar_url ?? undefined,
       });
     },
     async updateProfile(input) {
@@ -41,10 +51,19 @@ export const createProfileAdapter = (
         .select()
         .single();
       if (error || !data) throw error || new Error("Update profile failed");
+      const row = z
+        .object({
+          user_id: z.string().optional(),
+          userId: z.string().optional(),
+          name: z.string().optional().nullable(),
+          avatar_url: z.string().url().optional().nullable(),
+          avatarUrl: z.string().url().optional().nullable(),
+        })
+        .parse(data);
       return updateProfileOutputSchema.parse({
-        userId: data.user_id ?? data.userId,
-        name: data.name,
-        avatarUrl: data.avatar_url ?? data.avatarUrl,
+        userId: row.userId ?? (row as any).user_id,
+        name: row.name ?? undefined,
+        avatarUrl: row.avatarUrl ?? row.avatar_url ?? undefined,
       });
     },
   };
