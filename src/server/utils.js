@@ -6,7 +6,9 @@ import { info, error } from "../logger.js";
 // Load available map ids from manifest
 let validMaps = [];
 try {
-  const manifest = JSON.parse(fs.readFileSync("public/assets/maps/map-manifest.json", "utf8"));
+  const manifest = JSON.parse(
+    fs.readFileSync("public/assets/maps/map-manifest.json", "utf8"),
+  );
   validMaps = manifest.maps?.map((m) => m.id) || [];
 } catch {
   validMaps = [];
@@ -19,9 +21,10 @@ export const publicPlayers = (lobby) =>
   lobby.players.map(
     // eslint-disable-next-line no-unused-vars
     ({ ws, offlineTimer, ...p }) => ({
-    ...p,
-    connected: !!ws,
-  }));
+      ...p,
+      connected: !!ws,
+    }),
+  );
 
 export const broadcast = (lobby, msg) => {
   const data = JSON.stringify(msg);

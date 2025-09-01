@@ -71,7 +71,7 @@ function loadAudio(src) {
     () => {
       if (src !== FALLBACK_FILE) a.src = FALLBACK_FILE;
     },
-    { once: true }
+    { once: true },
   );
   cache.set(src, a);
   return a;
@@ -191,4 +191,3 @@ export {
   setLevelMusic,
   getLevelMusic,
 };
-

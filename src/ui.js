@@ -83,7 +83,9 @@ function updateInfoPanel() {
   const cp = getElement("currentPlayer");
   if (cp) {
     cp.textContent = formatPlayerName(game.players[gameState.currentPlayer]);
-    const colorClass = getColorClass(game.players[gameState.currentPlayer].color);
+    const colorClass = getColorClass(
+      game.players[gameState.currentPlayer].color,
+    );
     if (colorClass) {
       const existing = Array.from(cp.classList).filter((c) =>
         c.startsWith("player-color-"),
@@ -162,14 +164,16 @@ function exportLog(format = "json", filter) {
     return JSON.stringify(entries);
   }
   if (format === "csv") {
-    const header = ["turn", "player", "type", "message", "territories"].join(",");
+    const header = ["turn", "player", "type", "message", "territories"].join(
+      ",",
+    );
     const rows = entries.map((e) =>
       [
         e.turn,
         e.player || "",
         e.type || "",
         `"${e.message.replace(/"/g, '""')}"`,
-        (e.territories || []).join("|")
+        (e.territories || []).join("|"),
       ].join(","),
     );
     return [header, ...rows].join("\n");
@@ -210,7 +214,9 @@ function animateMove(from, to) {
     "transitionend",
     () => {
       token.classList.add("animate__animated", "animate__fadeOut");
-      token.addEventListener("animationend", () => token.remove(), { once: true });
+      token.addEventListener("animationend", () => token.remove(), {
+        once: true,
+      });
     },
     { once: true },
   );
@@ -255,83 +261,81 @@ function showVictoryModal(winnerIdx) {
     const durationEl = document.createElement("p");
     durationEl.textContent = `Duration: ${duration}s`;
     statsEl.appendChild(durationEl);
-      const ranking = game.players
-        .map((p, idx) => ({
-          name: p.name,
-          color: p.color,
-          territories: game.territories.filter((t) => t.owner === idx).length,
-        }))
-        .sort((a, b) => b.territories - a.territories);
-      const ol = document.createElement("ol");
-      ranking.forEach((r) => {
-        const li = document.createElement("li");
-        li.textContent = `${r.name}: ${r.territories} territories`;
-        const colorClass = getColorClass(r.color);
-        if (colorClass) li.classList.add(colorClass);
-        ol.appendChild(li);
-      });
-      statsEl.appendChild(ol);
+    const ranking = game.players
+      .map((p, idx) => ({
+        name: p.name,
+        color: p.color,
+        territories: game.territories.filter((t) => t.owner === idx).length,
+      }))
+      .sort((a, b) => b.territories - a.territories);
+    const ol = document.createElement("ol");
+    ranking.forEach((r) => {
+      const li = document.createElement("li");
+      li.textContent = `${r.name}: ${r.territories} territories`;
+      const colorClass = getColorClass(r.color);
+      if (colorClass) li.classList.add(colorClass);
+      ol.appendChild(li);
+    });
+    statsEl.appendChild(ol);
     const s = getStats();
-    if (s.territories.length && typeof window !== 'undefined' && window.Chart) {
+    if (s.territories.length && typeof window !== "undefined" && window.Chart) {
       const labels = s.territories[0].map((_, i) => `Turn ${i + 1}`);
       const terrCtx = document
         .getElementById("territoryChart")
         ?.getContext("2d");
       if (terrCtx) {
-          new window.Chart(terrCtx, {
-            type: "line",
-            data: {
-              labels,
-              datasets: game.players.map((p, idx) => ({
-                label: p.name,
-                data: s.territories[idx],
-                fill: false,
-                borderColor: p.color,
-                backgroundColor: p.color,
-              })),
-            },
-            options: { responsive: true },
-          });
+        new window.Chart(terrCtx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: game.players.map((p, idx) => ({
+              label: p.name,
+              data: s.territories[idx],
+              fill: false,
+              borderColor: p.color,
+              backgroundColor: p.color,
+            })),
+          },
+          options: { responsive: true },
+        });
       }
-      const armCtx = document
-        .getElementById("armiesChart")
-        ?.getContext("2d");
+      const armCtx = document.getElementById("armiesChart")?.getContext("2d");
       if (armCtx) {
-          new window.Chart(armCtx, {
-            type: "line",
-            data: {
-              labels,
-              datasets: game.players.map((p, idx) => ({
-                label: p.name,
-                data: s.armies[idx],
-                fill: false,
-                borderColor: p.color,
-                backgroundColor: p.color,
-              })),
-            },
-            options: { responsive: true },
-          });
+        new window.Chart(armCtx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: game.players.map((p, idx) => ({
+              label: p.name,
+              data: s.armies[idx],
+              fill: false,
+              borderColor: p.color,
+              backgroundColor: p.color,
+            })),
+          },
+          options: { responsive: true },
+        });
       }
-        const attCtx = document
-          .getElementById("attackChart")
-          ?.getContext("2d");
-        if (attCtx) {
-          const wins = s.attacksWon.map((a) => a.reduce((sum, n) => sum + n, 0));
-          const losses = s.attacksLost.map((a) => a.reduce((sum, n) => sum + n, 0));
-          const playerColors = game.players.map((p) => p.color);
-          const lossColors = playerColors.map((c) => `${c}80`);
-          new window.Chart(attCtx, {
-            type: "bar",
-            data: {
-              labels: game.players.map((p) => p.name),
-              datasets: [
-                { label: "Wins", data: wins, backgroundColor: playerColors },
-                { label: "Losses", data: losses, backgroundColor: lossColors },
-              ],
-            },
-            options: { responsive: true },
-          });
-        }
+      const attCtx = document.getElementById("attackChart")?.getContext("2d");
+      if (attCtx) {
+        const wins = s.attacksWon.map((a) => a.reduce((sum, n) => sum + n, 0));
+        const losses = s.attacksLost.map((a) =>
+          a.reduce((sum, n) => sum + n, 0),
+        );
+        const playerColors = game.players.map((p) => p.color);
+        const lossColors = playerColors.map((c) => `${c}80`);
+        new window.Chart(attCtx, {
+          type: "bar",
+          data: {
+            labels: game.players.map((p) => p.name),
+            datasets: [
+              { label: "Wins", data: wins, backgroundColor: playerColors },
+              { label: "Losses", data: losses, backgroundColor: lossColors },
+            ],
+          },
+          options: { responsive: true },
+        });
+      }
     }
   }
   modal.classList.add("show");
@@ -342,7 +346,9 @@ function updateBonusInfo() {
   if (!bonusEl) return;
   const bonuses = game.continents
     .filter((c) =>
-      c.territories.every((id) => game.territoryById(id).owner === game.currentPlayer),
+      c.territories.every(
+        (id) => game.territoryById(id).owner === game.currentPlayer,
+      ),
     )
     .map((c) => `${c.name} +${c.bonus}`);
   bonusEl.textContent = bonuses.length ? `Bonus: ${bonuses.join(", ")}` : "";
@@ -487,23 +493,23 @@ function destroyUI() {
   elementCache.clear();
 }
 
-  export {
-    initUI,
-    updateInfoPanel,
-    addLogEntry,
-    animateMove,
-    animateAttack,
-    animateReinforce,
-    showVictoryModal,
-    updateBonusInfo,
-    updateCardsUI,
-    updateUI,
-    destroyUI,
-    getSelectedCards,
-    resetSelectedCards,
-    getBoardScale,
-    getLog,
-    exportLog,
-    copyLog,
-    getElement,
-  };
+export {
+  initUI,
+  updateInfoPanel,
+  addLogEntry,
+  animateMove,
+  animateAttack,
+  animateReinforce,
+  showVictoryModal,
+  updateBonusInfo,
+  updateCardsUI,
+  updateUI,
+  destroyUI,
+  getSelectedCards,
+  resetSelectedCards,
+  getBoardScale,
+  getLog,
+  exportLog,
+  copyLog,
+  getElement,
+};

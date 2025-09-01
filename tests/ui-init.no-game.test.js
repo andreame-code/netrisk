@@ -50,7 +50,11 @@ jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
 jest.mock("../src/config.js", () => ({ WS_URL: "ws://test" }));
 jest.mock("../src/init/game-loader.js", () => ({
   loadGame: jest.fn(() =>
-    Promise.resolve({ game: null, territoryPositions: {}, error: new Error("fail") }),
+    Promise.resolve({
+      game: null,
+      territoryPositions: {},
+      error: new Error("fail"),
+    }),
   ),
 }));
 jest.mock("../src/state/storage.js", () => ({

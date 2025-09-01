@@ -25,14 +25,14 @@ function attachStatsListeners(game) {
   stats.attacksWon = game.players.map(() => []);
   stats.attacksLost = game.players.map(() => []);
   recordTurn(game);
-  game.on('turnStart', () => {
+  game.on("turnStart", () => {
     recordTurn(game);
   });
   game.on(REINFORCE, ({ player }) => {
     const i = stats.armies[player].length - 1;
     if (i >= 0) stats.armies[player][i] += 1;
   });
-  game.on('attackResolved', ({ result }) => {
+  game.on("attackResolved", ({ result }) => {
     const player = game.currentPlayer;
     const i = stats.attacksWon[player].length - 1;
     if (result.conquered) stats.attacksWon[player][i] += 1;
@@ -46,7 +46,13 @@ function getStats() {
 
 function exportStats() {
   const { startTime, territories, armies, attacksWon, attacksLost } = stats;
-  return JSON.stringify({ startTime, territories, armies, attacksWon, attacksLost });
+  return JSON.stringify({
+    startTime,
+    territories,
+    armies,
+    attacksWon,
+    attacksLost,
+  });
 }
 
 export { attachStatsListeners, getStats, exportStats };

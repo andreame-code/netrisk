@@ -14,8 +14,7 @@
     {
       "files": ["**/*.test.js"],
       "env": { "jest": true }
-    }
-    ,
+    },
     {
       "files": ["e2e/**/*.spec.js"],
       "env": { "jest": true }

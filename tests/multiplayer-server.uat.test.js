@@ -4,20 +4,20 @@ jest.mock("../src/init/supabase-client.js", () => null);
 import { createLobbyServer } from "../src/multiplayer-server.js";
 
 function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function onceOpen(ws) {
-  return new Promise(resolve => ws.once("open", resolve));
+  return new Promise((resolve) => ws.once("open", resolve));
 }
 
 function onceClose(ws) {
-  return new Promise(resolve => ws.once("close", resolve));
+  return new Promise((resolve) => ws.once("close", resolve));
 }
 
 function messageQueue(ws) {
   const q = [];
-  ws.on("message", data => q.push(JSON.parse(data.toString())));
+  ws.on("message", (data) => q.push(JSON.parse(data.toString())));
   return q;
 }
 
@@ -33,7 +33,7 @@ test("lobby creation, chat broadcast and state sync", async () => {
     JSON.stringify({
       type: "createLobby",
       player: { id: "h", name: "Host" },
-    })
+    }),
   );
   await wait(50);
   const lobbyMsg = qHost.shift();
@@ -47,16 +47,14 @@ test("lobby creation, chat broadcast and state sync", async () => {
       type: "joinLobby",
       code,
       player: { id: "c", name: "Client" },
-    })
+    }),
   );
   await wait(50);
   qClient.shift(); // joined
   qHost.shift(); // lobby broadcast to host
   qClient.shift(); // lobby broadcast to client
 
-  client.send(
-    JSON.stringify({ type: "chat", code, id: "c", text: "hello" })
-  );
+  client.send(JSON.stringify({ type: "chat", code, id: "c", text: "hello" }));
   await wait(50);
   const chatHost = qHost.shift();
   const chatClient = qClient.shift();
@@ -75,7 +73,7 @@ test("lobby creation, chat broadcast and state sync", async () => {
       code,
       id: "h",
       state: { currentPlayer: "h", turn: 1 },
-    })
+    }),
   );
   await wait(50);
   const startHost = qHost.shift();
@@ -89,7 +87,7 @@ test("lobby creation, chat broadcast and state sync", async () => {
       code,
       id: "h",
       state: { currentPlayer: "c", turn: 2 },
-    })
+    }),
   );
   await wait(50);
   const stateHost = qHost.shift();
@@ -102,7 +100,7 @@ test("lobby creation, chat broadcast and state sync", async () => {
   host.close();
   client.close();
   await Promise.all(closePromises);
-  await new Promise(resolve => server.close(resolve));
+  await new Promise((resolve) => server.close(resolve));
 });
 
 test("supports reconnection and removes offline players after timeout", async () => {
@@ -117,7 +115,7 @@ test("supports reconnection and removes offline players after timeout", async ()
     JSON.stringify({
       type: "createLobby",
       player: { id: "h", name: "Host" },
-    })
+    }),
   );
   await wait(50);
   const { code } = qHost.shift();
@@ -130,7 +128,7 @@ test("supports reconnection and removes offline players after timeout", async ()
       type: "joinLobby",
       code,
       player: { id: "c", name: "Client" },
-    })
+    }),
   );
   await wait(50);
   qClient.shift();
@@ -142,7 +140,7 @@ test("supports reconnection and removes offline players after timeout", async ()
   await close1;
   await wait(20);
   const offlineMsg = qHost.shift();
-  expect(offlineMsg.players.find(p => p.id === "c")?.connected).toBe(false);
+  expect(offlineMsg.players.find((p) => p.id === "c")?.connected).toBe(false);
 
   const clientR = new WebSocket(url);
   await onceOpen(clientR);
@@ -153,8 +151,8 @@ test("supports reconnection and removes offline players after timeout", async ()
   expect(reconnected.type).toBe("reconnected");
   qClientR.shift(); // lobby broadcast to client
   const reconnectBroadcast = qHost.shift();
-  expect(reconnectBroadcast.players.find(p => p.id === "c")?.connected).toBe(
-    true
+  expect(reconnectBroadcast.players.find((p) => p.id === "c")?.connected).toBe(
+    true,
   );
 
   const close2 = onceClose(clientR);
@@ -162,13 +160,13 @@ test("supports reconnection and removes offline players after timeout", async ()
   await close2;
   await wait(20);
   const offline2 = qHost.shift();
-  expect(offline2.players.find(p => p.id === "c")).toBeTruthy();
+  expect(offline2.players.find((p) => p.id === "c")).toBeTruthy();
   await wait(80);
   const removed = qHost.shift();
-  expect(removed.players.find(p => p.id === "c")).toBeFalsy();
+  expect(removed.players.find((p) => p.id === "c")).toBeFalsy();
 
   const closeHost = onceClose(host);
   host.close();
   await closeHost;
-  await new Promise(resolve => server.close(resolve));
+  await new Promise((resolve) => server.close(resolve));
 });

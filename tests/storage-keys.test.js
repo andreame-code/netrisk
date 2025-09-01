@@ -19,11 +19,11 @@ describe("storage helpers use correct keys", () => {
     const store = {};
     Object.defineProperty(global, "localStorage", {
       value: {
-        getItem: jest.fn(key => store[key] || null),
+        getItem: jest.fn((key) => store[key] || null),
         setItem: jest.fn((key, value) => {
           store[key] = String(value);
         }),
-        removeItem: jest.fn(key => {
+        removeItem: jest.fn((key) => {
           delete store[key];
         }),
       },
@@ -60,11 +60,16 @@ describe("storage helpers use correct keys", () => {
   test("saveNamedGame writes KEY_SAVES", () => {
     const game = { serialize: () => "{}" };
     saveNamedGame("slot", game);
-    expect(global.localStorage.setItem).toHaveBeenCalledWith(KEY_SAVES, expect.any(String));
+    expect(global.localStorage.setItem).toHaveBeenCalledWith(
+      KEY_SAVES,
+      expect.any(String),
+    );
   });
 
   test("loadNamedGame reads KEY_SAVES", () => {
-    const payload = JSON.stringify({ slot: { data: "{}", map: "map", savedAt: 0, turn: 0 } });
+    const payload = JSON.stringify({
+      slot: { data: "{}", map: "map", savedAt: 0, turn: 0 },
+    });
     global.localStorage.getItem.mockReturnValue(payload);
     loadNamedGame("slot", { deserialize: () => ({}) });
     expect(global.localStorage.getItem).toHaveBeenCalledWith(KEY_SAVES);

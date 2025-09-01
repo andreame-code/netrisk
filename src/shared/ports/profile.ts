@@ -1,12 +1,12 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const getProfileInputSchema = z.object({
-  userId: z.string()
+  userId: z.string(),
 });
 export const profileSchema = z.object({
   userId: z.string(),
   name: z.string().optional(),
-  avatarUrl: z.string().url().optional()
+  avatarUrl: z.string().url().optional(),
 });
 export const getProfileOutputSchema = profileSchema;
 export type GetProfileInputDto = z.infer<typeof getProfileInputSchema>;

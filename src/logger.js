@@ -35,7 +35,7 @@ function appendLog(level, args) {
   if (!logBox) return;
   const line = document.createElement("div");
   const text = args
-    .map(a => (typeof a === "string" ? a : JSON.stringify(a)))
+    .map((a) => (typeof a === "string" ? a : JSON.stringify(a)))
     .join(" ");
   line.textContent = `[${level}] ${text}`;
   if (typeof logBox.prepend === "function") logBox.prepend(line);

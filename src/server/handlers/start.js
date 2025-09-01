@@ -1,7 +1,11 @@
 import { broadcast, persistLobby, loadLobby } from "../utils.js";
 
 export async function handleStart(ctx, ws, msg) {
-  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
+  const lobby = await loadLobby(
+    ctx.lobbies,
+    msg.code,
+    ctx.offlinePlayerTimeout,
+  );
   if (!lobby || lobby.host !== msg.id) return;
   if (lobby.players.length < 2) return;
   if (!lobby.players.every((p) => p.ready)) return;

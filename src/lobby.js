@@ -1,8 +1,8 @@
-import { initThemeToggle } from './theme.js';
-import { goHome, navigateTo } from './navigation.js';
-import { WS_URL } from './config.js';
-import EventBus from './core/event-bus.js';
-import { info as logInfo, error as logError } from './logger.js';
+import { initThemeToggle } from "./theme.js";
+import { goHome, navigateTo } from "./navigation.js";
+import { WS_URL } from "./config.js";
+import EventBus from "./core/event-bus.js";
+import { info as logInfo, error as logError } from "./logger.js";
 
 const bus = new EventBus();
 
@@ -17,15 +17,15 @@ let currentPlayerId = null;
 let chatHistoryLoaded = false;
 const MAX_CHAT_LENGTH = 200;
 
-const lobbyErrorEl = document.getElementById('lobbyError');
-const lobbyErrorMsg = document.getElementById('lobbyErrorMsg');
-const retryBtn = document.getElementById('retryLobby');
+const lobbyErrorEl = document.getElementById("lobbyError");
+const lobbyErrorMsg = document.getElementById("lobbyErrorMsg");
+const retryBtn = document.getElementById("retryLobby");
 let retryAction = null;
 
 function showLobbyError(message, action) {
   if (lobbyErrorEl && lobbyErrorMsg && retryBtn) {
     lobbyErrorMsg.textContent = message;
-    lobbyErrorEl.classList.remove('hidden');
+    lobbyErrorEl.classList.remove("hidden");
     retryAction = action;
   } else {
     notifyUser(message);
@@ -33,20 +33,20 @@ function showLobbyError(message, action) {
 }
 
 function hideLobbyError() {
-  if (lobbyErrorEl) lobbyErrorEl.classList.add('hidden');
+  if (lobbyErrorEl) lobbyErrorEl.classList.add("hidden");
   retryAction = null;
 }
 
 if (retryBtn) {
-  retryBtn.addEventListener('click', () => {
+  retryBtn.addEventListener("click", () => {
     const action = retryAction;
     hideLobbyError();
-    if (typeof action === 'function') action();
+    if (typeof action === "function") action();
   });
 }
 
 function notifyUser(msg) {
-  if (typeof alert === 'function') {
+  if (typeof alert === "function") {
     alert(msg);
   } else {
     console.error(msg); // eslint-disable-line no-console
@@ -54,15 +54,15 @@ function notifyUser(msg) {
 }
 
 export function renderLobbies(lobbies) {
-  const list = document.getElementById('lobbyList');
+  const list = document.getElementById("lobbyList");
   if (!list) return;
-  list.innerHTML = '';
-  lobbies.forEach(lobby => {
-    const li = document.createElement('li');
+  list.innerHTML = "";
+  lobbies.forEach((lobby) => {
+    const li = document.createElement("li");
     const playerCount = Array.isArray(lobby.players) ? lobby.players.length : 0;
     const max = lobby.maxPlayers || 8;
-    const status = lobby.started ? 'started' : 'open';
-    li.textContent = `${lobby.code} – host: ${lobby.host} – players: ${playerCount}/${max} – map: ${lobby.map || '-' } – status: ${status}`;
+    const status = lobby.started ? "started" : "open";
+    li.textContent = `${lobby.code} – host: ${lobby.host} – players: ${playerCount}/${max} – map: ${lobby.map || "-"} – status: ${status}`;
     list.appendChild(li);
   });
 }
@@ -70,16 +70,22 @@ export function renderLobbies(lobbies) {
 async function fetchLobbies() {
   if (!supabase) {
     renderLobbies([]);
-    logError('Supabase not initialized; cannot fetch lobbies');
-    showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
+    logError("Supabase not initialized; cannot fetch lobbies");
+    showLobbyError(
+      "Impossibile caricare la lista delle lobby. Riprova.",
+      fetchLobbies,
+    );
     return;
   }
   try {
-    logInfo('Fetching lobbies from database');
-    const { data, error } = await supabase.from('lobbies').select();
+    logInfo("Fetching lobbies from database");
+    const { data, error } = await supabase.from("lobbies").select();
     if (error) {
-      logError('Error fetching lobbies', error.message);
-      showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
+      logError("Error fetching lobbies", error.message);
+      showLobbyError(
+        "Impossibile caricare la lista delle lobby. Riprova.",
+        fetchLobbies,
+      );
       return;
     }
     currentLobbies.splice(0, currentLobbies.length, ...(data || []));
@@ -87,42 +93,45 @@ async function fetchLobbies() {
     hideLobbyError();
     logInfo(`Loaded ${currentLobbies.length} lobbies`);
   } catch (err) {
-    logError('Unexpected error fetching lobbies', err?.message);
-    showLobbyError('Impossibile caricare la lista delle lobby. Riprova.', fetchLobbies);
+    logError("Unexpected error fetching lobbies", err?.message);
+    showLobbyError(
+      "Impossibile caricare la lista delle lobby. Riprova.",
+      fetchLobbies,
+    );
   }
 }
 
 export function initLobby() {
   initThemeToggle();
-  const backBtn = document.getElementById('backBtn');
-  if (backBtn) backBtn.addEventListener('click', () => goHome());
-  const createBtn = document.getElementById('createBtn');
-  const dialog = document.getElementById('createDialog');
-  const cancelBtn = document.getElementById('cancelCreate');
-  const form = document.getElementById('createForm');
-  const chatForm = document.getElementById('chatForm');
-  const chatInput = document.getElementById('chatInput');
-  const chatMessages = document.getElementById('chatMessages');
+  const backBtn = document.getElementById("backBtn");
+  if (backBtn) backBtn.addEventListener("click", () => goHome());
+  const createBtn = document.getElementById("createBtn");
+  const dialog = document.getElementById("createDialog");
+  const cancelBtn = document.getElementById("cancelCreate");
+  const form = document.getElementById("createForm");
+  const chatForm = document.getElementById("chatForm");
+  const chatInput = document.getElementById("chatInput");
+  const chatMessages = document.getElementById("chatMessages");
   // populate map select from manifest
   (async () => {
-    const select = document.getElementById('map');
+    const select = document.getElementById("map");
     if (!select) return;
     let res;
     try {
-      res = await fetch('./assets/maps/map-manifest.json');
-      if (res && res.ok === false) throw new Error('not ok');
+      res = await fetch("./assets/maps/map-manifest.json");
+      if (res && res.ok === false) throw new Error("not ok");
     } catch {
       try {
-        res = await fetch('./public/assets/maps/map-manifest.json');
-        if (res && res.ok === false) throw new Error('not ok');
+        res = await fetch("./public/assets/maps/map-manifest.json");
+        if (res && res.ok === false) throw new Error("not ok");
       } catch {
         return;
       }
     }
     try {
       const data = await res.json();
-      data.maps.forEach(m => {
-        const opt = document.createElement('option');
+      data.maps.forEach((m) => {
+        const opt = document.createElement("option");
         opt.value = m.id;
         opt.textContent = m.name;
         select.appendChild(opt);
@@ -133,21 +142,20 @@ export function initLobby() {
   })();
   if (!WS_URL && createBtn) {
     createBtn.disabled = true;
-    showLobbyError(
-      'Supabase non è configurato. Riprova.',
-      () => location.reload()
+    showLobbyError("Supabase non è configurato. Riprova.", () =>
+      location.reload(),
     );
   }
   if (createBtn && dialog) {
-    createBtn.addEventListener('click', () => {
+    createBtn.addEventListener("click", () => {
       if (dialog.showModal) dialog.showModal();
-      else dialog.setAttribute('open', '');
+      else dialog.setAttribute("open", "");
     });
   }
   if (cancelBtn && dialog) {
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener("click", () => {
       if (dialog.close) dialog.close();
-      else dialog.removeAttribute('open');
+      else dialog.removeAttribute("open");
     });
   }
   async function createGame(payload, dlg) {
@@ -156,17 +164,19 @@ export function initLobby() {
       if (supabase) {
         await supabase.auth.getSession();
         ({ data: { user } = {} } = await supabase.auth.getUser());
-        logInfo('Requested Supabase session and user');
+        logInfo("Requested Supabase session and user");
       }
     } catch (err) {
-      logError('Supabase getSession/getUser error', err?.message);
+      logError("Supabase getSession/getUser error", err?.message);
     }
     const url = WS_URL;
     const playerName = user?.user_metadata?.username || user?.email;
-    logInfo('Creating new game lobby');
+    logInfo("Creating new game lobby");
     try {
       if (!url) {
-        showLobbyError('Server multiplayer non disponibile. Riprova.', () => location.reload());
+        showLobbyError("Server multiplayer non disponibile. Riprova.", () =>
+          location.reload(),
+        );
         return;
       }
       if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -176,50 +186,64 @@ export function initLobby() {
           try {
             ws.send(
               JSON.stringify({
-                type: 'createLobby',
+                type: "createLobby",
                 name: payload.roomName,
                 player: { name: playerName },
                 maxPlayers: payload.maxPlayers,
                 ...(payload.map ? { map: payload.map } : {}),
-              })
+              }),
             );
           } catch (err2) {
-            logError('WebSocket send error', err2?.message);
-            showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => createGame(payload, dlg));
+            logError("WebSocket send error", err2?.message);
+            showLobbyError(
+              "Impossibile connettersi al server multiplayer. Riprova.",
+              () => createGame(payload, dlg),
+            );
           }
         };
-        ws.onmessage = e => handleMessage(e, dlg);
-        ws.onerror = errEvent => {
-          logError('WebSocket connection error', errEvent?.message);
-          showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => createGame(payload, dlg));
+        ws.onmessage = (e) => handleMessage(e, dlg);
+        ws.onerror = (errEvent) => {
+          logError("WebSocket connection error", errEvent?.message);
+          showLobbyError(
+            "Impossibile connettersi al server multiplayer. Riprova.",
+            () => createGame(payload, dlg),
+          );
         };
         ws.onclose = () =>
-          showLobbyError('Connessione al server multiplayer persa. Riprova.', () => createGame(payload, dlg));
+          showLobbyError(
+            "Connessione al server multiplayer persa. Riprova.",
+            () => createGame(payload, dlg),
+          );
       } else {
         ws.send(
           JSON.stringify({
-            type: 'createLobby',
+            type: "createLobby",
             name: payload.roomName,
             player: { name: playerName },
             maxPlayers: payload.maxPlayers,
             ...(payload.map ? { map: payload.map } : {}),
-          })
+          }),
         );
       }
     } catch (err) {
-      logError('createGame failed', err?.message);
-      showLobbyError('Impossibile creare la lobby. Riprova.', () => createGame(payload, dlg));
+      logError("createGame failed", err?.message);
+      showLobbyError("Impossibile creare la lobby. Riprova.", () =>
+        createGame(payload, dlg),
+      );
     }
   }
 
   if (form) {
-    form.addEventListener('submit', ev => {
+    form.addEventListener("submit", (ev) => {
       ev.preventDefault();
-      const roomName = document.getElementById('roomName').value.trim();
-      const maxPlayers = parseInt(document.getElementById('maxPlayers').value, 10);
-      const map = document.getElementById('map').value.trim();
+      const roomName = document.getElementById("roomName").value.trim();
+      const maxPlayers = parseInt(
+        document.getElementById("maxPlayers").value,
+        10,
+      );
+      const map = document.getElementById("map").value.trim();
       if (!roomName || isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 8) {
-        if (typeof form.reportValidity === 'function') {
+        if (typeof form.reportValidity === "function") {
           form.reportValidity();
         }
         return;
@@ -229,93 +253,122 @@ export function initLobby() {
   }
 
   if (chatForm && chatInput) {
-    chatForm.addEventListener('submit', ev => {
+    chatForm.addEventListener("submit", (ev) => {
       ev.preventDefault();
       let text = chatInput.value.trim();
       if (!text) return;
       if (text.length > MAX_CHAT_LENGTH) text = text.slice(0, MAX_CHAT_LENGTH);
-      if (!ws || ws.readyState !== WebSocket.OPEN || !currentCode || !currentPlayerId) return;
+      if (
+        !ws ||
+        ws.readyState !== WebSocket.OPEN ||
+        !currentCode ||
+        !currentPlayerId
+      )
+        return;
       ws.send(
-        JSON.stringify({ type: 'chat', code: currentCode, id: currentPlayerId, text })
+        JSON.stringify({
+          type: "chat",
+          code: currentCode,
+          id: currentPlayerId,
+          text,
+        }),
       );
-      chatInput.value = '';
+      chatInput.value = "";
     });
   }
-  const storedCode = localStorage.getItem('lobbyCode');
-  const storedId = localStorage.getItem('playerId');
+  const storedCode = localStorage.getItem("lobbyCode");
+  const storedId = localStorage.getItem("playerId");
   if (storedCode && storedId) {
     const url = WS_URL;
     if (url) {
       ws = new WebSocket(url);
       ws.onopen = () => {
         hideLobbyError();
-        ws.send(JSON.stringify({ type: 'reconnect', code: storedCode, id: storedId }));
+        ws.send(
+          JSON.stringify({ type: "reconnect", code: storedCode, id: storedId }),
+        );
       };
-      ws.onmessage = e => handleMessage(e, null);
+      ws.onmessage = (e) => handleMessage(e, null);
       ws.onerror = () =>
-        showLobbyError('Impossibile connettersi al server multiplayer. Riprova.', () => {
-          location.reload();
-        });
+        showLobbyError(
+          "Impossibile connettersi al server multiplayer. Riprova.",
+          () => {
+            location.reload();
+          },
+        );
       ws.onclose = () =>
-        showLobbyError('Connessione al server multiplayer persa. Riprova.', () => {
-          location.reload();
-        });
+        showLobbyError(
+          "Connessione al server multiplayer persa. Riprova.",
+          () => {
+            location.reload();
+          },
+        );
     } else {
-      showLobbyError('Server multiplayer non disponibile. Riprova.', () => location.reload());
+      showLobbyError("Server multiplayer non disponibile. Riprova.", () =>
+        location.reload(),
+      );
     }
   }
-  import('./init/supabase-client.js')
-    .then(async mod => {
-      if (mod && Object.prototype.hasOwnProperty.call(mod, 'default')) {
+  import("./init/supabase-client.js")
+    .then(async (mod) => {
+      if (mod && Object.prototype.hasOwnProperty.call(mod, "default")) {
         supabase = mod.default;
       } else {
         supabase = mod;
       }
       if (!supabase) {
-        logError('Supabase client not initialized');
+        logError("Supabase client not initialized");
         return;
       }
-      logInfo('Supabase client ready on lobby page');
+      logInfo("Supabase client ready on lobby page");
       try {
         const { data: { user } = {} } = await supabase.auth.getUser();
         if (!user) {
-          const redirectPath = window.location.pathname + window.location.search;
+          const redirectPath =
+            window.location.pathname + window.location.search;
           navigateTo(`login.html?redirect=${encodeURIComponent(redirectPath)}`);
           return;
         }
       } catch (err) {
-        logError('Supabase getUser error', err?.message);
+        logError("Supabase getUser error", err?.message);
         const redirectPath = window.location.pathname + window.location.search;
         navigateTo(`login.html?redirect=${encodeURIComponent(redirectPath)}`);
         return;
       }
       fetchLobbies();
       supabase
-        .channel('public:lobbies')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'lobbies' }, () => {
-          bus.emit('lobbiesChanged');
-        })
+        .channel("public:lobbies")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "lobbies" },
+          () => {
+            bus.emit("lobbiesChanged");
+          },
+        )
         .subscribe();
-      bus.on('lobbiesChanged', fetchLobbies);
+      bus.on("lobbiesChanged", fetchLobbies);
       try {
         const { data: { session } = {} } = await supabase.auth.getSession();
         if (!session) {
           if (createBtn) createBtn.disabled = true;
-          showLobbyError('Effettua il login per creare una lobby.');
+          showLobbyError("Effettua il login per creare una lobby.");
         }
       } catch (err) {
-        logError('Supabase getSession error', err?.message);
+        logError("Supabase getSession error", err?.message);
       }
     })
-    .catch(err => {
-      logError('Failed to load Supabase client', err?.message);
+    .catch((err) => {
+      logError("Failed to load Supabase client", err?.message);
     });
 
   function addChatMessage(id, text, time = new Date()) {
     if (!chatMessages) return;
-    const li = document.createElement('li');
+    const li = document.createElement("li");
     const name = playerNames.get(id) || id;
-    const ts = time instanceof Date ? time.toLocaleTimeString() : new Date(time).toLocaleTimeString();
+    const ts =
+      time instanceof Date
+        ? time.toLocaleTimeString()
+        : new Date(time).toLocaleTimeString();
     li.textContent = `[${ts}] ${name}: ${text}`;
     chatMessages.appendChild(li);
   }
@@ -326,17 +379,19 @@ export function initLobby() {
     try {
       logInfo(`Loading chat history for ${currentCode}`);
       const { data, error } = await supabase
-        .from('lobby_chat')
+        .from("lobby_chat")
         .select()
-        .eq('code', currentCode)
-        .order('created_at', { ascending: true });
+        .eq("code", currentCode)
+        .order("created_at", { ascending: true });
       if (error) {
-        logError('Error loading chat history', error.message);
+        logError("Error loading chat history", error.message);
         return;
       }
-      (data || []).forEach(row => addChatMessage(row.id, row.text, new Date(row.created_at)));
+      (data || []).forEach((row) =>
+        addChatMessage(row.id, row.text, new Date(row.created_at)),
+      );
     } catch (err) {
-      logError('Unexpected error loading chat history', err?.message);
+      logError("Unexpected error loading chat history", err?.message);
     }
   }
 
@@ -349,45 +404,47 @@ export function initLobby() {
     }
     logInfo(`WS response type: ${msg.type}`);
     switch (msg.type) {
-      case 'joined': {
+      case "joined": {
         currentCode = msg.code;
         currentPlayerId = msg.id;
-        localStorage.setItem('lobbyCode', currentCode);
-        localStorage.setItem('playerId', currentPlayerId);
+        localStorage.setItem("lobbyCode", currentCode);
+        localStorage.setItem("playerId", currentPlayerId);
         startHeartbeat();
         loadChatHistory();
         break;
       }
-      case 'lobby': {
+      case "lobby": {
         currentCode = msg.code;
         if (!currentPlayerId) currentPlayerId = msg.host;
         playerNames.clear();
-        (msg.players || []).forEach(p => {
+        (msg.players || []).forEach((p) => {
           playerNames.set(p.id, p.name || p.id);
         });
         loadChatHistory();
         currentLobbies.push(msg);
         renderLobbies(currentLobbies);
         if (dlg && dlg.close) dlg.close();
-        else if (dlg) dlg.removeAttribute('open');
+        else if (dlg) dlg.removeAttribute("open");
         break;
       }
-      case 'reconnected': {
+      case "reconnected": {
         currentCode = msg.code;
         currentPlayerId = msg.player?.id || null;
         if (currentCode && currentPlayerId) {
-          localStorage.setItem('lobbyCode', currentCode);
-          localStorage.setItem('playerId', currentPlayerId);
+          localStorage.setItem("lobbyCode", currentCode);
+          localStorage.setItem("playerId", currentPlayerId);
           startHeartbeat();
         }
         break;
       }
-      case 'chat': {
+      case "chat": {
         addChatMessage(msg.id, msg.text, new Date());
         break;
       }
-      case 'error': {
-        showLobbyError('Si è verificato un errore. Riprova.', () => location.reload());
+      case "error": {
+        showLobbyError("Si è verificato un errore. Riprova.", () =>
+          location.reload(),
+        );
         break;
       }
       default:
@@ -407,7 +464,11 @@ function startHeartbeat() {
       currentPlayerId
     ) {
       ws.send(
-        JSON.stringify({ type: 'heartbeat', code: currentCode, id: currentPlayerId })
+        JSON.stringify({
+          type: "heartbeat",
+          code: currentCode,
+          id: currentPlayerId,
+        }),
       );
     }
   }, 30000);

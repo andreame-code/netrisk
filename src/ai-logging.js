@@ -23,8 +23,8 @@ export default function attachAIActionLogging(game) {
     typeof game.on === "function"
       ? game
       : game.events instanceof EventBus
-      ? game.events
-      : null;
+        ? game.events
+        : null;
   if (!bus) return;
 
   bus.on(REINFORCE, ({ territory, player }) => {

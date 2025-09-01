@@ -23,7 +23,6 @@ function getCachedImage(src) {
   return img.cloneNode(true);
 }
 
-
 export async function loadMapData() {
   if (!mapGrid) return;
   let res;
@@ -74,7 +73,9 @@ export async function loadMapData() {
     layout.className = "layout";
     detail.appendChild(layout);
     item.appendChild(detail);
-    item.addEventListener("mouseenter", () => detail.classList.remove("hidden"));
+    item.addEventListener("mouseenter", () =>
+      detail.classList.remove("hidden"),
+    );
     item.addEventListener("mouseleave", () => detail.classList.add("hidden"));
     item.addEventListener("click", () => {
       selectedMap = m.id;
@@ -98,7 +99,7 @@ function renderPlayerInputs(humanCount) {
     const options = colorPalette
       .map(
         (c, idx) =>
-          `<option value="${c}" ${idx === i ? "selected" : ""}>${c}</option>`
+          `<option value="${c}" ${idx === i ? "selected" : ""}>${c}</option>`,
       )
       .join("");
     wrapper.innerHTML = `
@@ -123,7 +124,8 @@ function loadFromStorage() {
     aiCount = saved.filter((p) => p.ai).length;
     const firstAI = saved.find((p) => p.ai);
     if (firstAI) {
-      if (aiDifficultyInput) aiDifficultyInput.value = firstAI.difficulty || "normal";
+      if (aiDifficultyInput)
+        aiDifficultyInput.value = firstAI.difficulty || "normal";
       if (aiStyleInput) aiStyleInput.value = firstAI.style || "balanced";
     }
   }
@@ -141,12 +143,14 @@ function loadFromStorage() {
   }
   renderPlayerInputs(humanCount);
   if (saved) {
-    saved.filter((p) => !p.ai).forEach((p, i) => {
-      const nameInput = document.getElementById(`name${i}`);
-      const colorInput = document.getElementById(`color${i}`);
-      if (nameInput) nameInput.value = p.name;
-      if (colorInput) colorInput.value = p.color;
-    });
+    saved
+      .filter((p) => !p.ai)
+      .forEach((p, i) => {
+        const nameInput = document.getElementById(`name${i}`);
+        const colorInput = document.getElementById(`color${i}`);
+        if (nameInput) nameInput.value = p.name;
+        if (colorInput) colorInput.value = p.color;
+      });
   }
 }
 
@@ -175,7 +179,8 @@ form.addEventListener("submit", (e) => {
     players.push({ name, color });
   }
   for (let i = 0; i < aiCount; i += 1) {
-    const color = colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
+    const color =
+      colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
     usedColors.add(color);
     players.push({ name: `AI ${i + 1}`, color, ai: true, difficulty, style });
   }

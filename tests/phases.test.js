@@ -1,4 +1,9 @@
-import PHASES, { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../src/phases.js";
+import PHASES, {
+  REINFORCE,
+  ATTACK,
+  FORTIFY,
+  GAME_OVER,
+} from "../src/phases.js";
 
 describe("PHASES constants", () => {
   test("have expected values", () => {

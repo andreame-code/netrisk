@@ -41,4 +41,3 @@ describe("audio helpers", () => {
     expect(isMusicEnabled()).toBe(true);
   });
 });
-

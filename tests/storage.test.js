@@ -59,4 +59,3 @@ describe("multi-save storage", () => {
     expect(listSavedGames()).toHaveLength(0);
   });
 });
-

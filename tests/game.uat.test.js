@@ -75,7 +75,12 @@ describe("game user flows", () => {
     const select = game.handleTerritoryClick("a");
     expect(select).toEqual({ type: "select", territory: "a" });
     const fortify = game.handleTerritoryClick("c");
-    expect(fortify).toEqual({ type: FORTIFY, from: "a", to: "c", movableArmies: 3 });
+    expect(fortify).toEqual({
+      type: FORTIFY,
+      from: "a",
+      to: "c",
+      movableArmies: 3,
+    });
     const moved = game.moveArmies("a", "c", 2);
     expect(moved).toBe(true);
     expect(game.territoryById("a").armies).toBe(2);
@@ -97,8 +102,9 @@ describe("game user flows", () => {
     const state = game.serialize();
     const clone = Game.deserialize(state);
     expect(clone.getPhase()).toBe(ATTACK);
-    expect(clone.territoryById("a").armies).toBe(game.territoryById("a").armies);
+    expect(clone.territoryById("a").armies).toBe(
+      game.territoryById("a").armies,
+    );
     expect(clone.players).toEqual(game.players);
   });
 });
-

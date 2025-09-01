@@ -4,7 +4,7 @@ import { FORTIFY } from "../src/phases.js";
 import createWebSocketMultiplayer from "../src/plugins/websocket-multiplayer-plugin.js";
 
 function wait(ms = 0) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 class MockServer {
@@ -58,7 +58,7 @@ class MockWebSocket {
     this.listeners[type].push(handler);
   }
   _emit(type, event = {}) {
-    (this.listeners[type] || []).forEach(fn => fn(event));
+    (this.listeners[type] || []).forEach((fn) => fn(event));
   }
   send(data) {
     this.server.broadcast(this, data);
@@ -93,7 +93,7 @@ test("syncs game state and emits events", async () => {
   const game2 = new Game(players, territories, [], [], false, false);
 
   const events2 = [];
-  game2.on("turnStart", e => events2.push(e));
+  game2.on("turnStart", (e) => events2.push(e));
 
   createWebSocketMultiplayer(url)(game1);
   createWebSocketMultiplayer(url)(game2);
@@ -124,7 +124,7 @@ test("reconnects and handles messages after reconnect", async () => {
   const game2 = new Game(players, territories, [], [], false, false);
 
   const events2 = [];
-  game2.on("turnStart", e => events2.push(e));
+  game2.on("turnStart", (e) => events2.push(e));
 
   createWebSocketMultiplayer(url)(game1);
   createWebSocketMultiplayer(url)(game2);
@@ -170,7 +170,7 @@ test("ignores non-state messages", async () => {
 
   const game = new Game(players, territories, [], [], false, false);
   const events = [];
-  game.on("stateUpdated", e => events.push(e));
+  game.on("stateUpdated", (e) => events.push(e));
 
   createWebSocketMultiplayer(url)(game);
   await wait();

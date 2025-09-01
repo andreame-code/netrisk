@@ -59,11 +59,11 @@ export function createLobbyServer({
     heartbeat: handleHeartbeat,
   };
 
-  wss.on("connection", ws => {
+  wss.on("connection", (ws) => {
     const state = { currentLobby: null, currentPlayer: null };
     info("Client connected to lobby server");
 
-    ws.on("message", async raw => {
+    ws.on("message", async (raw) => {
       let msg;
       try {
         msg = JSON.parse(raw.toString());

@@ -39,7 +39,7 @@ export function battleOutcomeProbs(attDice, defDice) {
   }
   const total = Math.pow(6, attDice + defDice);
   const result = Object.entries(outcomes).map(([k, count]) => {
-    const [attLoss, defLoss] = k.split('-').map(Number);
+    const [attLoss, defLoss] = k.split("-").map(Number);
     return { attLoss, defLoss, prob: count / total };
   });
   battleCache[key] = result;
@@ -72,7 +72,7 @@ export function attackSuccessProbability(from, to) {
 }
 
 export function territoryPriority(game, territory, profile = {}) {
-  const enemyNeighbors = territory.neighbors.filter(id => {
+  const enemyNeighbors = territory.neighbors.filter((id) => {
     const neighbor = game.territoryById(id);
     return neighbor && neighbor.owner !== territory.owner;
   }).length;
@@ -81,4 +81,3 @@ export function territoryPriority(game, territory, profile = {}) {
   if (profile.style === "defensive") score -= territory.armies;
   return score;
 }
-

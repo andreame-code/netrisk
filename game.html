@@ -30,13 +30,21 @@
           <div><strong>Turn:</strong> <span id="turnNumber">1</span></div>
           <div><strong>Player:</strong> <span id="currentPlayer"></span></div>
           <div><strong>Phase:</strong> <span id="status"></span></div>
-          <div><strong>Reinforcements:</strong> <span id="reinforcements">0</span></div>
+          <div>
+            <strong>Reinforcements:</strong> <span id="reinforcements">0</span>
+          </div>
           <div><strong>Dice:</strong> <span id="diceResults"></span></div>
           <div><strong>Phase time:</strong> <span id="phaseTimer"></span></div>
         </div>
         <div id="gameActions">
           <strong>Game Actions:</strong>
-          <button id="undo" class="btn" aria-label="Undo" accesskey="u" disabled>
+          <button
+            id="undo"
+            class="btn"
+            aria-label="Undo"
+            accesskey="u"
+            disabled
+          >
             Undo
           </button>
           <button id="endTurn" class="btn" aria-label="End Turn" accesskey="e">
@@ -125,7 +133,10 @@
         </div>
       </div>
     </div>
-    <script src="./env.js?sha=%VITE_COMMIT_SHA%" onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"></script>
+    <script
+      src="./env.js?sha=%VITE_COMMIT_SHA%"
+      onerror="document.write('<script src=&quot;./env.js&quot;><\/script>')"
+    ></script>
     <script type="module" src="./main.js"></script>
   </body>
 </html>

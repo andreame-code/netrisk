@@ -15,12 +15,7 @@ import {
 } from "./audio.js";
 import askArmiesToMove from "./move-prompt.js";
 import { navigateTo, exitGame } from "./navigation.js";
-import {
-  REINFORCE,
-  ATTACK,
-  FORTIFY,
-  GAME_OVER,
-} from "./phases.js";
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "./phases.js";
 import { attachStatsListeners, exportStats } from "./stats.js";
 import {
   initUI,
@@ -127,7 +122,9 @@ async function startNewGame() {
   }
   destroyUI();
   const params =
-    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
   if (params && params.get("multiplayer")) {
     navigateTo("lobby.html");
   } else {
@@ -164,10 +161,7 @@ async function loadGame() {
 }
 
 function runAI() {
-  if (
-    game.players[game.currentPlayer].ai &&
-    game.getPhase() !== GAME_OVER
-  ) {
+  if (game.players[game.currentPlayer].ai && game.getPhase() !== GAME_OVER) {
     setTimeout(() => {
       game.performAITurn();
       updateUI();
@@ -186,14 +180,32 @@ function attachTerritoryHandlers() {
         if (result) {
           const playerName = game.players[prevPlayer].name;
           if (result.type === ATTACK) {
-            logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
+            logger.info(
+              `${playerName} attacks ${result.to} from ${result.from}`,
+            );
             const fromEl = getElement(result.from);
             const toEl = getElement(result.to);
-            fromEl.classList.add("attack", "animate__animated", "animate__shakeX");
-            toEl.classList.add("attack", "animate__animated", "animate__shakeX");
+            fromEl.classList.add(
+              "attack",
+              "animate__animated",
+              "animate__shakeX",
+            );
+            toEl.classList.add(
+              "attack",
+              "animate__animated",
+              "animate__shakeX",
+            );
             setTimeout(() => {
-              fromEl.classList.remove("attack", "animate__animated", "animate__shakeX");
-              toEl.classList.remove("attack", "animate__animated", "animate__shakeX");
+              fromEl.classList.remove(
+                "attack",
+                "animate__animated",
+                "animate__shakeX",
+              );
+              toEl.classList.remove(
+                "attack",
+                "animate__animated",
+                "animate__shakeX",
+              );
             }, 500);
             document.getElementById("diceResults").textContent =
               `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
@@ -203,20 +215,26 @@ function attachTerritoryHandlers() {
               const move = await askArmiesToMove(result.movableArmies, 0);
               if (move > 0) {
                 game.moveArmies(result.from, result.to, move);
-                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
-                  player: playerName,
-                  type: "move",
-                  territories: [result.from, result.to],
-                });
+                addLogEntry(
+                  `${playerName} moves ${move} from ${result.from} to ${result.to}`,
+                  {
+                    player: playerName,
+                    type: "move",
+                    territories: [result.from, result.to],
+                  },
+                );
                 animateMove(result.from, result.to);
               }
             }
             animateAttack(result.from, result.to);
-            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
-              player: playerName,
-              type: "attack",
-              territories: [result.from, result.to],
-            });
+            addLogEntry(
+              `${playerName} attacks ${result.to} from ${result.from}`,
+              {
+                player: playerName,
+                type: "attack",
+                territories: [result.from, result.to],
+              },
+            );
           } else if (result.type === REINFORCE) {
             logger.info(`${playerName} reinforces ${result.territory}`);
             animateReinforce(result.territory);
@@ -226,30 +244,37 @@ function attachTerritoryHandlers() {
               territories: [result.territory],
             });
           } else if (result.type === FORTIFY) {
-            logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
+            logger.info(
+              `${playerName} moves from ${result.from} to ${result.to}`,
+            );
             const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
-              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
-                player: playerName,
-                type: "move",
-                territories: [result.from, result.to],
-              });
+              addLogEntry(
+                `${playerName} moves ${move} from ${result.from} to ${result.to}`,
+                {
+                  player: playerName,
+                  type: "move",
+                  territories: [result.from, result.to],
+                },
+              );
               animateMove(result.from, result.to);
             }
             game.endTurn();
             const nextName = game.players[game.currentPlayer].name;
             gameState.incrementTurnNumber();
-            addLogEntry(
-              `${playerName} ends turn. Next: ${nextName}`,
-              { player: playerName, type: "endTurn" },
-            );
+            addLogEntry(`${playerName} ends turn. Next: ${nextName}`, {
+              player: playerName,
+              type: "endTurn",
+            });
             logger.info(`${playerName} ends turn. Next: ${nextName}`);
           }
         }
         updateUI();
         if (result && result.type === "select") {
-          logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
+          logger.info(
+            `${game.players[game.currentPlayer].name} selects ${result.territory}`,
+          );
           const selEl = getElement(result.territory);
           if (selEl) {
             selEl.classList.add("selected");
@@ -428,7 +453,7 @@ async function initGame() {
     '<button id="shareResults" class="btn">Share Results</button>' +
     '<button id="exportStats" class="btn">Export JSON</button>' +
     '<button id="newGameBtn" class="btn">New Game</button>' +
-    '</div></div>';
+    "</div></div>";
   document.body.appendChild(modal);
   document.getElementById("newGameBtn").addEventListener("click", startNewGame);
   document.getElementById("shareResults").addEventListener("click", () => {
@@ -454,26 +479,26 @@ async function initGame() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
-    const cardPanel = document.getElementById("cardPanel");
-    if (cardPanel) {
-      cardPanel.innerHTML =
-        '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
-        '<button id="playCardsBtn" class="btn">Play cards</button>' +
-        '<div id="bonusInfo"></div>';
-      document.getElementById("playCardsBtn").addEventListener("click", () => {
-        const cards = getSelectedCards();
-        if (cards.length === 3) {
-          if (game.playCards(cards)) {
-            addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
-              player: game.players[game.currentPlayer].name,
-              type: "cards",
-            });
-            resetSelectedCards();
-            updateUI();
-          }
+  const cardPanel = document.getElementById("cardPanel");
+  if (cardPanel) {
+    cardPanel.innerHTML =
+      '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
+      '<button id="playCardsBtn" class="btn">Play cards</button>' +
+      '<div id="bonusInfo"></div>';
+    document.getElementById("playCardsBtn").addEventListener("click", () => {
+      const cards = getSelectedCards();
+      if (cards.length === 3) {
+        if (game.playCards(cards)) {
+          addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
+            player: game.players[game.currentPlayer].name,
+            type: "cards",
+          });
+          resetSelectedCards();
+          updateUI();
         }
-      });
-    }
+      }
+    });
+  }
 
   const masterVolume = document.getElementById("masterVolume");
   const effectsVolume = document.getElementById("effectsVolume");
@@ -523,10 +548,13 @@ async function initGame() {
 
   updateGameState(gameState, game);
   updateInfoPanel();
-  addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`, {
-    player: game.players[game.currentPlayer].name,
-    type: "turn",
-  });
+  addLogEntry(
+    `Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`,
+    {
+      player: game.players[game.currentPlayer].name,
+      type: "turn",
+    },
+  );
 
   const toggleHowToPlay = document.getElementById("toggleHowToPlay");
   if (toggleHowToPlay) {
@@ -535,9 +563,7 @@ async function initGame() {
       if (!steps) return;
       const nowHidden = steps.toggleAttribute("hidden");
       toggleHowToPlay.setAttribute("aria-expanded", (!nowHidden).toString());
-      toggleHowToPlay.textContent = nowHidden
-        ? "Show details"
-        : "Hide details";
+      toggleHowToPlay.textContent = nowHidden ? "Show details" : "Hide details";
     });
   }
 }
