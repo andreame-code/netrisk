@@ -40,10 +40,12 @@ export const createLobbyAdapter = (
       if (error || !data) throw error || new Error("List lobbies failed");
       const lobbies = data.map((row: any) =>
         lobbySchema.parse({
-          id: row.id ?? row.code ?? "",
-          name: row.name,
-          maxPlayers: row.max_players ?? row.maxPlayers,
-          playerCount: row.player_count ?? row.playerCount ?? 0,
+          id: row.code ?? row.id ?? "",
+          name: row.host ?? row.name ?? "",
+          maxPlayers: row.max_players ?? row.maxPlayers ?? 8,
+          playerCount: Array.isArray(row.players)
+            ? row.players.length
+            : (row.player_count ?? row.playerCount ?? 0),
         }),
       );
       return listLobbiesOutputSchema.parse({ lobbies });

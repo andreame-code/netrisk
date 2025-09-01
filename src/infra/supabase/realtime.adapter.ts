@@ -16,8 +16,15 @@ export const createRealtimeAdapter = (
 
   return {
     async subscribe(input) {
-      const { channel } = subscribeInputSchema.parse(input);
-      const ch = client.channel(channel);
+      const { channel, event, schema, table, callback } =
+        subscribeInputSchema.parse(input);
+      const ch = client
+        .channel(channel)
+        .on(
+          "postgres_changes",
+          { event, schema, table } as any,
+          callback as any,
+        );
       await ch.subscribe();
       const id = globalThis.crypto.randomUUID();
       channels.set(id, ch);
