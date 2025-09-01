@@ -6,6 +6,7 @@ import {
   renderUserMenu as renderUserMenuUi,
   showFlashMessage,
 } from "./features/auth/ui.js";
+import { registerAuthListener } from "./init/supabase-client.js";
 
 const authPort = createAuthAdapter();
 const model = createAuthModel(authPort);
@@ -15,4 +16,10 @@ export async function renderUserMenu() {
 }
 
 renderUserMenu();
+registerAuthListener(async (event) => {
+  if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+    info(`[AUTH] ${event}`);
+    await renderUserMenu();
+  }
+});
 showFlashMessage();

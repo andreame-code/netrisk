@@ -24,6 +24,7 @@ describe("auth menu", () => {
     jest.doMock("../src/init/supabase-client.js", () => ({
       __esModule: true,
       default: null,
+      registerAuthListener: jest.fn(),
     }));
     await require("../src/auth.js");
     await new Promise((r) => setTimeout(r, 0));
@@ -41,6 +42,7 @@ describe("auth menu", () => {
     jest.doMock("../src/init/supabase-client.js", () => ({
       __esModule: true,
       default: { auth: { getSession } },
+      registerAuthListener: jest.fn(),
     }));
     await require("../src/auth.js");
     await new Promise((r) => setTimeout(r, 0));
