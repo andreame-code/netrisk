@@ -29,8 +29,20 @@ describe("netriskRealtime", () => {
     const channel = client.channel.mock.results[0].value;
 
     // simulate incoming messages
-    stateHandlers.cb({ new: { state: { turn: 1 } } });
-    expect(onState).toHaveBeenCalledWith({ turn: 1 });
+    const state = {
+      turnNumber: 1,
+      currentPlayer: 0,
+      players: [],
+      territories: [],
+      selectedTerritory: null,
+      tokenPosition: null,
+      phase: "lobby",
+      log: [],
+    };
+    stateHandlers.cb({ new: { state } });
+    expect(onState).toHaveBeenCalled();
+    const received = onState.mock.calls[0][0];
+    expect(received.getSnapshot()).toEqual(state);
 
     const ev: Event<{ move: string }, { ok: boolean }> = {
       id: "e1",
