@@ -39,12 +39,19 @@ export const createAuthAdapter = (
     async currentUser(input) {
       currentUserInputSchema.parse(input);
       if (!supa) throw new Error("Supabase client not initialized");
-      const { data, error } = await supa.auth.getUser();
-      if (error || !data.user) throw error || new Error("No user");
+      const { data, error } = await supa.auth.getSession();
+      if (error || !data.session) throw error || new Error("No session");
+      let user = (data.session as any).user;
+      if (!user && typeof supa.auth.getUser === "function") {
+        const { data: userData } = await supa.auth.getUser();
+        user = userData?.user;
+      }
+      if (!user) throw new Error("No session");
+      const meta = user.user_metadata as any;
       return currentUserOutputSchema.parse({
-        id: data.user.id,
-        email: data.user.email ?? undefined,
-        name: (data.user.user_metadata as any)?.name,
+        id: user.id || "",
+        email: user.email ?? undefined,
+        name: meta?.name || meta?.username,
       });
     },
   };
