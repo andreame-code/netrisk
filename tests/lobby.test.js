@@ -3,18 +3,14 @@ jest.mock("../src/navigation.js", () => ({
   navigateTo: jest.fn(),
 }));
 jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
+
+const mockCurrentUser = jest
+  .fn()
+  .mockResolvedValue({ id: "p1", email: "test@example.com", name: "testuser" });
+jest.mock("../src/infra/supabase/auth.adapter.ts", () => ({
+  createAuthAdapter: () => ({ currentUser: mockCurrentUser }),
+}));
 const mockSupabase = {
-  auth: {
-    getSession: jest.fn().mockResolvedValue({ data: { session: {} } }),
-    getUser: jest.fn().mockResolvedValue({
-      data: {
-        user: {
-          user_metadata: { username: "testuser" },
-          email: "test@example.com",
-        },
-      },
-    }),
-  },
   from: jest.fn((table) => {
     if (table === "lobby_chat") {
       const chain = {
@@ -44,6 +40,12 @@ describe("lobby screen", () => {
   beforeEach(() => {
     jest.resetModules();
     jest.doMock("../src/config.js", () => ({ WS_URL: "ws://test" }));
+    mockCurrentUser.mockReset();
+    mockCurrentUser.mockResolvedValue({
+      id: "p1",
+      email: "test@example.com",
+      name: "testuser",
+    });
     global.alert = jest.fn();
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -78,7 +80,7 @@ describe("lobby screen", () => {
   });
 
   test("redirects to login when not authenticated", async () => {
-    mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+    mockCurrentUser.mockResolvedValueOnce(null);
     const { navigateTo } = require("../src/navigation.js");
     require("../src/lobby.js");
     await new Promise((r) => setTimeout(r, 0));
@@ -279,17 +281,7 @@ describe("lobby screen", () => {
 
   test("disables create button when session is invalid", async () => {
     jest.resetModules();
-    const noSessionSupabase = {
-      ...mockSupabase,
-      auth: {
-        ...mockSupabase.auth,
-        getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
-      },
-    };
-    jest.doMock("../src/init/supabase-client.js", () => ({
-      __esModule: true,
-      default: noSessionSupabase,
-    }));
+    mockCurrentUser.mockResolvedValueOnce(null);
     jest.doMock("../src/config.js", () => ({ WS_URL: "ws://test" }));
     require("../src/lobby.js");
     await new Promise((r) => setTimeout(r, 0));
