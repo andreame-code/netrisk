@@ -9,11 +9,11 @@ import {
   persistLobby,
   validateMessage,
 } from "./utils.js";
-import { handleCreateLobby } from "./handlers/createLobby.js";
-import { handleJoinLobby } from "./handlers/joinLobby.js";
-import { handleLeaveLobby } from "./handlers/leaveLobby.js";
+import { handleCreateLobby } from "./handlers/create-lobby.js";
+import { handleJoinLobby } from "./handlers/join-lobby.js";
+import { handleLeaveLobby } from "./handlers/leave-lobby.js";
 import { handleReady } from "./handlers/ready.js";
-import { handleSelectMap } from "./handlers/selectMap.js";
+import { handleSelectMap } from "./handlers/select-map.js";
 import { handleStart } from "./handlers/start.js";
 import { handleState } from "./handlers/state.js";
 import { handleChat } from "./handlers/chat.js";

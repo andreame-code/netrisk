@@ -1,4 +1,4 @@
-import { subscribeToMatch } from "../src/netriskRealtime.ts";
+import { subscribeToMatch } from "../src/netrisk-realtime.ts";
 import type { Event } from "../src/types/netrisk";
 
 // Mock Supabase client

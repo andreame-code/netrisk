@@ -1,8 +1,8 @@
-import { handleCreateLobby } from "../src/server/handlers/createLobby.js";
-import { handleJoinLobby } from "../src/server/handlers/joinLobby.js";
-import { handleLeaveLobby } from "../src/server/handlers/leaveLobby.js";
+import { handleCreateLobby } from "../src/server/handlers/create-lobby.js";
+import { handleJoinLobby } from "../src/server/handlers/join-lobby.js";
+import { handleLeaveLobby } from "../src/server/handlers/leave-lobby.js";
 import { handleReady } from "../src/server/handlers/ready.js";
-import { handleSelectMap } from "../src/server/handlers/selectMap.js";
+import { handleSelectMap } from "../src/server/handlers/select-map.js";
 import { handleStart } from "../src/server/handlers/start.js";
 import { handleState } from "../src/server/handlers/state.js";
 import { handleChat } from "../src/server/handlers/chat.js";
