@@ -19,23 +19,17 @@ export const supabase =
   SUPABASE_URL && SUPABASE_KEY
     ? createClient(SUPABASE_URL, SUPABASE_KEY)
     : null;
-
-let authListenerRegistered = false;
-
 if (supabase) {
   info("[AUTH] client init ok");
-  if (!authListenerRegistered) {
-    authListenerRegistered = true;
-    supabase.auth.onAuthStateChange(async (event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        info(`[AUTH] ${event}`);
-        const { renderUserMenu } = await import("../auth.js");
-        await renderUserMenu();
-      }
-    });
-  }
 } else {
   error("[AUTH] client init ko");
+}
+
+export function registerAuthListener(handler) {
+  if (!supabase || typeof supabase.auth.onAuthStateChange !== "function") {
+    return;
+  }
+  supabase.auth.onAuthStateChange(handler);
 }
 
 export default supabase;

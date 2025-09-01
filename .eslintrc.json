@@ -5,11 +5,14 @@
     "node": true
   },
   "extends": ["eslint:recommended", "prettier"],
+  "plugins": ["import"],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
-  "rules": {},
+  "rules": {
+    "import/no-cycle": "error"
+  },
   "overrides": [
     {
       "files": ["**/*.test.js"],
