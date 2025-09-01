@@ -1,15 +1,22 @@
+import {
+  currentUserInputSchema,
+  logoutInputSchema,
+} from "../../shared/ports/auth";
+
 export function createAuthModel(authPort) {
   return {
     async currentUser() {
+      const input = currentUserInputSchema.parse({});
       try {
-        const { id, email, name } = await authPort.currentUser({});
+        const { id, email, name } = await authPort.currentUser(input);
         return { id, email, name };
       } catch {
         return null;
       }
     },
     async logout() {
-      await authPort.logout({});
+      const input = logoutInputSchema.parse({});
+      await authPort.logout(input);
     },
   };
 }
