@@ -5,7 +5,7 @@ export const subscribeInputSchema = z.object({
   event: z.enum(["*", "INSERT", "UPDATE", "DELETE"]).default("*"),
   schema: z.string().default("public"),
   table: z.string(),
-  callback: z.any(),
+  callback: z.function(z.tuple([z.any()]), z.any()),
 });
 export const subscribeOutputSchema = z.object({
   subscriptionId: z.string(),
