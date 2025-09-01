@@ -1,8 +1,8 @@
 import { initThemeToggle } from "./theme.js";
 import { navigateTo } from "./navigation.js";
-import supabase from "./init/supabase-client.js";
+import { createAuthAdapter } from "./infra/supabase/auth.adapter.ts";
 
-export function initHome() {
+export function initHome({ authPort }) {
   initThemeToggle();
   const mapping = [
     ["playBtn", "./game.html"],
@@ -22,7 +22,7 @@ export function initHome() {
     multiBtn.addEventListener("click", async () => {
       let user = null;
       try {
-        ({ data: { user } = {} } = await supabase.auth.getUser());
+        user = await authPort.currentUser({});
       } catch {
         user = null;
       }
@@ -55,6 +55,7 @@ export function initHome() {
   }
 }
 
-initHome();
+const authPort = createAuthAdapter();
+initHome({ authPort });
 
 export default { initHome };

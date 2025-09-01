@@ -1,13 +1,10 @@
 jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
 jest.mock("../src/navigation.js", () => ({ navigateTo: jest.fn() }));
-const mockSupabase = {
-  auth: {
-    getUser: jest.fn().mockResolvedValue({ data: { user: {} } }),
-  },
+const mockAuthPort = {
+  currentUser: jest.fn().mockResolvedValue({}),
 };
-jest.mock("../src/init/supabase-client.js", () => ({
-  __esModule: true,
-  default: mockSupabase,
+jest.mock("../src/infra/supabase/auth.adapter.ts", () => ({
+  createAuthAdapter: () => mockAuthPort,
 }));
 
 describe("home page initialization", () => {
@@ -39,7 +36,7 @@ describe("home page initialization", () => {
 
   test("multiplayer click shows auth dialog when not logged in", async () => {
     const { navigateTo } = require("../src/navigation.js");
-    mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
+    mockAuthPort.currentUser.mockResolvedValueOnce(null);
     require("../src/home.js");
     document.getElementById("multiplayerBtn").click();
     await Promise.resolve();
@@ -53,6 +50,7 @@ describe("home page initialization", () => {
 
   test("multiplayer click navigates when user present", async () => {
     const { navigateTo } = require("../src/navigation.js");
+    mockAuthPort.currentUser.mockResolvedValueOnce({ id: "u1" });
     require("../src/home.js");
     document.getElementById("multiplayerBtn").click();
     await Promise.resolve();
