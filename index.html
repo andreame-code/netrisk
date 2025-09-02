@@ -11,7 +11,7 @@
     </style>
     <script>
       (function () {
-        const base = location.pathname.replace(/[^/]*$/, '');
+        const base = document.currentScript?.src.split('/').slice(0, -1).join('/') + '/';
         const s = document.createElement('script');
         s.src = base + 'env.js?' + Date.now();
         s.onload = () => {
