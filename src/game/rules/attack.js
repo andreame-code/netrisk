@@ -11,12 +11,8 @@ export default function attack(state, fromId, toId) {
   const attackDice = Math.min(3, from.armies - 1);
   const defendDice = Math.min(2, to.armies);
   const roll = () => Math.ceil(Math.random() * 6);
-  const attackRolls = Array.from({ length: attackDice }, () => roll()).sort(
-    (a, b) => b - a,
-  );
-  const defendRolls = Array.from({ length: defendDice }, () => roll()).sort(
-    (a, b) => b - a,
-  );
+  const attackRolls = Array.from({ length: attackDice }, () => roll()).sort((a, b) => b - a);
+  const defendRolls = Array.from({ length: defendDice }, () => roll()).sort((a, b) => b - a);
   const comparisons = Math.min(attackRolls.length, defendRolls.length);
   let attackerLosses = 0;
   let defenderLosses = 0;

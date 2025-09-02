@@ -1,7 +1,7 @@
-import Game from "../game.js";
-import aiTurnManager from "../game/ai/turn-manager.js";
-import { getMapName, getSavedGame, getSavedPlayers } from "../state/storage.js";
-import * as logger from "../logger.js";
+import Game from '../game.js';
+import aiTurnManager from '../game/ai/turn-manager.js';
+import { getMapName, getSavedGame, getSavedPlayers } from '../state/storage.js';
+import * as logger from '../logger.js';
 
 let territoryPositions = {};
 
@@ -28,8 +28,8 @@ async function loadMap(mapName) {
       // try next path
     }
   }
-  const err = new Error("Failed to load map data");
-  logger.error("Failed to load map data", err);
+  const err = new Error('Failed to load map data');
+  logger.error('Failed to load map data', err);
   throw err;
 }
 
@@ -43,15 +43,15 @@ function restoreGameState(GameClass, map) {
       map.continents,
       map.deck,
     );
-    logger.info("Game initialised");
+    logger.info('Game initialised');
   }
   return loadedGame;
 }
 
 async function loadGame() {
-  const GameClass = (typeof window !== "undefined" && window.Game) || Game;
-  if (typeof GameClass !== "function") {
-    throw new Error("Game class not available");
+  const GameClass = (typeof window !== 'undefined' && window.Game) || Game;
+  if (typeof GameClass !== 'function') {
+    throw new Error('Game class not available');
   }
 
   const saved = getSavedGame(GameClass);

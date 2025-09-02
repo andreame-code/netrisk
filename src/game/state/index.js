@@ -1,5 +1,5 @@
-import { REINFORCE } from "../../phases.js";
-import { z } from "zod";
+import { REINFORCE } from '../../phases.js';
+import { z } from 'zod';
 
 // Factory for encapsulated game state. Consumers interact via
 // getters/setters rather than mutating a shared object directly.
@@ -103,25 +103,17 @@ function setSelectedTerritory(selected) {
 }
 
 function serialize(state) {
-  const snapshot =
-    typeof state?.getSnapshot === "function" ? state.getSnapshot() : state;
+  const snapshot = typeof state?.getSnapshot === 'function' ? state.getSnapshot() : state;
   return gameStateSchema.parse(snapshot);
 }
 
 function deserialize(json) {
-  const data = typeof json === "string" ? JSON.parse(json) : json;
+  const data = typeof json === 'string' ? JSON.parse(json) : json;
   const parsed = gameStateSchema.parse(data);
   const gs = new GameState();
   gs._state = { ...parsed };
   return gs;
 }
 
-export {
-  GameState,
-  gameState,
-  initGameState,
-  setSelectedTerritory,
-  serialize,
-  deserialize,
-};
+export { GameState, gameState, initGameState, setSelectedTerritory, serialize, deserialize };
 export default gameState;

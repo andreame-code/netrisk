@@ -2,11 +2,11 @@ export const levelObstacles = {
   map: {},
   map2: {},
   map3: {
-    purpleBrambles: { damage: "instant" },
-    moonMilk: { respawn: "checkpoint" },
-    seedWalls: { destructibleWith: "shield" },
+    purpleBrambles: { damage: 'instant' },
+    moonMilk: { respawn: 'checkpoint' },
+    seedWalls: { destructibleWith: 'shield' },
   },
-  "map-roman": {},
+  'map-roman': {},
 };
 
 export function getLevelObstacles(levelId) {

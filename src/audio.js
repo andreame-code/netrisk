@@ -1,4 +1,4 @@
-const SETTINGS_KEY = "audioSettings";
+const SETTINGS_KEY = 'audioSettings';
 
 // Default settings
 let settings = {
@@ -9,7 +9,7 @@ let settings = {
 };
 
 // Load persisted settings
-if (typeof localStorage !== "undefined") {
+if (typeof localStorage !== 'undefined') {
   try {
     const stored = localStorage.getItem(SETTINGS_KEY);
     if (stored) Object.assign(settings, JSON.parse(stored));
@@ -19,7 +19,7 @@ if (typeof localStorage !== "undefined") {
 }
 
 function saveSettings() {
-  if (typeof localStorage === "undefined") return;
+  if (typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
@@ -28,22 +28,22 @@ function saveSettings() {
 }
 
 const SILENCE_SRC =
-  "https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3";
+  'https://raw.githubusercontent.com/anars/blank-audio/master/1-second-of-silence.mp3';
 
 const EFFECT_FILES = {
-  reinforce: "assets/reinforce.mp3",
-  attackWin: "assets/attack-win.mp3",
-  attackLoss: "assets/attack-loss.mp3",
-  conquer: "assets/conquer.mp3",
-  endTurn: "assets/end-turn.mp3",
+  reinforce: 'assets/reinforce.mp3',
+  attackWin: 'assets/attack-win.mp3',
+  attackLoss: 'assets/attack-loss.mp3',
+  conquer: 'assets/conquer.mp3',
+  endTurn: 'assets/end-turn.mp3',
 };
 
 const cache = new Map();
 let musicAudio;
 
 const MUSIC_FILES = {
-  default: "assets/music.mp3",
-  map3: "assets/fairy-music.mp3",
+  default: 'assets/music.mp3',
+  map3: 'assets/fairy-music.mp3',
 };
 
 const FALLBACK_FILE = SILENCE_SRC;
@@ -51,8 +51,7 @@ const FALLBACK_FILE = SILENCE_SRC;
 let musicSrc = MUSIC_FILES.default;
 
 // Detect jsdom environment to avoid calling unimplemented media methods
-const IS_JSDOM =
-  typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom");
+const IS_JSDOM = typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom');
 
 function clamp(v) {
   return Math.min(Math.max(v, 0), 1);
@@ -60,14 +59,14 @@ function clamp(v) {
 
 function loadAudio(src) {
   if (cache.has(src)) return cache.get(src);
-  if (typeof Audio === "undefined") {
+  if (typeof Audio === 'undefined') {
     cache.set(src, null);
     return null;
   }
   const a = new Audio();
   a.src = src;
   a.addEventListener(
-    "error",
+    'error',
     () => {
       if (src !== FALLBACK_FILE) a.src = FALLBACK_FILE;
     },
@@ -88,7 +87,7 @@ function playEffect(name) {
   try {
     audio.currentTime = 0;
     const playPromise = audio.play();
-    if (playPromise && typeof playPromise.catch === "function") {
+    if (playPromise && typeof playPromise.catch === 'function') {
       playPromise.catch(() => {});
     }
   } catch {
@@ -97,7 +96,7 @@ function playEffect(name) {
 }
 
 function ensureMusic() {
-  if (musicAudio || typeof Audio === "undefined") return musicAudio;
+  if (musicAudio || typeof Audio === 'undefined') return musicAudio;
   musicAudio = new Audio();
   musicAudio.src = musicSrc;
   musicAudio.loop = true;
@@ -153,7 +152,7 @@ function setMusicEnabled(on) {
     if (!IS_JSDOM) {
       try {
         const p = music.play();
-        if (p && typeof p.catch === "function") p.catch(() => {});
+        if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch {
         // ignore play errors
       }

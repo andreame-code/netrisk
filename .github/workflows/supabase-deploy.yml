@@ -5,10 +5,10 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ['main']
     paths:
-      - "supabase/**"
-      - ".github/workflows/supabase-deploy.yml"
+      - 'supabase/**'
+      - '.github/workflows/supabase-deploy.yml'
 
 jobs:
   deploy-functions:

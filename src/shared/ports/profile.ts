@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const getProfileInputSchema = z.object({
   userId: z.string(),

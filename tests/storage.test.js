@@ -4,7 +4,7 @@ import {
   listSavedGames,
   renameSavedGame,
   deleteSavedGame,
-} from "../src/state/storage.js";
+} from '../src/state/storage.js';
 
 class DummyGame {
   constructor(state) {
@@ -19,7 +19,7 @@ class DummyGame {
   }
 }
 
-describe("multi-save storage", () => {
+describe('multi-save storage', () => {
   beforeEach(() => {
     global.localStorage = {
       store: {},
@@ -33,7 +33,7 @@ describe("multi-save storage", () => {
         delete this.store[key];
       },
     };
-    jest.spyOn(Date, "now").mockReturnValue(111);
+    jest.spyOn(Date, 'now').mockReturnValue(111);
   });
 
   afterEach(() => {
@@ -41,21 +41,21 @@ describe("multi-save storage", () => {
     delete global.localStorage;
   });
 
-  test("can save, list, rename, load and delete named games", () => {
+  test('can save, list, rename, load and delete named games', () => {
     const g1 = new DummyGame({ turn: 5 });
-    saveNamedGame("slot1", g1, { map: "map1" });
+    saveNamedGame('slot1', g1, { map: 'map1' });
     let list = listSavedGames();
     expect(list).toHaveLength(1);
-    expect(list[0].name).toBe("slot1");
-    expect(list[0].map).toBe("map1");
-    const loaded = loadNamedGame("slot1", DummyGame);
+    expect(list[0].name).toBe('slot1');
+    expect(list[0].map).toBe('map1');
+    const loaded = loadNamedGame('slot1', DummyGame);
     expect(loaded.state.turn).toBe(5);
 
-    renameSavedGame("slot1", "renamed");
+    renameSavedGame('slot1', 'renamed');
     list = listSavedGames();
-    expect(list[0].name).toBe("renamed");
+    expect(list[0].name).toBe('renamed');
 
-    deleteSavedGame("renamed");
+    deleteSavedGame('renamed');
     expect(listSavedGames()).toHaveLength(0);
   });
 });

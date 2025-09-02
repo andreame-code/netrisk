@@ -1,11 +1,11 @@
-describe("login page", () => {
+describe('login page', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    if (typeof localStorage !== "undefined") {
+    if (typeof localStorage !== 'undefined') {
       localStorage.clear();
     }
-    if (typeof sessionStorage !== "undefined") {
+    if (typeof sessionStorage !== 'undefined') {
       sessionStorage.clear();
     }
     document.body.innerHTML = `
@@ -20,8 +20,8 @@ describe("login page", () => {
     `;
   });
 
-  test("anonymous login uses supabase", () => {
-    jest.doMock("../src/init/supabase-client.js", () => ({
+  test('anonymous login uses supabase', () => {
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
@@ -32,14 +32,14 @@ describe("login page", () => {
       },
     }));
 
-    const { default: supabase } = require("../src/init/supabase-client.js");
-    require("../src/login.js");
-    document.getElementById("anonymousBtn").click();
+    const { default: supabase } = require('../src/init/supabase-client.js');
+    require('../src/login.js');
+    document.getElementById('anonymousBtn').click();
     expect(supabase.auth.signInAnonymously).toHaveBeenCalledTimes(1);
   });
 
-  test("shows message when anonymous login unsupported", () => {
-    jest.doMock("../src/init/supabase-client.js", () => ({
+  test('shows message when anonymous login unsupported', () => {
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
@@ -49,29 +49,27 @@ describe("login page", () => {
       },
     }));
 
-    require("../src/login.js");
-    document.getElementById("anonymousBtn").click();
-    expect(document.getElementById("message").textContent).toBe(
-      "Accesso anonimo non supportato",
-    );
+    require('../src/login.js');
+    document.getElementById('anonymousBtn').click();
+    expect(document.getElementById('message').textContent).toBe('Accesso anonimo non supportato');
   });
 
-  test("falls back to account page for external referrer after login", async () => {
-    Object.defineProperty(document, "referrer", {
-      value: "https://evil.com/",
+  test('falls back to account page for external referrer after login', async () => {
+    Object.defineProperty(document, 'referrer', {
+      value: 'https://evil.com/',
       configurable: true,
     });
     jest.useFakeTimers();
 
     const navigateTo = jest.fn();
-    jest.doMock("../src/navigation.js", () => ({ navigateTo }));
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
 
-    jest.doMock("../src/init/supabase-client.js", () => ({
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({
-            data: { user: { email: "foo@example.com" } },
+            data: { user: { email: 'foo@example.com' } },
             error: null,
           }),
           setSession: jest.fn().mockResolvedValue({}),
@@ -79,31 +77,31 @@ describe("login page", () => {
       },
     }));
 
-    require("../src/login.js");
-    document.getElementById("username").value = "foo@example.com";
-    document.getElementById("password").value = "pass";
-    document.getElementById("loginForm").dispatchEvent(new Event("submit"));
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     await Promise.resolve();
     jest.runAllTimers();
 
-    expect(navigateTo).toHaveBeenCalledWith("account.html");
+    expect(navigateTo).toHaveBeenCalledWith('account.html');
     jest.useRealTimers();
-    Object.defineProperty(document, "referrer", {
-      value: "",
+    Object.defineProperty(document, 'referrer', {
+      value: '',
       configurable: true,
     });
   });
 
-  test("redirects to path from query after login", async () => {
+  test('redirects to path from query after login', async () => {
     jest.useFakeTimers();
     const navigateTo = jest.fn();
-    jest.doMock("../src/navigation.js", () => ({ navigateTo }));
-    jest.doMock("../src/init/supabase-client.js", () => ({
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({
-            data: { user: { email: "foo@example.com" } },
+            data: { user: { email: 'foo@example.com' } },
             error: null,
           }),
           setSession: jest.fn().mockResolvedValue({}),
@@ -111,27 +109,23 @@ describe("login page", () => {
       },
     }));
     const originalUrl = window.location.href;
-    window.history.pushState(
-      {},
-      "",
-      "http://localhost/login.html?redirect=%2Flobby.html",
-    );
-    require("../src/login.js");
-    document.getElementById("username").value = "foo@example.com";
-    document.getElementById("password").value = "pass";
-    document.getElementById("loginForm").dispatchEvent(new Event("submit"));
+    window.history.pushState({}, '', 'http://localhost/login.html?redirect=%2Flobby.html');
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     await Promise.resolve();
     jest.runAllTimers();
-    expect(navigateTo).toHaveBeenCalledWith("lobby.html");
+    expect(navigateTo).toHaveBeenCalledWith('lobby.html');
     jest.useRealTimers();
-    window.history.pushState({}, "", originalUrl);
+    window.history.pushState({}, '', originalUrl);
   });
 
-  test("anonymous login redirects to path from query", async () => {
+  test('anonymous login redirects to path from query', async () => {
     jest.useFakeTimers();
     const navigateTo = jest.fn();
-    jest.doMock("../src/navigation.js", () => ({ navigateTo }));
-    jest.doMock("../src/init/supabase-client.js", () => ({
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
@@ -142,28 +136,24 @@ describe("login page", () => {
       },
     }));
     const originalUrl = window.location.href;
-    window.history.pushState(
-      {},
-      "",
-      "http://localhost/login.html?redirect=%2Flobby.html",
-    );
-    require("../src/login.js");
-    document.getElementById("anonymousBtn").click();
+    window.history.pushState({}, '', 'http://localhost/login.html?redirect=%2Flobby.html');
+    require('../src/login.js');
+    document.getElementById('anonymousBtn').click();
     await Promise.resolve();
     jest.runAllTimers();
-    expect(navigateTo).toHaveBeenCalledWith("lobby.html");
+    expect(navigateTo).toHaveBeenCalledWith('lobby.html');
     jest.useRealTimers();
-    window.history.pushState({}, "", originalUrl);
+    window.history.pushState({}, '', originalUrl);
   });
 
-  test("removes localStorage token when not staying logged in", async () => {
-    localStorage.setItem("supabase.auth.token", "old");
-    jest.doMock("../src/init/supabase-client.js", () => ({
+  test('removes localStorage token when not staying logged in', async () => {
+    localStorage.setItem('supabase.auth.token', 'old');
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({
-            data: { user: { email: "foo@example.com" }, session: {} },
+            data: { user: { email: 'foo@example.com' }, session: {} },
             error: null,
           }),
           setSession: jest.fn().mockResolvedValue({}),
@@ -179,22 +169,22 @@ describe("login page", () => {
       </form>
       <p id="message" role="alert"></p>
     `;
-    require("../src/login.js");
-    document.getElementById("username").value = "foo@example.com";
-    document.getElementById("password").value = "pass";
-    document.getElementById("loginForm").dispatchEvent(new Event("submit"));
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     await Promise.resolve();
-    expect(localStorage.getItem("supabase.auth.token")).toBeNull();
+    expect(localStorage.getItem('supabase.auth.token')).toBeNull();
   });
 
-  test("keeps token in localStorage when staying logged in", async () => {
-    const removeSpy = jest.spyOn(Storage.prototype, "removeItem");
-    jest.doMock("../src/init/supabase-client.js", () => ({
+  test('keeps token in localStorage when staying logged in', async () => {
+    const removeSpy = jest.spyOn(Storage.prototype, 'removeItem');
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: {
         auth: {
           signInWithPassword: jest.fn().mockResolvedValue({
-            data: { user: { email: "foo@example.com" }, session: {} },
+            data: { user: { email: 'foo@example.com' }, session: {} },
             error: null,
           }),
           setSession: jest.fn().mockResolvedValue({}),
@@ -210,14 +200,14 @@ describe("login page", () => {
       </form>
       <p id="message" role="alert"></p>
     `;
-    const { default: supabase } = require("../src/init/supabase-client.js");
-    require("../src/login.js");
-    document.getElementById("username").value = "foo@example.com";
-    document.getElementById("password").value = "pass";
-    document.getElementById("loginForm").dispatchEvent(new Event("submit"));
+    const { default: supabase } = require('../src/init/supabase-client.js');
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     await Promise.resolve();
     expect(supabase.auth.storage).toBe(window.localStorage);
-    expect(removeSpy).not.toHaveBeenCalledWith("supabase.auth.token");
+    expect(removeSpy).not.toHaveBeenCalledWith('supabase.auth.token');
     removeSpy.mockRestore();
   });
 });

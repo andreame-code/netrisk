@@ -1,14 +1,14 @@
-import { colorPalette } from "./colors.js";
-import { navigateTo } from "./navigation.js";
+import { colorPalette } from './colors.js';
+import { navigateTo } from './navigation.js';
 
-const form = document.getElementById("setupForm");
-const humanCountInput = document.getElementById("humanCount");
-const aiCountInput = document.getElementById("aiCount");
-const aiDifficultyInput = document.getElementById("aiDifficulty");
-const aiStyleInput = document.getElementById("aiStyle");
-const playersContainer = document.getElementById("players");
-const mapSelect = document.getElementById("mapSelect");
-const mapGrid = document.getElementById("mapGrid");
+const form = document.getElementById('setupForm');
+const humanCountInput = document.getElementById('humanCount');
+const aiCountInput = document.getElementById('aiCount');
+const aiDifficultyInput = document.getElementById('aiDifficulty');
+const aiStyleInput = document.getElementById('aiStyle');
+const playersContainer = document.getElementById('players');
+const mapSelect = document.getElementById('mapSelect');
+const mapGrid = document.getElementById('mapGrid');
 
 const thumbnailCache = new Map();
 let selectedMap = null;
@@ -17,7 +17,7 @@ function getCachedImage(src) {
   if (thumbnailCache.has(src)) {
     return thumbnailCache.get(src).cloneNode(true);
   }
-  const img = document.createElement("img");
+  const img = document.createElement('img');
   img.src = src;
   thumbnailCache.set(src, img);
   return img.cloneNode(true);
@@ -26,82 +26,77 @@ function getCachedImage(src) {
 export async function loadMapData() {
   if (!mapGrid) return;
   let res;
-  let prefix = "";
+  let prefix = '';
   try {
-    res = await fetch("./assets/maps/map-manifest.json");
-    if (res && res.ok === false) throw new Error("not ok");
+    res = await fetch('./assets/maps/map-manifest.json');
+    if (res && res.ok === false) throw new Error('not ok');
   } catch {
-    res = await fetch("./public/assets/maps/map-manifest.json");
-    prefix = "public/";
+    res = await fetch('./public/assets/maps/map-manifest.json');
+    prefix = 'public/';
   }
   const data = await res.json();
-  mapGrid.innerHTML = "";
-  mapGrid.style.display = "grid";
-  mapGrid.style.gridTemplateColumns = "repeat(auto-fit, minmax(150px, 1fr))";
+  mapGrid.innerHTML = '';
+  mapGrid.style.display = 'grid';
+  mapGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(150px, 1fr))';
   data.maps.forEach((m) => {
-    const item = document.createElement("div");
-    item.className = "map-item";
+    const item = document.createElement('div');
+    item.className = 'map-item';
     item.dataset.id = m.id;
     const img = getCachedImage(prefix + m.thumbnail);
     img.alt = m.name;
-    img.addEventListener("error", () => {
-      item.classList.add("missing");
+    img.addEventListener('error', () => {
+      item.classList.add('missing');
       item.innerHTML = '<div class="placeholder">No preview</div>';
     });
     item.appendChild(img);
-    const name = document.createElement("h3");
+    const name = document.createElement('h3');
     name.textContent = m.name;
     item.appendChild(name);
-    const diff = document.createElement("p");
+    const diff = document.createElement('p');
     diff.textContent = `Difficulty: ${m.difficulty}`;
     item.appendChild(diff);
-    const terr = document.createElement("p");
+    const terr = document.createElement('p');
     terr.textContent = `Territories: ${m.territories}`;
     item.appendChild(terr);
-    const bonus = document.createElement("p");
+    const bonus = document.createElement('p');
     bonus.textContent =
-      "Bonuses: " +
+      'Bonuses: ' +
       Object.entries(m.bonuses || {})
         .map(([k, v]) => `${k} ${v}`)
-        .join(", ");
+        .join(', ');
     item.appendChild(bonus);
-    const detail = document.createElement("div");
-    detail.className = "map-detail hidden";
-    detail.innerHTML = `<p>${m.description || ""}</p>`;
+    const detail = document.createElement('div');
+    detail.className = 'map-detail hidden';
+    detail.innerHTML = `<p>${m.description || ''}</p>`;
     const layout = getCachedImage(prefix + m.thumbnail);
     layout.alt = `${m.name} layout`;
-    layout.className = "layout";
+    layout.className = 'layout';
     detail.appendChild(layout);
     item.appendChild(detail);
-    item.addEventListener("mouseenter", () =>
-      detail.classList.remove("hidden"),
-    );
-    item.addEventListener("mouseleave", () => detail.classList.add("hidden"));
-    item.addEventListener("click", () => {
+    item.addEventListener('mouseenter', () => detail.classList.remove('hidden'));
+    item.addEventListener('mouseleave', () => detail.classList.add('hidden'));
+    item.addEventListener('click', () => {
       selectedMap = m.id;
       if (mapSelect) mapSelect.value = m.id;
       document
-        .querySelectorAll(".map-item.selected")
-        .forEach((el) => el.classList.remove("selected"));
-      item.classList.add("selected");
+        .querySelectorAll('.map-item.selected')
+        .forEach((el) => el.classList.remove('selected'));
+      item.classList.add('selected');
     });
     if (selectedMap === m.id) {
-      item.classList.add("selected");
+      item.classList.add('selected');
     }
     mapGrid.appendChild(item);
   });
 }
 
 function renderPlayerInputs(humanCount) {
-  playersContainer.innerHTML = "";
+  playersContainer.innerHTML = '';
   for (let i = 0; i < humanCount; i += 1) {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     const options = colorPalette
-      .map(
-        (c, idx) =>
-          `<option value="${c}" ${idx === i ? "selected" : ""}>${c}</option>`,
-      )
-      .join("");
+      .map((c, idx) => `<option value="${c}" ${idx === i ? 'selected' : ''}>${c}</option>`)
+      .join('');
     wrapper.innerHTML = `
       <label>Player Name ${i + 1}: <input type="text" id="name${i}" required /></label>
       <label>Color: <select id="color${i}" required>${options}</select></label>
@@ -113,7 +108,7 @@ function renderPlayerInputs(humanCount) {
 function loadFromStorage() {
   let saved = null;
   try {
-    saved = JSON.parse(localStorage.getItem("netriskPlayers"));
+    saved = JSON.parse(localStorage.getItem('netriskPlayers'));
   } catch (err) {
     saved = null;
   }
@@ -124,16 +119,15 @@ function loadFromStorage() {
     aiCount = saved.filter((p) => p.ai).length;
     const firstAI = saved.find((p) => p.ai);
     if (firstAI) {
-      if (aiDifficultyInput)
-        aiDifficultyInput.value = firstAI.difficulty || "normal";
-      if (aiStyleInput) aiStyleInput.value = firstAI.style || "balanced";
+      if (aiDifficultyInput) aiDifficultyInput.value = firstAI.difficulty || 'normal';
+      if (aiStyleInput) aiStyleInput.value = firstAI.style || 'balanced';
     }
   }
   humanCountInput.value = humanCount;
   aiCountInput.value = aiCount;
   let savedMap = null;
   try {
-    savedMap = localStorage.getItem("netriskMap");
+    savedMap = localStorage.getItem('netriskMap');
   } catch {
     savedMap = null;
   }
@@ -154,45 +148,44 @@ function loadFromStorage() {
   }
 }
 
-humanCountInput.addEventListener("change", () => {
+humanCountInput.addEventListener('change', () => {
   const count = parseInt(humanCountInput.value, 10);
   if (Number.isNaN(count) || count < 1) return;
   renderPlayerInputs(count);
 });
 
-form.addEventListener("submit", (e) => {
+form.addEventListener('submit', (e) => {
   e.preventDefault();
   const humanCount = parseInt(humanCountInput.value, 10) || 0;
   const aiCount = parseInt(aiCountInput.value, 10) || 0;
-  const difficulty = aiDifficultyInput ? aiDifficultyInput.value : "normal";
-  const style = aiStyleInput ? aiStyleInput.value : "balanced";
+  const difficulty = aiDifficultyInput ? aiDifficultyInput.value : 'normal';
+  const style = aiStyleInput ? aiStyleInput.value : 'balanced';
   const players = [];
   const usedColors = new Set();
   for (let i = 0; i < humanCount; i += 1) {
     const name = document.getElementById(`name${i}`).value || `Player ${i + 1}`;
     const color = document.getElementById(`color${i}`).value || colorPalette[0];
     if (usedColors.has(color)) {
-      window.alert("Player colors must be unique");
+      window.alert('Player colors must be unique');
       return;
     }
     usedColors.add(color);
     players.push({ name, color });
   }
   for (let i = 0; i < aiCount; i += 1) {
-    const color =
-      colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
+    const color = colorPalette.find((c) => !usedColors.has(c)) || colorPalette[0];
     usedColors.add(color);
     players.push({ name: `AI ${i + 1}`, color, ai: true, difficulty, style });
   }
   try {
-    localStorage.setItem("netriskPlayers", JSON.stringify(players));
+    localStorage.setItem('netriskPlayers', JSON.stringify(players));
     if (mapSelect) {
-      localStorage.setItem("netriskMap", mapSelect.value);
+      localStorage.setItem('netriskMap', mapSelect.value);
     }
   } catch (err) {
     // ignore storage errors
   }
-  navigateTo("game.html");
+  navigateTo('game.html');
 });
 
 loadFromStorage();

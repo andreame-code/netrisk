@@ -1,17 +1,13 @@
-import { persistLobby, publicPlayers, broadcast, loadLobby } from "../utils.js";
+import { persistLobby, publicPlayers, broadcast, loadLobby } from '../utils.js';
 
 export async function handleJoinLobby(ctx, ws, msg, state) {
-  const lobby = await loadLobby(
-    ctx.lobbies,
-    msg.code,
-    ctx.offlinePlayerTimeout,
-  );
+  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby || lobby.started) {
-    ws.send(JSON.stringify({ type: "error", error: "lobbyNotOpen" }));
+    ws.send(JSON.stringify({ type: 'error', error: 'lobbyNotOpen' }));
     return;
   }
   if (lobby.players.length >= ctx.maxPlayers) {
-    ws.send(JSON.stringify({ type: "error", error: "lobbyFull" }));
+    ws.send(JSON.stringify({ type: 'error', error: 'lobbyFull' }));
     return;
   }
   const player = {
@@ -24,10 +20,10 @@ export async function handleJoinLobby(ctx, ws, msg, state) {
   lobby.players.push(player);
   state.currentLobby = lobby;
   state.currentPlayer = player;
-  ws.send(JSON.stringify({ type: "joined", code: lobby.code, id: player.id }));
+  ws.send(JSON.stringify({ type: 'joined', code: lobby.code, id: player.id }));
   await persistLobby(lobby);
   broadcast(lobby, {
-    type: "lobby",
+    type: 'lobby',
     code: lobby.code,
     host: lobby.host,
     players: publicPlayers(lobby),

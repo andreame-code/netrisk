@@ -18,9 +18,7 @@ export default function playCard(state, indices) {
   if (!allSame && !allDiff) {
     return { state: newState, played: false };
   }
-  indices
-    .sort((a, b) => b - a)
-    .forEach((i) => newState.discard.push(hand.splice(i, 1)[0]));
+  indices.sort((a, b) => b - a).forEach((i) => newState.discard.push(hand.splice(i, 1)[0]));
   newState.reinforcements = (newState.reinforcements || 0) + 5;
   return { state: newState, played: true, cards };
 }

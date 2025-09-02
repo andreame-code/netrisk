@@ -1,4 +1,4 @@
-export { attack, reinforce, move, playCard } from "./rules/index.js";
+export { attack, reinforce, move, playCard } from './rules/index.js';
 export {
   GameState,
   gameState,
@@ -6,11 +6,7 @@ export {
   setSelectedTerritory,
   serialize,
   deserialize,
-} from "./state/index.js";
-export {
-  battleOutcomeProbs,
-  attackSuccessProbability,
-  territoryPriority,
-} from "./ai/index.js";
-export { performAITurn } from "./ai/turn-manager.js";
-export { default as aiTurnManager } from "./ai/turn-manager.js";
+} from './state/index.js';
+export { battleOutcomeProbs, attackSuccessProbability, territoryPriority } from './ai/index.js';
+export { performAITurn } from './ai/turn-manager.js';
+export { default as aiTurnManager } from './ai/turn-manager.js';

@@ -1,5 +1,5 @@
-import initPhaseTimer from "../src/phase-timer.js";
-import EventBus from "../src/core/event-bus.js";
+import initPhaseTimer from '../src/phase-timer.js';
+import EventBus from '../src/core/event-bus.js';
 
 jest.useFakeTimers();
 
@@ -12,7 +12,7 @@ function createGame() {
   };
 }
 
-test("calls endTurn when timer expires", () => {
+test('calls endTurn when timer expires', () => {
   document.body.innerHTML = '<div id="phaseTimer"></div>';
   const game = createGame();
   initPhaseTimer({ game, duration: 1000 });
@@ -20,12 +20,12 @@ test("calls endTurn when timer expires", () => {
   expect(game.endTurn).toHaveBeenCalled();
 });
 
-test("resets on phase change", () => {
+test('resets on phase change', () => {
   document.body.innerHTML = '<div id="phaseTimer"></div>';
   const game = createGame();
   initPhaseTimer({ game, duration: 1000 });
   jest.advanceTimersByTime(500);
-  game.events.emit("phaseChange");
+  game.events.emit('phaseChange');
   jest.advanceTimersByTime(700);
   expect(game.endTurn).not.toHaveBeenCalled();
   jest.advanceTimersByTime(300);

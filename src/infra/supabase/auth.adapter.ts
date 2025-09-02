@@ -1,6 +1,6 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { z } from "zod";
-import supabase from "../../init/supabase-client.js";
+import { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import supabase from '../../init/supabase-client.js';
 import {
   AuthPort,
   loginInputSchema,
@@ -9,21 +9,19 @@ import {
   logoutOutputSchema,
   currentUserInputSchema,
   currentUserOutputSchema,
-} from "../../shared/ports/auth";
+} from '../../shared/ports/auth';
 
-export const createAuthAdapter = (
-  client: SupabaseClient | null = supabase,
-): AuthPort => {
+export const createAuthAdapter = (client: SupabaseClient | null = supabase): AuthPort => {
   const supa = client;
   return {
     async login(input) {
       const { email, password } = loginInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
+      if (!supa) throw new Error('Supabase client not initialized');
       const { data, error } = await supa.auth.signInWithPassword({
         email,
         password,
       });
-      if (error || !data) throw error || new Error("Invalid login response");
+      if (error || !data) throw error || new Error('Invalid login response');
       const parsed = z
         .object({
           user: z.object({ id: z.string() }),
@@ -37,18 +35,18 @@ export const createAuthAdapter = (
     },
     async logout(input) {
       logoutInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
-      const { error } = await supa.auth.signOut({ scope: "global" });
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { error } = await supa.auth.signOut({ scope: 'global' });
       if (error) throw error;
       return logoutOutputSchema.parse({});
     },
     async currentUser(input) {
       currentUserInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
+      if (!supa) throw new Error('Supabase client not initialized');
       const { data, error } = await supa.auth.getSession();
-      if (error || !data?.session) throw error || new Error("No session");
+      if (error || !data?.session) throw error || new Error('No session');
       let user = (data.session as any).user;
-      if (!user && typeof supa.auth.getUser === "function") {
+      if (!user && typeof supa.auth.getUser === 'function') {
         const { data: userData } = await supa.auth.getUser();
         user = userData?.user;
       }

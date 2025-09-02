@@ -8,10 +8,7 @@ export default function move(state, fromId, toId, count) {
   if (!from || !to) {
     return { state: newState, moved: false };
   }
-  if (
-    from.owner !== newState.currentPlayer ||
-    to.owner !== newState.currentPlayer
-  ) {
+  if (from.owner !== newState.currentPlayer || to.owner !== newState.currentPlayer) {
     return { state: newState, moved: false };
   }
   if (!from.neighbors.includes(to.id)) {

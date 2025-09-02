@@ -1,4 +1,4 @@
-describe("account page", () => {
+describe('account page', () => {
   let supabaseMock;
   let navigateTo;
   let renderUserMenu;
@@ -15,7 +15,7 @@ describe("account page", () => {
       <button id="changePasswordBtn"></button>
       <button id="updateNameBtn"></button>
     `;
-    window.history.pushState({}, "", "http://localhost/");
+    window.history.pushState({}, '', 'http://localhost/');
     navigateTo = jest.fn();
     renderUserMenu = jest.fn();
     supabaseMock = {
@@ -31,9 +31,9 @@ describe("account page", () => {
         }),
       })),
     };
-    jest.doMock("../src/navigation.js", () => ({ navigateTo }));
-    jest.doMock("../src/auth.js", () => ({ renderUserMenu }));
-    jest.doMock("../src/init/supabase-client.js", () => ({
+    jest.doMock('../src/navigation.js', () => ({ navigateTo }));
+    jest.doMock('../src/auth.js', () => ({ renderUserMenu }));
+    jest.doMock('../src/init/supabase-client.js', () => ({
       __esModule: true,
       default: supabaseMock,
     }));
@@ -41,91 +41,89 @@ describe("account page", () => {
     window.prompt = jest.fn();
   });
 
-  test("loadUser fills DOM when user present", async () => {
+  test('loadUser fills DOM when user present', async () => {
     supabaseMock.auth.getUser.mockResolvedValue({
       data: {
         user: {
-          id: "1",
-          email: "foo@example.com",
-          user_metadata: { name: "Foo" },
+          id: '1',
+          email: 'foo@example.com',
+          user_metadata: { name: 'Foo' },
         },
       },
     });
-    require("../src/account.js");
+    require('../src/account.js');
     await Promise.resolve();
-    expect(document.getElementById("userName").textContent).toBe("Foo");
-    expect(document.getElementById("userEmail").textContent).toBe(
-      "foo@example.com",
-    );
-    expect(document.getElementById("userAvatar").textContent).toBe("F");
+    expect(document.getElementById('userName').textContent).toBe('Foo');
+    expect(document.getElementById('userEmail').textContent).toBe('foo@example.com');
+    expect(document.getElementById('userAvatar').textContent).toBe('F');
   });
 
-  test("loadLobbies renders list", async () => {
+  test('loadLobbies renders list', async () => {
     supabaseMock.auth.getUser.mockResolvedValue({
-      data: { user: { id: "1" } },
+      data: { user: { id: '1' } },
     });
     supabaseMock.from.mockImplementation(() => ({
       select: () => ({
         eq: () => ({
-          limit: () => Promise.resolve({ data: [{ code: "AAA", map: "M1" }] }),
+          limit: () => Promise.resolve({ data: [{ code: 'AAA', map: 'M1' }] }),
         }),
         contains: () => ({
-          limit: () => Promise.resolve({ data: [{ code: "BBB", map: "M2" }] }),
+          limit: () => Promise.resolve({ data: [{ code: 'BBB', map: 'M2' }] }),
         }),
       }),
     }));
-    require("../src/account.js");
+    require('../src/account.js');
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
     await new Promise((r) => setTimeout(r, 0));
-    expect(document.getElementById("recentLobbies").innerHTML).toBe(
-      "<li>AAA - M1</li><li>BBB - M2</li>",
+    expect(document.getElementById('recentLobbies').innerHTML).toBe(
+      '<li>AAA - M1</li><li>BBB - M2</li>',
     );
   });
 
-  test("logout listener calls signOut and navigates home", async () => {
+  test('logout listener calls signOut and navigates home', async () => {
     supabaseMock.auth.getUser.mockResolvedValue({
-      data: { user: { id: "1" } },
+      data: { user: { id: '1' } },
     });
-    require("../src/account.js");
+    require('../src/account.js');
     await Promise.resolve();
     await Promise.resolve();
-    document.getElementById("logoutBtn").click();
+    document.getElementById('logoutBtn').click();
     await Promise.resolve();
     await Promise.resolve();
-    expect(supabaseMock.auth.signOut).toHaveBeenCalledWith({ scope: "global" });
+    expect(supabaseMock.auth.signOut).toHaveBeenCalledWith({ scope: 'global' });
     expect(renderUserMenu).toHaveBeenCalled();
-    expect(navigateTo).toHaveBeenCalledWith("index.html");
+    expect(navigateTo).toHaveBeenCalledWith('index.html');
   });
 
-  test("change password listener updates via API", async () => {
+  test('change password listener updates via API', async () => {
     supabaseMock.auth.getUser.mockResolvedValue({
-      data: { user: { id: "1" } },
+      data: { user: { id: '1' } },
     });
-    window.prompt.mockReturnValue("newpass");
-    require("../src/account.js");
+    window.prompt.mockReturnValue('newpass');
+    require('../src/account.js');
     await Promise.resolve();
-    document.getElementById("changePasswordBtn").click();
+    document.getElementById('changePasswordBtn').click();
     await Promise.resolve();
     expect(supabaseMock.auth.updateUser).toHaveBeenCalledWith({
-      password: "newpass",
+      password: 'newpass',
     });
-    expect(window.alert).toHaveBeenCalledWith("Password aggiornata");
+    expect(window.alert).toHaveBeenCalledWith('Password aggiornata');
   });
 
-  test("update name listener updates DOM via API", async () => {
+  test('update name listener updates DOM via API', async () => {
     supabaseMock.auth.getUser.mockResolvedValue({
-      data: { user: { id: "1", email: "x", user_metadata: { name: "Old" } } },
+      data: { user: { id: '1', email: 'x', user_metadata: { name: 'Old' } } },
     });
-    window.prompt.mockReturnValue("New");
-    require("../src/account.js");
+    window.prompt.mockReturnValue('New');
+    require('../src/account.js');
     await Promise.resolve();
-    document.getElementById("updateNameBtn").click();
+    document.getElementById('updateNameBtn').click();
     await Promise.resolve();
     expect(supabaseMock.auth.updateUser).toHaveBeenCalledWith({
-      data: { name: "New" },
+      data: { name: 'New' },
     });
-    expect(document.getElementById("userName").textContent).toBe("New");
+    expect(document.getElementById('userName').textContent).toBe('New');
   });
 });

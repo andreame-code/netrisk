@@ -39,7 +39,7 @@ export function battleOutcomeProbs(attDice, defDice) {
   }
   const total = Math.pow(6, attDice + defDice);
   const result = Object.entries(outcomes).map(([k, count]) => {
-    const [attLoss, defLoss] = k.split("-").map(Number);
+    const [attLoss, defLoss] = k.split('-').map(Number);
     return { attLoss, defLoss, prob: count / total };
   });
   battleCache[key] = result;
@@ -61,8 +61,7 @@ export function attackSuccessProbability(from, to) {
     const defDice = Math.min(2, def);
     let prob = 0;
     for (const outcome of battleOutcomeProbs(attDice, defDice)) {
-      prob +=
-        outcome.prob * winProb(att - outcome.attLoss, def - outcome.defLoss);
+      prob += outcome.prob * winProb(att - outcome.attLoss, def - outcome.defLoss);
     }
     memo.set(key, prob);
     return prob;
@@ -77,7 +76,7 @@ export function territoryPriority(game, territory, profile = {}) {
     return neighbor && neighbor.owner !== territory.owner;
   }).length;
   let score = enemyNeighbors * 10 - territory.armies;
-  if (profile.style === "aggressive") score += territory.armies;
-  if (profile.style === "defensive") score -= territory.armies;
+  if (profile.style === 'aggressive') score += territory.armies;
+  if (profile.style === 'defensive') score -= territory.armies;
   return score;
 }

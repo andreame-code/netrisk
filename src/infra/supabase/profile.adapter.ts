@@ -1,28 +1,22 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { z } from "zod";
-import supabase from "../../init/supabase-client.js";
+import { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import supabase from '../../init/supabase-client.js';
 import {
   ProfilePort,
   getProfileInputSchema,
   getProfileOutputSchema,
   updateProfileInputSchema,
   updateProfileOutputSchema,
-} from "../../shared/ports/profile";
+} from '../../shared/ports/profile';
 
-export const createProfileAdapter = (
-  client: SupabaseClient | null = supabase,
-): ProfilePort => {
+export const createProfileAdapter = (client: SupabaseClient | null = supabase): ProfilePort => {
   const supa = client;
   return {
     async getProfile(input) {
       const { userId } = getProfileInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
-      const { data, error } = await supa
-        .from("profiles")
-        .select()
-        .eq("user_id", userId)
-        .single();
-      if (error || !data) throw error || new Error("Profile not found");
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { data, error } = await supa.from('profiles').select().eq('user_id', userId).single();
+      if (error || !data) throw error || new Error('Profile not found');
       const row = z
         .object({
           user_id: z.string().optional(),
@@ -40,9 +34,9 @@ export const createProfileAdapter = (
     },
     async updateProfile(input) {
       const profile = updateProfileInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
+      if (!supa) throw new Error('Supabase client not initialized');
       const { data, error } = await supa
-        .from("profiles")
+        .from('profiles')
         .upsert({
           user_id: profile.userId,
           name: profile.name,
@@ -50,7 +44,7 @@ export const createProfileAdapter = (
         })
         .select()
         .single();
-      if (error || !data) throw error || new Error("Update profile failed");
+      if (error || !data) throw error || new Error('Update profile failed');
       const row = z
         .object({
           user_id: z.string().optional(),

@@ -1,23 +1,19 @@
-import { broadcast, loadLobby } from "../utils.js";
+import { broadcast, loadLobby } from '../utils.js';
 
 export async function handleChat(ctx, ws, msg) {
-  const lobby = await loadLobby(
-    ctx.lobbies,
-    msg.code,
-    ctx.offlinePlayerTimeout,
-  );
+  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
   if (ctx.supabase) {
     ctx.supabase
-      .from("lobby_chat")
+      .from('lobby_chat')
       .insert({ code: lobby.code, id: msg.id, text: msg.text })
       .catch((err) => {
         // eslint-disable-next-line no-console
-        console.error("Supabase chat error", err);
+        console.error('Supabase chat error', err);
       });
   }
   broadcast(lobby, {
-    type: "chat",
+    type: 'chat',
     id: msg.id,
     text: msg.text,
   });

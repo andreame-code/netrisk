@@ -1,30 +1,23 @@
-import { SupabaseClient, RealtimeChannel } from "@supabase/supabase-js";
-import supabase from "../../init/supabase-client.js";
+import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+import supabase from '../../init/supabase-client.js';
 import {
   RealtimePort,
   subscribeInputSchema,
   subscribeOutputSchema,
   unsubscribeInputSchema,
   unsubscribeOutputSchema,
-} from "../../shared/ports/realtime";
+} from '../../shared/ports/realtime';
 
-export const createRealtimeAdapter = (
-  client: SupabaseClient | null = supabase,
-): RealtimePort => {
-  if (!client) throw new Error("Supabase client not initialized");
+export const createRealtimeAdapter = (client: SupabaseClient | null = supabase): RealtimePort => {
+  if (!client) throw new Error('Supabase client not initialized');
   const channels = new Map<string, RealtimeChannel>();
 
   return {
     async subscribe(input) {
-      const { channel, event, schema, table, callback } =
-        subscribeInputSchema.parse(input);
+      const { channel, event, schema, table, callback } = subscribeInputSchema.parse(input);
       const ch = client
         .channel(channel)
-        .on(
-          "postgres_changes",
-          { event, schema, table } as any,
-          callback as any,
-        );
+        .on('postgres_changes', { event, schema, table } as any, callback as any);
       await ch.subscribe();
       const id = globalThis.crypto.randomUUID();
       channels.set(id, ch);

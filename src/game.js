@@ -1,14 +1,14 @@
-import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "./phases.js";
-import { colorPalette } from "./colors.js";
-import EventBus from "./core/event-bus.js";
-import loadJson from "./utils/load-json.js";
-import * as logger from "./logger.js";
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from './phases.js';
+import { colorPalette } from './colors.js';
+import EventBus from './core/event-bus.js';
+import loadJson from './utils/load-json.js';
+import * as logger from './logger.js';
 import {
   attack as attackRule,
   reinforce as reinforceRule,
   move as moveRule,
   playCard as playCardRule,
-} from "./game/rules/index.js";
+} from './game/rules/index.js';
 
 /**
  * @typedef {Object} Player
@@ -33,9 +33,7 @@ import {
  */
 async function loadMapData() {
   const mapName =
-    (typeof localStorage !== "undefined" &&
-      localStorage.getItem("netriskMap")) ||
-    "map";
+    (typeof localStorage !== 'undefined' && localStorage.getItem('netriskMap')) || 'map';
   const paths = [`./src/data/${mapName}.json`, `./data/${mapName}.json`];
   for (const jsonPath of paths) {
     try {
@@ -72,14 +70,14 @@ class Game {
     maxUndoSteps = 10,
   ) {
     this.players = players || [
-      { name: "Player 1", color: colorPalette[0] },
-      { name: "Player 2", color: colorPalette[1] },
-      { name: "AI", color: colorPalette[2], ai: true },
+      { name: 'Player 1', color: colorPalette[0] },
+      { name: 'Player 2', color: colorPalette[1] },
+      { name: 'AI', color: colorPalette[2], ai: true },
     ];
 
     this.events = new EventBus();
 
-    const IS_TEST = typeof jest !== "undefined";
+    const IS_TEST = typeof jest !== 'undefined';
     if (IS_TEST) {
       randomizeTerritories = false;
     }
@@ -94,7 +92,7 @@ class Game {
       neighbors: t.neighbors,
       x: t.x,
       y: t.y,
-      owner: typeof t.owner === "number" ? t.owner : owners[i],
+      owner: typeof t.owner === 'number' ? t.owner : owners[i],
       armies: t.armies || 3,
     }));
 
@@ -157,13 +155,13 @@ class Game {
       const map = await loadMapData();
       return buildGame(map);
     } catch (err) {
-      console.error("Unable to load map data, starting with empty map.", err);
-      if (typeof alert === "function") {
+      console.error('Unable to load map data, starting with empty map.', err);
+      if (typeof alert === 'function') {
         try {
-          alert("Unable to load map data. Starting with empty map.");
+          alert('Unable to load map data. Starting with empty map.');
         } catch (alertErr) {
           // In non-browser environments alert may not be available
-          console.error("Failed to display alert", alertErr);
+          console.error('Failed to display alert', alertErr);
         }
       }
       return buildGame();
@@ -171,9 +169,7 @@ class Game {
   }
 
   calculateReinforcements() {
-    const owned = this.territories.filter(
-      (t) => t.owner === this.currentPlayer,
-    ).length;
+    const owned = this.territories.filter((t) => t.owner === this.currentPlayer).length;
     let reinf = Math.max(3, Math.floor(owned / 3));
     this.continents.forEach((c) => {
       if (
@@ -186,7 +182,7 @@ class Game {
       }
     });
     this.reinforcements = reinf;
-    this.emit("reinforcementsCalculated", {
+    this.emit('reinforcementsCalculated', {
       player: this.currentPlayer,
       amount: this.reinforcements,
     });
@@ -208,7 +204,7 @@ class Game {
       if (!action.canSelect || action.canSelect(territory)) {
         this.pushUndoState();
         this.selectedFrom = territory;
-        return { type: "select", territory: id };
+        return { type: 'select', territory: id };
       }
     } else {
       const from = this.selectedFrom;
@@ -216,7 +212,7 @@ class Game {
       if (from.id === to.id) {
         this.pushUndoState();
         this.selectedFrom = null;
-        return { type: "deselect", territory: id };
+        return { type: 'deselect', territory: id };
       }
       if (!action.canMove || action.canMove(from, to)) {
         this.selectedFrom = null;
@@ -230,8 +226,7 @@ class Game {
     return this.processSelection(
       {
         direct: true,
-        canSelect: (t) =>
-          t.owner === this.currentPlayer && this.reinforcements > 0,
+        canSelect: (t) => t.owner === this.currentPlayer && this.reinforcements > 0,
         onSelect: (t) => {
           this.pushUndoState();
           const { state } = reinforceRule(
@@ -250,7 +245,7 @@ class Game {
             this.undoStack = [];
             this.redoStack = [];
             this.phase = ATTACK;
-            this.emit("phaseChange", {
+            this.emit('phaseChange', {
               phase: this.phase,
               player: this.currentPlayer,
             });
@@ -273,10 +268,7 @@ class Game {
         onMove: (from, to) => {
           const result = this.attack(from, to);
           this.emit(ATTACK, { from: from.id, to: to.id, result });
-          return Object.assign(
-            { type: ATTACK, from: from.id, to: to.id },
-            result,
-          );
+          return Object.assign({ type: ATTACK, from: from.id, to: to.id }, result);
         },
       },
       territory,
@@ -314,11 +306,7 @@ class Game {
   }
 
   attack(from, to) {
-    const { state, result } = attackRule(
-      { territories: this.territories },
-      from.id,
-      to.id,
-    );
+    const { state, result } = attackRule({ territories: this.territories }, from.id, to.id);
     const updatedFrom = state.territories.find((t) => t.id === from.id);
     const updatedTo = state.territories.find((t) => t.id === to.id);
     if (updatedFrom) Object.assign(from, updatedFrom);
@@ -327,7 +315,7 @@ class Game {
       this.conqueredThisTurn = true;
       this.checkVictory();
     }
-    this.emit("attackResolved", { from: from.id, to: to.id, result });
+    this.emit('attackResolved', { from: from.id, to: to.id, result });
     return result;
   }
 
@@ -346,7 +334,7 @@ class Game {
     const updatedTo = state.territories.find((t) => t.id === toId);
     if (updatedFrom) Object.assign(from, updatedFrom);
     if (updatedTo) Object.assign(to, updatedTo);
-    this.emit("move", { from: fromId, to: toId, count });
+    this.emit('move', { from: fromId, to: toId, count });
     return true;
   }
 
@@ -376,15 +364,14 @@ class Game {
     this.currentPlayer = data.currentPlayer;
     this.phase = data.phase;
     this.reinforcements = data.reinforcements;
-    this.selectedFrom =
-      data.selectedFrom != null ? this.territoryById(data.selectedFrom) : null;
+    this.selectedFrom = data.selectedFrom != null ? this.territoryById(data.selectedFrom) : null;
     this.conqueredThisTurn = data.conqueredThisTurn || false;
     this.winner = data.winner;
   }
 
   undo() {
     if (this.phase !== REINFORCE) {
-      this.emit("undoUnavailable", { phase: this.phase });
+      this.emit('undoUnavailable', { phase: this.phase });
       return false;
     }
     if (!this.canUndo()) return false;
@@ -420,7 +407,7 @@ class Game {
     if (this.phase === ATTACK) {
       this.selectedFrom = null;
       this.phase = FORTIFY;
-      this.emit("phaseChange", {
+      this.emit('phaseChange', {
         phase: this.phase,
         player: this.currentPlayer,
       });
@@ -437,7 +424,7 @@ class Game {
         const card = this.drawCard(prev);
         this.conqueredThisTurn = false;
         if (card) {
-          this.emit("cardAwarded", { player: prev, card });
+          this.emit('cardAwarded', { player: prev, card });
         }
       }
       this.phase = REINFORCE;
@@ -447,8 +434,8 @@ class Game {
         if (!set) break;
         this.playCards(set);
       }
-      this.emit("turnStart", { player: this.currentPlayer });
-      this.emit("phaseChange", {
+      this.emit('turnStart', { player: this.currentPlayer });
+      this.emit('phaseChange', {
         phase: this.phase,
         player: this.currentPlayer,
       });
@@ -464,7 +451,7 @@ class Game {
     }
     const card = this.deck.shift();
     this.hands[player].push(card);
-    this.emit("cardDrawn", { player, card });
+    this.emit('cardDrawn', { player, card });
     return card;
   }
 
@@ -482,7 +469,7 @@ class Game {
     this.hands = state.hands;
     this.discard = state.discard;
     this.reinforcements = state.reinforcements;
-    this.emit("cardsPlayed", { player: this.currentPlayer, cards });
+    this.emit('cardsPlayed', { player: this.currentPlayer, cards });
     return true;
   }
 
@@ -526,22 +513,14 @@ class Game {
   }
 
   static deserialize(str) {
-    const data = typeof str === "string" ? JSON.parse(str) : str;
-    const game = new Game(
-      data.players,
-      data.territories,
-      data.continents,
-      data.deck,
-      false,
-    );
+    const data = typeof str === 'string' ? JSON.parse(str) : str;
+    const game = new Game(data.players, data.territories, data.continents, data.deck, false);
     game.hands = data.hands;
     game.discard = data.discard || [];
     game.currentPlayer = data.currentPlayer;
     game.phase = data.phase;
     game.reinforcements = data.reinforcements;
-    game.selectedFrom = data.selectedFrom
-      ? game.territoryById(data.selectedFrom)
-      : null;
+    game.selectedFrom = data.selectedFrom ? game.territoryById(data.selectedFrom) : null;
     game.conqueredThisTurn = data.conqueredThisTurn || false;
     game.winner = data.winner;
     return game;
@@ -579,7 +558,7 @@ class Game {
   }
 
   use(plugin) {
-    if (typeof plugin === "function") {
+    if (typeof plugin === 'function') {
       plugin(this);
     }
   }

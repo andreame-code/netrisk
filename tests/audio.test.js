@@ -8,18 +8,18 @@ import {
   isMuted,
   setMusicEnabled,
   isMusicEnabled,
-} from "../src/audio.js";
+} from '../src/audio.js';
 
-describe("audio helpers", () => {
-  test("playEffect is safe when Audio is undefined", () => {
+describe('audio helpers', () => {
+  test('playEffect is safe when Audio is undefined', () => {
     const original = global.Audio;
     // eslint-disable-next-line no-undefined
     global.Audio = undefined;
-    expect(() => playEffect("reinforce")).not.toThrow();
+    expect(() => playEffect('reinforce')).not.toThrow();
     global.Audio = original;
   });
 
-  test("volume setters clamp between 0 and 1", () => {
+  test('volume setters clamp between 0 and 1', () => {
     setMasterVolume(2);
     expect(getMasterVolume()).toBe(1);
     setMasterVolume(-1);
@@ -30,7 +30,7 @@ describe("audio helpers", () => {
     expect(getEffectsVolume()).toBe(0);
   });
 
-  test("mute and music toggles", () => {
+  test('mute and music toggles', () => {
     setMuted(true);
     expect(isMuted()).toBe(true);
     setMuted(false);

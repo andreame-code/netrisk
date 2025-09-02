@@ -1,6 +1,6 @@
-import { SupabaseClient } from "@supabase/supabase-js";
-import { z } from "zod";
-import supabase from "../../init/supabase-client.js";
+import { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import supabase from '../../init/supabase-client.js';
 import {
   LobbyPort,
   createLobbyInputSchema,
@@ -12,22 +12,20 @@ import {
   joinLobbyOutputSchema,
   leaveLobbyInputSchema,
   leaveLobbyOutputSchema,
-} from "../../shared/ports/lobby";
+} from '../../shared/ports/lobby';
 
-export const createLobbyAdapter = (
-  client: SupabaseClient | null = supabase,
-): LobbyPort => {
+export const createLobbyAdapter = (client: SupabaseClient | null = supabase): LobbyPort => {
   const supa = client;
   return {
     async createLobby(input) {
       const { name, maxPlayers } = createLobbyInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
+      if (!supa) throw new Error('Supabase client not initialized');
       const { data, error } = await supa
-        .from("lobbies")
+        .from('lobbies')
         .insert({ name, max_players: maxPlayers })
         .select()
         .single();
-      if (error || !data) throw error || new Error("Create lobby failed");
+      if (error || !data) throw error || new Error('Create lobby failed');
       const row = z
         .object({
           id: z.string().optional(),
@@ -45,9 +43,9 @@ export const createLobbyAdapter = (
     },
     async listLobbies(input) {
       listLobbiesInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
-      const { data, error } = await supa.from("lobbies").select();
-      if (error || !data) throw error || new Error("List lobbies failed");
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { data, error } = await supa.from('lobbies').select();
+      if (error || !data) throw error || new Error('List lobbies failed');
       const lobbies = data.map((row: any) =>
         lobbySchema.parse({
           id: row.code ?? row.id,
@@ -62,15 +60,15 @@ export const createLobbyAdapter = (
     },
     async join(input) {
       const { lobbyId } = joinLobbyInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
-      const { error } = await supa.rpc("join_lobby", { lobby_id: lobbyId });
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { error } = await supa.rpc('join_lobby', { lobby_id: lobbyId });
       if (error) throw error;
       return joinLobbyOutputSchema.parse({ lobbyId });
     },
     async leave(input) {
       const { lobbyId } = leaveLobbyInputSchema.parse(input);
-      if (!supa) throw new Error("Supabase client not initialized");
-      const { error } = await supa.rpc("leave_lobby", { lobby_id: lobbyId });
+      if (!supa) throw new Error('Supabase client not initialized');
+      const { error } = await supa.rpc('leave_lobby', { lobby_id: lobbyId });
       if (error) throw error;
       return leaveLobbyOutputSchema.parse({ lobbyId });
     },

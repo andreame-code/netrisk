@@ -1,8 +1,8 @@
-import EventBus from "./core/event-bus.js";
+import EventBus from './core/event-bus.js';
 
 export default function initPhaseTimer({
   game,
-  elementId = "phaseTimer",
+  elementId = 'phaseTimer',
   duration = 60000,
   serverOffset = 0,
   onTimeout,
@@ -15,11 +15,11 @@ export default function initPhaseTimer({
   function update() {
     const remaining = endTime - getNow();
     if (remaining <= 0) {
-      if (display) display.textContent = "0";
+      if (display) display.textContent = '0';
       clearInterval(timerId);
       if (onTimeout) {
         onTimeout();
-      } else if (game && typeof game.endTurn === "function") {
+      } else if (game && typeof game.endTurn === 'function') {
         game.endTurn();
       }
       return;
@@ -34,12 +34,12 @@ export default function initPhaseTimer({
     timerId = setInterval(update, 1000);
   }
 
-  if (game && typeof game.on === "function") {
-    game.on("phaseChange", start);
-    game.on("turnStart", start);
+  if (game && typeof game.on === 'function') {
+    game.on('phaseChange', start);
+    game.on('turnStart', start);
   } else if (game && game.events instanceof EventBus) {
-    game.events.on("phaseChange", start);
-    game.events.on("turnStart", start);
+    game.events.on('phaseChange', start);
+    game.events.on('turnStart', start);
   }
 
   start();

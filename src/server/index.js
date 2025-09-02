@@ -1,24 +1,18 @@
-import { WebSocketServer } from "ws";
-import { randomBytes } from "crypto";
-import supabase from "../init/supabase-client.js";
-import { info, error } from "../logger.js";
-import {
-  isValidMap,
-  publicPlayers,
-  broadcast,
-  persistLobby,
-  validateMessage,
-} from "./utils.js";
-import { handleCreateLobby } from "./handlers/create-lobby.js";
-import { handleJoinLobby } from "./handlers/join-lobby.js";
-import { handleLeaveLobby } from "./handlers/leave-lobby.js";
-import { handleReady } from "./handlers/ready.js";
-import { handleSelectMap } from "./handlers/select-map.js";
-import { handleStart } from "./handlers/start.js";
-import { handleState } from "./handlers/state.js";
-import { handleChat } from "./handlers/chat.js";
-import { handleReconnect } from "./handlers/reconnect.js";
-import { handleHeartbeat } from "./handlers/heartbeat.js";
+import { WebSocketServer } from 'ws';
+import { randomBytes } from 'crypto';
+import supabase from '../init/supabase-client.js';
+import { info, error } from '../logger.js';
+import { isValidMap, publicPlayers, broadcast, persistLobby, validateMessage } from './utils.js';
+import { handleCreateLobby } from './handlers/create-lobby.js';
+import { handleJoinLobby } from './handlers/join-lobby.js';
+import { handleLeaveLobby } from './handlers/leave-lobby.js';
+import { handleReady } from './handlers/ready.js';
+import { handleSelectMap } from './handlers/select-map.js';
+import { handleStart } from './handlers/start.js';
+import { handleState } from './handlers/state.js';
+import { handleChat } from './handlers/chat.js';
+import { handleReconnect } from './handlers/reconnect.js';
+import { handleHeartbeat } from './handlers/heartbeat.js';
 
 export function createLobbyServer({
   port = 8081,
@@ -28,7 +22,7 @@ export function createLobbyServer({
 } = {}) {
   const wss = new WebSocketServer({ port });
   const lobbies = new Map();
-  const createCode = () => randomBytes(3).toString("hex");
+  const createCode = () => randomBytes(3).toString('hex');
 
   const ctx = {
     lobbies,
@@ -41,9 +35,9 @@ export function createLobbyServer({
   };
 
   if (supabase) {
-    info("Supabase client available for lobby server");
+    info('Supabase client available for lobby server');
   } else {
-    error("Supabase client not configured; database features disabled");
+    error('Supabase client not configured; database features disabled');
   }
 
   const handlers = {
@@ -59,11 +53,11 @@ export function createLobbyServer({
     heartbeat: handleHeartbeat,
   };
 
-  wss.on("connection", (ws) => {
+  wss.on('connection', (ws) => {
     const state = { currentLobby: null, currentPlayer: null };
-    info("Client connected to lobby server");
+    info('Client connected to lobby server');
 
-    ws.on("message", async (raw) => {
+    ws.on('message', async (raw) => {
       let msg;
       try {
         msg = JSON.parse(raw.toString());
@@ -71,8 +65,8 @@ export function createLobbyServer({
         return;
       }
       const result = validateMessage(msg);
-      if (!result.success || !("data" in result)) {
-        ws.send(JSON.stringify({ type: "error", error: "invalidMessage" }));
+      if (!result.success || !('data' in result)) {
+        ws.send(JSON.stringify({ type: 'error', error: 'invalidMessage' }));
         return;
       }
       const { data } = result;
@@ -83,7 +77,7 @@ export function createLobbyServer({
       }
     });
 
-    ws.on("close", async () => {
+    ws.on('close', async () => {
       const lobby = state.currentLobby;
       const player = state.currentPlayer;
       if (lobby && player) {
@@ -92,7 +86,7 @@ export function createLobbyServer({
         player.lastSeen = Date.now();
         await persistLobby(lobby);
         broadcast(lobby, {
-          type: "lobby",
+          type: 'lobby',
           code: lobby.code,
           host: lobby.host,
           players: publicPlayers(lobby),
@@ -108,7 +102,7 @@ export function createLobbyServer({
             }
             await persistLobby(lobby);
             broadcast(lobby, {
-              type: "lobby",
+              type: 'lobby',
               code: lobby.code,
               host: lobby.host,
               players: publicPlayers(lobby),
@@ -125,7 +119,7 @@ export function createLobbyServer({
   return wss;
 }
 
-if (typeof require !== "undefined" && require.main === module) {
+if (typeof require !== 'undefined' && require.main === module) {
   const port = 8081;
   createLobbyServer({ port });
   info(`Multiplayer server listening on port ${port}`);

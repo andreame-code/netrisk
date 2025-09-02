@@ -1,7 +1,7 @@
-import { colorPalette } from "../src/colors.js";
-import { readFileSync } from "fs";
-import path from "path";
-jest.mock("../src/navigation.js", () => ({
+import { colorPalette } from '../src/colors.js';
+import { readFileSync } from 'fs';
+import path from 'path';
+jest.mock('../src/navigation.js', () => ({
   navigateTo: jest.fn(),
   goHome: jest.fn(),
   exitGame: jest.fn(),
@@ -28,7 +28,7 @@ function setupDOM() {
       </form>`;
 }
 
-describe("setup map selection", () => {
+describe('setup map selection', () => {
   beforeEach(() => {
     setupDOM();
     localStorage.clear();
@@ -40,135 +40,127 @@ describe("setup map selection", () => {
     delete global.fetch;
   });
 
-  test("saves selected map to localStorage and navigates to game", async () => {
+  test('saves selected map to localStorage and navigates to game', async () => {
     const manifest = {
       version: 1,
       maps: [
         {
-          id: "map",
-          name: "Classic",
-          difficulty: "Easy",
+          id: 'map',
+          name: 'Classic',
+          difficulty: 'Easy',
           territories: 1,
           bonuses: {},
-          thumbnail: "assets/maps/map.svg",
-          description: "",
+          thumbnail: 'assets/maps/map.svg',
+          description: '',
         },
         {
-          id: "map3",
-          name: "Grid",
-          difficulty: "Easy",
+          id: 'map3',
+          name: 'Grid',
+          difficulty: 'Easy',
           territories: 1,
           bonuses: {},
-          thumbnail: "assets/maps/map3.svg",
-          description: "",
+          thumbnail: 'assets/maps/map3.svg',
+          description: '',
         },
       ],
     };
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(manifest) }),
-    );
-    const { navigateTo } = require("../src/navigation.js");
-    const { mapLoadPromise } = require("../src/setup.js");
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { navigateTo } = require('../src/navigation.js');
+    const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
-    document.getElementById("humanCount").value = "1";
-    document.getElementById("aiCount").value = "0";
-    document.getElementById("name0").value = "P1";
-    document.getElementById("color0").value = colorPalette[0];
+    document.getElementById('humanCount').value = '1';
+    document.getElementById('aiCount').value = '0';
+    document.getElementById('name0').value = 'P1';
+    document.getElementById('color0').value = colorPalette[0];
     document.querySelector('.map-item[data-id="map3"]').click();
-    document.getElementById("setupForm").dispatchEvent(new Event("submit"));
-    expect(localStorage.getItem("netriskMap")).toBe("map3");
-    expect(navigateTo).toHaveBeenCalledWith("game.html");
+    document.getElementById('setupForm').dispatchEvent(new Event('submit'));
+    expect(localStorage.getItem('netriskMap')).toBe('map3');
+    expect(navigateTo).toHaveBeenCalledWith('game.html');
   });
 
-  test("renders responsive grid", async () => {
+  test('renders responsive grid', async () => {
     const manifest = {
       version: 1,
       maps: [
         {
-          id: "map",
-          name: "Classic",
-          difficulty: "Easy",
+          id: 'map',
+          name: 'Classic',
+          difficulty: 'Easy',
           territories: 1,
           bonuses: {},
-          thumbnail: "assets/maps/map.svg",
-          description: "",
+          thumbnail: 'assets/maps/map.svg',
+          description: '',
         },
       ],
     };
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(manifest) }),
-    );
-    const { mapLoadPromise } = require("../src/setup.js");
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
-    const grid = document.getElementById("mapGrid");
-    expect(grid.style.display).toBe("grid");
-    expect(grid.style.gridTemplateColumns).toContain("auto-fit");
+    const grid = document.getElementById('mapGrid');
+    expect(grid.style.display).toBe('grid');
+    expect(grid.style.gridTemplateColumns).toContain('auto-fit');
   });
 
-  test("shows placeholder when thumbnail missing", async () => {
+  test('shows placeholder when thumbnail missing', async () => {
     const manifest = {
       version: 1,
       maps: [
         {
-          id: "map",
-          name: "Classic",
-          difficulty: "Easy",
+          id: 'map',
+          name: 'Classic',
+          difficulty: 'Easy',
           territories: 1,
           bonuses: {},
-          thumbnail: "assets/maps/missing.svg",
-          description: "",
+          thumbnail: 'assets/maps/missing.svg',
+          description: '',
         },
       ],
     };
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(manifest) }),
-    );
-    const { mapLoadPromise } = require("../src/setup.js");
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
-    const img = document.querySelector(".map-item img");
-    img.dispatchEvent(new Event("error"));
-    expect(document.querySelector(".map-item .placeholder")).not.toBeNull();
+    const img = document.querySelector('.map-item img');
+    img.dispatchEvent(new Event('error'));
+    expect(document.querySelector('.map-item .placeholder')).not.toBeNull();
   });
 
-  test("saves AI difficulty and style", async () => {
+  test('saves AI difficulty and style', async () => {
     const manifest = {
       version: 1,
       maps: [
         {
-          id: "map",
-          name: "Classic",
-          difficulty: "Easy",
+          id: 'map',
+          name: 'Classic',
+          difficulty: 'Easy',
           territories: 1,
           bonuses: {},
-          thumbnail: "assets/maps/map.svg",
-          description: "",
+          thumbnail: 'assets/maps/map.svg',
+          description: '',
         },
       ],
     };
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ json: () => Promise.resolve(manifest) }),
-    );
-    const { mapLoadPromise } = require("../src/setup.js");
+    global.fetch = jest.fn(() => Promise.resolve({ json: () => Promise.resolve(manifest) }));
+    const { mapLoadPromise } = require('../src/setup.js');
     await mapLoadPromise;
-    document.getElementById("humanCount").value = "1";
-    document.getElementById("aiCount").value = "1";
-    document.getElementById("aiDifficulty").value = "hard";
-    document.getElementById("aiStyle").value = "aggressive";
-    document.getElementById("name0").value = "P1";
-    document.getElementById("color0").value = colorPalette[0];
-    document.getElementById("setupForm").dispatchEvent(new Event("submit"));
-    const saved = JSON.parse(localStorage.getItem("netriskPlayers"));
+    document.getElementById('humanCount').value = '1';
+    document.getElementById('aiCount').value = '1';
+    document.getElementById('aiDifficulty').value = 'hard';
+    document.getElementById('aiStyle').value = 'aggressive';
+    document.getElementById('name0').value = 'P1';
+    document.getElementById('color0').value = colorPalette[0];
+    document.getElementById('setupForm').dispatchEvent(new Event('submit'));
+    const saved = JSON.parse(localStorage.getItem('netriskPlayers'));
     expect(saved[1]).toEqual(
       expect.objectContaining({
         ai: true,
-        difficulty: "hard",
-        style: "aggressive",
+        difficulty: 'hard',
+        style: 'aggressive',
       }),
     );
   });
 
-  test("has header navigation", () => {
-    const html = readFileSync(path.join(__dirname, "..", "setup.html"), "utf8");
+  test('has header navigation', () => {
+    const html = readFileSync(path.join(__dirname, '..', 'setup.html'), 'utf8');
     expect(html).toMatch(/<header class="main-header">/);
     expect(html).toMatch(/href="index.html"/);
   });

@@ -1,14 +1,12 @@
-import fs from "fs";
-import { z } from "zod";
-import supabase from "../init/supabase-client.js";
-import { info, error } from "../logger.js";
+import fs from 'fs';
+import { z } from 'zod';
+import supabase from '../init/supabase-client.js';
+import { info, error } from '../logger.js';
 
 // Load available map ids from manifest
 let validMaps = [];
 try {
-  const manifest = JSON.parse(
-    fs.readFileSync("public/assets/maps/map-manifest.json", "utf8"),
-  );
+  const manifest = JSON.parse(fs.readFileSync('public/assets/maps/map-manifest.json', 'utf8'));
   validMaps = manifest.maps?.map((m) => m.id) || [];
 } catch {
   validMaps = [];
@@ -55,7 +53,7 @@ export const persistLobby = async (lobby) => {
   };
   try {
     info(`Persisting lobby ${lobby.code}`);
-    await supabase.from("lobbies").upsert(row, { onConflict: "code" });
+    await supabase.from('lobbies').upsert(row, { onConflict: 'code' });
     info(`Lobby ${lobby.code} persisted`);
   } catch (err) {
     error(`Supabase upsert error for lobby ${lobby.code}`, err?.message);
@@ -67,9 +65,9 @@ export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
   if (!lobby && supabase) {
     info(`Loading lobby ${code} from database`);
     const { data, error: loadError } = await supabase
-      .from("lobbies")
+      .from('lobbies')
       .select()
-      .eq("code", code)
+      .eq('code', code)
       .maybeSingle();
     if (loadError) {
       error(`Supabase load error for lobby ${code}`, loadError?.message);
@@ -86,9 +84,7 @@ export const loadLobby = async (lobbies, code, offlinePlayerTimeout) => {
         maxPlayers: data.max_players || 8,
       };
       const cutoff = Date.now() - offlinePlayerTimeout;
-      lobby.players = lobby.players.filter(
-        (p) => !p.lastSeen || p.lastSeen > cutoff,
-      );
+      lobby.players = lobby.players.filter((p) => !p.lastSeen || p.lastSeen > cutoff);
       lobbies.set(code, lobby);
       info(`Lobby ${code} loaded from database`);
     }
@@ -109,67 +105,67 @@ const codeSchema = z.string();
 const idSchema = z.string();
 
 export const createLobbySchema = z.object({
-  type: z.literal("createLobby"),
+  type: z.literal('createLobby'),
   player: playerSchema,
   map: z.string().optional(),
   maxPlayers: z.number().optional(),
 });
 
 export const joinLobbySchema = z.object({
-  type: z.literal("joinLobby"),
+  type: z.literal('joinLobby'),
   code: codeSchema,
   player: playerSchema,
 });
 
 export const leaveLobbySchema = z.object({
-  type: z.literal("leaveLobby"),
+  type: z.literal('leaveLobby'),
   code: codeSchema,
   id: idSchema,
 });
 
 export const readySchema = z.object({
-  type: z.literal("ready"),
+  type: z.literal('ready'),
   code: codeSchema,
   id: idSchema,
   ready: z.boolean(),
 });
 
 export const selectMapSchema = z.object({
-  type: z.literal("selectMap"),
+  type: z.literal('selectMap'),
   code: codeSchema,
   id: idSchema,
   map: z.string().nullable().optional(),
 });
 
 export const startSchema = z.object({
-  type: z.literal("start"),
+  type: z.literal('start'),
   code: codeSchema,
   id: idSchema,
   state: z.any(),
 });
 
 export const stateSchema = z.object({
-  type: z.literal("state"),
+  type: z.literal('state'),
   code: codeSchema,
   id: idSchema,
   state: z.any(),
 });
 
 export const chatSchema = z.object({
-  type: z.literal("chat"),
+  type: z.literal('chat'),
   code: codeSchema,
   id: idSchema,
   text: z.string(),
 });
 
 export const reconnectSchema = z.object({
-  type: z.literal("reconnect"),
+  type: z.literal('reconnect'),
   code: codeSchema,
   id: idSchema,
 });
 
 export const heartbeatSchema = z.object({
-  type: z.literal("heartbeat"),
+  type: z.literal('heartbeat'),
   code: codeSchema,
   id: idSchema,
 });
@@ -189,7 +185,7 @@ export const schemas = {
 
 export const validateMessage = (msg) => {
   const schema = schemas[msg?.type];
-  if (!schema) return { success: false, error: "unknownType" };
+  if (!schema) return { success: false, error: 'unknownType' };
   return schema.safeParse(msg);
 };
 

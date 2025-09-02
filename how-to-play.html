@@ -55,88 +55,79 @@
       </section>
     </main>
     <script>
-      const lang =
-        navigator.language && navigator.language.startsWith("it") ? "it" : "en";
+      const lang = navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
       const i18n = {
         en: {
-          navHome: "Back to Home",
-          navTutorial: "Start Tutorial",
-          tocObjective: "Objective",
-          tocPhases: "Phases",
-          tocTips: "Quick Tips",
-          tocShortcuts: "Keyboard Shortcuts",
-          tocFAQ: "FAQ",
-          title: "How to Play",
-          objectiveTitle: "Objective",
-          objectiveText: "Conquer all territories or eliminate all opponents.",
-          phasesTitle: "Phases",
+          navHome: 'Back to Home',
+          navTutorial: 'Start Tutorial',
+          tocObjective: 'Objective',
+          tocPhases: 'Phases',
+          tocTips: 'Quick Tips',
+          tocShortcuts: 'Keyboard Shortcuts',
+          tocFAQ: 'FAQ',
+          title: 'How to Play',
+          objectiveTitle: 'Objective',
+          objectiveText: 'Conquer all territories or eliminate all opponents.',
+          phasesTitle: 'Phases',
           phasesList: [
-            "Reinforce: deploy armies to your territories.",
-            "Attack: attempt to conquer adjacent territories.",
-            "Fortify: move armies to strengthen your borders.",
+            'Reinforce: deploy armies to your territories.',
+            'Attack: attempt to conquer adjacent territories.',
+            'Fortify: move armies to strengthen your borders.',
           ],
-          tipsTitle: "Quick Tips",
+          tipsTitle: 'Quick Tips',
           tipsList: [
-            "Claim continents for bonus troops.",
-            "Leave borders defended.",
-            "Weaken opponents before final strikes.",
+            'Claim continents for bonus troops.',
+            'Leave borders defended.',
+            'Weaken opponents before final strikes.',
           ],
-          shortcutsTitle: "Keyboard Shortcuts",
-          shortcutsList: [
-            "N: next phase",
-            "U: undo last action",
-            "M: mute audio",
-          ],
-          faqTitle: "FAQ",
+          shortcutsTitle: 'Keyboard Shortcuts',
+          shortcutsList: ['N: next phase', 'U: undo last action', 'M: mute audio'],
+          faqTitle: 'FAQ',
           faqList: [
             {
-              q: "Is there online multiplayer?",
+              q: 'Is there online multiplayer?',
               a: "Not yet, but it's planned.",
             },
             {
-              q: "Can I save the game?",
-              a: "Games are saved automatically in your browser.",
+              q: 'Can I save the game?',
+              a: 'Games are saved automatically in your browser.',
             },
           ],
         },
         it: {
-          navHome: "Torna alla Home",
-          navTutorial: "Avvia Tutorial",
-          tocObjective: "Obiettivo",
-          tocPhases: "Fasi",
-          tocTips: "Consigli Rapidi",
-          tocShortcuts: "Scorciatoie Tastiera",
-          tocFAQ: "FAQ",
-          title: "Come si gioca",
-          objectiveTitle: "Obiettivo",
-          objectiveText: "Conquista tutti i territori o elimina gli avversari.",
-          phasesTitle: "Fasi",
+          navHome: 'Torna alla Home',
+          navTutorial: 'Avvia Tutorial',
+          tocObjective: 'Obiettivo',
+          tocPhases: 'Fasi',
+          tocTips: 'Consigli Rapidi',
+          tocShortcuts: 'Scorciatoie Tastiera',
+          tocFAQ: 'FAQ',
+          title: 'Come si gioca',
+          objectiveTitle: 'Obiettivo',
+          objectiveText: 'Conquista tutti i territori o elimina gli avversari.',
+          phasesTitle: 'Fasi',
           phasesList: [
-            "Rinforza: schiera gli eserciti nei tuoi territori.",
-            "Attacca: prova a conquistare territori adiacenti.",
-            "Fortifica: sposta gli eserciti per rinforzare i confini.",
+            'Rinforza: schiera gli eserciti nei tuoi territori.',
+            'Attacca: prova a conquistare territori adiacenti.',
+            'Fortifica: sposta gli eserciti per rinforzare i confini.',
           ],
-          tipsTitle: "Consigli Rapidi",
+          tipsTitle: 'Consigli Rapidi',
           tipsList: [
-            "Controlla i continenti per bonus truppe.",
-            "Lascia sempre i confini difesi.",
-            "Indebolisci gli avversari prima del colpo finale.",
+            'Controlla i continenti per bonus truppe.',
+            'Lascia sempre i confini difesi.',
+            'Indebolisci gli avversari prima del colpo finale.',
           ],
-          shortcutsTitle: "Scorciatoie da Tastiera",
-          shortcutsList: [
-            "N: fase successiva",
-            "U: annulla ultima azione",
-            "M: disattiva audio",
-          ],
-          faqTitle: "FAQ",
+          shortcutsTitle: 'Scorciatoie da Tastiera',
+          shortcutsList: ['N: fase successiva', 'U: annulla ultima azione', 'M: disattiva audio'],
+          faqTitle: 'FAQ',
           faqList: [
             {
-              q: "Esiste il multiplayer online?",
-              a: "Non ancora, ma è previsto.",
+              q: 'Esiste il multiplayer online?',
+              a: 'Non ancora, ma è previsto.',
             },
             {
-              q: "Posso salvare la partita?",
-              a: "Le partite vengono salvate automaticamente nel tuo browser.",
+              q: 'Posso salvare la partita?',
+              a: 'Le partite vengono salvate automaticamente nel tuo browser.',
             },
           ],
         },
@@ -146,54 +137,51 @@
       }
       function renderList(id, items) {
         const list = document.getElementById(id);
-        list.innerHTML = "";
+        list.innerHTML = '';
         items.forEach((text) => {
-          const li = document.createElement("li");
+          const li = document.createElement('li');
           li.textContent = text;
           list.appendChild(li);
         });
       }
       function renderFaq(id, items) {
         const list = document.getElementById(id);
-        list.innerHTML = "";
+        list.innerHTML = '';
         items.forEach(({ q, a }) => {
-          const li = document.createElement("li");
-          const question = document.createElement("strong");
+          const li = document.createElement('li');
+          const question = document.createElement('strong');
           question.textContent = q;
           li.appendChild(question);
-          const answer = document.createElement("p");
+          const answer = document.createElement('p');
           answer.textContent = a;
           li.appendChild(answer);
           list.appendChild(li);
         });
       }
       function render() {
-        const navLink = document.getElementById("navLink");
-        if (localStorage.getItem("tutorialCompleted") !== "true") {
-          navLink.textContent = t("navTutorial");
+        const navLink = document.getElementById('navLink');
+        if (localStorage.getItem('tutorialCompleted') !== 'true') {
+          navLink.textContent = t('navTutorial');
         } else {
-          navLink.textContent = t("navHome");
+          navLink.textContent = t('navHome');
         }
-        navLink.href = "index.html";
-        document.getElementById("tocObjective").textContent = t("tocObjective");
-        document.getElementById("tocPhases").textContent = t("tocPhases");
-        document.getElementById("tocTips").textContent = t("tocTips");
-        document.getElementById("tocShortcuts").textContent = t("tocShortcuts");
-        document.getElementById("tocFAQ").textContent = t("tocFAQ");
-        document.getElementById("title").textContent = t("title");
-        document.getElementById("objectiveTitle").textContent =
-          t("objectiveTitle");
-        document.getElementById("objectiveText").textContent =
-          t("objectiveText");
-        document.getElementById("phasesTitle").textContent = t("phasesTitle");
-        renderList("phasesList", t("phasesList"));
-        document.getElementById("tipsTitle").textContent = t("tipsTitle");
-        renderList("tipsList", t("tipsList"));
-        document.getElementById("shortcutsTitle").textContent =
-          t("shortcutsTitle");
-        renderList("shortcutsList", t("shortcutsList"));
-        document.getElementById("faqTitle").textContent = t("faqTitle");
-        renderFaq("faqList", t("faqList"));
+        navLink.href = 'index.html';
+        document.getElementById('tocObjective').textContent = t('tocObjective');
+        document.getElementById('tocPhases').textContent = t('tocPhases');
+        document.getElementById('tocTips').textContent = t('tocTips');
+        document.getElementById('tocShortcuts').textContent = t('tocShortcuts');
+        document.getElementById('tocFAQ').textContent = t('tocFAQ');
+        document.getElementById('title').textContent = t('title');
+        document.getElementById('objectiveTitle').textContent = t('objectiveTitle');
+        document.getElementById('objectiveText').textContent = t('objectiveText');
+        document.getElementById('phasesTitle').textContent = t('phasesTitle');
+        renderList('phasesList', t('phasesList'));
+        document.getElementById('tipsTitle').textContent = t('tipsTitle');
+        renderList('tipsList', t('tipsList'));
+        document.getElementById('shortcutsTitle').textContent = t('shortcutsTitle');
+        renderList('shortcutsList', t('shortcutsList'));
+        document.getElementById('faqTitle').textContent = t('faqTitle');
+        renderFaq('faqList', t('faqList'));
       }
       render();
     </script>

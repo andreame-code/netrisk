@@ -1,5 +1,5 @@
 .btn {
-  font-family: "Cinzel", serif;
+  font-family: 'Cinzel', serif;
   background: #b8860b;
   color: #fff;
   border: 2px solid #8b4513;
@@ -82,7 +82,7 @@
 }
 
 .loading::after {
-  content: "";
+  content: '';
   width: 12px;
   height: 12px;
   border: 2px solid #333;

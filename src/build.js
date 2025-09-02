@@ -1,16 +1,16 @@
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 function hashContent(content) {
-  return crypto.createHash("sha256").update(content).digest("hex").slice(0, 8);
+  return crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
 }
 
 module.exports = { hashContent };
 
 if (require.main === module) {
-  const root = path.join(__dirname, "..");
-  const dist = path.join(root, "dist");
+  const root = path.join(__dirname, '..');
+  const dist = path.join(root, 'dist');
 
   if (fs.existsSync(dist)) {
     fs.rmSync(dist, { recursive: true, force: true });
@@ -18,25 +18,20 @@ if (require.main === module) {
   fs.mkdirSync(dist);
 
   const assets = [
-    "css/base.css",
-    "css/layout.css",
-    "css/components.css",
-    "css/theme.css",
-    "css/game.css",
-    "src/logger.js",
-    "main.js",
+    'css/base.css',
+    'css/layout.css',
+    'css/components.css',
+    'css/theme.css',
+    'css/game.css',
+    'src/logger.js',
+    'main.js',
   ];
-  const plainAssets = [
-    "src/game.js",
-    "src/territory-selection.js",
-    "src/audio.js",
-    "src/ui.js",
-  ];
+  const plainAssets = ['src/game.js', 'src/territory-selection.js', 'src/audio.js', 'src/ui.js'];
   const hashed = {};
 
   for (const asset of assets) {
     let filePath = path.join(root, asset);
-    let content = fs.readFileSync(filePath, "utf8");
+    let content = fs.readFileSync(filePath, 'utf8');
 
     const hash = hashContent(content);
     const ext = path.extname(asset);
@@ -53,25 +48,21 @@ if (require.main === module) {
     fs.copyFileSync(srcPath, destPath);
   }
   // Copy map assets
-  fs.cpSync(
-    path.join(root, "public/assets/maps"),
-    path.join(dist, "assets/maps"),
-    { recursive: true },
-  );
+  fs.cpSync(path.join(root, 'public/assets/maps'), path.join(dist, 'assets/maps'), {
+    recursive: true,
+  });
   // Copy additional data files (e.g., map.json)
-  fs.cpSync(path.join(root, "src"), path.join(dist, "src"), {
+  fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), {
     recursive: true,
   });
 
   // Copy all HTML files, replacing references to hashed assets
-  const htmlFiles = fs
-    .readdirSync(root)
-    .filter((file) => file.endsWith(".html"));
+  const htmlFiles = fs.readdirSync(root).filter((file) => file.endsWith('.html'));
 
   for (const file of htmlFiles) {
-    let html = fs.readFileSync(path.join(root, file), "utf8");
+    let html = fs.readFileSync(path.join(root, file), 'utf8');
     for (const [orig, hashedName] of Object.entries(hashed)) {
-      html = html.replace(new RegExp(orig, "g"), hashedName);
+      html = html.replace(new RegExp(orig, 'g'), hashedName);
     }
     fs.writeFileSync(path.join(dist, file), html);
   }
