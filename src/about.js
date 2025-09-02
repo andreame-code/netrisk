@@ -88,7 +88,16 @@ export function initAbout(doc = document) {
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => initAbout());
+  const start = () => {
+    if (document.getElementById('pageTitle')) {
+      initAbout();
+    }
+  };
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
 }
 
 export default { initAbout, filterSections };
