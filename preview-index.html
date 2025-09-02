@@ -9,6 +9,20 @@
         padding: 1rem;
       }
     </style>
+    <script>
+      (function () {
+        var v = Date.now();
+        document.write('<script src="build.js?v=' + v + '"><\/script>');
+        document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+          console.error('[ENV] Missing keys in env.js');
+        }
+      })();
+    </script>
   </head>
   <body>
     <h1>NetRisk Branch Previews</h1>
@@ -31,6 +45,5 @@
       }
       loadBranches();
     </script>
-    <script src="./env.js"></script>
   </body>
 </html>
