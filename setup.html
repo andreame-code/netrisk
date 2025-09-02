@@ -11,6 +11,27 @@
     <title>Setup NetRisk</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        var b = document.createElement('script');
+        b.src = 'build.js?v=' + Date.now();
+        b.defer = false;
+        document.head.appendChild(b);
+
+        var s = document.createElement('script');
+        s.src = 'env.js?v=' + Date.now();
+        s.defer = false;
+        s.onload = function () {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+        };
+        s.onerror = function () {
+          console.error('[ENV] env.js failed to load');
+        };
+        document.head.appendChild(s);
+      })();
+    </script>
   </head>
   <body>
     <header class="main-header">
@@ -55,7 +76,6 @@
       <div id="players"></div>
       <button type="submit" class="btn">Start</button>
     </form>
-    <script src="./env.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./setup.js"></script>
   </body>

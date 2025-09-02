@@ -1,5 +1,5 @@
 import { SUPABASE_URL, SUPABASE_KEY } from '../config.js';
-import { info, error } from '../logger.js';
+import { info, warn } from '../logger.js';
 
 // Support both Node (tests/server) and browser environments.
 // In the browser we expect the Supabase script to expose a global object.
@@ -15,12 +15,15 @@ if (typeof window === 'undefined' || !window.supabase) {
 // Initialize the client only when both URL and key are provided.
 // This avoids hitting Supabase with empty credentials during development
 // or when GitHub Actions secrets are not configured correctly.
-export const supabase =
-  SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+export const supabase = (() => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    warn('[Supabase] ENV missing — multiplayer/lobby disabilitati');
+    return null;
+  }
+  return createClient(SUPABASE_URL, SUPABASE_KEY);
+})();
 if (supabase) {
   info('[AUTH] client init ok');
-} else {
-  error('[AUTH] client init ko');
 }
 
 export function registerAuthListener(handler) {
