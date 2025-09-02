@@ -18,7 +18,7 @@
         <a href="setup.html">Setup</a>
         <a href="how-to-play.html">How To</a>
         <a href="about.html">About</a>
-        <span id="userMenu" class="user-menu loading"></span>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
       </nav>
     </header>
     <main>
@@ -34,7 +34,7 @@
         </label>
         <button type="submit" class="btn">Create Account</button>
       </form>
-      <p id="message" role="alert"></p>
+      <p id="message" role="alert" data-testid="error-msg"></p>
     </main>
     <script src="./env.js"></script>
     <script type="module" src="./auth.js"></script>

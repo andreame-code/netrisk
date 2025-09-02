@@ -35,7 +35,7 @@ test.describe('smoke auth', () => {
     await expect(page.locator('#userMenu')).toContainText('Profilo');
     await expect(page.locator('#userMenu')).toContainText('Esci');
     await expect(page.locator('#playBtn')).toBeVisible();
-    await expect(page.locator('#multiplayerBtn')).toBeVisible();
+    await expect(page.locator('[data-testid="lobby-link"]')).toBeVisible();
     await expect(page.locator('#setupBtn')).toBeVisible();
     await expect(page.locator('#howToPlayBtn')).toBeVisible();
     await expect(page.locator('#aboutBtn')).toBeVisible();

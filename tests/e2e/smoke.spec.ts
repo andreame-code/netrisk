@@ -21,8 +21,8 @@ test.describe('smoke flow', () => {
   test('login, lobby, start game', async ({ page }) => {
     await page.goto('/login.html');
     await expect(page.getByText('Unable to load data')).toHaveCount(0);
-    await expect(page.locator('[data-testid="login-username"]')).toBeVisible();
-    await page.fill('[data-testid="login-username"]', 'user@example.com');
+    await expect(page.locator('[data-testid="login-email"]')).toBeVisible();
+    await page.fill('[data-testid="login-email"]', 'user@example.com');
     await page.fill('[data-testid="login-password"]', 'password');
     await page.click('[data-testid="login-submit"]');
 
