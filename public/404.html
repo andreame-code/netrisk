@@ -26,8 +26,20 @@
         window.location.replace(fallback);
       })();
     </script>
+    <script>
+      (function () {
+          document.write('<script src="build.js"><\/script>');
+          var v = Date.now();
+          document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+          console.error('[ENV] Missing keys in env.js');
+        }
+      })();
+    </script>
   </head>
-  <body>
-    <script src="./env.js"></script>
-  </body>
+  <body></body>
 </html>

@@ -18,8 +18,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  if (url.pathname.endsWith('.js') && url.pathname.includes('env')) {
-    return; // never cache env files
+  if (
+    url.pathname.endsWith('.js') &&
+    (url.pathname.includes('env') || url.pathname.includes('build'))
+  ) {
+    return; // never cache env or build files
   }
   if (request.method !== 'GET' || url.origin !== location.origin) {
     return;
