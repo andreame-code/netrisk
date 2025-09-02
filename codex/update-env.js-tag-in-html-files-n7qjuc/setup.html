@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup NetRisk</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" crossorigin src="./assets/setup-2_4ZLhw5.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/config-VUvQXQsa.js">
+    <link rel="modulepreload" crossorigin href="./assets/colors-DHUIfYZB.js">
+    <link rel="modulepreload" crossorigin href="./assets/auth-CCLs5HSR.js">
+    <link rel="stylesheet" crossorigin href="./assets/config-BaM4L7Wl.css">
+    <link rel="stylesheet" crossorigin href="./assets/colors-DJ7Aj1sD.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading"></span>
+      </nav>
+    </header>
+    <h1>Player Setup</h1>
+    <form id="setupForm">
+      <label>
+        Number of human players:
+        <input type="number" id="humanCount" min="1" max="6" required value="1" />
+      </label>
+      <label>
+        Number of AI players:
+        <input type="number" id="aiCount" min="0" max="5" required value="2" />
+      </label>
+      <label>
+        AI Difficulty:
+        <select id="aiDifficulty">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+      <label>
+        AI Style:
+        <select id="aiStyle">
+          <option value="aggressive">Aggressive</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="defensive">Defensive</option>
+        </select>
+      </label>
+      <p>Map:</p>
+      <input type="hidden" id="mapSelect" />
+      <div id="mapGrid"></div>
+      <div id="players"></div>
+      <button type="submit" class="btn">Start</button>
+    </form>
+    <script src="./env.js"></script>
+  </body>
+</html>
