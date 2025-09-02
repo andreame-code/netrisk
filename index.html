@@ -11,16 +11,22 @@
     </style>
     <script>
       (function () {
-        const base = document.currentScript?.src.split('/').slice(0, -1).join('/') + '/';
-        const s = document.createElement('script');
-        s.src = base + 'env.js?' + Date.now();
-        s.onload = () => {
-          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-            console.error('[ENV] Missing keys in env.js');
+        const base = location.pathname.replace(/[^/]*$/, '');
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', base + 'env.js?' + Date.now(), false);
+          xhr.send(null);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            (0, eval)(xhr.responseText);
+            if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+              console.error('[ENV] Missing keys in env.js');
+            }
+          } else {
+            console.error('[ENV] env.js failed to load');
           }
-        };
-        s.onerror = () => console.error('[ENV] env.js failed to load');
-        document.head.appendChild(s);
+        } catch (e) {
+          console.error('[ENV] env.js failed to load');
+        }
       })();
     </script>
   </head>
