@@ -2,16 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>NetRisk Branch Previews</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        padding: 1rem;
-      }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forgot Password - NetRisk</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       (function () {
-        const modules = [];
+        const modules = ['./auth.js', './forgot.js'];
         const base = location.pathname.replace(/[^/]*$/, '');
         const s = document.createElement('script');
         s.src = base + 'env.js?' + Date.now();
@@ -37,27 +33,29 @@
         document.head.appendChild(s);
       })();
     </script>
+    <link rel="stylesheet" crossorigin href="./assets/theme-BaM4L7Wl.css">
   </head>
   <body>
-    <h1>NetRisk Branch Previews</h1>
-    <ul id="branchList"></ul>
-    <script>
-      async function loadBranches() {
-        const res = await fetch('https://api.github.com/repos/andreame-code/netrisk/branches');
-        const data = await res.json();
-        const list = document.getElementById('branchList');
-        data
-          .filter((b) => b.name !== 'gh-pages')
-          .forEach((b) => {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = './' + b.name + '/';
-            a.textContent = b.name;
-            li.appendChild(a);
-            list.appendChild(li);
-          });
-      }
-      loadBranches();
-    </script>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Recupera password</h1>
+      <form id="forgotForm">
+        <label>
+          Email:
+          <input type="email" id="email" required />
+        </label>
+        <button type="submit" class="btn">Invia</button>
+      </form>
+      <p id="message" role="alert" data-testid="error-msg"></p>
+    </main>
   </body>
 </html>

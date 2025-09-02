@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - NetRisk</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        const modules = ['./auth.js', './login.js'];
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+          const loadModules = () => {
+            modules.forEach((src) => {
+              const m = document.createElement('script');
+              m.type = 'module';
+              m.src = src;
+              document.body.appendChild(m);
+            });
+          };
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadModules);
+          } else {
+            loadModules();
+          }
+        };
+        s.onerror = () => console.error('[ENV] env.js failed to load');
+        document.head.appendChild(s);
+      })();
+    </script>
+    <link rel="stylesheet" crossorigin href="./assets/theme-BaM4L7Wl.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Login</h1>
+      <form id="loginForm">
+        <label>
+          Email:
+          <input type="email" id="username" required data-testid="login-email" />
+        </label>
+        <label>
+          Password:
+          <input type="password" id="password" required data-testid="login-password" />
+        </label>
+        <label> <input type="checkbox" id="stayLoggedIn" /> Resta connesso </label>
+        <p class="help-text">
+          Se selezionato, l'accesso rimarrà attivo anche dopo la chiusura del browser.
+        </p>
+        <button type="submit" class="btn" data-testid="login-submit">Login</button>
+        <a id="registerBtn" class="btn" href="./register.html">Register</a>
+        <button type="button" id="anonymousBtn" class="btn" data-testid="login-anon">
+          Login anonymously
+        </button>
+        <a href="./forgot.html">Password dimenticata?</a>
+      </form>
+      <p id="authGuardMessage" role="alert" data-testid="auth-guard-msg"></p>
+      <p id="message" role="alert" data-testid="error-msg"></p>
+    </main>
+  </body>
+</html>
