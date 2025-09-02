@@ -11,15 +11,21 @@
     </style>
     <script>
       (function () {
-          document.write('<script src="build.js"><\/script>');
-          var v = Date.now();
-          document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
-      })();
-    </script>
-    <script>
-      (function () {
-        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-          console.error('[ENV] Missing keys in env.js');
+        const base = location.pathname.replace(/[^/]*$/, '');
+        try {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', base + 'env.js?' + Date.now(), false);
+          xhr.send(null);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            (0, eval)(xhr.responseText);
+            if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+              console.error('[ENV] Missing keys in env.js');
+            }
+          } else {
+            console.error('[ENV] env.js failed to load');
+          }
+        } catch (e) {
+          console.error('[ENV] env.js failed to load');
         }
       })();
     </script>
