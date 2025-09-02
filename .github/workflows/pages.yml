@@ -18,25 +18,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: github-pages
-    env:
-      VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 'Guard: env usage'
-        shell: bash
+      - name: 'Guard-rails: verifica secrets presenti'
         run: |
-          set -e
-          if grep -RIn --include='*.html' 'src="./env.js' . >/dev/null; then
-            echo "USE_ENV_JS=true" >> $GITHUB_ENV
-          else
-            grep -R "import.meta.env" -n src >/dev/null || { echo 'missing import.meta.env'; exit 1; }
-            echo "USE_ENV_JS=false" >> $GITHUB_ENV
-          fi
-          grep -RIn --include='*.html' '<script[^>]*src="src/' . && { echo 'direct src/ script reference'; exit 1; } || true
-          echo 'Guard passed'
+          test -n "${{ secrets.SUPABASE_URL }}" || (echo "Missing SUPABASE_URL" && exit 1)
+          test -n "${{ secrets.SUPABASE_ANON_KEY }}" || (echo "Missing SUPABASE_ANON_KEY" && exit 1)
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -46,36 +36,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Generate env.js if needed
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-        env:
-          SHA: ${{ github.sha }}
-        run: |
-          set -e
-          if [ "$USE_ENV_JS" = "true" ]; then
-            [ -n "$VITE_SUPABASE_URL" ] || { echo '❌ Missing VITE_SUPABASE_URL'; exit 1; }
-            [ -n "$VITE_SUPABASE_ANON_KEY" ] || { echo '❌ Missing VITE_SUPABASE_ANON_KEY'; exit 1; }
-            rm -f public/env.js
-            STAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            cat > public/env.js <<EOF
-            window.__env = {
-              SUPABASE_URL: "$VITE_SUPABASE_URL",
-              SUPABASE_ANON_KEY: "$VITE_SUPABASE_ANON_KEY",
-              STAMP: "$STAMP",
-              SHA: "$SHA"
-            };
-            console.log('[ENV]', { STAMP: "$STAMP", SHA: "$SHA" });
-            if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.register('./sw.js?v=$SHA').catch(e => console.error('SW registration failed', e));
-            }
-            EOF
-          else
-            echo 'Skipping env.js generation; using import.meta.env'
-          fi
-          echo "VITE_COMMIT_SHA=$SHA" >> $GITHUB_ENV
-          find . -maxdepth 1 -name '*.html' -exec sed -i "s/%VITE_COMMIT_SHA%/$SHA/g" {} +
-          find public -name '*.html' -exec sed -i "s/%VITE_COMMIT_SHA%/$SHA/g" {} +
-          sed -i "s/%VITE_COMMIT_SHA%/$SHA/g" public/sw.js
+      - name: Replace commit SHA in service worker
+        run: sed -i "s/%VITE_COMMIT_SHA%/${GITHUB_SHA}/g" public/sw.js
 
       - name: Build (Vite, production mode)
         run: npm run build -- --mode production
@@ -84,6 +46,20 @@ jobs:
         run: |
           if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
           cp -r supabase dist/
+
+      - name: Genera env.js per Pages
+        run: |
+          mkdir -p dist
+          cat > dist/env.js <<'EOENV'
+          // Auto-generated at build time. Do NOT commit real keys.
+          (function(){
+            window.__env = {
+              SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
+              SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+            };
+          })();
+          EOENV
+          echo "(function(){window.__buildSha='${GITHUB_SHA}';})();" > dist/build.js
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3

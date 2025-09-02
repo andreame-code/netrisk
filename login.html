@@ -9,6 +9,20 @@
     <link rel="stylesheet" href="./css/components.css" />
     <link rel="stylesheet" href="./css/theme.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        var v = Date.now();
+        document.write('<script src="build.js?v=' + v + '"><\/script>');
+        document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+          console.error('[ENV] Missing keys in env.js');
+        }
+      })();
+    </script>
   </head>
   <body>
     <header class="main-header">
@@ -46,7 +60,6 @@
       <p id="authGuardMessage" role="alert" data-testid="auth-guard-msg"></p>
       <p id="message" role="alert" data-testid="error-msg"></p>
     </main>
-    <script src="./env.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./login.js"></script>
   </body>
