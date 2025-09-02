@@ -1,15 +1,15 @@
-jest.mock("../src/territory-selection.js", () => jest.fn());
-jest.mock("../src/logger.js", () => ({
+jest.mock('../src/territory-selection.js', () => jest.fn());
+jest.mock('../src/logger.js', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
 }));
-jest.mock("../src/move-prompt.js", () => jest.fn());
-jest.mock("../src/navigation.js", () => ({
+jest.mock('../src/move-prompt.js', () => jest.fn());
+jest.mock('../src/navigation.js', () => ({
   navigateTo: jest.fn(),
   exitGame: jest.fn(),
 }));
-jest.mock("../src/audio.js", () => ({
+jest.mock('../src/audio.js', () => ({
   playEffect: jest.fn(),
   preloadEffects: jest.fn(),
   setMasterVolume: jest.fn(),
@@ -22,17 +22,17 @@ jest.mock("../src/audio.js", () => ({
   isMusicEnabled: jest.fn(() => false),
   setLevelMusic: jest.fn(),
 }));
-jest.mock("../src/phases.js", () => ({
+jest.mock('../src/phases.js', () => ({
   REINFORCE: 0,
   ATTACK: 1,
   FORTIFY: 2,
   GAME_OVER: 3,
 }));
-jest.mock("../src/stats.js", () => ({
+jest.mock('../src/stats.js', () => ({
   attachStatsListeners: jest.fn(),
   exportStats: jest.fn(),
 }));
-jest.mock("../src/ui.js", () => ({
+jest.mock('../src/ui.js', () => ({
   initUI: jest.fn(),
   updateInfoPanel: jest.fn(),
   addLogEntry: jest.fn(),
@@ -46,31 +46,29 @@ jest.mock("../src/ui.js", () => ({
   getSelectedCards: jest.fn(() => []),
   exportLog: jest.fn(),
 }));
-jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
-jest.mock("../src/config.js", () => ({ WS_URL: "ws://test" }));
+jest.mock('../src/phase-timer.js', () => jest.fn(() => ({ stop: jest.fn() })));
+jest.mock('../src/config.js', () => ({ WS_URL: 'ws://test' }));
 let mockGame;
-jest.mock("../src/init/game-loader.js", () => ({
-  loadGame: jest.fn(() =>
-    Promise.resolve({ game: mockGame, territoryPositions: {} }),
-  ),
+jest.mock('../src/init/game-loader.js', () => ({
+  loadGame: jest.fn(() => Promise.resolve({ game: mockGame, territoryPositions: {} })),
 }));
-jest.mock("../src/state/storage.js", () => ({
+jest.mock('../src/state/storage.js', () => ({
   updateGameState: jest.fn(),
   clearSavedData: jest.fn(),
   hasSavedPlayers: jest.fn(() => true),
   hasSavedGame: jest.fn(() => true),
-  getMapName: jest.fn(() => "map"),
+  getMapName: jest.fn(() => 'map'),
 }));
-jest.mock("../src/data/level-accessibility.js", () => ({
+jest.mock('../src/data/level-accessibility.js', () => ({
   applyLevelAccessibility: jest.fn(),
 }));
-jest.mock("../src/game/state/index.js", () => ({
+jest.mock('../src/game/state/index.js', () => ({
   gameState: { turnNumber: 1 },
   initGameState: jest.fn(),
 }));
-jest.mock("../src/ai-logging.js", () => jest.fn());
+jest.mock('../src/ai-logging.js', () => jest.fn());
 
-describe("ui-init game start and navigation", () => {
+describe('ui-init game start and navigation', () => {
   let uiInit;
   let ui;
   let navigation;
@@ -80,7 +78,7 @@ describe("ui-init game start and navigation", () => {
     mockGame = {
       on: jest.fn(),
       use: jest.fn(),
-      players: [{ name: "P1", ai: false }],
+      players: [{ name: 'P1', ai: false }],
       currentPlayer: 0,
       getPhase: jest.fn(() => 0),
       performAITurn: jest.fn(),
@@ -98,9 +96,9 @@ describe("ui-init game start and navigation", () => {
       <button id="endTurn"></button>
       <button class="territory" id="t1" data-id="t1"></button>
     `;
-    uiInit = require("../src/ui-init.js");
-    ui = require("../src/ui.js");
-    navigation = require("../src/navigation.js");
+    uiInit = require('../src/ui-init.js');
+    ui = require('../src/ui.js');
+    navigation = require('../src/navigation.js');
     await uiInit.initGame();
   });
 
@@ -108,29 +106,27 @@ describe("ui-init game start and navigation", () => {
     jest.clearAllMocks();
   });
 
-  test("clicking territory triggers victory check", () => {
+  test('clicking territory triggers victory check', () => {
     uiInit.attachTerritoryHandlers();
-    const territory = document.getElementById("t1");
+    const territory = document.getElementById('t1');
     territory.click();
-    expect(mockGame.handleTerritoryClick).toHaveBeenCalledWith("t1");
+    expect(mockGame.handleTerritoryClick).toHaveBeenCalledWith('t1');
     expect(ui.showVictoryModal).toHaveBeenCalledWith(0);
   });
 
-  test("navigation handlers invoke exit and new game", () => {
+  test('navigation handlers invoke exit and new game', () => {
     uiInit.attachNavigationHandlers();
-    document.getElementById("exitGame").click();
+    document.getElementById('exitGame').click();
     expect(navigation.exitGame).toHaveBeenCalled();
 
     navigation.navigateTo.mockClear();
-    const resetBtn = document.getElementById("resetGame");
+    const resetBtn = document.getElementById('resetGame');
     expect(resetBtn).not.toBeNull();
     resetBtn.click();
-    expect(navigation.navigateTo).toHaveBeenCalledWith("setup.html");
+    expect(navigation.navigateTo).toHaveBeenCalledWith('setup.html');
   });
 
-  test("initGame does not show error on success", () => {
-    expect(
-      document.getElementById("loadError").classList.contains("hidden"),
-    ).toBe(true);
+  test('initGame does not show error on success', () => {
+    expect(document.getElementById('loadError').classList.contains('hidden')).toBe(true);
   });
 });

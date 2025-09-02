@@ -1,2 +1,2 @@
-import "./src/modulepreload-polyfill.js";
-import "./src/account.js";
+import './src/modulepreload-polyfill.js';
+import './src/account.js';

@@ -6,10 +6,10 @@ branches:
       required_status_checks:
         strict: true
         contexts:
-          - "Lint / eslint"
-          - "CI / tests"
-          - "CI (Playwright Container) / tests"
-          - "UAT / uat"
+          - 'Lint / eslint'
+          - 'CI / tests'
+          - 'CI (Playwright Container) / tests'
+          - 'UAT / uat'
       allow_force_pushes: false
       restrictions:
         users: []

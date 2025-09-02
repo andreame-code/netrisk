@@ -1,15 +1,11 @@
-import Game from "../src/game.js";
-import {
-  gameState,
-  initGameState,
-  setSelectedTerritory,
-} from "../src/game/state/index.js";
+import Game from '../src/game.js';
+import { gameState, initGameState, setSelectedTerritory } from '../src/game/state/index.js';
 
-test("initGameState synchronizes game properties", () => {
-  const players = [{ name: "A" }, { name: "B" }];
+test('initGameState synchronizes game properties', () => {
+  const players = [{ name: 'A' }, { name: 'B' }];
   const territories = [
-    { id: "t1", neighbors: [], x: 0, y: 0 },
-    { id: "t2", neighbors: [], x: 1, y: 1 },
+    { id: 't1', neighbors: [], x: 0, y: 0 },
+    { id: 't2', neighbors: [], x: 1, y: 1 },
   ];
   const game = new Game(players, territories, [], [], false, false);
   initGameState(game);
@@ -21,11 +17,11 @@ test("initGameState synchronizes game properties", () => {
   expect(snapshot.phase).toBe(game.getPhase());
 });
 
-test("setSelectedTerritory updates selection", () => {
-  const players = [{ name: "A" }, { name: "B" }];
+test('setSelectedTerritory updates selection', () => {
+  const players = [{ name: 'A' }, { name: 'B' }];
   const territories = [
-    { id: "t1", neighbors: [], x: 0, y: 0 },
-    { id: "t2", neighbors: [], x: 1, y: 1 },
+    { id: 't1', neighbors: [], x: 0, y: 0 },
+    { id: 't2', neighbors: [], x: 1, y: 1 },
   ];
   const game = new Game(players, territories, [], [], false, false);
   initGameState(game);

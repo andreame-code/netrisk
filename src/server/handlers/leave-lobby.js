@@ -1,11 +1,7 @@
-import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
+import { broadcast, persistLobby, publicPlayers, loadLobby } from '../utils.js';
 
 export async function handleLeaveLobby(ctx, ws, msg, state) {
-  const lobby = await loadLobby(
-    ctx.lobbies,
-    msg.code,
-    ctx.offlinePlayerTimeout,
-  );
+  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
   const idx = lobby.players.findIndex((p) => p.id === msg.id);
   if (idx === -1) return;
@@ -19,20 +15,20 @@ export async function handleLeaveLobby(ctx, ws, msg, state) {
   }
   await persistLobby(lobby);
   broadcast(lobby, {
-    type: "lobby",
+    type: 'lobby',
     code: lobby.code,
     host: lobby.host,
     players: publicPlayers(lobby),
     map: lobby.map,
   });
-  ws.send(JSON.stringify({ type: "left", code: lobby.code }));
+  ws.send(JSON.stringify({ type: 'left', code: lobby.code }));
   if (lobby.players.length === 0) {
     const timer = setTimeout(async () => {
       const still = ctx.lobbies.get(lobby.code);
       if (still && still.players.length === 0) {
         ctx.lobbies.delete(lobby.code);
         if (ctx.supabase) {
-          await ctx.supabase.from("lobbies").delete().eq("code", lobby.code);
+          await ctx.supabase.from('lobbies').delete().eq('code', lobby.code);
         }
       }
     }, ctx.closeEmptyLobbiesAfter);

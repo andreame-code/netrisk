@@ -1,4 +1,4 @@
-import { REINFORCE } from "./phases.js";
+import { REINFORCE } from './phases.js';
 
 const stats = {
   startTime: 0,
@@ -25,14 +25,14 @@ function attachStatsListeners(game) {
   stats.attacksWon = game.players.map(() => []);
   stats.attacksLost = game.players.map(() => []);
   recordTurn(game);
-  game.on("turnStart", () => {
+  game.on('turnStart', () => {
     recordTurn(game);
   });
   game.on(REINFORCE, ({ player }) => {
     const i = stats.armies[player].length - 1;
     if (i >= 0) stats.armies[player][i] += 1;
   });
-  game.on("attackResolved", ({ result }) => {
+  game.on('attackResolved', ({ result }) => {
     const player = game.currentPlayer;
     const i = stats.attacksWon[player].length - 1;
     if (result.conquered) stats.attacksWon[player][i] += 1;

@@ -1,16 +1,16 @@
-import { GameState, serialize, deserialize } from "../src/game/state/index.js";
-import { REINFORCE } from "../src/phases.js";
+import { GameState, serialize, deserialize } from '../src/game/state/index.js';
+import { REINFORCE } from '../src/phases.js';
 
-test("serialize returns plain object and deserialize hydrates", () => {
+test('serialize returns plain object and deserialize hydrates', () => {
   const gs = new GameState();
-  gs.setSelectedTerritory("t1");
+  gs.setSelectedTerritory('t1');
   const obj = serialize(gs);
   expect(obj).toEqual({
     turnNumber: 1,
     currentPlayer: 0,
     players: [],
     territories: [],
-    selectedTerritory: "t1",
+    selectedTerritory: 't1',
     tokenPosition: null,
     phase: REINFORCE,
     log: [],
@@ -20,6 +20,6 @@ test("serialize returns plain object and deserialize hydrates", () => {
   expect(restored.getSnapshot()).toEqual(obj);
 });
 
-test("deserialize validates structure", () => {
-  expect(() => deserialize({ foo: "bar" })).toThrow();
+test('deserialize validates structure', () => {
+  expect(() => deserialize({ foo: 'bar' })).toThrow();
 });

@@ -6,7 +6,7 @@ export interface Player {
 
 export interface GameState {
   players: Player[];
-  phase: "lobby" | "active";
+  phase: 'lobby' | 'active';
   currentPlayer: string | null;
   log: any[];
 }
@@ -14,7 +14,7 @@ export interface GameState {
 export function initialState(players: Player[]): GameState {
   return {
     players: players.map((p) => ({ id: p.id, name: p.name, color: p.color })),
-    phase: "lobby",
+    phase: 'lobby',
     currentPlayer: null,
     log: [],
   };
@@ -25,12 +25,9 @@ export interface Action {
   [key: string]: any;
 }
 
-export function applyAction(
-  state: GameState,
-  action: Action,
-): { state: GameState; result: any } {
+export function applyAction(state: GameState, action: Action): { state: GameState; result: any } {
   switch (action.type) {
-    case "attack": {
+    case 'attack': {
       const roll = Math.ceil(Math.random() * 6);
       const result = { ...action, roll };
       return {

@@ -1,11 +1,7 @@
-import { broadcast, persistLobby, publicPlayers, loadLobby } from "../utils.js";
+import { broadcast, persistLobby, publicPlayers, loadLobby } from '../utils.js';
 
 export async function handleReconnect(ctx, ws, msg, state) {
-  const lobby = await loadLobby(
-    ctx.lobbies,
-    msg.code,
-    ctx.offlinePlayerTimeout,
-  );
+  const lobby = await loadLobby(ctx.lobbies, msg.code, ctx.offlinePlayerTimeout);
   if (!lobby) return;
   const player = lobby.players.find((p) => p.id === msg.id);
   if (!player) return;
@@ -17,7 +13,7 @@ export async function handleReconnect(ctx, ws, msg, state) {
   await persistLobby(lobby);
   ws.send(
     JSON.stringify({
-      type: "reconnected",
+      type: 'reconnected',
       code: lobby.code,
       player: {
         id: player.id,
@@ -30,7 +26,7 @@ export async function handleReconnect(ctx, ws, msg, state) {
     }),
   );
   broadcast(lobby, {
-    type: "lobby",
+    type: 'lobby',
     code: lobby.code,
     host: lobby.host,
     players: publicPlayers(lobby),

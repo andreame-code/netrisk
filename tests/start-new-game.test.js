@@ -1,17 +1,17 @@
-jest.mock("../src/navigation.js", () => ({
+jest.mock('../src/navigation.js', () => ({
   navigateTo: jest.fn(),
   exitGame: jest.fn(),
 }));
 
-jest.mock("../src/state/storage.js", () => ({
+jest.mock('../src/state/storage.js', () => ({
   clearSavedData: jest.fn(),
   hasSavedPlayers: jest.fn(() => true),
   hasSavedGame: jest.fn(() => true),
   updateGameState: jest.fn(),
-  getMapName: jest.fn(() => "map"),
+  getMapName: jest.fn(() => 'map'),
 }));
 
-jest.mock("../src/ui.js", () => ({
+jest.mock('../src/ui.js', () => ({
   initUI: jest.fn(),
   updateInfoPanel: jest.fn(),
   addLogEntry: jest.fn(),
@@ -26,13 +26,13 @@ jest.mock("../src/ui.js", () => ({
   exportLog: jest.fn(),
 }));
 
-jest.mock("../src/init/game-loader.js", () => ({
+jest.mock('../src/init/game-loader.js', () => ({
   loadGame: jest.fn(() =>
     Promise.resolve({
       game: {
         on: jest.fn(),
         use: jest.fn(),
-        players: [{ ai: false, name: "p1" }],
+        players: [{ ai: false, name: 'p1' }],
         currentPlayer: 0,
         getPhase: jest.fn(() => 0),
         performAITurn: jest.fn(),
@@ -43,22 +43,22 @@ jest.mock("../src/init/game-loader.js", () => ({
   ),
 }));
 
-jest.mock("../src/phase-timer.js", () => jest.fn(() => ({ stop: jest.fn() })));
+jest.mock('../src/phase-timer.js', () => jest.fn(() => ({ stop: jest.fn() })));
 
-jest.mock("../src/stats.js", () => ({
+jest.mock('../src/stats.js', () => ({
   attachStatsListeners: jest.fn(),
   exportStats: jest.fn(),
 }));
 
-jest.mock("../src/tutorial.js", () => ({ initTutorialButtons: jest.fn() }));
+jest.mock('../src/tutorial.js', () => ({ initTutorialButtons: jest.fn() }));
 
-jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
+jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 
-jest.mock("../src/move-prompt.js", () => jest.fn());
+jest.mock('../src/move-prompt.js', () => jest.fn());
 
-jest.mock("../src/territory-selection.js", () => jest.fn());
+jest.mock('../src/territory-selection.js', () => jest.fn());
 
-jest.mock("../src/audio.js", () => ({
+jest.mock('../src/audio.js', () => ({
   playEffect: jest.fn(),
   preloadEffects: jest.fn(),
   setMasterVolume: jest.fn(),
@@ -72,12 +72,12 @@ jest.mock("../src/audio.js", () => ({
   setLevelMusic: jest.fn(),
 }));
 
-jest.mock("../src/game/state/index.js", () => ({
+jest.mock('../src/game/state/index.js', () => ({
   gameState: {},
   initGameState: jest.fn(),
 }));
 
-jest.mock("../src/logger.js", () => ({
+jest.mock('../src/logger.js', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
@@ -86,27 +86,27 @@ jest.mock("../src/logger.js", () => ({
 document.body.innerHTML =
   '<div id="uiPanel"></div><button id="exitGame"></button><button id="endTurn"></button>';
 
-const { startNewGame } = require("../src/main.js");
-const { navigateTo } = require("../src/navigation.js");
+const { startNewGame } = require('../src/main.js');
+const { navigateTo } = require('../src/navigation.js');
 
-describe("startNewGame navigation", () => {
+describe('startNewGame navigation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const url = new URL(window.location.href);
-    url.search = "";
-    window.history.replaceState({}, "", url);
+    url.search = '';
+    window.history.replaceState({}, '', url);
   });
 
-  test("navigates to setup in single-player", () => {
+  test('navigates to setup in single-player', () => {
     startNewGame();
-    expect(navigateTo).toHaveBeenCalledWith("setup.html");
+    expect(navigateTo).toHaveBeenCalledWith('setup.html');
   });
 
-  test("navigates to lobby in multiplayer", () => {
+  test('navigates to lobby in multiplayer', () => {
     const url = new URL(window.location.href);
-    url.search = "?multiplayer=1";
-    window.history.replaceState({}, "", url);
+    url.search = '?multiplayer=1';
+    window.history.replaceState({}, '', url);
     startNewGame();
-    expect(navigateTo).toHaveBeenCalledWith("lobby.html");
+    expect(navigateTo).toHaveBeenCalledWith('lobby.html');
   });
 });

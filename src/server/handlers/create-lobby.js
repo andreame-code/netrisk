@@ -1,8 +1,8 @@
-import { persistLobby, publicPlayers } from "../utils.js";
+import { persistLobby, publicPlayers } from '../utils.js';
 
 export async function handleCreateLobby(ctx, ws, msg, state) {
   if (msg.map && !ctx.isValidMap(msg.map)) {
-    ws.send(JSON.stringify({ type: "error", error: "invalidMap" }));
+    ws.send(JSON.stringify({ type: 'error', error: 'invalidMap' }));
     return;
   }
   const code = ctx.createCode();
@@ -30,7 +30,7 @@ export async function handleCreateLobby(ctx, ws, msg, state) {
   await persistLobby(lobby);
   ws.send(
     JSON.stringify({
-      type: "lobby",
+      type: 'lobby',
       code,
       host: player.id,
       players: publicPlayers(lobby),

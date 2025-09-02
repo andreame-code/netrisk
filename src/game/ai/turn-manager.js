@@ -1,11 +1,11 @@
-import { attackSuccessProbability, territoryPriority } from "./index.js";
-import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "../../phases.js";
+import { attackSuccessProbability, territoryPriority } from './index.js';
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from '../../phases.js';
 
 function getProfile(player) {
   const diffSettings = {
-    easy: { attackThreshold: 0.8, target: "random", card: 0.5 },
-    normal: { attackThreshold: 0.6, target: "best", card: 1 },
-    hard: { attackThreshold: 0.5, target: "best", card: 1 },
+    easy: { attackThreshold: 0.8, target: 'random', card: 0.5 },
+    normal: { attackThreshold: 0.6, target: 'best', card: 1 },
+    hard: { attackThreshold: 0.5, target: 'best', card: 1 },
   };
   const styleMod = {
     aggressive: -0.1,
@@ -13,12 +13,9 @@ function getProfile(player) {
     balanced: 0,
   };
   const difficulty = diffSettings[player.difficulty] || diffSettings.normal;
-  const style = player.style || "balanced";
+  const style = player.style || 'balanced';
   return {
-    attackThreshold: Math.max(
-      0,
-      difficulty.attackThreshold + (styleMod[style] || 0),
-    ),
+    attackThreshold: Math.max(0, difficulty.attackThreshold + (styleMod[style] || 0)),
     target: difficulty.target,
     card: difficulty.card,
     style,
@@ -36,9 +33,7 @@ export function performAITurn(game) {
 
   // Reinforce prioritizing territories
   while (game.reinforcements > 0) {
-    const owned = game.territories.filter(
-      (t) => t.owner === game.currentPlayer,
-    );
+    const owned = game.territories.filter((t) => t.owner === game.currentPlayer);
     if (owned.length === 0) break;
     const target = owned.reduce((best, t) => {
       const score = territoryPriority(game, t, profile);
@@ -50,7 +45,7 @@ export function performAITurn(game) {
   }
   if (game.phase === REINFORCE && game.reinforcements === 0) {
     game.phase = ATTACK;
-    game.emit("phaseChange", { phase: game.phase, player: game.currentPlayer });
+    game.emit('phaseChange', { phase: game.phase, player: game.currentPlayer });
   }
 
   // Attack while probabilities favorable
@@ -71,7 +66,7 @@ export function performAITurn(game) {
     const candidates = options.filter((o) => o.prob >= profile.attackThreshold);
     if (candidates.length === 0) break;
     let choice;
-    if (profile.target === "random") {
+    if (profile.target === 'random') {
       choice = candidates[Math.floor(Math.random() * candidates.length)];
     } else {
       candidates.sort((a, b) => b.prob - a.prob);
@@ -86,17 +81,14 @@ export function performAITurn(game) {
   game.endTurn();
   if (game.phase === FORTIFY) {
     let best = null;
-    const aiOwned = game.territories.filter(
-      (t) => t.owner === game.currentPlayer,
-    );
+    const aiOwned = game.territories.filter((t) => t.owner === game.currentPlayer);
     aiOwned.forEach((from) => {
       if (from.armies > 1) {
         from.neighbors.forEach((n) => {
           const to = game.territoryById(n);
           if (to.owner === game.currentPlayer) {
             const diff =
-              territoryPriority(game, to, profile) -
-              territoryPriority(game, from, profile);
+              territoryPriority(game, to, profile) - territoryPriority(game, from, profile);
             if (!best || diff > best.diff) best = { from, to, diff };
           }
         });

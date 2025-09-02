@@ -5,10 +5,7 @@ function askArmiesToMove(max, min = 0) {
       return;
     }
 
-    const input = window.prompt(
-      `How many armies to move? (${min}-${max})`,
-      String(max),
-    );
+    const input = window.prompt(`How many armies to move? (${min}-${max})`, String(max));
 
     if (input === null) {
       resolve(0);

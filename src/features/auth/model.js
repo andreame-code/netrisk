@@ -1,7 +1,4 @@
-import {
-  currentUserInputSchema,
-  logoutInputSchema,
-} from "../../shared/ports/auth";
+import { currentUserInputSchema, logoutInputSchema } from '../../shared/ports/auth';
 
 export function createAuthModel(authPort) {
   return {

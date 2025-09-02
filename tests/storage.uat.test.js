@@ -3,7 +3,7 @@ import {
   listSavedGames,
   renameSavedGame,
   deleteSavedGame,
-} from "../src/state/storage.js";
+} from '../src/state/storage.js';
 
 class DummyGame {
   constructor(state) {
@@ -15,7 +15,7 @@ class DummyGame {
   }
 }
 
-describe("storage UAT", () => {
+describe('storage UAT', () => {
   beforeEach(() => {
     global.localStorage = {
       store: {},
@@ -29,7 +29,7 @@ describe("storage UAT", () => {
         delete this.store[key];
       },
     };
-    jest.spyOn(Date, "now").mockReturnValue(123);
+    jest.spyOn(Date, 'now').mockReturnValue(123);
   });
 
   afterEach(() => {
@@ -37,19 +37,15 @@ describe("storage UAT", () => {
     delete global.localStorage;
   });
 
-  test("saves, lists, renames and deletes games", () => {
+  test('saves, lists, renames and deletes games', () => {
     const game = new DummyGame({ turn: 7 });
-    saveNamedGame("slot1", game, { map: "map1" });
-    expect(listSavedGames()).toEqual([
-      { name: "slot1", map: "map1", savedAt: 123, turn: 7 },
-    ]);
+    saveNamedGame('slot1', game, { map: 'map1' });
+    expect(listSavedGames()).toEqual([{ name: 'slot1', map: 'map1', savedAt: 123, turn: 7 }]);
 
-    renameSavedGame("slot1", "slot2");
-    expect(listSavedGames()).toEqual([
-      { name: "slot2", map: "map1", savedAt: 123, turn: 7 },
-    ]);
+    renameSavedGame('slot1', 'slot2');
+    expect(listSavedGames()).toEqual([{ name: 'slot2', map: 'map1', savedAt: 123, turn: 7 }]);
 
-    deleteSavedGame("slot2");
+    deleteSavedGame('slot2');
     expect(listSavedGames()).toEqual([]);
   });
 });

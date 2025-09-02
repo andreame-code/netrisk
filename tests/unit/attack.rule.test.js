@@ -1,26 +1,26 @@
-import attack from "../../src/game/rules/attack.js";
+import attack from '../../src/game/rules/attack.js';
 
-describe("attack rule", () => {
+describe('attack rule', () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  test("attacker wins without conquest", () => {
+  test('attacker wins without conquest', () => {
     const state = {
       territories: [
-        { id: "a", owner: 0, armies: 2 },
-        { id: "b", owner: 1, armies: 2 },
+        { id: 'a', owner: 0, armies: 2 },
+        { id: 'b', owner: 1, armies: 2 },
       ],
     };
     jest
-      .spyOn(Math, "random")
+      .spyOn(Math, 'random')
       .mockReturnValueOnce(0.9) // attacker roll 6
       .mockReturnValueOnce(0.5) // defender roll 3
       .mockReturnValueOnce(0.6); // defender roll 4
 
-    const { state: newState, result } = attack(state, "a", "b");
-    const from = newState.territories.find((t) => t.id === "a");
-    const to = newState.territories.find((t) => t.id === "b");
+    const { state: newState, result } = attack(state, 'a', 'b');
+    const from = newState.territories.find((t) => t.id === 'a');
+    const to = newState.territories.find((t) => t.id === 'b');
 
     expect(from.armies).toBe(2);
     expect(to.armies).toBe(1);
@@ -32,21 +32,21 @@ describe("attack rule", () => {
     expect(result.defendRolls).toEqual([4, 3]);
   });
 
-  test("defender wins", () => {
+  test('defender wins', () => {
     const state = {
       territories: [
-        { id: "a", owner: 0, armies: 2 },
-        { id: "b", owner: 1, armies: 1 },
+        { id: 'a', owner: 0, armies: 2 },
+        { id: 'b', owner: 1, armies: 1 },
       ],
     };
     jest
-      .spyOn(Math, "random")
+      .spyOn(Math, 'random')
       .mockReturnValueOnce(0.2) // attacker roll 2
       .mockReturnValueOnce(0.9); // defender roll 6
 
-    const { state: newState, result } = attack(state, "a", "b");
-    const from = newState.territories.find((t) => t.id === "a");
-    const to = newState.territories.find((t) => t.id === "b");
+    const { state: newState, result } = attack(state, 'a', 'b');
+    const from = newState.territories.find((t) => t.id === 'a');
+    const to = newState.territories.find((t) => t.id === 'b');
 
     expect(from.armies).toBe(1);
     expect(to.armies).toBe(1);
@@ -58,22 +58,22 @@ describe("attack rule", () => {
     expect(result.defendRolls).toEqual([6]);
   });
 
-  test("conquers territory", () => {
+  test('conquers territory', () => {
     const state = {
       territories: [
-        { id: "a", owner: 0, armies: 3 },
-        { id: "b", owner: 1, armies: 1 },
+        { id: 'a', owner: 0, armies: 3 },
+        { id: 'b', owner: 1, armies: 1 },
       ],
     };
     jest
-      .spyOn(Math, "random")
+      .spyOn(Math, 'random')
       .mockReturnValueOnce(0.9) // attacker roll 6
       .mockReturnValueOnce(0.8) // attacker roll 5
       .mockReturnValueOnce(0.2); // defender roll 2
 
-    const { state: newState, result } = attack(state, "a", "b");
-    const from = newState.territories.find((t) => t.id === "a");
-    const to = newState.territories.find((t) => t.id === "b");
+    const { state: newState, result } = attack(state, 'a', 'b');
+    const from = newState.territories.find((t) => t.id === 'a');
+    const to = newState.territories.find((t) => t.id === 'b');
 
     expect(from.armies).toBe(2);
     expect(to.armies).toBe(1);

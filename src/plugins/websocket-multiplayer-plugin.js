@@ -1,5 +1,5 @@
 /* eslint-env browser */
-import Game from "../game.js";
+import Game from '../game.js';
 
 export default function createWebSocketMultiplayer(url) {
   return (game) => {
@@ -11,7 +11,7 @@ export default function createWebSocketMultiplayer(url) {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(
           JSON.stringify({
-            type: "state",
+            type: 'state',
             state: game.serialize(),
             event,
             payload,
@@ -22,16 +22,16 @@ export default function createWebSocketMultiplayer(url) {
 
     game.emit = (event, payload) => {
       const result = originalEmit(event, payload);
-      if (event !== "stateUpdated") {
+      if (event !== 'stateUpdated') {
         sync(event, payload);
       }
       return result;
     };
 
-    ws.addEventListener("open", () => sync());
-    ws.addEventListener("message", (event) => {
+    ws.addEventListener('open', () => sync());
+    ws.addEventListener('message', (event) => {
       const msg = JSON.parse(event.data);
-      if (msg.type === "state") {
+      if (msg.type === 'state') {
         const preserved = game.events;
         const updated = Game.deserialize(msg.state);
         Object.assign(game, {
@@ -49,10 +49,10 @@ export default function createWebSocketMultiplayer(url) {
           winner: updated.winner,
         });
         game.events = preserved;
-        if (msg.event && msg.event !== "stateUpdated") {
+        if (msg.event && msg.event !== 'stateUpdated') {
           originalEmit(msg.event, msg.payload);
         }
-        originalEmit("stateUpdated", { player: game.currentPlayer });
+        originalEmit('stateUpdated', { player: game.currentPlayer });
       }
     });
   };

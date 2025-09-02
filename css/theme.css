@@ -1,6 +1,5 @@
 body {
-  background: #e8dcc0
-    url("https://www.transparenttextures.com/patterns/aged-paper.png");
+  background: #e8dcc0 url('https://www.transparenttextures.com/patterns/aged-paper.png');
   color: #3b2b16;
   text-align: center;
 }

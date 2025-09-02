@@ -1,5 +1,5 @@
-import initPhaseTimer from "../src/phase-timer.js";
-import EventBus from "../src/core/event-bus.js";
+import initPhaseTimer from '../src/phase-timer.js';
+import EventBus from '../src/core/event-bus.js';
 
 jest.useFakeTimers();
 
@@ -16,22 +16,22 @@ function createGame() {
   };
 }
 
-test("displays countdown each second", () => {
+test('displays countdown each second', () => {
   document.body.innerHTML = '<div id="phaseTimer"></div>';
   const game = createGame();
   initPhaseTimer({ game, duration: 3000 });
 
-  const display = document.getElementById("phaseTimer");
-  expect(display.textContent).toBe("3");
+  const display = document.getElementById('phaseTimer');
+  expect(display.textContent).toBe('3');
   jest.advanceTimersByTime(1000);
-  expect(display.textContent).toBe("2");
+  expect(display.textContent).toBe('2');
   jest.advanceTimersByTime(1000);
-  expect(display.textContent).toBe("1");
+  expect(display.textContent).toBe('1');
   jest.advanceTimersByTime(1000);
-  expect(display.textContent).toBe("0");
+  expect(display.textContent).toBe('0');
 });
 
-test("invokes onTimeout when time elapses", () => {
+test('invokes onTimeout when time elapses', () => {
   document.body.innerHTML = '<div id="phaseTimer"></div>';
   const game = createGame();
   const onTimeout = jest.fn();
@@ -41,7 +41,7 @@ test("invokes onTimeout when time elapses", () => {
   expect(onTimeout).toHaveBeenCalled();
 });
 
-test("stop prevents countdown and timeout", () => {
+test('stop prevents countdown and timeout', () => {
   document.body.innerHTML = '<div id="phaseTimer"></div>';
   const game = createGame();
   const timer = initPhaseTimer({ game, duration: 3000 });
@@ -50,5 +50,5 @@ test("stop prevents countdown and timeout", () => {
   jest.advanceTimersByTime(5000);
 
   expect(game.endTurn).not.toHaveBeenCalled();
-  expect(document.getElementById("phaseTimer").textContent).toBe("3");
+  expect(document.getElementById('phaseTimer').textContent).toBe('3');
 });

@@ -1,28 +1,28 @@
-import Game from "../src/game.js";
-import { REINFORCE, ATTACK, FORTIFY } from "../src/phases.js";
+import Game from '../src/game.js';
+import { REINFORCE, ATTACK, FORTIFY } from '../src/phases.js';
 
-describe("phase flow", () => {
+describe('phase flow', () => {
   let game;
   let phaseHandler;
   let turnStartHandler;
 
   beforeEach(() => {
     const players = [
-      { name: "P1", color: "red" },
-      { name: "P2", color: "blue" },
+      { name: 'P1', color: 'red' },
+      { name: 'P2', color: 'blue' },
     ];
     const territories = [
-      { id: "a", neighbors: ["b"], owner: 0, armies: 3 },
-      { id: "b", neighbors: ["a"], owner: 1, armies: 3 },
+      { id: 'a', neighbors: ['b'], owner: 0, armies: 3 },
+      { id: 'b', neighbors: ['a'], owner: 1, armies: 3 },
     ];
     game = new Game(players, territories, [], [], false);
     phaseHandler = jest.fn();
     turnStartHandler = jest.fn();
-    game.on("phaseChange", phaseHandler);
-    game.on("turnStart", turnStartHandler);
+    game.on('phaseChange', phaseHandler);
+    game.on('turnStart', turnStartHandler);
   });
 
-  test("setup -> reinforce -> attack -> fortify -> endTurn", () => {
+  test('setup -> reinforce -> attack -> fortify -> endTurn', () => {
     // setup starts in reinforce phase
     expect(game.phase).toBe(REINFORCE);
     game.endTurn(); // unavailable in reinforce
@@ -32,11 +32,11 @@ describe("phase flow", () => {
 
     // reinforce: attack not available
     const bBefore = game.territories[1].armies;
-    expect(game.handleTerritoryClick("b")).toBeNull();
+    expect(game.handleTerritoryClick('b')).toBeNull();
     expect(game.territories[1].armies).toBe(bBefore);
-    game.handleTerritoryClick("a");
-    game.handleTerritoryClick("a");
-    game.handleTerritoryClick("a");
+    game.handleTerritoryClick('a');
+    game.handleTerritoryClick('a');
+    game.handleTerritoryClick('a');
     expect(game.phase).toBe(ATTACK);
     expect(phaseHandler).toHaveBeenNthCalledWith(1, {
       phase: ATTACK,
@@ -45,8 +45,8 @@ describe("phase flow", () => {
 
     // attack: reinforce not available
     const armiesBefore = game.territories[0].armies;
-    const res = game.handleTerritoryClick("a");
-    expect(res).toEqual({ type: "select", territory: "a" });
+    const res = game.handleTerritoryClick('a');
+    expect(res).toEqual({ type: 'select', territory: 'a' });
     expect(game.territories[0].armies).toBe(armiesBefore);
     game.endTurn();
     expect(game.phase).toBe(FORTIFY);
@@ -56,11 +56,11 @@ describe("phase flow", () => {
     });
 
     // fortify: attack not available
-    expect(game.handleTerritoryClick("a")).toEqual({
-      type: "select",
-      territory: "a",
+    expect(game.handleTerritoryClick('a')).toEqual({
+      type: 'select',
+      territory: 'a',
     });
-    expect(game.handleTerritoryClick("b")).toBeNull();
+    expect(game.handleTerritoryClick('b')).toBeNull();
     const prevPlayer = game.currentPlayer;
     game.endTurn();
     expect(game.currentPlayer).toBe((prevPlayer + 1) % 2);

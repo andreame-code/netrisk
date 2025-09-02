@@ -1,12 +1,10 @@
-import playCard from "../../src/game/rules/play-card.js";
+import playCard from '../../src/game/rules/play-card.js';
 
-describe("playCard", () => {
-  test("awards +5 reinforcements for three of the same type", () => {
+describe('playCard', () => {
+  test('awards +5 reinforcements for three of the same type', () => {
     const state = {
       currentPlayer: 0,
-      hands: [
-        [{ type: "infantry" }, { type: "infantry" }, { type: "infantry" }],
-      ],
+      hands: [[{ type: 'infantry' }, { type: 'infantry' }, { type: 'infantry' }]],
       reinforcements: 0,
     };
 
@@ -16,12 +14,10 @@ describe("playCard", () => {
     expect(result.state.reinforcements).toBe(5);
   });
 
-  test("awards +5 reinforcements for one of each type", () => {
+  test('awards +5 reinforcements for one of each type', () => {
     const state = {
       currentPlayer: 0,
-      hands: [
-        [{ type: "infantry" }, { type: "cavalry" }, { type: "artillery" }],
-      ],
+      hands: [[{ type: 'infantry' }, { type: 'cavalry' }, { type: 'artillery' }]],
       reinforcements: 0,
     };
 
@@ -31,12 +27,10 @@ describe("playCard", () => {
     expect(result.state.reinforcements).toBe(5);
   });
 
-  test("returns played false for duplicates or missing cards", () => {
+  test('returns played false for duplicates or missing cards', () => {
     const state = {
       currentPlayer: 0,
-      hands: [
-        [{ type: "infantry" }, { type: "infantry" }, { type: "cavalry" }],
-      ],
+      hands: [[{ type: 'infantry' }, { type: 'infantry' }, { type: 'cavalry' }]],
       reinforcements: 0,
     };
 

@@ -1,9 +1,6 @@
-import { listLobbiesInputSchema } from "../../shared/ports/lobby";
-import { currentUserInputSchema } from "../../shared/ports/auth";
-import {
-  subscribeInputSchema,
-  unsubscribeInputSchema,
-} from "../../shared/ports/realtime";
+import { listLobbiesInputSchema } from '../../shared/ports/lobby';
+import { currentUserInputSchema } from '../../shared/ports/auth';
+import { subscribeInputSchema, unsubscribeInputSchema } from '../../shared/ports/realtime';
 
 export function createLobbyModel({ lobbyPort, authPort, realtimePort }) {
   return {
@@ -27,10 +24,10 @@ export function createLobbyModel({ lobbyPort, authPort, realtimePort }) {
     async subscribeToLobbyChanges(handler) {
       if (!realtimePort) return { unsubscribe: () => {} };
       const input = subscribeInputSchema.parse({
-        channel: "public:lobbies",
-        event: "*",
-        schema: "public",
-        table: "lobbies",
+        channel: 'public:lobbies',
+        event: '*',
+        schema: 'public',
+        table: 'lobbies',
         callback: handler,
       });
       const { subscriptionId } = await realtimePort.subscribe(input);

@@ -1,13 +1,13 @@
-import { attachStatsListeners, getStats } from "../src/stats.js";
-import { REINFORCE } from "../src/phases.js";
+import { attachStatsListeners, getStats } from '../src/stats.js';
+import { REINFORCE } from '../src/phases.js';
 
-describe("stats tracking", () => {
-  test("records armies and attacks per turn", () => {
+describe('stats tracking', () => {
+  test('records armies and attacks per turn', () => {
     const game = {
       players: [{}, {}],
       territories: [
-        { id: "a", owner: 0 },
-        { id: "b", owner: 1 },
+        { id: 'a', owner: 0 },
+        { id: 'b', owner: 1 },
       ],
       currentPlayer: 0,
       handlers: {},
@@ -21,8 +21,8 @@ describe("stats tracking", () => {
     };
     attachStatsListeners(game);
     game.emit(REINFORCE, { player: 0 });
-    game.emit("attackResolved", { result: { conquered: true } });
-    game.emit("turnStart");
+    game.emit('attackResolved', { result: { conquered: true } });
+    game.emit('turnStart');
     const s = getStats();
     expect(s.armies[0][0]).toBe(1);
     expect(s.attacksWon[0][0]).toBe(1);

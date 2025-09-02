@@ -1,5 +1,5 @@
-import initTerritorySelection from "./territory-selection.js";
-import * as logger from "./logger.js";
+import initTerritorySelection from './territory-selection.js';
+import * as logger from './logger.js';
 import {
   playEffect,
   preloadEffects,
@@ -12,11 +12,11 @@ import {
   setMusicEnabled,
   isMusicEnabled,
   setLevelMusic,
-} from "./audio.js";
-import askArmiesToMove from "./move-prompt.js";
-import { navigateTo, exitGame } from "./navigation.js";
-import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from "./phases.js";
-import { attachStatsListeners, exportStats } from "./stats.js";
+} from './audio.js';
+import askArmiesToMove from './move-prompt.js';
+import { navigateTo, exitGame } from './navigation.js';
+import { REINFORCE, ATTACK, FORTIFY, GAME_OVER } from './phases.js';
+import { attachStatsListeners, exportStats } from './stats.js';
 import {
   initUI,
   updateInfoPanel,
@@ -31,44 +31,44 @@ import {
   getSelectedCards,
   exportLog,
   getElement,
-} from "./ui.js";
-import initPhaseTimer from "./phase-timer.js";
-import { WS_URL } from "./config.js";
-import { loadGame as loadGameData } from "./init/game-loader.js";
+} from './ui.js';
+import initPhaseTimer from './phase-timer.js';
+import { WS_URL } from './config.js';
+import { loadGame as loadGameData } from './init/game-loader.js';
 import {
   updateGameState,
   clearSavedData,
   hasSavedPlayers,
   hasSavedGame,
   getMapName,
-} from "./state/storage.js";
-import { applyLevelAccessibility } from "./data/level-accessibility.js";
-import { gameState, initGameState } from "./game/state/index.js";
-import attachAIActionLogging from "./ai-logging.js";
+} from './state/storage.js';
+import { applyLevelAccessibility } from './data/level-accessibility.js';
+import { gameState, initGameState } from './game/state/index.js';
+import attachAIActionLogging from './ai-logging.js';
 
 let game;
 let territoryPositions = {};
 let phaseTimer;
 
-const loadErrorEl = document.getElementById("loadError");
-const loadErrorMsg = document.getElementById("loadErrorMsg");
-const retryBtn = document.getElementById("retryLoad");
+const loadErrorEl = document.getElementById('loadError');
+const loadErrorMsg = document.getElementById('loadErrorMsg');
+const retryBtn = document.getElementById('retryLoad');
 let retryAction = () => loadGame();
 
 function showLoadError(
-  message = "Impossibile caricare i dati di gioco. Riprova.",
+  message = 'Impossibile caricare i dati di gioco. Riprova.',
   action = () => loadGame(),
 ) {
   if (loadErrorEl && loadErrorMsg) {
     loadErrorMsg.textContent = message;
-    loadErrorEl.classList.remove("hidden");
+    loadErrorEl.classList.remove('hidden');
     retryAction = action;
   }
 }
 
 if (retryBtn) {
-  retryBtn.addEventListener("click", () => {
-    if (loadErrorEl) loadErrorEl.classList.add("hidden");
+  retryBtn.addEventListener('click', () => {
+    if (loadErrorEl) loadErrorEl.classList.add('hidden');
     retryAction();
   });
 }
@@ -76,30 +76,29 @@ if (retryBtn) {
 function handleImageError(event) {
   const img = event?.target;
   if (!img) return;
-  showLoadError(
-    "Impossibile caricare alcuni elementi del gioco. Riprova.",
-    () => location.reload(),
+  showLoadError('Impossibile caricare alcuni elementi del gioco. Riprova.', () =>
+    location.reload(),
   );
   if (!img.dataset.retry) {
-    img.dataset.retry = "1";
+    img.dataset.retry = '1';
     img.addEventListener(
-      "load",
+      'load',
       () => {
-        if (loadErrorEl) loadErrorEl.classList.add("hidden");
+        if (loadErrorEl) loadErrorEl.classList.add('hidden');
       },
       { once: true },
     );
     setTimeout(() => {
-      const sep = img.src.includes("?") ? "&" : "?";
+      const sep = img.src.includes('?') ? '&' : '?';
       img.src = `${img.src}${sep}retry=${Date.now()}`;
     }, 1000);
   }
 }
 
 window.addEventListener(
-  "error",
+  'error',
   (e) => {
-    if (e?.target?.tagName === "IMG") {
+    if (e?.target?.tagName === 'IMG') {
       handleImageError(e);
     }
   },
@@ -114,21 +113,18 @@ function checkForVictory() {
 }
 
 async function startNewGame() {
-  const modal = document.getElementById("victoryModal");
-  if (modal) modal.classList.remove("show");
+  const modal = document.getElementById('victoryModal');
+  if (modal) modal.classList.remove('show');
   clearSavedData();
-  if (phaseTimer && typeof phaseTimer.stop === "function") {
+  if (phaseTimer && typeof phaseTimer.stop === 'function') {
     phaseTimer.stop();
   }
   destroyUI();
-  const params =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
-      : null;
-  if (params && params.get("multiplayer")) {
-    navigateTo("lobby.html");
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  if (params && params.get('multiplayer')) {
+    navigateTo('lobby.html');
   } else {
-    navigateTo("setup.html");
+    navigateTo('setup.html');
   }
 }
 
@@ -146,12 +142,12 @@ async function loadGame() {
       showLoadError();
       return;
     }
-    if (loadErrorEl) loadErrorEl.classList.add("hidden");
+    if (loadErrorEl) loadErrorEl.classList.add('hidden');
     game = result.game;
     territoryPositions = result.territoryPositions;
     attachStatsListeners(game);
     initialiseUI(game);
-    if (typeof module !== "undefined") {
+    if (typeof module !== 'undefined') {
       module.exports.game = game;
       module.exports.territoryPositions = territoryPositions;
     }
@@ -171,8 +167,8 @@ function runAI() {
 }
 
 function attachTerritoryHandlers() {
-  document.querySelectorAll(".territory").forEach((el) => {
-    el.addEventListener("click", async () => {
+  document.querySelectorAll('.territory').forEach((el) => {
+    el.addEventListener('click', async () => {
       logger.info(`Territory clicked: ${el.dataset.id}`);
       try {
         const prevPlayer = game.currentPlayer;
@@ -180,84 +176,55 @@ function attachTerritoryHandlers() {
         if (result) {
           const playerName = game.players[prevPlayer].name;
           if (result.type === ATTACK) {
-            logger.info(
-              `${playerName} attacks ${result.to} from ${result.from}`,
-            );
+            logger.info(`${playerName} attacks ${result.to} from ${result.from}`);
             const fromEl = getElement(result.from);
             const toEl = getElement(result.to);
-            fromEl.classList.add(
-              "attack",
-              "animate__animated",
-              "animate__shakeX",
-            );
-            toEl.classList.add(
-              "attack",
-              "animate__animated",
-              "animate__shakeX",
-            );
+            fromEl.classList.add('attack', 'animate__animated', 'animate__shakeX');
+            toEl.classList.add('attack', 'animate__animated', 'animate__shakeX');
             setTimeout(() => {
-              fromEl.classList.remove(
-                "attack",
-                "animate__animated",
-                "animate__shakeX",
-              );
-              toEl.classList.remove(
-                "attack",
-                "animate__animated",
-                "animate__shakeX",
-              );
+              fromEl.classList.remove('attack', 'animate__animated', 'animate__shakeX');
+              toEl.classList.remove('attack', 'animate__animated', 'animate__shakeX');
             }, 500);
-            document.getElementById("diceResults").textContent =
-              `Attacker: ${result.attackRolls.join(", ")} | Defender: ${result.defendRolls.join(", ")}`;
+            document.getElementById('diceResults').textContent =
+              `Attacker: ${result.attackRolls.join(', ')} | Defender: ${result.defendRolls.join(', ')}`;
             if (result.conquered) {
-              toEl.classList.add("conquer");
-              setTimeout(() => toEl.classList.remove("conquer"), 1000);
+              toEl.classList.add('conquer');
+              setTimeout(() => toEl.classList.remove('conquer'), 1000);
               const move = await askArmiesToMove(result.movableArmies, 0);
               if (move > 0) {
                 game.moveArmies(result.from, result.to, move);
-                addLogEntry(
-                  `${playerName} moves ${move} from ${result.from} to ${result.to}`,
-                  {
-                    player: playerName,
-                    type: "move",
-                    territories: [result.from, result.to],
-                  },
-                );
+                addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                  player: playerName,
+                  type: 'move',
+                  territories: [result.from, result.to],
+                });
                 animateMove(result.from, result.to);
               }
             }
             animateAttack(result.from, result.to);
-            addLogEntry(
-              `${playerName} attacks ${result.to} from ${result.from}`,
-              {
-                player: playerName,
-                type: "attack",
-                territories: [result.from, result.to],
-              },
-            );
+            addLogEntry(`${playerName} attacks ${result.to} from ${result.from}`, {
+              player: playerName,
+              type: 'attack',
+              territories: [result.from, result.to],
+            });
           } else if (result.type === REINFORCE) {
             logger.info(`${playerName} reinforces ${result.territory}`);
             animateReinforce(result.territory);
             addLogEntry(`${playerName} reinforces ${result.territory}`, {
               player: playerName,
-              type: "reinforce",
+              type: 'reinforce',
               territories: [result.territory],
             });
           } else if (result.type === FORTIFY) {
-            logger.info(
-              `${playerName} moves from ${result.from} to ${result.to}`,
-            );
+            logger.info(`${playerName} moves from ${result.from} to ${result.to}`);
             const move = await askArmiesToMove(result.movableArmies, 1);
             if (move > 0) {
               game.moveArmies(result.from, result.to, move);
-              addLogEntry(
-                `${playerName} moves ${move} from ${result.from} to ${result.to}`,
-                {
-                  player: playerName,
-                  type: "move",
-                  territories: [result.from, result.to],
-                },
-              );
+              addLogEntry(`${playerName} moves ${move} from ${result.from} to ${result.to}`, {
+                player: playerName,
+                type: 'move',
+                territories: [result.from, result.to],
+              });
               animateMove(result.from, result.to);
             }
             game.endTurn();
@@ -265,26 +232,20 @@ function attachTerritoryHandlers() {
             gameState.incrementTurnNumber();
             addLogEntry(`${playerName} ends turn. Next: ${nextName}`, {
               player: playerName,
-              type: "endTurn",
+              type: 'endTurn',
             });
             logger.info(`${playerName} ends turn. Next: ${nextName}`);
           }
         }
         updateUI();
-        if (result && result.type === "select") {
-          logger.info(
-            `${game.players[game.currentPlayer].name} selects ${result.territory}`,
-          );
+        if (result && result.type === 'select') {
+          logger.info(`${game.players[game.currentPlayer].name} selects ${result.territory}`);
           const selEl = getElement(result.territory);
           if (selEl) {
-            selEl.classList.add("selected");
+            selEl.classList.add('selected');
           }
         }
-        updateGameState(
-          gameState,
-          game,
-          game.selectedFrom ? game.selectedFrom.id : null,
-        );
+        updateGameState(gameState, game, game.selectedFrom ? game.selectedFrom.id : null);
         updateInfoPanel();
         runAI();
         checkForVictory();
@@ -295,26 +256,22 @@ function attachTerritoryHandlers() {
   });
 }
 
-const undoBtn = document.getElementById("undo");
+const undoBtn = document.getElementById('undo');
 if (undoBtn) {
-  undoBtn.addEventListener("click", () => {
+  undoBtn.addEventListener('click', () => {
     try {
       if (game.undo()) {
         const playerName = game.players[game.currentPlayer].name;
         addLogEntry(`${playerName} undoes last action`, {
           player: playerName,
-          type: "undo",
+          type: 'undo',
         });
         updateUI();
-        updateGameState(
-          gameState,
-          game,
-          game.selectedFrom ? game.selectedFrom.id : null,
-        );
+        updateGameState(gameState, game, game.selectedFrom ? game.selectedFrom.id : null);
         updateInfoPanel();
       } else {
-        addLogEntry("Undo is only available during reinforcement phase", {
-          type: "undo",
+        addLogEntry('Undo is only available during reinforcement phase', {
+          type: 'undo',
         });
       }
     } catch (err) {
@@ -323,8 +280,8 @@ if (undoBtn) {
   });
 }
 
-document.getElementById("endTurn").addEventListener("click", () => {
-  logger.info("End turn clicked");
+document.getElementById('endTurn').addEventListener('click', () => {
+  logger.info('End turn clicked');
   try {
     const prevPlayer = game.currentPlayer;
     const prevPhase = game.getPhase();
@@ -332,14 +289,14 @@ document.getElementById("endTurn").addEventListener("click", () => {
     if (prevPhase === ATTACK && game.getPhase() === FORTIFY) {
       addLogEntry(`${game.players[prevPlayer].name} enters fortify phase`, {
         player: game.players[prevPlayer].name,
-        type: "phase",
+        type: 'phase',
       });
       logger.info(`${game.players[prevPlayer].name} enters fortify phase`);
     } else if (prevPhase === FORTIFY && game.getPhase() === REINFORCE) {
       gameState.incrementTurnNumber();
       addLogEntry(
         `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
-        { player: game.players[prevPlayer].name, type: "endTurn" },
+        { player: game.players[prevPlayer].name, type: 'endTurn' },
       );
       logger.info(
         `${game.players[prevPlayer].name} ends turn. Next: ${game.players[game.currentPlayer].name}`,
@@ -355,22 +312,22 @@ document.getElementById("endTurn").addEventListener("click", () => {
   }
 });
 
-const forceErrorBtn = document.getElementById("forceError");
+const forceErrorBtn = document.getElementById('forceError');
 if (forceErrorBtn) {
-  forceErrorBtn.addEventListener("click", () => {
-    throw new Error("Forced error for testing");
+  forceErrorBtn.addEventListener('click', () => {
+    throw new Error('Forced error for testing');
   });
 }
 
-const exportLogBtn = document.getElementById("exportLog");
+const exportLogBtn = document.getElementById('exportLog');
 if (exportLogBtn) {
-  exportLogBtn.addEventListener("click", () => {
-    const logData = exportLog("json");
-    const blob = new Blob([logData], { type: "application/json" });
+  exportLogBtn.addEventListener('click', () => {
+    const logData = exportLog('json');
+    const blob = new Blob([logData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "netrisk-log.json";
+    a.download = 'netrisk-log.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -379,35 +336,27 @@ if (exportLogBtn) {
 }
 
 async function initGame() {
-  const IS_TEST = typeof jest !== "undefined";
-  if (
-    typeof window !== "undefined" &&
-    !hasSavedPlayers() &&
-    !hasSavedGame() &&
-    !IS_TEST
-  ) {
-    if (typeof window.alert === "function") {
-      window.alert("No saved players or map found. Redirecting to setup.");
+  const IS_TEST = typeof jest !== 'undefined';
+  if (typeof window !== 'undefined' && !hasSavedPlayers() && !hasSavedGame() && !IS_TEST) {
+    if (typeof window.alert === 'function') {
+      window.alert('No saved players or map found. Redirecting to setup.');
     }
-    navigateTo("setup.html");
+    navigateTo('setup.html');
     return;
   }
   await loadGame();
   if (!game) {
-    logger.error("Failed to load game");
+    logger.error('Failed to load game');
     return;
   }
   const mapName = getMapName();
   setLevelMusic(mapName);
   applyLevelAccessibility(mapName);
 
-  const params =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search)
-      : null;
-  if (params && params.get("multiplayer")) {
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  if (params && params.get('multiplayer')) {
     const { default: createWebSocketMultiplayer } = await import(
-      "./plugins/websocket-multiplayer-plugin.js"
+      './plugins/websocket-multiplayer-plugin.js'
     );
     game.use(createWebSocketMultiplayer(WS_URL));
   }
@@ -415,34 +364,34 @@ async function initGame() {
   preloadEffects();
 
   let firstTurn = true;
-  game.on(REINFORCE, () => playEffect("reinforce"));
-  game.on("attackResolved", ({ result }) => {
+  game.on(REINFORCE, () => playEffect('reinforce'));
+  game.on('attackResolved', ({ result }) => {
     if (result.conquered) {
-      playEffect("conquer");
+      playEffect('conquer');
     } else if (result.defenderLosses > result.attackerLosses) {
-      playEffect("attackWin");
+      playEffect('attackWin');
     } else {
-      playEffect("attackLoss");
+      playEffect('attackLoss');
     }
   });
-  game.on("turnStart", () => {
-    if (!firstTurn) playEffect("endTurn");
+  game.on('turnStart', () => {
+    if (!firstTurn) playEffect('endTurn');
     firstTurn = false;
   });
-  game.on("undoUnavailable", () => {
-    addLogEntry("Undo is only available during reinforcement phase", {
-      type: "undo",
+  game.on('undoUnavailable', () => {
+    addLogEntry('Undo is only available during reinforcement phase', {
+      type: 'undo',
     });
   });
-  const resetBtn = document.createElement("button");
-  resetBtn.id = "resetGame";
-  resetBtn.textContent = "New Game";
-  resetBtn.classList.add("btn");
-  resetBtn.addEventListener("click", startNewGame);
+  const resetBtn = document.createElement('button');
+  resetBtn.id = 'resetGame';
+  resetBtn.textContent = 'New Game';
+  resetBtn.classList.add('btn');
+  resetBtn.addEventListener('click', startNewGame);
   document.body.appendChild(resetBtn);
-  const modal = document.createElement("div");
-  modal.id = "victoryModal";
-  modal.className = "modal";
+  const modal = document.createElement('div');
+  modal.id = 'victoryModal';
+  modal.className = 'modal';
   modal.innerHTML =
     '<div class="modal-content"><h2 id="victoryTitle"></h2>' +
     '<div id="victoryStats"></div>' +
@@ -453,45 +402,45 @@ async function initGame() {
     '<button id="shareResults" class="btn">Share Results</button>' +
     '<button id="exportStats" class="btn">Export JSON</button>' +
     '<button id="newGameBtn" class="btn">New Game</button>' +
-    "</div></div>";
+    '</div></div>';
   document.body.appendChild(modal);
-  document.getElementById("newGameBtn").addEventListener("click", startNewGame);
-  document.getElementById("shareResults").addEventListener("click", () => {
-    const canvas = document.getElementById("territoryChart");
+  document.getElementById('newGameBtn').addEventListener('click', startNewGame);
+  document.getElementById('shareResults').addEventListener('click', () => {
+    const canvas = document.getElementById('territoryChart');
     if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "netrisk-results.png";
+    a.download = 'netrisk-results.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   });
-  document.getElementById("exportStats").addEventListener("click", () => {
+  document.getElementById('exportStats').addEventListener('click', () => {
     const data = exportStats();
-    const blob = new Blob([data], { type: "application/json" });
+    const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "netrisk-stats.json";
+    a.download = 'netrisk-stats.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
-  const cardPanel = document.getElementById("cardPanel");
+  const cardPanel = document.getElementById('cardPanel');
   if (cardPanel) {
     cardPanel.innerHTML =
       '<div><strong>Cards:</strong> <span id="cards"></span></div>' +
       '<button id="playCardsBtn" class="btn">Play cards</button>' +
       '<div id="bonusInfo"></div>';
-    document.getElementById("playCardsBtn").addEventListener("click", () => {
+    document.getElementById('playCardsBtn').addEventListener('click', () => {
       const cards = getSelectedCards();
       if (cards.length === 3) {
         if (game.playCards(cards)) {
           addLogEntry(`${game.players[game.currentPlayer].name} plays cards`, {
             player: game.players[game.currentPlayer].name,
-            type: "cards",
+            type: 'cards',
           });
           resetSelectedCards();
           updateUI();
@@ -500,36 +449,36 @@ async function initGame() {
     });
   }
 
-  const masterVolume = document.getElementById("masterVolume");
-  const effectsVolume = document.getElementById("effectsVolume");
-  const muteBtn = document.getElementById("muteBtn");
-  const musicToggle = document.getElementById("musicToggle");
+  const masterVolume = document.getElementById('masterVolume');
+  const effectsVolume = document.getElementById('effectsVolume');
+  const muteBtn = document.getElementById('muteBtn');
+  const musicToggle = document.getElementById('musicToggle');
   if (masterVolume) {
     masterVolume.value = getMasterVolume();
-    masterVolume.addEventListener("input", (e) => {
+    masterVolume.addEventListener('input', (e) => {
       setMasterVolume(parseFloat(e.target.value));
     });
   }
   if (effectsVolume) {
     effectsVolume.value = getEffectsVolume();
-    effectsVolume.addEventListener("input", (e) => {
+    effectsVolume.addEventListener('input', (e) => {
       setEffectsVolume(parseFloat(e.target.value));
     });
   }
   if (muteBtn) {
-    muteBtn.textContent = isMuted() ? "Unmute" : "Mute";
-    muteBtn.addEventListener("click", () => {
+    muteBtn.textContent = isMuted() ? 'Unmute' : 'Mute';
+    muteBtn.addEventListener('click', () => {
       const muted = isMuted();
       setMuted(!muted);
-      muteBtn.textContent = muted ? "Mute" : "Unmute";
+      muteBtn.textContent = muted ? 'Mute' : 'Unmute';
     });
   }
   if (musicToggle) {
-    musicToggle.textContent = isMusicEnabled() ? "Music Off" : "Music On";
-    musicToggle.addEventListener("click", () => {
+    musicToggle.textContent = isMusicEnabled() ? 'Music Off' : 'Music On';
+    musicToggle.addEventListener('click', () => {
       const on = isMusicEnabled();
       setMusicEnabled(!on);
-      musicToggle.textContent = on ? "Music On" : "Music Off";
+      musicToggle.textContent = on ? 'Music On' : 'Music Off';
     });
   }
   initTerritorySelection({
@@ -548,30 +497,27 @@ async function initGame() {
 
   updateGameState(gameState, game);
   updateInfoPanel();
-  addLogEntry(
-    `Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`,
-    {
-      player: game.players[game.currentPlayer].name,
-      type: "turn",
-    },
-  );
+  addLogEntry(`Turn ${gameState.turnNumber}: ${game.players[game.currentPlayer].name}`, {
+    player: game.players[game.currentPlayer].name,
+    type: 'turn',
+  });
 
-  const toggleHowToPlay = document.getElementById("toggleHowToPlay");
+  const toggleHowToPlay = document.getElementById('toggleHowToPlay');
   if (toggleHowToPlay) {
-    toggleHowToPlay.addEventListener("click", () => {
-      const steps = document.getElementById("howToPlaySteps");
+    toggleHowToPlay.addEventListener('click', () => {
+      const steps = document.getElementById('howToPlaySteps');
       if (!steps) return;
-      const nowHidden = steps.toggleAttribute("hidden");
-      toggleHowToPlay.setAttribute("aria-expanded", (!nowHidden).toString());
-      toggleHowToPlay.textContent = nowHidden ? "Show details" : "Hide details";
+      const nowHidden = steps.toggleAttribute('hidden');
+      toggleHowToPlay.setAttribute('aria-expanded', (!nowHidden).toString());
+      toggleHowToPlay.textContent = nowHidden ? 'Show details' : 'Hide details';
     });
   }
 }
 
 function attachNavigationHandlers() {
-  const exit = document.getElementById("exitGame");
+  const exit = document.getElementById('exitGame');
   if (exit) {
-    exit.addEventListener("click", (e) => {
+    exit.addEventListener('click', (e) => {
       e.preventDefault();
       exitGame();
     });

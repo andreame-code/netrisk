@@ -1,18 +1,18 @@
-jest.mock("../src/navigation.js", () => ({
+jest.mock('../src/navigation.js', () => ({
   goHome: jest.fn(),
   navigateTo: jest.fn(),
 }));
-jest.mock("../src/theme.js", () => ({ initThemeToggle: jest.fn() }));
+jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 
 const mockCurrentUser = jest
   .fn()
-  .mockResolvedValue({ id: "p1", email: "test@example.com", name: "testuser" });
-jest.mock("../src/infra/supabase/auth.adapter.ts", () => ({
+  .mockResolvedValue({ id: 'p1', email: 'test@example.com', name: 'testuser' });
+jest.mock('../src/infra/supabase/auth.adapter.ts', () => ({
   createAuthAdapter: () => ({ currentUser: mockCurrentUser }),
 }));
 const mockSupabase = {
   from: jest.fn((table) => {
-    if (table === "lobby_chat") {
+    if (table === 'lobby_chat') {
       const chain = {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -31,25 +31,25 @@ const mockSupabase = {
     subscribe: jest.fn(),
   })),
 };
-jest.mock("../src/init/supabase-client.js", () => ({
+jest.mock('../src/init/supabase-client.js', () => ({
   __esModule: true,
   default: mockSupabase,
 }));
 
-describe("lobby screen", () => {
+describe('lobby screen', () => {
   beforeEach(() => {
     jest.resetModules();
-    jest.doMock("../src/config.js", () => ({ WS_URL: "ws://test" }));
+    jest.doMock('../src/config.js', () => ({ WS_URL: 'ws://test' }));
     mockCurrentUser.mockReset();
     mockCurrentUser.mockResolvedValue({
-      id: "p1",
-      email: "test@example.com",
-      name: "testuser",
+      id: 'p1',
+      email: 'test@example.com',
+      name: 'testuser',
     });
     global.alert = jest.fn();
     global.fetch = jest.fn(() =>
       Promise.resolve({
-        json: () => Promise.resolve({ maps: [{ id: "map", name: "Classic" }] }),
+        json: () => Promise.resolve({ maps: [{ id: 'map', name: 'Classic' }] }),
       }),
     );
     document.body.innerHTML = `
@@ -79,250 +79,240 @@ describe("lobby screen", () => {
     localStorage.clear();
   });
 
-  test("redirects to login when not authenticated", async () => {
+  test('redirects to login when not authenticated', async () => {
     mockCurrentUser.mockResolvedValueOnce(null);
-    const { navigateTo } = require("../src/navigation.js");
-    require("../src/lobby.js");
+    const { navigateTo } = require('../src/navigation.js');
+    require('../src/lobby.js');
     await new Promise((r) => setTimeout(r, 0));
-    expect(navigateTo).toHaveBeenCalledWith("login.html?redirect=%2F");
+    expect(navigateTo).toHaveBeenCalledWith('login.html?redirect=%2F');
   });
 
-  test("does not show error when lobbies load successfully", async () => {
-    require("../src/lobby.js");
+  test('does not show error when lobbies load successfully', async () => {
+    require('../src/lobby.js');
     await new Promise((r) => setTimeout(r, 0));
-    expect(
-      document.getElementById("lobbyError").classList.contains("hidden"),
-    ).toBe(true);
+    expect(document.getElementById('lobbyError').classList.contains('hidden')).toBe(true);
   });
 
-  test("back button goes home", () => {
-    const { goHome } = require("../src/navigation.js");
-    require("../src/lobby.js");
-    document.getElementById("backBtn").click();
+  test('back button goes home', () => {
+    const { goHome } = require('../src/navigation.js');
+    require('../src/lobby.js');
+    document.getElementById('backBtn').click();
     expect(goHome).toHaveBeenCalled();
   });
 
-  test("renderLobbies displays info", () => {
-    const { renderLobbies } = require("../src/lobby.js");
+  test('renderLobbies displays info', () => {
+    const { renderLobbies } = require('../src/lobby.js');
     const data = [
       {
-        id: "abc",
-        name: "host",
+        id: 'abc',
+        name: 'host',
         playerCount: 2,
         maxPlayers: 5,
       },
     ];
     renderLobbies(data);
-    const text = document.getElementById("lobbyList").textContent;
-    expect(text).toContain("abc");
-    expect(text).toContain("host");
-    expect(text).toContain("2/5");
-    expect(text).toContain("map");
-    expect(text).toContain("open");
+    const text = document.getElementById('lobbyList').textContent;
+    expect(text).toContain('abc');
+    expect(text).toContain('host');
+    expect(text).toContain('2/5');
+    expect(text).toContain('map');
+    expect(text).toContain('open');
   });
 
-  test("renderLobbies handles eight-player lobby", () => {
-    const { renderLobbies } = require("../src/lobby.js");
+  test('renderLobbies handles eight-player lobby', () => {
+    const { renderLobbies } = require('../src/lobby.js');
     const players = Array.from({ length: 8 }, (_, i) => ({ id: `p${i}` }));
     const data = [
       {
-        code: "xyz",
-        host: "p0",
+        code: 'xyz',
+        host: 'p0',
         players,
-        map: "world8",
+        map: 'world8',
         started: false,
         maxPlayers: 8,
       },
     ];
     renderLobbies(data);
-    const text = document.getElementById("lobbyList").textContent;
-    expect(text).toContain("xyz");
-    expect(text).toContain("8/8");
-    expect(text).toContain("world8");
+    const text = document.getElementById('lobbyList').textContent;
+    expect(text).toContain('xyz');
+    expect(text).toContain('8/8');
+    expect(text).toContain('world8');
   });
 
-  test("create game flow validates and sends message", async () => {
+  test('create game flow validates and sends message', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require("../src/lobby.js");
-    document.getElementById("createBtn").click();
-    expect(document.getElementById("createDialog").hasAttribute("open")).toBe(
-      true,
-    );
-    document.getElementById("roomName").value = "Room";
-    document.getElementById("maxPlayers").value = "4";
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    expect(document.getElementById('createDialog').hasAttribute('open')).toBe(true);
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '4';
     await new Promise((r) => setTimeout(r, 0));
-    document.getElementById("map").value = "map";
-    document.getElementById("createForm").dispatchEvent(new Event("submit"));
+    document.getElementById('map').value = 'map';
+    document.getElementById('createForm').dispatchEvent(new Event('submit'));
     await new Promise((r) => setTimeout(r, 0));
     expect(WebSocket).toHaveBeenCalled();
     wsInstance.onopen();
     expect(wsInstance.send).toHaveBeenCalled();
     const msg = JSON.parse(wsInstance.send.mock.calls[0][0]);
-    expect(msg.type).toBe("createLobby");
-    expect(msg.name).toBe("Room");
-    expect(msg.player.name).toBe("testuser");
+    expect(msg.type).toBe('createLobby');
+    expect(msg.name).toBe('Room');
+    expect(msg.player.name).toBe('testuser');
     expect(msg.maxPlayers).toBe(4);
-    expect(msg.map).toBe("map");
+    expect(msg.map).toBe('map');
     wsInstance.onmessage({
       data: JSON.stringify({
-        type: "lobby",
-        code: "abc",
-        host: "p1",
-        players: [{ id: "p1" }],
-        map: "map",
+        type: 'lobby',
+        code: 'abc',
+        host: 'p1',
+        players: [{ id: 'p1' }],
+        map: 'map',
         maxPlayers: 4,
       }),
     });
-    const text = document.getElementById("lobbyList").textContent;
-    expect(text).toContain("abc");
-    expect(text).toContain("1/4");
+    const text = document.getElementById('lobbyList').textContent;
+    expect(text).toContain('abc');
+    expect(text).toContain('1/4');
     delete global.WebSocket;
   });
 
-  test("cancel closes dialog and does not send message", async () => {
+  test('cancel closes dialog and does not send message', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require("../src/lobby.js");
-    document.getElementById("createBtn").click();
-    expect(document.getElementById("createDialog").hasAttribute("open")).toBe(
-      true,
-    );
-    document.getElementById("roomName").value = "Room";
-    document.getElementById("maxPlayers").value = "2";
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    expect(document.getElementById('createDialog').hasAttribute('open')).toBe(true);
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
     await new Promise((r) => setTimeout(r, 0));
-    document.getElementById("map").value = "map";
-    document.getElementById("cancelCreate").click();
-    expect(document.getElementById("createDialog").hasAttribute("open")).toBe(
-      false,
-    );
+    document.getElementById('map').value = 'map';
+    document.getElementById('cancelCreate').click();
+    expect(document.getElementById('createDialog').hasAttribute('open')).toBe(false);
     expect(WebSocket).not.toHaveBeenCalled();
     delete global.WebSocket;
   });
 
-  test("invalid form does not send", () => {
+  test('invalid form does not send', () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require("../src/lobby.js");
-    document.getElementById("createBtn").click();
-    const form = document.getElementById("createForm");
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    const form = document.getElementById('createForm');
     form.reportValidity = jest.fn();
-    document.getElementById("roomName").value = "";
-    document.getElementById("maxPlayers").value = "9";
-    form.dispatchEvent(new Event("submit"));
+    document.getElementById('roomName').value = '';
+    document.getElementById('maxPlayers').value = '9';
+    form.dispatchEvent(new Event('submit'));
     expect(WebSocket).not.toHaveBeenCalled();
     expect(form.reportValidity).toHaveBeenCalled();
     delete global.WebSocket;
   });
 
-  test("chat sends and renders messages", async () => {
+  test('chat sends and renders messages', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require("../src/lobby.js");
-    document.getElementById("createBtn").click();
-    document.getElementById("roomName").value = "Room";
-    document.getElementById("maxPlayers").value = "2";
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
     await new Promise((r) => setTimeout(r, 0));
-    document.getElementById("map").value = "";
-    document.getElementById("createForm").dispatchEvent(new Event("submit"));
+    document.getElementById('map').value = '';
+    document.getElementById('createForm').dispatchEvent(new Event('submit'));
     await new Promise((r) => setTimeout(r, 0));
     wsInstance.onopen();
     wsInstance.onmessage({
       data: JSON.stringify({
-        type: "lobby",
-        code: "abc",
-        host: "p1",
-        players: [{ id: "p1", name: "Host" }],
+        type: 'lobby',
+        code: 'abc',
+        host: 'p1',
+        players: [{ id: 'p1', name: 'Host' }],
         map: null,
         maxPlayers: 2,
       }),
     });
-    document.getElementById("chatInput").value = "hello";
-    document.getElementById("chatForm").dispatchEvent(new Event("submit"));
+    document.getElementById('chatInput').value = 'hello';
+    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
     expect(wsInstance.send).toHaveBeenLastCalledWith(
-      JSON.stringify({ type: "chat", code: "abc", id: "p1", text: "hello" }),
+      JSON.stringify({ type: 'chat', code: 'abc', id: 'p1', text: 'hello' }),
     );
     wsInstance.onmessage({
-      data: JSON.stringify({ type: "chat", id: "p1", text: "hello" }),
+      data: JSON.stringify({ type: 'chat', id: 'p1', text: 'hello' }),
     });
-    const text = document.getElementById("chatMessages").textContent;
-    expect(text).toContain("Host");
-    expect(text).toContain("hello");
+    const text = document.getElementById('chatMessages').textContent;
+    expect(text).toContain('Host');
+    expect(text).toContain('hello');
     delete global.WebSocket;
   });
 
-  test("reconnects when stored credentials are present", () => {
+  test('reconnects when stored credentials are present', () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    localStorage.setItem("lobbyCode", "abc");
-    localStorage.setItem("playerId", "p1");
-    require("../src/lobby.js");
+    localStorage.setItem('lobbyCode', 'abc');
+    localStorage.setItem('playerId', 'p1');
+    require('../src/lobby.js');
     wsInstance.onopen();
     expect(wsInstance.send).toHaveBeenCalledWith(
-      JSON.stringify({ type: "reconnect", code: "abc", id: "p1" }),
+      JSON.stringify({ type: 'reconnect', code: 'abc', id: 'p1' }),
     );
     delete global.WebSocket;
   });
 
-  test("disables create button when WS_URL missing", () => {
+  test('disables create button when WS_URL missing', () => {
     jest.resetModules();
-    jest.doMock("../src/config.js", () => ({ WS_URL: "" }));
-    require("../src/lobby.js");
-    expect(document.getElementById("createBtn").disabled).toBe(true);
-    expect(
-      document.getElementById("lobbyError").classList.contains("hidden"),
-    ).toBe(false);
+    jest.doMock('../src/config.js', () => ({ WS_URL: '' }));
+    require('../src/lobby.js');
+    expect(document.getElementById('createBtn').disabled).toBe(true);
+    expect(document.getElementById('lobbyError').classList.contains('hidden')).toBe(false);
   });
 
-  test("disables create button when session is invalid", async () => {
+  test('disables create button when session is invalid', async () => {
     jest.resetModules();
     mockCurrentUser.mockResolvedValueOnce(null);
-    jest.doMock("../src/config.js", () => ({ WS_URL: "ws://test" }));
-    require("../src/lobby.js");
+    jest.doMock('../src/config.js', () => ({ WS_URL: 'ws://test' }));
+    require('../src/lobby.js');
     await new Promise((r) => setTimeout(r, 0));
-    expect(document.getElementById("createBtn").disabled).toBe(true);
-    expect(document.getElementById("lobbyErrorMsg").textContent).toBe(
-      "Effettua il login per creare una lobby.",
+    expect(document.getElementById('createBtn').disabled).toBe(true);
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'Effettua il login per creare una lobby.',
     );
   });
 
-  test("notifies user on websocket error", async () => {
+  test('notifies user on websocket error', async () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    require("../src/lobby.js");
-    document.getElementById("createBtn").click();
-    document.getElementById("roomName").value = "Room";
-    document.getElementById("maxPlayers").value = "2";
+    require('../src/lobby.js');
+    document.getElementById('createBtn').click();
+    document.getElementById('roomName').value = 'Room';
+    document.getElementById('maxPlayers').value = '2';
     await new Promise((r) => setTimeout(r, 0));
-    document.getElementById("map").value = "";
-    document.getElementById("createForm").dispatchEvent(new Event("submit"));
+    document.getElementById('map').value = '';
+    document.getElementById('createForm').dispatchEvent(new Event('submit'));
     await new Promise((r) => setTimeout(r, 0));
     wsInstance.onopen();
     wsInstance.onerror();
-    expect(document.getElementById("lobbyErrorMsg").textContent).toBe(
-      "Impossibile connettersi al server multiplayer. Riprova.",
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'Impossibile connettersi al server multiplayer. Riprova.',
     );
     delete global.WebSocket;
   });
 
-  test("notifies user when server sends error message", () => {
+  test('notifies user when server sends error message', () => {
     const wsInstance = { send: jest.fn(), readyState: 1 };
     global.WebSocket = jest.fn(() => wsInstance);
     global.WebSocket.OPEN = 1;
-    localStorage.setItem("lobbyCode", "abc");
-    localStorage.setItem("playerId", "p1");
-    require("../src/lobby.js");
+    localStorage.setItem('lobbyCode', 'abc');
+    localStorage.setItem('playerId', 'p1');
+    require('../src/lobby.js');
     wsInstance.onmessage({
-      data: JSON.stringify({ type: "error", error: "oops" }),
+      data: JSON.stringify({ type: 'error', error: 'oops' }),
     });
-    expect(document.getElementById("lobbyErrorMsg").textContent).toBe(
-      "Si è verificato un errore. Riprova.",
+    expect(document.getElementById('lobbyErrorMsg').textContent).toBe(
+      'Si è verificato un errore. Riprova.',
     );
     delete global.WebSocket;
   });

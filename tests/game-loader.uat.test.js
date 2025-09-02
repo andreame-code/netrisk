@@ -1,8 +1,8 @@
-import { loadGame } from "../src/init/game-loader.js";
-import Game from "../src/game.js";
-import * as logger from "../src/logger.js";
+import { loadGame } from '../src/init/game-loader.js';
+import Game from '../src/game.js';
+import * as logger from '../src/logger.js';
 
-describe("game loader", () => {
+describe('game loader', () => {
   let originalFetch;
   let originalAlert;
 
@@ -32,46 +32,43 @@ describe("game loader", () => {
     delete global.localStorage;
   });
 
-  test("loads selected map and starts new game", async () => {
+  test('loads selected map and starts new game', async () => {
     const map = {
-      territories: [{ id: "t1", x: 1, y: 2, neighbors: [] }],
+      territories: [{ id: 't1', x: 1, y: 2, neighbors: [] }],
       continents: [],
       deck: [],
     };
     global.fetch.mockResolvedValue({ ok: true, json: async () => map });
-    global.localStorage.setItem("netriskMap", "custom");
-    global.localStorage.setItem(
-      "netriskPlayers",
-      JSON.stringify([{ name: "Red", color: "#f00" }]),
-    );
+    global.localStorage.setItem('netriskMap', 'custom');
+    global.localStorage.setItem('netriskPlayers', JSON.stringify([{ name: 'Red', color: '#f00' }]));
 
     const { game, territoryPositions } = await loadGame();
-    expect(global.fetch).toHaveBeenCalledWith("/src/data/custom.json");
+    expect(global.fetch).toHaveBeenCalledWith('/src/data/custom.json');
     expect(game).toBeTruthy();
-    expect(game.players[0].name).toBe("Red");
+    expect(game.players[0].name).toBe('Red');
     expect(territoryPositions).toEqual({ t1: { x: 1, y: 2 } });
   });
 
-  test("restores saved game from storage", async () => {
+  test('restores saved game from storage', async () => {
     const saved = new Game(
-      [{ name: "Red", color: "#f00" }],
-      [{ id: "a", x: 5, y: 6, neighbors: [] }],
+      [{ name: 'Red', color: '#f00' }],
+      [{ id: 'a', x: 5, y: 6, neighbors: [] }],
       [],
       [],
     );
-    global.localStorage.setItem("netriskGame", saved.serialize());
+    global.localStorage.setItem('netriskGame', saved.serialize());
 
     const { game, territoryPositions } = await loadGame();
     expect(global.fetch).not.toHaveBeenCalled();
-    expect(game.players[0].name).toBe("Red");
-    expect(game.territories[0].id).toBe("a");
+    expect(game.players[0].name).toBe('Red');
+    expect(game.territories[0].id).toBe('a');
     expect(territoryPositions).toEqual({ a: { x: 5, y: 6 } });
   });
 
-  test("returns error when map file is missing", async () => {
+  test('returns error when map file is missing', async () => {
     global.fetch.mockResolvedValue({ ok: false, status: 404 });
-    global.localStorage.setItem("netriskMap", "missing");
-    const errSpy = jest.spyOn(logger, "error").mockImplementation(() => {});
+    global.localStorage.setItem('netriskMap', 'missing');
+    const errSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
     const { game, territoryPositions, error } = await loadGame();
     expect(global.fetch).toHaveBeenCalled();
@@ -81,19 +78,16 @@ describe("game loader", () => {
     expect(error).toBeInstanceOf(Error);
   });
 
-  test("ignores corrupted saved game and loads map", async () => {
-    global.localStorage.setItem("netriskGame", "not-json");
-    global.localStorage.setItem(
-      "netriskPlayers",
-      JSON.stringify([{ name: "Red", color: "#f00" }]),
-    );
+  test('ignores corrupted saved game and loads map', async () => {
+    global.localStorage.setItem('netriskGame', 'not-json');
+    global.localStorage.setItem('netriskPlayers', JSON.stringify([{ name: 'Red', color: '#f00' }]));
     const map = {
-      territories: [{ id: "b", x: 7, y: 8, neighbors: [] }],
+      territories: [{ id: 'b', x: 7, y: 8, neighbors: [] }],
       continents: [],
       deck: [],
     };
     global.fetch.mockResolvedValue({ ok: true, json: async () => map });
-    const errSpy = jest.spyOn(logger, "error").mockImplementation(() => {});
+    const errSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
 
     const { game, territoryPositions } = await loadGame();
     expect(global.fetch).toHaveBeenCalled();

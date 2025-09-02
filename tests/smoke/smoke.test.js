@@ -1,3 +1,3 @@
-test("smoke test", () => {
+test('smoke test', () => {
   expect(true).toBe(true);
 });
