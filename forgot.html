@@ -11,16 +11,29 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       (function () {
-          document.write('<script src="build.js"><\/script>');
-          var v = Date.now();
-          document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
-      })();
-    </script>
-    <script>
-      (function () {
-        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-          console.error('[ENV] Missing keys in env.js');
-        }
+        const modules = ['./auth.js', './forgot.js'];
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const loadModules = () => {
+          modules.forEach((src) => {
+            const m = document.createElement('script');
+            m.type = 'module';
+            m.src = src;
+            document.head.appendChild(m);
+          });
+        };
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+          loadModules();
+        };
+        s.onerror = () => {
+          console.error('[ENV] env.js failed to load');
+          loadModules();
+        };
+        document.head.appendChild(s);
       })();
     </script>
   </head>
@@ -46,7 +59,5 @@
       </form>
       <p id="message" role="alert" data-testid="error-msg"></p>
     </main>
-    <script type="module" src="./auth.js"></script>
-    <script type="module" src="./forgot.js"></script>
   </body>
 </html>
