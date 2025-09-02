@@ -13,27 +13,26 @@
       (function () {
         const modules = [];
         const base = location.pathname.replace(/[^/]*$/, '');
+        const loadModules = () => {
+          modules.forEach((src) => {
+            const m = document.createElement('script');
+            m.type = 'module';
+            m.src = src;
+            document.head.appendChild(m);
+          });
+        };
         const s = document.createElement('script');
         s.src = base + 'env.js?' + Date.now();
         s.onload = () => {
           if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
             console.error('[ENV] Missing keys in env.js');
           }
-          const loadModules = () => {
-            modules.forEach((src) => {
-              const m = document.createElement('script');
-              m.type = 'module';
-              m.src = src;
-              document.body.appendChild(m);
-            });
-          };
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadModules);
-          } else {
-            loadModules();
-          }
+          loadModules();
         };
-        s.onerror = () => console.error('[ENV] env.js failed to load');
+        s.onerror = () => {
+          console.error('[ENV] env.js failed to load');
+          loadModules();
+        };
         document.head.appendChild(s);
       })();
     </script>
