@@ -11,23 +11,16 @@
     </style>
     <script>
       (function () {
-        var b = document.createElement('script');
-        b.src = 'build.js?v=' + Date.now();
-        b.defer = false;
-        document.head.appendChild(b);
-
-        var s = document.createElement('script');
-        s.src = 'env.js?v=' + Date.now();
-        s.defer = false;
-        s.onload = function () {
-          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-            console.error('[ENV] Missing keys in env.js');
-          }
-        };
-        s.onerror = function () {
-          console.error('[ENV] env.js failed to load');
-        };
-        document.head.appendChild(s);
+        var v = Date.now();
+        document.write('<script src="build.js?v=' + v + '"><\/script>');
+        document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+          console.error('[ENV] Missing keys in env.js');
+        }
       })();
     </script>
   </head>
