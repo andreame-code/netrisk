@@ -13,12 +13,35 @@ interface RealtimePayload<T> {
   new: T;
 }
 
-const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Supabase client only when URL and key are available.
+// Read from config constants first but allow runtime overrides via
+// `window.__env` to support deployments where values are injected at
+// runtime instead of build time.
+export const client = (() => {
+  const url =
+    SUPABASE_URL || (typeof window !== 'undefined' && (window as any).__env?.SUPABASE_URL) || '';
+  const key =
+    SUPABASE_KEY ||
+    (typeof window !== 'undefined' && (window as any).__env?.SUPABASE_ANON_KEY) ||
+    '';
+
+  if (!url || !key) {
+    console.warn('[Supabase] missing URL or anon key – realtime disabled');
+    return null;
+  }
+
+  return createClient(url, key);
+})();
 
 export function subscribeToMatch<S extends GameState = GameState, A = unknown, R = unknown>(
   matchId: string,
   handlers: MatchSubscriptionHandlers<S, A, R>,
 ) {
+  if (!client) {
+    console.warn('[Supabase] subscribeToMatch called without client – ignoring');
+    return () => {};
+  }
+
   const channel = client.channel(`netrisk:${matchId}`);
 
   if (handlers.onState) {

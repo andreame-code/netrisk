@@ -1,4 +1,3 @@
-import { subscribeToMatch } from '../src/netrisk-realtime.ts';
 import type { Event } from '../src/types/netrisk';
 
 // Mock Supabase client
@@ -18,6 +17,11 @@ jest.mock('@supabase/supabase-js', () => ({
     removeChannel: jest.fn(),
   })),
 }));
+
+process.env.VITE_SUPABASE_URL = 'http://localhost';
+process.env.VITE_SUPABASE_ANON_KEY = 'anon';
+
+const { subscribeToMatch } = require('../src/netrisk-realtime.ts');
 
 describe('netriskRealtime', () => {
   test('subscribeToMatch forwards realtime payloads', () => {
