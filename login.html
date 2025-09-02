@@ -18,15 +18,15 @@
         <a href="setup.html">Setup</a>
         <a href="how-to-play.html">How To</a>
         <a href="about.html">About</a>
-        <span id="userMenu" class="user-menu loading"></span>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
       </nav>
     </header>
     <main>
       <h1>Login</h1>
       <form id="loginForm">
         <label>
-          Username:
-          <input type="text" id="username" required data-testid="login-username" />
+          Email:
+          <input type="email" id="username" required data-testid="login-email" />
         </label>
         <label>
           Password:
@@ -43,7 +43,8 @@
         </button>
         <a href="./forgot.html">Password dimenticata?</a>
       </form>
-      <p id="message" role="alert" data-testid="login-message"></p>
+      <p id="authGuardMessage" role="alert" data-testid="auth-guard-msg"></p>
+      <p id="message" role="alert" data-testid="error-msg"></p>
     </main>
     <script src="./env.js"></script>
     <script type="module" src="./auth.js"></script>

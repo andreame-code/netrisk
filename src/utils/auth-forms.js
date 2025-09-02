@@ -3,9 +3,10 @@ import supabase from '../init/supabase-client.js';
 export function setupAuthForm(formId, handler) {
   const form = document.getElementById(formId);
   const message = document.getElementById('message');
+  const guardMsg = document.querySelector('[data-testid="auth-guard-msg"]');
   const params = new URLSearchParams(window.location.search);
   const initialMsg = params.get('message');
-  if (initialMsg) message.textContent = initialMsg;
+  if (initialMsg && guardMsg) guardMsg.textContent = initialMsg;
   const submitBtn = form?.querySelector('button[type="submit"]');
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();

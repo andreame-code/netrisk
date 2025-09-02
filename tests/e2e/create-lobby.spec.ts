@@ -132,7 +132,7 @@ test.describe('lobby creation', () => {
 
     await page.goto('/login.html');
     await expect(page.getByText('Unable to load data')).toHaveCount(0);
-    await page.fill('[data-testid="login-username"]', 'testuser@example.com');
+    await page.fill('[data-testid="login-email"]', 'testuser@example.com');
     await page.fill('[data-testid="login-password"]', 'password');
     await page.click('[data-testid="login-submit"]');
 
