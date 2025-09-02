@@ -64,10 +64,16 @@ export default function initTerritorySelection({
   function loadMap(paths) {
     if (!paths.length) {
       boardEl.textContent = 'Invalid map';
-      throw new Error('Map SVG missing .map-territory elements');
+      throw new Error(`Map "${mapName}" could not be loaded`);
     }
     const [path, ...rest] = paths;
-    return fetch(path)
+    const base = typeof document !== 'undefined' ? document.baseURI : undefined;
+    const url = new URL(path, base);
+    const fetchPath =
+      typeof window !== 'undefined' && url.origin === window.location.origin
+        ? url.pathname + url.search + url.hash
+        : url.href;
+    return fetch(fetchPath)
       .then((r) => (r.ok ? r.text() : null))
       .then((text) => {
         if (text) {
@@ -174,6 +180,6 @@ export default function initTerritorySelection({
       }
     })
     .catch((err) => {
-      logger.error(err);
+      logger.error(`Failed to load map "${mapName}"`, err);
     });
 }
