@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lobby - NetRisk</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        const modules = ['./auth.js', './lobby.js'];
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const loadModules = () => {
+          modules.forEach((src) => {
+            const m = document.createElement('script');
+            m.type = 'module';
+            m.src = src;
+            document.head.appendChild(m);
+          });
+        };
+        const init = () => {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadModules);
+          } else {
+            loadModules();
+          }
+        };
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+          init();
+        };
+        s.onerror = () => {
+          console.error('[ENV] env.js failed to load');
+          init();
+        };
+        document.head.appendChild(s);
+      })();
+    </script>
+    <link rel="stylesheet" crossorigin href="./assets/theme-BaM4L7Wl.css">
+  </head>
+  <body class="lobby-page">
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Lobby</h1>
+      <div id="lobbyError" class="hidden" data-testid="lobby-error">
+        <p id="lobbyErrorMsg"></p>
+        <button id="retryLobby" class="btn">Retry</button>
+      </div>
+      <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">Back</button>
+      <button
+        id="createBtn"
+        class="btn"
+        aria-label="Create new game"
+        accesskey="n"
+        data-testid="create-game"
+      >
+        Create game
+      </button>
+      <ul id="lobbyList" class="lobby-list" data-testid="lobby-list"></ul>
+      <dialog id="createDialog">
+        <form id="createForm">
+          <label>Room name <input id="roomName" required /></label>
+          <label
+            >Max players <input id="maxPlayers" type="number" min="2" max="8" value="2" required
+          /></label>
+          <label
+            >Map
+            <select id="map"></select
+          ></label>
+          <menu>
+            <button type="button" value="cancel" id="cancelCreate">Cancel</button>
+            <button type="submit" id="submitCreate" value="default">Create</button>
+          </menu>
+        </form>
+      </dialog>
+      <section class="chat">
+        <ul id="chatMessages" class="chat-messages"></ul>
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <input id="chatInput" maxlength="200" aria-label="Chat message" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+      <section id="debugLog" class="debug-log" aria-live="polite"></section>
+    </main>
+    <script>
+      (function () {
+        const badge = document.createElement('div');
+        badge.setAttribute('role', 'status');
+        badge.setAttribute('aria-live', 'polite');
+        badge.setAttribute('data-supabadge', '');
+        badge.textContent = '⏳ Checking…';
+        badge.style.cssText =
+          'position:fixed;top:10px;right:10px;padding:6px 10px;border-radius:4px;font-size:14px;font-family:sans-serif;color:#fff;background:#666;z-index:9999;box-shadow:0 2px 4px rgba(0,0,0,0.2);pointer-events:none';
+        document.body.appendChild(badge);
+
+        const params = new URLSearchParams(location.search);
+        const debug = params.get('supadebug') === '1';
+        if (debug) badge.style.pointerEvents = 'auto';
+
+        let detail = '';
+        function finish(text, color, ok, msg, det) {
+          badge.textContent = text;
+          badge.style.background = color;
+          detail = det || msg;
+          (ok ? console.info : console.error)('Supabase badge:', msg);
+        }
+
+        const env = window.__env;
+        if (!env) {
+          finish('❌ no env', '#e74c3c', false, 'no env');
+          return;
+        }
+        const url = env.SUPABASE_URL;
+        const key = env.SUPABASE_ANON_KEY;
+        if (!url || !key) {
+          finish('❌ missing key', '#e74c3c', false, 'missing key');
+          return;
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3000);
+        fetch(url + '/auth/v1/settings', {
+          headers: { apikey: key },
+          signal: controller.signal,
+        })
+          .then((res) => {
+            clearTimeout(timer);
+            if (res.status === 200) {
+              finish('✅ Supabase OK', '#2ecc71', true, 'Supabase OK', 'status 200');
+            } else {
+              finish(
+                '❌ ' + res.status,
+                '#e74c3c',
+                false,
+                String(res.status),
+                'status ' + res.status,
+              );
+            }
+          })
+          .catch((err) => {
+            clearTimeout(timer);
+            if (err.name === 'AbortError') {
+              finish('❌ timeout', '#e74c3c', false, 'timeout');
+            } else {
+              finish('❌ error', '#e74c3c', false, 'error', err.message);
+            }
+          });
+
+        if (debug) {
+          badge.addEventListener('click', () => {
+            alert('Supabase: ' + detail);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
