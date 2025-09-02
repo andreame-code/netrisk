@@ -10,6 +10,20 @@
     <link rel="stylesheet" href="./css/components.css" />
     <link rel="stylesheet" href="./css/theme.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        document.write('<script src="build.js"><\/script>');
+        var v = Date.now();
+        document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+      })();
+    </script>
+    <script>
+      (function () {
+        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+          console.error('[ENV] Missing keys in env.js');
+        }
+      })();
+    </script>
   </head>
   <body class="home-page">
     <header class="main-header">
@@ -45,7 +59,6 @@
         About/Settings
       </button>
     </main>
-    <script src="./env.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./home.js"></script>
   </body>
