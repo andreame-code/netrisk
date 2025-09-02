@@ -1,5 +1,6 @@
 {
   "imports": {
-    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
+    "zod": "https://cdn.jsdelivr.net/npm/zod@4.1.5/+esm"
   }
 }
