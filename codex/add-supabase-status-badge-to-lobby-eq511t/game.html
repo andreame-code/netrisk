@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetRisk Game</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
+    <script type="module" crossorigin src="./assets/game-SQeSMLLE.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/config-VUvQXQsa.js">
+    <link rel="modulepreload" crossorigin href="./assets/colors-DHUIfYZB.js">
+    <link rel="modulepreload" crossorigin href="./assets/audio-6NbL8Y2H.js">
+    <link rel="modulepreload" crossorigin href="./assets/theme-CN2ifeDr.js">
+    <link rel="stylesheet" crossorigin href="./assets/config-BaM4L7Wl.css">
+    <link rel="stylesheet" crossorigin href="./assets/colors-DJ7Aj1sD.css">
+  </head>
+  <body class="game-page">
+    <p id="setupNotice">
+      Need to configure players or map? Visit the
+      <a href="setup.html">setup page</a>.
+    </p>
+    <header id="gameHeader">
+      <button id="exitGame" class="btn">Exit Game</button>
+    </header>
+    <div id="loadError" class="hidden" data-testid="load-error">
+      <p id="loadErrorMsg"></p>
+      <button id="retryLoad" class="btn">Retry</button>
+    </div>
+    <div id="gameContainer">
+      <div id="board" class="board" data-testid="game-board"></div>
+      <div id="uiPanel">
+        <div id="turnInfo">
+          <div><strong>Turn:</strong> <span id="turnNumber">1</span></div>
+          <div><strong>Player:</strong> <span id="currentPlayer"></span></div>
+          <div><strong>Phase:</strong> <span id="status"></span></div>
+          <div><strong>Reinforcements:</strong> <span id="reinforcements">0</span></div>
+          <div><strong>Dice:</strong> <span id="diceResults"></span></div>
+          <div><strong>Phase time:</strong> <span id="phaseTimer"></span></div>
+        </div>
+        <div id="gameActions">
+          <strong>Game Actions:</strong>
+          <button id="undo" class="btn" aria-label="Undo" accesskey="u" disabled>Undo</button>
+          <button id="endTurn" class="btn" aria-label="End Turn" accesskey="e">End Turn</button>
+        </div>
+        <div id="selectedTerritory"></div>
+        <div id="cardPanel"></div>
+        <div id="logSection">
+          <strong>Action log:</strong>
+          <div id="actionLog" class="log"></div>
+        </div>
+        <div id="howToPlayBox">
+          <div>
+            <strong>How to play (alpha)</strong>
+            <button
+              id="toggleHowToPlay"
+              class="btn"
+              aria-expanded="false"
+              aria-controls="howToPlaySteps"
+            >
+              Show details
+            </button>
+          </div>
+          <ol id="howToPlaySteps" hidden>
+            <li>Click a territory</li>
+            <li>Choose an action</li>
+            <li>Press "End Turn"</li>
+          </ol>
+          <button id="replayTutorial" class="btn">Play Tutorial</button>
+        </div>
+        <div id="otherControls">
+          <strong>Other Controls:</strong>
+          <div id="audioSettings">
+            <label for="masterVolume">Master:</label>
+            <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.5" />
+            <label for="effectsVolume">Effects:</label>
+            <input type="range" id="effectsVolume" min="0" max="1" step="0.01" value="1" />
+            <button id="muteBtn" class="btn" aria-label="Toggle mute" accesskey="m">Mute</button>
+            <button id="musicToggle" class="btn" aria-label="Toggle music" accesskey="i">
+              Music Off
+            </button>
+          </div>
+          <button id="forceError" class="btn" aria-label="Force Error" accesskey="f">
+            Force Error
+          </button>
+          <button id="exportLog" class="btn" aria-label="Export Log" accesskey="x">
+            Export Log
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="./env.js"></script>
+  </body>
+</html>
