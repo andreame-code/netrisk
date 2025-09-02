@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup NetRisk</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="importmap" src="importmap.json"></script>
+    <script>
+      (function () {
+        const modules = ['./auth.js', './setup.js'];
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const loadModules = () => {
+          modules.forEach((src) => {
+            const m = document.createElement('script');
+            m.type = 'module';
+            m.src = src;
+            document.head.appendChild(m);
+          });
+        };
+        const init = () => {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadModules);
+          } else {
+            loadModules();
+          }
+        };
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+          init();
+        };
+        s.onerror = () => {
+          console.error('[ENV] env.js failed to load');
+          init();
+        };
+        document.head.appendChild(s);
+      })();
+    </script>
+    <link rel="stylesheet" crossorigin href="./assets/theme-BaM4L7Wl.css">
+    <link rel="stylesheet" crossorigin href="./assets/game-DJ7Aj1sD.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
+      </nav>
+    </header>
+    <h1>Player Setup</h1>
+    <form id="setupForm">
+      <label>
+        Number of human players:
+        <input type="number" id="humanCount" min="1" max="6" required value="1" />
+      </label>
+      <label>
+        Number of AI players:
+        <input type="number" id="aiCount" min="0" max="5" required value="2" />
+      </label>
+      <label>
+        AI Difficulty:
+        <select id="aiDifficulty">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+      <label>
+        AI Style:
+        <select id="aiStyle">
+          <option value="aggressive">Aggressive</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="defensive">Defensive</option>
+        </select>
+      </label>
+      <p>Map:</p>
+      <input type="hidden" id="mapSelect" />
+      <div id="mapGrid"></div>
+      <div id="players"></div>
+      <button type="submit" class="btn">Start</button>
+    </form>
+  </body>
+</html>
