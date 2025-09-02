@@ -122,7 +122,7 @@ describe('lobby flow', () => {
   test('creates lobby, exchanges chat, and shows error', async () => {
     await import('../../lobby.js');
 
-    screen.getByTestId('create-game').click();
+    screen.getByTestId('lobby-create').click();
     screen.getByLabelText(/Room name/i).value = 'Room';
     screen.getByLabelText(/Max players/i).value = '4';
     document.getElementById('createForm').dispatchEvent(new Event('submit'));
@@ -145,7 +145,7 @@ describe('lobby flow', () => {
 
     wsInstances[0].onmessage({ data: JSON.stringify({ type: 'error' }) });
     await waitFor(() =>
-      expect(screen.getByTestId('lobby-error').classList.contains('hidden')).toBe(false),
+      expect(screen.getByTestId('error-msg').classList.contains('hidden')).toBe(false),
     );
   });
 
@@ -165,6 +165,6 @@ describe('lobby flow', () => {
     });
 
     await waitFor(() => expect(localStorage.getItem('lobbyCode')).toBe('ABCD'));
-    expect(screen.getByTestId('lobby-error').classList.contains('hidden')).toBe(true);
+    expect(screen.getByTestId('error-msg').classList.contains('hidden')).toBe(true);
   });
 });

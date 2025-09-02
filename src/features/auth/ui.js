@@ -9,6 +9,7 @@ export function renderUserMenu({ authPort, navigateTo, info, error }) {
     const login = document.createElement('a');
     login.href = 'login.html';
     login.textContent = 'Accedi';
+    login.dataset.testid = 'login-btn';
 
     const register = document.createElement('a');
     register.href = 'register.html';
@@ -26,13 +27,24 @@ export function renderUserMenu({ authPort, navigateTo, info, error }) {
     const name = user.name || user.email || '';
     avatar.textContent = name.charAt(0).toUpperCase();
 
+    const status = document.createElement('span');
+    status.textContent = user.email || '';
+    status.dataset.testid = 'user-status';
+
     const profile = document.createElement('a');
     profile.href = 'account.html';
     profile.textContent = 'Profilo';
+    profile.dataset.testid = 'profile-link';
+
+    const lobby = document.createElement('a');
+    lobby.href = 'lobby.html';
+    lobby.textContent = 'Lobby';
+    lobby.dataset.testid = 'lobby-link';
 
     const logout = document.createElement('a');
     logout.href = '#';
     logout.textContent = 'Esci';
+    logout.dataset.testid = 'logout-btn';
     logout.addEventListener('click', async (e) => {
       e.preventDefault();
       try {
@@ -50,7 +62,7 @@ export function renderUserMenu({ authPort, navigateTo, info, error }) {
       navigateTo('index.html');
     });
 
-    menu.append(avatar, profile, logout);
+    menu.append(avatar, status, profile, lobby, logout);
     nav.classList.remove('loading');
     menu.classList.remove('loading');
   };
