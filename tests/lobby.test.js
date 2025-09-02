@@ -79,12 +79,13 @@ describe('lobby screen', () => {
     localStorage.clear();
   });
 
-  test('redirects to login when not authenticated', async () => {
+  test('does not redirect when not authenticated', async () => {
     mockCurrentUser.mockResolvedValueOnce(null);
     const { navigateTo } = require('../src/navigation.js');
     require('../src/lobby.js');
     await new Promise((r) => setTimeout(r, 0));
-    expect(navigateTo).toHaveBeenCalledWith('login.html?redirect=%2F');
+    expect(navigateTo).not.toHaveBeenCalled();
+    expect(document.getElementById('createBtn').disabled).toBe(true);
   });
 
   test('does not show error when lobbies load successfully', async () => {

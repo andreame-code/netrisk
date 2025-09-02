@@ -267,12 +267,9 @@ export function initLobby(model) {
   (async () => {
     try {
       const user = await modelInstance.currentUser();
-      if (!user) {
-        if (createBtn) createBtn.disabled = true;
+      if (!user && createBtn) {
+        createBtn.disabled = true;
         showLobbyError('Effettua il login per creare una lobby.');
-        const redirectPath = window.location.pathname + window.location.search;
-        navigateTo(`login.html?redirect=${encodeURIComponent(redirectPath)}`);
-        return;
       }
       await fetchLobbies();
       await modelInstance.subscribeToLobbyChanges(() => fetchLobbies());

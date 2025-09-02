@@ -1,11 +1,5 @@
 jest.mock('../src/theme.js', () => ({ initThemeToggle: jest.fn() }));
 jest.mock('../src/navigation.js', () => ({ navigateTo: jest.fn() }));
-const mockAuthPort = {
-  currentUser: jest.fn().mockResolvedValue({ id: 'u' }),
-};
-jest.mock('../src/infra/supabase/auth.adapter.ts', () => ({
-  createAuthAdapter: () => mockAuthPort,
-}));
 
 describe('home page UAT', () => {
   beforeEach(() => {
@@ -13,7 +7,7 @@ describe('home page UAT', () => {
     jest.clearAllMocks();
   });
 
-  test('initHome wires up all buttons to navigation', async () => {
+  test('initHome wires up all buttons to navigation', () => {
     document.body.innerHTML = `
       <button id="playBtn"></button>
       <button id="multiplayerBtn"></button>
@@ -27,7 +21,6 @@ describe('home page UAT', () => {
 
     document.getElementById('playBtn').click();
     document.getElementById('multiplayerBtn').click();
-    await Promise.resolve();
     document.getElementById('setupBtn').click();
     document.getElementById('howToPlayBtn').click();
     document.getElementById('aboutBtn').click();
