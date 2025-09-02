@@ -1,7 +1,10 @@
-export function renderUserMenu({ authPort, navigateTo, info, error }) {
+export async function renderUserMenu({ authPort, navigateTo, info, error }) {
   info?.('[AUTH] renderMenu');
   const menu = document.getElementById('userMenu');
-  if (!menu) return;
+  if (!menu) {
+    document.querySelector('nav.loading')?.classList.remove('loading');
+    return;
+  }
   const nav = menu.closest('nav') || menu;
 
   const showLoggedOut = () => {
@@ -15,8 +18,6 @@ export function renderUserMenu({ authPort, navigateTo, info, error }) {
     register.textContent = 'Registrati';
 
     menu.append(login, register);
-    nav.classList.remove('loading');
-    menu.classList.remove('loading');
   };
 
   const showLoggedIn = (user) => {
@@ -51,23 +52,22 @@ export function renderUserMenu({ authPort, navigateTo, info, error }) {
     });
 
     menu.append(avatar, profile, logout);
-    nav.classList.remove('loading');
-    menu.classList.remove('loading');
   };
 
-  return authPort
-    .currentUser({})
-    .then((user) => {
-      if (user) {
-        showLoggedIn(user);
-      } else {
-        showLoggedOut();
-      }
-    })
-    .catch((err) => {
-      error?.('[AUTH] currentUser', err);
+  try {
+    const user = await authPort.currentUser({});
+    if (user) {
+      showLoggedIn(user);
+    } else {
       showLoggedOut();
-    });
+    }
+  } catch (err) {
+    error?.('[AUTH] currentUser', err);
+    showLoggedOut();
+  } finally {
+    nav.classList.remove('loading');
+    menu.classList.remove('loading');
+  }
 }
 
 export function showFlashMessage() {
