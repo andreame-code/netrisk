@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lobby - NetRisk</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" crossorigin src="./assets/lobby-C_C9sfSE.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/config-VUvQXQsa.js">
+    <link rel="modulepreload" crossorigin href="./assets/auth-CCLs5HSR.js">
+    <link rel="modulepreload" crossorigin href="./assets/theme-CN2ifeDr.js">
+    <link rel="stylesheet" crossorigin href="./assets/config-BaM4L7Wl.css">
+  </head>
+  <body class="lobby-page">
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Lobby</h1>
+      <div id="lobbyError" class="hidden" data-testid="lobby-error">
+        <p id="lobbyErrorMsg"></p>
+        <button id="retryLobby" class="btn">Retry</button>
+      </div>
+      <button id="backBtn" class="btn" aria-label="Back to home" accesskey="b">Back</button>
+      <button
+        id="createBtn"
+        class="btn"
+        aria-label="Create new game"
+        accesskey="n"
+        data-testid="create-game"
+      >
+        Create game
+      </button>
+      <ul id="lobbyList" class="lobby-list" data-testid="lobby-list"></ul>
+      <dialog id="createDialog">
+        <form id="createForm">
+          <label>Room name <input id="roomName" required /></label>
+          <label
+            >Max players <input id="maxPlayers" type="number" min="2" max="8" value="2" required
+          /></label>
+          <label
+            >Map
+            <select id="map"></select
+          ></label>
+          <menu>
+            <button type="button" value="cancel" id="cancelCreate">Cancel</button>
+            <button type="submit" id="submitCreate" value="default">Create</button>
+          </menu>
+        </form>
+      </dialog>
+      <section class="chat">
+        <ul id="chatMessages" class="chat-messages"></ul>
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <input id="chatInput" maxlength="200" aria-label="Chat message" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+      <section id="debugLog" class="debug-log" aria-live="polite"></section>
+    </main>
+    <script src="/env.js"></script>
+  </body>
+</html>
