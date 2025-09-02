@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account - NetRisk</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+        };
+        s.onerror = () => console.error('[ENV] env.js failed to load');
+        document.head.appendChild(s);
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/account-Cr0zy-P5.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/config-pcTzC3rW.js">
+    <link rel="modulepreload" crossorigin href="./assets/auth-BipyuBRu.js">
+    <link rel="stylesheet" crossorigin href="./assets/config-BaM4L7Wl.css">
+  </head>
+  <body>
+    <header class="main-header">
+      <a href="index.html" class="logo">NetRisk</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="setup.html">Setup</a>
+        <a href="how-to-play.html">How To</a>
+        <a href="about.html">About</a>
+        <span id="userMenu" class="user-menu loading" data-testid="user-status"></span>
+      </nav>
+    </header>
+    <main>
+      <h1>Account</h1>
+      <div id="profile" class="profile">
+        <div id="userAvatar" class="avatar"></div>
+        <p>Nome: <span id="userName"></span></p>
+        <p>Email: <span id="userEmail"></span></p>
+      </div>
+      <div class="actions">
+        <button id="changePasswordBtn" class="btn">Cambia password</button>
+        <button id="updateNameBtn" class="btn">Aggiorna nome</button>
+        <button id="logoutBtn" class="btn">Esci da tutti i dispositivi</button>
+      </div>
+      <section id="myGame">
+        <h2>Il mio gioco</h2>
+        <div>
+          <h3>Ultime lobby</h3>
+          <ul id="recentLobbies"></ul>
+        </div>
+        <div>
+          <h3>Preferenze salvate</h3>
+          <p>Colore pedine: <span id="prefColor"></span></p>
+          <p>Mappa preferita: <span id="prefMap"></span></p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
