@@ -44,7 +44,9 @@ test.describe('join lobby', () => {
     await page.evaluate(() => {
       const code = 'abcd';
       const ws = new WebSocket('ws://test');
-      ws.send(JSON.stringify({ type: 'joinLobby', code, player: { name: 'tester' } }));
+      ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type: 'joinLobby', code, player: { name: 'tester' } }));
+      });
     });
     await expect
       .poll(async () => page.evaluate(() => localStorage.getItem('lobbyCode')))

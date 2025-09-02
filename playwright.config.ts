@@ -7,6 +7,7 @@ const STORAGE_STATE = 'playwright/.auth/user.json';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: process.env.CI ? /visual\.spec\.ts/ : undefined,
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: BASE_URL,
@@ -24,5 +25,10 @@ export default defineConfig({
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
+        env: {
+          VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? 'https://example.supabase.co',
+          VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY ?? 'dummy-key',
+          VITE_COMMIT_SHA: process.env.VITE_COMMIT_SHA ?? 'dev',
+        },
       },
 });
