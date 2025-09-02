@@ -97,7 +97,7 @@ test.describe('login', () => {
   test('redirects to account after login', async ({ page }) => {
     await page.goto('/login.html');
     await expect(page.getByText('Unable to load data')).toHaveCount(0);
-    await page.fill('[data-testid="login-username"]', 'user@example.com');
+    await page.fill('[data-testid="login-email"]', 'user@example.com');
     await page.fill('[data-testid="login-password"]', 'password');
     await page.click('[data-testid="login-submit"]');
     await page.waitForURL('**/account.html');

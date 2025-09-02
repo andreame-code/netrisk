@@ -132,7 +132,7 @@ test.describe('lobby creation', () => {
 
     await page.goto('/login.html');
     await expect(page.getByText('Unable to load data')).toHaveCount(0);
-    await page.fill('[data-testid="login-username"]', 'testuser@example.com');
+    await page.fill('[data-testid="login-email"]', 'testuser@example.com');
     await page.fill('[data-testid="login-password"]', 'password');
     await page.click('[data-testid="login-submit"]');
 
@@ -141,7 +141,7 @@ test.describe('lobby creation', () => {
     const list = page.locator('[data-testid="lobby-list"] li');
     await expect(list).toHaveCount(0);
 
-    await page.click('[data-testid="create-game"]');
+    await page.click('[data-testid="lobby-create"]');
     await page.fill('#roomName', 'Test Lobby');
     await page.fill('#maxPlayers', '3');
     await page.selectOption('#map', 'map1');
