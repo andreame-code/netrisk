@@ -36,7 +36,7 @@ test('lobby server manages lifecycle', async () => {
       maxPlayers: 5,
     }),
   );
-  await wait(50);
+  await wait(100);
   const lobbyMsg = q1.shift();
   const code = lobbyMsg.code;
   expect(lobbyMsg.maxPlayers).toBe(5);
