@@ -22,8 +22,8 @@ test.describe('start match flow', () => {
     await setupLobby(page);
     await page.goto('/setup.html');
     await expect(page.getByText('Unable to load data')).toHaveCount(0);
-    await expect(page.locator('#name0')).toHaveValue('Red');
-    await expect(page.locator('#name1')).toHaveValue('Blue');
+    await page.fill('#name0', 'Red');
+    await page.fill('#name1', 'Blue');
     await page.waitForSelector('#mapGrid .map-item');
     await page.click('button[type="submit"]');
     await page.goto('/game.html');

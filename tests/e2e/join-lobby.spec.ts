@@ -41,10 +41,10 @@ test.describe('join lobby', () => {
 
   test('stores lobby info after entering code', async ({ page }) => {
     await page.goto('/lobby.html');
+    await page.waitForFunction(() => (globalThis as any).__ws);
     await page.evaluate(() => {
-      const code = 'abcd';
-      const ws = new WebSocket('ws://test');
-      ws.send(JSON.stringify({ type: 'joinLobby', code, player: { name: 'tester' } }));
+      const ws = (globalThis as any).__ws;
+      ws.send(JSON.stringify({ type: 'joinLobby', code: 'abcd', player: { name: 'tester' } }));
     });
     await expect
       .poll(async () => page.evaluate(() => localStorage.getItem('lobbyCode')))

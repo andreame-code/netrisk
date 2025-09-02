@@ -5,17 +5,22 @@ test.describe('smoke auth', () => {
     await page.route('**/src/init/supabase-client.js*', (route) =>
       route.fulfill({
         body: `
-          const supabase = {
+          export const supabase = {
             auth: {
               getUser: async () => ({ data: { user: globalThis.__user || null } }),
-              onAuthStateChange: (cb) => { globalThis.__auth_cb = cb; },
-              signOut: async () => { globalThis.__user = null; globalThis.__auth_cb?.('SIGNED_OUT', { user: null }); },
+              onAuthStateChange: (cb) => {
+                globalThis.__auth_cb = cb;
+                cb('SIGNED_OUT', { user: null });
+              },
+              signOut: async () => {
+                globalThis.__user = null;
+                globalThis.__auth_cb?.('SIGNED_OUT', { user: null });
+              },
             },
           };
-          supabase.auth.onAuthStateChange(async () => {
-            const { renderUserMenu } = await import('../auth.js');
-            await renderUserMenu();
-          });
+          export function registerAuthListener(handler) {
+            supabase.auth.onAuthStateChange(handler);
+          }
           export default supabase;
         `,
         contentType: 'application/javascript',
