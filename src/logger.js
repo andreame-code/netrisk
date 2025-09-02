@@ -16,10 +16,15 @@ if (typeof document !== 'undefined') {
     whiteSpace: 'pre-wrap',
   });
   overlay.classList.add('hidden');
-  document.addEventListener('DOMContentLoaded', () => {
+  const attach = () => {
     document.body.appendChild(overlay);
     logBox = document.getElementById('debugLog');
-  });
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attach);
+  } else {
+    attach();
+  }
 }
 
 function showError(message) {

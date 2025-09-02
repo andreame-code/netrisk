@@ -13,16 +13,36 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       (function () {
-          document.write('<script src="build.js"><\/script>');
-          var v = Date.now();
-          document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
-      })();
-    </script>
-    <script>
-      (function () {
-        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-          console.error('[ENV] Missing keys in env.js');
-        }
+        const modules = ['./auth.js', './setup.js'];
+        const base = location.pathname.replace(/[^/]*$/, '');
+        const loadModules = () => {
+          modules.forEach((src) => {
+            const m = document.createElement('script');
+            m.type = 'module';
+            m.src = src;
+            document.head.appendChild(m);
+          });
+        };
+        const init = () => {
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadModules);
+          } else {
+            loadModules();
+          }
+        };
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+          init();
+        };
+        s.onerror = () => {
+          console.error('[ENV] env.js failed to load');
+          init();
+        };
+        document.head.appendChild(s);
       })();
     </script>
   </head>
@@ -69,7 +89,5 @@
       <div id="players"></div>
       <button type="submit" class="btn">Start</button>
     </form>
-    <script type="module" src="./auth.js"></script>
-    <script type="module" src="./setup.js"></script>
   </body>
 </html>
