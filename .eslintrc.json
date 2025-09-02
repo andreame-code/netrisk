@@ -21,9 +21,30 @@
   },
   "overrides": [
     {
+      "files": ["src/game/**/*.{js,ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": ["error", { "patterns": ["@app/*", "@features/*", "@infra/*"] }]
+      }
+    },
+    {
       "files": ["src/features/**/*.{js,ts,tsx}"],
       "rules": {
         "no-restricted-imports": ["error", { "patterns": ["@app/*", "@infra/*"] }]
+      }
+    },
+    {
+      "files": ["src/shared/**/*.{js,ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          { "patterns": ["@app/*", "@game/*", "@features/*", "@infra/*"] }
+        ]
+      }
+    },
+    {
+      "files": ["src/infra/**/*.{js,ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": ["error", { "patterns": ["@app/*", "@features/*", "@game/*"] }]
       }
     },
     {
