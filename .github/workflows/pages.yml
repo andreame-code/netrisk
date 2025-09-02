@@ -51,34 +51,20 @@ jobs:
           cp -r supabase dist/
 
       - name: Genera env.js per Pages
+        working-directory: dist
         run: |
-          mkdir -p dist
-          cat > dist/env.js <<'EOENV'
+          cat > env.js <<'EOENV'
           // Auto-generated at build time. Do NOT commit real keys.
-          (function(){
-            window.__env = {
-              SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
-              SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
-            };
-          })();
+          window.__env = {
+            SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
+            SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+          };
           EOENV
-          cat > dist/build.js <<EOF
-          (function(){
-            window.__buildSha='${GITHUB_SHA}';
-            if('serviceWorker' in navigator){
-              navigator.serviceWorker
-                .register('./sw.js?v=${GITHUB_SHA}')
-                .catch(function(err){
-                  console.warn('[SW] registration failed', err);
-                });
-            }
-          })();
-          EOF
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: ./dist
 
   deploy:
     environment:
