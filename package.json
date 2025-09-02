@@ -17,6 +17,9 @@
     "pretest:e2e:full": "PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install chromium",
     "test:e2e:smoke": "playwright test -c config/playwright.smoke.config.ts",
     "test:e2e:full": "playwright test -c config/playwright.full.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "test:smoke": "jest --config config/jest.config.js tests/smoke",
     "prepare": "husky"
   },
