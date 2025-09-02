@@ -6,6 +6,7 @@ describe('auth form utility', () => {
       <form id="testForm">
         <button type="submit">Go</button>
       </form>
+      <p id="authGuard" data-testid="auth-guard-msg"></p>
       <p id="message"></p>
     `;
   });
@@ -46,7 +47,7 @@ describe('auth form utility', () => {
     }));
     const { setupAuthForm } = require('../src/utils/auth-forms.js');
     setupAuthForm('testForm', jest.fn());
-    expect(document.getElementById('message').textContent).toBe('hello');
+    expect(document.querySelector('[data-testid="auth-guard-msg"]').textContent).toBe('hello');
     window.history.pushState({}, '', originalUrl);
   });
 });
