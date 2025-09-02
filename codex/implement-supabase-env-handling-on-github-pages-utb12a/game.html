@@ -7,9 +7,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-transform" />
     <script>
       (function () {
-        var v = Date.now();
-        document.write('<script src="build.js?v=' + v + '"><\/script>');
-        document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
+          document.write('<script src="build.js"><\/script>');
+          var v = Date.now();
+          document.write('<script src="env.js?v=' + v + '" onerror="console.error(\\'[ENV] env.js failed to load\\')"><\/script>');
       })();
     </script>
     <script>
