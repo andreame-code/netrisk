@@ -12,20 +12,16 @@
     <link rel="stylesheet" href="./css/game.css" />
     <script>
       (function () {
-        document.write('<script src="build.js"><\/script>');
-        var v = Date.now();
-        document.write(
-          '<script src="env.js?v=' +
-            v +
-            '" onerror="console.error(\'[ENV] env.js failed to load\')"><\/script>',
-        );
-      })();
-    </script>
-    <script>
-      (function () {
-        if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
-          console.error('[ENV] Missing keys in env.js');
-        }
+        const base = document.currentScript?.src.split('/').slice(0, -1).join('/') + '/';
+        const s = document.createElement('script');
+        s.src = base + 'env.js?' + Date.now();
+        s.onload = () => {
+          if (!window.__env || !window.__env.SUPABASE_URL || !window.__env.SUPABASE_ANON_KEY) {
+            console.error('[ENV] Missing keys in env.js');
+          }
+        };
+        s.onerror = () => console.error('[ENV] env.js failed to load');
+        document.head.appendChild(s);
       })();
     </script>
   </head>
