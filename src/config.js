@@ -8,15 +8,18 @@ const rawApiBaseUrl =
   (typeof process !== 'undefined' ? process.env.VITE_API_BASE_URL : '') ??
   '';
 
+// Supabase configuration prioritizes variables injected by Vite at build time
+// while still allowing runtime overrides via `window.__env` or Node's
+// `process.env` (for tests or server-side usage).
 const rawSupabaseUrl =
-  (typeof window !== 'undefined' && window.__env?.SUPABASE_URL) ??
   import.meta.env?.VITE_SUPABASE_URL ??
+  (typeof window !== 'undefined' && window.__env?.SUPABASE_URL) ??
   (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL : '') ??
   '';
 
 const rawSupabaseKey =
-  (typeof window !== 'undefined' && window.__env?.SUPABASE_ANON_KEY) ??
   import.meta.env?.VITE_SUPABASE_ANON_KEY ??
+  (typeof window !== 'undefined' && window.__env?.SUPABASE_ANON_KEY) ??
   (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY : '') ??
   '';
 
