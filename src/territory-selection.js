@@ -61,10 +61,19 @@ export default function initTerritorySelection({
     (typeof localStorage !== 'undefined' && localStorage.getItem('netriskMap')) || 'map';
   const boardEl = document.getElementById('board');
 
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function loadMap(urls) {
     if (!urls.length) {
       const msg = `Map "${mapName}" could not be loaded`;
-      boardEl.innerHTML = `<p role="alert">${msg}</p>`;
+      boardEl.innerHTML = `<p role="alert">${escapeHtml(msg)}</p>`;
       throw new Error(msg);
     }
     const [url, ...rest] = urls;
