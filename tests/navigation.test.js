@@ -37,4 +37,20 @@ describe('navigateTo', () => {
     exitGame(win);
     expect(win.location.assign).not.toHaveBeenCalled();
   });
+
+  test('resolves relative paths from directory without trailing slash', () => {
+    const win = {
+      location: { pathname: '/netrisk', assign: jest.fn() },
+    };
+    navigateTo('./game.html', win);
+    expect(win.location.assign).toHaveBeenCalledWith('/netrisk/game.html');
+  });
+
+  test('resolves relative paths from extensionless files', () => {
+    const win = {
+      location: { pathname: '/netrisk/home', assign: jest.fn() },
+    };
+    navigateTo('./game.html', win);
+    expect(win.location.assign).toHaveBeenCalledWith('/netrisk/game.html');
+  });
 });
