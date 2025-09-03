@@ -62,6 +62,9 @@ Per valutare l'equilibrio dell'IA, esegui una serie di partite automatizzate:
 npm run simulate
 ```
 
+Per la configurazione dei test end-to-end e le variabili richieste consulta
+[docs/e2e.md](docs/e2e.md).
+
 ## Deploy
 
 Genera la build destinata alla produzione:
