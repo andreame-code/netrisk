@@ -47,24 +47,45 @@ jobs:
 
       - name: Stage static files
         run: |
-          if [ -d dist ]; then true; elif [ -d build ]; then mv build dist; elif [ -d out ]; then mv out dist; else mkdir -p dist; fi
+          mkdir -p dist
           cp -r supabase dist/
 
-      - name: Genera env.js per Pages
+      - name: Generate env.${{ github.sha }}.js
         working-directory: dist
         run: |
-          cat > env.js <<'EOENV'
+          cat > env.${GITHUB_SHA}.js <<EOENV
           // Auto-generated at build time. Do NOT commit real keys.
           window.__env = {
             SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
-            SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}"
+            SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}",
+            SHA: "${GITHUB_SHA}"
+          };
+          console.log('[ENV CHECK] loaded: OK');
+          EOENV
+          cat > env.js <<EOENV
+          window.__env = {
+            SUPABASE_URL: "${{ secrets.SUPABASE_URL }}",
+            SUPABASE_ANON_KEY: "${{ secrets.SUPABASE_ANON_KEY }}",
+            SHA: "${GITHUB_SHA}"
           };
           EOENV
+
+      - name: Patch index.html with env script
+        working-directory: dist
+        run: |
+          sed -i "s#</head>#  <script src=\"env.${GITHUB_SHA}.js\"></script>\n</head>#" index.html
+
+      - name: Verify env file
+        run: |
+          test -f dist/env.${GITHUB_SHA}.js
+          grep -q "window.__env" dist/env.${GITHUB_SHA}.js
+          grep -Eq "SUPABASE_URL: \"[^\"]+\"" dist/env.${GITHUB_SHA}.js
+          grep -Eq "SUPABASE_ANON_KEY: \"[^\"]+\"" dist/env.${GITHUB_SHA}.js
 
       - name: Upload artifact (Pages)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
   deploy:
     environment:
