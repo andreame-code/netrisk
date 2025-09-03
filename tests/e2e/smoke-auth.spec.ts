@@ -2,20 +2,30 @@ import { test, expect } from '@playwright/test';
 
 test.describe('smoke auth', () => {
   test('anonymous auth flow', async ({ page }) => {
-    await page.route('**/src/init/supabase-client.js*', (route) =>
+    await page.route('**/init/supabase-client.js*', (route) =>
       route.fulfill({
         body: `
-          const supabase = {
+          export const supabase = {
             auth: {
               getUser: async () => ({ data: { user: globalThis.__user || null } }),
-              onAuthStateChange: (cb) => { globalThis.__auth_cb = cb; },
-              signOut: async () => { globalThis.__user = null; globalThis.__auth_cb?.('SIGNED_OUT', { user: null }); },
+              getSession: async () => ({
+                data: {
+                  session: globalThis.__user ? { user: globalThis.__user } : null,
+                },
+              }),
+              onAuthStateChange: (cb) => {
+                globalThis.__auth_cb = cb;
+                cb('SIGNED_OUT', { user: null });
+              },
+              signOut: async () => {
+                globalThis.__user = null;
+                globalThis.__auth_cb?.('SIGNED_OUT', { user: null });
+              },
             },
           };
-          supabase.auth.onAuthStateChange(async () => {
-            const { renderUserMenu } = await import('../auth.js');
-            await renderUserMenu();
-          });
+          export function registerAuthListener(handler) {
+            supabase.auth.onAuthStateChange(handler);
+          }
           export default supabase;
         `,
         contentType: 'application/javascript',
@@ -23,6 +33,7 @@ test.describe('smoke auth', () => {
     );
 
     await page.goto('/index.html');
+    await page.waitForSelector('#userMenu:not(.loading)');
     await expect(page.locator('#userMenu')).toContainText('Accedi');
     await expect(page.locator('#userMenu')).toContainText('Registrati');
     await expect(page.locator('text=Unable to load data')).toHaveCount(0);
