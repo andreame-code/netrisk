@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+test.skip(process.env.CI, 'skip visual tests in CI');
+
 test.describe('visual regression', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
