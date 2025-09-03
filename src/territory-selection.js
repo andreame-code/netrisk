@@ -61,18 +61,18 @@ export default function initTerritorySelection({
     (typeof localStorage !== 'undefined' && localStorage.getItem('netriskMap')) || 'map';
   const boardEl = document.getElementById('board');
 
-  function loadMap(paths) {
-    if (!paths.length) {
-      boardEl.textContent = 'Invalid map';
-      throw new Error(`Map "${mapName}" could not be loaded`);
+  function loadMap(urls) {
+    if (!urls.length) {
+      const msg = `Map "${mapName}" could not be loaded`;
+      boardEl.innerHTML = `<p role="alert">${msg}</p>`;
+      throw new Error(msg);
     }
-    const [path, ...rest] = paths;
-    const base = typeof document !== 'undefined' ? document.baseURI : undefined;
-    const url = new URL(path, base);
+    const [url, ...rest] = urls;
+    const u = new URL(url, typeof document !== 'undefined' ? document.baseURI : undefined);
     const fetchPath =
-      typeof window !== 'undefined' && url.origin === window.location.origin
-        ? url.pathname + url.search + url.hash
-        : url.href;
+      typeof window !== 'undefined' && u.origin === window.location.origin
+        ? u.pathname + u.search + u.hash
+        : u.href;
     return fetch(fetchPath)
       .then((r) => (r.ok ? r.text() : null))
       .then((text) => {
@@ -91,11 +91,23 @@ export default function initTerritorySelection({
       .catch(() => loadMap(rest));
   }
 
-  loadMap([
-    `/assets/maps/${mapName}.svg`,
-    `assets/maps/${mapName}.svg`,
-    `public/assets/maps/${mapName}.svg`,
-  ])
+  const mapUrls = [];
+  if (typeof document !== 'undefined') {
+    const base = document.baseURI;
+    mapUrls.push(new URL(`./assets/maps/${mapName}.svg`, base).href);
+    mapUrls.push(new URL(`./public/assets/maps/${mapName}.svg`, base).href);
+  }
+  let moduleUrl;
+  try {
+    moduleUrl = new Function('return import.meta.url')();
+  } catch {
+    moduleUrl = undefined;
+  }
+  if (moduleUrl) {
+    mapUrls.push(new URL(`../public/assets/maps/${mapName}.svg`, moduleUrl).href);
+  }
+
+  loadMap(mapUrls)
     .then((svg) => {
       boardEl.innerHTML = svg;
       const map = boardEl.querySelector('#map');
