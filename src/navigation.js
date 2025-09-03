@@ -1,7 +1,15 @@
 export function navigateTo(url, win = typeof window !== 'undefined' ? window : undefined) {
   if (!win) return;
-  const base = win.location?.pathname?.replace(/[^/]*$/, '') ?? '';
-  const target = base + url;
+  const path = win.location?.pathname ?? '';
+  const base = !path
+    ? ''
+    : path.endsWith('/')
+      ? path
+      : path.includes('.')
+        ? path.replace(/[^/]*$/, '')
+        : `${path}/`;
+  const isAbsolute = /^(?:[a-z]+:)?\//i.test(url);
+  const target = isAbsolute ? url : base + url.replace(/^\.\//, '');
   if (win.history && typeof win.history.pushState === 'function') {
     try {
       win.history.pushState({}, '', target);
