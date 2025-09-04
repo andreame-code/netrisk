@@ -10,14 +10,8 @@
     <link rel="stylesheet" href="./css/theme.css" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module">
-      const modules = ['./auth.js', './register.js'];
-      const loadModules = () => {
-        modules.forEach((src) => {
-          const m = document.createElement('script');
-          m.type = 'module';
-          m.src = src;
-          document.head.appendChild(m);
-        });
+      const loadModules = async () => {
+        await Promise.all([import('./auth.js'), import('./register.js')]);
       };
       const base = location.pathname.replace(/[^/]*$/, '');
       try {

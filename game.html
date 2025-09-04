@@ -11,14 +11,8 @@
     <link rel="stylesheet" href="./css/theme.css" />
     <link rel="stylesheet" href="./css/game.css" />
     <script type="module">
-      const modules = ['./main.js'];
-      const loadModules = () => {
-        modules.forEach((src) => {
-          const m = document.createElement('script');
-          m.type = 'module';
-          m.src = src;
-          document.head.appendChild(m);
-        });
+      const loadModules = async () => {
+        await import('./main.js');
       };
       const base = location.pathname.replace(/[^/]*$/, '');
       try {
