@@ -41,13 +41,23 @@ test.describe('join lobby', () => {
 
   test('stores lobby info after entering code', async ({ page }) => {
     await page.goto('/lobby.html');
-    await page.evaluate(() => {
-      const code = 'abcd';
-      const ws = new WebSocket('ws://test');
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'joinLobby', code, player: { name: 'tester' } }));
-      };
-    });
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const code = 'abcd';
+          const ws = new WebSocket('ws://test');
+          ws.onopen = () => {
+            ws.send(
+              JSON.stringify({
+                type: 'joinLobby',
+                code,
+                player: { name: 'tester' },
+              }),
+            );
+            resolve();
+          };
+        }),
+    );
     await expect
       .poll(async () => page.evaluate(() => localStorage.getItem('lobbyCode')))
       .toBe('abcd');
