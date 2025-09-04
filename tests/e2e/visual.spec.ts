@@ -3,6 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('visual regression', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
+      window.__env = {
+        SUPABASE_URL: 'https://example.supabase.co',
+        SUPABASE_ANON_KEY: 'dummy-key',
+      };
       const style = document.createElement('style');
       style.innerHTML = '* { transition: none !important; animation: none !important; }';
       document.head.appendChild(style);
@@ -60,9 +64,8 @@ test.describe('visual regression', () => {
         await page.waitForSelector('[data-testid="game-board"] .map-territory');
       }
       await page.evaluate(() => document.fonts.ready);
-      await expect(page).toHaveScreenshot(`${p.name}.png`, {
-        maxDiffPixels: 100,
-      });
+      const screenshot = await page.screenshot();
+      expect(screenshot.toString('base64')).toMatchSnapshot(`${p.name}.txt`);
     });
   }
 });
