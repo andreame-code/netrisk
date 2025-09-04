@@ -10,15 +10,7 @@
       }
     </style>
     <script type="module">
-      const modules = [];
-      const loadModules = () => {
-        modules.forEach((src) => {
-          const m = document.createElement('script');
-          m.type = 'module';
-          m.src = src;
-          document.head.appendChild(m);
-        });
-      };
+      const loadModules = async () => {};
       const base = location.pathname.replace(/[^/]*$/, '');
       try {
         await import(`${base}env.js?${Date.now()}`);
