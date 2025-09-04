@@ -20,7 +20,7 @@
         await Promise.all([import('./auth.js'), import('./home.js')]);
       };
       try {
-        await import(`${basePath}env.js?${Date.now()}`);
+        await import(/* @vite-ignore */ `${basePath}env.js?${Date.now()}`);
         if (!window.__env?.SUPABASE_URL || !window.__env?.SUPABASE_ANON_KEY) {
           console.error('[ENV] Missing keys in env.js');
         }

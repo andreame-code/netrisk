@@ -16,7 +16,7 @@
       };
       const base = location.pathname.replace(/[^/]*$/, '');
       try {
-        await import(`${base}env.js?${Date.now()}`);
+        await import(/* @vite-ignore */ `${base}env.js?${Date.now()}`);
         if (!window.__env?.SUPABASE_URL || !window.__env?.SUPABASE_ANON_KEY) {
           console.error('[ENV] Missing keys in env.js');
         }
