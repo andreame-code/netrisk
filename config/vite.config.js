@@ -18,6 +18,11 @@ export default defineConfig({
         forgot: resolve(__dirname, '../forgot.html'),
         register: resolve(__dirname, '../register.html'),
         account: resolve(__dirname, '../account.html'),
+        auth: resolve(__dirname, '../auth.js'),
+        home: resolve(__dirname, '../home.js'),
+      },
+      output: {
+        entryFileNames: '[name].js',
       },
     },
   },
