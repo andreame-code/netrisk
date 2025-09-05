@@ -20,6 +20,13 @@ export const supabase = (() => {
     warn('[Supabase] ENV missing — multiplayer/lobby disabilitati');
     return null;
   }
+  if (typeof window !== 'undefined') {
+    const tokenKey = 'supabase.auth.token';
+    const sessionToken = window.sessionStorage.getItem(tokenKey);
+    const localToken = window.localStorage.getItem(tokenKey);
+    const storage = sessionToken && !localToken ? window.sessionStorage : window.localStorage;
+    return createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storage } });
+  }
   return createClient(SUPABASE_URL, SUPABASE_KEY);
 })();
 if (supabase) {
