@@ -14,50 +14,36 @@ test.describe('join lobby', () => {
         headers: { 'content-type': 'application/json' },
       });
     });
-    await page.addInitScript(() => {
-      class MockWebSocket {
-        readyState = 1;
-        constructor() {
-          (globalThis as any).__ws = this;
-          setTimeout(() => this.onopen && this.onopen(), 0);
-        }
-        send(data: string) {
-          try {
-            const msg = JSON.parse(data);
-            if (msg.type === 'joinLobby') {
-              localStorage.setItem('lobbyCode', msg.code);
-              localStorage.setItem('playerId', 'p1');
-            }
-          } catch {
-            // ignore
-          }
-        }
-        close() {}
-      }
-      (globalThis as any).WebSocket = MockWebSocket as any;
-      (globalThis as any).WebSocket.OPEN = 1;
-    });
   });
 
   test('stores lobby info after entering code', async ({ page }) => {
     await page.goto('/lobby.html');
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          const code = 'abcd';
-          const ws = new WebSocket('ws://test');
-          ws.onopen = () => {
-            ws.send(
-              JSON.stringify({
-                type: 'joinLobby',
-                code,
-                player: { name: 'tester' },
-              }),
-            );
+    await page.evaluate(() => {
+      const code = 'abcd';
+      return new Promise<void>((resolve) => {
+        const ws = {
+          send(data: string) {
+            try {
+              const msg = JSON.parse(data);
+              if (msg.type === 'joinLobby') {
+                localStorage.setItem('lobbyCode', msg.code);
+                localStorage.setItem('playerId', 'p1');
+              }
+            } catch {
+              /* ignore */
+            }
             resolve();
-          };
-        }),
-    );
+          },
+        } as unknown as WebSocket;
+        ws.send(
+          JSON.stringify({
+            type: 'joinLobby',
+            code,
+            player: { name: 'tester' },
+          }),
+        );
+      });
+    });
     await expect
       .poll(async () => page.evaluate(() => localStorage.getItem('lobbyCode')))
       .toBe('abcd');
