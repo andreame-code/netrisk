@@ -75,6 +75,28 @@ describe('Supabase adapters', () => {
     const { lobbies } = await adapter.listLobbies({});
     expect(lobbies).toEqual([{ id: '1', name: 'L1', maxPlayers: 4, playerCount: 2 }]);
   });
+
+  test('lobby adapter converts numeric strings', async () => {
+    const client: any = {
+      from: () => ({
+        select: () =>
+          Promise.resolve({
+            data: [
+              {
+                id: '1',
+                name: 'L1',
+                max_players: 4,
+                player_count: '2',
+              },
+            ],
+            error: null,
+          }),
+      }),
+    };
+    const adapter = createLobbyAdapter(client);
+    const { lobbies } = await adapter.listLobbies({});
+    expect(lobbies).toEqual([{ id: '1', name: 'L1', maxPlayers: 4, playerCount: 2 }]);
+  });
 });
 
 describe('Model input validation', () => {
