@@ -46,16 +46,19 @@ export const createLobbyAdapter = (client: SupabaseClient | null = supabase): Lo
       if (!supa) throw new Error('Supabase client not initialized');
       const { data, error } = await supa.from('lobbies').select();
       if (error || !data) throw error || new Error('List lobbies failed');
-      const lobbies = data.map((row: any) =>
-        lobbySchema.parse({
+      const lobbies = data.map((row: any) => {
+        const count = row.player_count ?? row.playerCount;
+        return lobbySchema.parse({
           id: row.code ?? row.id,
           name: row.host ?? row.name,
           maxPlayers: row.max_players ?? row.maxPlayers,
           playerCount: Array.isArray(row.players)
             ? row.players.length
-            : (row.player_count ?? row.playerCount),
-        }),
-      );
+            : typeof count === 'string'
+              ? Number(count)
+              : (count ?? 0),
+        });
+      });
       return listLobbiesOutputSchema.parse({ lobbies });
     },
     async join(input) {
