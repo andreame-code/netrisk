@@ -1,0 +1,10 @@
+python
+venv
+__pycache__
+.env
+models/
+.pio/
+.vscode/
+build/
+dist/
+*.bin
