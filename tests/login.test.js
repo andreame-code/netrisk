@@ -248,7 +248,14 @@ describe('login page', () => {
     jest.resetModules();
     jest.dontMock('../src/init/supabase-client.js');
     jest.doMock('@supabase/supabase-js', () => ({
-      createClient: jest.fn((url, key, opts) => ({ auth: { storage: opts?.auth?.storage } })),
+      createClient: jest.fn((url, key, opts) => ({
+        auth: {
+          storage: opts?.auth?.storage,
+          getSession: jest.fn(async () =>
+            JSON.parse(opts?.auth?.storage.getItem('supabase.auth.token')),
+          ),
+        },
+      })),
     }));
     const { createClient } = require('@supabase/supabase-js');
     const client = require('../src/init/supabase-client.js').default;
@@ -256,5 +263,6 @@ describe('login page', () => {
       auth: { storage: window.sessionStorage },
     });
     expect(client.auth.storage).toBe(window.sessionStorage);
+    await expect(client.auth.getSession()).resolves.toEqual(session);
   });
 });
