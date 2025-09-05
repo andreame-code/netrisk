@@ -210,4 +210,51 @@ describe('login page', () => {
     expect(removeSpy).not.toHaveBeenCalledWith('supabase.auth.token');
     removeSpy.mockRestore();
   });
+
+  test('session persists in sessionStorage after navigation when not staying logged in', async () => {
+    process.env.VITE_SUPABASE_URL = 'https://example.com';
+    process.env.VITE_SUPABASE_ANON_KEY = 'anon';
+    const session = { access_token: 'a', refresh_token: 'r' };
+    jest.doMock('../src/init/supabase-client.js', () => ({
+      __esModule: true,
+      default: {
+        auth: {
+          signInWithPassword: jest.fn().mockResolvedValue({
+            data: { user: { email: 'foo@example.com' }, session },
+            error: null,
+          }),
+          setSession: jest.fn(async () => {
+            sessionStorage.setItem('supabase.auth.token', JSON.stringify(session));
+          }),
+        },
+      },
+    }));
+    document.body.innerHTML = `
+      <form id="loginForm">
+        <input id="username" />
+        <input id="password" />
+        <input type="checkbox" id="stayLoggedIn" />
+        <button type="submit">Login</button>
+      </form>
+      <p id="message" role="alert"></p>
+    `;
+    require('../src/login.js');
+    document.getElementById('username').value = 'foo@example.com';
+    document.getElementById('password').value = 'pass';
+    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    await Promise.resolve();
+    expect(sessionStorage.getItem('supabase.auth.token')).not.toBeNull();
+    expect(localStorage.getItem('supabase.auth.token')).toBeNull();
+    jest.resetModules();
+    jest.dontMock('../src/init/supabase-client.js');
+    jest.doMock('@supabase/supabase-js', () => ({
+      createClient: jest.fn((url, key, opts) => ({ auth: { storage: opts?.auth?.storage } })),
+    }));
+    const { createClient } = require('@supabase/supabase-js');
+    const client = require('../src/init/supabase-client.js').default;
+    expect(createClient).toHaveBeenCalledWith('https://example.com', 'anon', {
+      auth: { storage: window.sessionStorage },
+    });
+    expect(client.auth.storage).toBe(window.sessionStorage);
+  });
 });
