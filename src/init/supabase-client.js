@@ -24,8 +24,14 @@ export const supabase = (() => {
     const tokenKey = 'supabase.auth.token';
     const sessionToken = window.sessionStorage.getItem(tokenKey);
     const localToken = window.localStorage.getItem(tokenKey);
-    const storage = sessionToken && !localToken ? window.sessionStorage : window.localStorage;
-    return createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storage } });
+    if (sessionToken && !localToken) {
+      return createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { storage: window.sessionStorage },
+      });
+    }
+    return createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { storage: window.localStorage },
+    });
   }
   return createClient(SUPABASE_URL, SUPABASE_KEY);
 })();
