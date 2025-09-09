@@ -6,3 +6,16 @@ tests/e2e/*-snapshots/
 test-results/
 
 env.js
+
+# Environment files
+.env.local
+.env.*.local
+.env.production
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

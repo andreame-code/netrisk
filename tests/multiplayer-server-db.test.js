@@ -15,18 +15,8 @@ beforeAll(async () => {
   ({ createLobbyServer } = await import('../src/multiplayer-server.js'));
 });
 
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function onceOpen(ws) {
   return new Promise((resolve) => ws.once('open', resolve));
-}
-
-function messageQueue(ws) {
-  const q = [];
-  ws.on('message', (data) => q.push(JSON.parse(data.toString())));
-  return q;
 }
 
 test('persists lobby data to database on create and join', async () => {
@@ -36,15 +26,16 @@ test('persists lobby data to database on create and join', async () => {
 
   const ws1 = new WebSocket(url);
   await onceOpen(ws1);
-  const q1 = messageQueue(ws1);
+  const lobbyMsgPromise = new Promise((resolve) =>
+    ws1.once('message', (data) => resolve(JSON.parse(data.toString()))),
+  );
   ws1.send(
     JSON.stringify({
       type: 'createLobby',
       player: { id: 'p1', name: 'P1', color: '#f00' },
     }),
   );
-  await wait(50);
-  const lobbyMsg = q1.shift();
+  const lobbyMsg = await lobbyMsgPromise;
   const code = lobbyMsg.code;
 
   expect(mockFrom).toHaveBeenCalledWith('lobbies');
@@ -63,14 +54,24 @@ test('persists lobby data to database on create and join', async () => {
       player: { id: 'p2', name: 'P2', color: '#0f0' },
     }),
   );
-  await wait(50);
+  await new Promise((resolve) => {
+    const check = () => {
+      if (mockUpsert.mock.calls.length >= 2) resolve();
+      else setTimeout(check, 10);
+    };
+    check();
+  });
 
   expect(mockUpsert).toHaveBeenCalledTimes(2);
   const [row2] = mockUpsert.mock.calls[1];
   expect(row2.code).toBe(code);
   expect(row2.players).toHaveLength(2);
 
+  const ws1Closed = new Promise((resolve) => ws1.on('close', resolve));
+  const ws2Closed = new Promise((resolve) => ws2.on('close', resolve));
   ws1.close();
   ws2.close();
-  server.close();
+  await ws1Closed;
+  await ws2Closed;
+  await new Promise((resolve) => server.close(resolve));
 });
