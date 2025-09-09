@@ -27,6 +27,21 @@ export const API_BASE_URL = String(rawApiBaseUrl).replace(/\/+$/, '');
 export const SUPABASE_URL = String(rawSupabaseUrl).replace(/\/+$/, '');
 export const SUPABASE_KEY = String(rawSupabaseKey);
 
+if (typeof window === 'undefined') {
+  const required = {
+    VITE_SUPABASE_URL: SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: SUPABASE_KEY,
+  };
+  const missingVars = Object.entries(required)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
+  if (missingVars.length) {
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}. Hint: set repo Secrets SUPABASE_URL and SUPABASE_ANON_KEY (mapped to VITE_* in the build job).`,
+    );
+  }
+}
+
 export const ENV_STAMP = (typeof window !== 'undefined' && window.__env?.STAMP) || '';
 export const ENV_SHA = (typeof window !== 'undefined' && window.__env?.SHA) || '';
 export const WS_URL = (() => {
