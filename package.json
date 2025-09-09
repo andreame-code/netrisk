@@ -28,8 +28,10 @@
     "prebuild": "npm run generate-env",
     "prepreview": "npm run generate-env",
     "pretest": "npm run generate-env",
-    "pretest:uat": "npm run generate-env",
-    "postbuild": "npm run generate-env"
+    "pretest:uat": "npm run generate-env && PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.download.prss.microsoft.com/dbazure/download/playwright npx playwright install chromium",
+    "postbuild": "npm run generate-env",
+    "setup": "node scripts/setup-env.js",
+    "env:check": "node -e \"console.log(\\\"Environment check:\\\", !!process.env.VITE_SUPABASE_URL)\""
   },
   "devDependencies": {
     "@babel/preset-env": "^7.24.0",
