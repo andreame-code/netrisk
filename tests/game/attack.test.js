@@ -76,4 +76,19 @@ describe('attack rule', () => {
     expect(to.armies).toBe(1);
     Math.random.mockRestore();
   });
+
+  test('should not allow attacking a friendly territory', () => {
+    const state = {
+      territories: [
+        { id: 'a', owner: 0, armies: 5 },
+        { id: 'b', owner: 0, armies: 3 },
+      ],
+    };
+    const { state: newState, result } = attack(state, 'a', 'b');
+    expect(result).toBe(null);
+    const from = newState.territories.find((t) => t.id === 'a');
+    const to = newState.territories.find((t) => t.id === 'b');
+    expect(from.armies).toBe(5);
+    expect(to.armies).toBe(3);
+  });
 });
