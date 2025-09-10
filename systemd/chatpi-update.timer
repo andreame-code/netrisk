@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule ChatPi update
+
+[Timer]
+OnBootSec=1s
+OnUnitActiveSec=1s
+Unit=chatpi-update.service
+
+[Install]
+WantedBy=timers.target
