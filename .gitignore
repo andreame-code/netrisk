@@ -6,3 +6,7 @@ tests/e2e/*-snapshots/
 test-results/
 
 env.js
+
+# Env files
+.env*
+!.env.example
