@@ -5,7 +5,7 @@ export default function attack(state, fromId, toId) {
   };
   const from = newState.territories.find((t) => t.id === fromId);
   const to = newState.territories.find((t) => t.id === toId);
-  if (!from || !to) {
+  if (!from || !to || from.owner === to.owner) {
     return { state: newState, result: null };
   }
   const attackDice = Math.min(3, from.armies - 1);
