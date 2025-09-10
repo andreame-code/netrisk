@@ -29,6 +29,22 @@ function messageQueue(ws) {
   return q;
 }
 
+function closeConnections(...args) {
+  return new Promise((resolve) => {
+    let closed = 0;
+    const total = args.length;
+    for (const conn of args) {
+      conn.on('close', () => {
+        closed++;
+        if (closed === total) {
+          resolve();
+        }
+      });
+      conn.close();
+    }
+  });
+}
+
 test('persists lobby data to database on create and join', async () => {
   const port = 12355;
   const server = createLobbyServer({ port });
@@ -70,7 +86,5 @@ test('persists lobby data to database on create and join', async () => {
   expect(row2.code).toBe(code);
   expect(row2.players).toHaveLength(2);
 
-  ws1.close();
-  ws2.close();
-  server.close();
+  await closeConnections(ws1, ws2, server);
 });
