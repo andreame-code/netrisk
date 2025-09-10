@@ -1,0 +1,10 @@
+[Unit]
+Description=ChatPi dummy service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'echo "start $(date +%s)" >> %h/chatpi.log; exec sleep infinity'
+Restart=always
+
+[Install]
+WantedBy=default.target

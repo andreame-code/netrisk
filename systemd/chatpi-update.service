@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ChatPi update script
+After=chatpi.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/systemd/user/update.sh
+
+[Install]
+WantedBy=default.target
