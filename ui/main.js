@@ -8,6 +8,13 @@ export async function initClient(url, key) {
 
 export function renderPlayers(element, players) {
   element.innerHTML = ''
+  if (players.length === 0) {
+    const li = document.createElement('li')
+    li.className = 'empty'
+    li.textContent = 'No players yet'
+    element.appendChild(li)
+    return
+  }
   for (const name of players) {
     const li = document.createElement('li')
     li.textContent = name

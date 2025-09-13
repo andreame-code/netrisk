@@ -13,6 +13,12 @@ describe('ui helpers', () => {
     ])
   })
 
+  it('renders a placeholder when no players', () => {
+    const ul = document.createElement('ul')
+    renderPlayers(ul, [])
+    expect(ul.textContent).toBe('No players yet')
+  })
+
   it('initializes a supabase client', async () => {
     const client = await initClient('https://example.supabase.co', 'anon')
     expect(client).toHaveProperty('from')
