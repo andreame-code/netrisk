@@ -1,0 +1,21 @@
+[project]
+name = "netrisk"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+  "black",
+  "ruff",
+  "pytest",
+  "pytest-cov",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+
+[tool.pytest.ini_options]
+addopts = "--cov=. --cov-branch --cov-report=term-missing --cov-fail-under=90"

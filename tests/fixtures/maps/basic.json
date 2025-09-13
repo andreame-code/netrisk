@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "territories": [
-    { "id": "a", "neighbors": [], "owner": 0, "x": 0, "y": 0 },
-    { "id": "b", "neighbors": [], "owner": 0, "x": 0, "y": 0 }
-  ],
-  "continents": [],
-  "deck": []
-}

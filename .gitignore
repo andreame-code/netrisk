@@ -1,8 +1,5 @@
-node_modules/
-dist/
-
-tests/e2e/__screenshots__/
-tests/e2e/*-snapshots/
-test-results/
-
-env.js
+__pycache__/
+*.py[cod]
+.env
+.venv
+.coverage
