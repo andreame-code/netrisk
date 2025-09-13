@@ -1,32 +1,16 @@
 # AGENTS.md
 
-## Stile e convenzioni
+## Style and Conventions
 
-- I nomi dei file devono essere in **kebab-case** (tutto minuscolo, parole separate da trattini).
-- Usa Prettier per formattare il codice: `npx prettier --write <file>`.
-- Usa ESLint per controllare lo stile: `npm run lint`.
+- JavaScript modules use `camelCase` file names.
+- Format with `prettier` and lint with `eslint`.
 
-## Verifiche da eseguire prima del commit
+## Required Checks
 
-Esegui tutti i seguenti comandi e risolvi eventuali errori:
-
-```bash
-npm test          # unit/integration
-npm run lint      # eslint + prettier
-npm run type-check
-npm run test:uat  # suite Playwright di UAT
-```
-
-Per modifiche che impattano il flusso end-to-end:
+Run the following commands before committing:
 
 ```bash
-npm run test:e2e:smoke   # test rapidi di regressione
-# oppure
-npm run test:e2e:full    # suite completa con visual regression
+npm run lint
+npm run format:check
+npm test
 ```
-
-## Linee guida generali
-
-- Mantieni commit piccoli e descrittivi.
-- Se aggiungi dipendenze o tocchi la build, verifica che `npm run build` funzioni.
-- Segui le istruzioni in `docs/ci.md` se modifichi pipeline o workflow CI/CD.
