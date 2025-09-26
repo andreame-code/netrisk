@@ -10,7 +10,9 @@ jest.mock('@netrisk/core', () => ({
 
 describe('GameService', () => {
   const mockCreateInitialGameState =
-    createInitialGameState as jest.MockedFunction<typeof createInitialGameState>;
+    createInitialGameState as jest.MockedFunction<
+      typeof createInitialGameState
+    >;
   const mockJoinGameRequestSchemaParse =
     joinGameRequestSchema.parse as jest.MockedFunction<
       typeof joinGameRequestSchema.parse
@@ -228,8 +230,8 @@ describe('GameService', () => {
 
       expect(mockJoinGameRequestSchemaParse).toHaveBeenCalledWith(request);
       expect(prisma.upsertPlayer).toHaveBeenCalledTimes(1);
-      const [payloadArg, rulesArg, timestampArg] = prisma.upsertPlayer.mock
-        .calls[0];
+      const [payloadArg, rulesArg, timestampArg] =
+        prisma.upsertPlayer.mock.calls[0];
       expect(payloadArg).toBe(parsedPayload);
       expect(rulesArg).toBe(seedState.rules);
       expect(timestampArg).toEqual(now);
