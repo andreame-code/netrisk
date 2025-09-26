@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: netrisk
+      POSTGRES_USER: netrisk
+      POSTGRES_PASSWORD: netrisk
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://netrisk:netrisk@db:5432/netrisk
+    depends_on:
+      - db
+    ports:
+      - '3001:3000'
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      - server
+    ports:
+      - '3000:3000'
+
+volumes:
+  db_data:
