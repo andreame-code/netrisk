@@ -13,7 +13,8 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "turbo run format",
-    "prepare": "husky"
+    "prepare": "husky",
+    "codespace": "bash .devcontainer/start-dev.sh"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md,css,scss,html}": [
