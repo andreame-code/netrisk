@@ -2,6 +2,11 @@
 
 A full-stack workspace for the netrisk strategy platform. The repository is organised as a PNPM workspace with Turborepo to coordinate builds between the Next.js client, NestJS server, and shared TypeScript domain package.
 
+## Getting started
+
+- **GitHub Codespaces**: Follow the zero-install workflow in [README_Codespaces.md](README_Codespaces.md) to spin up a cloud development environment with the client and server already bootstrapped.
+- **Local development**: Install the prerequisites below and run the installation steps on your machine.
+
 ## Project structure
 
 ```
