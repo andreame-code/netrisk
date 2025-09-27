@@ -5,5 +5,9 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@netrisk/core$": "<rootDir>/../../../packages/core/dist/index.cjs",
+    "^@netrisk/core/(.*)$": "<rootDir>/../../../packages/core/dist/$1"
   }
 }
