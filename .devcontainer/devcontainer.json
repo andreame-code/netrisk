@@ -1,5 +1,36 @@
 {
-  "name": "netrisk-devcontainer",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
-  "postCreateCommand": "/workspaces/netrisk/.devcontainer/start-dev.sh"
+  "name": "netrisk-codespace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "updateContentCommand": "bash .devcontainer/start-dev.sh",
+  "postStartCommand": "pnpm install",
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js client",
+      "onAutoForward": "openBrowser"
+    },
+    "3001": {
+      "label": "NestJS API",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.formatOnSave": true,
+        "files.autoSave": "onFocusChange",
+        "npm.packageManager": "pnpm"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  }
 }
