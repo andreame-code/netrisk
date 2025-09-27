@@ -4,7 +4,7 @@ A full-stack workspace for the netrisk strategy platform. The repository is orga
 
 ## Getting started
 
-- **GitHub Codespaces**: Follow the zero-install workflow in [README_Codespaces.md](README_Codespaces.md) to spin up a cloud development environment with the client and server already bootstrapped.
+- **GitHub Codespaces**: Follow the zero-install workflow in [README_Codespaces.md](README_Codespaces.md) to spin up a cloud development environment with the client and server already bootstrapped and publicly accessible URLs preconfigured.
 - **Local development**: Install the prerequisites below and run the installation steps on your machine.
 
 ## Project structure
