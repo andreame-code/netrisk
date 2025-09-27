@@ -6,8 +6,8 @@
       "version": "20"
     }
   },
-  "updateContentCommand": "bash .devcontainer/start-dev.sh",
-  "postStartCommand": "pnpm install",
+  "updateContentCommand": "corepack enable pnpm && pnpm install",
+  "postAttachCommand": "bash .devcontainer/start-dev.sh",
   "forwardPorts": [3000, 3001],
   "portsAttributes": {
     "3000": {
