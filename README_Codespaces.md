@@ -2,9 +2,10 @@
 
 This document explains how to work on the netrisk monorepo entirely inside GitHub Codespaces—from spinning up the container to exposing the running services publicly.
 
-## Zero-install workspace
+## Zero-install requirements
 
-The repository ships a ready-to-use devcontainer that provisions a Node.js 20 environment for you. When the codespace boots it uses the [`mcr.microsoft.com/devcontainers/javascript-node:20` image](.devcontainer/devcontainer.json) and runs the [`start-dev.sh` bootstrap script](.devcontainer/start-dev.sh). That script enables Corepack, activates the workspace-pinned `pnpm@10.5.2`, and installs all dependencies with `pnpm install`. No local tooling is required beyond a GitHub account with Codespaces access.
+- **GitHub access** – Any GitHub account with Codespaces enabled can launch the workspace; no local Node.js or PNPM setup is required.
+- **Devcontainer tooling** – The repository ships a ready-to-use devcontainer that provisions a Node.js 20 environment. When the codespace boots it uses the [`mcr.microsoft.com/devcontainers/javascript-node:20` image](.devcontainer/devcontainer.json) and runs the [`start-dev.sh` bootstrap script](.devcontainer/start-dev.sh). That script enables Corepack, activates the workspace-pinned `pnpm@10.5.2`, and installs all dependencies with `pnpm install` so everything is preconfigured on first launch.
 
 ## Launching a Codespace
 
