@@ -7,6 +7,20 @@ import {
 import type { Game, GamePlayer, PrismaClient } from '@prisma/client';
 import type { JoinGameRequest } from '@netrisk/core';
 
+type PrismaModule = typeof import('@prisma/client');
+
+const defaultPrismaLoader = () => import('@prisma/client');
+let prismaLoader: () => Promise<PrismaModule> = defaultPrismaLoader;
+
+export const prismaServiceTestUtils = {
+  setPrismaLoader(loader: () => Promise<PrismaModule>) {
+    prismaLoader = loader;
+  },
+  resetPrismaLoader() {
+    prismaLoader = defaultPrismaLoader;
+  },
+};
+
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
@@ -14,7 +28,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
-      const { PrismaClient } = await import('@prisma/client');
+      const { PrismaClient } = await prismaLoader();
       this.client = new PrismaClient({
         log: ['warn', 'error'],
       });
