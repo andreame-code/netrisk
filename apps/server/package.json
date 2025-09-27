@@ -76,7 +76,8 @@
     },
     "moduleNameMapper": {
       "^@netrisk/core$": "<rootDir>/../../../packages/core/dist/index.cjs",
-      "^@netrisk/core/(.*)$": "<rootDir>/../../../packages/core/dist/$1"
+      "^@netrisk/core/(.*)$": "<rootDir>/../../../packages/core/dist/$1",
+      "^@prisma/client$": "<rootDir>/prisma/__mocks__/prisma-client.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
