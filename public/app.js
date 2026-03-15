@@ -4,6 +4,18 @@ const state = {
   snapshot: null
 };
 
+const mapLayout = {
+  aurora: { x: 130, y: 90 },
+  bastion: { x: 310, y: 70 },
+  cinder: { x: 210, y: 195 },
+  delta: { x: 110, y: 315 },
+  ember: { x: 385, y: 215 },
+  forge: { x: 535, y: 125 },
+  grove: { x: 260, y: 420 },
+  harbor: { x: 470, y: 335 },
+  ion: { x: 655, y: 250 }
+};
+
 const elements = {
   joinForm: document.querySelector("#join-form"),
   playerName: document.querySelector("#player-name"),
@@ -29,6 +41,10 @@ function ownerById(ownerId) {
   return state.snapshot?.players.find((player) => player.id === ownerId) || null;
 }
 
+function territoryById(territoryId) {
+  return state.snapshot?.map.find((territory) => territory.id === territoryId) || null;
+}
+
 function isCurrentPlayer() {
   return state.snapshot?.currentPlayerId === state.playerId;
 }
@@ -42,6 +58,119 @@ function setIdentity(playerId, playerName) {
   state.playerName = playerName;
   localStorage.setItem("frontline-player-id", playerId);
   localStorage.setItem("frontline-player-name", playerName);
+}
+
+function territoryOptionLabel(territory) {
+  return `${territory.name} (${territory.armies})`;
+}
+
+function buildGraphMarkup(snapshot) {
+  const renderedLinks = new Set();
+  const links = [];
+
+  snapshot.map.forEach((territory) => {
+    territory.neighbors.forEach((neighborId) => {
+      const key = [territory.id, neighborId].sort().join(":");
+      if (renderedLinks.has(key)) {
+        return;
+      }
+
+      renderedLinks.add(key);
+      const source = mapLayout[territory.id];
+      const target = mapLayout[neighborId];
+      if (!source || !target) {
+        return;
+      }
+
+      links.push(`
+        <line
+          x1="${source.x}"
+          y1="${source.y}"
+          x2="${target.x}"
+          y2="${target.y}"
+          class="map-link"
+        />
+      `);
+    });
+  });
+
+  const nodes = snapshot.map
+    .map((territory) => {
+      const owner = ownerById(territory.ownerId);
+      const position = mapLayout[territory.id];
+      const isMine = territory.ownerId === state.playerId;
+      const isActiveSource = elements.attackFrom.value === territory.id;
+      const isAttackTarget = elements.attackTo.value === territory.id;
+      const isReinforceTarget = elements.reinforceSelect.value === territory.id;
+      const classes = [
+        "territory-node",
+        isMine ? "is-mine" : "",
+        isActiveSource ? "is-source" : "",
+        isAttackTarget ? "is-target" : "",
+        isReinforceTarget ? "is-reinforce" : ""
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return `
+        <button
+          type="button"
+          class="${classes}"
+          data-territory-id="${territory.id}"
+          style="left:${position.x}px; top:${position.y}px; --owner-color:${owner?.color || "#9aa6b2"};"
+        >
+          <span class="territory-name">${territory.name}</span>
+          <span class="territory-meta">${owner ? owner.name : "Neutrale"}</span>
+          <span class="territory-armies">${territory.armies}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  const details = snapshot.map
+    .map((territory) => {
+      const owner = ownerById(territory.ownerId);
+      return `
+        <article class="territory-card">
+          <strong>${territory.name}</strong>
+          <div>Controllo: ${owner ? owner.name : "neutrale"}</div>
+          <div>Armate: ${territory.armies}</div>
+          <div>Confini: ${territory.neighbors.join(", ")}</div>
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <div class="map-board">
+      <svg class="map-lines" viewBox="0 0 760 500" aria-hidden="true">
+        ${links.join("")}
+      </svg>
+      ${nodes}
+    </div>
+    <div class="map-legend">
+      ${details}
+    </div>
+  `;
+}
+
+function handleTerritoryClick(territoryId) {
+  const territory = territoryById(territoryId);
+  if (!territory) {
+    return;
+  }
+
+  if (territory.ownerId === state.playerId) {
+    elements.reinforceSelect.value = territory.id;
+    elements.attackFrom.value = territory.id;
+  } else if (territory.ownerId) {
+    const source = territoryById(elements.attackFrom.value) || myTerritories()[0];
+    if (source?.neighbors.includes(territory.id)) {
+      elements.attackTo.value = territory.id;
+    }
+  }
+
+  render();
 }
 
 function render() {
@@ -85,28 +214,23 @@ function render() {
     )
     .join("");
 
-  elements.map.innerHTML = snapshot.map
-    .map((territory) => {
-      const owner = ownerById(territory.ownerId);
-      return `
-        <article class="territory-card" style="--owner-color: ${owner?.color || "#adb5bd"}">
-          <strong>${territory.name}</strong>
-          <div>Armate: ${territory.armies}</div>
-          <div>Controllo: ${owner ? owner.name : "neutrale"}</div>
-          <div>Confini: ${territory.neighbors.join(", ")}</div>
-        </article>
-      `;
-    })
-    .join("");
-
   const territories = myTerritories();
   const reinforceOptions = territories
-    .map((territory) => `<option value="${territory.id}">${territory.name} (${territory.armies})</option>`)
+    .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
     .join("");
   elements.reinforceSelect.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+
+  const previousAttackFrom = elements.attackFrom.value;
   elements.attackFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  if (previousAttackFrom && territories.some((territory) => territory.id === previousAttackFrom)) {
+    elements.attackFrom.value = previousAttackFrom;
+  }
 
   const selectedFromId = elements.attackFrom.value || territories[0]?.id || "";
+  if (!elements.attackFrom.value && selectedFromId) {
+    elements.attackFrom.value = selectedFromId;
+  }
+
   const source = snapshot.map.find((territory) => territory.id === selectedFromId);
   const attackTargets = snapshot.map.filter(
     (territory) =>
@@ -122,6 +246,12 @@ function render() {
         return `<option value="${territory.id}">${territory.name} vs ${owner?.name || "?"} (${territory.armies})</option>`;
       })
       .join("") || '<option value="">Nessun bersaglio</option>';
+
+  if (attackTargets.length && !attackTargets.some((territory) => territory.id === elements.attackTo.value)) {
+    elements.attackTo.value = attackTargets[0].id;
+  }
+
+  elements.map.innerHTML = buildGraphMarkup(snapshot);
 
   const canInteract = Boolean(me) && snapshot.phase === "active" && isCurrentPlayer();
   elements.startButton.disabled = !me || snapshot.phase !== "lobby" || snapshot.players.length < 2;
@@ -209,6 +339,14 @@ elements.reinforceButton.addEventListener("click", async () => {
 });
 
 elements.attackFrom.addEventListener("change", () => render());
+elements.map.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-territory-id]");
+  if (!button) {
+    return;
+  }
+
+  handleTerritoryClick(button.dataset.territoryId);
+});
 
 elements.attackButton.addEventListener("click", async () => {
   try {
