@@ -4,6 +4,7 @@
   "description": "MVP multiplayer browser game inspired by Risk",
   "private": true,
   "scripts": {
-    "start": "node src/server.cjs"
+    "start": "node src/server.cjs",
+    "test": "node scripts/run-tests.cjs"
   }
 }

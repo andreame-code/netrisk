@@ -1,38 +1,20 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const {
+  addPlayer,
+  advanceTurn,
+  createInitialState,
+  getCurrentPlayer,
+  getPlayer,
+  publicState,
+  resolveAttack,
+  startGame
+} = require("./game.cjs");
 
 const publicDir = path.join(__dirname, "..", "public");
 const port = process.env.PORT || 3000;
-
-const territories = [
-  { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"] },
-  { id: "bastion", name: "Bastion", neighbors: ["aurora", "ember", "forge"] },
-  { id: "cinder", name: "Cinder", neighbors: ["aurora", "delta", "ember"] },
-  { id: "delta", name: "Delta", neighbors: ["aurora", "cinder", "grove", "harbor"] },
-  { id: "ember", name: "Ember", neighbors: ["bastion", "cinder", "forge", "harbor"] },
-  { id: "forge", name: "Forge", neighbors: ["bastion", "ember", "harbor", "ion"] },
-  { id: "grove", name: "Grove", neighbors: ["delta", "harbor"] },
-  { id: "harbor", name: "Harbor", neighbors: ["delta", "ember", "forge", "grove", "ion"] },
-  { id: "ion", name: "Ion", neighbors: ["forge", "harbor"] }
-];
-
-const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
-
-const state = {
-  phase: "lobby",
-  players: [],
-  territories: Object.fromEntries(
-    territories.map((territory) => [territory.id, { ownerId: null, armies: 0 }])
-  ),
-  currentTurnIndex: 0,
-  reinforcementPool: 0,
-  winnerId: null,
-  log: ["Lobby creata. Unisciti e avvia la partita."],
-  lastAction: null
-};
-
+const state = createInitialState();
 const clients = new Set();
 
 function sendJson(res, statusCode, payload) {
@@ -65,188 +47,20 @@ function parseBody(req) {
   });
 }
 
-function randomId() {
-  return crypto.randomBytes(8).toString("hex");
-}
-
-function shuffle(list) {
-  const copy = list.slice();
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const current = copy[i];
-    copy[i] = copy[j];
-    copy[j] = current;
-  }
-  return copy;
-}
-
-function getPlayer(playerId) {
-  return state.players.find((player) => player.id === playerId) || null;
-}
-
-function getCurrentPlayer() {
-  return state.players.length ? state.players[state.currentTurnIndex] : null;
-}
-
-function territoriesOwnedBy(playerId) {
-  return territories.filter((territory) => state.territories[territory.id].ownerId === playerId);
-}
-
-function computeReinforcements(playerId) {
-  return Math.max(3, Math.floor(territoriesOwnedBy(playerId).length / 3));
-}
-
-function appendLog(message) {
-  state.log.unshift(message);
-  state.log = state.log.slice(0, 12);
-}
-
-function publicState() {
-  const currentPlayer = getCurrentPlayer();
-  return {
-    phase: state.phase,
-    players: state.players.map((player) => ({
-      id: player.id,
-      name: player.name,
-      color: player.color,
-      connected: player.connected,
-      territoryCount: territoriesOwnedBy(player.id).length,
-      eliminated: state.phase !== "lobby" && territoriesOwnedBy(player.id).length === 0
-    })),
-    map: territories.map((territory) => ({
-      id: territory.id,
-      name: territory.name,
-      neighbors: territory.neighbors,
-      ownerId: state.territories[territory.id].ownerId,
-      armies: state.territories[territory.id].armies
-    })),
-    currentPlayerId: currentPlayer ? currentPlayer.id : null,
-    reinforcementPool: state.reinforcementPool,
-    winnerId: state.winnerId,
-    log: state.log,
-    lastAction: state.lastAction
-  };
+function snapshot() {
+  return publicState(state);
 }
 
 function broadcast() {
-  const payload = "data: " + JSON.stringify(publicState()) + "\n\n";
+  const payload = "data: " + JSON.stringify(snapshot()) + "\n\n";
   clients.forEach((client) => {
     client.write(payload);
   });
 }
 
-function startGame() {
-  const shuffledTerritories = shuffle(territories.map((territory) => territory.id));
-  state.phase = "active";
-  state.winnerId = null;
-  state.currentTurnIndex = 0;
-  state.lastAction = null;
-
-  shuffledTerritories.forEach((territoryId) => {
-    state.territories[territoryId] = { ownerId: null, armies: 0 };
-  });
-
-  shuffledTerritories.forEach((territoryId, index) => {
-    const player = state.players[index % state.players.length];
-    state.territories[territoryId] = { ownerId: player.id, armies: 1 };
-  });
-
-  const firstPlayer = getCurrentPlayer();
-  state.reinforcementPool = computeReinforcements(firstPlayer.id);
-  appendLog("Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.");
-}
-
-function declareWinnerIfNeeded() {
-  const activePlayers = state.players.filter((player) => territoriesOwnedBy(player.id).length > 0);
-  if (activePlayers.length === 1) {
-    state.winnerId = activePlayers[0].id;
-    state.phase = "finished";
-    appendLog(activePlayers[0].name + " conquista la mappa e vince la partita.");
-    return true;
-  }
-  return false;
-}
-
-function advanceTurn() {
-  if (state.winnerId || declareWinnerIfNeeded()) {
-    return;
-  }
-
-  let nextIndex = state.currentTurnIndex;
-  for (let step = 0; step < state.players.length; step += 1) {
-    nextIndex = (nextIndex + 1) % state.players.length;
-    const candidate = state.players[nextIndex];
-    if (territoriesOwnedBy(candidate.id).length > 0) {
-      state.currentTurnIndex = nextIndex;
-      state.reinforcementPool = computeReinforcements(candidate.id);
-      appendLog("Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.");
-      return;
-    }
-  }
-}
-
-function resolveAttack(playerId, fromId, toId) {
-  const attacker = getPlayer(playerId);
-  const from = state.territories[fromId];
-  const to = state.territories[toId];
-  const territory = territories.find((item) => item.id === fromId);
-
-  if (!attacker || !from || !to || !territory) {
-    return { ok: false, message: "Territori non validi." };
-  }
-
-  if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
-  }
-
-  if (!getCurrentPlayer() || getCurrentPlayer().id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
-  }
-
-  if (state.reinforcementPool > 0) {
-    return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
-  }
-
-  if (from.ownerId !== playerId || to.ownerId === playerId) {
-    return { ok: false, message: "Puoi attaccare solo da un tuo territorio verso uno nemico." };
-  }
-
-  if (territory.neighbors.indexOf(toId) === -1) {
-    return { ok: false, message: "I territori non sono confinanti." };
-  }
-
-  if (from.armies < 2) {
-    return { ok: false, message: "Servono almeno 2 armate per attaccare." };
-  }
-
-  const attackRoll = Math.ceil(Math.random() * 6);
-  const defendRoll = Math.ceil(Math.random() * 6);
-  from.armies -= 1;
-  let summary;
-
-  if (attackRoll > defendRoll) {
-    to.armies -= 1;
-    summary = attacker.name + " attacca " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
-    if (to.armies <= 0) {
-      to.ownerId = playerId;
-      to.armies = 1;
-      summary += " " + attacker.name + " conquista " + toId + ".";
-    } else {
-      summary += " Il difensore perde 1 armata.";
-    }
-  } else {
-    summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
-  }
-
-  state.lastAction = { type: "attack", summary, fromId, toId };
-  appendLog(summary);
-  declareWinnerIfNeeded();
-  return { ok: true };
-}
-
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/state") {
-    sendJson(res, 200, publicState());
+    sendJson(res, 200, snapshot());
     return;
   }
 
@@ -257,7 +71,7 @@ async function handleApi(req, res, url) {
       Connection: "keep-alive",
       "Access-Control-Allow-Origin": "*"
     });
-    res.write("data: " + JSON.stringify(publicState()) + "\n\n");
+    res.write("data: " + JSON.stringify(snapshot()) + "\n\n");
     clients.add(res);
     req.on("close", () => clients.delete(res));
     return;
@@ -265,42 +79,14 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/join") {
     const body = await parseBody(req);
-    const name = String(body.name || "").trim().slice(0, 24);
-    if (!name) {
-      sendJson(res, 400, { error: "Inserisci un nome." });
+    const result = addPlayer(state, body.name);
+    if (!result.ok) {
+      sendJson(res, 400, { error: result.error });
       return;
     }
 
-    const existing = state.players.find((player) => player.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      existing.connected = true;
-      appendLog(existing.name + " si ricollega alla lobby.");
-      broadcast();
-      sendJson(res, 200, { playerId: existing.id, state: publicState() });
-      return;
-    }
-
-    if (state.phase !== "lobby") {
-      sendJson(res, 400, { error: "La partita e gia iniziata." });
-      return;
-    }
-
-    if (state.players.length >= 4) {
-      sendJson(res, 400, { error: "La lobby e piena." });
-      return;
-    }
-
-    const player = {
-      id: randomId(),
-      name,
-      color: palette[state.players.length % palette.length],
-      connected: true
-    };
-
-    state.players.push(player);
-    appendLog(player.name + " entra nella lobby.");
     broadcast();
-    sendJson(res, 201, { playerId: player.id, state: publicState() });
+    sendJson(res, result.rejoined ? 200 : 201, { playerId: result.player.id, state: snapshot() });
     return;
   }
 
@@ -316,14 +102,14 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    if (!getPlayer(body.playerId)) {
+    if (!getPlayer(state, body.playerId)) {
       sendJson(res, 403, { error: "Giocatore non valido." });
       return;
     }
 
-    startGame();
+    startGame(state);
     broadcast();
-    sendJson(res, 200, { ok: true, state: publicState() });
+    sendJson(res, 200, { ok: true, state: snapshot() });
     return;
   }
 
@@ -331,7 +117,7 @@ async function handleApi(req, res, url) {
     const body = await parseBody(req);
     const playerId = body.playerId;
     const type = body.type;
-    const player = getPlayer(playerId);
+    const player = getPlayer(state, playerId);
 
     if (!player) {
       sendJson(res, 403, { error: "Giocatore non valido." });
@@ -347,7 +133,7 @@ async function handleApi(req, res, url) {
         return;
       }
 
-      if (!getCurrentPlayer() || getCurrentPlayer().id !== playerId) {
+      if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
         sendJson(res, 400, { error: "Non e il tuo turno." });
         return;
       }
@@ -368,21 +154,22 @@ async function handleApi(req, res, url) {
         type: "reinforce",
         summary: player.name + " rinforza " + territoryId + "."
       };
-      appendLog(player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
+      state.log.unshift(player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
+      state.log = state.log.slice(0, 12);
       broadcast();
-      sendJson(res, 200, { ok: true, state: publicState() });
+      sendJson(res, 200, { ok: true, state: snapshot() });
       return;
     }
 
     if (type === "attack") {
-      const result = resolveAttack(playerId, String(body.fromId || ""), String(body.toId || ""));
+      const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""));
       if (!result.ok) {
         sendJson(res, 400, { error: result.message });
         return;
       }
 
       broadcast();
-      sendJson(res, 200, { ok: true, state: publicState() });
+      sendJson(res, 200, { ok: true, state: snapshot() });
       return;
     }
 
@@ -392,7 +179,7 @@ async function handleApi(req, res, url) {
         return;
       }
 
-      if (!getCurrentPlayer() || getCurrentPlayer().id !== playerId) {
+      if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
         sendJson(res, 400, { error: "Non e il tuo turno." });
         return;
       }
@@ -402,10 +189,11 @@ async function handleApi(req, res, url) {
         return;
       }
 
-      appendLog(player.name + " termina il turno.");
-      advanceTurn();
+      state.log.unshift(player.name + " termina il turno.");
+      state.log = state.log.slice(0, 12);
+      advanceTurn(state);
       broadcast();
-      sendJson(res, 200, { ok: true, state: publicState() });
+      sendJson(res, 200, { ok: true, state: snapshot() });
       return;
     }
 
@@ -461,6 +249,16 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(port, () => {
-  console.log("Server attivo su http://localhost:" + port);
-});
+if (require.main === module) {
+  server.listen(port, () => {
+    console.log("Server attivo su http://localhost:" + port);
+  });
+}
+
+module.exports = {
+  handleApi,
+  parseBody,
+  sendJson,
+  server,
+  state
+};
