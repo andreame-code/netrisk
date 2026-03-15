@@ -1,0 +1,271 @@
+:root {
+  --bg: #11212d;
+  --bg-soft: #1b3342;
+  --panel: rgba(244, 243, 238, 0.95);
+  --text: #14213d;
+  --muted: #52616b;
+  --accent: #c1121f;
+  --accent-2: #669bbc;
+  --line: rgba(20, 33, 61, 0.12);
+  --shadow: 0 18px 40px rgba(8, 15, 23, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(102, 155, 188, 0.35), transparent 32%),
+    linear-gradient(135deg, #0b1d26 0%, #173042 45%, #284b63 100%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+.app-shell {
+  width: min(1200px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0 48px;
+}
+
+.hero {
+  color: #f5f7fa;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  opacity: 0.78;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2.8rem, 4vw, 4.8rem);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  max-width: 720px;
+  font-size: 1.05rem;
+  color: rgba(245, 247, 250, 0.88);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 18px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.identity-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.join-form,
+.action-row,
+.action-stack {
+  display: flex;
+  gap: 10px;
+}
+
+.action-stack {
+  flex-direction: column;
+}
+
+input,
+select,
+button {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  background: #fff;
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  border: none;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ghost-button {
+  background: var(--text);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(20, 33, 61, 0.08);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.badge.accent {
+  background: rgba(193, 18, 31, 0.12);
+  color: var(--accent);
+}
+
+.status-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--muted);
+}
+
+.players,
+.map {
+  display: grid;
+  gap: 12px;
+}
+
+.players {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.player-card,
+.territory-card {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  padding: 14px;
+  background: white;
+}
+
+.player-card strong,
+.territory-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.map {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.territory-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.territory-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 8px;
+  background: var(--owner-color, #adb5bd);
+}
+
+.territory-card.selected {
+  outline: 2px solid var(--accent);
+}
+
+.actions-panel {
+  grid-column: span 4;
+}
+
+.log-panel {
+  grid-column: span 8;
+}
+
+.grid > .panel:nth-child(1) {
+  grid-column: span 4;
+}
+
+.grid > .panel:nth-child(2) {
+  grid-column: span 8;
+}
+
+.action-group {
+  margin-bottom: 16px;
+}
+
+.action-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.log-list li {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  .identity-panel,
+  .join-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grid > .panel,
+  .actions-panel,
+  .log-panel {
+    grid-column: 1 / -1;
+  }
+}

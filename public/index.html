@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontline Dominion</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Multiplayer browser strategy</p>
+        <h1>Frontline Dominion</h1>
+        <p class="subtitle">
+          Un prototipo ispirato a Risk: lobby condivisa, turni, rinforzi, attacchi e aggiornamenti live.
+        </p>
+      </section>
+
+      <section class="panel identity-panel">
+        <div>
+          <h2>Entra nella partita</h2>
+          <p id="identity-status">Scegli un nome e collegati alla lobby.</p>
+        </div>
+        <form id="join-form" class="join-form">
+          <input id="player-name" name="name" maxlength="24" placeholder="Nome comandante" required />
+          <button type="submit">Entra</button>
+        </form>
+        <button id="start-button" class="ghost-button">Avvia partita</button>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Stato</h2>
+            <span id="turn-badge" class="badge">Lobby</span>
+          </div>
+          <div id="status-summary" class="status-summary"></div>
+          <div id="players" class="players"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Mappa</h2>
+            <span class="badge accent">9 territori</span>
+          </div>
+          <div id="map" class="map"></div>
+        </div>
+
+        <div class="panel actions-panel">
+          <div class="panel-header">
+            <h2>Azioni</h2>
+            <span id="action-hint" class="badge">In attesa</span>
+          </div>
+
+          <div class="action-group">
+            <label for="reinforce-select">Rinforza</label>
+            <div class="action-row">
+              <select id="reinforce-select"></select>
+              <button id="reinforce-button">+1 armata</button>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <label for="attack-from">Attacca</label>
+            <div class="action-stack">
+              <select id="attack-from"></select>
+              <select id="attack-to"></select>
+              <button id="attack-button">Lancia attacco</button>
+            </div>
+          </div>
+
+          <button id="end-turn-button" class="ghost-button">Termina turno</button>
+        </div>
+
+        <div class="panel log-panel">
+          <div class="panel-header">
+            <h2>Registro</h2>
+            <span class="badge accent">Live</span>
+          </div>
+          <ul id="log" class="log-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

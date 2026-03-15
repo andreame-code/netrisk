@@ -1,0 +1,9 @@
+{
+  "name": "web-risk-lite",
+  "version": "0.1.0",
+  "description": "MVP multiplayer browser game inspired by Risk",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.cjs"
+  }
+}
