@@ -8,6 +8,7 @@ const {
   createInitialState,
   endTurn,
   getPlayer,
+  moveAfterConquest,
   publicState,
   resolveAttack,
   startGame
@@ -229,6 +230,18 @@ function createApp(options = {}) {
 
       if (type === "attack") {
         const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""));
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.message });
+          return;
+        }
+
+        broadcast();
+        sendJson(res, 200, { ok: true, state: snapshot() });
+        return;
+      }
+
+      if (type === "moveAfterConquest") {
+        const result = moveAfterConquest(state, playerId, body.armies);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;

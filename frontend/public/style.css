@@ -527,3 +527,7 @@ button:disabled {
   }
 }
 
+
+#conquest-group[hidden] {
+  display: none;
+}

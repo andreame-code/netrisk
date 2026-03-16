@@ -8,6 +8,7 @@ const {
   computeReinforcements,
   createInitialState,
   endTurn,
+  moveAfterConquest,
   publicState,
   resolveAttack,
   startGame,
@@ -119,6 +120,7 @@ register("resolveAttack conquista un territorio quando l'attaccante vince", () =
   state.reinforcementPool = 0;
   state.territories.aurora = { ownerId: first.id, armies: 3 };
   state.territories.bastion = { ownerId: second.id, armies: 1 };
+  state.territories.cinder = { ownerId: second.id, armies: 2 };
 
   const random = (() => {
     const values = [0.9, 0.1];
@@ -128,6 +130,35 @@ register("resolveAttack conquista un territorio quando l'attaccante vince", () =
   const result = resolveAttack(state, first.id, "aurora", "bastion", random);
   assert.equal(result.ok, true);
   assert.equal(state.territories.bastion.ownerId, first.id);
+  assert.equal(state.pendingConquest.toId, "bastion");
+  assert.equal(state.territories.bastion.armies, 0);
+});
+
+register("moveAfterConquest trasferisce armate prima di poter chiudere il turno", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.bastion = { ownerId: second.id, armies: 1 };
+  state.territories.cinder = { ownerId: second.id, armies: 2 };
+
+  const random = (() => {
+    const values = [0.9, 0.1];
+    return () => values.shift();
+  })();
+
+  const attack = resolveAttack(state, first.id, "aurora", "bastion", random);
+  assert.equal(attack.ok, true);
+
+  const endTurnBlocked = endTurn(state, first.id);
+  assert.equal(endTurnBlocked.ok, false);
+
+  const move = moveAfterConquest(state, first.id, 1);
+  assert.equal(move.ok, true);
+  assert.equal(state.pendingConquest, null);
+  assert.equal(state.territories.bastion.armies, 1);
 });
 
 register("advanceTurn salta i giocatori eliminati e ricalcola i rinforzi", () => {

@@ -46,7 +46,8 @@ function createGameState(input = {}) {
     reinforcementPool: input.reinforcementPool || 0,
     winnerId: input.winnerId || null,
     log: input.log || [],
-    lastAction: input.lastAction || null
+    lastAction: input.lastAction || null,
+    pendingConquest: input.pendingConquest || null
   };
 }
 

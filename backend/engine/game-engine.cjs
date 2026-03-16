@@ -41,7 +41,8 @@ function createInitialState() {
     reinforcementPool: 0,
     winnerId: null,
     log: ["Lobby creata. Unisciti e avvia la partita."],
-    lastAction: null
+    lastAction: null,
+    pendingConquest: null
   });
 }
 
@@ -107,7 +108,8 @@ function publicState(state) {
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
     log: state.log,
-    lastAction: state.lastAction
+    lastAction: state.lastAction,
+    pendingConquest: state.pendingConquest
   };
 }
 
@@ -118,6 +120,7 @@ function startGame(state, random = Math.random) {
   state.winnerId = null;
   state.currentTurnIndex = 0;
   state.lastAction = null;
+  state.pendingConquest = null;
 
   shuffledTerritories.forEach((territoryId) => {
     state.territories[territoryId] = { ownerId: null, armies: 0 };
@@ -253,6 +256,10 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
   }
 
+  if (state.pendingConquest) {
+    return { ok: false, message: "Devi prima spostare le armate nel territorio conquistato." };
+  }
+
   if (from.ownerId !== playerId || to.ownerId === playerId) {
     return { ok: false, message: "Puoi attaccare solo da un tuo territorio verso uno nemico." };
   }
@@ -277,8 +284,14 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     summary = attacker.name + " attacca " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
     if (to.armies <= 0) {
       to.ownerId = playerId;
-      to.armies = 1;
-      summary += " " + attacker.name + " conquista " + toId + ".";
+      to.armies = 0;
+      state.pendingConquest = {
+        fromId,
+        toId,
+        minArmies: 1,
+        maxArmies: Math.max(1, from.armies - 1)
+      };
+      summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
     } else {
       summary += " Il difensore perde 1 armata.";
     }
@@ -289,6 +302,55 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   state.lastAction = { type: GameAction.ATTACK, summary, fromId, toId };
   appendLog(state, summary);
   declareWinnerIfNeeded(state);
+  return { ok: true };
+}
+
+function moveAfterConquest(state, playerId, armiesToMove) {
+  const player = getPlayer(state, playerId);
+  const pending = state.pendingConquest;
+
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
+  }
+
+  if (state.phase !== "active") {
+    return { ok: false, message: "La partita non e attiva." };
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
+    return { ok: false, message: "Non e il tuo turno." };
+  }
+
+  if (!pending) {
+    return { ok: false, message: "Nessuna conquista in attesa." };
+  }
+
+  const moveCount = Number(armiesToMove);
+  if (!Number.isInteger(moveCount)) {
+    return { ok: false, message: "Inserisci un numero intero di armate." };
+  }
+
+  const from = state.territories[pending.fromId];
+  const to = state.territories[pending.toId];
+  const maxArmies = Math.max(1, from.armies - 1);
+
+  if (moveCount < pending.minArmies) {
+    return { ok: false, message: "Devi spostare almeno " + pending.minArmies + " armata." };
+  }
+
+  if (moveCount > maxArmies) {
+    return { ok: false, message: "Devi lasciare almeno 1 armata nel territorio di partenza." };
+  }
+
+  from.armies -= moveCount;
+  to.ownerId = playerId;
+  to.armies = moveCount;
+  state.pendingConquest = null;
+  state.lastAction = {
+    type: "moveAfterConquest",
+    summary: player.name + " sposta " + moveCount + " armate in " + pending.toId + "."
+  };
+  appendLog(state, player.name + " sposta " + moveCount + " armate in " + pending.toId + ".");
   return { ok: true };
 }
 
@@ -311,6 +373,10 @@ function endTurn(state, playerId) {
     return { ok: false, message: "Spendi prima tutti i rinforzi." };
   }
 
+  if (state.pendingConquest) {
+    return { ok: false, message: "Sposta prima le armate nel territorio conquistato." };
+  }
+
   appendLog(state, player.name + " termina il turno.");
   advanceTurn(state);
   return { ok: true };
@@ -331,6 +397,7 @@ module.exports = {
   getCurrentPlayer,
   getPlayer,
   palette,
+  moveAfterConquest,
   publicState,
   resolveAttack,
   startGame,

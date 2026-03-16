@@ -37,6 +37,9 @@ const elements = {
   attackFrom: document.querySelector("#attack-from"),
   attackTo: document.querySelector("#attack-to"),
   attackButton: document.querySelector("#attack-button"),
+  conquestGroup: document.querySelector("#conquest-group"),
+  conquestArmies: document.querySelector("#conquest-armies"),
+  conquestButton: document.querySelector("#conquest-button"),
   actionHint: document.querySelector("#action-hint"),
   endTurnButton: document.querySelector("#end-turn-button"),
   log: document.querySelector("#log")
@@ -266,18 +269,33 @@ function render() {
   elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${entry}</li>`).join("");
 
   const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
+  const pendingConquest = snapshot?.pendingConquest || null;
   elements.registerButton.disabled = Boolean(state.user);
   elements.loginButton.disabled = Boolean(state.user);
   elements.logoutButton.disabled = !state.user;
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
   elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
-  elements.reinforceButton.disabled = !canInteract || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
-  elements.attackButton.disabled = !canInteract || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
-  elements.endTurnButton.disabled = !canInteract || snapshot.reinforcementPool > 0;
+  if (elements.conquestGroup) {
+    elements.conquestGroup.hidden = !pendingConquest;
+  }
+  if (pendingConquest && elements.conquestArmies) {
+    elements.conquestArmies.min = String(pendingConquest.minArmies || 1);
+    elements.conquestArmies.max = String(pendingConquest.maxArmies || pendingConquest.minArmies || 1);
+    if (!elements.conquestArmies.value) {
+      elements.conquestArmies.value = String(pendingConquest.minArmies || 1);
+    }
+  }
+
+  elements.reinforceButton.disabled = !canInteract || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  elements.attackButton.disabled = !canInteract || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
+  elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
+  elements.endTurnButton.disabled = !canInteract || snapshot.reinforcementPool > 0 || Boolean(pendingConquest);
   elements.actionHint.textContent = canInteract
-    ? snapshot.reinforcementPool > 0
-      ? "Distribuisci rinforzi"
-      : "Puoi attaccare o chiudere il turno"
+    ? pendingConquest
+      ? "Sposta armate dopo la conquista"
+      : snapshot.reinforcementPool > 0
+        ? "Distribuisci rinforzi"
+        : "Puoi attaccare o chiudere il turno"
     : state.user
       ? "Osservazione"
       : "Login richiesto";
@@ -447,6 +465,25 @@ elements.attackButton.addEventListener("click", async () => {
       toId: elements.attackTo.value
     });
     state.snapshot = data.state;
+    if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+      elements.conquestArmies.value = "";
+    }
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.conquestButton.addEventListener("click", async () => {
+  try {
+    const data = await send("/api/action", {
+      sessionToken: state.sessionToken,
+      playerId: state.playerId,
+      type: "moveAfterConquest",
+      armies: Number(elements.conquestArmies.value)
+    });
+    state.snapshot = data.state;
+    elements.conquestArmies.value = "";
     render();
   } catch (error) {
     alert(error.message);
