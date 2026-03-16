@@ -4,16 +4,14 @@ const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
 const {
   addPlayer,
-  advanceTurn,
-  appendLog,
+  applyReinforcement,
   createInitialState,
-  getCurrentPlayer,
+  endTurn,
   getPlayer,
   publicState,
   resolveAttack,
-  startGame,
-  TurnPhase
-} = require("../shared/game-rules.cjs");
+  startGame
+} = require("./engine/game-engine.cjs");
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
@@ -218,39 +216,12 @@ function createApp(options = {}) {
       }
 
       if (type === "reinforce") {
-        const territoryId = String(body.territoryId || "");
-        const territoryState = state.territories[territoryId];
-
-        if (state.phase !== "active") {
-          sendJson(res, 400, { error: "La partita non e attiva." });
+        const result = applyReinforcement(state, playerId, String(body.territoryId || ""));
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.message });
           return;
         }
 
-        if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-          sendJson(res, 400, { error: "Non e il tuo turno." });
-          return;
-        }
-
-        if (state.reinforcementPool <= 0) {
-          sendJson(res, 400, { error: "Non hai rinforzi disponibili." });
-          return;
-        }
-
-        if (!territoryState || territoryState.ownerId !== playerId) {
-          sendJson(res, 400, { error: "Puoi rinforzare solo un tuo territorio." });
-          return;
-        }
-
-        territoryState.armies += 1;
-        state.reinforcementPool -= 1;
-        state.lastAction = {
-          type,
-          summary: player.name + " rinforza " + territoryId + "."
-        };
-        if (state.reinforcementPool === 0) {
-          state.turnPhase = TurnPhase.ATTACK;
-        }
-        appendLog(state, player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -269,23 +240,12 @@ function createApp(options = {}) {
       }
 
       if (type === "endTurn") {
-        if (state.phase !== "active") {
-          sendJson(res, 400, { error: "La partita non e attiva." });
+        const result = endTurn(state, playerId);
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.message });
           return;
         }
 
-        if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-          sendJson(res, 400, { error: "Non e il tuo turno." });
-          return;
-        }
-
-        if (state.reinforcementPool > 0) {
-          sendJson(res, 400, { error: "Spendi prima tutti i rinforzi." });
-          return;
-        }
-
-        appendLog(state, player.name + " termina il turno.");
-        advanceTurn(state);
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;

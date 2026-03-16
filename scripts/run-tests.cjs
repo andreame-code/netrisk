@@ -4,13 +4,15 @@ const path = require("path");
 const {
   addPlayer,
   advanceTurn,
+  applyReinforcement,
   computeReinforcements,
   createInitialState,
+  endTurn,
   publicState,
   resolveAttack,
   startGame,
   territoriesOwnedBy
-} = require("../shared/game-rules.cjs");
+} = require("../backend/engine/game-engine.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createApp } = require("../backend/server.cjs");
 
@@ -98,6 +100,17 @@ register("startGame distribuisce tutti i territori e assegna rinforzi iniziali",
   assert.equal(territoriesOwnedBy(state, first.id).length + territoriesOwnedBy(state, second.id).length, 9);
 });
 
+register("applyReinforcement centralizza la mutazione di rinforzo", () => {
+  const { state, first } = setupLobby();
+  startGame(state, () => 0);
+  const owned = territoriesOwnedBy(state, first.id)[0];
+  const before = state.territories[owned.id].armies;
+
+  const result = applyReinforcement(state, first.id, owned.id);
+  assert.equal(result.ok, true);
+  assert.equal(state.territories[owned.id].armies, before + 1);
+});
+
 register("resolveAttack conquista un territorio quando l'attaccante vince", () => {
   const { state, first, second } = setupLobby();
   state.phase = "active";
@@ -141,6 +154,20 @@ register("advanceTurn salta i giocatori eliminati e ricalcola i rinforzi", () =>
   assert.equal(state.currentTurnIndex, 1);
   assert.equal(state.reinforcementPool, computeReinforcements(state, second.id));
   assert.equal(state.turnPhase, "reinforcement");
+});
+
+register("endTurn centralizza la chiusura del turno", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 2 };
+  state.territories.bastion = { ownerId: second.id, armies: 2 };
+
+  const result = endTurn(state, first.id);
+  assert.equal(result.ok, true);
+  assert.equal(state.currentTurnIndex, 1);
 });
 
 register("publicState espone modelli condivisi e stato corrente", () => {

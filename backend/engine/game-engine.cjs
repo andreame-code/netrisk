@@ -3,8 +3,9 @@ const {
   GameAction,
   TurnPhase,
   createContinent,
-  createGameState
-} = require("./models.cjs");
+  createGameState,
+  createPlayer
+} = require("../../shared/models.cjs");
 
 const territories = [
   { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"], continentId: "north" },
@@ -163,6 +164,73 @@ function advanceTurn(state) {
   }
 }
 
+function addPlayer(state, name) {
+  const normalizedName = String(name || "").trim().slice(0, 24);
+  if (!normalizedName) {
+    return { ok: false, error: "Inserisci un nome." };
+  }
+
+  const existing = state.players.find((player) => player.name.toLowerCase() === normalizedName.toLowerCase());
+  if (existing) {
+    existing.connected = true;
+    appendLog(state, existing.name + " si ricollega alla lobby.");
+    return { ok: true, player: existing, rejoined: true };
+  }
+
+  if (state.phase !== "lobby") {
+    return { ok: false, error: "La partita e gia iniziata." };
+  }
+
+  if (state.players.length >= 4) {
+    return { ok: false, error: "La lobby e piena." };
+  }
+
+  const player = createPlayer({
+    id: randomId(),
+    name: normalizedName,
+    color: palette[state.players.length % palette.length],
+    connected: true
+  });
+  state.players.push(player);
+  appendLog(state, player.name + " entra nella lobby.");
+  return { ok: true, player, rejoined: false };
+}
+
+function applyReinforcement(state, playerId, territoryId) {
+  const territoryState = state.territories[territoryId];
+  const player = getPlayer(state, playerId);
+
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
+  }
+
+  if (state.phase !== "active") {
+    return { ok: false, message: "La partita non e attiva." };
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
+    return { ok: false, message: "Non e il tuo turno." };
+  }
+
+  if (state.reinforcementPool <= 0) {
+    return { ok: false, message: "Non hai rinforzi disponibili." };
+  }
+
+  if (!territoryState || territoryState.ownerId !== playerId) {
+    return { ok: false, message: "Puoi rinforzare solo un tuo territorio." };
+  }
+
+  territoryState.armies += 1;
+  state.reinforcementPool -= 1;
+  state.lastAction = {
+    type: GameAction.REINFORCE,
+    summary: player.name + " rinforza " + territoryId + "."
+  };
+  state.turnPhase = state.reinforcementPool === 0 ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
+  appendLog(state, player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
+  return { ok: true };
+}
+
 function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   const attacker = getPlayer(state, playerId);
   const from = state.territories[fromId];
@@ -185,8 +253,6 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
   }
 
-  state.turnPhase = TurnPhase.ATTACK;
-
   if (from.ownerId !== playerId || to.ownerId === playerId) {
     return { ok: false, message: "Puoi attaccare solo da un tuo territorio verso uno nemico." };
   }
@@ -198,6 +264,8 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   if (from.armies < 2) {
     return { ok: false, message: "Servono almeno 2 armate per attaccare." };
   }
+
+  state.turnPhase = TurnPhase.ATTACK;
 
   const attackRoll = Math.ceil(random() * 6);
   const defendRoll = Math.ceil(random() * 6);
@@ -224,36 +292,28 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   return { ok: true };
 }
 
-function addPlayer(state, name) {
-  const normalizedName = String(name || "").trim().slice(0, 24);
-  if (!normalizedName) {
-    return { ok: false, error: "Inserisci un nome." };
+function endTurn(state, playerId) {
+  const player = getPlayer(state, playerId);
+
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
   }
 
-  const existing = state.players.find((player) => player.name.toLowerCase() === normalizedName.toLowerCase());
-  if (existing) {
-    existing.connected = true;
-    appendLog(state, existing.name + " si ricollega alla lobby.");
-    return { ok: true, player: existing, rejoined: true };
+  if (state.phase !== "active") {
+    return { ok: false, message: "La partita non e attiva." };
   }
 
-  if (state.phase !== "lobby") {
-    return { ok: false, error: "La partita e gia iniziata." };
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
+    return { ok: false, message: "Non e il tuo turno." };
   }
 
-  if (state.players.length >= 4) {
-    return { ok: false, error: "La lobby e piena." };
+  if (state.reinforcementPool > 0) {
+    return { ok: false, message: "Spendi prima tutti i rinforzi." };
   }
 
-  const player = {
-    id: randomId(),
-    name: normalizedName,
-    color: palette[state.players.length % palette.length],
-    connected: true
-  };
-  state.players.push(player);
-  appendLog(state, player.name + " entra nella lobby.");
-  return { ok: true, player, rejoined: false };
+  appendLog(state, player.name + " termina il turno.");
+  advanceTurn(state);
+  return { ok: true };
 }
 
 module.exports = {
@@ -262,10 +322,12 @@ module.exports = {
   addPlayer,
   advanceTurn,
   appendLog,
+  applyReinforcement,
   computeReinforcements,
   continents,
   createInitialState,
   declareWinnerIfNeeded,
+  endTurn,
   getCurrentPlayer,
   getPlayer,
   palette,
