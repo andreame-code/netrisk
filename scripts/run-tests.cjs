@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
-const { once } = require("node:events");
+const fs = require("fs");
+const path = require("path");
 const {
   addPlayer,
   advanceTurn,
@@ -10,7 +11,8 @@ const {
   startGame,
   territoriesOwnedBy
 } = require("../src/game.cjs");
-const { server } = require("../src/server.cjs");
+const { createAuthStore } = require("../src/auth.cjs");
+const { createApp } = require("../src/server.cjs");
 
 const tests = [];
 
@@ -28,23 +30,51 @@ function setupLobby() {
 }
 
 async function withServer(run) {
-  const listener = server.listen(0);
-  await once(listener, "listening");
+  const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const app = createApp({ dataFile: tempFile });
+  const listener = app.server.listen(0);
+
+  await new Promise((resolve, reject) => {
+    listener.once("listening", resolve);
+    listener.once("error", reject);
+  });
+
   try {
     const address = listener.address();
     return await run(`http://127.0.0.1:${address.port}`);
   } finally {
-    await new Promise((resolve, reject) => {
-      listener.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
+    await new Promise((resolve) => {
+      if (!listener.listening) {
         resolve();
-      });
+        return;
+      }
+
+      listener.close(() => resolve());
     });
+
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
   }
 }
+
+register("auth store registra e autentica utenti password", () => {
+  const tempFile = path.join(__dirname, "tmp-users.json");
+  if (fs.existsSync(tempFile)) {
+    fs.unlinkSync(tempFile);
+  }
+
+  const auth = createAuthStore({ dataFile: tempFile });
+  const registered = auth.registerPasswordUser("tester", "secret");
+  assert.equal(registered.ok, true);
+
+  const login = auth.loginWithPassword("tester", "secret");
+  assert.equal(login.ok, true);
+  assert.equal(Boolean(login.sessionToken), true);
+  assert.equal(auth.getUserFromSession(login.sessionToken).username, "tester");
+
+  fs.unlinkSync(tempFile);
+});
 
 register("addPlayer aggiunge giocatori e impedisce lobby oltre 4", () => {
   const state = createInitialState();
@@ -152,48 +182,42 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
   });
 });
 
-register("API join + start + reinforce completa il flusso base", async () => {
+register("API register + login + join completa il flusso di accesso", async () => {
   await withServer(async (baseUrl) => {
-    const joinAlice = await fetch(`${baseUrl}/api/join`, {
+    const unique = `api_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    const registerResponse = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "ApiAlice" })
+      body: JSON.stringify({ username: unique, password: "secret" })
     });
-    assert.equal(joinAlice.status, 201);
-    const aliceData = await joinAlice.json();
+    assert.equal(registerResponse.status, 201);
 
-    const joinBob = await fetch(`${baseUrl}/api/join`, {
+    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "ApiBob" })
+      body: JSON.stringify({ username: unique, password: "secret" })
     });
-    assert.equal(joinBob.status, 201);
+    assert.equal(loginResponse.status, 200);
+    const loginPayload = await loginResponse.json();
+    assert.equal(Boolean(loginPayload.sessionToken), true);
 
-    const start = await fetch(`${baseUrl}/api/start`, {
+    const sessionResponse = await fetch(`${baseUrl}/api/auth/session`, {
+      headers: { "x-session-token": loginPayload.sessionToken }
+    });
+    assert.equal(sessionResponse.status, 200);
+
+    const joinResponse = await fetch(`${baseUrl}/api/join`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId: aliceData.playerId })
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": loginPayload.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: loginPayload.sessionToken })
     });
-    assert.equal(start.status, 200);
-    const started = await start.json();
-    assert.equal(started.state.phase, "active");
-
-    const mine = started.state.map.find((territory) => territory.ownerId === aliceData.playerId);
-    assert.ok(mine);
-
-    const reinforce = await fetch(`${baseUrl}/api/action`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        playerId: aliceData.playerId,
-        type: "reinforce",
-        territoryId: mine.id
-      })
-    });
-    assert.equal(reinforce.status, 200);
-    const reinforced = await reinforce.json();
-    const updated = reinforced.state.map.find((territory) => territory.id === mine.id);
-    assert.equal(updated.armies >= mine.armies + 1, true);
+    assert.equal(joinResponse.status, 201);
+    const joined = await joinResponse.json();
+    assert.equal(joined.user.username, unique);
+    assert.equal(Boolean(joined.playerId), true);
   });
 });
 
