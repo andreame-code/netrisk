@@ -1,7 +1,8 @@
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
-  playerName: localStorage.getItem("frontline-player-name") || "",
-  snapshot: null
+  sessionToken: localStorage.getItem("frontline-session-token") || null,
+  snapshot: null,
+  user: null
 };
 
 const mapLayout = {
@@ -17,9 +18,15 @@ const mapLayout = {
 };
 
 const elements = {
-  joinForm: document.querySelector("#join-form"),
-  playerName: document.querySelector("#player-name"),
+  authForm: document.querySelector("#auth-form"),
+  authUsername: document.querySelector("#auth-username"),
+  authPassword: document.querySelector("#auth-password"),
+  authStatus: document.querySelector("#auth-status"),
+  registerButton: document.querySelector("#register-button"),
+  loginButton: document.querySelector("#login-button"),
+  logoutButton: document.querySelector("#logout-button"),
   identityStatus: document.querySelector("#identity-status"),
+  joinButton: document.querySelector("#join-button"),
   startButton: document.querySelector("#start-button"),
   turnBadge: document.querySelector("#turn-badge"),
   statusSummary: document.querySelector("#status-summary"),
@@ -34,8 +41,6 @@ const elements = {
   endTurnButton: document.querySelector("#end-turn-button"),
   log: document.querySelector("#log")
 };
-
-elements.playerName.value = state.playerName;
 
 function ownerById(ownerId) {
   return state.snapshot?.players.find((player) => player.id === ownerId) || null;
@@ -53,11 +58,24 @@ function myTerritories() {
   return (state.snapshot?.map || []).filter((territory) => territory.ownerId === state.playerId);
 }
 
-function setIdentity(playerId, playerName) {
+function setSession(sessionToken, user) {
+  state.sessionToken = sessionToken;
+  state.user = user;
+  if (sessionToken) {
+    localStorage.setItem("frontline-session-token", sessionToken);
+  } else {
+    localStorage.removeItem("frontline-session-token");
+  }
+}
+
+function clearPlayerIdentity() {
+  state.playerId = null;
+  localStorage.removeItem("frontline-player-id");
+}
+
+function setPlayerIdentity(playerId) {
   state.playerId = playerId;
-  state.playerName = playerName;
   localStorage.setItem("frontline-player-id", playerId);
-  localStorage.setItem("frontline-player-name", playerName);
 }
 
 function territoryOptionLabel(territory) {
@@ -83,13 +101,7 @@ function buildGraphMarkup(snapshot) {
       }
 
       links.push(`
-        <line
-          x1="${source.x}"
-          y1="${source.y}"
-          x2="${target.x}"
-          y2="${target.y}"
-          class="map-link"
-        />
+        <line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" class="map-link" />
       `);
     });
   });
@@ -98,16 +110,12 @@ function buildGraphMarkup(snapshot) {
     .map((territory) => {
       const owner = ownerById(territory.ownerId);
       const position = mapLayout[territory.id];
-      const isMine = territory.ownerId === state.playerId;
-      const isActiveSource = elements.attackFrom.value === territory.id;
-      const isAttackTarget = elements.attackTo.value === territory.id;
-      const isReinforceTarget = elements.reinforceSelect.value === territory.id;
       const classes = [
         "territory-node",
-        isMine ? "is-mine" : "",
-        isActiveSource ? "is-source" : "",
-        isAttackTarget ? "is-target" : "",
-        isReinforceTarget ? "is-reinforce" : ""
+        territory.ownerId === state.playerId ? "is-mine" : "",
+        elements.attackFrom.value === territory.id ? "is-source" : "",
+        elements.attackTo.value === territory.id ? "is-target" : "",
+        elements.reinforceSelect.value === territory.id ? "is-reinforce" : ""
       ]
         .filter(Boolean)
         .join(" ");
@@ -143,14 +151,10 @@ function buildGraphMarkup(snapshot) {
 
   return `
     <div class="map-board">
-      <svg class="map-lines" viewBox="0 0 760 500" aria-hidden="true">
-        ${links.join("")}
-      </svg>
+      <svg class="map-lines" viewBox="0 0 760 500" aria-hidden="true">${links.join("")}</svg>
       ${nodes}
     </div>
-    <div class="map-legend">
-      ${details}
-    </div>
+    <div class="map-legend">${details}</div>
   `;
 }
 
@@ -175,33 +179,40 @@ function handleTerritoryClick(territoryId) {
 
 function render() {
   const snapshot = state.snapshot;
-  if (!snapshot) {
-    return;
-  }
+  const me = snapshot?.players.find((player) => player.id === state.playerId) || null;
+  const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
+  const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
 
-  const currentPlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
-  const me = snapshot.players.find((player) => player.id === state.playerId);
-  elements.identityStatus.textContent = me
-    ? `Connesso come ${me.name}. Apri questa pagina anche da altri browser per simulare altri giocatori.`
-    : "Scegli un nome e collegati alla lobby.";
+  elements.authStatus.textContent = state.user
+    ? `Autenticato come ${state.user.username}. Metodi disponibili: ${state.user.authMethods.join(", ")}.`
+    : "Registrati o accedi per entrare nella lobby.";
+
+  elements.identityStatus.textContent = state.user
+    ? me
+      ? `Connesso alla partita come ${me.name}.`
+      : `Accesso attivo come ${state.user.username}. Ora puoi entrare nella lobby.`
+    : "Accedi per collegarti alla partita.";
 
   elements.turnBadge.textContent =
-    snapshot.phase === "lobby"
+    !snapshot
       ? "Lobby"
-      : snapshot.phase === "finished"
-        ? "Partita conclusa"
-        : currentPlayer
-          ? `Turno di ${currentPlayer.name}`
-          : "In attesa";
+      : snapshot.phase === "lobby"
+        ? "Lobby"
+        : snapshot.phase === "finished"
+          ? "Partita conclusa"
+          : currentPlayer
+            ? `Turno di ${currentPlayer.name}`
+            : "In attesa";
 
-  const winner = snapshot.players.find((player) => player.id === snapshot.winnerId);
-  elements.statusSummary.innerHTML = `
-    <div>Fase: <strong>${snapshot.phase}</strong></div>
-    <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
-    <div>Vincitore: <strong>${winner ? winner.name : "nessuno"}</strong></div>
-  `;
+  elements.statusSummary.innerHTML = snapshot
+    ? `
+      <div>Fase: <strong>${snapshot.phase}</strong></div>
+      <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
+      <div>Vincitore: <strong>${winner ? winner.name : "nessuno"}</strong></div>
+    `
+    : "<div>Caricamento stato...</div>";
 
-  elements.players.innerHTML = snapshot.players
+  elements.players.innerHTML = (snapshot?.players || [])
     .map(
       (player) => `
         <article class="player-card">
@@ -231,8 +242,8 @@ function render() {
     elements.attackFrom.value = selectedFromId;
   }
 
-  const source = snapshot.map.find((territory) => territory.id === selectedFromId);
-  const attackTargets = snapshot.map.filter(
+  const source = snapshot?.map.find((territory) => territory.id === selectedFromId);
+  const attackTargets = (snapshot?.map || []).filter(
     (territory) =>
       source?.neighbors.includes(territory.id) &&
       territory.ownerId &&
@@ -251,29 +262,37 @@ function render() {
     elements.attackTo.value = attackTargets[0].id;
   }
 
-  elements.map.innerHTML = buildGraphMarkup(snapshot);
+  elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
+  elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${entry}</li>`).join("");
 
-  const canInteract = Boolean(me) && snapshot.phase === "active" && isCurrentPlayer();
-  elements.startButton.disabled = !me || snapshot.phase !== "lobby" || snapshot.players.length < 2;
-  elements.reinforceButton.disabled =
-    !canInteract || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
-  elements.attackButton.disabled =
-    !canInteract || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
+  const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
+  elements.registerButton.disabled = Boolean(state.user);
+  elements.loginButton.disabled = Boolean(state.user);
+  elements.logoutButton.disabled = !state.user;
+  elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
+  elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
+  elements.reinforceButton.disabled = !canInteract || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  elements.attackButton.disabled = !canInteract || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
   elements.endTurnButton.disabled = !canInteract || snapshot.reinforcementPool > 0;
   elements.actionHint.textContent = canInteract
     ? snapshot.reinforcementPool > 0
       ? "Distribuisci rinforzi"
       : "Puoi attaccare o chiudere il turno"
-    : "Osservazione";
-
-  elements.log.innerHTML = snapshot.log.map((entry) => `<li>${entry}</li>`).join("");
+    : state.user
+      ? "Osservazione"
+      : "Login richiesto";
 }
 
-async function send(path, payload) {
+async function send(path, payload = {}, options = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (state.sessionToken) {
+    headers["x-session-token"] = state.sessionToken;
+  }
+
   const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
+    method: options.method || "POST",
+    headers,
+    body: options.method === "GET" ? undefined : JSON.stringify(payload)
   });
 
   const data = await response.json();
@@ -289,6 +308,30 @@ async function loadState() {
   render();
 }
 
+async function restoreSession() {
+  if (!state.sessionToken) {
+    render();
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/auth/session", {
+      headers: { "x-session-token": state.sessionToken }
+    });
+    if (!response.ok) {
+      throw new Error("Sessione scaduta");
+    }
+
+    const data = await response.json();
+    state.user = data.user;
+  } catch (error) {
+    setSession(null, null);
+    clearPlayerIdentity();
+  }
+
+  render();
+}
+
 function connectEvents() {
   const events = new EventSource("/api/events");
   events.onmessage = (event) => {
@@ -297,16 +340,58 @@ function connectEvents() {
   };
 }
 
-elements.joinForm.addEventListener("submit", async (event) => {
+elements.authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const name = elements.playerName.value.trim();
-  if (!name) {
+  const username = elements.authUsername.value.trim();
+  const password = elements.authPassword.value;
+  if (!username || !password) {
     return;
   }
 
   try {
-    const data = await send("/api/join", { name });
-    setIdentity(data.playerId, name);
+    const data = await send("/api/auth/login", { username, password });
+    setSession(data.sessionToken, data.user);
+    clearPlayerIdentity();
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.registerButton.addEventListener("click", async () => {
+  const username = elements.authUsername.value.trim();
+  const password = elements.authPassword.value;
+  if (!username || !password) {
+    return;
+  }
+
+  try {
+    await send("/api/auth/register", { username, password });
+    const login = await send("/api/auth/login", { username, password });
+    setSession(login.sessionToken, login.user);
+    clearPlayerIdentity();
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.logoutButton.addEventListener("click", async () => {
+  try {
+    await send("/api/auth/logout", { sessionToken: state.sessionToken });
+  } catch (error) {
+  }
+
+  setSession(null, null);
+  clearPlayerIdentity();
+  render();
+});
+
+elements.joinButton.addEventListener("click", async () => {
+  try {
+    const data = await send("/api/join", { sessionToken: state.sessionToken });
+    setPlayerIdentity(data.playerId);
+    state.user = data.user;
     state.snapshot = data.state;
     render();
   } catch (error) {
@@ -316,7 +401,10 @@ elements.joinForm.addEventListener("submit", async (event) => {
 
 elements.startButton.addEventListener("click", async () => {
   try {
-    const data = await send("/api/start", { playerId: state.playerId });
+    const data = await send("/api/start", {
+      sessionToken: state.sessionToken,
+      playerId: state.playerId
+    });
     state.snapshot = data.state;
     render();
   } catch (error) {
@@ -327,6 +415,7 @@ elements.startButton.addEventListener("click", async () => {
 elements.reinforceButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "reinforce",
       territoryId: elements.reinforceSelect.value
@@ -351,6 +440,7 @@ elements.map.addEventListener("click", (event) => {
 elements.attackButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "attack",
       fromId: elements.attackFrom.value,
@@ -366,6 +456,7 @@ elements.attackButton.addEventListener("click", async () => {
 elements.endTurnButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "endTurn"
     });
@@ -377,4 +468,5 @@ elements.endTurnButton.addEventListener("click", async () => {
 });
 
 await loadState();
+await restoreSession();
 connectEvents();

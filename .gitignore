@@ -1,1 +1,4 @@
 npm-debug.log
+data/users.json
+scripts/tmp-users.json
+scripts/tmp-users-*.json
