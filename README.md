@@ -5,8 +5,9 @@ Base architecture for a turn-based strategy game inspired by Risk, organized to 
 ## Structure
 
 - `frontend/public`: game UI, map rendering, panels, auth and turn controls
-- `backend`: HTTP API, sessions, game state orchestration, validations, future multiplayer and AI hooks
-- `shared`: common models, rules, enums, and game state structures reused across layers
+- `backend`: HTTP API, sessions, orchestration, persistence entrypoints
+- `backend/engine`: pure game rules and turn logic
+- `shared`: shared models, enums, and DTO-style structures reused across layers
 - `scripts`: local tooling and automated tests
 - `data`: local runtime files such as registered users
 
@@ -33,5 +34,6 @@ Then open `http://localhost:3000`.
 
 - The frontend only renders state and sends actions.
 - The backend remains the source of truth for the match.
+- Pure game rules live in `backend/engine`.
 - The structure is ready to evolve toward both single player and turn-based multiplayer.
 - Use `npm test` before commits; the repository hook runs it automatically.
