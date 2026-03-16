@@ -10,32 +10,32 @@
     <div class="backdrop"></div>
     <main class="app-shell board-shell">
       <section class="command-bar panel">
-        <div class="brand-block">
+        <div class="brand-block compact-brand">
           <p class="eyebrow">Multiplayer browser strategy</p>
           <h1>Frontline Dominion</h1>
-          <p class="subtitle">Una schermata unica per mappa, turni, login, azioni e cronologia.</p>
         </div>
 
-        <div class="auth-cluster">
-          <div class="mini-card">
+        <div class="top-status-row">
+          <div class="mini-card slim-card">
             <span class="mini-label">Accesso</span>
             <p id="auth-status">Registrati o accedi per entrare nella lobby.</p>
           </div>
-          <form id="auth-form" class="auth-form compact-form">
+          <div class="mini-card slim-card">
+            <span class="mini-label">Comandante</span>
+            <p id="identity-status">Accedi per collegarti alla partita.</p>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <form id="auth-form" class="auth-form compact-form header-form">
             <input id="auth-username" name="username" maxlength="32" placeholder="Utente" required />
             <input id="auth-password" name="password" type="password" placeholder="Password" required />
             <button type="button" id="register-button">Registrati</button>
             <button type="submit" id="login-button" class="ghost-button">Accedi</button>
             <button type="button" id="logout-button" class="ghost-button">Esci</button>
           </form>
-        </div>
 
-        <div class="identity-cluster">
-          <div class="mini-card">
-            <span class="mini-label">Comandante</span>
-            <p id="identity-status">Accedi per collegarti alla partita.</p>
-          </div>
-          <div class="identity-actions compact-actions">
+          <div class="identity-actions compact-actions header-actions">
             <button id="join-button">Entra nella lobby</button>
             <button id="start-button" class="ghost-button">Avvia partita</button>
           </div>
