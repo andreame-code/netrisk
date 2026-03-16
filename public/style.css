@@ -84,6 +84,7 @@ h1 {
   backdrop-filter: blur(12px);
 }
 
+.auth-panel,
 .identity-panel {
   display: flex;
   justify-content: space-between;
@@ -92,15 +93,31 @@ h1 {
   margin-bottom: 18px;
 }
 
+.auth-form,
 .join-form,
 .action-row,
-.action-stack {
+.action-stack,
+.auth-actions,
+.identity-actions {
   display: flex;
   gap: 10px;
 }
 
+.auth-form {
+  flex: 1;
+  align-items: center;
+}
+
+.auth-actions,
+.identity-actions,
 .action-stack {
-  flex-direction: column;
+  flex-wrap: wrap;
+}
+
+.auth-note {
+  max-width: 280px;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 input,
@@ -352,8 +369,11 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
+  .auth-panel,
   .identity-panel,
-  .join-form {
+  .auth-form,
+  .auth-actions,
+  .identity-actions {
     flex-direction: column;
     align-items: stretch;
   }

@@ -17,16 +17,32 @@
         </p>
       </section>
 
+      <section class="panel auth-panel">
+        <div>
+          <h2>Accesso</h2>
+          <p id="auth-status">Registrati o accedi per entrare nella lobby.</p>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <input id="auth-username" name="username" maxlength="32" placeholder="Utente" required />
+          <input id="auth-password" name="password" type="password" placeholder="Password" required />
+          <div class="auth-actions">
+            <button type="button" id="register-button">Registrati</button>
+            <button type="submit" id="login-button" class="ghost-button">Accedi</button>
+            <button type="button" id="logout-button" class="ghost-button">Esci</button>
+          </div>
+        </form>
+        <p class="auth-note">Base semplice oggi, gia pronta per estendere provider futuri come email, Google o Discord.</p>
+      </section>
+
       <section class="panel identity-panel">
         <div>
-          <h2>Entra nella partita</h2>
-          <p id="identity-status">Scegli un nome e collegati alla lobby.</p>
+          <h2>Giocatore</h2>
+          <p id="identity-status">Accedi per collegarti alla partita.</p>
         </div>
-        <form id="join-form" class="join-form">
-          <input id="player-name" name="name" maxlength="24" placeholder="Nome comandante" required />
-          <button type="submit">Entra</button>
-        </form>
-        <button id="start-button" class="ghost-button">Avvia partita</button>
+        <div class="identity-actions">
+          <button id="join-button">Entra nella lobby</button>
+          <button id="start-button" class="ghost-button">Avvia partita</button>
+        </div>
       </section>
 
       <section class="grid">
