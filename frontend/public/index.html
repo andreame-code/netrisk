@@ -8,94 +8,102 @@
   </head>
   <body>
     <div class="backdrop"></div>
-    <main class="app-shell">
-      <section class="hero">
-        <p class="eyebrow">Multiplayer browser strategy</p>
-        <h1>Frontline Dominion</h1>
-        <p class="subtitle">
-          Un prototipo ispirato a Risk: lobby condivisa, turni, rinforzi, attacchi e aggiornamenti live.
-        </p>
-      </section>
-
-      <section class="panel auth-panel">
-        <div>
-          <h2>Accesso</h2>
-          <p id="auth-status">Registrati o accedi per entrare nella lobby.</p>
+    <main class="app-shell board-shell">
+      <section class="command-bar panel">
+        <div class="brand-block">
+          <p class="eyebrow">Multiplayer browser strategy</p>
+          <h1>Frontline Dominion</h1>
+          <p class="subtitle">Una schermata unica per mappa, turni, login, azioni e cronologia.</p>
         </div>
-        <form id="auth-form" class="auth-form">
-          <input id="auth-username" name="username" maxlength="32" placeholder="Utente" required />
-          <input id="auth-password" name="password" type="password" placeholder="Password" required />
-          <div class="auth-actions">
+
+        <div class="auth-cluster">
+          <div class="mini-card">
+            <span class="mini-label">Accesso</span>
+            <p id="auth-status">Registrati o accedi per entrare nella lobby.</p>
+          </div>
+          <form id="auth-form" class="auth-form compact-form">
+            <input id="auth-username" name="username" maxlength="32" placeholder="Utente" required />
+            <input id="auth-password" name="password" type="password" placeholder="Password" required />
             <button type="button" id="register-button">Registrati</button>
             <button type="submit" id="login-button" class="ghost-button">Accedi</button>
             <button type="button" id="logout-button" class="ghost-button">Esci</button>
+          </form>
+        </div>
+
+        <div class="identity-cluster">
+          <div class="mini-card">
+            <span class="mini-label">Comandante</span>
+            <p id="identity-status">Accedi per collegarti alla partita.</p>
           </div>
-        </form>
-        <p class="auth-note">Base semplice oggi, gia pronta per estendere provider futuri come email, Google o Discord.</p>
-      </section>
-
-      <section class="panel identity-panel">
-        <div>
-          <h2>Giocatore</h2>
-          <p id="identity-status">Accedi per collegarti alla partita.</p>
-        </div>
-        <div class="identity-actions">
-          <button id="join-button">Entra nella lobby</button>
-          <button id="start-button" class="ghost-button">Avvia partita</button>
+          <div class="identity-actions compact-actions">
+            <button id="join-button">Entra nella lobby</button>
+            <button id="start-button" class="ghost-button">Avvia partita</button>
+          </div>
         </div>
       </section>
 
-      <section class="grid">
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Stato</h2>
+      <section class="battlefield-layout">
+        <aside class="left-rail panel">
+          <div class="panel-header tight-header">
+            <h2>Comando</h2>
             <span id="turn-badge" class="badge">Lobby</span>
           </div>
-          <div id="status-summary" class="status-summary"></div>
-          <div id="players" class="players"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Mappa</h2>
-            <span class="badge accent">9 territori</span>
-          </div>
-          <div id="map" class="map"></div>
-        </div>
-
-        <div class="panel actions-panel">
-          <div class="panel-header">
-            <h2>Azioni</h2>
-            <span id="action-hint" class="badge">In attesa</span>
-          </div>
-
-          <div class="action-group">
-            <label for="reinforce-select">Rinforza</label>
-            <div class="action-row">
-              <select id="reinforce-select"></select>
-              <button id="reinforce-button">+1 armata</button>
+          <div id="status-summary" class="status-summary command-summary"></div>
+          <div class="rail-section">
+            <div class="section-title-row">
+              <h3>Giocatori</h3>
+              <span class="badge accent">Live</span>
             </div>
+            <div id="players" class="players rail-players"></div>
           </div>
+        </aside>
 
-          <div class="action-group">
-            <label for="attack-from">Attacca</label>
-            <div class="action-stack">
-              <select id="attack-from"></select>
-              <select id="attack-to"></select>
-              <button id="attack-button">Lancia attacco</button>
+        <section class="center-stage panel map-stage-panel">
+          <div class="panel-header map-stage-header">
+            <div>
+              <h2>Teatro di Guerra</h2>
+              <p class="stage-copy">La mappa e il campo principale: seleziona territori e segui il turno in tempo reale.</p>
             </div>
+            <span id="action-hint" class="badge accent">In attesa</span>
+          </div>
+          <div id="map" class="map tactical-map"></div>
+        </section>
+
+        <aside class="right-rail panel">
+          <div class="rail-section actions-section">
+            <div class="section-title-row">
+              <h3>Azioni</h3>
+              <span class="badge">Turno</span>
+            </div>
+
+            <div class="action-group compact-group">
+              <label for="reinforce-select">Rinforza</label>
+              <div class="action-stack">
+                <select id="reinforce-select"></select>
+                <button id="reinforce-button">+1 armata</button>
+              </div>
+            </div>
+
+            <div class="action-group compact-group">
+              <label for="attack-from">Attacca</label>
+              <div class="action-stack">
+                <select id="attack-from"></select>
+                <select id="attack-to"></select>
+                <button id="attack-button">Lancia attacco</button>
+              </div>
+            </div>
+
+            <button id="end-turn-button" class="ghost-button full-width">Termina turno</button>
           </div>
 
-          <button id="end-turn-button" class="ghost-button">Termina turno</button>
-        </div>
-
-        <div class="panel log-panel">
-          <div class="panel-header">
-            <h2>Registro</h2>
-            <span class="badge accent">Live</span>
+          <div class="rail-section log-section">
+            <div class="section-title-row">
+              <h3>Registro</h3>
+              <span class="badge accent">Cronologia</span>
+            </div>
+            <ul id="log" class="log-list rail-log"></ul>
           </div>
-          <ul id="log" class="log-list"></ul>
-        </div>
+        </aside>
       </section>
     </main>
 
