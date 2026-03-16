@@ -1,0 +1,6 @@
+id,name,bonus,territoryIds
+north,Northern Reach,3,aurora|bastion
+center,Central Belt,4,cinder|ember
+west,Western Frontier,2,delta
+south,Southern March,3,grove|harbor
+east,Eastern Crown,2,forge|ion
