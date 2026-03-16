@@ -1,10 +1,10 @@
 {
-  "name": "web-risk-lite",
+  "name": "netrisk",
   "version": "0.1.0",
-  "description": "MVP multiplayer browser game inspired by Risk",
+  "description": "NetRisk base architecture with separated frontend, backend and shared logic",
   "private": true,
   "scripts": {
-    "start": "node src/server.cjs",
+    "start": "node backend/server.cjs",
     "test": "node scripts/run-tests.cjs"
   }
 }
