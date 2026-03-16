@@ -6,15 +6,15 @@ const state = {
 };
 
 const mapLayout = {
-  aurora: { x: 130, y: 90 },
-  bastion: { x: 310, y: 70 },
-  cinder: { x: 210, y: 195 },
-  delta: { x: 110, y: 315 },
-  ember: { x: 385, y: 215 },
-  forge: { x: 535, y: 125 },
-  grove: { x: 260, y: 420 },
-  harbor: { x: 470, y: 335 },
-  ion: { x: 655, y: 250 }
+  aurora: { x: 17.1, y: 18 },
+  bastion: { x: 40.8, y: 14 },
+  cinder: { x: 27.6, y: 39 },
+  delta: { x: 14.5, y: 63 },
+  ember: { x: 50.7, y: 43 },
+  forge: { x: 70.4, y: 25 },
+  grove: { x: 34.2, y: 84 },
+  harbor: { x: 61.8, y: 67 },
+  ion: { x: 86.2, y: 50 }
 };
 
 const elements = {
@@ -101,7 +101,7 @@ function buildGraphMarkup(snapshot) {
       }
 
       links.push(`
-        <line x1="${source.x}" y1="${source.y}" x2="${target.x}" y2="${target.y}" class="map-link" />
+        <line x1="${source.x}%" y1="${source.y}%" x2="${target.x}%" y2="${target.y}%" class="map-link" />
       `);
     });
   });
@@ -125,7 +125,7 @@ function buildGraphMarkup(snapshot) {
           type="button"
           class="${classes}"
           data-territory-id="${territory.id}"
-          style="left:${position.x}px; top:${position.y}px; --owner-color:${owner?.color || "#9aa6b2"};"
+          style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"};"
         >
           <span class="territory-name">${territory.name}</span>
           <span class="territory-meta">${owner ? owner.name : "Neutrale"}</span>
@@ -470,3 +470,4 @@ elements.endTurnButton.addEventListener("click", async () => {
 await loadState();
 await restoreSession();
 connectEvents();
+
