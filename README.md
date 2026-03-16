@@ -1,37 +1,37 @@
-# Frontline Dominion
+# NetRisk
 
-MVP multiplayer via browser ispirato a Risk, pensato come base di partenza.
+Base architecture for a turn-based strategy game inspired by Risk, organized to keep UI, server state, and shared rules clearly separated.
 
-## Cosa include
+## Structure
 
-- lobby condivisa con fino a 4 giocatori
-- aggiornamenti live via Server-Sent Events
-- mappa semplificata con 9 territori
-- turni, rinforzi, attacchi e condizione di vittoria
-- nessuna dipendenza esterna
+- `frontend/public`: game UI, map rendering, panels, auth and turn controls
+- `backend`: HTTP API, sessions, game state orchestration, validations, future multiplayer and AI hooks
+- `shared`: common models, rules, enums, and game state structures reused across layers
+- `scripts`: local tooling and automated tests
+- `data`: local runtime files such as registered users
 
-## Avvio
+## Core Models
+
+Shared models already defined in `shared/models.cjs`:
+
+- `Player`
+- `Territory`
+- `Continent`
+- `GameState`
+- `GameAction`
+- `TurnPhase`
+
+## Local Start
 
 ```bash
 npm start
 ```
 
-Poi apri `http://localhost:3000` in piu browser o tab.
+Then open `http://localhost:3000`.
 
-## Regole MVP
+## Notes
 
-- in lobby, almeno 2 giocatori possono entrare e uno puo avviare la partita
-- a inizio partita i territori vengono distribuiti casualmente
-- all'inizio del turno ricevi almeno 3 rinforzi
-- devi spendere tutti i rinforzi prima di poter attaccare
-- per attaccare serve un territorio confinante e almeno 2 armate sul territorio d'origine
-- il turno termina manualmente dopo gli attacchi
-
-## Prossimi step consigliati
-
-- autenticazione reale e partite multiple
-- matchmaking o lobby con codice invito
-- spostamento truppe a fine turno
-- carte, obiettivi e continenti
-- persistenza database
-- WebSocket e deploy online
+- The frontend only renders state and sends actions.
+- The backend remains the source of truth for the match.
+- The structure is ready to evolve toward both single player and turn-based multiplayer.
+- Use `npm test` before commits; the repository hook runs it automatically.

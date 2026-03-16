@@ -11,10 +11,11 @@ const {
   getPlayer,
   publicState,
   resolveAttack,
-  startGame
-} = require("./game.cjs");
+  startGame,
+  TurnPhase
+} = require("../shared/game-rules.cjs");
 
-const publicDir = path.join(__dirname, "..", "public");
+const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
 
 function sendJson(res, statusCode, payload) {
@@ -243,9 +244,12 @@ function createApp(options = {}) {
         territoryState.armies += 1;
         state.reinforcementPool -= 1;
         state.lastAction = {
-          type: "reinforce",
+          type,
           summary: player.name + " rinforza " + territoryId + "."
         };
+        if (state.reinforcementPool === 0) {
+          state.turnPhase = TurnPhase.ATTACK;
+        }
         appendLog(state, player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });

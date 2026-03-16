@@ -1,32 +1,47 @@
 const crypto = require("crypto");
+const {
+  GameAction,
+  TurnPhase,
+  createContinent,
+  createGameState
+} = require("./models.cjs");
 
 const territories = [
-  { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"] },
-  { id: "bastion", name: "Bastion", neighbors: ["aurora", "ember", "forge"] },
-  { id: "cinder", name: "Cinder", neighbors: ["aurora", "delta", "ember"] },
-  { id: "delta", name: "Delta", neighbors: ["aurora", "cinder", "grove", "harbor"] },
-  { id: "ember", name: "Ember", neighbors: ["bastion", "cinder", "forge", "harbor"] },
-  { id: "forge", name: "Forge", neighbors: ["bastion", "ember", "harbor", "ion"] },
-  { id: "grove", name: "Grove", neighbors: ["delta", "harbor"] },
-  { id: "harbor", name: "Harbor", neighbors: ["delta", "ember", "forge", "grove", "ion"] },
-  { id: "ion", name: "Ion", neighbors: ["forge", "harbor"] }
+  { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"], continentId: "north" },
+  { id: "bastion", name: "Bastion", neighbors: ["aurora", "ember", "forge"], continentId: "north" },
+  { id: "cinder", name: "Cinder", neighbors: ["aurora", "delta", "ember"], continentId: "central" },
+  { id: "delta", name: "Delta", neighbors: ["aurora", "cinder", "grove", "harbor"], continentId: "central" },
+  { id: "ember", name: "Ember", neighbors: ["bastion", "cinder", "forge", "harbor"], continentId: "central" },
+  { id: "forge", name: "Forge", neighbors: ["bastion", "ember", "harbor", "ion"], continentId: "east" },
+  { id: "grove", name: "Grove", neighbors: ["delta", "harbor"], continentId: "south" },
+  { id: "harbor", name: "Harbor", neighbors: ["delta", "ember", "forge", "grove", "ion"], continentId: "south" },
+  { id: "ion", name: "Ion", neighbors: ["forge", "harbor"], continentId: "east" }
+];
+
+const continents = [
+  createContinent({ id: "north", name: "North Reach", bonus: 2, territoryIds: ["aurora", "bastion"] }),
+  createContinent({ id: "central", name: "Ash Corridor", bonus: 3, territoryIds: ["cinder", "delta", "ember"] }),
+  createContinent({ id: "east", name: "Iron Frontier", bonus: 2, territoryIds: ["forge", "ion"] }),
+  createContinent({ id: "south", name: "Harbor Belt", bonus: 2, territoryIds: ["grove", "harbor"] })
 ];
 
 const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
 
 function createInitialState() {
-  return {
+  return createGameState({
     phase: "lobby",
+    turnPhase: TurnPhase.LOBBY,
     players: [],
     territories: Object.fromEntries(
       territories.map((territory) => [territory.id, { ownerId: null, armies: 0 }])
     ),
+    continents,
     currentTurnIndex: 0,
     reinforcementPool: 0,
     winnerId: null,
     log: ["Lobby creata. Unisciti e avvia la partita."],
     lastAction: null
-  };
+  });
 }
 
 function randomId() {
@@ -69,6 +84,7 @@ function publicState(state) {
   const currentPlayer = getCurrentPlayer(state);
   return {
     phase: state.phase,
+    turnPhase: state.turnPhase,
     players: state.players.map((player) => ({
       id: player.id,
       name: player.name,
@@ -81,9 +97,11 @@ function publicState(state) {
       id: territory.id,
       name: territory.name,
       neighbors: territory.neighbors,
+      continentId: territory.continentId,
       ownerId: state.territories[territory.id].ownerId,
       armies: state.territories[territory.id].armies
     })),
+    continents: state.continents,
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
@@ -95,6 +113,7 @@ function publicState(state) {
 function startGame(state, random = Math.random) {
   const shuffledTerritories = shuffle(territories.map((territory) => territory.id), random);
   state.phase = "active";
+  state.turnPhase = TurnPhase.REINFORCEMENT;
   state.winnerId = null;
   state.currentTurnIndex = 0;
   state.lastAction = null;
@@ -118,6 +137,7 @@ function declareWinnerIfNeeded(state) {
   if (activePlayers.length === 1) {
     state.winnerId = activePlayers[0].id;
     state.phase = "finished";
+    state.turnPhase = TurnPhase.FINISHED;
     appendLog(state, activePlayers[0].name + " conquista la mappa e vince la partita.");
     return true;
   }
@@ -135,6 +155,7 @@ function advanceTurn(state) {
     const candidate = state.players[nextIndex];
     if (territoriesOwnedBy(state, candidate.id).length > 0) {
       state.currentTurnIndex = nextIndex;
+      state.turnPhase = TurnPhase.REINFORCEMENT;
       state.reinforcementPool = computeReinforcements(state, candidate.id);
       appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.");
       return;
@@ -163,6 +184,8 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   if (state.reinforcementPool > 0) {
     return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
   }
+
+  state.turnPhase = TurnPhase.ATTACK;
 
   if (from.ownerId !== playerId || to.ownerId === playerId) {
     return { ok: false, message: "Puoi attaccare solo da un tuo territorio verso uno nemico." };
@@ -195,7 +218,7 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
   }
 
-  state.lastAction = { type: "attack", summary, fromId, toId };
+  state.lastAction = { type: GameAction.ATTACK, summary, fromId, toId };
   appendLog(state, summary);
   declareWinnerIfNeeded(state);
   return { ok: true };
@@ -234,10 +257,13 @@ function addPlayer(state, name) {
 }
 
 module.exports = {
+  GameAction,
+  TurnPhase,
   addPlayer,
   advanceTurn,
   appendLog,
   computeReinforcements,
+  continents,
   createInitialState,
   declareWinnerIfNeeded,
   getCurrentPlayer,
