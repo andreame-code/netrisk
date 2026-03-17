@@ -40,6 +40,11 @@ const elements = {
   conquestGroup: document.querySelector("#conquest-group"),
   conquestArmies: document.querySelector("#conquest-armies"),
   conquestButton: document.querySelector("#conquest-button"),
+  fortifyGroup: document.querySelector("#fortify-group"),
+  fortifyFrom: document.querySelector("#fortify-from"),
+  fortifyTo: document.querySelector("#fortify-to"),
+  fortifyArmies: document.querySelector("#fortify-armies"),
+  fortifyButton: document.querySelector("#fortify-button"),
   actionHint: document.querySelector("#action-hint"),
   endTurnButton: document.querySelector("#end-turn-button"),
   log: document.querySelector("#log")
@@ -265,6 +270,35 @@ function render() {
     elements.attackTo.value = attackTargets[0].id;
   }
 
+  const previousFortifyFrom = elements.fortifyFrom.value;
+  elements.fortifyFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  if (previousFortifyFrom && territories.some((territory) => territory.id === previousFortifyFrom)) {
+    elements.fortifyFrom.value = previousFortifyFrom;
+  }
+
+  const selectedFortifyFromId = elements.fortifyFrom.value || territories[0]?.id || "";
+  if (!elements.fortifyFrom.value && selectedFortifyFromId) {
+    elements.fortifyFrom.value = selectedFortifyFromId;
+  }
+
+  const fortifySource = territoryById(selectedFortifyFromId);
+  const fortifyTargets = territories.filter(
+    (territory) => territory.id !== selectedFortifyFromId && fortifySource?.neighbors.includes(territory.id)
+  );
+
+  elements.fortifyTo.innerHTML =
+    fortifyTargets
+      .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
+      .join("") || '<option value="">Nessun territorio adiacente</option>';
+
+  if (fortifyTargets.length && !fortifyTargets.some((territory) => territory.id === elements.fortifyTo.value)) {
+    elements.fortifyTo.value = fortifyTargets[0].id;
+  }
+
+  if (fortifySource && elements.fortifyArmies && !elements.fortifyArmies.value) {
+    elements.fortifyArmies.value = "1";
+  }
+
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
   elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${entry}</li>`).join("");
 
@@ -278,6 +312,9 @@ function render() {
   if (elements.conquestGroup) {
     elements.conquestGroup.hidden = !pendingConquest;
   }
+  if (elements.fortifyGroup) {
+    elements.fortifyGroup.hidden = snapshot?.turnPhase !== "fortify" || Boolean(pendingConquest);
+  }
   if (pendingConquest && elements.conquestArmies) {
     elements.conquestArmies.min = String(pendingConquest.minArmies || 1);
     elements.conquestArmies.max = String(pendingConquest.maxArmies || pendingConquest.minArmies || 1);
@@ -286,16 +323,25 @@ function render() {
     }
   }
 
-  elements.reinforceButton.disabled = !canInteract || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
-  elements.attackButton.disabled = !canInteract || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
+  const inReinforcement = snapshot?.turnPhase === "reinforcement";
+  const inAttack = snapshot?.turnPhase === "attack";
+  const inFortify = snapshot?.turnPhase === "fortify";
+  elements.reinforceButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
-  elements.endTurnButton.disabled = !canInteract || snapshot.reinforcementPool > 0 || Boolean(pendingConquest);
+  elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
+  elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
+  elements.endTurnButton.textContent = inAttack ? "Vai a fortifica" : "Termina turno";
   elements.actionHint.textContent = canInteract
     ? pendingConquest
       ? "Sposta armate dopo la conquista"
-      : snapshot.reinforcementPool > 0
+      : inReinforcement
         ? "Distribuisci rinforzi"
-        : "Puoi attaccare o chiudere il turno"
+        : inFortify
+          ? snapshot.fortifyUsed
+            ? "Puoi terminare il turno"
+            : "Puoi fortificare o terminare il turno"
+          : "Puoi attaccare o passare alla fortifica"
     : state.user
       ? "Osservazione"
       : "Login richiesto";
@@ -446,6 +492,7 @@ elements.reinforceButton.addEventListener("click", async () => {
 });
 
 elements.attackFrom.addEventListener("change", () => render());
+elements.fortifyFrom.addEventListener("change", () => render());
 elements.map.addEventListener("click", (event) => {
   const button = event.target.closest("[data-territory-id]");
   if (!button) {
@@ -484,6 +531,23 @@ elements.conquestButton.addEventListener("click", async () => {
     });
     state.snapshot = data.state;
     elements.conquestArmies.value = "";
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.fortifyButton.addEventListener("click", async () => {
+  try {
+    const data = await send("/api/action", {
+      sessionToken: state.sessionToken,
+      playerId: state.playerId,
+      type: "fortify",
+      fromId: elements.fortifyFrom.value,
+      toId: elements.fortifyTo.value,
+      armies: Number(elements.fortifyArmies.value)
+    });
+    state.snapshot = data.state;
     render();
   } catch (error) {
     alert(error.message);
