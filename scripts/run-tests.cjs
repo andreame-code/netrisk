@@ -5,6 +5,7 @@ const {
   addPlayer,
   advanceTurn,
   applyReinforcement,
+  applyFortify,
   computeReinforcements,
   createInitialState,
   endTurn,
@@ -187,17 +188,27 @@ register("advanceTurn salta i giocatori eliminati e ricalcola i rinforzi", () =>
   assert.equal(state.turnPhase, "reinforcement");
 });
 
-register("endTurn centralizza la chiusura del turno", () => {
+register("endTurn entra in fortifica prima di chiudere davvero il turno", () => {
   const { state, first, second } = setupLobby();
   state.phase = "active";
   state.turnPhase = "attack";
   state.currentTurnIndex = 0;
   state.reinforcementPool = 0;
-  state.territories.aurora = { ownerId: first.id, armies: 2 };
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.cinder = { ownerId: first.id, armies: 1 };
   state.territories.bastion = { ownerId: second.id, armies: 2 };
 
-  const result = endTurn(state, first.id);
-  assert.equal(result.ok, true);
+  const toFortify = endTurn(state, first.id);
+  assert.equal(toFortify.ok, true);
+  assert.equal(state.turnPhase, "fortify");
+
+  const fortify = applyFortify(state, first.id, "aurora", "cinder", 1);
+  assert.equal(fortify.ok, true);
+  assert.equal(state.territories.aurora.armies, 2);
+  assert.equal(state.territories.cinder.armies, 2);
+
+  const finishTurn = endTurn(state, first.id);
+  assert.equal(finishTurn.ok, true);
   assert.equal(state.currentTurnIndex, 1);
 });
 
