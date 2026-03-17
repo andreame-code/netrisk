@@ -73,6 +73,10 @@ function myTerritories() {
   return (state.snapshot?.map || []).filter((territory) => territory.ownerId === state.playerId);
 }
 
+function currentExpectedVersion() {
+  return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
+}
+
 function setSession(sessionToken, user) {
   state.sessionToken = sessionToken;
   state.user = user;
@@ -385,6 +389,12 @@ async function send(path, payload = {}, options = {}) {
 
   const data = await response.json();
   if (!response.ok) {
+    if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
+      state.snapshot = data.state;
+      state.currentGameId = data.state.gameId || state.currentGameId;
+      await loadGameList();
+      throw new Error(data.error || "La partita e stata aggiornata. Ho ricaricato lo stato piu recente.");
+    }
     throw new Error(data.error || "Richiesta fallita.");
   }
   return data;
@@ -547,7 +557,8 @@ elements.reinforceButton.addEventListener("click", async () => {
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "reinforce",
-      territoryId: elements.reinforceSelect.value
+      territoryId: elements.reinforceSelect.value,
+      expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
     render();
@@ -574,7 +585,8 @@ elements.attackButton.addEventListener("click", async () => {
       playerId: state.playerId,
       type: "attack",
       fromId: elements.attackFrom.value,
-      toId: elements.attackTo.value
+      toId: elements.attackTo.value,
+      expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
     if (!state.snapshot.pendingConquest && elements.conquestArmies) {
@@ -592,7 +604,8 @@ elements.conquestButton.addEventListener("click", async () => {
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "moveAfterConquest",
-      armies: Number(elements.conquestArmies.value)
+      armies: Number(elements.conquestArmies.value),
+      expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
     elements.conquestArmies.value = "";
@@ -610,7 +623,8 @@ elements.fortifyButton.addEventListener("click", async () => {
       type: "fortify",
       fromId: elements.fortifyFrom.value,
       toId: elements.fortifyTo.value,
-      armies: Number(elements.fortifyArmies.value)
+      armies: Number(elements.fortifyArmies.value),
+      expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
     render();
@@ -624,7 +638,8 @@ elements.endTurnButton.addEventListener("click", async () => {
     const data = await send("/api/action", {
       sessionToken: state.sessionToken,
       playerId: state.playerId,
-      type: "endTurn"
+      type: "endTurn",
+      expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
     render();
@@ -634,6 +649,7 @@ elements.endTurnButton.addEventListener("click", async () => {
 });
 
 await loadState();
+await loadGameList();
 await restoreSession();
 connectEvents();
 

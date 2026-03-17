@@ -52,12 +52,14 @@ function parseBody(req) {
 function createApp(options = {}) {
   const state = createInitialState();
   let activeGameId = null;
+  let activeGameVersion = null;
   let nextAttackRolls = null;
   const gameSessions = createGameSessionStore({
     dataFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
   });
   const initialGame = gameSessions.ensureActiveGame(createInitialState);
   activeGameId = initialGame.game.id;
+  activeGameVersion = initialGame.game.version;
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, initialGame.state);
   const auth = createAuthStore({
@@ -70,16 +72,22 @@ function createApp(options = {}) {
     Object.assign(state, nextState);
   }
 
-  function persistActiveGame() {
+  function persistActiveGame(expectedVersion) {
     if (!activeGameId) {
       return null;
     }
 
-    return gameSessions.saveGame(activeGameId, state);
+    const savedGame = gameSessions.saveGame(activeGameId, state, expectedVersion);
+    activeGameVersion = savedGame.version;
+    return savedGame;
+  }
+
+  function snapshotForState(nextState, gameId, version) {
+    return { ...publicState(nextState), gameId, version };
   }
 
   function snapshot() {
-    return { ...publicState(state), gameId: activeGameId };
+    return snapshotForState(state, activeGameId, activeGameVersion);
   }
 
   function broadcast() {
@@ -145,6 +153,7 @@ function createApp(options = {}) {
       try {
         const created = gameSessions.createGame(createInitialState(), { name: body.name });
         activeGameId = created.game.id;
+        activeGameVersion = created.game.version;
         replaceState(created.state);
         broadcast();
         sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
@@ -160,6 +169,7 @@ function createApp(options = {}) {
       try {
         const opened = gameSessions.openGame(body.gameId);
         activeGameId = opened.game.id;
+        activeGameVersion = opened.game.version;
         replaceState(opened.state);
         broadcast();
         sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
@@ -294,11 +304,32 @@ function createApp(options = {}) {
 
       const playerId = body.playerId;
       const type = body.type;
+      const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
+      if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
+        sendJson(res, 400, { error: "expectedVersion non valida." });
+        return;
+      }
+
       const player = getPlayer(state, playerId);
 
       if (!player || player.name !== authContext.user.username) {
         sendJson(res, 403, { error: "Giocatore non valido." });
         return;
+      }
+
+      function handleVersionConflict(error) {
+        if (!error || error.code !== "VERSION_CONFLICT") {
+          return false;
+        }
+
+        activeGameVersion = error.currentVersion;
+        sendJson(res, 409, {
+          error: error.message,
+          code: error.code,
+          currentVersion: error.currentVersion,
+          state: snapshotForState(error.currentState, activeGameId, error.currentVersion)
+        });
+        return true;
       }
 
       if (type === "reinforce") {
@@ -308,7 +339,14 @@ function createApp(options = {}) {
           return;
         }
 
-        persistActiveGame();
+        try {
+          persistActiveGame(expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -335,7 +373,14 @@ function createApp(options = {}) {
           return;
         }
 
-        persistActiveGame();
+        try {
+          persistActiveGame(expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -348,7 +393,14 @@ function createApp(options = {}) {
           return;
         }
 
-        persistActiveGame();
+        try {
+          persistActiveGame(expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -361,7 +413,14 @@ function createApp(options = {}) {
           return;
         }
 
-        persistActiveGame();
+        try {
+          persistActiveGame(expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -374,7 +433,14 @@ function createApp(options = {}) {
           return;
         }
 
-        persistActiveGame();
+        try {
+          persistActiveGame(expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;

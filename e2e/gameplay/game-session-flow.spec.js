@@ -30,4 +30,11 @@ test("user can create a new game, see it in the list, and open it immediately", 
 
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
+
+  await page.reload();
+
+  await expect(page.locator("#game-status")).toContainText(gameName);
+  await expect(page.locator("#game-list")).toContainText(gameName);
+  await expect(page.locator("#game-list")).toHaveValue(targetValue);
+  await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
 });
