@@ -50,6 +50,7 @@ function parseBody(req) {
 
 function createApp(options = {}) {
   const state = createInitialState();
+  let nextAttackRolls = null;
   const auth = createAuthStore({
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json")
   });
@@ -82,6 +83,31 @@ function createApp(options = {}) {
   }
 
   async function handleApi(req, res, url) {
+    if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
+      const nextState = createInitialState();
+      Object.keys(state).forEach((key) => delete state[key]);
+      Object.assign(state, nextState);
+      nextAttackRolls = null;
+      broadcast();
+      sendJson(res, 200, { ok: true, state: snapshot() });
+      return;
+    }
+
+    if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/next-attack-rolls") {
+      const body = await parseBody(req);
+      const attackRoll = Number(body.attackRoll);
+      const defendRoll = Number(body.defendRoll);
+
+      if (!Number.isInteger(attackRoll) || attackRoll < 1 || attackRoll > 6 || !Number.isInteger(defendRoll) || defendRoll < 1 || defendRoll > 6) {
+        sendJson(res, 400, { error: "I lanci di test devono essere interi tra 1 e 6." });
+        return;
+      }
+
+      nextAttackRolls = [attackRoll, defendRoll];
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/state") {
       sendJson(res, 200, snapshot());
       return;
@@ -230,7 +256,21 @@ function createApp(options = {}) {
       }
 
       if (type === "attack") {
-        const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""));
+        let random;
+        if (process.env.E2E === "true" && Array.isArray(nextAttackRolls) && nextAttackRolls.length === 2) {
+          const queuedRolls = nextAttackRolls.slice();
+          nextAttackRolls = null;
+          random = () => {
+            const roll = queuedRolls.shift();
+            if (!roll) {
+              return Math.random();
+            }
+
+            return (roll - 0.01) / 6;
+          };
+        }
+
+        const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""), random);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;

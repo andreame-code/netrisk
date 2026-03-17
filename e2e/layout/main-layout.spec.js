@@ -1,6 +1,8 @@
 const { test, expect } = require("@playwright/test");
+const { resetGame } = require("../support/game-helpers.js");
 
 test("main layout exposes core regions", async ({ page }) => {
+  await resetGame(page);
   await page.goto("/");
 
   await expect(page.getByTestId("app-shell")).toBeVisible();
