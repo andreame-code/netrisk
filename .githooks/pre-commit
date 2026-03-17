@@ -1,4 +1,6 @@
 #!C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
 npm.cmd test
 if ($LASTEXITCODE -ne 0) { exit 1 }
+npm.cmd run test:gameplay
+if ($LASTEXITCODE -ne 0) { exit 1 }
 exit 0
