@@ -4,6 +4,7 @@ const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
 const {
   addPlayer,
+  applyFortify,
   applyReinforcement,
   createInitialState,
   endTurn,
@@ -242,6 +243,18 @@ function createApp(options = {}) {
 
       if (type === "moveAfterConquest") {
         const result = moveAfterConquest(state, playerId, body.armies);
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.message });
+          return;
+        }
+
+        broadcast();
+        sendJson(res, 200, { ok: true, state: snapshot() });
+        return;
+      }
+
+      if (type === "fortify") {
+        const result = applyFortify(state, playerId, String(body.fromId || ""), String(body.toId || ""), body.armies);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;

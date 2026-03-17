@@ -47,7 +47,8 @@ function createGameState(input = {}) {
     winnerId: input.winnerId || null,
     log: input.log || [],
     lastAction: input.lastAction || null,
-    pendingConquest: input.pendingConquest || null
+    pendingConquest: input.pendingConquest || null,
+    fortifyUsed: Boolean(input.fortifyUsed)
   };
 }
 

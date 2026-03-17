@@ -42,7 +42,8 @@ function createInitialState() {
     winnerId: null,
     log: ["Lobby creata. Unisciti e avvia la partita."],
     lastAction: null,
-    pendingConquest: null
+    pendingConquest: null,
+    fortifyUsed: false
   });
 }
 
@@ -109,7 +110,8 @@ function publicState(state) {
     winnerId: state.winnerId,
     log: state.log,
     lastAction: state.lastAction,
-    pendingConquest: state.pendingConquest
+    pendingConquest: state.pendingConquest,
+    fortifyUsed: Boolean(state.fortifyUsed)
   };
 }
 
@@ -121,6 +123,7 @@ function startGame(state, random = Math.random) {
   state.currentTurnIndex = 0;
   state.lastAction = null;
   state.pendingConquest = null;
+  state.fortifyUsed = false;
 
   shuffledTerritories.forEach((territoryId) => {
     state.territories[territoryId] = { ownerId: null, armies: 0 };
@@ -161,6 +164,8 @@ function advanceTurn(state) {
       state.currentTurnIndex = nextIndex;
       state.turnPhase = TurnPhase.REINFORCEMENT;
       state.reinforcementPool = computeReinforcements(state, candidate.id);
+      state.pendingConquest = null;
+      state.fortifyUsed = false;
       appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.");
       return;
     }
@@ -354,6 +359,64 @@ function moveAfterConquest(state, playerId, armiesToMove) {
   return { ok: true };
 }
 
+function applyFortify(state, playerId, fromId, toId, armiesToMove) {
+  const player = getPlayer(state, playerId);
+  const from = state.territories[fromId];
+  const to = state.territories[toId];
+
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
+  }
+
+  if (state.phase !== "active") {
+    return { ok: false, message: "La partita non e attiva." };
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
+    return { ok: false, message: "Non e il tuo turno." };
+  }
+
+  if (state.turnPhase !== TurnPhase.FORTIFY) {
+    return { ok: false, message: "Puoi fortificare solo nella fase di fortifica." };
+  }
+
+  if (state.fortifyUsed) {
+    return { ok: false, message: "Hai gia usato la fortifica in questo turno." };
+  }
+
+  if (!from || !to || fromId === toId) {
+    return { ok: false, message: "Seleziona due territori validi e distinti." };
+  }
+
+  if (from.ownerId !== playerId || to.ownerId !== playerId) {
+    return { ok: false, message: "Puoi spostare armate solo tra tuoi territori." };
+  }
+
+  const territory = territories.find((item) => item.id === fromId);
+  if (!territory || territory.neighbors.indexOf(toId) === -1) {
+    return { ok: false, message: "Puoi fortificare solo tra territori adiacenti." };
+  }
+
+  const moveCount = Number(armiesToMove);
+  if (!Number.isInteger(moveCount) || moveCount < 1) {
+    return { ok: false, message: "Inserisci almeno 1 armata da spostare." };
+  }
+
+  if (from.armies - moveCount < 1) {
+    return { ok: false, message: "Devi lasciare almeno 1 armata nel territorio di partenza." };
+  }
+
+  from.armies -= moveCount;
+  to.armies += moveCount;
+  state.fortifyUsed = true;
+  state.lastAction = {
+    type: "fortify",
+    summary: player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + "."
+  };
+  appendLog(state, player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".");
+  return { ok: true };
+}
+
 function endTurn(state, playerId) {
   const player = getPlayer(state, playerId);
 
@@ -377,6 +440,13 @@ function endTurn(state, playerId) {
     return { ok: false, message: "Sposta prima le armate nel territorio conquistato." };
   }
 
+  if (state.turnPhase === TurnPhase.ATTACK) {
+    state.turnPhase = TurnPhase.FORTIFY;
+    state.fortifyUsed = false;
+    appendLog(state, player.name + " entra nella fase di fortifica.");
+    return { ok: true, requiresFortifyDecision: true };
+  }
+
   appendLog(state, player.name + " termina il turno.");
   advanceTurn(state);
   return { ok: true };
@@ -388,6 +458,7 @@ module.exports = {
   addPlayer,
   advanceTurn,
   appendLog,
+  applyFortify,
   applyReinforcement,
   computeReinforcements,
   continents,

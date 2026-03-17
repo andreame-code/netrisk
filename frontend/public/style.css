@@ -531,3 +531,7 @@ button:disabled {
 #conquest-group[hidden] {
   display: none;
 }
+
+#fortify-group[hidden] {
+  display: none;
+}
