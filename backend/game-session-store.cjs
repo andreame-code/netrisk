@@ -13,17 +13,18 @@ function safeClone(value) {
 function readDatabase(filePath) {
   ensureDirectory(filePath);
   if (!fs.existsSync(filePath)) {
-    return { games: [] };
+    return { games: [], activeGameId: null };
   }
 
   const raw = fs.readFileSync(filePath, "utf8").trim();
   if (!raw) {
-    return { games: [] };
+    return { games: [], activeGameId: null };
   }
 
   const parsed = JSON.parse(raw);
   return {
-    games: Array.isArray(parsed.games) ? parsed.games : []
+    games: Array.isArray(parsed.games) ? parsed.games : [],
+    activeGameId: parsed.activeGameId || null
   };
 }
 
@@ -49,6 +50,7 @@ function summarizeGame(entry) {
   return {
     id: entry.id,
     name: entry.name,
+    version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
     phase: entry.state && entry.state.phase ? entry.state.phase : "lobby",
     playerCount: Array.isArray(entry.state && entry.state.players) ? entry.state.players.length : 0,
     createdAt: entry.createdAt,
@@ -77,14 +79,32 @@ function createGameSessionStore(options = {}) {
     const entry = {
       id: crypto.randomBytes(8).toString("hex"),
       name: normalizeGameName(input.name, database.games.length + 1),
+      version: 1,
       state: safeClone(initialState),
       createdAt: timestamp,
       updatedAt: timestamp
     };
 
     database.games.push(entry);
+    database.activeGameId = entry.id;
     writeDatabase(dataFile, database);
     return { game: summarizeGame(entry), state: safeClone(entry.state) };
+  }
+
+  function setActiveGame(gameId) {
+    if (!gameId) {
+      throw new Error("Impostare la partita attiva richiede un game id valido.");
+    }
+
+    const database = readDatabase(dataFile);
+    const entry = database.games.find((game) => game.id === gameId);
+    if (!entry) {
+      throw new Error(`Partita "${gameId}" non trovata.`);
+    }
+
+    database.activeGameId = gameId;
+    writeDatabase(dataFile, database);
+    return summarizeGame(entry);
   }
 
   function openGame(gameId) {
@@ -98,10 +118,12 @@ function createGameSessionStore(options = {}) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
 
+    database.activeGameId = gameId;
+    writeDatabase(dataFile, database);
     return { game: summarizeGame(entry), state: safeClone(entry.state) };
   }
 
-  function saveGame(gameId, state) {
+  function saveGame(gameId, state, expectedVersion) {
     if (!gameId) {
       throw new Error("Il salvataggio richiede un game id valido.");
     }
@@ -110,23 +132,48 @@ function createGameSessionStore(options = {}) {
       throw new Error("Il salvataggio richiede uno stato partita valido.");
     }
 
+    if (expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
+      throw new Error("Il salvataggio richiede una expectedVersion valida.");
+    }
+
     const database = readDatabase(dataFile);
     const entry = database.games.find((game) => game.id === gameId);
     if (!entry) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
 
+    const currentVersion = Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1;
+    entry.version = currentVersion;
+
+    if (expectedVersion != null && expectedVersion !== currentVersion) {
+      const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.");
+      conflict.code = "VERSION_CONFLICT";
+      conflict.currentVersion = currentVersion;
+      conflict.currentState = safeClone(entry.state);
+      conflict.game = summarizeGame(entry);
+      throw conflict;
+    }
+
     entry.state = safeClone(state);
+    entry.version = currentVersion + 1;
     entry.updatedAt = new Date().toISOString();
     writeDatabase(dataFile, database);
     return summarizeGame(entry);
   }
 
   function ensureActiveGame(createInitialState) {
+    const database = readDatabase(dataFile);
+    const preferredId = database.activeGameId && database.games.some((game) => game.id === database.activeGameId)
+      ? database.activeGameId
+      : null;
+
+    if (preferredId) {
+      return openGame(preferredId);
+    }
+
     const games = listGames();
     if (games.length > 0) {
-      const firstGame = openGame(games[0].id);
-      return { game: firstGame.game, state: firstGame.state };
+      return openGame(games[0].id);
     }
 
     return createGame(createInitialState(), { name: "Partita 1" });
@@ -137,7 +184,8 @@ function createGameSessionStore(options = {}) {
     ensureActiveGame,
     listGames,
     openGame,
-    saveGame
+    saveGame,
+    setActiveGame
   };
 }
 
