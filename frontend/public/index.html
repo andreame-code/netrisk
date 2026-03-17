@@ -40,6 +40,19 @@
             <button id="start-button" class="ghost-button">Avvia partita</button>
           </div>
         </div>
+
+        <div class="control-row">
+          <div class="auth-form compact-form header-form game-form">
+            <input id="game-name" maxlength="80" placeholder="Nuova partita" />
+            <button type="button" id="create-game-button">Crea partita</button>
+            <select id="game-list"></select>
+            <button type="button" id="open-game-button" class="ghost-button">Apri partita</button>
+          </div>
+
+          <div class="identity-actions compact-actions header-actions">
+            <span id="game-status" class="badge accent">Partita attiva</span>
+          </div>
+        </div>
       </section>
 
       <section class="battlefield-layout" data-testid="battlefield-layout">

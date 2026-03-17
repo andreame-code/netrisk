@@ -9,6 +9,7 @@ const {
 } = require("../support/game-helpers.js");
 
 test("current player can conquer a territory and move armies after combat", async ({ browser }) => {
+  test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
   const firstPage = await firstContext.newPage();

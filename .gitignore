@@ -9,3 +9,5 @@ test-results/
 
 data/e2e-users.json
 
+data/games.json
+data/e2e-games.json
