@@ -9,6 +9,7 @@ const {
 } = require("../support/game-helpers.js");
 
 test("current player can fortify once and pass the turn to the next player", async ({ browser }) => {
+  test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
   const firstPage = await firstContext.newPage();

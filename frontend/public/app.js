@@ -2,7 +2,9 @@ const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
   sessionToken: localStorage.getItem("frontline-session-token") || null,
   snapshot: null,
-  user: null
+  user: null,
+  currentGameId: null,
+  gameList: []
 };
 
 const mapLayout = {
@@ -28,6 +30,11 @@ const elements = {
   identityStatus: document.querySelector("#identity-status"),
   joinButton: document.querySelector("#join-button"),
   startButton: document.querySelector("#start-button"),
+  gameName: document.querySelector("#game-name"),
+  createGameButton: document.querySelector("#create-game-button"),
+  gameList: document.querySelector("#game-list"),
+  openGameButton: document.querySelector("#open-game-button"),
+  gameStatus: document.querySelector("#game-status"),
   turnBadge: document.querySelector("#turn-badge"),
   statusSummary: document.querySelector("#status-summary"),
   players: document.querySelector("#players"),
@@ -187,6 +194,9 @@ function handleTerritoryClick(territoryId) {
 
 function render() {
   const snapshot = state.snapshot;
+  if (snapshot?.gameId) {
+    state.currentGameId = snapshot.gameId;
+  }
   const me = snapshot?.players.find((player) => player.id === state.playerId) || null;
   const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
@@ -194,6 +204,18 @@ function render() {
   elements.authStatus.textContent = state.user
     ? `Autenticato come ${state.user.username}. Metodi disponibili: ${state.user.authMethods.join(", ")}.`
     : "Registrati o accedi per entrare nella lobby.";
+
+  const gameOptions = state.gameList
+    .map((game) => `<option value="${game.id}">${game.name} · ${game.phase}</option>`)
+    .join("");
+  elements.gameList.innerHTML = gameOptions || "<option value=\"\">Nessuna partita</option>";
+  if (state.currentGameId && state.gameList.some((game) => game.id === state.currentGameId)) {
+    elements.gameList.value = state.currentGameId;
+  }
+
+  elements.gameStatus.textContent = state.currentGameId
+    ? `Partita attiva: ${(state.gameList.find((game) => game.id === state.currentGameId) || {}).name || state.currentGameId}`
+    : "Nessuna partita attiva";
 
   elements.identityStatus.textContent = state.user
     ? me
@@ -309,6 +331,8 @@ function render() {
   elements.logoutButton.disabled = !state.user;
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
   elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
+  elements.createGameButton.disabled = false;
+  elements.openGameButton.disabled = !elements.gameList.value;
   if (elements.conquestGroup) {
     elements.conquestGroup.hidden = !pendingConquest;
   }
@@ -369,6 +393,15 @@ async function send(path, payload = {}, options = {}) {
 async function loadState() {
   const response = await fetch("/api/state");
   state.snapshot = await response.json();
+  state.currentGameId = state.snapshot?.gameId || state.currentGameId;
+  render();
+}
+
+async function loadGameList() {
+  const response = await fetch("/api/games");
+  const data = await response.json();
+  state.gameList = data.games || [];
+  state.currentGameId = data.activeGameId || state.currentGameId;
   render();
 }
 
@@ -400,6 +433,7 @@ function connectEvents() {
   const events = new EventSource("/api/events");
   events.onmessage = (event) => {
     state.snapshot = JSON.parse(event.data);
+    state.currentGameId = state.snapshot?.gameId || state.currentGameId;
     render();
   };
 }
@@ -433,6 +467,37 @@ elements.registerButton.addEventListener("click", async () => {
     await send("/api/auth/register", { username, password });
     const login = await send("/api/auth/login", { username, password });
     setSession(login.sessionToken, login.user);
+    clearPlayerIdentity();
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.createGameButton.addEventListener("click", async () => {
+  try {
+    const data = await send("/api/games", { name: elements.gameName.value.trim() || undefined });
+    state.snapshot = data.state;
+    state.gameList = data.games || [];
+    state.currentGameId = data.activeGameId || null;
+    clearPlayerIdentity();
+    elements.gameName.value = "";
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+elements.openGameButton.addEventListener("click", async () => {
+  if (!elements.gameList.value) {
+    return;
+  }
+
+  try {
+    const data = await send("/api/games/open", { gameId: elements.gameList.value });
+    state.snapshot = data.state;
+    state.gameList = data.games || [];
+    state.currentGameId = data.activeGameId || null;
     clearPlayerIdentity();
     render();
   } catch (error) {

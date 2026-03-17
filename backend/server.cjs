@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
+const { createGameSessionStore } = require("./game-session-store.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -50,14 +51,35 @@ function parseBody(req) {
 
 function createApp(options = {}) {
   const state = createInitialState();
+  let activeGameId = null;
   let nextAttackRolls = null;
+  const gameSessions = createGameSessionStore({
+    dataFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
+  });
+  const initialGame = gameSessions.ensureActiveGame(createInitialState);
+  activeGameId = initialGame.game.id;
+  Object.keys(state).forEach((key) => delete state[key]);
+  Object.assign(state, initialGame.state);
   const auth = createAuthStore({
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json")
   });
   const clients = new Set();
 
+  function replaceState(nextState) {
+    Object.keys(state).forEach((key) => delete state[key]);
+    Object.assign(state, nextState);
+  }
+
+  function persistActiveGame() {
+    if (!activeGameId) {
+      return null;
+    }
+
+    return gameSessions.saveGame(activeGameId, state);
+  }
+
   function snapshot() {
-    return publicState(state);
+    return { ...publicState(state), gameId: activeGameId };
   }
 
   function broadcast() {
@@ -85,8 +107,7 @@ function createApp(options = {}) {
   async function handleApi(req, res, url) {
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
       const nextState = createInitialState();
-      Object.keys(state).forEach((key) => delete state[key]);
-      Object.assign(state, nextState);
+      replaceState(nextState);
       nextAttackRolls = null;
       broadcast();
       sendJson(res, 200, { ok: true, state: snapshot() });
@@ -110,6 +131,41 @@ function createApp(options = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/state") {
       sendJson(res, 200, snapshot());
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/games") {
+      sendJson(res, 200, { games: gameSessions.listGames(), activeGameId });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/games") {
+      const body = await parseBody(req);
+
+      try {
+        const created = gameSessions.createGame(createInitialState(), { name: body.name });
+        activeGameId = created.game.id;
+        replaceState(created.state);
+        broadcast();
+        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
+      } catch (error) {
+        sendJson(res, 400, { error: error.message || "Creazione partita non riuscita." });
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/games/open") {
+      const body = await parseBody(req);
+
+      try {
+        const opened = gameSessions.openGame(body.gameId);
+        activeGameId = opened.game.id;
+        replaceState(opened.state);
+        broadcast();
+        sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
+      } catch (error) {
+        sendJson(res, 400, { error: error.message || "Apertura partita non riuscita." });
+      }
       return;
     }
 
@@ -189,6 +245,7 @@ function createApp(options = {}) {
         return;
       }
 
+      persistActiveGame();
       broadcast();
       sendJson(res, result.rejoined ? 200 : 201, {
         playerId: result.player.id,
@@ -222,6 +279,7 @@ function createApp(options = {}) {
       }
 
       startGame(state);
+      persistActiveGame();
       broadcast();
       sendJson(res, 200, { ok: true, state: snapshot() });
       return;
@@ -250,6 +308,7 @@ function createApp(options = {}) {
           return;
         }
 
+        persistActiveGame();
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -276,6 +335,7 @@ function createApp(options = {}) {
           return;
         }
 
+        persistActiveGame();
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -288,6 +348,7 @@ function createApp(options = {}) {
           return;
         }
 
+        persistActiveGame();
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -300,6 +361,7 @@ function createApp(options = {}) {
           return;
         }
 
+        persistActiveGame();
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;
@@ -312,6 +374,7 @@ function createApp(options = {}) {
           return;
         }
 
+        persistActiveGame();
         broadcast();
         sendJson(res, 200, { ok: true, state: snapshot() });
         return;

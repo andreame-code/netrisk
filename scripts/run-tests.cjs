@@ -35,7 +35,8 @@ function setupLobby() {
 
 async function withServer(run) {
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const app = createApp({ dataFile: tempFile });
+  const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile });
   const listener = app.server.listen(0);
 
   await new Promise((resolve, reject) => {
@@ -58,6 +59,10 @@ async function withServer(run) {
 
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempGamesFile)) {
+      fs.unlinkSync(tempGamesFile);
     }
   }
 }
@@ -224,6 +229,148 @@ register("publicState espone modelli condivisi e stato corrente", () => {
   assert.equal(snapshot.turnPhase, "attack");
   assert.equal(Array.isArray(snapshot.continents), true);
   assert.equal(snapshot.currentPlayerId, first.id);
+});
+
+register("API games create + list + open persiste e riapre una sessione", async () => {
+  await withServer(async (baseUrl) => {
+    const initialList = await fetch(baseUrl + "/api/games");
+    assert.equal(initialList.status, 200);
+    const initialPayload = await initialList.json();
+    assert.equal(Array.isArray(initialPayload.games), true);
+
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Campagna test" })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+    assert.equal(createdPayload.game.name, "Campagna test");
+    assert.equal(Boolean(createdPayload.game.id), true);
+    assert.equal(createdPayload.state.phase, "lobby");
+    assert.equal(createdPayload.activeGameId, createdPayload.game.id);
+
+    const listed = await fetch(baseUrl + "/api/games");
+    const listedPayload = await listed.json();
+    assert.equal(listedPayload.games.some((game) => game.id === createdPayload.game.id), true);
+
+    const opened = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId: createdPayload.game.id })
+    });
+    assert.equal(opened.status, 200);
+    const openedPayload = await opened.json();
+    assert.equal(openedPayload.activeGameId, createdPayload.game.id);
+    assert.equal(openedPayload.state.gameId, createdPayload.game.id);
+  });
+});
+
+register("API game session persists mutations across reopen", async () => {
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Persistenza campagna" })
+    });
+    assert.equal(createdResponse.status, 201);
+    const createdPayload = await createdResponse.json();
+    const gameId = createdPayload.game.id;
+
+    const firstUser = `persist_a_${Date.now()}`;
+    const secondUser = `persist_b_${Date.now()}`;
+
+    const registerFirst = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: firstUser, password: "secret" })
+    });
+    assert.equal(registerFirst.status, 201);
+
+    const registerSecond = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: secondUser, password: "secret" })
+    });
+    assert.equal(registerSecond.status, 201);
+
+    const loginFirst = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: firstUser, password: "secret" })
+    });
+    const firstAuth = await loginFirst.json();
+
+    const joinFirst = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstAuth.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: firstAuth.sessionToken })
+    });
+    assert.equal(joinFirst.status, 201);
+    const firstJoinPayload = await joinFirst.json();
+
+    const loginSecond = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: secondUser, password: "secret" })
+    });
+    const secondAuth = await loginSecond.json();
+
+    const joinSecond = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": secondAuth.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: secondAuth.sessionToken })
+    });
+    assert.equal(joinSecond.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstAuth.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: firstAuth.sessionToken, playerId: firstJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+    const startedPayload = await startResponse.json();
+
+    const ownedTerritoryId = startedPayload.state.map.find((territory) => territory.ownerId === firstJoinPayload.playerId).id;
+
+    const reinforceResponse = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstAuth.sessionToken
+      },
+      body: JSON.stringify({
+        sessionToken: firstAuth.sessionToken,
+        playerId: firstJoinPayload.playerId,
+        type: "reinforce",
+        territoryId: ownedTerritoryId
+      })
+    });
+    assert.equal(reinforceResponse.status, 200);
+
+    const reopenedResponse = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId })
+    });
+    assert.equal(reopenedResponse.status, 200);
+    const reopenedPayload = await reopenedResponse.json();
+
+    const reopenedTerritory = reopenedPayload.state.map.find((territory) => territory.id === ownedTerritoryId);
+    assert.equal(reopenedPayload.state.gameId, gameId);
+    assert.equal(reopenedPayload.state.phase, "active");
+    assert.equal(reopenedTerritory.ownerId, firstJoinPayload.playerId);
+    assert.equal(reopenedTerritory.armies >= 2, true);
+  });
 });
 
 register("GET /api/state risponde con lo stato pubblico", async () => {
