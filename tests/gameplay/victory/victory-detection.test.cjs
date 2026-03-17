@@ -1,0 +1,51 @@
+const assert = require("node:assert/strict");
+const { detectVictory } = require("../../../backend/engine/victory-detection.cjs");
+const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+register("detectVictory declares victory when only one active player remains", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK
+  });
+
+  const result = detectVictory(state);
+  assert.equal(result.ok, true);
+  assert.equal(result.code, "VICTORY_DECLARED");
+  assert.equal(result.victory.winnerId, "p1");
+  assert.equal(state.winnerId, "p1");
+  assert.equal(state.phase, "finished");
+  assert.equal(state.turnPhase, TurnPhase.FINISHED);
+});
+
+register("detectVictory returns no victory while multiple active players remain", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p2", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK
+  });
+
+  const result = detectVictory(state);
+  assert.equal(result.ok, true);
+  assert.equal(result.code, "NO_VICTORY");
+  assert.equal(result.victory, null);
+  assert.equal(state.winnerId, null);
+});
+
+register("detectVictory throws for impossible states with no active players", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "a", ownerId: null, armies: 0 },
+      { id: "b", ownerId: null, armies: 0 }
+    ])
+  });
+
+  assert.throws(() => detectVictory(state), /no active players/i);
+});
