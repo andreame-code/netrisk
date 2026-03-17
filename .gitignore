@@ -1,4 +1,11 @@
+node_modules/
 npm-debug.log
 data/users.json
 scripts/tmp-users.json
 scripts/tmp-users-*.json
+
+playwright-report/
+test-results/
+
+data/e2e-users.json
+
