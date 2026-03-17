@@ -16,6 +16,7 @@ const {
   territoriesOwnedBy
 } = require("../backend/engine/game-engine.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
+const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
 
 const tests = [];
@@ -31,6 +32,48 @@ function setupLobby() {
   assert.equal(first.ok, true);
   assert.equal(second.ok, true);
   return { state, first: first.player, second: second.player };
+}
+
+function makeMockResponse() {
+  const headers = {};
+  return {
+    statusCode: 200,
+    headers,
+    body: "",
+    writeHead(statusCode, nextHeaders) {
+      this.statusCode = statusCode;
+      Object.assign(headers, nextHeaders || {});
+    },
+    end(chunk) {
+      this.body += chunk || "";
+    }
+  };
+}
+
+async function callApp(app, method, pathname, body) {
+  const req = new (require("events").EventEmitter)();
+  req.method = method;
+  req.headers = { "content-type": "application/json" };
+  req.destroy = () => {};
+  const res = makeMockResponse();
+  const promise = app.handleApi(req, res, new URL(`http://127.0.0.1${pathname}`));
+
+  process.nextTick(() => {
+    if (body !== undefined) {
+      req.emit("data", JSON.stringify(body));
+    }
+    req.emit("end");
+  });
+
+  await promise;
+  return {
+    statusCode: res.statusCode,
+    payload: res.body ? JSON.parse(res.body) : null
+  };
+}
+
+async function fetchGame(app, pathname, options = {}) {
+  return (await callApp(app, options.method || "GET", pathname, options.body)).payload;
 }
 
 async function withServer(run) {
@@ -370,6 +413,199 @@ register("API game session persists mutations across reopen", async () => {
     assert.equal(reopenedPayload.state.phase, "active");
     assert.equal(reopenedTerritory.ownerId, firstJoinPayload.playerId);
     assert.equal(reopenedTerritory.armies >= 2, true);
+  });
+});
+
+register("API game session restores active game across app recreation", async () => {
+  const tempUsers = path.join(__dirname, `tmp-users-${Date.now()}-restore.json`);
+  const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-restore.json`);
+  let app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
+
+  try {
+    const created = await fetchGame(app, "/api/games", { method: "POST", body: { name: "Sessione persistita" } });
+    const createdGameId = created.game.id;
+
+    const second = await fetchGame(app, "/api/games", { method: "POST", body: { name: "Altra sessione" } });
+    const secondGameId = second.game.id;
+
+    await fetchGame(app, "/api/games/open", { method: "POST", body: { gameId: createdGameId } });
+
+    app.server.close();
+    app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
+
+    const stateResponse = await callApp(app, "GET", "/api/state");
+    assert.equal(stateResponse.statusCode, 200);
+    assert.equal(stateResponse.payload.gameId, createdGameId);
+
+    const listResponse = await callApp(app, "GET", "/api/games");
+    assert.equal(listResponse.statusCode, 200);
+    assert.equal(listResponse.payload.activeGameId, createdGameId);
+    assert.equal(listResponse.payload.games.some((game) => game.id === secondGameId), true);
+  } finally {
+    if (app.server.listening) {
+      await new Promise((resolve) => app.server.close(resolve));
+    }
+    if (fs.existsSync(tempUsers)) fs.unlinkSync(tempUsers);
+    if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+  }
+});
+
+register("game session store versiona i salvataggi e rifiuta versioni stale", () => {
+  const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-version.json`);
+  const store = createGameSessionStore({ dataFile: tempGames });
+
+  try {
+    const created = store.createGame(createInitialState(), { name: "Versionata" });
+    assert.equal(created.game.version, 1);
+
+    const nextState = createInitialState();
+    nextState.log.push("Mutazione 1");
+    const saved = store.saveGame(created.game.id, nextState, 1);
+    assert.equal(saved.version, 2);
+
+    assert.throws(() => {
+      store.saveGame(created.game.id, nextState, 1);
+    }, (error) => error && error.code === "VERSION_CONFLICT" && error.currentVersion === 2);
+  } finally {
+    if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+  }
+});
+
+register("game session store mantiene versioni indipendenti tra partite", () => {
+  const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-independent.json`);
+  const store = createGameSessionStore({ dataFile: tempGames });
+
+  try {
+    const first = store.createGame(createInitialState(), { name: "Prima" });
+    const second = store.createGame(createInitialState(), { name: "Seconda" });
+    const mutated = createInitialState();
+    mutated.log.push("Solo prima");
+
+    const savedFirst = store.saveGame(first.game.id, mutated, 1);
+    const reopenedSecond = store.openGame(second.game.id);
+
+    assert.equal(savedFirst.version, 2);
+    assert.equal(reopenedSecond.game.version, 1);
+  } finally {
+    if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+  }
+});
+
+register("API action incrementa la version e rifiuta expectedVersion stale", async () => {
+  await withServer(async (baseUrl) => {
+    const createdResponse = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Concorrenza" })
+    });
+    assert.equal(createdResponse.status, 201);
+    const createdPayload = await createdResponse.json();
+    assert.equal(createdPayload.state.version, 1);
+
+    const uniqueVersionSuffix = Math.random().toString(16).slice(2, 8);
+    const firstUsername = `va_${uniqueVersionSuffix}`;
+    const secondUsername = `vb_${uniqueVersionSuffix}`;
+
+    const registerFirst = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: firstUsername, password: "secret" })
+    });
+    assert.equal(registerFirst.status, 201);
+
+    const registerSecond = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: secondUsername, password: "secret" })
+    });
+    assert.equal(registerSecond.status, 201);
+
+    const loginFirst = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: firstUsername, password: "secret" })
+    });
+    const firstLoginPayload = await loginFirst.json();
+
+    const joinFirst = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstLoginPayload.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken })
+    });
+    assert.equal(joinFirst.status, 201);
+    const firstJoinPayload = await joinFirst.json();
+
+    const loginSecond = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: secondUsername, password: "secret" })
+    });
+    const secondLoginPayload = await loginSecond.json();
+
+    const joinSecond = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": secondLoginPayload.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: secondLoginPayload.sessionToken })
+    });
+    assert.equal(joinSecond.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstLoginPayload.sessionToken
+      },
+      body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken, playerId: firstJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+
+    const stateResponse = await fetch(baseUrl + "/api/state");
+    const statePayload = await stateResponse.json();
+    const ownedTerritory = statePayload.map.find((territory) => territory.ownerId === firstJoinPayload.playerId);
+
+    const actionResponse = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstLoginPayload.sessionToken
+      },
+      body: JSON.stringify({
+        sessionToken: firstLoginPayload.sessionToken,
+        playerId: firstJoinPayload.playerId,
+        type: "reinforce",
+        territoryId: ownedTerritory.id,
+        expectedVersion: statePayload.version
+      })
+    });
+    assert.equal(actionResponse.status, 200);
+    const actionPayload = await actionResponse.json();
+    assert.equal(actionPayload.state.version, statePayload.version + 1);
+
+    const staleResponse = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-session-token": firstLoginPayload.sessionToken
+      },
+      body: JSON.stringify({
+        sessionToken: firstLoginPayload.sessionToken,
+        playerId: firstJoinPayload.playerId,
+        type: "reinforce",
+        territoryId: ownedTerritory.id,
+        expectedVersion: statePayload.version
+      })
+    });
+    assert.equal(staleResponse.status, 409);
+    const stalePayload = await staleResponse.json();
+    assert.equal(stalePayload.code, "VERSION_CONFLICT");
+    assert.equal(stalePayload.currentVersion, actionPayload.state.version);
+    assert.equal(stalePayload.state.version, actionPayload.state.version);
   });
 });
 
