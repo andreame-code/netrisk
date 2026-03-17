@@ -6,6 +6,7 @@ const {
   createGameState,
   createPlayer
 } = require("../../shared/models.cjs");
+const { detectVictory } = require("./victory-detection.cjs");
 
 const territories = [
   { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"], continentId: "north" },
@@ -140,15 +141,13 @@ function startGame(state, random = Math.random) {
 }
 
 function declareWinnerIfNeeded(state) {
-  const activePlayers = state.players.filter((player) => territoriesOwnedBy(state, player.id).length > 0);
-  if (activePlayers.length === 1) {
-    state.winnerId = activePlayers[0].id;
-    state.phase = "finished";
-    state.turnPhase = TurnPhase.FINISHED;
-    appendLog(state, activePlayers[0].name + " conquista la mappa e vince la partita.");
-    return true;
-  }
-  return false;
+  const result = detectVictory(state, {
+    appendLog(message) {
+      appendLog(state, message.replace("conquers the map and wins the game.", "conquista la mappa e vince la partita."));
+    }
+  });
+
+  return result.code === "VICTORY_DECLARED";
 }
 
 function advanceTurn(state) {

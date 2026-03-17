@@ -15,6 +15,7 @@ global.register = function register(name, fn) {
   "../tests/gameplay/combat/combat-resolution.test.cjs",
   "../tests/gameplay/conquest/conquest-resolution.test.cjs",
   "../tests/gameplay/fortify/fortify-movement.test.cjs",
+  "../tests/gameplay/victory/victory-detection.test.cjs",
   "../tests/gameplay/victory/elimination-and-victory.test.cjs",
   "../tests/gameplay/regression/full-flows.test.cjs"
 ].forEach((relativePath) => {
