@@ -8,7 +8,7 @@
   </head>
   <body>
     <div class="backdrop"></div>
-    <main class="app-shell board-shell">
+    <main class="app-shell board-shell" data-testid="app-shell">
       <section class="command-bar panel">
         <div class="brand-block compact-brand">
           <p class="eyebrow">Multiplayer browser strategy</p>
@@ -22,7 +22,7 @@
           </div>
           <div class="mini-card slim-card">
             <span class="mini-label">Comandante</span>
-            <p id="identity-status">Accedi per collegarti alla partita.</p>
+            <p id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</p>
           </div>
         </div>
 
@@ -42,13 +42,13 @@
         </div>
       </section>
 
-      <section class="battlefield-layout">
-        <aside class="left-rail panel">
+      <section class="battlefield-layout" data-testid="battlefield-layout">
+        <aside class="left-rail panel" data-testid="info-panel">
           <div class="panel-header tight-header">
             <h2>Comando</h2>
-            <span id="turn-badge" class="badge">Lobby</span>
+            <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
           </div>
-          <div id="status-summary" class="status-summary command-summary"></div>
+          <div id="status-summary" class="status-summary command-summary" data-testid="status-summary"></div>
           <div class="rail-section">
             <div class="section-title-row">
               <h3>Giocatori</h3>
@@ -58,7 +58,7 @@
           </div>
         </aside>
 
-        <section class="center-stage panel map-stage-panel">
+        <section class="center-stage panel map-stage-panel" data-testid="map-panel">
           <div class="panel-header map-stage-header">
             <div>
               <h2>Teatro di Guerra</h2>
@@ -66,10 +66,10 @@
             </div>
             <span id="action-hint" class="badge accent">In attesa</span>
           </div>
-          <div id="map" class="map tactical-map"></div>
+          <div id="map" class="map tactical-map" data-testid="map-region"></div>
         </section>
 
-        <aside class="right-rail panel">
+        <aside class="right-rail panel" data-testid="actions-panel">
           <div class="rail-section actions-section">
             <div class="section-title-row">
               <h3>Azioni</h3>
@@ -128,3 +128,5 @@
     <script type="module" src="/app.js"></script>
   </body>
 </html>
+
+
