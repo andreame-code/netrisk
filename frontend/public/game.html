@@ -11,25 +11,24 @@
     <div class="app-frame game-app-frame">
       <main class="page-shell game-page-shell">
         <section class="app-shell board-shell" data-testid="app-shell">
-          <section class="command-bar panel game-command-bar">
-            <div class="game-topline">
-              <div class="game-brand-line">
-                <p class="eyebrow">NetRisk Command</p>
-                <h1>Frontline Dominion</h1>
-              </div>
-
-              <nav class="game-inline-nav" aria-label="Sezioni principali">
-                <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
-                <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
-                <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
-              </nav>
-
-              <div class="mini-card slim-card session-context-card game-session-pill">
-                <span class="mini-label">Sessione attiva</span>
-                <p id="game-status">Nessuna partita attiva</p>
-              </div>
+          <section class="panel top-nav-bar">
+            <div class="top-nav-zone top-nav-brand">
+              <p class="eyebrow">NetRisk</p>
+              <h1>Frontline Dominion</h1>
             </div>
 
+            <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+              <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+              <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+            </nav>
+
+            <div class="top-nav-zone top-nav-actions">
+              <a href="/lobby.html" class="primary-nav-action">Create Game</a>
+              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+            </div>
+          </section>
+
+          <section class="command-bar panel game-ops-bar">
             <div class="game-utility-row">
               <div class="mini-card slim-card compact-status-card">
                 <span class="mini-label">Accesso</span>
@@ -38,6 +37,10 @@
               <div class="mini-card slim-card compact-status-card">
                 <span class="mini-label">Comandante</span>
                 <p id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</p>
+              </div>
+              <div class="mini-card slim-card session-context-card game-session-pill">
+                <span class="mini-label">Sessione attiva</span>
+                <p id="game-status">Nessuna partita attiva</p>
               </div>
             </div>
 

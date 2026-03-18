@@ -81,6 +81,16 @@ const elements = {
   log: document.querySelector("#log")
 };
 
+function renderNavAvatar(username) {
+  const avatar = document.querySelector("#nav-avatar");
+  if (!avatar) {
+    return;
+  }
+
+  const label = username ? String(username).trim().charAt(0).toUpperCase() : "C";
+  avatar.textContent = label || "C";
+}
+
 function ownerById(ownerId) {
   return state.snapshot?.players.find((player) => player.id === ownerId) || null;
 }
@@ -348,6 +358,7 @@ function render() {
   elements.authStatus.textContent = state.user
     ? `Autenticato come ${state.user.username}. Metodi disponibili: ${state.user.authMethods.join(", ")}.`
     : "Registrati o accedi per entrare nella lobby.";
+  renderNavAvatar(state.user?.username);
 
   renderGameSessionBrowser();
 
@@ -466,9 +477,16 @@ function render() {
 
   const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
   const pendingConquest = snapshot?.pendingConquest || null;
-  elements.registerButton.disabled = Boolean(state.user);
-  elements.loginButton.disabled = Boolean(state.user);
-  elements.logoutButton.disabled = !state.user;
+  const isAuthenticated = Boolean(state.user);
+  elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
+  elements.authUsername.hidden = isAuthenticated;
+  elements.authPassword.hidden = isAuthenticated;
+  elements.registerButton.hidden = isAuthenticated;
+  elements.loginButton.hidden = isAuthenticated;
+  elements.registerButton.disabled = isAuthenticated;
+  elements.loginButton.disabled = isAuthenticated;
+  elements.logoutButton.hidden = !isAuthenticated;
+  elements.logoutButton.disabled = !isAuthenticated;
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
   elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
   if (elements.createGameButton) {

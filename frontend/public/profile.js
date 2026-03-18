@@ -1,6 +1,8 @@
 const elements = {
   profileName: document.querySelector("#profile-name"),
   profileSubtitle: document.querySelector("#profile-subtitle"),
+  authStatus: document.querySelector("#auth-status"),
+  logoutButton: document.querySelector("#logout-button"),
   profileFeedback: document.querySelector("#profile-feedback"),
   profileContent: document.querySelector("#profile-content"),
   profileHeading: document.querySelector("#profile-heading"),
@@ -11,6 +13,16 @@ const elements = {
   inProgress: document.querySelector("#metric-in-progress"),
   winRate: document.querySelector("#metric-win-rate")
 };
+
+function renderNavAvatar(username) {
+  const avatar = document.querySelector("#nav-avatar");
+  if (!avatar) {
+    return;
+  }
+
+  const label = username ? String(username).trim().charAt(0).toUpperCase() : "C";
+  avatar.textContent = label || "C";
+}
 
 function showFeedback(message, tone = "neutral") {
   elements.profileFeedback.hidden = false;
@@ -59,6 +71,10 @@ async function loadProfile() {
     }
 
     const session = await sessionResponse.json();
+    elements.authStatus.textContent = "Autenticato come " + session.user.username + ".";
+    elements.logoutButton.hidden = false;
+    elements.logoutButton.disabled = false;
+    renderNavAvatar(session.user.username);
     const profileResponse = await fetch("/api/profile", {
       headers: {
         "x-session-token": sessionToken
@@ -75,9 +91,39 @@ async function loadProfile() {
     showProfile(payload.profile);
   } catch (error) {
     showFeedback(error.message || "Impossibile caricare il profilo.", "error");
+    elements.authStatus.textContent = "Sessione non disponibile.";
+    elements.logoutButton.hidden = true;
+    elements.logoutButton.disabled = true;
+    renderNavAvatar();
     elements.profileName.textContent = "Profilo non disponibile";
     elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
   }
 }
 
 await loadProfile();
+
+
+elements.logoutButton.addEventListener("click", async () => {
+  const sessionToken = localStorage.getItem("frontline-session-token") || "";
+
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ sessionToken })
+    });
+  } catch (error) {
+  }
+
+  localStorage.removeItem("frontline-session-token");
+  localStorage.removeItem("frontline-player-id");
+  elements.logoutButton.hidden = true;
+  elements.logoutButton.disabled = true;
+  elements.authStatus.textContent = "Sessione terminata.";
+  renderNavAvatar();
+  showFeedback("Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.", "error");
+  elements.profileName.textContent = "Profilo non disponibile";
+  elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
+});
