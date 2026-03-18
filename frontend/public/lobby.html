@@ -8,32 +8,45 @@
   </head>
   <body data-app-section="lobby">
     <div class="backdrop"></div>
-    <div class="app-frame">
-      <aside class="main-nav-shell panel">
-        <div class="nav-brand-block">
-          <p class="eyebrow">NetRisk Command</p>
-          <h1 class="nav-brand-title">Frontline Dominion</h1>
-          <p class="nav-brand-copy">Navigazione desktop-first per lobby, partita e profilo comandante.</p>
-        </div>
-
-        <nav class="main-nav" aria-label="Sezioni principali">
-          <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
-          <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
-          <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
-        </nav>
-      </aside>
-
-      <main class="page-shell">
-        <section class="page-header-panel panel">
-          <div>
-            <p class="eyebrow session-eyebrow">Strategic Overview</p>
-            <h2 class="page-title">Lobby Strategica</h2>
-            <p class="stage-copy">Scansiona le sessioni, selezionane una e aprila nel teatro di gioco dedicato.</p>
+    <div class="app-frame top-nav-page-frame">
+      <main class="page-shell top-nav-page-shell">
+        <section class="panel top-nav-bar">
+          <div class="top-nav-zone top-nav-brand">
+            <p class="eyebrow">NetRisk</p>
+            <h1>Frontline Dominion</h1>
           </div>
-          <div class="page-header-actions compact-actions">
-            <input id="game-name" maxlength="80" placeholder="Nuova partita" />
-            <button type="button" id="create-game-button">Crea partita</button>
-            <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+            <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+            <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+          </nav>
+
+          <div class="top-nav-zone top-nav-actions">
+            <button type="button" id="create-game-button" class="primary-nav-action">Create Game</button>
+            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+          </div>
+        </section>
+
+        <section class="panel game-command-bar shared-top-shell">
+          <div class="shared-page-intro shared-lobby-intro">
+            <div>
+              <p class="eyebrow session-eyebrow">Strategic Overview</p>
+              <h2 class="page-title">Lobby Strategica</h2>
+              <p class="stage-copy">Scansiona le sessioni, selezionane una e aprila nel teatro di gioco dedicato.</p>
+            </div>
+            <div class="page-header-actions compact-actions">
+              <input id="game-name" maxlength="80" placeholder="Nuova partita" />
+              <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+            </div>
+          </div>
+
+          <div class="shared-auth-strip mini-card slim-card">
+            <div>
+              <span class="mini-label">Accesso</span>
+              <p id="auth-status">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</p>
+              <p id="game-status">Nessuna partita attiva</p>
+            </div>
+            <button type="button" id="logout-button" class="ghost-button" hidden>Esci</button>
           </div>
         </section>
 
@@ -43,9 +56,6 @@
               <p class="eyebrow session-eyebrow">Game Sessions</p>
               <h2>Lista Partite</h2>
               <p class="stage-copy">Ogni sessione resta separata e persistita sul backend, pronta a essere riaperta.</p>
-            </div>
-            <div class="session-browser-actions">
-              <span id="game-status" class="badge accent">Nessuna partita attiva</span>
             </div>
           </div>
 
