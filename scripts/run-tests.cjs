@@ -609,6 +609,79 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
   });
 });
 
+register("API profile espone statistiche giocatore aggregate", async () => {
+  await withServer(async (baseUrl) => {
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Profilo test" })
+    });
+    assert.equal(created.status, 201);
+
+    const username = `prof_${Math.random().toString(16).slice(2, 8)}`;
+    const other = `enem_${Math.random().toString(16).slice(2, 8)}`;
+
+    const registerUser = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: "secret" })
+    });
+    assert.equal(registerUser.status, 201);
+
+    const registerOther = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: other, password: "secret" })
+    });
+    assert.equal(registerOther.status, 201);
+
+    const loginUser = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: "secret" })
+    });
+    const userSession = await loginUser.json();
+
+    const joinUser = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": userSession.sessionToken },
+      body: JSON.stringify({ sessionToken: userSession.sessionToken })
+    });
+    const joinUserPayload = await joinUser.json();
+
+    const loginOther = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: other, password: "secret" })
+    });
+    const otherSession = await loginOther.json();
+
+    const joinOther = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": otherSession.sessionToken },
+      body: JSON.stringify({ sessionToken: otherSession.sessionToken })
+    });
+    assert.equal(joinOther.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": userSession.sessionToken },
+      body: JSON.stringify({ sessionToken: userSession.sessionToken, playerId: joinUserPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+
+    const profileResponse = await fetch(baseUrl + "/api/profile", {
+      headers: { "x-session-token": userSession.sessionToken }
+    });
+    assert.equal(profileResponse.status, 200);
+    const profilePayload = await profileResponse.json();
+    assert.equal(profilePayload.profile.playerName, username);
+    assert.equal(profilePayload.profile.gamesInProgress, 1);
+    assert.equal(profilePayload.profile.gamesPlayed, 0);
+    assert.equal(profilePayload.profile.winRate, null);
+  });
+});
+
 register("GET /api/state risponde con lo stato pubblico", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/state`);
