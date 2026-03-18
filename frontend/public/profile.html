@@ -11,10 +11,10 @@
     <div class="app-frame top-nav-page-frame">
       <main class="page-shell top-nav-page-shell">
         <section class="panel top-nav-bar">
-          <div class="top-nav-zone top-nav-brand">
+          <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
             <p class="eyebrow">NetRisk</p>
             <h1>Frontline Dominion</h1>
-          </div>
+          </a>
 
           <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
             <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
@@ -23,34 +23,16 @@
           </nav>
 
           <div class="top-nav-zone top-nav-actions">
-            <a href="/lobby.html" class="primary-nav-action">Create Game</a>
+            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
             <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
           </div>
         </section>
-
-        <section class="panel game-command-bar shared-top-shell">
-          <div class="shared-page-intro shared-profile-intro">
-            <div>
-              <p class="eyebrow">Commander Record</p>
-              <h2 class="page-title">Profilo Giocatore</h2>
-              <p id="profile-subtitle" class="stage-copy">Panoramica strategica delle campagne disputate.</p>
-            </div>
-            <div class="mini-card slim-card session-context-card game-session-pill">
-              <span class="mini-label">Comandante</span>
-              <p id="profile-name">Caricamento profilo...</p>
-            </div>
-          </div>
-
-          <div class="shared-auth-strip mini-card slim-card">
-            <div>
-              <span class="mini-label">Accesso</span>
-              <p id="auth-status">Verifica della sessione in corso...</p>
-            </div>
-            <button type="button" id="logout-button" class="ghost-button" hidden>Esci</button>
-          </div>
-        </section>
-
         <section class="profile-shell panel" data-testid="player-profile-shell">
+          <div class="content-meta-line profile-meta-line">
+            <span id="profile-name">Caricamento profilo...</span>
+            <span class="status-divider" aria-hidden="true"></span>
+            <span id="auth-status">Verifica della sessione in corso...</span>
+          </div>
           <div id="profile-feedback" class="profile-feedback">Caricamento dati giocatore...</div>
           <section id="profile-content" class="profile-content" hidden>
             <div class="profile-summary-card">

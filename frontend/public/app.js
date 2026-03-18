@@ -11,17 +11,34 @@ const state = {
   gameListError: ""
 };
 
+let pendingRequestedGameId = null;
+
 function requestedGameIdFromRoute() {
+  const pathnameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
+  if (pathnameMatch) {
+    return decodeURIComponent(pathnameMatch[1]);
+  }
+
   return new URLSearchParams(window.location.search).get("gameId");
 }
 
 function syncGameRoute(gameId) {
+  if (pendingRequestedGameId && gameId !== pendingRequestedGameId) {
+    return;
+  }
+
   const url = new URL(window.location.href);
   if (gameId) {
-    url.searchParams.set("gameId", gameId);
-  } else {
-    url.searchParams.delete("gameId");
+    window.history.replaceState({}, "", "/game/" + encodeURIComponent(gameId));
+    return;
   }
+
+  if (url.pathname !== "/game.html") {
+    window.history.replaceState({}, "", "/game.html");
+    return;
+  }
+
+  url.searchParams.delete("gameId");
   window.history.replaceState({}, "", url.pathname + url.search);
 }
 
@@ -356,23 +373,23 @@ function render() {
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
 
   elements.authStatus.textContent = state.user
-    ? `Autenticato come ${state.user.username}. Metodi disponibili: ${state.user.authMethods.join(", ")}.`
-    : "Registrati o accedi per entrare nella lobby.";
+    ? state.user.username
+    : "Accesso richiesto";
   renderNavAvatar(state.user?.username);
 
   renderGameSessionBrowser();
 
   syncCurrentGameName();
   elements.gameStatus.textContent = state.currentGameId
-    ? `Partita attiva: ${state.currentGameName || state.currentGameId}`
-    : "Nessuna partita attiva";
+    ? (state.currentGameName || state.currentGameId)
+    : "Nessuna";
   syncGameRoute(state.currentGameId);
 
   elements.identityStatus.textContent = state.user
     ? me
-      ? `Connesso alla partita come ${me.name}.`
-      : `Accesso attivo come ${state.user.username}. Ora puoi entrare nella lobby.`
-    : "Accedi per collegarti alla partita.";
+      ? me.name
+      : "Non assegnato"
+    : "Non connesso";
 
   elements.turnBadge.textContent =
     !snapshot
@@ -520,17 +537,17 @@ function render() {
   elements.endTurnButton.textContent = inAttack ? "Vai a fortifica" : "Termina turno";
   elements.actionHint.textContent = canInteract
     ? pendingConquest
-      ? "Sposta armate dopo la conquista"
+      ? "Conquista"
       : inReinforcement
-        ? "Distribuisci rinforzi"
+        ? "Rinforzi"
         : inFortify
           ? snapshot.fortifyUsed
-            ? "Puoi terminare il turno"
-            : "Puoi fortificare o terminare il turno"
-          : "Puoi attaccare o passare alla fortifica"
+            ? "Chiudi turno"
+            : "Fortifica"
+          : "Attacco"
     : state.user
       ? "Osservazione"
-      : "Login richiesto";
+      : "Login";
 }
 
 async function send(path, payload = {}, options = {}) {
@@ -678,8 +695,13 @@ async function handleOpenSelectedGame() {
 }
 
 async function openRequestedGameIfNeeded() {
-  const requestedId = requestedGameIdFromRoute();
-  if (!requestedId || requestedId === state.currentGameId) {
+  const requestedId = pendingRequestedGameId || requestedGameIdFromRoute();
+  if (!requestedId) {
+    return;
+  }
+
+  if (requestedId === state.currentGameId) {
+    pendingRequestedGameId = null;
     return;
   }
 
@@ -688,6 +710,7 @@ async function openRequestedGameIfNeeded() {
   }
 
   await openGameById(requestedId);
+  pendingRequestedGameId = null;
 }
 
 elements.authForm.addEventListener("submit", async (event) => {
@@ -900,7 +923,9 @@ elements.endTurnButton.addEventListener("click", async () => {
   }
 });
 
+pendingRequestedGameId = requestedGameIdFromRoute();
 await loadState();
 await loadGameList();
+await openRequestedGameIfNeeded();
 await restoreSession();
 connectEvents();

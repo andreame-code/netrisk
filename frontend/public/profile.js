@@ -14,6 +14,8 @@ const elements = {
   winRate: document.querySelector("#metric-win-rate")
 };
 
+let profileRequestId = 0;
+
 function renderNavAvatar(username) {
   const avatar = document.querySelector("#nav-avatar");
   if (!avatar) {
@@ -56,7 +58,10 @@ function showProfile(profile) {
 }
 
 async function loadProfile() {
+  const requestId = ++profileRequestId;
   showFeedback("Caricamento dati giocatore...");
+
+  let sessionUser = null;
 
   try {
     const sessionToken = localStorage.getItem("frontline-session-token") || "";
@@ -71,6 +76,10 @@ async function loadProfile() {
     }
 
     const session = await sessionResponse.json();
+    if (requestId !== profileRequestId) {
+      return;
+    }
+    sessionUser = session.user;
     elements.authStatus.textContent = "Autenticato come " + session.user.username + ".";
     elements.logoutButton.hidden = false;
     elements.logoutButton.disabled = false;
@@ -87,10 +96,26 @@ async function loadProfile() {
     }
 
     const payload = await profileResponse.json();
+    if (requestId !== profileRequestId) {
+      return;
+    }
     elements.profileName.textContent = session.user.username;
     showProfile(payload.profile);
   } catch (error) {
+    if (requestId !== profileRequestId) {
+      return;
+    }
     showFeedback(error.message || "Impossibile caricare il profilo.", "error");
+    if (sessionUser) {
+      elements.authStatus.textContent = "Autenticato come " + sessionUser.username + ".";
+      elements.logoutButton.hidden = false;
+      elements.logoutButton.disabled = false;
+      renderNavAvatar(sessionUser.username);
+      elements.profileName.textContent = sessionUser.username;
+      elements.profileSubtitle.textContent = "Profilo temporaneamente non disponibile.";
+      return;
+    }
+
     elements.authStatus.textContent = "Sessione non disponibile.";
     elements.logoutButton.hidden = true;
     elements.logoutButton.disabled = true;
@@ -104,7 +129,18 @@ await loadProfile();
 
 
 elements.logoutButton.addEventListener("click", async () => {
+  profileRequestId += 1;
   const sessionToken = localStorage.getItem("frontline-session-token") || "";
+
+  localStorage.removeItem("frontline-session-token");
+  localStorage.removeItem("frontline-player-id");
+  elements.logoutButton.hidden = true;
+  elements.logoutButton.disabled = true;
+  elements.authStatus.textContent = "Sessione terminata.";
+  renderNavAvatar();
+  showFeedback("Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.", "error");
+  elements.profileName.textContent = "Profilo non disponibile";
+  elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
 
   try {
     await fetch("/api/auth/logout", {
@@ -116,14 +152,4 @@ elements.logoutButton.addEventListener("click", async () => {
     });
   } catch (error) {
   }
-
-  localStorage.removeItem("frontline-session-token");
-  localStorage.removeItem("frontline-player-id");
-  elements.logoutButton.hidden = true;
-  elements.logoutButton.disabled = true;
-  elements.authStatus.textContent = "Sessione terminata.";
-  renderNavAvatar();
-  showFeedback("Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.", "error");
-  elements.profileName.textContent = "Profilo non disponibile";
-  elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
 });
