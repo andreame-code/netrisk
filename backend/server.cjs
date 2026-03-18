@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
+const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -54,8 +55,12 @@ function createApp(options = {}) {
   let activeGameId = null;
   let activeGameVersion = null;
   let nextAttackRolls = null;
+  const gamesFile = options.gamesFile || path.join(__dirname, "..", "data", "games.json");
   const gameSessions = createGameSessionStore({
-    dataFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
+    dataFile: gamesFile
+  });
+  const playerProfiles = createPlayerProfileStore({
+    gamesFile
   });
   const initialGame = gameSessions.ensureActiveGame(createInitialState);
   activeGameId = initialGame.game.id;
@@ -186,6 +191,20 @@ function createApp(options = {}) {
       }
 
       sendJson(res, 200, { user: auth.publicUser(authContext.user) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/profile") {
+      const authContext = requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        sendJson(res, 200, { profile: playerProfiles.getPlayerProfile(authContext.user.username) });
+      } catch (error) {
+        sendJson(res, 400, { error: error.message || "Profilo non disponibile." });
+      }
       return;
     }
 

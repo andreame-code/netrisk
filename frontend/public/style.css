@@ -739,3 +739,115 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+
+.profile-bar {
+  margin-bottom: 12px;
+}
+
+.profile-shell {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(245, 236, 214, 0.98), rgba(239, 226, 198, 0.97));
+}
+
+.profile-feedback {
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: rgba(89, 67, 48, 0.08);
+  color: var(--muted);
+}
+
+.profile-feedback.is-error {
+  background: rgba(184, 92, 56, 0.12);
+  color: var(--accent);
+}
+
+.profile-content {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-summary-card,
+.profile-note-card,
+.profile-metric-card {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 252, 246, 0.9);
+}
+
+.profile-summary-card,
+.profile-note-card {
+  padding: 16px;
+}
+
+.profile-section-eyebrow {
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.profile-summary-card h2,
+.profile-note-card h3 {
+  margin: 0 0 8px;
+}
+
+.profile-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-metric-card {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-metric-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+.profile-metric-value {
+  font-size: clamp(1.6rem, 2.2vw, 2.35rem);
+}
+
+.profile-metric-card.accent-win {
+  background: linear-gradient(180deg, rgba(225, 239, 214, 0.95), rgba(214, 234, 194, 0.95));
+}
+
+.profile-metric-card.accent-loss {
+  background: linear-gradient(180deg, rgba(245, 225, 214, 0.95), rgba(240, 212, 197, 0.95));
+}
+
+.profile-metric-card.accent-neutral {
+  background: linear-gradient(180deg, rgba(229, 232, 236, 0.95), rgba(217, 223, 231, 0.95));
+}
+
+.profile-metric-card.accent-gold {
+  background: linear-gradient(180deg, rgba(246, 234, 201, 0.96), rgba(240, 223, 177, 0.95));
+}
+
+.profile-metric-card.wide-card {
+  grid-column: span 1;
+}
+
+.profile-future-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1100px) {
+  .profile-metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-metrics-grid,
+  .profile-future-grid {
+    grid-template-columns: 1fr;
+  }
+}

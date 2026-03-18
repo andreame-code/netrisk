@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontline Dominion - Profilo</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="app-shell board-shell">
+      <section class="command-bar panel profile-bar">
+        <div class="brand-block compact-brand">
+          <p class="eyebrow">Commander Record</p>
+          <h1>Profilo Giocatore</h1>
+        </div>
+        <div class="top-status-row">
+          <div class="mini-card slim-card">
+            <span class="mini-label">Comandante</span>
+            <p id="profile-name">Caricamento profilo...</p>
+          </div>
+          <div class="mini-card slim-card">
+            <span class="mini-label">Sintesi</span>
+            <p id="profile-subtitle">Panoramica strategica delle campagne disputate.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-shell panel" data-testid="player-profile-shell">
+        <div id="profile-feedback" class="profile-feedback">Caricamento dati giocatore...</div>
+        <section id="profile-content" class="profile-content" hidden>
+          <div class="profile-summary-card">
+            <p class="eyebrow profile-section-eyebrow">Panoramica</p>
+            <h2 id="profile-heading">Comandante</h2>
+            <p id="profile-copy" class="stage-copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
+          </div>
+
+          <div class="profile-metrics-grid">
+            <article class="profile-metric-card">
+              <span class="profile-metric-label">Partite giocate</span>
+              <strong id="metric-games-played" class="profile-metric-value">0</strong>
+            </article>
+            <article class="profile-metric-card accent-win">
+              <span class="profile-metric-label">Vittorie</span>
+              <strong id="metric-wins" class="profile-metric-value">0</strong>
+            </article>
+            <article class="profile-metric-card accent-loss">
+              <span class="profile-metric-label">Sconfitte</span>
+              <strong id="metric-losses" class="profile-metric-value">0</strong>
+            </article>
+            <article class="profile-metric-card accent-neutral">
+              <span class="profile-metric-label">In corso</span>
+              <strong id="metric-in-progress" class="profile-metric-value">0</strong>
+            </article>
+            <article class="profile-metric-card accent-gold wide-card">
+              <span class="profile-metric-label">Win rate</span>
+              <strong id="metric-win-rate" class="profile-metric-value">--</strong>
+            </article>
+          </div>
+
+          <div class="profile-future-grid">
+            <article class="profile-note-card">
+              <h3>Spazio comandante</h3>
+              <p>Pronto per aggiungere partite recenti, cronologia campagne e riepiloghi tattici.</p>
+            </article>
+            <article class="profile-note-card">
+              <h3>Espansioni future</h3>
+              <p>Ranking, dettaglio mappe e statistiche avanzate possono essere agganciati qui senza rifare la pagina.</p>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/profile.js"></script>
+  </body>
+</html>
