@@ -27,17 +27,44 @@ function renderNavAvatar(username) {
   avatar.textContent = label || "C";
 }
 
+function slotDescription(type, index) {
+  if (index === 0) {
+    return "Slot bloccato: questo e il creatore della partita.";
+  }
+
+  return type === "ai"
+    ? "Nome assegnato dal server da una lista di generali storici."
+    : "Il nome verra preso dal giocatore quando entrera nella lobby.";
+}
+
 function slotMarkup(index) {
+  if (index === 0) {
+    return '<div class="setup-slot is-fixed" data-slot-index="0">' +
+      '<div class="setup-slot-head"><strong>Player 1</strong><span class="badge accent">Creator</span></div>' +
+      '<div class="field-stack"><span>Tipo</span><div class="setup-fixed-value">Human</div></div>' +
+      '<p class="setup-slot-note" data-role="note">' + slotDescription("human", 0) + '</p>' +
+    '</div>';
+  }
+
   return '<div class="setup-slot" data-slot-index="' + index + '">' +
     '<div class="setup-slot-head"><strong>Player ' + (index + 1) + '</strong></div>' +
     '<label class="field-stack"><span>Tipo</span><select data-role="type"><option value="human">Human</option><option value="ai">AI</option></select></label>' +
-    '<label class="field-stack"><span>Nome</span><input data-role="name" maxlength="24" placeholder="Player ' + (index + 1) + '" /></label>' +
+    '<p class="setup-slot-note" data-role="note">' + slotDescription("human", index) + '</p>' +
   '</div>';
+}
+
+function updateSlotNotes() {
+  Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]")).forEach((slot, index) => {
+    const typeControl = slot.querySelector('[data-role="type"]');
+    const type = typeControl ? typeControl.value : "human";
+    slot.querySelector('[data-role="note"]').textContent = slotDescription(type, index);
+  });
 }
 
 function renderSlots() {
   const total = Number(elements.totalPlayers.value || 2);
   elements.playerSlots.innerHTML = Array.from({ length: total }, (_, index) => slotMarkup(index)).join("");
+  updateSlotNotes();
 }
 
 function setFeedback(message, type = "") {
@@ -49,8 +76,7 @@ function readConfig() {
   const totalPlayers = Number(elements.totalPlayers.value || 2);
   const players = Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]"))
     .map((slot, index) => ({
-      type: slot.querySelector('[data-role="type"]').value,
-      name: slot.querySelector('[data-role="name"]').value.trim() || undefined,
+      type: index === 0 ? "human" : slot.querySelector('[data-role="type"]').value,
       slot: index + 1
     }));
 
@@ -117,6 +143,12 @@ async function restoreSession() {
 }
 
 elements.totalPlayers.addEventListener("change", renderSlots);
+elements.playerSlots.addEventListener("change", (event) => {
+  if (!event.target.matches('[data-role="type"]')) {
+    return;
+  }
+  updateSlotNotes();
+});
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();

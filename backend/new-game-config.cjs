@@ -68,12 +68,17 @@ function validateNewGameConfig(input = {}, options = {}) {
     throw new Error("Configura tutti gli slot giocatore prima di creare la partita.");
   }
 
-  const aiCount = requestedPlayers.filter((slot) => normalizePlayerType(slot && slot.type) === "ai").length;
+  const firstSlotType = normalizePlayerType(requestedPlayers[0] && requestedPlayers[0].type);
+  if (firstSlotType !== "human") {
+    throw new Error("Il giocatore 1 deve essere sempre il creatore umano.");
+  }
+
+  const aiCount = requestedPlayers.slice(1).filter((slot) => normalizePlayerType(slot && slot.type) === "ai").length;
   const aiNames = buildHistoricalAiNames(aiCount, options.random);
   let nextAiIndex = 0;
 
   const players = requestedPlayers.map((slot, index) => {
-    const type = normalizePlayerType(slot && slot.type);
+    const type = index === 0 ? "human" : normalizePlayerType(slot && slot.type);
     return {
       slot: index + 1,
       type,
