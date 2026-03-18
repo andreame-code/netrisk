@@ -45,13 +45,51 @@
           <div class="auth-form compact-form header-form game-form">
             <input id="game-name" maxlength="80" placeholder="Nuova partita" />
             <button type="button" id="create-game-button">Crea partita</button>
-            <select id="game-list"></select>
+            <select id="game-list" class="legacy-game-select" aria-label="Lista partite legacy"></select>
             <button type="button" id="open-game-button" class="ghost-button">Apri partita</button>
           </div>
 
           <div class="identity-actions compact-actions header-actions">
             <span id="game-status" class="badge accent">Partita attiva</span>
           </div>
+        </div>
+      </section>
+
+      <section class="session-browser panel" data-testid="game-lobby-shell">
+        <div class="session-browser-head">
+          <div>
+            <p class="eyebrow session-eyebrow">Game Sessions</p>
+            <h2>Lobby Strategica</h2>
+            <p class="stage-copy">Scansiona le partite attive, selezionane una e aprila dal pannello dedicato.</p>
+          </div>
+          <div class="session-browser-actions">
+            <button type="button" id="create-game-button-secondary">Crea partita</button>
+            <button type="button" id="open-game-button-secondary" class="ghost-button">Apri selezionata</button>
+          </div>
+        </div>
+
+        <div class="session-browser-grid">
+          <div class="session-list-panel">
+            <div class="session-list-header session-row session-row-head">
+              <span>Partita</span>
+              <span>ID</span>
+              <span>Stato</span>
+              <span>Giocatori</span>
+              <span>Aggiornata</span>
+            </div>
+            <div id="game-list-state" class="session-feedback" data-testid="game-list-state">Caricamento sessioni...</div>
+            <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
+          </div>
+
+          <aside class="session-detail-panel" data-testid="game-session-details">
+            <div class="section-title-row">
+              <h3>Dettagli sessione</h3>
+              <span id="selected-game-status" class="badge">Nessuna selezione</span>
+            </div>
+            <div id="game-session-details" class="session-details-card">
+              <div class="session-empty-copy">Seleziona una partita dalla lista per vedere dettagli, stato e azioni principali.</div>
+            </div>
+          </aside>
         </div>
       </section>
 
