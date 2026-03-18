@@ -89,9 +89,14 @@ function readConfig() {
 }
 
 async function send(path, body) {
+  const headers = { "Content-Type": "application/json" };
+  if (state.sessionToken) {
+    headers["x-session-token"] = state.sessionToken;
+  }
+
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body)
   });
   const data = await response.json();

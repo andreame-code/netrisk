@@ -1,8 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame } = require("../support/game-helpers.js");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("new game setup keeps player 1 locked as creator and creates the configured session", async ({ page }) => {
   await resetGame(page);
+  await page.goto("/game.html");
+  await registerAndLogin(page, uniqueUser("setup_owner"));
   await page.goto("/new-game.html");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();

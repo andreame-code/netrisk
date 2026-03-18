@@ -1,11 +1,13 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("user can create a new game, see it in the list, and open it immediately", async ({ page }) => {
   const gameName = uniqueUser("campagna");
   const secondGameName = uniqueUser("seconda");
 
   await resetGame(page);
+  await page.goto("/game.html");
+  await registerAndLogin(page, uniqueUser("lobby_owner"));
   await page.goto("/lobby.html");
 
   const initialOptions = await page.locator("#game-session-list [data-game-id]").count();
