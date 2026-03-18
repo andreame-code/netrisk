@@ -2,6 +2,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
+const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialState, SUPPORTED_MAPS } = require("./new-game-config.cjs");
@@ -138,25 +139,54 @@ function createApp(options = {}) {
     return aiReports;
   }
 
-  function extractSessionToken(req, body = {}) {
-    return body.sessionToken || req.headers["x-session-token"] || null;
+  function extractSessionToken(req, body = {}, url = null) {
+    return body.sessionToken || req.headers["x-session-token"] || (url ? url.searchParams.get("sessionToken") : null) || null;
   }
 
-  function requireAuth(req, res, body) {
-    const sessionToken = extractSessionToken(req, body);
+  function requireAuth(req, res, body, url = null) {
+    const sessionToken = extractSessionToken(req, body, url);
     const user = auth.getUserFromSession(sessionToken);
     if (!user) {
-      sendJson(res, 401, { error: "Sessione non valida." });
+      sendJson(res, 401, { error: "Sessione non valida.", code: "AUTH_REQUIRED" });
       return null;
     }
 
     return { sessionToken, user };
   }
 
+  function authorizeActiveGameRead(req, res, url) {
+    if (!activeGameId) {
+      return { ok: true, user: null };
+    }
+
+    const gameRecord = gameSessions.getGame(activeGameId);
+    if (!gameRecord.game.creatorUserId) {
+      return { ok: true, user: null };
+    }
+
+    const authContext = requireAuth(req, res, {}, url);
+    if (!authContext) {
+      return null;
+    }
+
+    try {
+      authorize("game:read", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
+    } catch (error) {
+      const statusCode = error.statusCode || 400;
+      sendJson(res, statusCode, { error: error.message || "Accesso partita non autorizzato.", code: error.code || null });
+      return null;
+    }
+
+    return authContext;
+  }
+
   async function handleApi(req, res, url) {
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
-      const nextState = createInitialState();
-      replaceState(nextState);
+      const resetGame = gameSessions.createGame(createInitialState(), { name: "Partita test" });
+      activeGameId = resetGame.game.id;
+      activeGameVersion = resetGame.game.version;
+      activeGameName = resetGame.game.name;
+      replaceState(resetGame.state);
       nextAttackRolls = null;
       broadcast();
       sendJson(res, 200, { ok: true, state: snapshot() });
@@ -179,6 +209,10 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/state") {
+      const access = authorizeActiveGameRead(req, res, url);
+      if (access === null) {
+        return;
+      }
       sendJson(res, 200, snapshot());
       return;
     }
@@ -195,10 +229,18 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
+      const authContext = requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
 
       try {
+        const policy = authorize("game:create", { user: authContext.user });
         const configured = createConfiguredInitialState(body);
-        const created = gameSessions.createGame(configured.state, configured.gameInput);
+        const created = gameSessions.createGame(configured.state, {
+          ...configured.gameInput,
+          creatorUserId: policy.actor.id
+        });
         activeGameId = created.game.id;
         activeGameVersion = created.game.version;
         activeGameName = created.game.name;
@@ -206,15 +248,22 @@ function createApp(options = {}) {
         broadcast();
         sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config });
       } catch (error) {
-        sendJson(res, 400, { error: error.message || "Creazione partita non riuscita." });
+        const statusCode = error.statusCode || 400;
+        sendJson(res, statusCode, { error: error.message || "Creazione partita non riuscita.", code: error.code || null });
       }
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/games/open") {
       const body = await parseBody(req);
+      const authContext = requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
 
       try {
+        const gameRecord = gameSessions.getGame(body.gameId);
+        authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
         const opened = gameSessions.openGame(body.gameId);
         activeGameId = opened.game.id;
         activeGameVersion = opened.game.version;
@@ -223,7 +272,8 @@ function createApp(options = {}) {
         broadcast();
         sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
       } catch (error) {
-        sendJson(res, 400, { error: error.message || "Apertura partita non riuscita." });
+        const statusCode = error.statusCode || 400;
+        sendJson(res, statusCode, { error: error.message || "Apertura partita non riuscita.", code: error.code || null });
       }
       return;
     }
@@ -253,6 +303,10 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/events") {
+      const access = authorizeActiveGameRead(req, res, url);
+      if (access === null) {
+        return;
+      }
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -355,6 +409,15 @@ function createApp(options = {}) {
 
       if (state.phase !== "lobby") {
         sendJson(res, 400, { error: "La partita e gia iniziata." });
+        return;
+      }
+
+      try {
+        const activeGame = gameSessions.getGame(activeGameId);
+        authorize("game:start", { user: authContext.user, game: activeGame.game });
+      } catch (error) {
+        const statusCode = error.statusCode || 400;
+        sendJson(res, statusCode, { error: error.message || "Avvio partita non autorizzato.", code: error.code || null });
         return;
       }
 

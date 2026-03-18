@@ -95,6 +95,7 @@ function createGameSessionStore(options = {}) {
       id: crypto.randomBytes(8).toString("hex"),
       name: normalizeGameName(input.name, database.games.length + 1),
       version: 1,
+      creatorUserId: input.creatorUserId || null,
       state: safeClone(initialState),
       createdAt: timestamp,
       updatedAt: timestamp
@@ -120,6 +121,26 @@ function createGameSessionStore(options = {}) {
     database.activeGameId = gameId;
     writeDatabase(dataFile, database);
     return summarizeGame(entry);
+  }
+
+  function getGame(gameId) {
+    if (!gameId) {
+      throw new Error("Leggere una partita richiede un game id valido.");
+    }
+
+    const database = readDatabase(dataFile);
+    const entry = database.games.find((game) => game.id === gameId);
+    if (!entry) {
+      throw new Error(`Partita "${gameId}" non trovata.`);
+    }
+
+    return {
+      game: {
+        ...summarizeGame(entry),
+        creatorUserId: entry.creatorUserId || null
+      },
+      state: safeClone(entry.state)
+    };
   }
 
   function openGame(gameId) {
@@ -197,6 +218,7 @@ function createGameSessionStore(options = {}) {
   return {
     createGame,
     ensureActiveGame,
+    getGame,
     listGames,
     openGame,
     saveGame,

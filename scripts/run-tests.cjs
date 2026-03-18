@@ -52,10 +52,10 @@ function makeMockResponse() {
   };
 }
 
-async function callApp(app, method, pathname, body) {
+async function callApp(app, method, pathname, body, headers = {}) {
   const req = new (require("events").EventEmitter)();
   req.method = method;
-  req.headers = { "content-type": "application/json" };
+  req.headers = { "content-type": "application/json", ...headers };
   req.destroy = () => {};
   const res = makeMockResponse();
   const promise = app.handleApi(req, res, new URL(`http://127.0.0.1${pathname}`));
@@ -75,7 +75,41 @@ async function callApp(app, method, pathname, body) {
 }
 
 async function fetchGame(app, pathname, options = {}) {
-  return (await callApp(app, options.method || "GET", pathname, options.body)).payload;
+  return (await callApp(app, options.method || "GET", pathname, options.body, options.headers)).payload;
+}
+
+
+async function createAuthenticatedSession(baseUrl, username) {
+  const password = "secret";
+  const registerResponse = await fetch(baseUrl + "/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  assert.equal(registerResponse.status, 201);
+
+  const loginResponse = await fetch(baseUrl + "/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  assert.equal(loginResponse.status, 200);
+  return await loginResponse.json();
+}
+
+function authHeaders(sessionToken) {
+  return {
+    "Content-Type": "application/json",
+    "x-session-token": sessionToken
+  };
+}
+
+async function createAuthenticatedAppSession(app, username) {
+  const registered = app.auth.registerPasswordUser(username, "secret");
+  assert.equal(registered.ok, true);
+  const login = app.auth.loginWithPassword(username, "secret");
+  assert.equal(login.ok, true);
+  return login;
 }
 
 async function withServer(run) {
@@ -385,6 +419,143 @@ register("validateNewGameConfig rifiuta player 1 come AI", () => {
   }, /giocatore 1 deve essere sempre il creatore umano/i);
 });
 
+register("API games richiede autenticazione per creare una partita", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Anonima" })
+    });
+    assert.equal(response.status, 401);
+    const payload = await response.json();
+    assert.equal(payload.code, "AUTH_REQUIRED");
+  });
+});
+
+register("game session store salva il creator user id", () => {
+  const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-creator.json`);
+  const store = createGameSessionStore({ dataFile: tempGames });
+
+  try {
+    const created = store.createGame(createInitialState(), { name: "Con owner", creatorUserId: "user-123" });
+    assert.equal(created.game.name, "Con owner");
+    const saved = JSON.parse(fs.readFileSync(tempGames, "utf8"));
+    assert.equal(saved.games[0].creatorUserId, "user-123");
+  } finally {
+    if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+  }
+});
+
+register("API state richiede membership sulla partita protetta", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, `state_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const outsider = await createAuthenticatedSession(baseUrl, `state_out_${Math.random().toString(16).slice(2, 8)}`);
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ name: "Stato protetto" })
+    });
+    assert.equal(created.status, 201);
+
+    const outsiderState = await fetch(baseUrl + "/api/state", {
+      headers: { "x-session-token": outsider.sessionToken }
+    });
+    assert.equal(outsiderState.status, 403);
+    const outsiderPayload = await outsiderState.json();
+    assert.equal(outsiderPayload.code, "MEMBER_ONLY");
+
+    const ownerState = await fetch(baseUrl + "/api/state", {
+      headers: { "x-session-token": owner.sessionToken }
+    });
+    assert.equal(ownerState.status, 200);
+  });
+});
+
+register("API games open richiede autenticazione", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, `open_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ name: "Apri protetta" })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+
+    const opened = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gameId: createdPayload.game.id })
+    });
+    assert.equal(opened.status, 401);
+    const payload = await opened.json();
+    assert.equal(payload.code, "AUTH_REQUIRED");
+  });
+});
+
+register("API games open consente al creatore di riaprire la propria partita", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, `open_member_${Math.random().toString(16).slice(2, 8)}`);
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ name: "Apri membro" })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+
+    const opened = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ gameId: createdPayload.game.id })
+    });
+    assert.equal(opened.status, 200);
+  });
+});
+
+register("API start consente solo al creatore di avviare la partita", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, `host_${Math.random().toString(16).slice(2, 8)}`);
+    const guest = await createAuthenticatedSession(baseUrl, `guest_${Math.random().toString(16).slice(2, 8)}`);
+
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ name: "Host only" })
+    });
+    assert.equal(created.status, 201);
+
+    const joinOwner = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ sessionToken: owner.sessionToken })
+    });
+    const joinOwnerPayload = await joinOwner.json();
+
+    const joinGuest = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(guest.sessionToken),
+      body: JSON.stringify({ sessionToken: guest.sessionToken })
+    });
+    const joinGuestPayload = await joinGuest.json();
+
+    const forbiddenStart = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: authHeaders(guest.sessionToken),
+      body: JSON.stringify({ sessionToken: guest.sessionToken, playerId: joinGuestPayload.playerId })
+    });
+    assert.equal(forbiddenStart.status, 403);
+    const forbiddenPayload = await forbiddenStart.json();
+    assert.equal(forbiddenPayload.code, "HOST_ONLY");
+
+    const ownerStart = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ sessionToken: owner.sessionToken, playerId: joinOwnerPayload.playerId })
+    });
+    assert.equal(ownerStart.status, 200);
+  });
+});
 register("API game options espone setup base per nuova partita", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(baseUrl + "/api/game-options");
@@ -399,9 +570,11 @@ register("API game options espone setup base per nuova partita", async () => {
 
 register("API games crea una sessione da configurazione strutturata", async () => {
   await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl,       `creator_${Math.random().toString(16).slice(2, 8)}`
+    );
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(session.sessionToken),
       body: JSON.stringify({
         name: "Scenario AI",
         mapId: "classic-mini",
@@ -427,9 +600,11 @@ register("API games crea una sessione da configurazione strutturata", async () =
 
 register("API games summary espone metadati configurazione", async () => {
   await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl,       `summary_${Math.random().toString(16).slice(2, 8)}`
+    );
     const createResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(session.sessionToken),
       body: JSON.stringify({
         name: "Scenario Meta",
         mapId: "classic-mini",
@@ -458,9 +633,11 @@ register("API games summary espone metadati configurazione", async () => {
 
 register("API games rifiuta configurazioni incomplete", async () => {
   await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl,       `invalid_${Math.random().toString(16).slice(2, 8)}`
+    );
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(session.sessionToken),
       body: JSON.stringify({
         name: "Scenario non valido",
         mapId: "classic-mini",
@@ -476,6 +653,7 @@ register("API games rifiuta configurazioni incomplete", async () => {
 
 register("API games create + list + open persiste e riapre una sessione", async () => {
   await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, `list_${Math.random().toString(16).slice(2, 8)}`);
     const initialList = await fetch(baseUrl + "/api/games");
     assert.equal(initialList.status, 200);
     const initialPayload = await initialList.json();
@@ -483,7 +661,7 @@ register("API games create + list + open persiste e riapre una sessione", async 
 
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(session.sessionToken),
       body: JSON.stringify({ name: "Campagna test" })
     });
     assert.equal(created.status, 201);
@@ -499,7 +677,7 @@ register("API games create + list + open persiste e riapre una sessione", async 
 
     const opened = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(session.sessionToken),
       body: JSON.stringify({ gameId: createdPayload.game.id })
     });
     assert.equal(opened.status, 200);
@@ -511,24 +689,18 @@ register("API games create + list + open persiste e riapre una sessione", async 
 
 register("API game session persists mutations across reopen", async () => {
   await withServer(async (baseUrl) => {
+    const firstUser = `persist_a_${Date.now()}`;
+    const ownerSession = await createAuthenticatedSession(baseUrl, firstUser);
     const createdResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ name: "Persistenza campagna" })
     });
     assert.equal(createdResponse.status, 201);
     const createdPayload = await createdResponse.json();
     const gameId = createdPayload.game.id;
 
-    const firstUser = `persist_a_${Date.now()}`;
     const secondUser = `persist_b_${Date.now()}`;
-
-    const registerFirst = await fetch(baseUrl + "/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: firstUser, password: "secret" })
-    });
-    assert.equal(registerFirst.status, 201);
 
     const registerSecond = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
@@ -537,12 +709,7 @@ register("API game session persists mutations across reopen", async () => {
     });
     assert.equal(registerSecond.status, 201);
 
-    const loginFirst = await fetch(baseUrl + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: firstUser, password: "secret" })
-    });
-    const firstAuth = await loginFirst.json();
+    const firstAuth = ownerSession;
 
     const joinFirst = await fetch(baseUrl + "/api/join", {
       method: "POST",
@@ -602,7 +769,7 @@ register("API game session persists mutations across reopen", async () => {
 
     const reopenedResponse = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(firstAuth.sessionToken),
       body: JSON.stringify({ gameId })
     });
     assert.equal(reopenedResponse.status, 200);
@@ -622,13 +789,14 @@ register("API game session restores active game across app recreation", async ()
   let app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
 
   try {
-    const created = await fetchGame(app, "/api/games", { method: "POST", body: { name: "Sessione persistita" } });
+    const firstSession = await createAuthenticatedAppSession(app, `restore_${Math.random().toString(16).slice(2, 8)}`);
+    const created = await fetchGame(app, "/api/games", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { name: "Sessione persistita" } });
     const createdGameId = created.game.id;
 
-    const second = await fetchGame(app, "/api/games", { method: "POST", body: { name: "Altra sessione" } });
+    const second = await fetchGame(app, "/api/games", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { name: "Altra sessione" } });
     const secondGameId = second.game.id;
 
-    await fetchGame(app, "/api/games/open", { method: "POST", body: { gameId: createdGameId } });
+    await fetchGame(app, "/api/games/open", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { gameId: createdGameId } });
 
     app.server.close();
     app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
@@ -693,9 +861,10 @@ register("game session store mantiene versioni indipendenti tra partite", () => 
 
 register("API action incrementa la version e rifiuta expectedVersion stale", async () => {
   await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, `concurrency_owner_${Math.random().toString(16).slice(2, 8)}`);
     const createdResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ name: "Concorrenza" })
     });
     assert.equal(createdResponse.status, 201);
@@ -720,12 +889,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     });
     assert.equal(registerSecond.status, 201);
 
-    const loginFirst = await fetch(baseUrl + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: firstUsername, password: "secret" })
-    });
-    const firstLoginPayload = await loginFirst.json();
+    const firstLoginPayload = ownerSession;
 
     const joinFirst = await fetch(baseUrl + "/api/join", {
       method: "POST",
@@ -811,29 +975,17 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
 
 register("API ai join + endTurn esegue automaticamente il turno AI", async () => {
   await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, `ai_owner_${Math.random().toString(16).slice(2, 8)}`);
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ name: "AI Match" })
     });
     assert.equal(created.status, 201);
 
     const username = `cpu_host_${Math.random().toString(16).slice(2, 8)}`;
 
-    const registerHuman = await fetch(baseUrl + "/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: "secret" })
-    });
-    assert.equal(registerHuman.status, 201);
-
-    const loginHuman = await fetch(baseUrl + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: "secret" })
-    });
-    assert.equal(loginHuman.status, 200);
-    const humanSession = await loginHuman.json();
+    const humanSession = ownerSession;
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
       method: "POST",
@@ -911,22 +1063,16 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
 register("API profile espone statistiche giocatore aggregate", async () => {
   await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, `profile_owner_${Math.random().toString(16).slice(2, 8)}`);
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ name: "Profilo test" })
     });
     assert.equal(created.status, 201);
 
     const username = `prof_${Math.random().toString(16).slice(2, 8)}`;
     const other = `enem_${Math.random().toString(16).slice(2, 8)}`;
-
-    const registerUser = await fetch(baseUrl + "/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: "secret" })
-    });
-    assert.equal(registerUser.status, 201);
 
     const registerOther = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
@@ -935,12 +1081,7 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     });
     assert.equal(registerOther.status, 201);
 
-    const loginUser = await fetch(baseUrl + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: "secret" })
-    });
-    const userSession = await loginUser.json();
+    const userSession = ownerSession;
 
     const joinUser = await fetch(baseUrl + "/api/join", {
       method: "POST",
@@ -975,7 +1116,7 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     });
     assert.equal(profileResponse.status, 200);
     const profilePayload = await profileResponse.json();
-    assert.equal(profilePayload.profile.playerName, username);
+    assert.equal(profilePayload.profile.playerName, userSession.user.username);
     assert.equal(profilePayload.profile.gamesInProgress, 1);
     assert.equal(profilePayload.profile.gamesPlayed, 0);
     assert.equal(profilePayload.profile.winRate, null);
@@ -1044,3 +1185,5 @@ async function run() {
 }
 
 run();
+
+
