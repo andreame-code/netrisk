@@ -4,11 +4,26 @@ const state = {
   snapshot: null,
   user: null,
   currentGameId: null,
+  currentGameName: null,
   selectedGameId: null,
   gameList: [],
   gameListState: "loading",
   gameListError: ""
 };
+
+function requestedGameIdFromRoute() {
+  return new URLSearchParams(window.location.search).get("gameId");
+}
+
+function syncGameRoute(gameId) {
+  const url = new URL(window.location.href);
+  if (gameId) {
+    url.searchParams.set("gameId", gameId);
+  } else {
+    url.searchParams.delete("gameId");
+  }
+  window.history.replaceState({}, "", url.pathname + url.search);
+}
 
 const mapLayout = {
   aurora: { x: 17.1, y: 18 },
@@ -150,10 +165,18 @@ function updateGameSelection(gameId) {
   }
 }
 
+function syncCurrentGameName() {
+  state.currentGameName = state.snapshot?.gameName || (state.gameList.find((game) => game.id === state.currentGameId) || {}).name || state.currentGameName || null;
+}
+
 function renderGameSessionBrowser() {
   const selected = selectedGame();
   const selectedId = state.selectedGameId || state.currentGameId;
   const hasGames = state.gameList.length > 0;
+
+  if (!elements.gameList) {
+    return;
+  }
 
   elements.gameList.innerHTML = state.gameList
     .map((game) => `<option value="${game.id}">${game.name}</option>`)
@@ -161,6 +184,11 @@ function renderGameSessionBrowser() {
 
   if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
     elements.gameList.value = selectedId;
+  }
+
+  if (!elements.gameListState || !elements.gameSessionList || !elements.gameSessionDetails || !elements.selectedGameStatus) {
+    elements.openGameButton.disabled = !selected;
+    return;
   }
 
   elements.gameListState.className = `session-feedback${state.gameListState === "error" ? " is-error" : ""}${hasGames ? " is-hidden" : ""}`;
@@ -205,8 +233,12 @@ function renderGameSessionBrowser() {
     : '<div class="session-empty-copy">Seleziona una partita dalla lista per vedere dettagli, stato e azioni principali.</div>';
 
   const hasSelection = Boolean(selected);
-  elements.openGameButton.disabled = !hasSelection;
-  elements.openGameButtonSecondary.disabled = !hasSelection;
+  if (elements.openGameButton) {
+    elements.openGameButton.disabled = !hasSelection;
+  }
+  if (elements.openGameButtonSecondary) {
+    elements.openGameButtonSecondary.disabled = !hasSelection;
+  }
 }
 
 function buildGraphMarkup(snapshot) {
@@ -319,9 +351,11 @@ function render() {
 
   renderGameSessionBrowser();
 
+  syncCurrentGameName();
   elements.gameStatus.textContent = state.currentGameId
-    ? `Partita attiva: ${(state.gameList.find((game) => game.id === state.currentGameId) || {}).name || state.currentGameId}`
+    ? `Partita attiva: ${state.currentGameName || state.currentGameId}`
     : "Nessuna partita attiva";
+  syncGameRoute(state.currentGameId);
 
   elements.identityStatus.textContent = state.user
     ? me
@@ -437,8 +471,12 @@ function render() {
   elements.logoutButton.disabled = !state.user;
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
   elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
-  elements.createGameButton.disabled = false;
-  elements.createGameButtonSecondary.disabled = false;
+  if (elements.createGameButton) {
+    elements.createGameButton.disabled = false;
+  }
+  if (elements.createGameButtonSecondary) {
+    elements.createGameButtonSecondary.disabled = false;
+  }
   if (elements.conquestGroup) {
     elements.conquestGroup.hidden = !pendingConquest;
   }
@@ -506,6 +544,7 @@ async function loadState() {
   const response = await fetch("/api/state");
   state.snapshot = await response.json();
   state.currentGameId = state.snapshot?.gameId || state.currentGameId;
+  syncCurrentGameName();
   render();
 }
 
@@ -523,6 +562,7 @@ async function loadGameList() {
     const data = await response.json();
     state.gameList = data.games || [];
     state.currentGameId = data.activeGameId || state.currentGameId;
+    syncCurrentGameName();
     if (!state.selectedGameId || !state.gameList.some((game) => game.id === state.selectedGameId)) {
       updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
     }
@@ -571,14 +611,17 @@ function connectEvents() {
 
 async function handleCreateGame() {
   try {
-    const data = await send("/api/games", { name: elements.gameName.value.trim() || undefined });
+    const data = await send("/api/games", { name: elements.gameName?.value.trim() || undefined });
     state.snapshot = data.state;
     state.gameList = data.games || [];
     state.currentGameId = data.activeGameId || null;
+    state.currentGameName = data.game?.name || null;
     updateGameSelection(state.currentGameId);
     state.gameListState = state.gameList.length ? "ready" : "empty";
     clearPlayerIdentity();
-    elements.gameName.value = "";
+    if (elements.gameName) {
+      elements.gameName.value = "";
+    }
     render();
   } catch (error) {
     state.gameListState = "error";
@@ -588,27 +631,45 @@ async function handleCreateGame() {
   }
 }
 
+async function openGameById(gameId) {
+  const data = await send("/api/games/open", { gameId });
+  state.snapshot = data.state;
+  state.gameList = data.games || [];
+  state.currentGameId = data.activeGameId || null;
+  state.currentGameName = data.game?.name || null;
+  updateGameSelection(state.currentGameId);
+  state.gameListState = state.gameList.length ? "ready" : "empty";
+  clearPlayerIdentity();
+  render();
+}
+
 async function handleOpenSelectedGame() {
-  const selectedId = state.selectedGameId || elements.gameList.value;
+  const selectedId = state.selectedGameId || elements.gameList?.value;
   if (!selectedId) {
     return;
   }
 
   try {
-    const data = await send("/api/games/open", { gameId: selectedId });
-    state.snapshot = data.state;
-    state.gameList = data.games || [];
-    state.currentGameId = data.activeGameId || null;
-    updateGameSelection(state.currentGameId);
-    state.gameListState = state.gameList.length ? "ready" : "empty";
-    clearPlayerIdentity();
-    render();
+    await openGameById(selectedId);
   } catch (error) {
     state.gameListState = "error";
     state.gameListError = error.message;
     render();
     alert(error.message);
   }
+}
+
+async function openRequestedGameIfNeeded() {
+  const requestedId = requestedGameIdFromRoute();
+  if (!requestedId || requestedId === state.currentGameId) {
+    return;
+  }
+
+  if (!state.gameList.some((game) => game.id === requestedId)) {
+    return;
+  }
+
+  await openGameById(requestedId);
 }
 
 elements.authForm.addEventListener("submit", async (event) => {
@@ -647,11 +708,19 @@ elements.registerButton.addEventListener("click", async () => {
   }
 });
 
-elements.createGameButton.addEventListener("click", handleCreateGame);
-elements.createGameButtonSecondary.addEventListener("click", handleCreateGame);
+if (elements.createGameButton) {
+  elements.createGameButton.addEventListener("click", handleCreateGame);
+}
+if (elements.createGameButtonSecondary) {
+  elements.createGameButtonSecondary.addEventListener("click", handleCreateGame);
+}
 
-elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
-elements.openGameButtonSecondary.addEventListener("click", handleOpenSelectedGame);
+if (elements.openGameButton) {
+  elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
+}
+if (elements.openGameButtonSecondary) {
+  elements.openGameButtonSecondary.addEventListener("click", handleOpenSelectedGame);
+}
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
@@ -707,27 +776,33 @@ elements.reinforceButton.addEventListener("click", async () => {
 
 elements.attackFrom.addEventListener("change", () => render());
 elements.fortifyFrom.addEventListener("change", () => render());
-elements.gameList.addEventListener("change", () => {
-  updateGameSelection(elements.gameList.value || null);
-  render();
-});
-elements.gameSessionList.addEventListener("click", (event) => {
-  const trigger = event.target.closest("[data-game-id]");
-  if (!trigger) {
-    return;
-  }
+if (elements.gameList) {
+  elements.gameList.addEventListener("change", () => {
+    updateGameSelection(elements.gameList.value || null);
+    render();
+  });
+}
+if (elements.gameSessionList) {
+  elements.gameSessionList.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-game-id]");
+    if (!trigger) {
+      return;
+    }
 
-  updateGameSelection(trigger.dataset.gameId);
-  render();
-});
-elements.gameSessionDetails.addEventListener("click", (event) => {
-  const trigger = event.target.closest("#open-selected-inline");
-  if (!trigger) {
-    return;
-  }
+    updateGameSelection(trigger.dataset.gameId);
+    render();
+  });
+}
+if (elements.gameSessionDetails) {
+  elements.gameSessionDetails.addEventListener("click", (event) => {
+    const trigger = event.target.closest("#open-selected-inline");
+    if (!trigger) {
+      return;
+    }
 
-  handleOpenSelectedGame();
-});
+    handleOpenSelectedGame();
+  });
+}
 elements.map.addEventListener("click", (event) => {
   const button = event.target.closest("[data-territory-id]");
   if (!button) {

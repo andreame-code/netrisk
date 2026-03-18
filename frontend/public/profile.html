@@ -6,9 +6,25 @@
     <title>Frontline Dominion - Profilo</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body>
+  <body data-app-section="profile">
     <div class="backdrop"></div>
-    <main class="app-shell board-shell">
+    <div class="app-frame">
+      <aside class="main-nav-shell panel">
+        <div class="nav-brand-block">
+          <p class="eyebrow">NetRisk Command</p>
+          <h1 class="nav-brand-title">Frontline Dominion</h1>
+          <p class="nav-brand-copy">Hub strategico per lobby, tabellone di guerra e profilo comandante.</p>
+        </div>
+
+        <nav class="main-nav" aria-label="Sezioni principali">
+          <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+          <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
+          <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+        </nav>
+      </aside>
+
+      <main class="page-shell">
+        <section class="app-shell board-shell">
       <section class="command-bar panel profile-bar">
         <div class="brand-block compact-brand">
           <p class="eyebrow">Commander Record</p>
@@ -70,8 +86,11 @@
           </div>
         </section>
       </section>
-    </main>
+        </section>
+      </main>
+    </div>
 
+    <script type="module" src="/layout.js"></script>
     <script type="module" src="/profile.js"></script>
   </body>
 </html>
