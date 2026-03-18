@@ -801,7 +801,10 @@ register("API game session restores active game across app recreation", async ()
     app.server.close();
     app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
 
-    const stateResponse = await callApp(app, "GET", "/api/state");
+    const relogin = app.auth.loginWithPassword(firstSession.user.username, "secret");
+    assert.equal(relogin.ok, true);
+
+    const stateResponse = await callApp(app, "GET", "/api/state", undefined, authHeaders(relogin.sessionToken));
     assert.equal(stateResponse.statusCode, 200);
     assert.equal(stateResponse.payload.gameId, createdGameId);
 
@@ -929,7 +932,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     });
     assert.equal(startResponse.status, 200);
 
-    const stateResponse = await fetch(baseUrl + "/api/state");
+    const stateResponse = await fetch(baseUrl + "/api/state", { headers: authHeaders(firstLoginPayload.sessionToken) });
     const statePayload = await stateResponse.json();
     const ownedTerritory = statePayload.map.find((territory) => territory.ownerId === firstJoinPayload.playerId);
 
@@ -973,6 +976,79 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
   });
 });
 
+register("API games open ricollega il player umano corretto dopo logout e nuovo login", async () => {
+  await withServer(async (baseUrl) => {
+    const username = `rebind_${Math.random().toString(16).slice(2, 8)}`;
+    const ownerSession = await createAuthenticatedSession(baseUrl, username);
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Rebind Match" })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+
+    const joinHuman = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+    });
+    assert.equal(joinHuman.status, 201);
+    const humanJoinPayload = await joinHuman.json();
+
+    const joinAi = await fetch(baseUrl + "/api/ai/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "CPU Rebind" })
+    });
+    assert.equal(joinAi.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+
+    const logoutResponse = await fetch(baseUrl + "/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+    });
+    assert.equal(logoutResponse.status, 200);
+
+    const reloginResponse = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: "secret" })
+    });
+    assert.equal(reloginResponse.status, 200);
+    const reloginPayload = await reloginResponse.json();
+
+    const reopened = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(reloginPayload.sessionToken),
+      body: JSON.stringify({ gameId: createdPayload.game.id })
+    });
+    assert.equal(reopened.status, 200);
+    const reopenedPayload = await reopened.json();
+    assert.equal(reopenedPayload.playerId, humanJoinPayload.playerId);
+
+    const ownedTerritory = reopenedPayload.state.map.find((territory) => territory.ownerId === humanJoinPayload.playerId);
+    const reinforceResponse = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: authHeaders(reloginPayload.sessionToken),
+      body: JSON.stringify({
+        sessionToken: reloginPayload.sessionToken,
+        playerId: reopenedPayload.playerId,
+        type: "reinforce",
+        territoryId: ownedTerritory.id,
+        expectedVersion: reopenedPayload.state.version
+      })
+    });
+    assert.equal(reinforceResponse.status, 200);
+  });
+});
 register("API ai join + endTurn esegue automaticamente il turno AI", async () => {
   await withServer(async (baseUrl) => {
     const ownerSession = await createAuthenticatedSession(baseUrl, `ai_owner_${Math.random().toString(16).slice(2, 8)}`);
@@ -1185,5 +1261,6 @@ async function run() {
 }
 
 run();
+
 
 

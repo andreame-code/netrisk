@@ -187,15 +187,28 @@ function advanceTurn(state) {
 
 function addPlayer(state, name, options = {}) {
   const normalizedName = String(name || "").trim().slice(0, 24);
+  const linkedUserId = options.isAi ? null : (options.linkedUserId || null);
   if (!normalizedName) {
     return { ok: false, error: "Inserisci un nome." };
   }
 
-  const existing = state.players.find((player) => player.name.toLowerCase() === normalizedName.toLowerCase());
+  const existing = state.players.find((player) => {
+    if (player.isAi !== Boolean(options.isAi)) {
+      return false;
+    }
+
+    if (!options.isAi && linkedUserId && player.linkedUserId === linkedUserId) {
+      return true;
+    }
+
+    return player.name.toLowerCase() === normalizedName.toLowerCase();
+  });
   if (existing) {
     existing.connected = true;
     if (options.isAi) {
       existing.isAi = true;
+    } else if (linkedUserId && !existing.linkedUserId) {
+      existing.linkedUserId = linkedUserId;
     }
     appendLog(state, existing.name + " si ricollega alla lobby.");
     return { ok: true, player: existing, rejoined: true };
@@ -214,7 +227,8 @@ function addPlayer(state, name, options = {}) {
     name: normalizedName,
     color: palette[state.players.length % palette.length],
     connected: true,
-    isAi: Boolean(options.isAi)
+    isAi: Boolean(options.isAi),
+    linkedUserId
   });
   state.players.push(player);
   appendLog(state, player.name + " entra nella lobby.");
@@ -492,3 +506,4 @@ module.exports = {
   territories,
   territoriesOwnedBy
 };
+

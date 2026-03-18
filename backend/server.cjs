@@ -180,6 +180,36 @@ function createApp(options = {}) {
     return authContext;
   }
 
+  function resolvePlayerForUser(nextState, user) {
+    if (!user || !nextState || !Array.isArray(nextState.players)) {
+      return null;
+    }
+
+    return nextState.players.find((player) => {
+      if (player.isAi) {
+        return false;
+      }
+
+      if (player.linkedUserId) {
+        return player.linkedUserId === user.id;
+      }
+
+      return player.name === user.username;
+    }) || null;
+  }
+
+  function playerBelongsToUser(player, user) {
+    if (!player || !user || player.isAi) {
+      return false;
+    }
+
+    if (player.linkedUserId) {
+      return player.linkedUserId === user.id;
+    }
+
+    return player.name === user.username;
+  }
+
   async function handleApi(req, res, url) {
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
       const resetGame = gameSessions.createGame(createInitialState(), { name: "Partita test" });
@@ -213,7 +243,9 @@ function createApp(options = {}) {
       if (access === null) {
         return;
       }
-      sendJson(res, 200, snapshot());
+      const sessionUser = access && access.user ? access.user : auth.getUserFromSession(extractSessionToken(req, {}, url));
+      const resolvedPlayer = resolvePlayerForUser(state, sessionUser);
+      sendJson(res, 200, { ...snapshot(), playerId: resolvedPlayer ? resolvedPlayer.id : null });
       return;
     }
 
@@ -270,7 +302,8 @@ function createApp(options = {}) {
         activeGameName = opened.game.name;
         replaceState(opened.state);
         broadcast();
-        sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
+        const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
+        sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), playerId: resolvedPlayer ? resolvedPlayer.id : null });
       } catch (error) {
         const statusCode = error.statusCode || 400;
         sendJson(res, statusCode, { error: error.message || "Apertura partita non riuscita.", code: error.code || null });
@@ -384,7 +417,7 @@ function createApp(options = {}) {
         return;
       }
 
-      const result = addPlayer(state, authContext.user.username);
+      const result = addPlayer(state, authContext.user.username, { linkedUserId: authContext.user.id });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
@@ -427,7 +460,7 @@ function createApp(options = {}) {
       }
 
       const player = getPlayer(state, body.playerId);
-      if (!player || player.name !== authContext.user.username) {
+      if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
         return;
       }
@@ -456,7 +489,7 @@ function createApp(options = {}) {
 
       const player = getPlayer(state, playerId);
 
-      if (!player || player.name !== authContext.user.username) {
+      if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
         return;
       }
@@ -684,3 +717,6 @@ module.exports = {
   server: app.server,
   state: app.state
 };
+
+
+

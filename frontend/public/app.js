@@ -596,6 +596,11 @@ async function loadState() {
     throw new Error(data.error || "Impossibile caricare la partita attiva.");
   }
   state.snapshot = data;
+  if (data.playerId) {
+    setPlayerIdentity(data.playerId);
+  } else {
+    clearPlayerIdentity();
+  }
   state.currentGameId = state.snapshot?.gameId || state.currentGameId;
   syncCurrentGameName();
   render();
@@ -693,7 +698,11 @@ async function openGameById(gameId) {
   state.currentGameName = data.game?.name || null;
   updateGameSelection(state.currentGameId);
   state.gameListState = state.gameList.length ? "ready" : "empty";
-  clearPlayerIdentity();
+  if (data.playerId) {
+    setPlayerIdentity(data.playerId);
+  } else {
+    clearPlayerIdentity();
+  }
   render();
 }
 
@@ -957,3 +966,5 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await restoreSession();
 connectEvents();
+
+
