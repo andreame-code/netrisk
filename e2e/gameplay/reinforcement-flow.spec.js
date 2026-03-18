@@ -34,8 +34,11 @@ test("current player can distribute reinforcements and enter attack step", async
 
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
   await expect(reinforceButton).toBeDisabled();
-  await expect(firstPage.getByText(/Puoi attaccare o passare alla fortifica/i)).toBeVisible();
-  await expect(firstPage.getByRole("button", { name: "Vai a fortifica" })).toBeEnabled();
+  await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
+  await expect(firstPage.locator("#conquest-group")).toBeHidden();
+  await expect(firstPage.locator("#fortify-group")).toBeHidden();
+  await expect(firstPage.locator("#end-turn-button")).toHaveText("Vai a fortifica");
+  await expect(firstPage.locator("#end-turn-button")).toBeEnabled();
 
   await firstContext.close();
   await secondContext.close();
