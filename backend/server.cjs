@@ -4,18 +4,21 @@ const path = require("path");
 const { createAuthStore } = require("./auth.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
+const { createConfiguredInitialState, SUPPORTED_MAPS } = require("./new-game-config.cjs");
 const {
   addPlayer,
   applyFortify,
   applyReinforcement,
   createInitialState,
   endTurn,
+  getCurrentPlayer,
   getPlayer,
   moveAfterConquest,
   publicState,
   resolveAttack,
   startGame
 } = require("./engine/game-engine.cjs");
+const { runAiTurn } = require("./engine/ai-player.cjs");
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
@@ -105,6 +108,36 @@ function createApp(options = {}) {
     });
   }
 
+  function runAiTurnsIfNeeded() {
+    const reports = [];
+    const maxTurns = Math.max(4, state.players.length * 4);
+
+    for (let step = 0; step < maxTurns; step += 1) {
+      const currentPlayer = getCurrentPlayer(state);
+      if (!currentPlayer || !currentPlayer.isAi || state.phase !== "active" || state.winnerId) {
+        break;
+      }
+
+      const result = runAiTurn(state);
+      if (!result.ok) {
+        throw new Error(result.error || "Turno AI non riuscito.");
+      }
+
+      reports.push(result);
+    }
+
+    return reports;
+  }
+
+  function persistWithAiTurns(expectedVersion) {
+    persistActiveGame(expectedVersion);
+    const aiReports = runAiTurnsIfNeeded();
+    if (aiReports.length > 0) {
+      persistActiveGame(activeGameVersion);
+    }
+    return aiReports;
+  }
+
   function extractSessionToken(req, body = {}) {
     return body.sessionToken || req.headers["x-session-token"] || null;
   }
@@ -155,17 +188,23 @@ function createApp(options = {}) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/game-options") {
+      sendJson(res, 200, { maps: SUPPORTED_MAPS, playerRange: { min: 2, max: 4 } });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
 
       try {
-        const created = gameSessions.createGame(createInitialState(), { name: body.name });
+        const configured = createConfiguredInitialState(body);
+        const created = gameSessions.createGame(configured.state, configured.gameInput);
         activeGameId = created.game.id;
         activeGameVersion = created.game.version;
         activeGameName = created.game.name;
         replaceState(created.state);
         broadcast();
-        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
+        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config });
       } catch (error) {
         sendJson(res, 400, { error: error.message || "Creazione partita non riuscita." });
       }
@@ -266,6 +305,24 @@ function createApp(options = {}) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/ai/join") {
+      const body = await parseBody(req);
+      const result = addPlayer(state, body.name, { isAi: true });
+      if (!result.ok) {
+        sendJson(res, 400, { error: result.error });
+        return;
+      }
+
+      persistActiveGame();
+      broadcast();
+      sendJson(res, result.rejoined ? 200 : 201, {
+        playerId: result.player.id,
+        state: snapshot(),
+        player: result.player
+      });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/join") {
       const body = await parseBody(req);
       const authContext = requireAuth(req, res, body);
@@ -313,7 +370,7 @@ function createApp(options = {}) {
       }
 
       startGame(state);
-      persistActiveGame();
+      persistWithAiTurns();
       broadcast();
       sendJson(res, 200, { ok: true, state: snapshot() });
       return;
@@ -469,7 +526,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistActiveGame(expectedVersion);
+          persistWithAiTurns(expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;

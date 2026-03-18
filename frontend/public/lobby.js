@@ -9,7 +9,6 @@ const state = {
 };
 
 const elements = {
-  gameName: document.querySelector("#game-name"),
   createGameButton: document.querySelector("#create-game-button"),
   openGameButton: document.querySelector("#open-game-button"),
   gameStatus: document.querySelector("#game-status"),
@@ -136,7 +135,10 @@ function render() {
         '<div class="session-detail-item"><span>Nome</span><strong>' + selected.name + '</strong></div>' +
         '<div class="session-detail-item"><span>ID</span><strong>' + selected.id + '</strong></div>' +
         '<div class="session-detail-item"><span>Stato</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Giocatori</span><strong>' + selected.playerCount + '/4</strong></div>' +
+        '<div class="session-detail-item"><span>Giocatori presenti</span><strong>' + selected.playerCount + '/4</strong></div>' +
+        '<div class="session-detail-item"><span>Giocatori configurati</span><strong>' + (selected.totalPlayers || 'n/d') + '</strong></div>' +
+        '<div class="session-detail-item"><span>Mappa</span><strong>' + (selected.mapName || selected.mapId || 'Classic Mini') + '</strong></div>' +
+        '<div class="session-detail-item"><span>AI</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
         '<div class="session-detail-item"><span>Ultimo update</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
         '<div class="session-detail-item"><span>Focus</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
       '</div>' +
@@ -191,23 +193,6 @@ async function loadGameList() {
   render();
 }
 
-async function handleCreateGame() {
-  try {
-    const data = await send("/api/games", { name: elements.gameName.value.trim() || undefined });
-    state.gameList = data.games || [];
-    state.currentGameId = data.activeGameId || null;
-    updateGameSelection(state.currentGameId);
-    state.gameListState = state.gameList.length ? "ready" : "empty";
-    elements.gameName.value = "";
-    render();
-  } catch (error) {
-    state.gameListState = "error";
-    state.gameListError = error.message;
-    render();
-    alert(error.message);
-  }
-}
-
 async function openGameById(gameId) {
   const data = await send("/api/games/open", { gameId });
   state.gameList = data.games || [];
@@ -234,7 +219,6 @@ async function handleOpenSelectedGame() {
   }
 }
 
-elements.createGameButton.addEventListener("click", handleCreateGame);
 elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
 elements.gameSessionList.addEventListener("click", (event) => {
   const gameNameTrigger = event.target.closest("[data-open-game-id]");
