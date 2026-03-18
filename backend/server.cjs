@@ -332,6 +332,16 @@ function createApp(options = {}) {
         return true;
       }
 
+      if (expectedVersion != null && expectedVersion !== activeGameVersion) {
+        sendJson(res, 409, {
+          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          code: "VERSION_CONFLICT",
+          currentVersion: activeGameVersion,
+          state: snapshot()
+        });
+        return;
+      }
+
       if (type === "reinforce") {
         const result = applyReinforcement(state, playerId, String(body.territoryId || ""));
         if (!result.ok) {
