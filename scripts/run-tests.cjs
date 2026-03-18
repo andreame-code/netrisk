@@ -16,6 +16,7 @@ const {
   territoriesOwnedBy
 } = require("../backend/engine/game-engine.cjs");
 const { chooseFortify, runAiTurn } = require("../backend/engine/ai-player.cjs");
+const { validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
@@ -346,6 +347,44 @@ register("publicState espone anche i metadati configurazione partita", () => {
   assert.equal(snapshot.gameConfig.players[2].type, "ai");
 });
 
+register("validateNewGameConfig assegna i nomi AI dal server e ignora quelli umani", () => {
+  const config = validateNewGameConfig({
+    mapId: "classic-mini",
+    totalPlayers: 4,
+    players: [
+      { type: "human", name: "Nome client 1" },
+      { type: "ai", name: "Nome client AI" },
+      { type: "human", name: "Nome client 2" },
+      { type: "ai" }
+    ]
+  }, {
+    random: (() => {
+      const values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      return () => values.shift() ?? 0;
+    })()
+  });
+
+  assert.equal(config.players[0].name, null);
+  assert.equal(config.players[2].name, null);
+  assert.equal(Boolean(config.players[1].name), true);
+  assert.equal(Boolean(config.players[3].name), true);
+  assert.notEqual(config.players[1].name, "Nome client AI");
+  assert.notEqual(config.players[1].name, config.players[3].name);
+});
+
+register("validateNewGameConfig rifiuta player 1 come AI", () => {
+  assert.throws(() => {
+    validateNewGameConfig({
+      mapId: "classic-mini",
+      totalPlayers: 2,
+      players: [
+        { type: "ai" },
+        { type: "human" }
+      ]
+    });
+  }, /giocatore 1 deve essere sempre il creatore umano/i);
+});
+
 register("API game options espone setup base per nuova partita", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(baseUrl + "/api/game-options");
@@ -368,9 +407,9 @@ register("API games crea una sessione da configurazione strutturata", async () =
         mapId: "classic-mini",
         totalPlayers: 3,
         players: [
-          { type: "human", name: "Andre" },
-          { type: "ai", name: "CPU Nord" },
-          { type: "ai", name: "CPU Sud" }
+          { type: "human" },
+          { type: "ai" },
+          { type: "ai" }
         ]
       })
     });
@@ -378,7 +417,9 @@ register("API games crea una sessione da configurazione strutturata", async () =
     const payload = await response.json();
     assert.equal(payload.game.name, "Scenario AI");
     assert.equal(payload.config.totalPlayers, 3);
+    assert.equal(payload.config.players[0].name, null);
     assert.equal(payload.config.players[1].type, "ai");
+    assert.equal(Boolean(payload.config.players[1].name), true);
     assert.equal(payload.state.players.length, 2);
     assert.equal(payload.state.players.every((player) => player.isAi), true);
   });
@@ -394,10 +435,10 @@ register("API games summary espone metadati configurazione", async () => {
         mapId: "classic-mini",
         totalPlayers: 4,
         players: [
-          { type: "human", name: "Andre" },
-          { type: "human", name: "Luca" },
-          { type: "ai", name: "CPU Ovest" },
-          { type: "ai", name: "CPU Est" }
+          { type: "human" },
+          { type: "human" },
+          { type: "ai" },
+          { type: "ai" }
         ]
       })
     });
