@@ -72,6 +72,8 @@ const elements = {
   createGameButtonSecondary: document.querySelector("#create-game-button-secondary"),
   openGameButtonSecondary: document.querySelector("#open-game-button-secondary"),
   gameStatus: document.querySelector("#game-status"),
+  gameMapMeta: document.querySelector("#game-map-meta"),
+  gameSetupMeta: document.querySelector("#game-setup-meta"),
   gameListState: document.querySelector("#game-list-state"),
   gameSessionList: document.querySelector("#game-session-list"),
   gameSessionDetails: document.querySelector("#game-session-details"),
@@ -383,6 +385,13 @@ function render() {
   elements.gameStatus.textContent = state.currentGameId
     ? (state.currentGameName || state.currentGameId)
     : "Nessuna";
+  elements.gameMapMeta.textContent = snapshot?.gameConfig?.mapName || snapshot?.gameConfig?.mapId || "Classic Mini";
+  const totalPlayers = snapshot?.gameConfig?.totalPlayers || 2;
+  const aiCount = Array.isArray(snapshot?.gameConfig?.players)
+    ? snapshot.gameConfig.players.filter((player) => player.type === "ai").length
+    : 0;
+  const playerLabel = totalPlayers === 1 ? "giocatore" : "giocatori";
+  elements.gameSetupMeta.textContent = totalPlayers + " " + playerLabel + " · " + aiCount + " AI";
   syncGameRoute(state.currentGameId);
 
   elements.identityStatus.textContent = state.user

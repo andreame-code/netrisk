@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontline Dominion - Nuova Partita</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body data-app-section="lobby">
+    <div class="backdrop"></div>
+    <div class="app-frame top-nav-page-frame">
+      <main class="page-shell top-nav-page-shell">
+        <section class="panel top-nav-bar">
+          <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
+            <p class="eyebrow">NetRisk</p>
+            <h1>Frontline Dominion</h1>
+          </a>
+
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+            <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+            <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
+            <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+          </nav>
+
+          <div class="top-nav-zone top-nav-actions">
+            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
+            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+          </div>
+        </section>
+
+        <section class="panel new-game-shell" data-testid="new-game-shell">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">New Game Setup</p>
+              <h2>Configura una nuova partita</h2>
+              <p class="stage-copy">Prepara la sessione prima di crearla: nome, mappa, numero giocatori e slot umani o AI.</p>
+            </div>
+            <div class="content-meta-line new-game-meta-line">
+              <span id="setup-auth-status">Configurazione locale pronta.</span>
+            </div>
+          </div>
+
+          <form id="new-game-form" class="new-game-grid">
+            <section class="new-game-panel">
+              <h3>Impostazioni</h3>
+              <label class="field-stack">
+                <span>Nome partita</span>
+                <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" />
+              </label>
+              <label class="field-stack">
+                <span>Mappa</span>
+                <select id="setup-map"></select>
+              </label>
+              <label class="field-stack">
+                <span>Giocatori totali</span>
+                <select id="setup-total-players">
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>
+              </label>
+            </section>
+
+            <section class="new-game-panel">
+              <div class="section-title-row compact-row">
+                <h3>Slot giocatori</h3>
+                <span class="badge">Human / AI</span>
+              </div>
+              <div id="setup-player-slots" class="setup-player-slots"></div>
+            </section>
+          </form>
+
+          <div id="new-game-feedback" class="session-feedback is-hidden"></div>
+
+          <div class="new-game-actions">
+            <a href="/lobby.html" class="ghost-button">Annulla</a>
+            <button type="submit" form="new-game-form" id="submit-new-game" class="ghost-button">Crea e apri</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/layout.js"></script>
+    <script type="module" src="/new-game.js"></script>
+  </body>
+</html>
