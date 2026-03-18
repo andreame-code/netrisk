@@ -3,7 +3,9 @@ const state = {
   selectedGameId: null,
   gameList: [],
   gameListState: "loading",
-  gameListError: ""
+  gameListError: "",
+  sessionToken: localStorage.getItem("frontline-session-token") || null,
+  user: null
 };
 
 const elements = {
@@ -11,11 +13,23 @@ const elements = {
   createGameButton: document.querySelector("#create-game-button"),
   openGameButton: document.querySelector("#open-game-button"),
   gameStatus: document.querySelector("#game-status"),
+  authStatus: document.querySelector("#auth-status"),
+  logoutButton: document.querySelector("#logout-button"),
   gameListState: document.querySelector("#game-list-state"),
   gameSessionList: document.querySelector("#game-session-list"),
   gameSessionDetails: document.querySelector("#game-session-details"),
   selectedGameStatus: document.querySelector("#selected-game-status")
 };
+
+function renderNavAvatar(username) {
+  const avatar = document.querySelector("#nav-avatar");
+  if (!avatar) {
+    return;
+  }
+
+  const label = username ? String(username).trim().charAt(0).toUpperCase() : "C";
+  avatar.textContent = label || "C";
+}
 
 function formatUpdatedTime(value) {
   if (!value) {
@@ -99,6 +113,13 @@ function render() {
       '</button>'
     )
     .join("");
+
+  elements.authStatus.textContent = state.user
+    ? "Autenticato come " + state.user.username + ". Usa Game per entrare nella partita attiva."
+    : "Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.";
+  elements.logoutButton.hidden = !state.user;
+  elements.logoutButton.disabled = !state.user;
+  renderNavAvatar(state.user?.username);
 
   elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : "Nessuna selezione";
   elements.gameStatus.textContent = state.currentGameId
@@ -234,3 +255,42 @@ elements.gameSessionDetails.addEventListener("click", (event) => {
 });
 
 await loadGameList();
+await restoreSession();
+
+async function restoreSession() {
+  if (!state.sessionToken) {
+    render();
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/auth/session", {
+      headers: { "x-session-token": state.sessionToken }
+    });
+
+    if (!response.ok) {
+      throw new Error("Sessione scaduta");
+    }
+
+    const data = await response.json();
+    state.user = data.user;
+  } catch (error) {
+    state.user = null;
+    state.sessionToken = null;
+    localStorage.removeItem("frontline-session-token");
+  }
+
+  render();
+}
+
+elements.logoutButton.addEventListener("click", async () => {
+  try {
+    await send("/api/auth/logout", { sessionToken: state.sessionToken });
+  } catch (error) {
+  }
+
+  state.user = null;
+  state.sessionToken = null;
+  localStorage.removeItem("frontline-session-token");
+  render();
+});
