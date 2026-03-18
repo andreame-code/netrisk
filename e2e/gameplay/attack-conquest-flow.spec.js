@@ -43,7 +43,6 @@ test("current player can conquer a territory and move armies after combat", asyn
   await queueNextAttackRolls(firstPage, 6, 1);
   await firstPage.getByRole("button", { name: "Lancia attacco" }).click();
 
-  await expect(firstPage.getByText(/Sposta armate dopo la conquista/i)).toBeVisible();
   await expect(firstPage.locator("#conquest-group")).toBeVisible();
   await expect(firstPage.locator("#end-turn-button")).toBeDisabled();
 
@@ -51,7 +50,9 @@ test("current player can conquer a territory and move armies after combat", asyn
   await firstPage.getByRole("button", { name: "Sposta armate" }).click();
 
   await expect(firstPage.locator("#conquest-group")).toBeHidden();
-  await expect(firstPage.getByText(/Puoi attaccare o passare alla fortifica/i)).toBeVisible();
+  await expect(firstPage.locator("#fortify-group")).toBeHidden();
+  await expect(firstPage.locator("#end-turn-button")).toHaveText("Vai a fortifica");
+  await expect(firstPage.locator("#end-turn-button")).toBeEnabled();
   await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"]')).toContainText(firstUser);
   await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"] .territory-armies')).toHaveText("1");
 

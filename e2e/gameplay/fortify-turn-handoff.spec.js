@@ -45,22 +45,24 @@ test("current player can fortify once and pass the turn to the next player", asy
 
   await firstPage.locator("#end-turn-button").click();
   await expect(firstPage.locator("#fortify-group")).toBeVisible();
-  await expect(firstPage.getByText(/Puoi fortificare o terminare il turno/i)).toBeVisible();
+  await expect(firstPage.locator("#fortify-button")).toBeEnabled();
+  await expect(firstPage.locator("#end-turn-button")).toHaveText("Termina turno");
+  await expect(firstPage.locator("#end-turn-button")).toBeEnabled();
 
   await firstPage.locator("#fortify-from").selectOption(attackPair.fromId);
   await firstPage.locator("#fortify-to").selectOption(attackPair.toId);
   await firstPage.locator("#fortify-armies").fill("1");
   await firstPage.locator("#fortify-button").click();
 
-  await expect(firstPage.getByText(/Puoi terminare il turno/i)).toBeVisible();
   await expect(firstPage.locator("#fortify-button")).toBeDisabled();
+  await expect(firstPage.locator("#end-turn-button")).toBeEnabled();
   await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"] .territory-armies')).toHaveText("2");
 
   await firstPage.locator("#end-turn-button").click();
 
-  await expect(secondPage.getByText(/Distribuisci rinforzi/i)).toBeVisible({ timeout: 10000 });
+  await expect(secondPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
   await expect(secondPage.getByRole("button", { name: "+1 armata" })).toBeEnabled();
-  await expect(firstPage.getByText(/Osservazione/i)).toBeVisible({ timeout: 10000 });
+  await expect(firstPage.getByText(/^Osservazione$/i)).toBeVisible({ timeout: 10000 });
 
   await firstContext.close();
   await secondContext.close();

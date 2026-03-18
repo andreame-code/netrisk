@@ -26,7 +26,7 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await stalePage.route("**/api/events", (route) => route.abort());
   await stalePage.goto("/");
 
-  await expect(stalePage.getByTestId("current-player-indicator")).toContainText(firstUser, { timeout: 10000 });
+  await expect(stalePage.locator("#auth-status")).toContainText(firstUser, { timeout: 10000 });
   await expect(stalePage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*3/i);
 
   await currentPage.getByRole("button", { name: "+1 armata" }).click();
