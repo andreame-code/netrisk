@@ -1321,8 +1321,39 @@ body[data-app-section="profile"] .main-nav-shell {
 
 .top-nav-actions {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.top-nav-auth-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.top-nav-auth-form[hidden] {
+  display: none;
+}
+
+.top-nav-auth-form input {
+  width: 108px;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(90, 62, 41, 0.16);
+  background: rgba(255, 249, 240, 0.76);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.top-nav-auth-form input::placeholder {
+  color: rgba(44, 31, 20, 0.54);
 }
 
 .primary-nav-action {
@@ -1338,6 +1369,13 @@ body[data-app-section="profile"] .main-nav-shell {
   font-weight: 600;
   border: none;
   box-shadow: 0 5px 12px rgba(90, 43, 24, 0.12);
+}
+
+.top-nav-login,
+.top-nav-logout {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .nav-avatar {

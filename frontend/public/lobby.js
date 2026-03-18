@@ -12,6 +12,10 @@ const elements = {
   createGameButton: document.querySelector("#create-game-button"),
   openGameButton: document.querySelector("#open-game-button"),
   gameStatus: document.querySelector("#game-status"),
+  headerLoginForm: document.querySelector("#header-login-form"),
+  headerAuthUsername: document.querySelector("#header-auth-username"),
+  headerAuthPassword: document.querySelector("#header-auth-password"),
+  headerLoginButton: document.querySelector("#header-login-button"),
   authStatus: document.querySelector("#auth-status"),
   logoutButton: document.querySelector("#logout-button"),
   gameListState: document.querySelector("#game-list-state"),
@@ -84,6 +88,32 @@ function updateGameSelection(gameId) {
   state.selectedGameId = gameId || null;
 }
 
+function setSession(sessionToken, user) {
+  state.sessionToken = sessionToken || null;
+  state.user = user || null;
+  if (state.sessionToken) {
+    localStorage.setItem("frontline-session-token", state.sessionToken);
+  } else {
+    localStorage.removeItem("frontline-session-token");
+  }
+}
+
+async function loginWithCredentials(username, password) {
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Accesso non riuscito.");
+  }
+
+  setSession(data.sessionToken, data.user);
+  await loadGameList();
+  render();
+}
+
 function render() {
   const selected = selectedGame();
   const selectedId = state.selectedGameId || state.currentGameId;
@@ -115,7 +145,14 @@ function render() {
 
   elements.authStatus.textContent = state.user
     ? "Autenticato come " + state.user.username + ". Usa Game per entrare nella partita attiva."
-    : "Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.";
+    : "Accedi per aprire e gestire le tue sessioni.";
+  if (elements.headerLoginForm) {
+    const isAuthenticated = Boolean(state.user);
+    elements.headerLoginForm.hidden = isAuthenticated;
+    elements.headerAuthUsername.disabled = isAuthenticated;
+    elements.headerAuthPassword.disabled = isAuthenticated;
+    elements.headerLoginButton.disabled = isAuthenticated;
+  }
   elements.logoutButton.hidden = !state.user;
   elements.logoutButton.disabled = !state.user;
   renderNavAvatar(state.user?.username);
@@ -279,15 +316,31 @@ async function restoreSession() {
   render();
 }
 
+if (elements.headerLoginForm) {
+  elements.headerLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = elements.headerAuthUsername.value.trim();
+    const password = elements.headerAuthPassword.value;
+    if (!username || !password) {
+      return;
+    }
+
+    try {
+      await loginWithCredentials(username, password);
+      elements.headerAuthPassword.value = "";
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
 elements.logoutButton.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", { sessionToken: state.sessionToken });
   } catch (error) {
   }
 
-  state.user = null;
-  state.sessionToken = null;
-  localStorage.removeItem("frontline-session-token");
+  setSession(null, null);
   render();
 });
 

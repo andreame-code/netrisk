@@ -8,14 +8,14 @@ test("auth status and logout stay coherent across Game, Lobby, and Profile", asy
   await resetGame(page);
   await page.goto("/game.html");
 
-  await page.getByPlaceholder("Utente").fill(username);
-  await page.getByPlaceholder("Password").fill(password);
+  await page.locator("#auth-username").fill(username);
+  await page.locator("#auth-password").fill(password);
   await page.getByRole("button", { name: "Registrati" }).click();
 
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();
-  await expect(page.getByPlaceholder("Utente")).toBeHidden();
-  await expect(page.getByPlaceholder("Password")).toBeHidden();
+  await expect(page.locator("#header-auth-username")).toBeHidden();
+  await expect(page.locator("#header-auth-password")).toBeHidden();
 
   await page.goto("/lobby.html");
   await expect(page.locator("#auth-status")).toContainText(username);
@@ -30,7 +30,7 @@ test("auth status and logout stay coherent across Game, Lobby, and Profile", asy
   await expect(page.locator("#auth-status")).toContainText(/Sessione|Accedi/i);
 
   await page.goto("/game.html");
-  await expect(page.getByPlaceholder("Utente")).toBeVisible();
-  await expect(page.getByPlaceholder("Password")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Accedi" })).toBeVisible();
+  await expect(page.locator("#header-auth-username")).toBeVisible();
+  await expect(page.locator("#header-auth-password")).toBeVisible();
+  await expect(page.locator("#header-login-button")).toBeVisible();
 });
