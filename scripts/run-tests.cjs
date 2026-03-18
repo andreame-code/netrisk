@@ -15,6 +15,7 @@ const {
   startGame,
   territoriesOwnedBy
 } = require("../backend/engine/game-engine.cjs");
+const { chooseFortify, runAiTurn } = require("../backend/engine/ai-player.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
@@ -260,6 +261,56 @@ register("endTurn entra in fortifica prima di chiudere davvero il turno", () => 
   assert.equal(state.currentTurnIndex, 1);
 });
 
+register("runAiTurn completa un turno AI usando il motore esistente", () => {
+  const state = createInitialState();
+  const human = addPlayer(state, "Alice").player;
+  const ai = addPlayer(state, "CPU", { isAi: true }).player;
+
+  state.phase = "active";
+  state.turnPhase = "reinforcement";
+  state.currentTurnIndex = 1;
+  state.reinforcementPool = 1;
+  state.territories.aurora = { ownerId: ai.id, armies: 3 };
+  state.territories.bastion = { ownerId: human.id, armies: 1 };
+  state.territories.cinder = { ownerId: ai.id, armies: 1 };
+  state.territories.delta = { ownerId: human.id, armies: 1 };
+  state.territories.ember = { ownerId: human.id, armies: 1 };
+
+  const random = (() => {
+    const values = [0.9, 0.1];
+    return () => values.shift() ?? 0.9;
+  })();
+
+  const result = runAiTurn(state, { random });
+  assert.equal(result.ok, true);
+  assert.equal(result.endedTurn, true);
+  assert.equal(state.currentTurnIndex, 0);
+  assert.equal(state.turnPhase, "reinforcement");
+  assert.equal(state.territories.bastion.ownerId, ai.id);
+  assert.equal(state.territories.bastion.armies, 2);
+  assert.equal(result.conquestMoves[0].armies, 2);
+});
+
+register("chooseFortify privilegia rinforzi dal retro verso un confine esposto", () => {
+  const state = createInitialState();
+  const ai = addPlayer(state, "CPU Fortify", { isAi: true }).player;
+  const enemy = addPlayer(state, "Enemy").player;
+
+  state.phase = "active";
+  state.turnPhase = "fortify";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+
+  state.territories.cinder = { ownerId: ai.id, armies: 4 };
+  state.territories.delta = { ownerId: ai.id, armies: 1 };
+  state.territories.aurora = { ownerId: ai.id, armies: 1 };
+  state.territories.ember = { ownerId: ai.id, armies: 1 };
+  state.territories.harbor = { ownerId: enemy.id, armies: 2 };
+
+  const fortify = chooseFortify(state, ai.id);
+  assert.deepEqual(fortify, { fromId: "cinder", toId: "delta", armies: 2, score: 15 });
+});
+
 register("publicState espone modelli condivisi e stato corrente", () => {
   const { state, first } = setupLobby();
   state.phase = "active";
@@ -272,6 +323,114 @@ register("publicState espone modelli condivisi e stato corrente", () => {
   assert.equal(snapshot.turnPhase, "attack");
   assert.equal(Array.isArray(snapshot.continents), true);
   assert.equal(snapshot.currentPlayerId, first.id);
+  assert.equal(snapshot.gameConfig, null);
+});
+
+register("publicState espone anche i metadati configurazione partita", () => {
+  const state = createInitialState();
+  state.gameConfig = {
+    mapId: "classic-mini",
+    totalPlayers: 4,
+    players: [
+      { type: "human", name: "Andre" },
+      { type: "human", name: "Luca" },
+      { type: "ai", name: "CPU Ovest" },
+      { type: "ai", name: "CPU Est" }
+    ]
+  };
+
+  const snapshot = publicState(state);
+  assert.equal(snapshot.gameConfig.mapId, "classic-mini");
+  assert.equal(snapshot.gameConfig.mapName, "Classic Mini");
+  assert.equal(snapshot.gameConfig.totalPlayers, 4);
+  assert.equal(snapshot.gameConfig.players[2].type, "ai");
+});
+
+register("API game options espone setup base per nuova partita", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(baseUrl + "/api/game-options");
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(Array.isArray(payload.maps), true);
+    assert.equal(payload.maps[0].id, "classic-mini");
+    assert.equal(payload.playerRange.min, 2);
+    assert.equal(payload.playerRange.max, 4);
+  });
+});
+
+register("API games crea una sessione da configurazione strutturata", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Scenario AI",
+        mapId: "classic-mini",
+        totalPlayers: 3,
+        players: [
+          { type: "human", name: "Andre" },
+          { type: "ai", name: "CPU Nord" },
+          { type: "ai", name: "CPU Sud" }
+        ]
+      })
+    });
+    assert.equal(response.status, 201);
+    const payload = await response.json();
+    assert.equal(payload.game.name, "Scenario AI");
+    assert.equal(payload.config.totalPlayers, 3);
+    assert.equal(payload.config.players[1].type, "ai");
+    assert.equal(payload.state.players.length, 2);
+    assert.equal(payload.state.players.every((player) => player.isAi), true);
+  });
+});
+
+register("API games summary espone metadati configurazione", async () => {
+  await withServer(async (baseUrl) => {
+    const createResponse = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Scenario Meta",
+        mapId: "classic-mini",
+        totalPlayers: 4,
+        players: [
+          { type: "human", name: "Andre" },
+          { type: "human", name: "Luca" },
+          { type: "ai", name: "CPU Ovest" },
+          { type: "ai", name: "CPU Est" }
+        ]
+      })
+    });
+    assert.equal(createResponse.status, 201);
+
+    const listResponse = await fetch(baseUrl + "/api/games");
+    assert.equal(listResponse.status, 200);
+    const listPayload = await listResponse.json();
+    const game = listPayload.games.find((entry) => entry.name === "Scenario Meta");
+
+    assert.equal(game.mapId, "classic-mini");
+    assert.equal(game.mapName, "Classic Mini");
+    assert.equal(game.totalPlayers, 4);
+    assert.equal(game.aiCount, 2);
+  });
+});
+
+register("API games rifiuta configurazioni incomplete", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Scenario non valido",
+        mapId: "classic-mini",
+        totalPlayers: 3,
+        players: [{ type: "human", name: "Solo uno" }]
+      })
+    });
+    assert.equal(response.status, 400);
+    const payload = await response.json();
+    assert.equal(payload.error, "Configura tutti gli slot giocatore prima di creare la partita.");
+  });
 });
 
 register("API games create + list + open persiste e riapre una sessione", async () => {
@@ -606,6 +765,106 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     assert.equal(stalePayload.code, "VERSION_CONFLICT");
     assert.equal(stalePayload.currentVersion, actionPayload.state.version);
     assert.equal(stalePayload.state.version, actionPayload.state.version);
+  });
+});
+
+register("API ai join + endTurn esegue automaticamente il turno AI", async () => {
+  await withServer(async (baseUrl) => {
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "AI Match" })
+    });
+    assert.equal(created.status, 201);
+
+    const username = `cpu_host_${Math.random().toString(16).slice(2, 8)}`;
+
+    const registerHuman = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: "secret" })
+    });
+    assert.equal(registerHuman.status, 201);
+
+    const loginHuman = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: "secret" })
+    });
+    assert.equal(loginHuman.status, 200);
+    const humanSession = await loginHuman.json();
+
+    const joinHuman = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      body: JSON.stringify({ sessionToken: humanSession.sessionToken })
+    });
+    assert.equal(joinHuman.status, 201);
+    const humanJoinPayload = await joinHuman.json();
+
+    const joinAi = await fetch(baseUrl + "/api/ai/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "CPU Basic" })
+    });
+    assert.equal(joinAi.status, 201);
+    const aiJoinPayload = await joinAi.json();
+    assert.equal(aiJoinPayload.player.isAi, true);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      body: JSON.stringify({ sessionToken: humanSession.sessionToken, playerId: humanJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+    const started = await startResponse.json();
+    assert.equal(started.state.players.some((player) => player.isAi), true);
+
+    const ownedTerritoryId = started.state.map.find((territory) => territory.ownerId === humanJoinPayload.playerId).id;
+    let currentState = started.state;
+
+    while (currentState.reinforcementPool > 0) {
+      const reinforceResponse = await fetch(baseUrl + "/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+        body: JSON.stringify({
+          sessionToken: humanSession.sessionToken,
+          playerId: humanJoinPayload.playerId,
+          type: "reinforce",
+          territoryId: ownedTerritoryId
+        })
+      });
+      assert.equal(reinforceResponse.status, 200);
+      currentState = (await reinforceResponse.json()).state;
+    }
+
+    const toFortify = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      body: JSON.stringify({
+        sessionToken: humanSession.sessionToken,
+        playerId: humanJoinPayload.playerId,
+        type: "endTurn"
+      })
+    });
+    assert.equal(toFortify.status, 200);
+
+    const finishTurn = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      body: JSON.stringify({
+        sessionToken: humanSession.sessionToken,
+        playerId: humanJoinPayload.playerId,
+        type: "endTurn"
+      })
+    });
+    assert.equal(finishTurn.status, 200);
+    const finishedPayload = await finishTurn.json();
+
+    assert.equal(finishedPayload.state.currentPlayerId, humanJoinPayload.playerId);
+    assert.equal(finishedPayload.state.turnPhase, "reinforcement");
+    assert.equal(finishedPayload.state.reinforcementPool >= 3, true);
+    assert.equal(finishedPayload.state.log.some((line) => line.indexOf("CPU Basic") !== -1), true);
   });
 });
 

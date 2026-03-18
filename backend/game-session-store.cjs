@@ -33,6 +33,13 @@ function writeDatabase(filePath, database) {
   fs.writeFileSync(filePath, JSON.stringify(database, null, 2) + "\n");
 }
 
+function readableMapName(mapId) {
+  if (mapId === "classic-mini") {
+    return "Classic Mini";
+  }
+  return mapId || null;
+}
+
 function normalizeGameName(name, fallbackIndex) {
   if (name == null) {
     return `Partita ${fallbackIndex}`;
@@ -47,12 +54,20 @@ function normalizeGameName(name, fallbackIndex) {
 }
 
 function summarizeGame(entry) {
+  const config = entry.state && entry.state.gameConfig ? entry.state.gameConfig : null;
+  const configuredPlayers = Array.isArray(config && config.players) ? config.players : [];
+  const totalPlayers = Number.isInteger(config && config.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
+
   return {
     id: entry.id,
     name: entry.name,
     version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
     phase: entry.state && entry.state.phase ? entry.state.phase : "lobby",
     playerCount: Array.isArray(entry.state && entry.state.players) ? entry.state.players.length : 0,
+    mapId: config && config.mapId ? config.mapId : null,
+    mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
+    totalPlayers: totalPlayers || null,
+    aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt
   };

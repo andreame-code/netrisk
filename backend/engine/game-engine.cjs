@@ -84,6 +84,13 @@ function appendLog(state, message) {
   state.log = state.log.slice(0, 12);
 }
 
+function readableMapName(mapId) {
+  if (mapId === "classic-mini") {
+    return "Classic Mini";
+  }
+  return mapId || null;
+}
+
 function publicState(state) {
   const currentPlayer = getCurrentPlayer(state);
   return {
@@ -94,6 +101,7 @@ function publicState(state) {
       name: player.name,
       color: player.color,
       connected: player.connected,
+      isAi: Boolean(player.isAi),
       territoryCount: territoriesOwnedBy(state, player.id).length,
       eliminated: state.phase !== "lobby" && territoriesOwnedBy(state, player.id).length === 0
     })),
@@ -109,6 +117,12 @@ function publicState(state) {
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
+    gameConfig: state.gameConfig
+      ? {
+          ...state.gameConfig,
+          mapName: state.gameConfig.mapName || readableMapName(state.gameConfig.mapId)
+        }
+      : null,
     log: state.log,
     lastAction: state.lastAction,
     pendingConquest: state.pendingConquest,
@@ -171,7 +185,7 @@ function advanceTurn(state) {
   }
 }
 
-function addPlayer(state, name) {
+function addPlayer(state, name, options = {}) {
   const normalizedName = String(name || "").trim().slice(0, 24);
   if (!normalizedName) {
     return { ok: false, error: "Inserisci un nome." };
@@ -180,6 +194,9 @@ function addPlayer(state, name) {
   const existing = state.players.find((player) => player.name.toLowerCase() === normalizedName.toLowerCase());
   if (existing) {
     existing.connected = true;
+    if (options.isAi) {
+      existing.isAi = true;
+    }
     appendLog(state, existing.name + " si ricollega alla lobby.");
     return { ok: true, player: existing, rejoined: true };
   }
@@ -196,7 +213,8 @@ function addPlayer(state, name) {
     id: randomId(),
     name: normalizedName,
     color: palette[state.players.length % palette.length],
-    connected: true
+    connected: true,
+    isAi: Boolean(options.isAi)
   });
   state.players.push(player);
   appendLog(state, player.name + " entra nella lobby.");
