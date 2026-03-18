@@ -103,7 +103,7 @@ function render() {
     .map((game) => 
       '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
         '<span class="session-primary">' +
-          '<span class="session-name">' + game.name + '</span>' +
+          '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + game.name + '</span>' +
           '<span class="session-sub">Sessione ' + game.id.slice(0, 8) + '</span>' +
         '</span>' +
         '<span class="session-cell-muted">' + game.id + '</span>' +
@@ -237,6 +237,13 @@ async function handleOpenSelectedGame() {
 elements.createGameButton.addEventListener("click", handleCreateGame);
 elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
 elements.gameSessionList.addEventListener("click", (event) => {
+  const gameNameTrigger = event.target.closest("[data-open-game-id]");
+  if (gameNameTrigger) {
+    event.stopPropagation();
+    window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
+    return;
+  }
+
   const trigger = event.target.closest("[data-game-id]");
   if (!trigger) {
     return;
@@ -293,4 +300,20 @@ elements.logoutButton.addEventListener("click", async () => {
   state.sessionToken = null;
   localStorage.removeItem("frontline-session-token");
   render();
+});
+
+
+elements.gameSessionList.addEventListener("keydown", (event) => {
+  const gameNameTrigger = event.target.closest("[data-open-game-id]");
+  if (!gameNameTrigger) {
+    return;
+  }
+
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
 });

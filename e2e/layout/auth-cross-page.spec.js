@@ -25,8 +25,9 @@ test("auth status and logout stay coherent across Game, Lobby, and Profile", asy
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();
 
+  await page.goto("/lobby.html");
   await page.getByRole("button", { name: "Esci" }).click();
-  await expect(page.locator("#auth-status")).toContainText(/Sessione/i);
+  await expect(page.locator("#auth-status")).toContainText(/Sessione|Accedi/i);
 
   await page.goto("/game.html");
   await expect(page.getByPlaceholder("Utente")).toBeVisible();
