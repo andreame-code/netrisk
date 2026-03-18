@@ -489,7 +489,11 @@ function createApp(options = {}) {
   }
 
   function serveStatic(res, url) {
-    const relativePath = url.pathname === "/" ? "/index.html" : url.pathname;
+    const relativePath = url.pathname === "/"
+      ? "/index.html"
+      : url.pathname.indexOf("/game/") === 0
+        ? "/game.html"
+        : url.pathname;
     const filePath = path.join(publicDir, relativePath);
     if (filePath.indexOf(publicDir) !== 0) {
       sendJson(res, 403, { error: "Accesso negato." });
