@@ -4,180 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Frontline Dominion</title>
+    <meta http-equiv="refresh" content="0; url=/game.html" />
+    <script>
+      const target = "/game.html" + window.location.search + window.location.hash;
+      window.location.replace(target);
+    </script>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
     <div class="backdrop"></div>
-    <main class="app-shell board-shell" data-testid="app-shell">
-      <section class="command-bar panel">
-        <div class="brand-block compact-brand">
-          <p class="eyebrow">Multiplayer browser strategy</p>
-          <h1>Frontline Dominion</h1>
+    <main class="app-shell board-shell">
+      <section class="page-header-panel panel">
+        <div>
+          <p class="eyebrow">Redirect</p>
+          <h1 class="page-title">Apertura partita</h1>
+          <p class="stage-copy">Reindirizzamento verso la pagina di gioco dedicata.</p>
         </div>
-
-        <div class="top-status-row">
-          <div class="mini-card slim-card">
-            <span class="mini-label">Accesso</span>
-            <p id="auth-status">Registrati o accedi per entrare nella lobby.</p>
-          </div>
-          <div class="mini-card slim-card">
-            <span class="mini-label">Comandante</span>
-            <p id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</p>
-          </div>
-        </div>
-
-        <div class="control-row">
-          <form id="auth-form" class="auth-form compact-form header-form">
-            <input id="auth-username" name="username" maxlength="32" placeholder="Utente" required />
-            <input id="auth-password" name="password" type="password" placeholder="Password" required />
-            <button type="button" id="register-button">Registrati</button>
-            <button type="submit" id="login-button" class="ghost-button">Accedi</button>
-            <button type="button" id="logout-button" class="ghost-button">Esci</button>
-          </form>
-
-          <div class="identity-actions compact-actions header-actions">
-            <button id="join-button">Entra nella lobby</button>
-            <button id="start-button" class="ghost-button">Avvia partita</button>
-          </div>
-        </div>
-
-        <div class="control-row">
-          <div class="auth-form compact-form header-form game-form">
-            <input id="game-name" maxlength="80" placeholder="Nuova partita" />
-            <button type="button" id="create-game-button">Crea partita</button>
-            <select id="game-list" class="legacy-game-select" aria-label="Lista partite legacy"></select>
-            <button type="button" id="open-game-button" class="ghost-button">Apri partita</button>
-          </div>
-
-          <div class="identity-actions compact-actions header-actions">
-            <span id="game-status" class="badge accent">Partita attiva</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="session-browser panel" data-testid="game-lobby-shell">
-        <div class="session-browser-head">
-          <div>
-            <p class="eyebrow session-eyebrow">Game Sessions</p>
-            <h2>Lobby Strategica</h2>
-            <p class="stage-copy">Scansiona le partite attive, selezionane una e aprila dal pannello dedicato.</p>
-          </div>
-          <div class="session-browser-actions">
-            <button type="button" id="create-game-button-secondary">Crea partita</button>
-            <button type="button" id="open-game-button-secondary" class="ghost-button">Apri selezionata</button>
-          </div>
-        </div>
-
-        <div class="session-browser-grid">
-          <div class="session-list-panel">
-            <div class="session-list-header session-row session-row-head">
-              <span>Partita</span>
-              <span>ID</span>
-              <span>Stato</span>
-              <span>Giocatori</span>
-              <span>Aggiornata</span>
-            </div>
-            <div id="game-list-state" class="session-feedback" data-testid="game-list-state">Caricamento sessioni...</div>
-            <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
-          </div>
-
-          <aside class="session-detail-panel" data-testid="game-session-details">
-            <div class="section-title-row">
-              <h3>Dettagli sessione</h3>
-              <span id="selected-game-status" class="badge">Nessuna selezione</span>
-            </div>
-            <div id="game-session-details" class="session-details-card">
-              <div class="session-empty-copy">Seleziona una partita dalla lista per vedere dettagli, stato e azioni principali.</div>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section class="battlefield-layout" data-testid="battlefield-layout">
-        <aside class="left-rail panel" data-testid="info-panel">
-          <div class="panel-header tight-header">
-            <h2>Comando</h2>
-            <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
-          </div>
-          <div id="status-summary" class="status-summary command-summary" data-testid="status-summary"></div>
-          <div class="rail-section">
-            <div class="section-title-row">
-              <h3>Giocatori</h3>
-              <span class="badge accent">Live</span>
-            </div>
-            <div id="players" class="players rail-players"></div>
-          </div>
-        </aside>
-
-        <section class="center-stage panel map-stage-panel" data-testid="map-panel">
-          <div class="panel-header map-stage-header">
-            <div>
-              <h2>Teatro di Guerra</h2>
-              <p class="stage-copy">La mappa e il campo principale: seleziona territori e segui il turno in tempo reale.</p>
-            </div>
-            <span id="action-hint" class="badge accent">In attesa</span>
-          </div>
-          <div id="map" class="map tactical-map" data-testid="map-region"></div>
-        </section>
-
-        <aside class="right-rail panel" data-testid="actions-panel">
-          <div class="rail-section actions-section">
-            <div class="section-title-row">
-              <h3>Azioni</h3>
-              <span class="badge">Turno</span>
-            </div>
-
-            <div class="action-group compact-group">
-              <label for="reinforce-select">Rinforza</label>
-              <div class="action-stack">
-                <select id="reinforce-select"></select>
-                <button id="reinforce-button">+1 armata</button>
-              </div>
-            </div>
-
-            <div class="action-group compact-group">
-              <label for="attack-from">Attacca</label>
-              <div class="action-stack">
-                <select id="attack-from"></select>
-                <select id="attack-to"></select>
-                <button id="attack-button">Lancia attacco</button>
-              </div>
-            </div>
-
-            <div class="action-group compact-group" id="conquest-group" hidden>
-              <label for="conquest-armies">Dopo conquista</label>
-              <div class="action-stack">
-                <input id="conquest-armies" type="number" min="1" step="1" />
-                <button id="conquest-button">Sposta armate</button>
-              </div>
-            </div>
-
-            <div class="action-group compact-group" id="fortify-group" hidden>
-              <label for="fortify-from">Fortifica</label>
-              <div class="action-stack">
-                <select id="fortify-from"></select>
-                <select id="fortify-to"></select>
-                <input id="fortify-armies" type="number" min="1" step="1" />
-                <button id="fortify-button">Sposta armate</button>
-              </div>
-            </div>
-
-            <button id="end-turn-button" class="ghost-button full-width">Termina turno</button>
-          </div>
-
-          <div class="rail-section log-section">
-            <div class="section-title-row">
-              <h3>Registro</h3>
-              <span class="badge accent">Cronologia</span>
-            </div>
-            <ul id="log" class="log-list rail-log"></ul>
-          </div>
-        </aside>
       </section>
     </main>
-
-    <script type="module" src="/app.js"></script>
   </body>
 </html>
-
-

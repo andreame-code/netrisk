@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontline Dominion - Lobby</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body data-app-section="lobby">
+    <div class="backdrop"></div>
+    <div class="app-frame">
+      <aside class="main-nav-shell panel">
+        <div class="nav-brand-block">
+          <p class="eyebrow">NetRisk Command</p>
+          <h1 class="nav-brand-title">Frontline Dominion</h1>
+          <p class="nav-brand-copy">Navigazione desktop-first per lobby, partita e profilo comandante.</p>
+        </div>
+
+        <nav class="main-nav" aria-label="Sezioni principali">
+          <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+          <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
+          <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+        </nav>
+      </aside>
+
+      <main class="page-shell">
+        <section class="page-header-panel panel">
+          <div>
+            <p class="eyebrow session-eyebrow">Strategic Overview</p>
+            <h2 class="page-title">Lobby Strategica</h2>
+            <p class="stage-copy">Scansiona le sessioni, selezionane una e aprila nel teatro di gioco dedicato.</p>
+          </div>
+          <div class="page-header-actions compact-actions">
+            <input id="game-name" maxlength="80" placeholder="Nuova partita" />
+            <button type="button" id="create-game-button">Crea partita</button>
+            <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+          </div>
+        </section>
+
+        <section class="session-browser panel" data-testid="game-lobby-shell">
+          <div class="session-browser-head">
+            <div>
+              <p class="eyebrow session-eyebrow">Game Sessions</p>
+              <h2>Lista Partite</h2>
+              <p class="stage-copy">Ogni sessione resta separata e persistita sul backend, pronta a essere riaperta.</p>
+            </div>
+            <div class="session-browser-actions">
+              <span id="game-status" class="badge accent">Nessuna partita attiva</span>
+            </div>
+          </div>
+
+          <div class="session-browser-grid">
+            <div class="session-list-panel">
+              <div class="session-list-header session-row session-row-head">
+                <span>Partita</span>
+                <span>ID</span>
+                <span>Stato</span>
+                <span>Giocatori</span>
+                <span>Aggiornata</span>
+              </div>
+              <div id="game-list-state" class="session-feedback">Caricamento sessioni...</div>
+              <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
+            </div>
+
+            <aside class="session-detail-panel" data-testid="game-session-details">
+              <div class="section-title-row">
+                <h3>Dettagli sessione</h3>
+                <span id="selected-game-status" class="badge">Nessuna selezione</span>
+              </div>
+              <div id="game-session-details" class="session-details-card">
+                <div class="session-empty-copy">Seleziona una partita per vedere lo stato corrente e aprirla nel tabellone di gioco.</div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/layout.js"></script>
+    <script type="module" src="/lobby.js"></script>
+  </body>
+</html>
