@@ -5,27 +5,27 @@ test("user can create a new game, see it in the list, and open it immediately", 
   const gameName = uniqueUser("campagna");
 
   await resetGame(page);
-  await page.goto("/");
+  await page.goto("/lobby.html");
 
-  const initialOptions = await page.locator("#game-list option").count();
+  const initialOptions = await page.locator("#game-session-list [data-game-id]").count();
 
   await page.locator("#game-name").fill(gameName);
   await page.locator("#create-game-button").click();
 
   await expect(page.locator("#game-status")).toContainText(gameName);
-  await expect(page.locator("#game-list")).toHaveValue(/.+/);
-  await expect(page.locator("#game-list")).toContainText(gameName);
-  await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
+  await expect(page.getByTestId("game-session-list")).toContainText(gameName);
+  await expect(page.getByTestId("game-session-details")).toContainText(gameName);
 
-  const afterCreateOptions = await page.locator("#game-list option").count();
+  const afterCreateOptions = await page.locator("#game-session-list [data-game-id]").count();
   expect(afterCreateOptions).toBeGreaterThanOrEqual(initialOptions);
 
   await page.locator("#game-name").fill(uniqueUser("seconda"));
   await page.locator("#create-game-button").click();
   await expect(page.locator("#game-status")).not.toContainText(gameName);
 
-  const targetValue = await page.locator("#game-list option", { hasText: gameName }).first().getAttribute("value");
-  await page.locator("#game-list").selectOption(targetValue);
+  const targetRow = page.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
+  const targetValue = await targetRow.getAttribute("data-game-id");
+  await targetRow.click();
   await page.locator("#open-game-button").click();
 
   await expect(page.locator("#game-status")).toContainText(gameName);
@@ -33,8 +33,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
 
   await page.reload();
 
+  expect(page.url()).toContain("/game.html?gameId=" + targetValue);
   await expect(page.locator("#game-status")).toContainText(gameName);
-  await expect(page.locator("#game-list")).toContainText(gameName);
-  await expect(page.locator("#game-list")).toHaveValue(targetValue);
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
 });

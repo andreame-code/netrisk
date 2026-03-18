@@ -54,6 +54,7 @@ function createApp(options = {}) {
   const state = createInitialState();
   let activeGameId = null;
   let activeGameVersion = null;
+  let activeGameName = null;
   let nextAttackRolls = null;
   const gamesFile = options.gamesFile || path.join(__dirname, "..", "data", "games.json");
   const gameSessions = createGameSessionStore({
@@ -65,6 +66,7 @@ function createApp(options = {}) {
   const initialGame = gameSessions.ensureActiveGame(createInitialState);
   activeGameId = initialGame.game.id;
   activeGameVersion = initialGame.game.version;
+  activeGameName = initialGame.game.name;
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, initialGame.state);
   const auth = createAuthStore({
@@ -84,15 +86,16 @@ function createApp(options = {}) {
 
     const savedGame = gameSessions.saveGame(activeGameId, state, expectedVersion);
     activeGameVersion = savedGame.version;
+    activeGameName = savedGame.name;
     return savedGame;
   }
 
-  function snapshotForState(nextState, gameId, version) {
-    return { ...publicState(nextState), gameId, version };
+  function snapshotForState(nextState, gameId, version, gameName) {
+    return { ...publicState(nextState), gameId, version, gameName };
   }
 
   function snapshot() {
-    return snapshotForState(state, activeGameId, activeGameVersion);
+    return snapshotForState(state, activeGameId, activeGameVersion, activeGameName);
   }
 
   function broadcast() {
@@ -159,6 +162,7 @@ function createApp(options = {}) {
         const created = gameSessions.createGame(createInitialState(), { name: body.name });
         activeGameId = created.game.id;
         activeGameVersion = created.game.version;
+        activeGameName = created.game.name;
         replaceState(created.state);
         broadcast();
         sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
@@ -175,6 +179,7 @@ function createApp(options = {}) {
         const opened = gameSessions.openGame(body.gameId);
         activeGameId = opened.game.id;
         activeGameVersion = opened.game.version;
+        activeGameName = opened.game.name;
         replaceState(opened.state);
         broadcast();
         sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot() });
@@ -342,11 +347,12 @@ function createApp(options = {}) {
         }
 
         activeGameVersion = error.currentVersion;
+        activeGameName = error.game?.name || activeGameName;
         sendJson(res, 409, {
           error: error.message,
           code: error.code,
           currentVersion: error.currentVersion,
-          state: snapshotForState(error.currentState, activeGameId, error.currentVersion)
+          state: snapshotForState(error.currentState, activeGameId, error.currentVersion, activeGameName)
         });
         return true;
       }
