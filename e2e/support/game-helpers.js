@@ -20,7 +20,7 @@ async function registerLoginAndJoin(page, username, password = "secret123") {
   await page.getByPlaceholder("Utente").fill(username);
   await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Registrati" }).click();
-  await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
+  await expect(page.locator("#auth-status")).toContainText(username, { timeout: 10000 });
   await page.getByRole("button", { name: "Entra nella lobby" }).click();
   await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
 }
