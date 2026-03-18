@@ -58,6 +58,10 @@ const elements = {
   authForm: document.querySelector("#auth-form"),
   authUsername: document.querySelector("#auth-username"),
   authPassword: document.querySelector("#auth-password"),
+  headerLoginForm: document.querySelector("#header-login-form"),
+  headerAuthUsername: document.querySelector("#header-auth-username"),
+  headerAuthPassword: document.querySelector("#header-auth-password"),
+  headerLoginButton: document.querySelector("#header-login-button"),
   authStatus: document.querySelector("#auth-status"),
   registerButton: document.querySelector("#register-button"),
   loginButton: document.querySelector("#login-button"),
@@ -511,6 +515,12 @@ function render() {
   elements.loginButton.hidden = isAuthenticated;
   elements.registerButton.disabled = isAuthenticated;
   elements.loginButton.disabled = isAuthenticated;
+  if (elements.headerLoginForm) {
+    elements.headerLoginForm.hidden = isAuthenticated;
+    elements.headerAuthUsername.disabled = isAuthenticated;
+    elements.headerAuthPassword.disabled = isAuthenticated;
+    elements.headerLoginButton.disabled = isAuthenticated;
+  }
   elements.logoutButton.hidden = !isAuthenticated;
   elements.logoutButton.disabled = !isAuthenticated;
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
@@ -722,6 +732,16 @@ async function handleOpenSelectedGame() {
   }
 }
 
+async function loginWithCredentials(username, password) {
+  const data = await send("/api/auth/login", { username, password });
+  setSession(data.sessionToken, data.user);
+  clearPlayerIdentity();
+  await loadState().catch(() => {});
+  await loadGameList();
+  await openRequestedGameIfNeeded();
+  render();
+}
+
 async function openRequestedGameIfNeeded() {
   const requestedId = pendingRequestedGameId || requestedGameIdFromRoute();
   if (!requestedId) {
@@ -750,17 +770,29 @@ elements.authForm.addEventListener("submit", async (event) => {
   }
 
   try {
-    const data = await send("/api/auth/login", { username, password });
-    setSession(data.sessionToken, data.user);
-    clearPlayerIdentity();
-    await loadState().catch(() => {});
-    await loadGameList();
-    await openRequestedGameIfNeeded();
-    render();
+    await loginWithCredentials(username, password);
   } catch (error) {
     alert(error.message);
   }
 });
+
+if (elements.headerLoginForm) {
+  elements.headerLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = elements.headerAuthUsername.value.trim();
+    const password = elements.headerAuthPassword.value;
+    if (!username || !password) {
+      return;
+    }
+
+    try {
+      await loginWithCredentials(username, password);
+      elements.headerAuthPassword.value = "";
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
 
 elements.registerButton.addEventListener("click", async () => {
   const username = elements.authUsername.value.trim();

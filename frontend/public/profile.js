@@ -1,6 +1,10 @@
 const elements = {
   profileName: document.querySelector("#profile-name"),
   profileSubtitle: document.querySelector("#profile-subtitle"),
+  headerLoginForm: document.querySelector("#header-login-form"),
+  headerAuthUsername: document.querySelector("#header-auth-username"),
+  headerAuthPassword: document.querySelector("#header-auth-password"),
+  headerLoginButton: document.querySelector("#header-login-button"),
   authStatus: document.querySelector("#auth-status"),
   logoutButton: document.querySelector("#logout-button"),
   profileFeedback: document.querySelector("#profile-feedback"),
@@ -15,6 +19,18 @@ const elements = {
 };
 
 let profileRequestId = 0;
+
+function renderAuthArea(user) {
+  const isAuthenticated = Boolean(user);
+  if (elements.headerLoginForm) {
+    elements.headerLoginForm.hidden = isAuthenticated;
+    elements.headerAuthUsername.disabled = isAuthenticated;
+    elements.headerAuthPassword.disabled = isAuthenticated;
+    elements.headerLoginButton.disabled = isAuthenticated;
+  }
+  elements.logoutButton.hidden = !isAuthenticated;
+  elements.logoutButton.disabled = !isAuthenticated;
+}
 
 function renderNavAvatar(username) {
   const avatar = document.querySelector("#nav-avatar");
@@ -81,8 +97,7 @@ async function loadProfile() {
     }
     sessionUser = session.user;
     elements.authStatus.textContent = "Autenticato come " + session.user.username + ".";
-    elements.logoutButton.hidden = false;
-    elements.logoutButton.disabled = false;
+    renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
     const profileResponse = await fetch("/api/profile", {
       headers: {
@@ -108,8 +123,7 @@ async function loadProfile() {
     showFeedback(error.message || "Impossibile caricare il profilo.", "error");
     if (sessionUser) {
       elements.authStatus.textContent = "Autenticato come " + sessionUser.username + ".";
-      elements.logoutButton.hidden = false;
-      elements.logoutButton.disabled = false;
+      renderAuthArea(sessionUser);
       renderNavAvatar(sessionUser.username);
       elements.profileName.textContent = sessionUser.username;
       elements.profileSubtitle.textContent = "Profilo temporaneamente non disponibile.";
@@ -117,8 +131,7 @@ async function loadProfile() {
     }
 
     elements.authStatus.textContent = "Sessione non disponibile.";
-    elements.logoutButton.hidden = true;
-    elements.logoutButton.disabled = true;
+    renderAuthArea(null);
     renderNavAvatar();
     elements.profileName.textContent = "Profilo non disponibile";
     elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
@@ -128,14 +141,44 @@ async function loadProfile() {
 await loadProfile();
 
 
+if (elements.headerLoginForm) {
+  elements.headerLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = elements.headerAuthUsername.value.trim();
+    const password = elements.headerAuthPassword.value;
+    if (!username || !password) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Accesso non riuscito.");
+      }
+
+      localStorage.setItem("frontline-session-token", data.sessionToken);
+      elements.headerAuthPassword.value = "";
+      await loadProfile();
+    } catch (error) {
+      showFeedback(error.message || "Accesso non riuscito.", "error");
+      renderAuthArea(null);
+      renderNavAvatar();
+    }
+  });
+}
+
 elements.logoutButton.addEventListener("click", async () => {
   profileRequestId += 1;
   const sessionToken = localStorage.getItem("frontline-session-token") || "";
 
   localStorage.removeItem("frontline-session-token");
   localStorage.removeItem("frontline-player-id");
-  elements.logoutButton.hidden = true;
-  elements.logoutButton.disabled = true;
+  renderAuthArea(null);
   elements.authStatus.textContent = "Sessione terminata.";
   renderNavAvatar();
   showFeedback("Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.", "error");
