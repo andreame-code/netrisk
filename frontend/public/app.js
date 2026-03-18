@@ -4,7 +4,10 @@ const state = {
   snapshot: null,
   user: null,
   currentGameId: null,
-  gameList: []
+  selectedGameId: null,
+  gameList: [],
+  gameListState: "loading",
+  gameListError: ""
 };
 
 const mapLayout = {
@@ -34,7 +37,13 @@ const elements = {
   createGameButton: document.querySelector("#create-game-button"),
   gameList: document.querySelector("#game-list"),
   openGameButton: document.querySelector("#open-game-button"),
+  createGameButtonSecondary: document.querySelector("#create-game-button-secondary"),
+  openGameButtonSecondary: document.querySelector("#open-game-button-secondary"),
   gameStatus: document.querySelector("#game-status"),
+  gameListState: document.querySelector("#game-list-state"),
+  gameSessionList: document.querySelector("#game-session-list"),
+  gameSessionDetails: document.querySelector("#game-session-details"),
+  selectedGameStatus: document.querySelector("#selected-game-status"),
   turnBadge: document.querySelector("#turn-badge"),
   statusSummary: document.querySelector("#status-summary"),
   players: document.querySelector("#players"),
@@ -99,6 +108,105 @@ function setPlayerIdentity(playerId) {
 
 function territoryOptionLabel(territory) {
   return `${territory.name} (${territory.armies})`;
+}
+
+function formatUpdatedTime(value) {
+  if (!value) {
+    return "n/d";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "n/d";
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(parsed);
+}
+
+function phaseLabel(phase) {
+  if (phase === "active") {
+    return "In corso";
+  }
+  if (phase === "finished") {
+    return "Conclusa";
+  }
+  return "Lobby";
+}
+
+function selectedGame() {
+  const selectedId = state.selectedGameId || state.currentGameId;
+  return state.gameList.find((game) => game.id === selectedId) || null;
+}
+
+function updateGameSelection(gameId) {
+  state.selectedGameId = gameId || null;
+  if (elements.gameList) {
+    elements.gameList.value = state.selectedGameId || "";
+  }
+}
+
+function renderGameSessionBrowser() {
+  const selected = selectedGame();
+  const selectedId = state.selectedGameId || state.currentGameId;
+  const hasGames = state.gameList.length > 0;
+
+  elements.gameList.innerHTML = state.gameList
+    .map((game) => `<option value="${game.id}">${game.name}</option>`)
+    .join("") || '<option value="">Nessuna partita</option>';
+
+  if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
+    elements.gameList.value = selectedId;
+  }
+
+  elements.gameListState.className = `session-feedback${state.gameListState === "error" ? " is-error" : ""}${hasGames ? " is-hidden" : ""}`;
+  if (state.gameListState === "loading") {
+    elements.gameListState.textContent = "Caricamento sessioni...";
+  } else if (state.gameListState === "error") {
+    elements.gameListState.textContent = state.gameListError || "Impossibile caricare le partite.";
+  } else {
+    elements.gameListState.textContent = "Nessuna partita disponibile. Creane una nuova per iniziare.";
+  }
+
+  elements.gameSessionList.innerHTML = state.gameList
+    .map((game) => `
+      <button type="button" class="session-row session-row-button${game.id === selectedId ? " is-selected" : ""}" data-game-id="${game.id}">
+        <span class="session-primary">
+          <span class="session-name">${game.name}</span>
+          <span class="session-sub">Sessione ${game.id.slice(0, 8)}</span>
+        </span>
+        <span class="session-cell-muted">${game.id}</span>
+        <span class="badge${game.id === state.currentGameId ? " accent" : ""}">${phaseLabel(game.phase)}</span>
+        <span class="session-cell-muted">${game.playerCount}/4</span>
+        <span class="session-cell-muted">${formatUpdatedTime(game.updatedAt)}</span>
+      </button>
+    `)
+    .join("");
+
+  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : "Nessuna selezione";
+  elements.gameSessionDetails.innerHTML = selected
+    ? `
+      <div class="session-detail-grid">
+        <div class="session-detail-item"><span>Nome</span><strong>${selected.name}</strong></div>
+        <div class="session-detail-item"><span>ID</span><strong>${selected.id}</strong></div>
+        <div class="session-detail-item"><span>Stato</span><strong>${phaseLabel(selected.phase)}</strong></div>
+        <div class="session-detail-item"><span>Giocatori</span><strong>${selected.playerCount}/4</strong></div>
+        <div class="session-detail-item"><span>Ultimo update</span><strong>${formatUpdatedTime(selected.updatedAt)}</strong></div>
+        <div class="session-detail-item"><span>Focus</span><strong>${selected.id === state.currentGameId ? "Sessione aperta" : "Disponibile"}</strong></div>
+      </div>
+      <div class="session-detail-actions">
+        <button type="button" id="open-selected-inline">Apri partita</button>
+      </div>
+    `
+    : '<div class="session-empty-copy">Seleziona una partita dalla lista per vedere dettagli, stato e azioni principali.</div>';
+
+  const hasSelection = Boolean(selected);
+  elements.openGameButton.disabled = !hasSelection;
+  elements.openGameButtonSecondary.disabled = !hasSelection;
 }
 
 function buildGraphMarkup(snapshot) {
@@ -209,13 +317,7 @@ function render() {
     ? `Autenticato come ${state.user.username}. Metodi disponibili: ${state.user.authMethods.join(", ")}.`
     : "Registrati o accedi per entrare nella lobby.";
 
-  const gameOptions = state.gameList
-    .map((game) => `<option value="${game.id}">${game.name} · ${game.phase}</option>`)
-    .join("");
-  elements.gameList.innerHTML = gameOptions || "<option value=\"\">Nessuna partita</option>";
-  if (state.currentGameId && state.gameList.some((game) => game.id === state.currentGameId)) {
-    elements.gameList.value = state.currentGameId;
-  }
+  renderGameSessionBrowser();
 
   elements.gameStatus.textContent = state.currentGameId
     ? `Partita attiva: ${(state.gameList.find((game) => game.id === state.currentGameId) || {}).name || state.currentGameId}`
@@ -336,7 +438,7 @@ function render() {
   elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
   elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
   elements.createGameButton.disabled = false;
-  elements.openGameButton.disabled = !elements.gameList.value;
+  elements.createGameButtonSecondary.disabled = false;
   if (elements.conquestGroup) {
     elements.conquestGroup.hidden = !pendingConquest;
   }
@@ -408,10 +510,29 @@ async function loadState() {
 }
 
 async function loadGameList() {
-  const response = await fetch("/api/games");
-  const data = await response.json();
-  state.gameList = data.games || [];
-  state.currentGameId = data.activeGameId || state.currentGameId;
+  state.gameListState = "loading";
+  state.gameListError = "";
+  render();
+
+  try {
+    const response = await fetch("/api/games");
+    if (!response.ok) {
+      throw new Error("Caricamento partite non riuscito.");
+    }
+
+    const data = await response.json();
+    state.gameList = data.games || [];
+    state.currentGameId = data.activeGameId || state.currentGameId;
+    if (!state.selectedGameId || !state.gameList.some((game) => game.id === state.selectedGameId)) {
+      updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
+    }
+    state.gameListState = state.gameList.length ? "ready" : "empty";
+  } catch (error) {
+    state.gameList = [];
+    state.gameListState = "error";
+    state.gameListError = error.message || "Impossibile caricare le partite.";
+  }
+
   render();
 }
 
@@ -446,6 +567,48 @@ function connectEvents() {
     state.currentGameId = state.snapshot?.gameId || state.currentGameId;
     render();
   };
+}
+
+async function handleCreateGame() {
+  try {
+    const data = await send("/api/games", { name: elements.gameName.value.trim() || undefined });
+    state.snapshot = data.state;
+    state.gameList = data.games || [];
+    state.currentGameId = data.activeGameId || null;
+    updateGameSelection(state.currentGameId);
+    state.gameListState = state.gameList.length ? "ready" : "empty";
+    clearPlayerIdentity();
+    elements.gameName.value = "";
+    render();
+  } catch (error) {
+    state.gameListState = "error";
+    state.gameListError = error.message;
+    render();
+    alert(error.message);
+  }
+}
+
+async function handleOpenSelectedGame() {
+  const selectedId = state.selectedGameId || elements.gameList.value;
+  if (!selectedId) {
+    return;
+  }
+
+  try {
+    const data = await send("/api/games/open", { gameId: selectedId });
+    state.snapshot = data.state;
+    state.gameList = data.games || [];
+    state.currentGameId = data.activeGameId || null;
+    updateGameSelection(state.currentGameId);
+    state.gameListState = state.gameList.length ? "ready" : "empty";
+    clearPlayerIdentity();
+    render();
+  } catch (error) {
+    state.gameListState = "error";
+    state.gameListError = error.message;
+    render();
+    alert(error.message);
+  }
 }
 
 elements.authForm.addEventListener("submit", async (event) => {
@@ -484,36 +647,11 @@ elements.registerButton.addEventListener("click", async () => {
   }
 });
 
-elements.createGameButton.addEventListener("click", async () => {
-  try {
-    const data = await send("/api/games", { name: elements.gameName.value.trim() || undefined });
-    state.snapshot = data.state;
-    state.gameList = data.games || [];
-    state.currentGameId = data.activeGameId || null;
-    clearPlayerIdentity();
-    elements.gameName.value = "";
-    render();
-  } catch (error) {
-    alert(error.message);
-  }
-});
+elements.createGameButton.addEventListener("click", handleCreateGame);
+elements.createGameButtonSecondary.addEventListener("click", handleCreateGame);
 
-elements.openGameButton.addEventListener("click", async () => {
-  if (!elements.gameList.value) {
-    return;
-  }
-
-  try {
-    const data = await send("/api/games/open", { gameId: elements.gameList.value });
-    state.snapshot = data.state;
-    state.gameList = data.games || [];
-    state.currentGameId = data.activeGameId || null;
-    clearPlayerIdentity();
-    render();
-  } catch (error) {
-    alert(error.message);
-  }
-});
+elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
+elements.openGameButtonSecondary.addEventListener("click", handleOpenSelectedGame);
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
@@ -569,6 +707,27 @@ elements.reinforceButton.addEventListener("click", async () => {
 
 elements.attackFrom.addEventListener("change", () => render());
 elements.fortifyFrom.addEventListener("change", () => render());
+elements.gameList.addEventListener("change", () => {
+  updateGameSelection(elements.gameList.value || null);
+  render();
+});
+elements.gameSessionList.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-game-id]");
+  if (!trigger) {
+    return;
+  }
+
+  updateGameSelection(trigger.dataset.gameId);
+  render();
+});
+elements.gameSessionDetails.addEventListener("click", (event) => {
+  const trigger = event.target.closest("#open-selected-inline");
+  if (!trigger) {
+    return;
+  }
+
+  handleOpenSelectedGame();
+});
 elements.map.addEventListener("click", (event) => {
   const button = event.target.closest("[data-territory-id]");
   if (!button) {
@@ -652,7 +811,3 @@ await loadState();
 await loadGameList();
 await restoreSession();
 connectEvents();
-
-
-
-

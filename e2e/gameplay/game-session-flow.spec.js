@@ -10,7 +10,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   const initialOptions = await page.locator("#game-list option").count();
 
   await page.locator("#game-name").fill(gameName);
-  await page.getByRole("button", { name: "Crea partita" }).click();
+  await page.locator("#create-game-button").click();
 
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.locator("#game-list")).toHaveValue(/.+/);
@@ -21,12 +21,12 @@ test("user can create a new game, see it in the list, and open it immediately", 
   expect(afterCreateOptions).toBeGreaterThanOrEqual(initialOptions);
 
   await page.locator("#game-name").fill(uniqueUser("seconda"));
-  await page.getByRole("button", { name: "Crea partita" }).click();
+  await page.locator("#create-game-button").click();
   await expect(page.locator("#game-status")).not.toContainText(gameName);
 
   const targetValue = await page.locator("#game-list option", { hasText: gameName }).first().getAttribute("value");
   await page.locator("#game-list").selectOption(targetValue);
-  await page.getByRole("button", { name: "Apri partita" }).click();
+  await page.locator("#open-game-button").click();
 
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
