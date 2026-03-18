@@ -28,6 +28,36 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
 
   await expect(stalePage.locator("#auth-status")).toContainText(firstUser, { timeout: 10000 });
   await expect(stalePage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*3/i);
+  await expect(stalePage.getByRole("button", { name: "+1 armata" })).toBeEnabled();
+
+  const staleVersion = await stalePage.evaluate(async () => {
+    const token = localStorage.getItem("frontline-session-token");
+    const response = await fetch("/api/state", {
+      headers: token ? { "x-session-token": token } : {}
+    });
+    const data = await response.json();
+    return data.version;
+  });
+
+  let forceStaleVersion = true;
+  await stalePage.route("**/api/action", async (route) => {
+    if (!forceStaleVersion) {
+      await route.continue();
+      return;
+    }
+
+    forceStaleVersion = false;
+    const request = route.request();
+    const body = JSON.parse(request.postData() || "{}");
+    body.expectedVersion = staleVersion;
+    await route.continue({
+      headers: {
+        ...request.headers(),
+        "content-type": "application/json"
+      },
+      postData: JSON.stringify(body)
+    });
+  });
 
   await currentPage.getByRole("button", { name: "+1 armata" }).click();
   await expect(currentPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*2/i);

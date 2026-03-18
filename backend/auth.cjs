@@ -36,6 +36,10 @@ function normalizeUsername(username) {
   return String(username || "").trim().toLowerCase();
 }
 
+function userRole(user) {
+  return user && user.role === "admin" ? "admin" : "user";
+}
+
 function publicUser(user) {
   if (!user) {
     return null;
@@ -44,6 +48,7 @@ function publicUser(user) {
   return {
     id: user.id,
     username: user.username,
+    role: userRole(user),
     authMethods: Object.keys(user.credentials || {})
   };
 }
@@ -82,6 +87,7 @@ function createAuthStore(options = {}) {
           secret: cleanedPassword
         }
       },
+      role: "user",
       profile: {
         displayName: cleanedUsername
       },
@@ -146,5 +152,7 @@ function createAuthStore(options = {}) {
 module.exports = {
   createAuthStore,
   normalizeUsername,
-  publicUser
+  publicUser,
+  userRole
 };
+

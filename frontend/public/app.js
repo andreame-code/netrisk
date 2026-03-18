@@ -585,8 +585,17 @@ async function send(path, payload = {}, options = {}) {
 }
 
 async function loadState() {
-  const response = await fetch("/api/state");
-  state.snapshot = await response.json();
+  const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
+  const response = await fetch("/api/state", { headers });
+  const data = await response.json();
+  if (!response.ok) {
+    state.snapshot = null;
+    state.currentGameId = null;
+    state.currentGameName = null;
+    render();
+    throw new Error(data.error || "Impossibile caricare la partita attiva.");
+  }
+  state.snapshot = data;
   state.currentGameId = state.snapshot?.gameId || state.currentGameId;
   syncCurrentGameName();
   render();
@@ -645,7 +654,8 @@ async function restoreSession() {
 }
 
 function connectEvents() {
-  const events = new EventSource("/api/events");
+  const query = state.sessionToken ? "?sessionToken=" + encodeURIComponent(state.sessionToken) : "";
+  const events = new EventSource("/api/events" + query);
   events.onmessage = (event) => {
     state.snapshot = JSON.parse(event.data);
     state.currentGameId = state.snapshot?.gameId || state.currentGameId;
@@ -734,6 +744,9 @@ elements.authForm.addEventListener("submit", async (event) => {
     const data = await send("/api/auth/login", { username, password });
     setSession(data.sessionToken, data.user);
     clearPlayerIdentity();
+    await loadState().catch(() => {});
+    await loadGameList();
+    await openRequestedGameIfNeeded();
     render();
   } catch (error) {
     alert(error.message);
@@ -752,6 +765,9 @@ elements.registerButton.addEventListener("click", async () => {
     const login = await send("/api/auth/login", { username, password });
     setSession(login.sessionToken, login.user);
     clearPlayerIdentity();
+    await loadState().catch(() => {});
+    await loadGameList();
+    await openRequestedGameIfNeeded();
     render();
   } catch (error) {
     alert(error.message);
@@ -780,6 +796,9 @@ elements.logoutButton.addEventListener("click", async () => {
 
   setSession(null, null);
   clearPlayerIdentity();
+  state.snapshot = null;
+  state.currentGameId = null;
+  state.currentGameName = null;
   render();
 });
 
