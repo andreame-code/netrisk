@@ -6,6 +6,14 @@
 - Player profile E2E: loading
 - Card system: enforce mandatory trade above hand limit
 - Card system: trade valid sets for reinforcements
+- Card system: traded cards now move into the discard pile
+- Card system API: trade endpoint
+- Card system public state: forced trade metadata
+- Card system API: authenticated player hand visibility
+- Card system UI: minimal trade panel on game page
+- Card system UI: player hand refreshes after game actions
+- Card system UI: inline trade error feedback
+- Card system UI: inline trade success feedback
 - Card system: award one card on turn end after at least one conquest
 - Card system foundation: standard rule set, deck storage, player hands metadata
 - Backend gameplay rules and regression flows
@@ -23,4 +31,11 @@
 
 ## Next Recommended Gap
 - None currently tracked
+
+
+
+
+
+
+
 

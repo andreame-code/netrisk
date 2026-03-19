@@ -122,6 +122,15 @@
                   </div>
                 </div>
 
+                <div class="action-group compact-group" id="card-trade-group" hidden>
+                  <label for="card-trade-list">Carte</label>
+                  <div id="card-trade-list" class="card-trade-list" data-testid="card-trade-list"></div>
+                  <p id="card-trade-help" class="action-help">Seleziona 3 carte valide per lo scambio.</p>
+                  <p id="card-trade-success" class="action-success" hidden></p>
+                  <p id="card-trade-error" class="action-error" hidden></p>
+                  <button id="card-trade-button" class="ghost-button full-width">Scambia set</button>
+                </div>
+
                 <button id="end-turn-button" class="ghost-button full-width">Termina turno</button>
               </div>
 
@@ -142,3 +151,6 @@
     <script type="module" src="/app.js"></script>
   </body>
 </html>
+
+
+

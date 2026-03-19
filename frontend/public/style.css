@@ -399,6 +399,52 @@ h1 {
   font-weight: 700;
 }
 
+.card-trade-list {
+  display: grid;
+  gap: 8px;
+}
+
+.card-chip {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid rgba(72, 47, 29, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 248, 238, 0.92);
+  color: var(--text);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.card-chip.is-selected {
+  border-color: rgba(184, 92, 56, 0.72);
+  background: rgba(244, 224, 207, 0.96);
+}
+
+.action-help {
+  margin: 8px 0 10px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.action-success {
+  margin: -2px 0 10px;
+  color: #2f6b31;
+  font-size: 0.9rem;
+}
+
+.action-error {
+  margin: -2px 0 10px;
+  color: #8c2f21;
+  font-size: 0.9rem;
+}
+
+.card-trade-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
 input,
 select,
 button {
@@ -1614,3 +1660,6 @@ body[data-app-section="profile"] .main-nav-shell {
   color: #4d3a28;
   font-weight: 600;
 }
+
+
+

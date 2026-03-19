@@ -52,6 +52,7 @@ function createGameState(input = {}) {
     fortifyUsed: Boolean(input.fortifyUsed),
     cardRuleSetId: input.cardRuleSetId || "standard",
     deck: Array.isArray(input.deck) ? input.deck : [],
+    discardPile: Array.isArray(input.discardPile) ? input.discardPile : [],
     hands: input.hands || {},
     tradeCount: Number.isInteger(input.tradeCount) ? input.tradeCount : 0,
     conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn)

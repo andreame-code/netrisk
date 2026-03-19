@@ -8,7 +8,10 @@ const state = {
   selectedGameId: null,
   gameList: [],
   gameListState: "loading",
-  gameListError: ""
+  gameListError: "",
+  selectedTradeCardIds: [],
+  tradeError: "",
+  tradeSuccess: ""
 };
 
 let pendingRequestedGameId = null;
@@ -99,6 +102,12 @@ const elements = {
   fortifyTo: document.querySelector("#fortify-to"),
   fortifyArmies: document.querySelector("#fortify-armies"),
   fortifyButton: document.querySelector("#fortify-button"),
+  cardTradeGroup: document.querySelector("#card-trade-group"),
+  cardTradeList: document.querySelector("#card-trade-list"),
+  cardTradeHelp: document.querySelector("#card-trade-help"),
+  cardTradeSuccess: document.querySelector("#card-trade-success"),
+  cardTradeError: document.querySelector("#card-trade-error"),
+  cardTradeButton: document.querySelector("#card-trade-button"),
   actionHint: document.querySelector("#action-hint"),
   endTurnButton: document.querySelector("#end-turn-button"),
   log: document.querySelector("#log")
@@ -132,6 +141,20 @@ function myTerritories() {
 
 function currentExpectedVersion() {
   return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
+}
+
+function currentPlayerHand() {
+  return Array.isArray(state.snapshot?.playerHand) ? state.snapshot.playerHand : [];
+}
+
+function cardTypeLabel(type) {
+  const labels = { infantry: "Fanteria", cavalry: "Cavalleria", artillery: "Artiglieria", wild: "Jolly" };
+  return labels[type] || String(type || "Carta");
+}
+
+function cardDisplayLabel(card) {
+  const territoryName = card.territoryId ? (territoryById(card.territoryId)?.name || card.territoryId) : null;
+  return territoryName ? `${cardTypeLabel(card.type)} · ${territoryName}` : cardTypeLabel(card.type);
 }
 
 function setSession(sessionToken, user) {
@@ -377,6 +400,12 @@ function render() {
   const me = snapshot?.players.find((player) => player.id === state.playerId) || null;
   const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
+  const playerHand = currentPlayerHand();
+  state.selectedTradeCardIds = state.selectedTradeCardIds.filter((cardId) => playerHand.some((card) => card.id === cardId));
+  if (!playerHand.length) {
+    state.tradeError = "";
+    state.tradeSuccess = "";
+  }
 
   elements.authStatus.textContent = state.user
     ? state.user.username
@@ -548,6 +577,24 @@ function render() {
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
+  const mustTradeCards = Boolean(me) && isCurrentPlayer() && Boolean(snapshot?.cardState?.currentPlayerMustTrade);
+  const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
+  if (elements.cardTradeGroup) {
+    elements.cardTradeGroup.hidden = !showTradePanel;
+    elements.cardTradeList.innerHTML = playerHand.length
+      ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
+      : '<p class="card-trade-empty">Nessuna carta disponibile.</p>';
+    elements.cardTradeHelp.textContent = mustTradeCards
+      ? `Devi scambiare 3 carte per continuare. Limite mano: ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
+      : playerHand.length
+        ? `${state.selectedTradeCardIds.length}/3 carte selezionate.`
+        : "Nessuna carta disponibile.";
+    elements.cardTradeSuccess.hidden = !state.tradeSuccess;
+    elements.cardTradeSuccess.textContent = state.tradeSuccess;
+    elements.cardTradeError.hidden = !state.tradeError;
+    elements.cardTradeError.textContent = state.tradeError;
+    elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
+  }
   elements.reinforceButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
   elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
@@ -567,6 +614,16 @@ function render() {
     : state.user
       ? "Osservazione"
       : "Login";
+}
+
+async function fetchLatestStateSnapshot() {
+  const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
+  const response = await fetch("/api/state", { headers });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Impossibile caricare la partita attiva.");
+  }
+  return data;
 }
 
 async function send(path, payload = {}, options = {}) {
@@ -591,29 +648,36 @@ async function send(path, payload = {}, options = {}) {
     }
     throw new Error(data.error || "Richiesta fallita.");
   }
+
+  if (path === "/api/action" && state.sessionToken) {
+    try {
+      data.state = await fetchLatestStateSnapshot();
+    } catch (error) {
+    }
+  }
+
   return data;
 }
 
 async function loadState() {
-  const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
-  const response = await fetch("/api/state", { headers });
-  const data = await response.json();
-  if (!response.ok) {
+  try {
+    const data = await fetchLatestStateSnapshot();
+    state.snapshot = data;
+    if (data.playerId) {
+      setPlayerIdentity(data.playerId);
+    } else {
+      clearPlayerIdentity();
+    }
+    state.currentGameId = state.snapshot?.gameId || state.currentGameId;
+    syncCurrentGameName();
+    render();
+  } catch (error) {
     state.snapshot = null;
     state.currentGameId = null;
     state.currentGameName = null;
     render();
-    throw new Error(data.error || "Impossibile caricare la partita attiva.");
+    throw error;
   }
-  state.snapshot = data;
-  if (data.playerId) {
-    setPlayerIdentity(data.playerId);
-  } else {
-    clearPlayerIdentity();
-  }
-  state.currentGameId = state.snapshot?.gameId || state.currentGameId;
-  syncCurrentGameName();
-  render();
 }
 
 async function loadGameList() {
@@ -714,6 +778,9 @@ async function openGameById(gameId) {
     clearPlayerIdentity();
   }
   render();
+  if (state.sessionToken) {
+    await loadState().catch(() => {});
+  }
 }
 
 async function handleOpenSelectedGame() {
@@ -913,6 +980,25 @@ if (elements.gameSessionDetails) {
     handleOpenSelectedGame();
   });
 }
+if (elements.cardTradeList) {
+  elements.cardTradeList.addEventListener("click", (event) => {
+    const trigger = event.target.closest("[data-card-id]");
+    if (!trigger) {
+      return;
+    }
+
+    const cardId = trigger.dataset.cardId;
+    if (state.selectedTradeCardIds.includes(cardId)) {
+      state.selectedTradeCardIds = state.selectedTradeCardIds.filter((id) => id !== cardId);
+    } else if (state.selectedTradeCardIds.length < 3) {
+      state.selectedTradeCardIds = [...state.selectedTradeCardIds, cardId];
+    }
+
+    state.tradeError = "";
+    state.tradeSuccess = "";
+    render();
+  });
+}
 elements.map.addEventListener("click", (event) => {
   const button = event.target.closest("[data-territory-id]");
   if (!button) {
@@ -992,11 +1078,35 @@ elements.endTurnButton.addEventListener("click", async () => {
   }
 });
 
+if (elements.cardTradeButton) {
+  elements.cardTradeButton.addEventListener("click", async () => {
+    try {
+      const data = await send("/api/cards/trade", {
+        sessionToken: state.sessionToken,
+        playerId: state.playerId,
+        cardIds: state.selectedTradeCardIds,
+        expectedVersion: currentExpectedVersion()
+      });
+      state.selectedTradeCardIds = [];
+      state.tradeError = "";
+      state.tradeSuccess = `Set valido: +${data.bonus} rinforzi.`;
+      await loadState();
+    } catch (error) {
+      state.tradeSuccess = "";
+      state.tradeError = error.message;
+      render();
+    }
+  });
+}
+
 pendingRequestedGameId = requestedGameIdFromRoute();
 await loadState();
 await loadGameList();
 await openRequestedGameIfNeeded();
 await restoreSession();
 connectEvents();
+
+
+
 
 
