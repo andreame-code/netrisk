@@ -5,7 +5,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, SUPPORTED_MAPS } = require("./new-game-config.cjs");
+const { createConfiguredInitialState, listDiceRuleSets, SUPPORTED_MAPS } = require("./new-game-config.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -268,7 +268,7 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, { maps: SUPPORTED_MAPS, playerRange: { min: 2, max: 4 } });
+      sendJson(res, 200, { maps: SUPPORTED_MAPS, diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
       return;
     }
 

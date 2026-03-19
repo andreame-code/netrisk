@@ -1,4 +1,5 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
+const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
 
 const SUPPORTED_MAPS = [
   { id: "classic-mini", name: "Classic Mini" }
@@ -60,6 +61,12 @@ function validateNewGameConfig(input = {}, options = {}) {
     throw new Error("La mappa selezionata non e supportata.");
   }
 
+  const requestedDiceRuleSetId = String(input.diceRuleSetId || STANDARD_DICE_RULE_SET_ID);
+  const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
+  if (!selectedDiceRuleSet) {
+    throw new Error("La regola dadi selezionata non e supportata.");
+  }
+
   const requestedPlayers = Array.isArray(input.players)
     ? input.players
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
@@ -90,6 +97,7 @@ function validateNewGameConfig(input = {}, options = {}) {
     name: input.name,
     mapId,
     mapName: selectedMap.name,
+    diceRuleSetId: selectedDiceRuleSet.id,
     totalPlayers,
     players
   };
@@ -98,9 +106,11 @@ function validateNewGameConfig(input = {}, options = {}) {
 function createConfiguredInitialState(configInput = {}, options = {}) {
   const config = validateNewGameConfig(configInput, options);
   const state = createInitialState();
+  state.diceRuleSetId = config.diceRuleSetId;
   state.gameConfig = {
     mapId: config.mapId,
     mapName: config.mapName,
+    diceRuleSetId: config.diceRuleSetId,
     totalPlayers: config.totalPlayers,
     players: config.players
   };
@@ -126,6 +136,7 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 module.exports = {
   AI_GENERAL_NAMES,
   SUPPORTED_MAPS,
+  listDiceRuleSets,
   buildHistoricalAiNames,
   createConfiguredInitialState,
   findSupportedMap,
