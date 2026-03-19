@@ -36,8 +36,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await page.goto("/lobby.html");
   const targetRow = page.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   const targetValue = await targetRow.getAttribute("data-game-id");
-  await targetRow.click();
-  await targetRow.locator("[data-open-game-id]").click();
+  await page.locator(`[data-open-game-id="${targetValue}"]`).click();
 
   await expect(page).toHaveURL(new RegExp("/game/" + targetValue + "$"));
   await expect(page.locator("#game-status")).toContainText(gameName);
