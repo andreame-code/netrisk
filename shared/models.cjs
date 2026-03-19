@@ -7,7 +7,9 @@ const {
 } = require("./core-domain.cjs");
 const {
   STANDARD_DICE_RULE_SET_ID,
+  findDiceRuleSet,
   getDiceRuleSet,
+  listDiceRuleSets,
   standardDiceRuleSet
 } = require("./dice.cjs");
 const {
@@ -27,7 +29,9 @@ module.exports = {
   CardType,
   GameAction,
   STANDARD_DICE_RULE_SET_ID,
+  findDiceRuleSet,
   getDiceRuleSet,
+  listDiceRuleSets,
   standardDiceRuleSet,
   STANDARD_CARD_RULE_SET_ID,
   STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,

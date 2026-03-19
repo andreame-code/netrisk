@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-resolution.cjs");
+const { compareCombatDice, rollCombatDice } = require("../../../backend/engine/combat-dice.cjs");
 const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet } = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
@@ -34,6 +35,27 @@ register("resolveSingleAttackRoll compares sorted dice correctly for multi-die c
   assert.equal(result.combat.comparisons[0].winner, "attacker");
   assert.equal(result.combat.comparisons[1].winner, "attacker");
   assert.equal(result.combat.defenderReducedToZero, true);
+});
+
+register("resolveSingleAttackRoll applica i limiti dadi dal rule set", () => {
+  const { graph, state } = setupCombatState(4, 2);
+  const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+    diceRuleSet: {
+      id: "variant-test",
+      attackerMaxDice: 2,
+      defenderMaxDice: 1,
+      attackerMustLeaveOneArmyBehind: true,
+      defenderWinsTies: true
+    },
+    random: createFixedRandom(rollsToRandomValues([6, 3, 5]))
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.diceRuleSetId, "variant-test");
+  assert.equal(result.combat.attackDiceCount, 2);
+  assert.equal(result.combat.defendDiceCount, 1);
+  assert.deepEqual(result.combat.attackerRolls, [6, 3]);
+  assert.deepEqual(result.combat.defenderRolls, [5]);
 });
 
 register("resolveSingleAttackRoll lets defender win ties", () => {
@@ -72,4 +94,14 @@ register("standard dice rule set espone i limiti classici di combattimento", () 
   assert.equal(ruleSet.defenderMaxDice, 2);
   assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
   assert.equal(ruleSet.defenderWinsTies, true);
+});
+
+register("combat dice helpers tirano ordinato e confrontano in modo puro", () => {
+  const rolls = rollCombatDice(3, createFixedRandom(rollsToRandomValues([2, 6, 4])));
+  assert.deepEqual(rolls, [6, 4, 2]);
+
+  const compared = compareCombatDice([2, 6, 4], [5, 1], { defenderWinsTies: true });
+  assert.deepEqual(compared.attackerRolls, [6, 4, 2]);
+  assert.deepEqual(compared.defenderRolls, [5, 1]);
+  assert.deepEqual(compared.comparisons.map((entry) => entry.winner), ["attacker", "attacker"]);
 });

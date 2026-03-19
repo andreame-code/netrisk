@@ -7,10 +7,12 @@ const {
   createPlayer,
   createStandardDeck,
   getCardRuleSet,
+  getDiceRuleSet,
   standardTradeBonusForIndex,
   validateStandardCardSet
 } = require("../../shared/models.cjs");
 const { detectVictory } = require("./victory-detection.cjs");
+const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
 
 const territories = [
   { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"], continentId: "north" },
@@ -222,6 +224,7 @@ function publicState(state) {
       : null,
     log: state.log,
     lastAction: state.lastAction,
+    lastCombat: state.lastAction && state.lastAction.type === GameAction.ATTACK ? state.lastAction.combat || null : null,
     pendingConquest: state.pendingConquest,
     fortifyUsed: Boolean(state.fortifyUsed),
     conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
@@ -422,12 +425,20 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
 
   state.turnPhase = TurnPhase.ATTACK;
 
-  const attackRoll = Math.ceil(random() * 6);
-  const defendRoll = Math.ceil(random() * 6);
+  const defenderOwnerId = to.ownerId;
+  const attackerArmiesBefore = from.armies;
+  const defenderArmiesBefore = to.armies;
+  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const attackRolls = rollCombatDice(1, random);
+  const defendRolls = rollCombatDice(1, random);
+  const comparison = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies }).comparisons[0];
+  const attackRoll = attackRolls[0];
+  const defendRoll = defendRolls[0];
+  const winner = comparison.winner;
   from.armies -= 1;
   let summary;
 
-  if (attackRoll > defendRoll) {
+  if (winner === "attacker") {
     to.armies -= 1;
     summary = attacker.name + " attacca " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
     if (to.armies <= 0) {
@@ -448,10 +459,29 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
   }
 
-  state.lastAction = { type: GameAction.ATTACK, summary, fromId, toId };
+  const combat = {
+    fromTerritoryId: fromId,
+    toTerritoryId: toId,
+    attackerPlayerId: playerId,
+    defenderPlayerId: defenderOwnerId,
+    diceRuleSetId: diceRuleSet.id || "standard",
+    attackDiceCount: 1,
+    defendDiceCount: 1,
+    attackerRolls: attackRolls,
+    defenderRolls: defendRolls,
+    comparisons: [comparison],
+    attackerArmiesBefore,
+    defenderArmiesBefore,
+    attackerArmiesRemaining: from.armies,
+    defenderArmiesRemaining: to.armies,
+    defenderReducedToZero: to.armies <= 0,
+    conqueredTerritory: Boolean(state.pendingConquest)
+  };
+
+  state.lastAction = { type: GameAction.ATTACK, summary, fromId, toId, combat };
   appendLog(state, summary);
   declareWinnerIfNeeded(state);
-  return { ok: true };
+  return { ok: true, summary, combat, pendingConquest: state.pendingConquest };
 }
 
 function moveAfterConquest(state, playerId, armiesToMove) {
