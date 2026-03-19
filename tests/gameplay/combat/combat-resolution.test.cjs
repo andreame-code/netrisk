@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-resolution.cjs");
+const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet } = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 
@@ -63,3 +64,12 @@ register("resolveSingleAttackRoll supports one-die attacks", () => {
   assert.equal(result.combat.defenderReducedToZero, true);
 });
 
+
+register("standard dice rule set espone i limiti classici di combattimento", () => {
+  const ruleSet = getDiceRuleSet();
+  assert.equal(ruleSet.id, STANDARD_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.attackerMaxDice, 3);
+  assert.equal(ruleSet.defenderMaxDice, 2);
+  assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
+  assert.equal(ruleSet.defenderWinsTies, true);
+});

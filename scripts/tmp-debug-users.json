@@ -1,0 +1,16 @@
+[
+  {
+    "id": "0fb2968a12af772c",
+    "username": "debug_user",
+    "credentials": {
+      "password": {
+        "secret": "secret"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "debug_user"
+    },
+    "createdAt": "2026-03-19T22:16:47.158Z"
+  }
+]
