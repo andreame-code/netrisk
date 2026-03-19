@@ -51,6 +51,7 @@ function createInitialState() {
     fortifyUsed: false,
     cardRuleSetId: "standard",
     deck: createStandardDeck(territories.map((territory) => territory.id)),
+    discardPile: [],
     hands: {},
     tradeCount: 0,
     conqueredTerritoryThisTurn: false
@@ -165,6 +166,10 @@ function tradeCardSet(state, playerId, cardIds) {
 
   const bonus = standardTradeBonusForIndex(state.tradeCount || 0);
   state.hands[playerId] = hand.filter((card) => !uniqueCardIds.includes(card.id));
+  if (!Array.isArray(state.discardPile)) {
+    state.discardPile = [];
+  }
+  state.discardPile.push(...selectedCards);
   state.tradeCount = (state.tradeCount || 0) + 1;
   state.reinforcementPool += bonus;
   state.lastAction = {
@@ -223,7 +228,10 @@ function publicState(state) {
     cardState: {
       ruleSetId: state.cardRuleSetId || "standard",
       tradeCount: Number.isInteger(state.tradeCount) ? state.tradeCount : 0,
-      deckCount: Array.isArray(state.deck) ? state.deck.length : 0
+      deckCount: Array.isArray(state.deck) ? state.deck.length : 0,
+      discardCount: Array.isArray(state.discardPile) ? state.discardPile.length : 0,
+      maxHandBeforeForcedTrade: getForcedTradeLimit(state),
+      currentPlayerMustTrade: currentPlayer ? playerMustTradeCards(state, currentPlayer.id) : false
     }
   };
 }
@@ -619,4 +627,5 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
+
 

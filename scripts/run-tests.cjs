@@ -28,6 +28,7 @@ const {
   standardTradeBonusForIndex,
   validateStandardCardSet
 } = require("../shared/cards.cjs");
+const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, standardDiceRuleSet } = require("../shared/dice.cjs");
 const { validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
@@ -393,6 +394,16 @@ register("standard card rules riconoscono tris, set misto e wild", () => {
   assert.equal(wildSet.resolvedType, CardType.CAVALRY);
 });
 
+register("standard dice rules centralizzano i limiti di combattimento", () => {
+  const ruleSet = getDiceRuleSet();
+  assert.equal(ruleSet.id, STANDARD_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.attackerMaxDice, 3);
+  assert.equal(ruleSet.defenderMaxDice, 2);
+  assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
+  assert.equal(ruleSet.defenderWinsTies, true);
+  assert.equal(getDiceRuleSet("unsupported"), standardDiceRuleSet);
+});
+
 register("standard card rules rifiutano set invalidi e centralizzano la progressione bonus", () => {
   const invalidSet = validateStandardCardSet([
     createCard({ id: "c1", type: CardType.INFANTRY }),
@@ -430,6 +441,7 @@ register("tradeCardSet converte un set valido in rinforzi e incrementa la progre
   assert.equal(state.reinforcementPool, 7);
   assert.equal(state.tradeCount, 1);
   assert.deepEqual(state.hands[first.id], []);
+  assert.deepEqual(state.discardPile.map((card) => card.id), ["t1", "t2", "t3"]);
 });
 
 register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo stato", () => {
@@ -449,6 +461,7 @@ register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo s
   assert.equal(state.reinforcementPool, 3);
   assert.equal(state.tradeCount, 0);
   assert.equal(state.hands[first.id].length, 3);
+  assert.deepEqual(state.discardPile, []);
 
   state.turnPhase = "reinforcement";
   const invalidSet = tradeCardSet(state, first.id, ["x1", "x2", "x3"]);
@@ -456,6 +469,7 @@ register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo s
   assert.equal(state.reinforcementPool, 3);
   assert.equal(state.tradeCount, 0);
   assert.equal(state.hands[first.id].length, 3);
+  assert.deepEqual(state.discardPile, []);
 });
 
 register("playerMustTradeCards segnala il limite mano standard", () => {
@@ -553,11 +567,12 @@ register("awardTurnCardIfEligible non assegna carte senza conquista o con deck v
   assert.equal(Array.isArray(state.hands[first.id]), false);
 });
 
-register("createInitialState inizializza deck, hands e progressione carte standard", () => {
+register("createInitialState inizializza deck, discard pile, hands e progressione carte standard", () => {
   const state = createInitialState();
   assert.equal(state.cardRuleSetId, "standard");
   assert.equal(Array.isArray(state.deck), true);
   assert.equal(state.deck.length, 11);
+  assert.deepEqual(state.discardPile, []);
   assert.deepEqual(state.hands, {});
   assert.equal(state.tradeCount, 0);
   assert.equal(state.deck.filter((card) => card.type === CardType.WILD).length, 2);
@@ -567,7 +582,7 @@ register("createInitialState inizializza deck, hands e progressione carte standa
   assert.equal(rebuiltDeck.length, state.deck.length);
 });
 
-register("publicState espone i metadati carte senza rivelare il deck completo", () => {
+register("publicState espone i metadati carte senza rivelare deck e discard pile completi", () => {
   const { state, first, second } = setupLobby();
   state.hands[first.id] = [createCard({ id: "h1", type: CardType.INFANTRY })];
   state.hands[second.id] = [
@@ -575,14 +590,19 @@ register("publicState espone i metadati carte senza rivelare il deck completo", 
     createCard({ id: "h3", type: CardType.ARTILLERY })
   ];
   state.tradeCount = 3;
+  state.discardPile = [createCard({ id: "d1", type: CardType.WILD })];
 
   const snapshot = publicState(state);
   assert.equal(snapshot.cardState.ruleSetId, "standard");
   assert.equal(snapshot.cardState.tradeCount, 3);
   assert.equal(snapshot.cardState.deckCount, state.deck.length);
+  assert.equal(snapshot.cardState.discardCount, 1);
+  assert.equal(snapshot.cardState.maxHandBeforeForcedTrade, STANDARD_MAX_HAND_BEFORE_FORCED_TRADE);
+  assert.equal(snapshot.cardState.currentPlayerMustTrade, false);
   assert.equal(snapshot.players.find((player) => player.id === first.id).cardCount, 1);
   assert.equal(snapshot.players.find((player) => player.id === second.id).cardCount, 2);
   assert.equal(Object.prototype.hasOwnProperty.call(snapshot.cardState, "deck"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(snapshot.cardState, "discardPile"), false);
 });
 
 register("publicState espone modelli condivisi e stato corrente", () => {
@@ -1288,6 +1308,75 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
     assert.equal(reinforceResponse.status, 200);
   });
 });
+register("API cards trade applica un set valido e persiste lo stato aggiornato", async () => {
+  await withServer(async (baseUrl, context) => {
+    const login = await createAuthenticatedAppSession(context.app, `trade_api_${Math.random().toString(16).slice(2, 8)}`);
+    const state = createInitialState();
+    const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
+    addPlayer(state, "CPU Trade", { isAi: true });
+    state.phase = "active";
+    state.turnPhase = "reinforcement";
+    state.currentTurnIndex = 0;
+    state.reinforcementPool = 3;
+    state.hands[first.id] = [
+      createCard({ id: "api-t1", type: CardType.INFANTRY }),
+      createCard({ id: "api-t2", type: CardType.INFANTRY }),
+      createCard({ id: "api-t3", type: CardType.INFANTRY })
+    ];
+
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
+    const response = await callApp(context.app, "POST", "/api/cards/trade", {
+      sessionToken: login.sessionToken,
+      playerId: first.id,
+      cardIds: ["api-t1", "api-t2", "api-t3"]
+    }, authHeaders(login.sessionToken));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.payload.ok, true);
+    assert.equal(response.payload.bonus, 4);
+    assert.equal(response.payload.state.reinforcementPool, 7);
+    assert.equal(response.payload.state.cardState.discardCount, 3);
+    assert.equal(response.payload.state.players.find((player) => player.id === first.id).cardCount, 0);
+    assert.deepEqual(context.app.state.discardPile.map((card) => card.id), ["api-t1", "api-t2", "api-t3"]);
+  });
+});
+
+register("API cards trade rifiuta set invalidi senza mutare lo stato", async () => {
+  await withServer(async (baseUrl, context) => {
+    const login = await createAuthenticatedAppSession(context.app, `trade_invalid_${Math.random().toString(16).slice(2, 8)}`);
+    const state = createInitialState();
+    const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
+    addPlayer(state, "CPU Trade", { isAi: true });
+    state.phase = "active";
+    state.turnPhase = "reinforcement";
+    state.currentTurnIndex = 0;
+    state.reinforcementPool = 3;
+    state.hands[first.id] = [
+      createCard({ id: "bad-t1", type: CardType.INFANTRY }),
+      createCard({ id: "bad-t2", type: CardType.INFANTRY }),
+      createCard({ id: "bad-t3", type: CardType.CAVALRY })
+    ];
+
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
+    const response = await callApp(context.app, "POST", "/api/cards/trade", {
+      sessionToken: login.sessionToken,
+      playerId: first.id,
+      cardIds: ["bad-t1", "bad-t2", "bad-t3"]
+    }, authHeaders(login.sessionToken));
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.payload.error, "Card set does not match a valid standard trade.");
+    assert.equal(context.app.state.reinforcementPool, 3);
+    assert.equal(context.app.state.tradeCount, 0);
+    assert.equal(context.app.state.discardPile.length, 0);
+    assert.equal(context.app.state.hands[first.id].length, 3);
+  });
+});
+
 register("API ai join + endTurn esegue automaticamente il turno AI", async () => {
   await withServer(async (baseUrl) => {
     const ownerSession = await createAuthenticatedSession(baseUrl, `ai_owner_${Math.random().toString(16).slice(2, 8)}`);
@@ -1511,12 +1600,59 @@ register("API profile espone statistiche giocatore aggregate", async () => {
 });
 
 register("GET /api/state risponde con lo stato pubblico", async () => {
-  await withServer(async (baseUrl) => {
+  await withServer(async (baseUrl, context) => {
+    const state = createInitialState();
+    const first = addPlayer(state, "Alice").player;
+    addPlayer(state, "Bob");
+    state.phase = "active";
+    state.turnPhase = "reinforcement";
+    state.currentTurnIndex = 0;
+    state.hands[first.id] = [
+      createCard({ id: "m1", type: CardType.INFANTRY }),
+      createCard({ id: "m2", type: CardType.INFANTRY }),
+      createCard({ id: "m3", type: CardType.INFANTRY }),
+      createCard({ id: "m4", type: CardType.CAVALRY }),
+      createCard({ id: "m5", type: CardType.ARTILLERY }),
+      createCard({ id: "m6", type: CardType.WILD })
+    ];
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
     const response = await fetch(`${baseUrl}/api/state`);
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.equal(Array.isArray(payload.map), true);
     assert.equal(Array.isArray(payload.continents), true);
+    assert.equal(payload.cardState.maxHandBeforeForcedTrade, STANDARD_MAX_HAND_BEFORE_FORCED_TRADE);
+    assert.equal(payload.cardState.currentPlayerMustTrade, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, "playerHand"), false);
+  });
+});
+
+register("API state espone solo la mano del player autenticato risolto", async () => {
+  await withServer(async (baseUrl, context) => {
+    const login = await createAuthenticatedAppSession(context.app, `hand_state_${Math.random().toString(16).slice(2, 8)}`);
+    const state = createInitialState();
+    const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
+    addPlayer(state, "CPU Observer", { isAi: true });
+    state.phase = "active";
+    state.turnPhase = "reinforcement";
+    state.currentTurnIndex = 0;
+    state.hands[first.id] = [
+      createCard({ id: "hand-1", type: CardType.INFANTRY, territoryId: "aurora" }),
+      createCard({ id: "hand-2", type: CardType.CAVALRY, territoryId: "bastion" }),
+      createCard({ id: "hand-3", type: CardType.WILD })
+    ];
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
+    const response = await callApp(context.app, "GET", "/api/state", undefined, authHeaders(login.sessionToken));
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.payload.playerId, first.id);
+    assert.equal(Array.isArray(response.payload.playerHand), true);
+    assert.deepEqual(response.payload.playerHand.map((card) => card.id), ["hand-1", "hand-2", "hand-3"]);
+    assert.equal(response.payload.players.find((player) => player.id === first.id).cardCount, 3);
+    assert.equal(Object.prototype.hasOwnProperty.call(response.payload.players[0], "hand"), false);
   });
 });
 
@@ -1572,6 +1708,10 @@ async function run() {
 }
 
 run();
+
+
+
+
 
 
 
