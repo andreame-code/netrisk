@@ -1,6 +1,9 @@
 # Test Gaps
 
 ## Covered
+- Visual regression expansion: Lobby, New Game, Profile
+- Admin policy coverage
+- Player profile E2E: loading
 - Card system: enforce mandatory trade above hand limit
 - Card system: trade valid sets for reinforcements
 - Card system: award one card on turn end after at least one conquest
@@ -16,10 +19,8 @@
 - Main battlefield visual baseline
 
 ## Missing
-- Player profile E2E: loading
-- Admin policy coverage
-- Visual regression expansion: Lobby, New Game, Profile
+- None currently tracked
 
 ## Next Recommended Gap
-- Player profile E2E: loading
+- None currently tracked
 
