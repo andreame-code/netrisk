@@ -4,7 +4,11 @@ const {
   TurnPhase,
   createContinent,
   createGameState,
-  createPlayer
+  createPlayer,
+  createStandardDeck,
+  getCardRuleSet,
+  standardTradeBonusForIndex,
+  validateStandardCardSet
 } = require("../../shared/models.cjs");
 const { detectVictory } = require("./victory-detection.cjs");
 
@@ -44,7 +48,12 @@ function createInitialState() {
     log: ["Lobby creata. Unisciti e avvia la partita."],
     lastAction: null,
     pendingConquest: null,
-    fortifyUsed: false
+    fortifyUsed: false,
+    cardRuleSetId: "standard",
+    deck: createStandardDeck(territories.map((territory) => territory.id)),
+    hands: {},
+    tradeCount: 0,
+    conqueredTerritoryThisTurn: false
   });
 }
 
@@ -84,6 +93,88 @@ function appendLog(state, message) {
   state.log = state.log.slice(0, 12);
 }
 
+function ensurePlayerHand(state, playerId) {
+  if (!Array.isArray(state.hands[playerId])) {
+    state.hands[playerId] = [];
+  }
+  return state.hands[playerId];
+}
+
+function getForcedTradeLimit(state) {
+  return getCardRuleSet(state.cardRuleSetId || "standard").maxHandBeforeForcedTrade || 5;
+}
+
+function playerMustTradeCards(state, playerId) {
+  return ensurePlayerHand(state, playerId).length > getForcedTradeLimit(state);
+}
+
+function awardTurnCardIfEligible(state, playerId) {
+  if (!state.conqueredTerritoryThisTurn || !Array.isArray(state.deck) || state.deck.length === 0) {
+    return null;
+  }
+
+  const player = getPlayer(state, playerId);
+  if (!player) {
+    return null;
+  }
+
+  const nextCard = state.deck.shift();
+  ensurePlayerHand(state, playerId).push(nextCard);
+  state.conqueredTerritoryThisTurn = false;
+  appendLog(state, player.name + " riceve una carta territorio.");
+  return nextCard;
+}
+
+function tradeCardSet(state, playerId, cardIds) {
+  const player = getPlayer(state, playerId);
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
+  }
+
+  if (state.phase !== "active") {
+    return { ok: false, message: "La partita non e attiva." };
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
+    return { ok: false, message: "Non e il tuo turno." };
+  }
+
+  if (state.turnPhase !== TurnPhase.REINFORCEMENT) {
+    return { ok: false, message: "Puoi scambiare carte solo nella fase di rinforzo." };
+  }
+
+  if (!Array.isArray(cardIds) || cardIds.length !== 3) {
+    return { ok: false, message: "Devi selezionare esattamente 3 carte." };
+  }
+
+  const uniqueCardIds = [...new Set(cardIds)];
+  if (uniqueCardIds.length !== 3) {
+    return { ok: false, message: "Non puoi usare la stessa carta due volte." };
+  }
+
+  const hand = ensurePlayerHand(state, playerId);
+  const selectedCards = uniqueCardIds.map((cardId) => hand.find((card) => card.id === cardId));
+  if (selectedCards.some((card) => !card)) {
+    return { ok: false, message: "Le carte selezionate non sono disponibili nella mano del giocatore." };
+  }
+
+  const validation = validateStandardCardSet(selectedCards);
+  if (!validation.ok) {
+    return { ok: false, message: validation.reason };
+  }
+
+  const bonus = standardTradeBonusForIndex(state.tradeCount || 0);
+  state.hands[playerId] = hand.filter((card) => !uniqueCardIds.includes(card.id));
+  state.tradeCount = (state.tradeCount || 0) + 1;
+  state.reinforcementPool += bonus;
+  state.lastAction = {
+    type: "tradeCards",
+    summary: player.name + " scambia un set di carte e riceve " + bonus + " rinforzi."
+  };
+  appendLog(state, player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.");
+  return { ok: true, bonus, validation };
+}
+
 function readableMapName(mapId) {
   if (mapId === "classic-mini") {
     return "Classic Mini";
@@ -103,7 +194,8 @@ function publicState(state) {
       connected: player.connected,
       isAi: Boolean(player.isAi),
       territoryCount: territoriesOwnedBy(state, player.id).length,
-      eliminated: state.phase !== "lobby" && territoriesOwnedBy(state, player.id).length === 0
+      eliminated: state.phase !== "lobby" && territoriesOwnedBy(state, player.id).length === 0,
+      cardCount: Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
     })),
     map: territories.map((territory) => ({
       id: territory.id,
@@ -126,7 +218,13 @@ function publicState(state) {
     log: state.log,
     lastAction: state.lastAction,
     pendingConquest: state.pendingConquest,
-    fortifyUsed: Boolean(state.fortifyUsed)
+    fortifyUsed: Boolean(state.fortifyUsed),
+    conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
+    cardState: {
+      ruleSetId: state.cardRuleSetId || "standard",
+      tradeCount: Number.isInteger(state.tradeCount) ? state.tradeCount : 0,
+      deckCount: Array.isArray(state.deck) ? state.deck.length : 0
+    }
   };
 }
 
@@ -139,6 +237,7 @@ function startGame(state, random = Math.random) {
   state.lastAction = null;
   state.pendingConquest = null;
   state.fortifyUsed = false;
+  state.conqueredTerritoryThisTurn = false;
 
   shuffledTerritories.forEach((territoryId) => {
     state.territories[territoryId] = { ownerId: null, armies: 0 };
@@ -179,6 +278,7 @@ function advanceTurn(state) {
       state.reinforcementPool = computeReinforcements(state, candidate.id);
       state.pendingConquest = null;
       state.fortifyUsed = false;
+      state.conqueredTerritoryThisTurn = false;
       appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.");
       return;
     }
@@ -265,7 +365,7 @@ function applyReinforcement(state, playerId, territoryId) {
     type: GameAction.REINFORCE,
     summary: player.name + " rinforza " + territoryId + "."
   };
-  state.turnPhase = state.reinforcementPool === 0 ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
+  state.turnPhase = state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId) ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
   appendLog(state, player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
   return { ok: true };
 }
@@ -290,6 +390,10 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
 
   if (state.reinforcementPool > 0) {
     return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
+  }
+
+  if (playerMustTradeCards(state, playerId)) {
+    return { ok: false, message: "Devi prima scambiare carte: hai superato il limite di mano." };
   }
 
   if (state.pendingConquest) {
@@ -327,6 +431,7 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
         minArmies: 1,
         maxArmies: Math.max(1, from.armies - 1)
       };
+      state.conqueredTerritoryThisTurn = true;
       summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
     } else {
       summary += " Il difensore perde 1 armata.";
@@ -467,6 +572,10 @@ function endTurn(state, playerId) {
     return { ok: false, message: "Spendi prima tutti i rinforzi." };
   }
 
+  if (playerMustTradeCards(state, playerId)) {
+    return { ok: false, message: "Devi prima scambiare carte: hai superato il limite di mano." };
+  }
+
   if (state.pendingConquest) {
     return { ok: false, message: "Sposta prima le armate nel territorio conquistato." };
   }
@@ -478,9 +587,10 @@ function endTurn(state, playerId) {
     return { ok: true, requiresFortifyDecision: true };
   }
 
+  const awardedCard = awardTurnCardIfEligible(state, playerId);
   appendLog(state, player.name + " termina il turno.");
   advanceTurn(state);
-  return { ok: true };
+  return { ok: true, awardedCard };
 }
 
 module.exports = {
@@ -502,8 +612,11 @@ module.exports = {
   moveAfterConquest,
   publicState,
   resolveAttack,
+  awardTurnCardIfEligible,
   startGame,
   territories,
-  territoriesOwnedBy
+  territoriesOwnedBy,
+  tradeCardSet,
+  playerMustTradeCards
 };
 

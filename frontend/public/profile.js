@@ -51,9 +51,11 @@ function showFeedback(message, tone = "neutral") {
 
 function showProfile(profile) {
   elements.profileName.textContent = profile.playerName;
-  elements.profileSubtitle.textContent = profile.hasHistory
-    ? "Record operativo delle campagne completate e delle sessioni ancora aperte."
-    : "Nessuna campagna registrata per questo comandante, ma il profilo e pronto a crescere.";
+  if (elements.profileSubtitle) {
+    elements.profileSubtitle.textContent = profile.hasHistory
+      ? "Record operativo delle campagne completate e delle sessioni ancora aperte."
+      : "Nessuna campagna registrata per questo comandante, ma il profilo e pronto a crescere.";
+  }
   elements.profileHeading.textContent = profile.playerName;
   elements.profileCopy.textContent = profile.hasHistory
     ? "Una lettura rapida del rendimento complessivo, mantenendo la pagina pronta per espansioni future."
@@ -126,7 +128,9 @@ async function loadProfile() {
       renderAuthArea(sessionUser);
       renderNavAvatar(sessionUser.username);
       elements.profileName.textContent = sessionUser.username;
-      elements.profileSubtitle.textContent = "Profilo temporaneamente non disponibile.";
+      if (elements.profileSubtitle) {
+        elements.profileSubtitle.textContent = "Profilo temporaneamente non disponibile.";
+      }
       return;
     }
 
@@ -134,7 +138,11 @@ async function loadProfile() {
     renderAuthArea(null);
     renderNavAvatar();
     elements.profileName.textContent = "Profilo non disponibile";
+    if (elements.profileSubtitle) {
+      if (elements.profileSubtitle) {
     elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
+  }
+    }
   }
 }
 
