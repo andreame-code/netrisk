@@ -235,14 +235,19 @@ async function loadGameList() {
   render();
 }
 
+function navigateToGameRoute(gameId) {
+  window.location.href = "/game/" + encodeURIComponent(gameId);
+}
+
 async function openGameById(gameId) {
   const data = await send("/api/games/open", { gameId });
   state.gameList = data.games || [];
   state.currentGameId = data.activeGameId || null;
+  state.currentGameName = data.game?.name || null;
   updateGameSelection(state.currentGameId);
   state.gameListState = state.gameList.length ? "ready" : "empty";
   render();
-  window.location.href = "/game.html?gameId=" + encodeURIComponent(gameId);
+  navigateToGameRoute(gameId);
 }
 
 async function handleOpenSelectedGame() {
@@ -262,11 +267,18 @@ async function handleOpenSelectedGame() {
 }
 
 elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
-elements.gameSessionList.addEventListener("click", (event) => {
+elements.gameSessionList.addEventListener("click", async (event) => {
   const gameNameTrigger = event.target.closest("[data-open-game-id]");
   if (gameNameTrigger) {
     event.stopPropagation();
-    window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
+    try {
+      await openGameById(gameNameTrigger.dataset.openGameId);
+    } catch (error) {
+      state.gameListState = "error";
+      state.gameListError = error.message;
+      render();
+      alert(error.message);
+    }
     return;
   }
 

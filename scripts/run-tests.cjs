@@ -124,6 +124,14 @@ async function createAuthenticatedAppSession(app, username) {
   return login;
 }
 
+function setStoredUserRole(dataFile, username, role) {
+  const users = JSON.parse(fs.readFileSync(dataFile, "utf8"));
+  const target = users.find((user) => String(user.username).toLowerCase() === String(username).toLowerCase());
+  assert.equal(Boolean(target), true);
+  target.role = role;
+  fs.writeFileSync(dataFile, JSON.stringify(users, null, 2) + "\n", "utf8");
+}
+
 async function withServer(run) {
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
   const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
@@ -137,7 +145,7 @@ async function withServer(run) {
 
   try {
     const address = listener.address();
-    return await run(`http://127.0.0.1:${address.port}`);
+    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile });
   } finally {
     await new Promise((resolve) => {
       if (!listener.listening) {
@@ -1368,6 +1376,78 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
   });
 });
 
+register("API games open consente all'admin di aprire una partita protetta altrui", async () => {
+  await withServer(async (baseUrl, context) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_open_${Math.random().toString(16).slice(2, 8)}`);
+    const adminSession = await createAuthenticatedSession(baseUrl, `admin_open_${Math.random().toString(16).slice(2, 8)}`);
+
+    setStoredUserRole(context.tempFile, adminSession.user.username, "admin");
+
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Admin open test" })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+
+    const openResponse = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(adminSession.sessionToken),
+      body: JSON.stringify({ gameId: createdPayload.game.id })
+    });
+    assert.equal(openResponse.status, 200);
+    const openPayload = await openResponse.json();
+    assert.equal(openPayload.game.id, createdPayload.game.id);
+  });
+});
+
+register("API start consente all'admin di avviare una partita protetta altrui", async () => {
+  await withServer(async (baseUrl, context) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_start_${Math.random().toString(16).slice(2, 8)}`);
+    const adminSession = await createAuthenticatedSession(baseUrl, `admin_start_${Math.random().toString(16).slice(2, 8)}`);
+
+    setStoredUserRole(context.tempFile, adminSession.user.username, "admin");
+
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Admin start test" })
+    });
+    assert.equal(created.status, 201);
+
+    const ownerJoin = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+    });
+    assert.equal(ownerJoin.status, 201);
+
+    const openResponse = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(adminSession.sessionToken),
+      body: JSON.stringify({ gameId: (await created.json()).game.id })
+    });
+    assert.equal(openResponse.status, 200);
+
+    const adminJoin = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(adminSession.sessionToken),
+      body: JSON.stringify({ sessionToken: adminSession.sessionToken })
+    });
+    assert.equal(adminJoin.status, 201);
+    const adminJoinPayload = await adminJoin.json();
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: authHeaders(adminSession.sessionToken),
+      body: JSON.stringify({ sessionToken: adminSession.sessionToken, playerId: adminJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+    const startPayload = await startResponse.json();
+    assert.equal(startPayload.state.phase, "active");
+  });
+});
 register("API profile espone statistiche giocatore aggregate", async () => {
   await withServer(async (baseUrl) => {
     const ownerSession = await createAuthenticatedSession(baseUrl, `profile_owner_${Math.random().toString(16).slice(2, 8)}`);
