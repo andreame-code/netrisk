@@ -6,6 +6,11 @@ const {
   createTerritory
 } = require("./core-domain.cjs");
 const {
+  STANDARD_DICE_RULE_SET_ID,
+  getDiceRuleSet,
+  standardDiceRuleSet
+} = require("./dice.cjs");
+const {
   CardType,
   STANDARD_CARD_RULE_SET_ID,
   STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,
@@ -21,6 +26,9 @@ const { GameAction } = require("./game-actions.cjs");
 module.exports = {
   CardType,
   GameAction,
+  STANDARD_DICE_RULE_SET_ID,
+  getDiceRuleSet,
+  standardDiceRuleSet,
   STANDARD_CARD_RULE_SET_ID,
   STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,
   TurnPhase,

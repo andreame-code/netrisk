@@ -17,7 +17,8 @@ const {
   moveAfterConquest,
   publicState,
   resolveAttack,
-  startGame
+  startGame,
+  tradeCardSet
 } = require("./engine/game-engine.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 
@@ -210,6 +211,14 @@ function createApp(options = {}) {
     return player.name === user.username;
   }
 
+  function visibleHandForPlayer(nextState, player) {
+    if (!player || !Array.isArray(nextState?.hands?.[player.id])) {
+      return [];
+    }
+
+    return nextState.hands[player.id].map((card) => ({ ...card }));
+  }
+
   async function handleApi(req, res, url) {
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
       const resetGame = gameSessions.createGame(createInitialState(), { name: "Partita test" });
@@ -245,7 +254,11 @@ function createApp(options = {}) {
       }
       const sessionUser = access && access.user ? access.user : auth.getUserFromSession(extractSessionToken(req, {}, url));
       const resolvedPlayer = resolvePlayerForUser(state, sessionUser);
-      sendJson(res, 200, { ...snapshot(), playerId: resolvedPlayer ? resolvedPlayer.id : null });
+      sendJson(res, 200, {
+        ...snapshot(),
+        playerId: resolvedPlayer ? resolvedPlayer.id : null,
+        ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(state, resolvedPlayer) } : {})
+      });
       return;
     }
 
@@ -430,6 +443,64 @@ function createApp(options = {}) {
         state: snapshot(),
         user: auth.publicUser(authContext.user)
       });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/cards/trade") {
+      const body = await parseBody(req);
+      const authContext = requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      const player = getPlayer(state, body.playerId);
+      if (!player || !playerBelongsToUser(player, authContext.user)) {
+        sendJson(res, 403, { error: "Giocatore non valido." });
+        return;
+      }
+
+      const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
+      if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
+        sendJson(res, 400, { error: "expectedVersion non valida." });
+        return;
+      }
+
+      if (expectedVersion != null && expectedVersion !== activeGameVersion) {
+        sendJson(res, 409, {
+          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          code: "VERSION_CONFLICT",
+          currentVersion: activeGameVersion,
+          state: snapshot()
+        });
+        return;
+      }
+
+      const result = tradeCardSet(state, body.playerId, body.cardIds);
+      if (!result.ok) {
+        sendJson(res, 400, { error: result.message });
+        return;
+      }
+
+      try {
+        persistActiveGame(expectedVersion);
+      } catch (error) {
+        if (error && error.code === "VERSION_CONFLICT") {
+          activeGameVersion = error.currentVersion;
+          activeGameName = error.game?.name || activeGameName;
+          sendJson(res, 409, {
+            error: error.message,
+            code: error.code,
+            currentVersion: error.currentVersion,
+            state: snapshotForState(error.currentState, activeGameId, error.currentVersion, activeGameName)
+          });
+          return;
+        }
+
+        throw error;
+      }
+
+      broadcast();
+      sendJson(res, 200, { ok: true, bonus: result.bonus, validation: result.validation, state: snapshot() });
       return;
     }
 
@@ -717,6 +788,9 @@ module.exports = {
   server: app.server,
   state: app.state
 };
+
+
+
 
 
 
