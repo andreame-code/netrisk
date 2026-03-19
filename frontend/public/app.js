@@ -108,6 +108,12 @@ const elements = {
   cardTradeSuccess: document.querySelector("#card-trade-success"),
   cardTradeError: document.querySelector("#card-trade-error"),
   cardTradeButton: document.querySelector("#card-trade-button"),
+  combatResultGroup: document.querySelector("#combat-result-group"),
+  combatResultBadge: document.querySelector("#combat-result-badge"),
+  combatResultSummary: document.querySelector("#combat-result-summary"),
+  combatAttackerRolls: document.querySelector("#combat-attacker-rolls"),
+  combatDefenderRolls: document.querySelector("#combat-defender-rolls"),
+  combatComparisons: document.querySelector("#combat-comparisons"),
   actionHint: document.querySelector("#action-hint"),
   endTurnButton: document.querySelector("#end-turn-button"),
   log: document.querySelector("#log")
@@ -155,6 +161,18 @@ function cardTypeLabel(type) {
 function cardDisplayLabel(card) {
   const territoryName = card.territoryId ? (territoryById(card.territoryId)?.name || card.territoryId) : null;
   return territoryName ? `${cardTypeLabel(card.type)} · ${territoryName}` : cardTypeLabel(card.type);
+}
+
+function formatDiceList(rolls) {
+  return Array.isArray(rolls) && rolls.length ? rolls.join(" · ") : "-";
+}
+
+function formatCombatComparisons(comparisons) {
+  if (!Array.isArray(comparisons) || !comparisons.length) {
+    return "-";
+  }
+
+  return comparisons.map((comparison) => comparison.winner === "attacker" ? "A" : "D").join(" · ");
 }
 
 function setSession(sessionToken, user) {
@@ -571,6 +589,19 @@ function render() {
     elements.conquestArmies.max = String(pendingConquest.maxArmies || pendingConquest.minArmies || 1);
     if (!elements.conquestArmies.value) {
       elements.conquestArmies.value = String(pendingConquest.minArmies || 1);
+    }
+  }
+
+  const lastCombat = snapshot?.lastCombat || null;
+  if (elements.combatResultGroup) {
+    elements.combatResultGroup.hidden = !lastCombat;
+    if (lastCombat) {
+      const conquestText = lastCombat.conqueredTerritory ? "Territorio conquistato" : lastCombat.defenderReducedToZero ? "Difesa spezzata" : "Scambio risolto";
+      elements.combatResultBadge.textContent = conquestText;
+      elements.combatResultSummary.textContent = `${territoryById(lastCombat.fromTerritoryId)?.name || lastCombat.fromTerritoryId} -> ${territoryById(lastCombat.toTerritoryId)?.name || lastCombat.toTerritoryId}`;
+      elements.combatAttackerRolls.textContent = formatDiceList(lastCombat.attackerRolls);
+      elements.combatDefenderRolls.textContent = formatDiceList(lastCombat.defenderRolls);
+      elements.combatComparisons.textContent = formatCombatComparisons(lastCombat.comparisons);
     }
   }
 

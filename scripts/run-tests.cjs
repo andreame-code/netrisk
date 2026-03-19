@@ -28,7 +28,8 @@ const {
   standardTradeBonusForIndex,
   validateStandardCardSet
 } = require("../shared/cards.cjs");
-const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, standardDiceRuleSet } = require("../shared/dice.cjs");
+const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, listDiceRuleSets, standardDiceRuleSet } = require("../shared/dice.cjs");
+const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
 const { validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
@@ -238,6 +239,44 @@ register("resolveAttack conquista un territorio quando l'attaccante vince", () =
   assert.equal(state.territories.bastion.ownerId, first.id);
   assert.equal(state.pendingConquest.toId, "bastion");
   assert.equal(state.territories.bastion.armies, 0);
+  assert.equal(result.combat.fromTerritoryId, "aurora");
+  assert.equal(result.combat.toTerritoryId, "bastion");
+  assert.equal(result.combat.diceRuleSetId, "standard");
+  assert.deepEqual(result.combat.attackerRolls, [6]);
+  assert.deepEqual(result.combat.defenderRolls, [1]);
+  assert.equal(result.combat.comparisons[0].winner, "attacker");
+  assert.equal(result.combat.defenderReducedToZero, true);
+  assert.equal(result.combat.conqueredTerritory, true);
+  assert.deepEqual(result.pendingConquest, state.pendingConquest);
+  assert.deepEqual(state.lastAction.combat, result.combat);
+});
+
+register("resolveAttack espone un risultato strutturato anche quando il difensore vince il confronto", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.bastion = { ownerId: second.id, armies: 2 };
+
+  const random = (() => {
+    const values = [0.5, 0.5];
+    return () => values.shift();
+  })();
+
+  const result = resolveAttack(state, first.id, "aurora", "bastion", random);
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.comparisons[0].winner, "defender");
+  assert.equal(result.combat.attackerArmiesBefore, 3);
+  assert.equal(result.combat.defenderArmiesBefore, 2);
+  assert.equal(result.combat.attackerArmiesRemaining, 2);
+  assert.equal(result.combat.defenderArmiesRemaining, 2);
+  assert.equal(result.combat.defenderReducedToZero, false);
+  assert.equal(result.combat.conqueredTerritory, false);
+  assert.equal(result.pendingConquest, null);
+  assert.equal(state.pendingConquest, null);
+  assert.deepEqual(state.lastAction.combat, result.combat);
 });
 
 register("moveAfterConquest trasferisce armate prima di poter chiudere il turno", () => {
@@ -402,6 +441,62 @@ register("standard dice rules centralizzano i limiti di combattimento", () => {
   assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
   assert.equal(ruleSet.defenderWinsTies, true);
   assert.equal(getDiceRuleSet("unsupported"), standardDiceRuleSet);
+});
+
+register("combat resolution applica i limiti dadi dal rule set centralizzato", () => {
+  const customRuleSet = {
+    id: "variant-test",
+    attackerMaxDice: 2,
+    defenderMaxDice: 1,
+    attackerMustLeaveOneArmyBehind: true,
+    defenderWinsTies: true
+  };
+
+  const random = (() => {
+    const values = [0.95, 0.45, 0.8];
+    return () => values.shift();
+  })();
+
+  const state = {
+    phase: "active",
+    turnPhase: "attack",
+    currentTurnIndex: 0,
+    players: [{ id: "p1" }, { id: "p2" }],
+    territories: {
+      a: { ownerId: "p1", armies: 4 },
+      b: { ownerId: "p2", armies: 2 }
+    }
+  };
+  const graph = {
+    hasTerritory(id) { return id === "a" || id === "b"; },
+    areAdjacent(fromId, toId) {
+      return (fromId === "a" && toId === "b") || (fromId === "b" && toId === "a");
+    }
+  };
+
+  const validationModule = require("../backend/engine/combat-resolution.cjs");
+  const result = validationModule.resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+    diceRuleSet: customRuleSet,
+    random
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.diceRuleSetId, "variant-test");
+  assert.equal(result.combat.attackDiceCount, 2);
+  assert.equal(result.combat.defendDiceCount, 1);
+});
+
+register("combat dice helpers separano tiro e confronto", () => {
+  const rolls = rollCombatDice(3, (() => {
+    const values = [0.2, 0.95, 0.5];
+    return () => values.shift();
+  })());
+  assert.deepEqual(rolls, [6, 4, 2]);
+
+  const compared = compareCombatDice([2, 6, 4], [4, 1], { defenderWinsTies: true });
+  assert.deepEqual(compared.attackerRolls, [6, 4, 2]);
+  assert.deepEqual(compared.defenderRolls, [4, 1]);
+  assert.deepEqual(compared.comparisons.map((entry) => entry.winner), ["attacker", "attacker"]);
 });
 
 register("standard card rules rifiutano set invalidi e centralizzano la progressione bonus", () => {
@@ -605,6 +700,29 @@ register("publicState espone i metadati carte senza rivelare deck e discard pile
   assert.equal(Object.prototype.hasOwnProperty.call(snapshot.cardState, "discardPile"), false);
 });
 
+register("publicState espone lastCombat in modo esplicito dopo un attacco", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.bastion = { ownerId: second.id, armies: 1 };
+
+  const random = (() => {
+    const values = [0.9, 0.1];
+    return () => values.shift();
+  })();
+
+  const attack = resolveAttack(state, first.id, "aurora", "bastion", random);
+  assert.equal(attack.ok, true);
+
+  const snapshot = publicState(state);
+  assert.deepEqual(snapshot.lastCombat, attack.combat);
+  assert.equal(snapshot.lastCombat.toTerritoryId, "bastion");
+  assert.equal(snapshot.lastCombat.diceRuleSetId, "standard");
+});
+
 register("publicState espone modelli condivisi e stato corrente", () => {
   const { state, first } = setupLobby();
   state.phase = "active";
@@ -624,6 +742,7 @@ register("publicState espone anche i metadati configurazione partita", () => {
   const state = createInitialState();
   state.gameConfig = {
     mapId: "classic-mini",
+    diceRuleSetId: "standard",
     totalPlayers: 4,
     players: [
       { type: "human", name: "Andre" },
@@ -636,8 +755,35 @@ register("publicState espone anche i metadati configurazione partita", () => {
   const snapshot = publicState(state);
   assert.equal(snapshot.gameConfig.mapId, "classic-mini");
   assert.equal(snapshot.gameConfig.mapName, "Classic Mini");
+  assert.equal(snapshot.gameConfig.diceRuleSetId, "standard");
   assert.equal(snapshot.gameConfig.totalPlayers, 4);
   assert.equal(snapshot.gameConfig.players[2].type, "ai");
+});
+
+register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
+  const defaultConfig = validateNewGameConfig({
+    mapId: "classic-mini",
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai" }]
+  });
+  assert.equal(defaultConfig.diceRuleSetId, "standard");
+
+  const explicitConfig = validateNewGameConfig({
+    mapId: "classic-mini",
+    diceRuleSetId: "standard",
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "human" }]
+  });
+  assert.equal(explicitConfig.diceRuleSetId, "standard");
+
+  assert.throws(() => {
+    validateNewGameConfig({
+      mapId: "classic-mini",
+      diceRuleSetId: "unsupported",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    });
+  }, /regola dadi selezionata non e supportata/i);
 });
 
 register("validateNewGameConfig assegna i nomi AI dal server e ignora quelli umani", () => {
@@ -822,6 +968,8 @@ register("API game options espone setup base per nuova partita", async () => {
     const payload = await response.json();
     assert.equal(Array.isArray(payload.maps), true);
     assert.equal(payload.maps[0].id, "classic-mini");
+    assert.equal(Array.isArray(payload.diceRuleSets), true);
+    assert.equal(payload.diceRuleSets[0].id, "standard");
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
   });
@@ -837,6 +985,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
       body: JSON.stringify({
         name: "Scenario AI",
         mapId: "classic-mini",
+        diceRuleSetId: "standard",
         totalPlayers: 3,
         players: [
           { type: "human" },
@@ -848,6 +997,8 @@ register("API games crea una sessione da configurazione strutturata", async () =
     assert.equal(response.status, 201);
     const payload = await response.json();
     assert.equal(payload.game.name, "Scenario AI");
+    assert.equal(payload.config.diceRuleSetId, "standard");
+    assert.equal(payload.state.gameConfig.diceRuleSetId, "standard");
     assert.equal(payload.config.totalPlayers, 3);
     assert.equal(payload.config.players[0].name, null);
     assert.equal(payload.config.players[1].type, "ai");
@@ -867,6 +1018,7 @@ register("API games summary espone metadati configurazione", async () => {
       body: JSON.stringify({
         name: "Scenario Meta",
         mapId: "classic-mini",
+        diceRuleSetId: "standard",
         totalPlayers: 4,
         players: [
           { type: "human" },
@@ -885,6 +1037,7 @@ register("API games summary espone metadati configurazione", async () => {
 
     assert.equal(game.mapId, "classic-mini");
     assert.equal(game.mapName, "Classic Mini");
+    assert.equal(game.diceRuleSetId, "standard");
     assert.equal(game.totalPlayers, 4);
     assert.equal(game.aiCount, 2);
   });
@@ -1626,6 +1779,38 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
     assert.equal(payload.cardState.maxHandBeforeForcedTrade, STANDARD_MAX_HAND_BEFORE_FORCED_TRADE);
     assert.equal(payload.cardState.currentPlayerMustTrade, true);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, "playerHand"), false);
+  });
+});
+
+register("GET /api/state espone lastCombat dopo un attacco", async () => {
+  await withServer(async (baseUrl, context) => {
+    const state = createInitialState();
+    const first = addPlayer(state, "Alice").player;
+    const second = addPlayer(state, "Bob").player;
+    state.phase = "active";
+    state.turnPhase = "attack";
+    state.currentTurnIndex = 0;
+    state.reinforcementPool = 0;
+    state.territories.aurora = { ownerId: first.id, armies: 3 };
+    state.territories.bastion = { ownerId: second.id, armies: 1 };
+
+    const random = (() => {
+      const values = [0.9, 0.1];
+      return () => values.shift();
+    })();
+
+    const attack = resolveAttack(state, first.id, "aurora", "bastion", random);
+    assert.equal(attack.ok, true);
+
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
+    const response = await fetch(`${baseUrl}/api/state`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.lastCombat, attack.combat);
+    assert.equal(payload.lastCombat.comparisons[0].winner, "attacker");
+    assert.equal(payload.lastCombat.conqueredTerritory, true);
   });
 });
 

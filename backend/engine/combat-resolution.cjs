@@ -1,20 +1,7 @@
 const { validateAttackAttempt } = require("./attack-validation.cjs");
+const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
+const { getDiceRuleSet } = require("../../shared/dice.cjs");
 
-function rollDie(random) {
-  return Math.floor(random() * 6) + 1;
-}
-
-function sortDescending(values) {
-  return values.slice().sort((left, right) => right - left);
-}
-
-function buildDice(count, random) {
-  const dice = [];
-  for (let index = 0; index < count; index += 1) {
-    dice.push(rollDie(random));
-  }
-  return sortDescending(dice);
-}
 
 function invalidFromValidation(validation) {
   return {
@@ -35,9 +22,11 @@ function resolveSingleAttackRoll(state, graph, playerId, fromTerritoryId, toTerr
   const attackerState = state.territories[fromTerritoryId];
   const defenderState = state.territories[toTerritoryId];
   const random = typeof options.random === "function" ? options.random : Math.random;
+  const diceRuleSet = options.diceRuleSet || getDiceRuleSet(options.diceRuleSetId || state.diceRuleSetId || "standard");
+  const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
 
-  const maxAttackDice = Math.min(3, attackerState.armies - 1);
-  const maxDefendDice = Math.min(2, defenderState.armies);
+  const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, attackerState.armies - attackerReserve);
+  const maxDefendDice = Math.min(diceRuleSet.defenderMaxDice, defenderState.armies);
 
   const attackDiceCount = options.attackDice == null ? maxAttackDice : Number(options.attackDice);
   const defendDiceCount = options.defendDice == null ? maxDefendDice : Number(options.defendDice);
@@ -50,24 +39,14 @@ function resolveSingleAttackRoll(state, graph, playerId, fromTerritoryId, toTerr
     throw new Error(`Defender dice must be between 1 and ${maxDefendDice}.`);
   }
 
-  const attackerRolls = buildDice(attackDiceCount, random);
-  const defenderRolls = buildDice(defendDiceCount, random);
-  const comparisons = [];
+  const { attackerRolls, defenderRolls, comparisons } = compareCombatDice(
+    rollCombatDice(attackDiceCount, random),
+    rollCombatDice(defendDiceCount, random),
+    { defenderWinsTies: diceRuleSet.defenderWinsTies }
+  );
 
-  const pairCount = Math.min(attackerRolls.length, defenderRolls.length);
-  for (let index = 0; index < pairCount; index += 1) {
-    const attackDie = attackerRolls[index];
-    const defendDie = defenderRolls[index];
-    const winner = attackDie > defendDie ? "attacker" : "defender";
-
-    comparisons.push({
-      pair: index + 1,
-      attackDie,
-      defendDie,
-      winner
-    });
-
-    if (winner === "attacker") {
+  for (const comparison of comparisons) {
+    if (comparison.winner === "attacker") {
       defenderState.armies -= 1;
     } else {
       attackerState.armies -= 1;
@@ -85,6 +64,7 @@ function resolveSingleAttackRoll(state, graph, playerId, fromTerritoryId, toTerr
     combat: {
       fromTerritoryId,
       toTerritoryId,
+      diceRuleSetId: diceRuleSet.id || "standard",
       attackDiceCount,
       defendDiceCount,
       attackerRolls,

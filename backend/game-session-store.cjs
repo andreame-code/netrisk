@@ -66,6 +66,7 @@ function summarizeGame(entry) {
     playerCount: Array.isArray(entry.state && entry.state.players) ? entry.state.players.length : 0,
     mapId: config && config.mapId ? config.mapId : null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
+    diceRuleSetId: config && config.diceRuleSetId ? config.diceRuleSetId : null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
     createdAt: entry.createdAt,
