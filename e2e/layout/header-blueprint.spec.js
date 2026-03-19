@@ -8,8 +8,8 @@ test("game header follows the single-row blueprint", async ({ page }) => {
   await resetGame(page);
   await page.goto("/game.html");
 
-  await page.getByPlaceholder("Utente").fill(username);
-  await page.getByPlaceholder("Password").fill(password);
+  await page.locator("#auth-form #auth-username").fill(username);
+  await page.locator("#auth-form #auth-password").fill(password);
   await page.getByRole("button", { name: "Registrati" }).click();
 
   const header = page.locator(".top-nav-bar");

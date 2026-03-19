@@ -49,7 +49,12 @@ function createGameState(input = {}) {
     log: input.log || [],
     lastAction: input.lastAction || null,
     pendingConquest: input.pendingConquest || null,
-    fortifyUsed: Boolean(input.fortifyUsed)
+    fortifyUsed: Boolean(input.fortifyUsed),
+    cardRuleSetId: input.cardRuleSetId || "standard",
+    deck: Array.isArray(input.deck) ? input.deck : [],
+    hands: input.hands || {},
+    tradeCount: Number.isInteger(input.tradeCount) ? input.tradeCount : 0,
+    conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn)
   };
 }
 
