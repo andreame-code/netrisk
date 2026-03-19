@@ -6,6 +6,7 @@ const {
   advanceTurn,
   applyReinforcement,
   applyFortify,
+  awardTurnCardIfEligible,
   computeReinforcements,
   createInitialState,
   endTurn,
@@ -13,9 +14,20 @@ const {
   publicState,
   resolveAttack,
   startGame,
-  territoriesOwnedBy
+  territoriesOwnedBy,
+  tradeCardSet,
+  playerMustTradeCards
 } = require("../backend/engine/game-engine.cjs");
 const { chooseFortify, runAiTurn } = require("../backend/engine/ai-player.cjs");
+const {
+  CardType,
+  STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,
+  createCard,
+  createStandardDeck,
+  getCardRuleSet,
+  standardTradeBonusForIndex,
+  validateStandardCardSet
+} = require("../shared/cards.cjs");
 const { validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
@@ -344,6 +356,225 @@ register("chooseFortify privilegia rinforzi dal retro verso un confine esposto",
 
   const fortify = chooseFortify(state, ai.id);
   assert.deepEqual(fortify, { fromId: "cinder", toId: "delta", armies: 2, score: 15 });
+});
+
+register("standard card rules riconoscono tris, set misto e wild", () => {
+  const infantrySet = validateStandardCardSet([
+    createCard({ id: "c1", type: CardType.INFANTRY }),
+    createCard({ id: "c2", type: CardType.INFANTRY }),
+    createCard({ id: "c3", type: CardType.INFANTRY })
+  ]);
+  assert.equal(infantrySet.ok, true);
+  assert.equal(infantrySet.pattern, "three-of-a-kind");
+
+  const mixedSet = validateStandardCardSet([
+    createCard({ id: "c4", type: CardType.INFANTRY }),
+    createCard({ id: "c5", type: CardType.CAVALRY }),
+    createCard({ id: "c6", type: CardType.ARTILLERY })
+  ]);
+  assert.equal(mixedSet.ok, true);
+  assert.equal(mixedSet.pattern, "one-of-each");
+
+  const wildSet = validateStandardCardSet([
+    createCard({ id: "c7", type: CardType.CAVALRY }),
+    createCard({ id: "c8", type: CardType.CAVALRY }),
+    createCard({ id: "c9", type: CardType.WILD })
+  ]);
+  assert.equal(wildSet.ok, true);
+  assert.equal(wildSet.pattern, "three-of-a-kind");
+  assert.equal(wildSet.resolvedType, CardType.CAVALRY);
+});
+
+register("standard card rules rifiutano set invalidi e centralizzano la progressione bonus", () => {
+  const invalidSet = validateStandardCardSet([
+    createCard({ id: "c1", type: CardType.INFANTRY }),
+    createCard({ id: "c2", type: CardType.INFANTRY }),
+    createCard({ id: "c3", type: CardType.CAVALRY })
+  ]);
+  assert.equal(invalidSet.ok, false);
+
+  assert.equal(standardTradeBonusForIndex(0), 4);
+  assert.equal(standardTradeBonusForIndex(1), 6);
+  assert.equal(standardTradeBonusForIndex(5), 15);
+  assert.equal(standardTradeBonusForIndex(6), 20);
+  assert.equal(standardTradeBonusForIndex(7), 25);
+
+  const ruleSet = getCardRuleSet();
+  assert.equal(ruleSet.id, "standard");
+  assert.equal(ruleSet.tradeBonusForIndex(2), 8);
+});
+
+register("tradeCardSet converte un set valido in rinforzi e incrementa la progressione", () => {
+  const { state, first } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "reinforcement";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 3;
+  state.hands[first.id] = [
+    createCard({ id: "t1", type: CardType.INFANTRY }),
+    createCard({ id: "t2", type: CardType.INFANTRY }),
+    createCard({ id: "t3", type: CardType.INFANTRY })
+  ];
+
+  const result = tradeCardSet(state, first.id, ["t1", "t2", "t3"]);
+  assert.equal(result.ok, true);
+  assert.equal(result.bonus, 4);
+  assert.equal(state.reinforcementPool, 7);
+  assert.equal(state.tradeCount, 1);
+  assert.deepEqual(state.hands[first.id], []);
+});
+
+register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo stato", () => {
+  const { state, first } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 3;
+  state.hands[first.id] = [
+    createCard({ id: "x1", type: CardType.INFANTRY }),
+    createCard({ id: "x2", type: CardType.INFANTRY }),
+    createCard({ id: "x3", type: CardType.CAVALRY })
+  ];
+
+  const wrongPhase = tradeCardSet(state, first.id, ["x1", "x2", "x3"]);
+  assert.equal(wrongPhase.ok, false);
+  assert.equal(state.reinforcementPool, 3);
+  assert.equal(state.tradeCount, 0);
+  assert.equal(state.hands[first.id].length, 3);
+
+  state.turnPhase = "reinforcement";
+  const invalidSet = tradeCardSet(state, first.id, ["x1", "x2", "x3"]);
+  assert.equal(invalidSet.ok, false);
+  assert.equal(state.reinforcementPool, 3);
+  assert.equal(state.tradeCount, 0);
+  assert.equal(state.hands[first.id].length, 3);
+});
+
+register("playerMustTradeCards segnala il limite mano standard", () => {
+  const { state, first } = setupLobby();
+  state.hands[first.id] = Array.from({ length: STANDARD_MAX_HAND_BEFORE_FORCED_TRADE + 1 }, (_, index) =>
+    createCard({ id: "limit-" + index, type: CardType.INFANTRY })
+  );
+
+  assert.equal(playerMustTradeCards(state, first.id), true);
+
+  state.hands[first.id] = state.hands[first.id].slice(0, STANDARD_MAX_HAND_BEFORE_FORCED_TRADE);
+  assert.equal(playerMustTradeCards(state, first.id), false);
+});
+
+register("il motore forza il trade prima di uscire dal rinforzo", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "reinforcement";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 1;
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.bastion = { ownerId: second.id, armies: 1 };
+  state.hands[first.id] = [
+    createCard({ id: "m1", type: CardType.INFANTRY }),
+    createCard({ id: "m2", type: CardType.INFANTRY }),
+    createCard({ id: "m3", type: CardType.INFANTRY }),
+    createCard({ id: "m4", type: CardType.CAVALRY }),
+    createCard({ id: "m5", type: CardType.CAVALRY }),
+    createCard({ id: "m6", type: CardType.ARTILLERY })
+  ];
+
+  const reinforce = applyReinforcement(state, first.id, "aurora");
+  assert.equal(reinforce.ok, true);
+  assert.equal(state.reinforcementPool, 0);
+  assert.equal(state.turnPhase, "reinforcement");
+
+  const attackBlocked = resolveAttack(state, first.id, "aurora", "bastion");
+  assert.equal(attackBlocked.ok, false);
+  assert.match(attackBlocked.message, /scambiare carte/i);
+
+  const endBlocked = endTurn(state, first.id);
+  assert.equal(endBlocked.ok, false);
+  assert.match(endBlocked.message, /scambiare carte/i);
+
+  const trade = tradeCardSet(state, first.id, ["m1", "m2", "m3"]);
+  assert.equal(trade.ok, true);
+  assert.equal(playerMustTradeCards(state, first.id), false);
+  assert.equal(state.turnPhase, "reinforcement");
+});
+
+register("awardTurnCardIfEligible assegna una carta solo dopo almeno una conquista", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 3 };
+  state.territories.bastion = { ownerId: second.id, armies: 1 };
+  state.territories.cinder = { ownerId: second.id, armies: 2 };
+
+  const startingDeck = state.deck.length;
+  const random = (() => {
+    const values = [0.9, 0.1];
+    return () => values.shift();
+  })();
+
+  const attack = resolveAttack(state, first.id, "aurora", "bastion", random);
+  assert.equal(attack.ok, true);
+  assert.equal(state.conqueredTerritoryThisTurn, true);
+
+  const moved = moveAfterConquest(state, first.id, 1);
+  assert.equal(moved.ok, true);
+
+  const toFortify = endTurn(state, first.id);
+  assert.equal(toFortify.ok, true);
+  assert.equal(toFortify.awardedCard, undefined);
+
+  const finishTurn = endTurn(state, first.id);
+  assert.equal(finishTurn.ok, true);
+  assert.equal(Boolean(finishTurn.awardedCard), true);
+  assert.equal(state.hands[first.id].length, 1);
+  assert.equal(state.deck.length, startingDeck - 1);
+  assert.equal(state.conqueredTerritoryThisTurn, false);
+});
+
+register("awardTurnCardIfEligible non assegna carte senza conquista o con deck vuoto", () => {
+  const { state, first } = setupLobby();
+  const noneWithoutConquest = awardTurnCardIfEligible(state, first.id);
+  assert.equal(noneWithoutConquest, null);
+
+  state.conqueredTerritoryThisTurn = true;
+  state.deck = [];
+  const noneWithoutDeck = awardTurnCardIfEligible(state, first.id);
+  assert.equal(noneWithoutDeck, null);
+  assert.equal(Array.isArray(state.hands[first.id]), false);
+});
+
+register("createInitialState inizializza deck, hands e progressione carte standard", () => {
+  const state = createInitialState();
+  assert.equal(state.cardRuleSetId, "standard");
+  assert.equal(Array.isArray(state.deck), true);
+  assert.equal(state.deck.length, 11);
+  assert.deepEqual(state.hands, {});
+  assert.equal(state.tradeCount, 0);
+  assert.equal(state.deck.filter((card) => card.type === CardType.WILD).length, 2);
+  assert.equal(state.deck.filter((card) => card.territoryId).length, 9);
+
+  const rebuiltDeck = createStandardDeck(Object.keys(state.territories));
+  assert.equal(rebuiltDeck.length, state.deck.length);
+});
+
+register("publicState espone i metadati carte senza rivelare il deck completo", () => {
+  const { state, first, second } = setupLobby();
+  state.hands[first.id] = [createCard({ id: "h1", type: CardType.INFANTRY })];
+  state.hands[second.id] = [
+    createCard({ id: "h2", type: CardType.CAVALRY }),
+    createCard({ id: "h3", type: CardType.ARTILLERY })
+  ];
+  state.tradeCount = 3;
+
+  const snapshot = publicState(state);
+  assert.equal(snapshot.cardState.ruleSetId, "standard");
+  assert.equal(snapshot.cardState.tradeCount, 3);
+  assert.equal(snapshot.cardState.deckCount, state.deck.length);
+  assert.equal(snapshot.players.find((player) => player.id === first.id).cardCount, 1);
+  assert.equal(snapshot.players.find((player) => player.id === second.id).cardCount, 2);
+  assert.equal(Object.prototype.hasOwnProperty.call(snapshot.cardState, "deck"), false);
 });
 
 register("publicState espone modelli condivisi e stato corrente", () => {

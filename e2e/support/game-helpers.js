@@ -17,9 +17,10 @@ async function queueNextAttackRolls(page, attackRoll, defendRoll) {
 }
 
 async function registerAndLogin(page, username, password = "secret123") {
-  await page.getByPlaceholder("Utente").fill(username);
-  await page.getByPlaceholder("Password").fill(password);
-  await page.getByRole("button", { name: "Registrati" }).click();
+  const authForm = page.locator("#auth-form");
+  await authForm.locator("#auth-username").fill(username);
+  await authForm.locator("#auth-password").fill(password);
+  await authForm.locator("#register-button").click();
   await expect(page.locator("#auth-status")).toContainText(username, { timeout: 10000 });
 }
 

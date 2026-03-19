@@ -1,6 +1,10 @@
 # Test Gaps
 
 ## Covered
+- Card system: enforce mandatory trade above hand limit
+- Card system: trade valid sets for reinforcements
+- Card system: award one card on turn end after at least one conquest
+- Card system foundation: standard rule set, deck storage, player hands metadata
 - Backend gameplay rules and regression flows
 - Core E2E gameplay flows: reinforcement, attack/conquest, fortify handoff, turn guard, version conflict
 - AI autoplay E2E
@@ -12,10 +16,10 @@
 - Main battlefield visual baseline
 
 ## Missing
-- Player profile E2E: loading, empty
+- Player profile E2E: loading
 - Admin policy coverage
 - Visual regression expansion: Lobby, New Game, Profile
 
 ## Next Recommended Gap
-- Player profile E2E: empty state
+- Player profile E2E: loading
 

@@ -7,8 +7,8 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
 
   await resetGame(page);
   await page.goto("/game.html");
-  await page.getByPlaceholder("Utente").fill(username);
-  await page.getByPlaceholder("Password").fill(password);
+  await page.locator("#auth-form #auth-username").fill(username);
+  await page.locator("#auth-form #auth-password").fill(password);
   await page.getByRole("button", { name: "Registrati" }).click();
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();
