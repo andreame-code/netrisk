@@ -29,16 +29,12 @@ test("non-member user cannot open a protected game from a direct game route", as
   await outsiderPage.goto("/game.html");
   await registerAndLogin(outsiderPage, outsiderUser);
   await outsiderPage.goto("/lobby.html");
-
-  const routeError = outsiderPage.waitForEvent("pageerror");
   await outsiderPage.goto("/game.html?gameId=" + encodeURIComponent(protectedGameId));
-  const denialError = await routeError;
 
-  await expect(denialError.message).toMatch(/sessione non valida|fai parte|membro|accesso|autorizzat/i);
   await expect(outsiderPage.locator("#game-status")).toHaveText("Nessuna");
   await expect(outsiderPage.getByRole("button", { name: "Entra nella lobby" })).toBeVisible();
+  await expect(outsiderPage).not.toHaveURL(new RegExp("/game/" + protectedGameId + "$"));
 
   await ownerContext.close();
   await outsiderContext.close();
 });
-

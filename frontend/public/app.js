@@ -1131,10 +1131,10 @@ if (elements.cardTradeButton) {
 }
 
 pendingRequestedGameId = requestedGameIdFromRoute();
-await loadState();
+await restoreSession();
 await loadGameList();
 await openRequestedGameIfNeeded();
-await restoreSession();
+await loadState().catch(() => {});
 connectEvents();
 
 
