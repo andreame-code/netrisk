@@ -111,13 +111,36 @@ function playerMustTradeCards(state, playerId) {
   return ensurePlayerHand(state, playerId).length > getForcedTradeLimit(state);
 }
 
-function awardTurnCardIfEligible(state, playerId) {
-  if (!state.conqueredTerritoryThisTurn || !Array.isArray(state.deck) || state.deck.length === 0) {
+function refillDeckFromDiscardIfNeeded(state, random = Math.random) {
+  if (!Array.isArray(state.deck)) {
+    state.deck = [];
+  }
+
+  if (state.deck.length > 0) {
+    return false;
+  }
+
+  if (!Array.isArray(state.discardPile) || state.discardPile.length === 0) {
+    return false;
+  }
+
+  state.deck = shuffle(state.discardPile, random);
+  state.discardPile = [];
+  return true;
+}
+
+function awardTurnCardIfEligible(state, playerId, random = Math.random) {
+  if (!state.conqueredTerritoryThisTurn) {
     return null;
   }
 
   const player = getPlayer(state, playerId);
   if (!player) {
+    return null;
+  }
+
+  refillDeckFromDiscardIfNeeded(state, random);
+  if (!Array.isArray(state.deck) || state.deck.length === 0) {
     return null;
   }
 
