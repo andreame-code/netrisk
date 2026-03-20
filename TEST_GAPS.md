@@ -1,6 +1,7 @@
 # Test Gaps
 
 ## Covered
+- Card system: long-game card awarding reshuffles discard back into deck
 - Visual regression expansion: Lobby, New Game, Profile
 - Admin policy coverage
 - Player profile E2E: loading
