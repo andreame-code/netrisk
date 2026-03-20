@@ -650,16 +650,75 @@ register("awardTurnCardIfEligible assegna una carta solo dopo almeno una conquis
   assert.equal(state.conqueredTerritoryThisTurn, false);
 });
 
-register("awardTurnCardIfEligible non assegna carte senza conquista o con deck vuoto", () => {
+register("awardTurnCardIfEligible non assegna carte senza conquista o senza carte disponibili", () => {
   const { state, first } = setupLobby();
   const noneWithoutConquest = awardTurnCardIfEligible(state, first.id);
   assert.equal(noneWithoutConquest, null);
 
   state.conqueredTerritoryThisTurn = true;
   state.deck = [];
-  const noneWithoutDeck = awardTurnCardIfEligible(state, first.id);
-  assert.equal(noneWithoutDeck, null);
+  state.discardPile = [];
+  const noneWithoutCards = awardTurnCardIfEligible(state, first.id);
+  assert.equal(noneWithoutCards, null);
   assert.equal(Array.isArray(state.hands[first.id]), false);
+});
+
+register("awardTurnCardIfEligible rimescola il discard quando il deck e vuoto", () => {
+  const { state, first } = setupLobby();
+  state.conqueredTerritoryThisTurn = true;
+  state.deck = [];
+  state.discardPile = [
+    createCard({ id: "d1", type: CardType.CAVALRY }),
+    createCard({ id: "d2", type: CardType.ARTILLERY })
+  ];
+
+  const awarded = awardTurnCardIfEligible(state, first.id, (() => {
+    const values = [0];
+    return () => values.shift() ?? 0;
+  })());
+
+  assert.equal(Boolean(awarded), true);
+  assert.equal(state.hands[first.id].length, 1);
+  assert.equal(state.discardPile.length, 0);
+  assert.equal(state.deck.length, 1);
+  assert.equal(state.hands[first.id][0].id, "d2");
+});
+
+register("awardTurnCardIfEligible non assegna piu di una carta nello stesso turno", () => {
+  const { state, first } = setupLobby();
+  state.conqueredTerritoryThisTurn = true;
+  state.deck = [createCard({ id: "only-one", type: CardType.INFANTRY })];
+
+  const firstAward = awardTurnCardIfEligible(state, first.id);
+  const secondAward = awardTurnCardIfEligible(state, first.id);
+
+  assert.equal(firstAward.id, "only-one");
+  assert.equal(secondAward, null);
+  assert.equal(state.hands[first.id].length, 1);
+});
+
+register("awardTurnCardIfEligible continua ad assegnare carte su molti turni di conquista", () => {
+  const { state, first } = setupLobby();
+  state.deck = [createCard({ id: "deck-1", type: CardType.INFANTRY })];
+  state.discardPile = [
+    createCard({ id: "discard-1", type: CardType.CAVALRY }),
+    createCard({ id: "discard-2", type: CardType.ARTILLERY }),
+    createCard({ id: "discard-3", type: CardType.WILD })
+  ];
+
+  const random = (() => {
+    const values = [0, 0, 0, 0, 0, 0];
+    return () => values.shift() ?? 0;
+  })();
+
+  for (let turn = 0; turn < 4; turn += 1) {
+    state.conqueredTerritoryThisTurn = true;
+    const awarded = awardTurnCardIfEligible(state, first.id, random);
+    assert.equal(Boolean(awarded), true);
+  }
+
+  assert.equal(state.hands[first.id].length, 4);
+  assert.deepEqual(state.hands[first.id].map((card) => card.id).sort(), ["deck-1", "discard-1", "discard-2", "discard-3"]);
 });
 
 register("createInitialState inizializza deck, discard pile, hands e progressione carte standard", () => {
@@ -1493,6 +1552,61 @@ register("API cards trade applica un set valido e persiste lo stato aggiornato",
     assert.equal(response.payload.state.cardState.discardCount, 3);
     assert.equal(response.payload.state.players.find((player) => player.id === first.id).cardCount, 0);
     assert.deepEqual(context.app.state.discardPile.map((card) => card.id), ["api-t1", "api-t2", "api-t3"]);
+  });
+});
+
+register("API card flow rimescola il discard e continua l'award a fine turno", async () => {
+  await withServer(async (baseUrl, context) => {
+    const login = await createAuthenticatedAppSession(context.app,                                                                                                                                                                                                                                                                                                                                                 'card_flow_' + Math.random().toString(16).slice(2, 8));
+    const state = createInitialState();
+    const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
+    addPlayer(state, 'CPU Card', { isAi: true });
+    state.phase = 'active';
+    state.turnPhase = 'reinforcement';
+    state.currentTurnIndex = 0;
+    state.reinforcementPool = 3;
+    state.territories.aurora = { ownerId: first.id, armies: 2 };
+    state.territories.bastion = { ownerId: first.id, armies: 1 };
+    const cpu = state.players.find((player) => player.id !== first.id);
+    state.territories.cinder = { ownerId: cpu.id, armies: 2 };
+    state.territories.delta = { ownerId: cpu.id, armies: 1 };
+    state.hands[first.id] = [
+      createCard({ id: 'flow-t1', type: CardType.INFANTRY }),
+      createCard({ id: 'flow-t2', type: CardType.INFANTRY }),
+      createCard({ id: 'flow-t3', type: CardType.INFANTRY })
+    ];
+
+    Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
+    Object.assign(context.app.state, state);
+
+    const tradeResponse = await callApp(context.app, 'POST', '/api/cards/trade', {
+      sessionToken: login.sessionToken,
+      playerId: first.id,
+      cardIds: ['flow-t1', 'flow-t2', 'flow-t3']
+    }, authHeaders(login.sessionToken));
+
+    assert.equal(tradeResponse.statusCode, 200);
+    assert.deepEqual(context.app.state.discardPile.map((card) => card.id), ['flow-t1', 'flow-t2', 'flow-t3']);
+
+    context.app.state.reinforcementPool = 0;
+    context.app.state.turnPhase = 'fortify';
+    context.app.state.conqueredTerritoryThisTurn = true;
+    context.app.state.deck = [];
+
+    const endTurnResponse = await callApp(context.app, 'POST', '/api/action', {
+      sessionToken: login.sessionToken,
+      playerId: first.id,
+      type: 'endTurn'
+    }, authHeaders(login.sessionToken));
+
+    assert.equal(endTurnResponse.statusCode, 200);
+    assert.equal(endTurnResponse.payload.state.cardState.discardCount, 0);
+    assert.equal(endTurnResponse.payload.state.cardState.deckCount >= 1, true);
+    assert.equal(context.app.state.hands[first.id].length, 1);
+    assert.equal(['flow-t1', 'flow-t2', 'flow-t3'].includes(context.app.state.hands[first.id][0].id), true);
+    assert.equal(context.app.state.discardPile.length, 0);
+    assert.equal(context.app.state.deck.length >= 1, true);
+    assert.equal(context.app.state.conqueredTerritoryThisTurn, false);
   });
 });
 

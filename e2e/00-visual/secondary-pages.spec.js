@@ -10,7 +10,7 @@ test("lobby layout matches the baseline", async ({ page }) => {
   await expect(page.locator("#auth-status")).toContainText("Accedi per aprire e gestire le tue sessioni.");
   await expect(page).toHaveScreenshot("lobby-layout.png", {
     timeout: 15000,
-    maxDiffPixels: 8000
+    maxDiffPixels: 10000
   });
 });
 

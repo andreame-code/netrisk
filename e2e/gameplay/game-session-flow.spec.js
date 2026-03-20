@@ -17,6 +17,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
+  await expect(page).toHaveURL(/\/game(?:\/|\.html\?gameId=)/);
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
 
@@ -31,6 +32,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await expect(page).toHaveURL(/\/new-game\.html$/);
   await page.locator("#setup-game-name").fill(secondGameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
+  await expect(page).toHaveURL(/\/game(?:\/|\.html\?gameId=)/);
   await expect(page.locator("#game-status")).toContainText(secondGameName);
 
   await page.goto("/lobby.html");
