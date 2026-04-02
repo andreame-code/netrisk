@@ -27,6 +27,7 @@ function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
       tradeCount: 0,
       deckCount: 5,
       discardCount: 0,
+      nextTradeBonus: 4,
       maxHandBeforeForcedTrade: 5,
       currentPlayerMustTrade: mustTrade
     },
@@ -83,7 +84,9 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await page.goto("/game.html");
 
   await expect(page.locator("#card-trade-group")).toBeVisible();
-  await expect(page.locator("#card-trade-help")).toContainText("Devi scambiare 3 carte");
+  await expect(page.locator("#card-trade-summary")).toContainText("Carte in mano: 4");
+  await expect(page.locator("#card-trade-bonus")).toContainText("Prossimo scambio: +4 rinforzi");
+  await expect(page.locator("#card-trade-help")).toContainText("Scambio obbligatorio");
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(4);
   await expect(page.locator("#card-trade-button")).toBeDisabled();
 
@@ -98,3 +101,5 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);
   await expect(page.locator("#card-trade-help")).toContainText("0/3 carte selezionate");
 });
+
+
