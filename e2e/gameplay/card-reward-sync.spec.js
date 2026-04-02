@@ -43,8 +43,8 @@ test("game page refreshes player hand after an action updates card rewards", asy
   const refreshedState = mockState({
     playerHand: [{ id: "reward-1", type: "artillery", territoryId: "aurora" }],
     turnPhase: "reinforcement",
-    currentPlayerId: "p2",
-    reinforcementPool: 3,
+    currentPlayerId: "p1",
+    reinforcementPool: 1,
     version: 5
   });
   let stateCalls = 0;

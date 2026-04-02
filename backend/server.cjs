@@ -626,7 +626,8 @@ function createApp(options = {}) {
           };
         }
 
-        const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""), random);
+        const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
+        const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""), random, requestedAttackDice);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;

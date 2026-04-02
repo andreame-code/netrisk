@@ -10,6 +10,12 @@ const state = {
   gameListState: "loading",
   gameListError: "",
   selectedTradeCardIds: [],
+  selectedReinforceTerritoryId: null,
+  selectedAttackFromId: null,
+  selectedAttackToId: null,
+  selectedAttackDiceCount: "3",
+  selectedFortifyFromId: null,
+  selectedFortifyToId: null,
   tradeError: "",
   tradeSuccess: ""
 };
@@ -89,10 +95,13 @@ const elements = {
   statusSummary: document.querySelector("#status-summary"),
   players: document.querySelector("#players"),
   map: document.querySelector("#map"),
+  reinforceGroup: document.querySelector("#reinforce-group"),
   reinforceSelect: document.querySelector("#reinforce-select"),
   reinforceButton: document.querySelector("#reinforce-button"),
+  attackGroup: document.querySelector("#attack-group"),
   attackFrom: document.querySelector("#attack-from"),
   attackTo: document.querySelector("#attack-to"),
+  attackDice: document.querySelector("#attack-dice"),
   attackButton: document.querySelector("#attack-button"),
   conquestGroup: document.querySelector("#conquest-group"),
   conquestArmies: document.querySelector("#conquest-armies"),
@@ -151,6 +160,29 @@ function currentExpectedVersion() {
 
 function currentPlayerHand() {
   return Array.isArray(state.snapshot?.playerHand) ? state.snapshot.playerHand : [];
+}
+
+function currentDiceRuleSet() {
+  return state.snapshot?.diceRuleSet || { attackerMaxDice: 3, defenderMaxDice: 2 };
+}
+
+function selectOrFallback(selectedId, options, fallbackId = "") {
+  if (selectedId && options.some((option) => option.id === selectedId)) {
+    return selectedId;
+  }
+
+  return fallbackId || options[0]?.id || "";
+}
+
+function attackDiceOptions(maxDice) {
+  if (maxDice < 1) {
+    return '<option value="">Nessun dado disponibile</option>';
+  }
+
+  return Array.from({ length: maxDice }, (_, index) => {
+    const value = String(index + 1);
+    return '<option value="' + value + '">' + value + ' dado' + (value === '1' ? '' : 'i') + '</option>';
+  }).join("");
 }
 
 function cardTypeLabel(type) {
@@ -346,9 +378,9 @@ function buildGraphMarkup(snapshot) {
       const classes = [
         "territory-node",
         territory.ownerId === state.playerId ? "is-mine" : "",
-        elements.attackFrom.value === territory.id ? "is-source" : "",
-        elements.attackTo.value === territory.id ? "is-target" : "",
-        elements.reinforceSelect.value === territory.id ? "is-reinforce" : ""
+        state.selectedAttackFromId === territory.id ? "is-source" : "",
+        state.selectedAttackToId === territory.id ? "is-target" : "",
+        state.selectedReinforceTerritoryId === territory.id ? "is-reinforce" : ""
       ]
         .filter(Boolean)
         .join(" ");
@@ -398,12 +430,13 @@ function handleTerritoryClick(territoryId) {
   }
 
   if (territory.ownerId === state.playerId) {
-    elements.reinforceSelect.value = territory.id;
-    elements.attackFrom.value = territory.id;
+    state.selectedReinforceTerritoryId = territory.id;
+    state.selectedAttackFromId = territory.id;
+    state.selectedFortifyFromId = territory.id;
   } else if (territory.ownerId) {
-    const source = territoryById(elements.attackFrom.value) || myTerritories()[0];
+    const source = territoryById(state.selectedAttackFromId) || myTerritories()[0];
     if (source?.neighbors.includes(territory.id)) {
-      elements.attackTo.value = territory.id;
+      state.selectedAttackToId = territory.id;
     }
   }
 
@@ -487,26 +520,29 @@ function render() {
   const reinforceOptions = territories
     .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
     .join("");
+  const selectedReinforceId = selectOrFallback(state.selectedReinforceTerritoryId, territories);
+  state.selectedReinforceTerritoryId = selectedReinforceId || null;
   elements.reinforceSelect.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
-
-  const previousAttackFrom = elements.attackFrom.value;
-  elements.attackFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
-  if (previousAttackFrom && territories.some((territory) => territory.id === previousAttackFrom)) {
-    elements.attackFrom.value = previousAttackFrom;
+  if (selectedReinforceId) {
+    elements.reinforceSelect.value = selectedReinforceId;
   }
 
-  const selectedFromId = elements.attackFrom.value || territories[0]?.id || "";
-  if (!elements.attackFrom.value && selectedFromId) {
+  const selectedFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
+  state.selectedAttackFromId = selectedFromId || null;
+  elements.attackFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  if (selectedFromId) {
     elements.attackFrom.value = selectedFromId;
   }
 
-  const source = snapshot?.map.find((territory) => territory.id === selectedFromId);
+  const source = snapshot?.map.find((territory) => territory.id === selectedFromId) || null;
   const attackTargets = (snapshot?.map || []).filter(
     (territory) =>
       source?.neighbors.includes(territory.id) &&
       territory.ownerId &&
       territory.ownerId !== state.playerId
   );
+  const selectedAttackToId = selectOrFallback(state.selectedAttackToId, attackTargets);
+  state.selectedAttackToId = selectedAttackToId || null;
 
   elements.attackTo.innerHTML =
     attackTargets
@@ -516,18 +552,27 @@ function render() {
       })
       .join("") || '<option value="">Nessun bersaglio</option>';
 
-  if (attackTargets.length && !attackTargets.some((territory) => territory.id === elements.attackTo.value)) {
-    elements.attackTo.value = attackTargets[0].id;
+  if (selectedAttackToId) {
+    elements.attackTo.value = selectedAttackToId;
   }
 
-  const previousFortifyFrom = elements.fortifyFrom.value;
+  const maxAttackDice = source
+    ? Math.max(0, Math.min(currentDiceRuleSet().attackerMaxDice || 3, source.armies - 1))
+    : 0;
+  elements.attackDice.innerHTML = attackDiceOptions(maxAttackDice);
+  if (maxAttackDice > 0) {
+    const selectedAttackDiceCount = String(Math.min(Number(state.selectedAttackDiceCount || maxAttackDice), maxAttackDice));
+    state.selectedAttackDiceCount = selectedAttackDiceCount;
+    elements.attackDice.value = selectedAttackDiceCount;
+  } else {
+    state.selectedAttackDiceCount = "";
+    elements.attackDice.value = "";
+  }
+
+  const selectedFortifyFromId = selectOrFallback(state.selectedFortifyFromId, territories, selectedReinforceId);
+  state.selectedFortifyFromId = selectedFortifyFromId || null;
   elements.fortifyFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
-  if (previousFortifyFrom && territories.some((territory) => territory.id === previousFortifyFrom)) {
-    elements.fortifyFrom.value = previousFortifyFrom;
-  }
-
-  const selectedFortifyFromId = elements.fortifyFrom.value || territories[0]?.id || "";
-  if (!elements.fortifyFrom.value && selectedFortifyFromId) {
+  if (selectedFortifyFromId) {
     elements.fortifyFrom.value = selectedFortifyFromId;
   }
 
@@ -535,14 +580,16 @@ function render() {
   const fortifyTargets = territories.filter(
     (territory) => territory.id !== selectedFortifyFromId && fortifySource?.neighbors.includes(territory.id)
   );
+  const selectedFortifyToId = selectOrFallback(state.selectedFortifyToId, fortifyTargets);
+  state.selectedFortifyToId = selectedFortifyToId || null;
 
   elements.fortifyTo.innerHTML =
     fortifyTargets
       .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
       .join("") || '<option value="">Nessun territorio adiacente</option>';
 
-  if (fortifyTargets.length && !fortifyTargets.some((territory) => territory.id === elements.fortifyTo.value)) {
-    elements.fortifyTo.value = fortifyTargets[0].id;
+  if (selectedFortifyToId) {
+    elements.fortifyTo.value = selectedFortifyToId;
   }
 
   if (fortifySource && elements.fortifyArmies && !elements.fortifyArmies.value) {
@@ -551,7 +598,9 @@ function render() {
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
   elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${entry}</li>`).join("");
-
+  const inReinforcement = snapshot?.turnPhase === "reinforcement";
+  const inAttack = snapshot?.turnPhase === "attack";
+  const inFortify = snapshot?.turnPhase === "fortify";
   const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
   const pendingConquest = snapshot?.pendingConquest || null;
   const isAuthenticated = Boolean(state.user);
@@ -578,11 +627,17 @@ function render() {
   if (elements.createGameButtonSecondary) {
     elements.createGameButtonSecondary.disabled = false;
   }
+  if (elements.reinforceGroup) {
+    elements.reinforceGroup.hidden = !canInteract || !inReinforcement || Boolean(pendingConquest);
+  }
+  if (elements.attackGroup) {
+    elements.attackGroup.hidden = !canInteract || !inAttack || Boolean(pendingConquest);
+  }
   if (elements.conquestGroup) {
-    elements.conquestGroup.hidden = !pendingConquest;
+    elements.conquestGroup.hidden = !canInteract || !pendingConquest;
   }
   if (elements.fortifyGroup) {
-    elements.fortifyGroup.hidden = snapshot?.turnPhase !== "fortify" || Boolean(pendingConquest);
+    elements.fortifyGroup.hidden = !canInteract || !inFortify || Boolean(pendingConquest) || Boolean(snapshot?.fortifyUsed);
   }
   if (pendingConquest && elements.conquestArmies) {
     elements.conquestArmies.min = String(pendingConquest.minArmies || 1);
@@ -604,14 +659,10 @@ function render() {
       elements.combatComparisons.textContent = formatCombatComparisons(lastCombat.comparisons);
     }
   }
-
-  const inReinforcement = snapshot?.turnPhase === "reinforcement";
-  const inAttack = snapshot?.turnPhase === "attack";
-  const inFortify = snapshot?.turnPhase === "fortify";
   const mustTradeCards = Boolean(me) && isCurrentPlayer() && Boolean(snapshot?.cardState?.currentPlayerMustTrade);
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
   if (elements.cardTradeGroup) {
-    elements.cardTradeGroup.hidden = !showTradePanel;
+    elements.cardTradeGroup.hidden = !canInteract || !inReinforcement || Boolean(pendingConquest) || !showTradePanel;
     elements.cardTradeList.innerHTML = playerHand.length
       ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
       : '<p class="card-trade-empty">Nessuna carta disponibile.</p>';
@@ -627,9 +678,10 @@ function render() {
     elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
   }
   elements.reinforceButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
-  elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value;
+  elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
+  elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.textContent = inAttack ? "Vai a fortifica" : "Termina turno";
   elements.actionHint.textContent = canInteract
@@ -982,8 +1034,32 @@ elements.reinforceButton.addEventListener("click", async () => {
   }
 });
 
-elements.attackFrom.addEventListener("change", () => render());
-elements.fortifyFrom.addEventListener("change", () => render());
+elements.reinforceSelect.addEventListener("change", () => {
+  state.selectedReinforceTerritoryId = elements.reinforceSelect.value || null;
+  render();
+});
+elements.attackFrom.addEventListener("change", () => {
+  state.selectedAttackFromId = elements.attackFrom.value || null;
+  state.selectedAttackToId = null;
+  render();
+});
+elements.attackTo.addEventListener("change", () => {
+  state.selectedAttackToId = elements.attackTo.value || null;
+  render();
+});
+elements.attackDice.addEventListener("change", () => {
+  state.selectedAttackDiceCount = elements.attackDice.value || "";
+  render();
+});
+elements.fortifyFrom.addEventListener("change", () => {
+  state.selectedFortifyFromId = elements.fortifyFrom.value || null;
+  state.selectedFortifyToId = null;
+  render();
+});
+elements.fortifyTo.addEventListener("change", () => {
+  state.selectedFortifyToId = elements.fortifyTo.value || null;
+  render();
+});
 if (elements.gameList) {
   elements.gameList.addEventListener("change", () => {
     updateGameSelection(elements.gameList.value || null);
@@ -1047,6 +1123,7 @@ elements.attackButton.addEventListener("click", async () => {
       type: "attack",
       fromId: elements.attackFrom.value,
       toId: elements.attackTo.value,
+      attackDice: Number(elements.attackDice.value),
       expectedVersion: currentExpectedVersion()
     });
     state.snapshot = data.state;
@@ -1136,6 +1213,8 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
+
+
 
 
 
