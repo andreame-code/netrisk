@@ -26,12 +26,15 @@ test("human player can end turn and watch the AI complete its turn automatically
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*3/i);
 
   const reinforceButton = page.getByRole("button", { name: "+1 armata" });
-  const reinforcementCount = await getReinforcementCount(page);
-  for (let index = 0; index < reinforcementCount; index += 1) {
+  let reinforcementCount = await getReinforcementCount(page);
+  while (reinforcementCount > 0) {
     await reinforceButton.click();
+    await expect.poll(() => getReinforcementCount(page), {
+      message: "i rinforzi disponibili devono diminuire dopo ogni click"
+    }).toBeLessThan(reinforcementCount);
+    reinforcementCount = await getReinforcementCount(page);
   }
 
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
   await expect(page.locator("#end-turn-button")).toBeEnabled();
   await expect(page.locator("#end-turn-button")).toHaveText("Vai a fortifica");
 

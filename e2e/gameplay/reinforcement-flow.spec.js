@@ -24,16 +24,21 @@ test("current player can distribute reinforcements and enter attack step", async
   const reinforceButton = firstPage.getByRole("button", { name: "+1 armata" });
   await expect(reinforceButton).toBeEnabled();
 
-  const summaryText = await firstPage.getByTestId("status-summary").innerText();
-  const match = summaryText.match(/Rinforzi disponibili:\s*(\d+)/i);
-  const reinforcementCount = match ? Number(match[1]) : 0;
+  for (;;) {
+    const summaryText = await firstPage.getByTestId("status-summary").innerText();
+    const match = summaryText.match(/Rinforzi disponibili:\s*(\d+)/i);
+    const reinforcementCount = match ? Number(match[1]) : 0;
+    if (reinforcementCount <= 0) {
+      break;
+    }
 
-  for (let index = 0; index < reinforcementCount; index += 1) {
     await reinforceButton.click();
+    await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(String(reinforcementCount - 1)));
   }
 
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
-  await expect(reinforceButton).toBeDisabled();
+  await expect(firstPage.locator("#reinforce-group")).toBeHidden();
+  await expect(firstPage.locator("#attack-group")).toBeVisible();
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
   await expect(firstPage.locator("#conquest-group")).toBeHidden();
   await expect(firstPage.locator("#fortify-group")).toBeHidden();

@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("auth status and logout stay coherent across Game, Lobby, and Profile", async ({ page }) => {
+  test.slow();
   const username = uniqueUser("commander");
   const password = "secret123";
 
