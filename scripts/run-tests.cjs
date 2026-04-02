@@ -230,7 +230,7 @@ register("resolveAttack conquista un territorio quando l'attaccante vince", () =
   state.territories.cinder = { ownerId: second.id, armies: 2 };
 
   const random = (() => {
-    const values = [0.9, 0.1];
+    const values = [0.9, 0.7, 0.1];
     return () => values.shift();
   })();
 
@@ -242,13 +242,51 @@ register("resolveAttack conquista un territorio quando l'attaccante vince", () =
   assert.equal(result.combat.fromTerritoryId, "aurora");
   assert.equal(result.combat.toTerritoryId, "bastion");
   assert.equal(result.combat.diceRuleSetId, "standard");
-  assert.deepEqual(result.combat.attackerRolls, [6]);
+  assert.equal(result.combat.attackDiceCount, 2);
+  assert.equal(result.combat.defendDiceCount, 1);
+  assert.deepEqual(result.combat.attackerRolls, [6, 5]);
   assert.deepEqual(result.combat.defenderRolls, [1]);
   assert.equal(result.combat.comparisons[0].winner, "attacker");
   assert.equal(result.combat.defenderReducedToZero, true);
   assert.equal(result.combat.conqueredTerritory, true);
   assert.deepEqual(result.pendingConquest, state.pendingConquest);
   assert.deepEqual(state.lastAction.combat, result.combat);
+});
+
+register("resolveAttack usa i dadi richiesti dall'attaccante entro il limite disponibile", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 5 };
+  state.territories.bastion = { ownerId: second.id, armies: 2 };
+
+  const random = (() => {
+    const values = [0.9, 0.2, 0.1];
+    return () => values.shift();
+  })();
+
+  const result = resolveAttack(state, first.id, "aurora", "bastion", random, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.attackDiceCount, 1);
+  assert.equal(result.combat.defendDiceCount, 2);
+  assert.deepEqual(result.combat.attackerRolls, [6]);
+  assert.deepEqual(result.combat.defenderRolls, [2, 1]);
+});
+
+register("resolveAttack rifiuta un numero di dadi oltre il massimo disponibile", () => {
+  const { state, first, second } = setupLobby();
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: first.id, armies: 2 };
+  state.territories.bastion = { ownerId: second.id, armies: 2 };
+
+  const result = resolveAttack(state, first.id, "aurora", "bastion", Math.random, 2);
+  assert.equal(result.ok, false);
+  assert.equal(result.message, "Numero di dadi di attacco non valido.");
 });
 
 register("resolveAttack espone un risultato strutturato anche quando il difensore vince il confronto", () => {
@@ -261,16 +299,19 @@ register("resolveAttack espone un risultato strutturato anche quando il difensor
   state.territories.bastion = { ownerId: second.id, armies: 2 };
 
   const random = (() => {
-    const values = [0.5, 0.5];
+    const values = [0.5, 0.5, 0.5, 0.5];
     return () => values.shift();
   })();
 
   const result = resolveAttack(state, first.id, "aurora", "bastion", random);
   assert.equal(result.ok, true);
+  assert.equal(result.combat.attackDiceCount, 2);
+  assert.equal(result.combat.defendDiceCount, 2);
   assert.equal(result.combat.comparisons[0].winner, "defender");
+  assert.equal(result.combat.comparisons[1].winner, "defender");
   assert.equal(result.combat.attackerArmiesBefore, 3);
   assert.equal(result.combat.defenderArmiesBefore, 2);
-  assert.equal(result.combat.attackerArmiesRemaining, 2);
+  assert.equal(result.combat.attackerArmiesRemaining, 1);
   assert.equal(result.combat.defenderArmiesRemaining, 2);
   assert.equal(result.combat.defenderReducedToZero, false);
   assert.equal(result.combat.conqueredTerritory, false);
@@ -290,7 +331,7 @@ register("moveAfterConquest trasferisce armate prima di poter chiudere il turno"
   state.territories.cinder = { ownerId: second.id, armies: 2 };
 
   const random = (() => {
-    const values = [0.9, 0.1];
+    const values = [0.9, 0.7, 0.1];
     return () => values.shift();
   })();
 
@@ -372,7 +413,7 @@ register("runAiTurn completa un turno AI usando il motore esistente", () => {
   state.territories.ember = { ownerId: human.id, armies: 1 };
 
   const random = (() => {
-    const values = [0.9, 0.1];
+    const values = [0.9, 0.8, 0.7, 0.1];
     return () => values.shift() ?? 0.9;
   })();
 
@@ -627,7 +668,7 @@ register("awardTurnCardIfEligible assegna una carta solo dopo almeno una conquis
 
   const startingDeck = state.deck.length;
   const random = (() => {
-    const values = [0.9, 0.1];
+    const values = [0.9, 0.7, 0.1];
     return () => values.shift();
   })();
 
@@ -1909,7 +1950,7 @@ register("GET /api/state espone lastCombat dopo un attacco", async () => {
     state.territories.bastion = { ownerId: second.id, armies: 1 };
 
     const random = (() => {
-      const values = [0.9, 0.1];
+      const values = [0.9, 0.7, 0.1];
       return () => values.shift();
     })();
 
