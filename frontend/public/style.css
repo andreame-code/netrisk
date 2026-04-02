@@ -1717,3 +1717,12 @@ body[data-app-section="profile"] .main-nav-shell {
 
 
 
+
+.action-meta-list {
+  display: grid;
+  gap: 2px;
+}
+
+.action-meta-list .action-help {
+  margin: 0;
+}

@@ -262,6 +262,7 @@ function publicState(state) {
       tradeCount: Number.isInteger(state.tradeCount) ? state.tradeCount : 0,
       deckCount: Array.isArray(state.deck) ? state.deck.length : 0,
       discardCount: Array.isArray(state.discardPile) ? state.discardPile.length : 0,
+      nextTradeBonus: getCardRuleSet(state.cardRuleSetId || "standard").tradeBonusForIndex(Number.isInteger(state.tradeCount) ? state.tradeCount : 0),
       maxHandBeforeForcedTrade: getForcedTradeLimit(state),
       currentPlayerMustTrade: currentPlayer ? playerMustTradeCards(state, currentPlayer.id) : false
     }
@@ -704,5 +705,6 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
+
 
 
