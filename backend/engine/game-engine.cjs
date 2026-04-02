@@ -214,6 +214,7 @@ function readableMapName(mapId) {
 
 function publicState(state) {
   const currentPlayer = getCurrentPlayer(state);
+  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
   return {
     phase: state.phase,
     turnPhase: state.turnPhase,
@@ -248,6 +249,11 @@ function publicState(state) {
     log: state.log,
     lastAction: state.lastAction,
     lastCombat: state.lastAction && state.lastAction.type === GameAction.ATTACK ? state.lastAction.combat || null : null,
+    diceRuleSet: {
+      id: diceRuleSet.id || "standard",
+      attackerMaxDice: diceRuleSet.attackerMaxDice,
+      defenderMaxDice: diceRuleSet.defenderMaxDice
+    },
     pendingConquest: state.pendingConquest,
     fortifyUsed: Boolean(state.fortifyUsed),
     conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
@@ -404,7 +410,7 @@ function applyReinforcement(state, playerId, territoryId) {
   return { ok: true };
 }
 
-function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
+function resolveAttack(state, playerId, fromId, toId, random = Math.random, requestedAttackDice = null) {
   const attacker = getPlayer(state, playerId);
   const from = state.territories[fromId];
   const to = state.territories[toId];
@@ -452,34 +458,52 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
   const attackerArmiesBefore = from.armies;
   const defenderArmiesBefore = to.armies;
   const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
-  const attackRolls = rollCombatDice(1, random);
-  const defendRolls = rollCombatDice(1, random);
-  const comparison = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies }).comparisons[0];
-  const attackRoll = attackRolls[0];
-  const defendRoll = defendRolls[0];
-  const winner = comparison.winner;
-  from.armies -= 1;
-  let summary;
+  const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
+  const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve);
+  if (maxAttackDice < 1) {
+    return { ok: false, message: "Non hai abbastanza armate per tirare dadi in attacco." };
+  }
+  const attackDiceCount = requestedAttackDice == null
+    ? maxAttackDice
+    : Number(requestedAttackDice);
+  if (!Number.isInteger(attackDiceCount) || attackDiceCount < 1 || attackDiceCount > maxAttackDice) {
+    return { ok: false, message: "Numero di dadi di attacco non valido." };
+  }
+  const defendDiceCount = Math.min(diceRuleSet.defenderMaxDice, to.armies);
+  const attackRolls = rollCombatDice(attackDiceCount, random);
+  const defendRolls = rollCombatDice(defendDiceCount, random);
+  const { comparisons } = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies });
+  let attackerLosses = 0;
+  let defenderLosses = 0;
 
-  if (winner === "attacker") {
-    to.armies -= 1;
-    summary = attacker.name + " attacca " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
-    if (to.armies <= 0) {
-      to.ownerId = playerId;
-      to.armies = 0;
-      state.pendingConquest = {
-        fromId,
-        toId,
-        minArmies: 1,
-        maxArmies: Math.max(1, from.armies - 1)
-      };
-      state.conqueredTerritoryThisTurn = true;
-      summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
-    } else {
-      summary += " Il difensore perde 1 armata.";
+  comparisons.forEach((comparison) => {
+    if (comparison.winner === "attacker") {
+      defenderLosses += 1;
+      return;
     }
+
+    attackerLosses += 1;
+  });
+
+  from.armies -= attackerLosses;
+  to.armies -= defenderLosses;
+  let summary = attacker.name + " attacca " + toId + ": " + attackRolls.join("-") + " contro " + defendRolls.join("-") + ".";
+
+  if (to.armies <= 0) {
+    to.ownerId = playerId;
+    to.armies = 0;
+    state.pendingConquest = {
+      fromId,
+      toId,
+      minArmies: 1,
+      maxArmies: Math.max(1, from.armies - 1)
+    };
+    state.conqueredTerritoryThisTurn = true;
+    summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
+  } else if (defenderLosses > 0) {
+    summary += " Il difensore perde " + defenderLosses + " armata" + (defenderLosses > 1 ? "e" : "") + ".";
   } else {
-    summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRoll + " contro " + defendRoll + ".";
+    summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRolls.join("-") + " contro " + defendRolls.join("-") + ".";
   }
 
   const combat = {
@@ -488,11 +512,11 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random) {
     attackerPlayerId: playerId,
     defenderPlayerId: defenderOwnerId,
     diceRuleSetId: diceRuleSet.id || "standard",
-    attackDiceCount: 1,
-    defendDiceCount: 1,
+    attackDiceCount,
+    defendDiceCount,
     attackerRolls: attackRolls,
     defenderRolls: defendRolls,
-    comparisons: [comparison],
+    comparisons,
     attackerArmiesBefore,
     defenderArmiesBefore,
     attackerArmiesRemaining: from.armies,

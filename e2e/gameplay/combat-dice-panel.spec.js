@@ -29,11 +29,14 @@ function mockState() {
         toTerritoryId: "bastion",
         attackerPlayerId: "p1",
         defenderPlayerId: "p2",
-        attackDiceCount: 1,
-        defendDiceCount: 1,
-        attackerRolls: [6],
-        defenderRolls: [1],
-        comparisons: [{ pair: 1, attackDie: 6, defendDie: 1, winner: "attacker" }],
+        attackDiceCount: 3,
+        defendDiceCount: 2,
+        attackerRolls: [6, 5, 4],
+        defenderRolls: [6, 5],
+        comparisons: [
+          { pair: 1, attackDie: 6, defendDie: 6, winner: "defender" },
+          { pair: 2, attackDie: 5, defendDie: 5, winner: "defender" }
+        ],
         attackerArmiesBefore: 3,
         defenderArmiesBefore: 1,
         attackerArmiesRemaining: 2,
@@ -48,11 +51,14 @@ function mockState() {
       toTerritoryId: "bastion",
       attackerPlayerId: "p1",
       defenderPlayerId: "p2",
-      attackDiceCount: 1,
-      defendDiceCount: 1,
-      attackerRolls: [6],
-      defenderRolls: [1],
-      comparisons: [{ pair: 1, attackDie: 6, defendDie: 1, winner: "attacker" }],
+      attackDiceCount: 3,
+      defendDiceCount: 2,
+      attackerRolls: [6, 5, 4],
+      defenderRolls: [6, 5],
+      comparisons: [
+        { pair: 1, attackDie: 6, defendDie: 6, winner: "defender" },
+        { pair: 2, attackDie: 5, defendDie: 5, winner: "defender" }
+      ],
       attackerArmiesBefore: 3,
       defenderArmiesBefore: 1,
       attackerArmiesRemaining: 2,
@@ -107,8 +113,11 @@ test("game page shows the latest combat dice result from public state", async ({
 
   await expect(page.locator("#combat-result-group")).toBeVisible();
   await expect(page.locator("#combat-result-summary")).toContainText("Aurora -> Bastion");
-  await expect(page.locator("#combat-attacker-rolls")).toContainText("6");
-  await expect(page.locator("#combat-defender-rolls")).toContainText("1");
-  await expect(page.locator("#combat-comparisons")).toContainText("A");
+  await expect(page.locator("#combat-attacker-rolls")).toContainText("6 · 5 · 4");
+  await expect(page.locator("#combat-defender-rolls")).toContainText("6 · 5");
+  await expect(page.locator("#combat-comparisons")).toContainText("D · D");
   await expect(page.locator("#combat-result-badge")).toContainText("Territorio conquistato");
+
+  const hasHorizontalOverflow = await page.locator("#combat-result-group").evaluate((element) => element.scrollWidth > element.clientWidth);
+  expect(hasHorizontalOverflow).toBeFalsy();
 });
