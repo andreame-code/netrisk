@@ -26,17 +26,10 @@
 - New game setup negative validation: invalid map selection shows in-page error
 - Player profile E2E: error without session
 - Main battlefield visual baseline
+- Attack UI: selected dice count is sent to the backend
 
 ## Missing
 - None currently tracked
 
 ## Next Recommended Gap
 - None currently tracked
-
-
-
-
-
-
-
-

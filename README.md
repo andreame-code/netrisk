@@ -8,9 +8,12 @@ Il repository non contiene solo una demo grafica: contiene una base applicativa 
 
 - lobby e creazione partite
 - giocatori umani e AI
+- regole dadi configurabili
+- carte territorio e scambio set
 - flusso di turno strutturato
 - rinforzi, attacco, conquista e fortifica
 - validazione centralizzata sul backend
+- profilo giocatore con statistiche base
 - test automatici sia di gameplay sia end-to-end
 
 ## Stato attuale del gioco
@@ -19,15 +22,22 @@ Oggi il progetto supporta queste capacita:
 
 - registrazione, login, logout e profilo utente
 - lobby iniziale e riapertura di partite salvate
-- creazione di una nuova partita con mappa supportata
+- creazione di una nuova partita con mappa supportata e regola dadi selezionabile
 - ingresso di giocatori umani e aggiunta di bot AI
+- configurazione partite da 2 a 4 giocatori con primo slot umano obbligatorio
 - avvio partita e assegnazione iniziale dei territori
 - turno diviso in fasi: `reinforcement`, `attack`, `fortify`, `finished`
+- scelta del numero di dadi attacco entro i limiti consentiti
 - piazzamento rinforzi con controllo proprieta del territorio
 - attacco tra territori confinanti con risoluzione del combattimento
 - gestione della conquista e dello spostamento armate obbligatorio
+- carta territorio assegnata a fine turno se durante il turno e stata effettuata almeno una conquista
+- scambio carte durante la fase rinforzi con bonus progressivo
+- scambio obbligatorio oltre la soglia mano prevista dal ruleset standard
 - fortificazione a fine turno
 - rilevamento eliminazione giocatori e vittoria
+- pannello UI per ultimo risultato dadi del combattimento
+- pagina profilo con partite giocate, vittorie, sconfitte, partite in corso e win rate
 - eventi e sincronizzazione dello stato dal server al frontend
 
 La mappa supportata al momento e `classic-mini`.
@@ -41,9 +51,9 @@ L'architettura segue un principio semplice: il frontend presenta e invia azioni,
 - `backend`
   Server HTTP, autenticazione, autorizzazione, salvataggio sessioni di gioco, configurazione nuove partite.
 - `backend/engine`
-  Regole pure del gioco: setup, rinforzi, validazione attacco, combattimento, conquista, fortifica, vittoria, AI.
+  Regole pure del gioco: setup, rinforzi, validazione attacco, dadi di combattimento, conquista, carte, fortifica, vittoria, AI.
 - `shared`
-  Modelli e primitive condivise tra livelli applicativi.
+  Modelli, primitive e ruleset condivisi tra livelli applicativi.
 - `tests/gameplay`
   Test focalizzati sulla logica del motore di gioco.
 - `e2e`
@@ -58,12 +68,14 @@ Una partita tipica segue questo percorso:
 1. L'utente crea o apre una partita.
 2. I giocatori umani entrano nella lobby e opzionalmente vengono aggiunti bot AI.
 3. Il backend avvia la partita, distribuisce i territori e inizializza il turno corrente.
-4. Il giocatore attivo riceve i rinforzi e li piazza sui propri territori.
-5. Il giocatore puo eseguire attacchi validi contro territori adiacenti nemici.
-6. Se conquista un territorio, deve spostare armate dal territorio attaccante a quello conquistato.
-7. Il turno passa alla fase di fortifica.
-8. Il turno termina e il backend calcola il nuovo giocatore attivo.
-9. Quando resta un solo giocatore con territori, la partita viene chiusa con vincitore.
+4. Il giocatore attivo entra nella fase rinforzi e puo anche scambiare 3 carte valide per ottenere rinforzi extra.
+5. Il giocatore piazza i rinforzi sui propri territori.
+6. Il giocatore puo eseguire attacchi validi contro territori adiacenti nemici, scegliendo i dadi attacco consentiti.
+7. Se conquista un territorio, deve spostare armate dal territorio attaccante a quello conquistato.
+8. Se durante il turno ha conquistato almeno un territorio, a fine turno riceve una carta dal mazzo, se disponibile.
+9. Il turno passa alla fase di fortifica.
+10. Il turno termina e il backend calcola il nuovo giocatore attivo.
+11. Quando resta un solo giocatore con territori, la partita viene chiusa con vincitore.
 
 ## Modelli condivisi
 
@@ -71,10 +83,19 @@ I costrutti condivisi esposti da `shared/models.cjs` sono:
 
 - `TurnPhase`
 - `GameAction`
+- `CardType`
+- `STANDARD_DICE_RULE_SET_ID`
+- `STANDARD_CARD_RULE_SET_ID`
 - `createPlayer`
 - `createTerritory`
 - `createContinent`
 - `createGameState`
+- `createCard`
+- `createStandardDeck`
+- `getDiceRuleSet`
+- `listDiceRuleSets`
+- `getCardRuleSet`
+- `validateStandardCardSet`
 
 Lo stato di gioco contiene in particolare:
 
@@ -88,6 +109,10 @@ Lo stato di gioco contiene in particolare:
 - eventuale vincitore
 - log delle azioni
 - eventuale conquista in attesa di completamento
+- ruleset dadi attivo
+- mazzo carte, scarti e mani giocatore
+- numero scambi effettuati
+- flag di conquista nel turno per assegnazione carta
 
 ## Pagine e interfaccia
 
@@ -101,6 +126,12 @@ Le principali schermate disponibili nel frontend sono:
 
 La UI e pensata per restare sottile: mostra lo stato ricevuto dal server e invia azioni tramite API.
 
+Nella schermata di gioco sono presenti anche:
+
+- selettore dadi attacco con default coerente al territorio selezionato
+- pannello riepilogo ultimo combattimento con dadi e confronto
+- pannello carte del giocatore corrente con selezione set e invio scambio
+
 ## API principali
 
 Il server espone endpoint per:
@@ -111,6 +142,7 @@ Il server espone endpoint per:
 - opzioni per la creazione partita
 - creazione nuova partita
 - join umano e join AI
+- scambio carte del giocatore corrente
 - avvio partita
 - invio azioni di gioco
 - lettura stato corrente ed eventi
@@ -162,10 +194,11 @@ La suite `tests/gameplay` copre aree come:
 - setup partita
 - turn flow
 - rinforzi
-- validazione attacco e risoluzione combattimento
+- validazione attacco, dadi e risoluzione combattimento
 - conquista
 - fortifica
 - vittoria ed eliminazione
+- helper carte e trade bonus
 - flussi regressivi multi-modulo
 
 La suite `e2e` copre oggi:
@@ -173,9 +206,12 @@ La suite `e2e` copre oggi:
 - caricamento applicazione
 - layout principale
 - navigazione auth tra pagine
+- stati profilo: loading, errore, empty state
 - configurazione nuova partita
 - flussi gameplay principali
-- una baseline visuale della schermata principale
+- scelta dadi attacco e visualizzazione risultato combattimento
+- pannello carte, scambio riuscito, errori inline e sincronizzazione reward
+- baseline visuali della schermata principale e delle pagine secondarie
 
 ## Persistenza e dati locali
 
@@ -190,6 +226,15 @@ Il progetto segue queste regole:
 - logica di gioco centralizzata in `backend/engine`
 - modelli condivisi in `shared`
 - modifiche piccole, incrementali e facili da rivedere
+
+## Regole implementate oggi
+
+- Rinforzi minimi pari a 3 armate per turno, con bonus continenti dove applicabile.
+- Dadi standard di combattimento: attaccante fino a 3 dadi, difensore fino a 2, pareggio al difensore.
+- Carte standard: `infantry`, `cavalry`, `artillery`, `wild`.
+- Set validi per lo scambio: tris dello stesso tipo oppure uno per tipo, con jolly usabile come wildcard.
+- Progressione bonus scambio standard: `4, 6, 8, 10, 12, 15`, poi incremento di `+5`.
+- Scambio forzato quando una mano supera 5 carte nel ruleset standard.
 
 ## Roadmap naturale del progetto
 
