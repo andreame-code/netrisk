@@ -113,6 +113,8 @@ const elements = {
   fortifyButton: document.querySelector("#fortify-button"),
   cardTradeGroup: document.querySelector("#card-trade-group"),
   cardTradeList: document.querySelector("#card-trade-list"),
+  cardTradeSummary: document.querySelector("#card-trade-summary"),
+  cardTradeBonus: document.querySelector("#card-trade-bonus"),
   cardTradeHelp: document.querySelector("#card-trade-help"),
   cardTradeSuccess: document.querySelector("#card-trade-success"),
   cardTradeError: document.querySelector("#card-trade-error"),
@@ -432,6 +434,7 @@ function handleTerritoryClick(territoryId) {
   if (territory.ownerId === state.playerId) {
     state.selectedReinforceTerritoryId = territory.id;
     state.selectedAttackFromId = territory.id;
+    state.selectedAttackDiceCount = "";
     state.selectedFortifyFromId = territory.id;
   } else if (territory.ownerId) {
     const source = territoryById(state.selectedAttackFromId) || myTerritories()[0];
@@ -663,11 +666,13 @@ function render() {
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
   if (elements.cardTradeGroup) {
     elements.cardTradeGroup.hidden = !canInteract || !inReinforcement || Boolean(pendingConquest) || !showTradePanel;
+    elements.cardTradeSummary.textContent = `Carte in mano: ${playerHand.length}.`;
+    elements.cardTradeBonus.textContent = `Prossimo scambio: +${snapshot?.cardState?.nextTradeBonus || 4} rinforzi.`;
     elements.cardTradeList.innerHTML = playerHand.length
       ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
       : '<p class="card-trade-empty">Nessuna carta disponibile.</p>';
     elements.cardTradeHelp.textContent = mustTradeCards
-      ? `Devi scambiare 3 carte per continuare. Limite mano: ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
+      ? `Scambio obbligatorio: devi scambiare 3 carte per continuare. Limite mano: ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
       : playerHand.length
         ? `${state.selectedTradeCardIds.length}/3 carte selezionate.`
         : "Nessuna carta disponibile.";
@@ -1041,6 +1046,7 @@ elements.reinforceSelect.addEventListener("change", () => {
 elements.attackFrom.addEventListener("change", () => {
   state.selectedAttackFromId = elements.attackFrom.value || null;
   state.selectedAttackToId = null;
+  state.selectedAttackDiceCount = "";
   render();
 });
 elements.attackTo.addEventListener("change", () => {
@@ -1213,6 +1219,9 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
+
+
+
 
 
 
