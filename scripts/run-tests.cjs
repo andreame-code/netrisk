@@ -37,6 +37,7 @@ const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
+const worldClassicMap = require("../shared/maps/world-classic.cjs");
 const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
@@ -916,6 +917,25 @@ register("createInitialState supporta Middle-earth con coordinate e immagine", (
   assert.equal(snapshot.mapVisual.aspectRatio.width, 463);
   assert.equal(snapshot.map.find((territory) => territory.id === "gondor").x, middleEarthMap.positions.gondor.x);
   assert.equal(snapshot.map.find((territory) => territory.id === "the_shire").name, "The Shire");
+});
+
+register("createInitialState supporta World Classic con i territori standard Risk", () => {
+  const state = createInitialState(worldClassicMap);
+  const snapshot = publicState(state);
+
+  assert.equal(state.mapId, "world-classic");
+  assert.equal(state.mapName, "World Classic");
+  assert.equal(state.mapTerritories.length, 42);
+  assert.equal(snapshot.mapVisual.imageUrl, "/assets/maps/world-classic.png");
+  assert.equal(snapshot.mapVisual.aspectRatio.width, 800);
+  assert.equal(snapshot.mapVisual.aspectRatio.height, 533);
+  assert.equal(worldClassicMap.positions.alaska.x, 0.09);
+  assert.equal(worldClassicMap.positions.ukraine.x, 0.58);
+  assert.equal(worldClassicMap.positions.northern_europe.y, 0.32);
+  assert.equal(worldClassicMap.positions.india.y, 0.54);
+  assert.equal(worldClassicMap.positions.western_australia.y, 0.88);
+  assert.equal(snapshot.map.find((territory) => territory.id === "ukraine").name, "Ukraine");
+  assert.equal(snapshot.map.find((territory) => territory.id === "eastern_australia").y, worldClassicMap.positions.eastern_australia.y);
 });
 
 register("createConfiguredInitialState usa la mappa shared selezionata", () => {
