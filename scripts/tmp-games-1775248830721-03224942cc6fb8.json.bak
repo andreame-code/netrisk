@@ -1,0 +1,682 @@
+{
+  "games": [
+    {
+      "id": "dd2211f3384686fa",
+      "name": "Partita 1",
+      "version": 1,
+      "creatorUserId": null,
+      "state": {
+        "phase": "lobby",
+        "turnPhase": "lobby",
+        "players": [],
+        "territories": {
+          "aurora": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "bastion": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "cinder": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "delta": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "ember": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "forge": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "grove": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "harbor": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "ion": {
+            "ownerId": null,
+            "armies": 0
+          }
+        },
+        "continents": [
+          {
+            "id": "north",
+            "name": "North Reach",
+            "bonus": 2,
+            "territoryIds": [
+              "aurora",
+              "bastion"
+            ]
+          },
+          {
+            "id": "central",
+            "name": "Ash Corridor",
+            "bonus": 3,
+            "territoryIds": [
+              "cinder",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "east",
+            "name": "Iron Frontier",
+            "bonus": 2,
+            "territoryIds": [
+              "forge",
+              "ion"
+            ]
+          },
+          {
+            "id": "south",
+            "name": "Harbor Belt",
+            "bonus": 2,
+            "territoryIds": [
+              "grove",
+              "harbor"
+            ]
+          }
+        ],
+        "mapId": "classic-mini",
+        "mapName": "Classic Mini",
+        "mapTerritories": [
+          {
+            "id": "aurora",
+            "name": "Aurora",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "delta"
+            ]
+          },
+          {
+            "id": "bastion",
+            "name": "Bastion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "aurora",
+              "ember",
+              "forge"
+            ]
+          },
+          {
+            "id": "cinder",
+            "name": "Cinder",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "delta",
+            "name": "Delta",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "cinder",
+              "grove",
+              "harbor"
+            ]
+          },
+          {
+            "id": "ember",
+            "name": "Ember",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "forge",
+              "harbor"
+            ]
+          },
+          {
+            "id": "forge",
+            "name": "Forge",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "bastion",
+              "ember",
+              "harbor",
+              "ion"
+            ]
+          },
+          {
+            "id": "grove",
+            "name": "Grove",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "harbor"
+            ]
+          },
+          {
+            "id": "harbor",
+            "name": "Harbor",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "ember",
+              "forge",
+              "grove",
+              "ion"
+            ]
+          },
+          {
+            "id": "ion",
+            "name": "Ion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "forge",
+              "harbor"
+            ]
+          }
+        ],
+        "mapPositions": {
+          "aurora": {
+            "x": 0.171,
+            "y": 0.18
+          },
+          "bastion": {
+            "x": 0.408,
+            "y": 0.14
+          },
+          "cinder": {
+            "x": 0.276,
+            "y": 0.39
+          },
+          "delta": {
+            "x": 0.145,
+            "y": 0.63
+          },
+          "ember": {
+            "x": 0.507,
+            "y": 0.43
+          },
+          "forge": {
+            "x": 0.704,
+            "y": 0.25
+          },
+          "grove": {
+            "x": 0.342,
+            "y": 0.84
+          },
+          "harbor": {
+            "x": 0.618,
+            "y": 0.67
+          },
+          "ion": {
+            "x": 0.862,
+            "y": 0.5
+          }
+        },
+        "mapImageUrl": null,
+        "mapAspectRatio": null,
+        "currentTurnIndex": 0,
+        "reinforcementPool": 0,
+        "winnerId": null,
+        "log": [
+          "Lobby creata. Unisciti e avvia la partita."
+        ],
+        "lastAction": null,
+        "pendingConquest": null,
+        "fortifyUsed": false,
+        "cardRuleSetId": "standard",
+        "deck": [
+          {
+            "id": "card-aurora",
+            "type": "infantry",
+            "territoryId": "aurora"
+          },
+          {
+            "id": "card-bastion",
+            "type": "cavalry",
+            "territoryId": "bastion"
+          },
+          {
+            "id": "card-cinder",
+            "type": "artillery",
+            "territoryId": "cinder"
+          },
+          {
+            "id": "card-delta",
+            "type": "infantry",
+            "territoryId": "delta"
+          },
+          {
+            "id": "card-ember",
+            "type": "cavalry",
+            "territoryId": "ember"
+          },
+          {
+            "id": "card-forge",
+            "type": "artillery",
+            "territoryId": "forge"
+          },
+          {
+            "id": "card-grove",
+            "type": "infantry",
+            "territoryId": "grove"
+          },
+          {
+            "id": "card-harbor",
+            "type": "cavalry",
+            "territoryId": "harbor"
+          },
+          {
+            "id": "card-ion",
+            "type": "artillery",
+            "territoryId": "ion"
+          },
+          {
+            "id": "card-wild-1",
+            "type": "wild",
+            "territoryId": null
+          },
+          {
+            "id": "card-wild-2",
+            "type": "wild",
+            "territoryId": null
+          }
+        ],
+        "discardPile": [],
+        "hands": {},
+        "tradeCount": 0,
+        "conqueredTerritoryThisTurn": false
+      },
+      "createdAt": "2026-04-03T20:40:30.723Z",
+      "updatedAt": "2026-04-03T20:40:30.723Z"
+    },
+    {
+      "id": "45d4cd9ce0fc4110",
+      "name": "Persistenza campagna",
+      "version": 5,
+      "creatorUserId": "5683c03bbf9c92af",
+      "state": {
+        "phase": "active",
+        "turnPhase": "reinforcement",
+        "players": [
+          {
+            "id": "8835533895493ae3",
+            "name": "persist_a_1775248830740",
+            "color": "#e85d04",
+            "connected": true,
+            "isAi": false,
+            "linkedUserId": "5683c03bbf9c92af"
+          },
+          {
+            "id": "6446cc5ea30977b5",
+            "name": "persist_b_1775248831050",
+            "color": "#0f4c5c",
+            "connected": true,
+            "isAi": false
+          }
+        ],
+        "territories": {
+          "aurora": {
+            "ownerId": "8835533895493ae3",
+            "armies": 2
+          },
+          "bastion": {
+            "ownerId": "6446cc5ea30977b5",
+            "armies": 1
+          },
+          "cinder": {
+            "ownerId": "8835533895493ae3",
+            "armies": 1
+          },
+          "delta": {
+            "ownerId": "6446cc5ea30977b5",
+            "armies": 1
+          },
+          "ember": {
+            "ownerId": "6446cc5ea30977b5",
+            "armies": 1
+          },
+          "forge": {
+            "ownerId": "8835533895493ae3",
+            "armies": 1
+          },
+          "grove": {
+            "ownerId": "8835533895493ae3",
+            "armies": 1
+          },
+          "harbor": {
+            "ownerId": "8835533895493ae3",
+            "armies": 1
+          },
+          "ion": {
+            "ownerId": "6446cc5ea30977b5",
+            "armies": 1
+          }
+        },
+        "continents": [
+          {
+            "id": "north",
+            "name": "North Reach",
+            "bonus": 2,
+            "territoryIds": [
+              "aurora",
+              "bastion"
+            ]
+          },
+          {
+            "id": "central",
+            "name": "Ash Corridor",
+            "bonus": 3,
+            "territoryIds": [
+              "cinder",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "east",
+            "name": "Iron Frontier",
+            "bonus": 2,
+            "territoryIds": [
+              "forge",
+              "ion"
+            ]
+          },
+          {
+            "id": "south",
+            "name": "Harbor Belt",
+            "bonus": 2,
+            "territoryIds": [
+              "grove",
+              "harbor"
+            ]
+          }
+        ],
+        "mapId": "classic-mini",
+        "mapName": "Classic Mini",
+        "mapTerritories": [
+          {
+            "id": "aurora",
+            "name": "Aurora",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "delta"
+            ]
+          },
+          {
+            "id": "bastion",
+            "name": "Bastion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "aurora",
+              "ember",
+              "forge"
+            ]
+          },
+          {
+            "id": "cinder",
+            "name": "Cinder",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "delta",
+            "name": "Delta",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "cinder",
+              "grove",
+              "harbor"
+            ]
+          },
+          {
+            "id": "ember",
+            "name": "Ember",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "forge",
+              "harbor"
+            ]
+          },
+          {
+            "id": "forge",
+            "name": "Forge",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "bastion",
+              "ember",
+              "harbor",
+              "ion"
+            ]
+          },
+          {
+            "id": "grove",
+            "name": "Grove",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "harbor"
+            ]
+          },
+          {
+            "id": "harbor",
+            "name": "Harbor",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "ember",
+              "forge",
+              "grove",
+              "ion"
+            ]
+          },
+          {
+            "id": "ion",
+            "name": "Ion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "forge",
+              "harbor"
+            ]
+          }
+        ],
+        "mapPositions": {
+          "aurora": {
+            "x": 0.171,
+            "y": 0.18
+          },
+          "bastion": {
+            "x": 0.408,
+            "y": 0.14
+          },
+          "cinder": {
+            "x": 0.276,
+            "y": 0.39
+          },
+          "delta": {
+            "x": 0.145,
+            "y": 0.63
+          },
+          "ember": {
+            "x": 0.507,
+            "y": 0.43
+          },
+          "forge": {
+            "x": 0.704,
+            "y": 0.25
+          },
+          "grove": {
+            "x": 0.342,
+            "y": 0.84
+          },
+          "harbor": {
+            "x": 0.618,
+            "y": 0.67
+          },
+          "ion": {
+            "x": 0.862,
+            "y": 0.5
+          }
+        },
+        "mapImageUrl": null,
+        "mapAspectRatio": null,
+        "currentTurnIndex": 0,
+        "reinforcementPool": 2,
+        "winnerId": null,
+        "log": [
+          "persist_a_1775248830740 aggiunge 1 armata a aurora. Rinforzi rimasti: 2.",
+          "Partita iniziata. Turno di persist_a_1775248830740 con 3 rinforzi.",
+          "persist_b_1775248831050 entra nella lobby.",
+          "persist_a_1775248830740 si ricollega alla lobby.",
+          "persist_a_1775248830740 entra nella lobby.",
+          "Lobby creata. Unisciti e avvia la partita."
+        ],
+        "lastAction": {
+          "type": "reinforce",
+          "summary": "persist_a_1775248830740 rinforza aurora."
+        },
+        "pendingConquest": null,
+        "fortifyUsed": false,
+        "cardRuleSetId": "standard",
+        "deck": [
+          {
+            "id": "card-aurora",
+            "type": "infantry",
+            "territoryId": "aurora"
+          },
+          {
+            "id": "card-bastion",
+            "type": "cavalry",
+            "territoryId": "bastion"
+          },
+          {
+            "id": "card-cinder",
+            "type": "artillery",
+            "territoryId": "cinder"
+          },
+          {
+            "id": "card-delta",
+            "type": "infantry",
+            "territoryId": "delta"
+          },
+          {
+            "id": "card-ember",
+            "type": "cavalry",
+            "territoryId": "ember"
+          },
+          {
+            "id": "card-forge",
+            "type": "artillery",
+            "territoryId": "forge"
+          },
+          {
+            "id": "card-grove",
+            "type": "infantry",
+            "territoryId": "grove"
+          },
+          {
+            "id": "card-harbor",
+            "type": "cavalry",
+            "territoryId": "harbor"
+          },
+          {
+            "id": "card-ion",
+            "type": "artillery",
+            "territoryId": "ion"
+          },
+          {
+            "id": "card-wild-1",
+            "type": "wild",
+            "territoryId": null
+          },
+          {
+            "id": "card-wild-2",
+            "type": "wild",
+            "territoryId": null
+          }
+        ],
+        "discardPile": [],
+        "hands": {
+          "8835533895493ae3": []
+        },
+        "tradeCount": 0,
+        "conqueredTerritoryThisTurn": false,
+        "diceRuleSetId": "standard",
+        "gameConfig": {
+          "mapId": "classic-mini",
+          "mapName": "Classic Mini",
+          "diceRuleSetId": "standard",
+          "totalPlayers": 2,
+          "players": [
+            {
+              "slot": 1,
+              "type": "human",
+              "name": null
+            },
+            {
+              "slot": 2,
+              "type": "human",
+              "name": null
+            }
+          ]
+        }
+      },
+      "createdAt": "2026-04-03T20:40:31.023Z",
+      "updatedAt": "2026-04-03T20:40:31.295Z"
+    }
+  ],
+  "activeGameId": "45d4cd9ce0fc4110"
+}

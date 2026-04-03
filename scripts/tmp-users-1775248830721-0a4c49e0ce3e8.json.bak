@@ -1,0 +1,19 @@
+[
+  {
+    "id": "5683c03bbf9c92af",
+    "username": "persist_a_1775248830740",
+    "credentials": {
+      "password": {
+        "salt": "055b18c526693f38e81825d3d40bd178",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "65a64e3a1065b2c7e53696d87c82c0f3acd099679c7f6c84139a6c44f62f4948"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "persist_a_1775248830740"
+    },
+    "createdAt": "2026-04-03T20:40:30.887Z"
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "eb17691c620df919",
+    "username": "owner_admin_start_5c371d",
+    "credentials": {
+      "password": {
+        "salt": "670e31c5a46bf9fc74817ce57edb91fe",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "2e533c0061da1f099dbd67ae59e4c1f87c94d18c965149ceb5990eaee8c85166"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "owner_admin_start_5c371d"
+    },
+    "createdAt": "2026-04-03T20:40:36.476Z"
+  }
+]

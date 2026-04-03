@@ -1,0 +1,36 @@
+[
+  {
+    "id": "f40c88b102512239",
+    "username": "concurrency_owner_4a8278",
+    "credentials": {
+      "password": {
+        "salt": "746adb26a396872be4d52ec1cbab7d95",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "737f8f9460d621374563cf167f12855e1e3d127a8fdd0d83111dcce89dbca79c"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "concurrency_owner_4a8278"
+    },
+    "createdAt": "2026-04-03T20:40:31.831Z"
+  },
+  {
+    "id": "9af6f678a3d8b765",
+    "username": "va_8117c4",
+    "credentials": {
+      "password": {
+        "salt": "b043112abbe01b00384d3843bd878f78",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "c58e370898e0daa1482adbd41fda936b7d6a008c001076debd5c2ecaafea9cf2"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "va_8117c4"
+    },
+    "createdAt": "2026-04-03T20:40:32.061Z"
+  }
+]

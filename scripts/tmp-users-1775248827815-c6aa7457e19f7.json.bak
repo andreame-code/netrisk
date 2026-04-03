@@ -1,0 +1,19 @@
+[
+  {
+    "id": "6ad476af3907c6b0",
+    "username": "host_db66b2",
+    "credentials": {
+      "password": {
+        "salt": "ccef855394958afde3d2c924055621f1",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "8a134cc2d6522548e4de81cf9743123d7db01ec9bc6f688f21db851fef653712"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "host_db66b2"
+    },
+    "createdAt": "2026-04-03T20:40:28.025Z"
+  }
+]

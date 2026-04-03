@@ -1,0 +1,19 @@
+[
+  {
+    "id": "76777f20c21a49ff",
+    "username": "profile_owner_161bb0",
+    "credentials": {
+      "password": {
+        "salt": "9c1d8709d94e8501f0effff44e457f27",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "2bee0632c43b791f84b33cb6405b2e05842bd2c839a68aee05640dadef90d336"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "profile_owner_161bb0"
+    },
+    "createdAt": "2026-04-03T20:40:37.145Z"
+  }
+]

@@ -142,7 +142,8 @@ function setStoredUserRole(dataFile, username, role) {
 async function withServer(run) {
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
   const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile });
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile, sessionsFile: tempSessionsFile });
   const listener = app.server.listen(0);
 
   await new Promise((resolve, reject) => {
@@ -152,7 +153,7 @@ async function withServer(run) {
 
   try {
     const address = listener.address();
-    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile });
+    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile, tempSessionsFile });
   } finally {
     await new Promise((resolve) => {
       if (!listener.listening) {
@@ -170,16 +171,25 @@ async function withServer(run) {
     if (fs.existsSync(tempGamesFile)) {
       fs.unlinkSync(tempGamesFile);
     }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
   }
 }
 
 register("auth store registra e autentica utenti password", () => {
   const tempFile = path.join(__dirname, "tmp-users.json");
+  const tempSessionsFile = path.join(__dirname, "tmp-sessions.json");
   if (fs.existsSync(tempFile)) {
     fs.unlinkSync(tempFile);
   }
 
-  const auth = createAuthStore({ dataFile: tempFile });
+  if (fs.existsSync(tempSessionsFile)) {
+    fs.unlinkSync(tempSessionsFile);
+  }
+
+  const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
   const registered = auth.registerPasswordUser("tester", "secret");
   assert.equal(registered.ok, true);
 
@@ -187,8 +197,80 @@ register("auth store registra e autentica utenti password", () => {
   assert.equal(login.ok, true);
   assert.equal(Boolean(login.sessionToken), true);
   assert.equal(auth.getUserFromSession(login.sessionToken).username, "tester");
+  const storedUsers = JSON.parse(fs.readFileSync(tempFile, "utf8"));
+  assert.equal(typeof storedUsers[0].credentials.password.secret, "undefined");
+  assert.equal(typeof storedUsers[0].credentials.password.hash, "string");
 
   fs.unlinkSync(tempFile);
+  fs.unlinkSync(tempSessionsFile);
+});
+
+register("auth store mantiene la sessione dopo il riavvio del processo", () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+
+  try {
+    const firstStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const registered = firstStore.registerPasswordUser("persisted", "secret");
+    assert.equal(registered.ok, true);
+
+    const login = firstStore.loginWithPassword("persisted", "secret");
+    assert.equal(login.ok, true);
+
+    const restartedStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const user = restartedStore.getUserFromSession(login.sessionToken);
+    assert.equal(Boolean(user), true);
+    assert.equal(user.username, "persisted");
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+  }
+});
+
+register("auth store migra password legacy in hash al login riuscito", () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+
+  try {
+    fs.writeFileSync(tempFile, JSON.stringify([{
+      id: "legacy-user",
+      username: "legacy",
+      credentials: {
+        password: {
+          secret: "secret"
+        }
+      },
+      role: "user",
+      profile: {
+        displayName: "legacy"
+      },
+      createdAt: new Date().toISOString()
+    }], null, 2) + "\n", "utf8");
+
+    const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const login = auth.loginWithPassword("legacy", "secret");
+    assert.equal(login.ok, true);
+
+    const storedUsers = JSON.parse(fs.readFileSync(tempFile, "utf8"));
+    assert.equal(typeof storedUsers[0].credentials.password.secret, "undefined");
+    assert.equal(typeof storedUsers[0].credentials.password.hash, "string");
+    assert.equal(typeof storedUsers[0].credentials.password.salt, "string");
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+  }
 });
 
 register("addPlayer aggiunge giocatori e impedisce lobby oltre 4", () => {
@@ -1116,6 +1198,59 @@ register("API games open consente al creatore di riaprire la propria partita", a
       body: JSON.stringify({ gameId: createdPayload.game.id })
     });
     assert.equal(opened.status, 200);
+  });
+});
+
+register("API state e mutazioni restano isolate tra partite diverse tramite gameId", async () => {
+  await withServer(async (baseUrl) => {
+    const ownerA = await createAuthenticatedSession(baseUrl, `isolate_a_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerB = await createAuthenticatedSession(baseUrl, `isolate_b_${Math.random().toString(16).slice(2, 8)}`);
+
+    const createdA = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerA.sessionToken),
+      body: JSON.stringify({ name: "Isolation A" })
+    });
+    assert.equal(createdA.status, 201);
+    const payloadA = await createdA.json();
+
+    const createdB = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerB.sessionToken),
+      body: JSON.stringify({ name: "Isolation B" })
+    });
+    assert.equal(createdB.status, 201);
+    const payloadB = await createdB.json();
+
+    const aiJoinA = await fetch(baseUrl + "/api/ai/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "CPU A", gameId: payloadA.game.id })
+    });
+    assert.equal(aiJoinA.status, 201);
+
+    const openB = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(ownerB.sessionToken),
+      body: JSON.stringify({ gameId: payloadB.game.id })
+    });
+    assert.equal(openB.status, 200);
+
+    const stateA = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(payloadA.game.id)}`, {
+      headers: authHeaders(ownerA.sessionToken)
+    });
+    assert.equal(stateA.status, 200);
+    const stateAPayload = await stateA.json();
+    assert.equal(stateAPayload.gameId, payloadA.game.id);
+    assert.equal(stateAPayload.players.length, 2);
+
+    const stateB = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(payloadB.game.id)}`, {
+      headers: authHeaders(ownerB.sessionToken)
+    });
+    assert.equal(stateB.status, 200);
+    const stateBPayload = await stateB.json();
+    assert.equal(stateBPayload.gameId, payloadB.game.id);
+    assert.equal(stateBPayload.players.length, 1);
   });
 });
 

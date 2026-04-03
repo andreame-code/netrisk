@@ -1,0 +1,19 @@
+[
+  {
+    "id": "bf7da1218d4fd1f3",
+    "username": "state_owner_cfc980",
+    "credentials": {
+      "password": {
+        "salt": "3394cdd3c465e00d0f5b6b0e56c03d2c",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "1a56c3b1ecf2745d75df500e00af99f2e6e6a439f24103949801ea227e8a309f"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "state_owner_cfc980"
+    },
+    "createdAt": "2026-04-03T20:40:25.686Z"
+  }
+]
