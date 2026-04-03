@@ -36,6 +36,7 @@ const { createAuthStore } = require("../backend/auth.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
+const { pruneBackups } = require("./backup-datastore.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
@@ -355,6 +356,39 @@ register("datastore backup crea uno snapshot sqlite leggibile", async () => {
     datastore.close();
     cleanupSqliteFiles(sourceDbFile);
     cleanupSqliteFiles(targetDbFile);
+  }
+});
+
+register("backup retention mantiene solo gli snapshot piu recenti", () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const backupDir = path.join(__dirname, `tmp-backups-${unique}`);
+  fs.mkdirSync(backupDir, { recursive: true });
+
+  const files = [
+    "netrisk-20260403-090000.sqlite",
+    "netrisk-20260403-100000.sqlite",
+    "netrisk-20260403-110000.sqlite",
+    "netrisk-20260403-120000.sqlite",
+    "other-20260403-120000.sqlite"
+  ];
+
+  try {
+    files.forEach((name) => {
+      fs.writeFileSync(path.join(backupDir, name), name, "utf8");
+    });
+
+    const removed = pruneBackups(path.join(backupDir, "netrisk-20260403-130000.sqlite"), 2);
+    assert.equal(removed.length, 2);
+    assert.deepEqual(
+      fs.readdirSync(backupDir).sort(),
+      [
+        "netrisk-20260403-110000.sqlite",
+        "netrisk-20260403-120000.sqlite",
+        "other-20260403-120000.sqlite"
+      ]
+    );
+  } finally {
+    fs.rmSync(backupDir, { recursive: true, force: true });
   }
 });
 
