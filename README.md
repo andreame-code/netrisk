@@ -274,6 +274,7 @@ Il progetto segue queste regole:
 - logica di gioco centralizzata in `backend/engine`
 - modelli condivisi in `shared`
 - modifiche piccole, incrementali e facili da rivedere
+- preferire branch dedicati e pull request piccole per cambiamenti incrementali
 
 ## Regole implementate oggi
 
