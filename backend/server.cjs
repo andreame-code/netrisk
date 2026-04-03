@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { createDatastore } = require("./datastore.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
@@ -61,11 +62,19 @@ function createApp(options = {}) {
   let activeGameVersion = null;
   let activeGameName = null;
   let nextAttackRolls = null;
+  const datastore = createDatastore({
+    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+    legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+    legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
+    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
+  });
   const gamesFile = options.gamesFile || path.join(__dirname, "..", "data", "games.json");
   const gameSessions = createGameSessionStore({
+    datastore,
     dataFile: gamesFile
   });
   const playerProfiles = createPlayerProfileStore({
+    datastore,
     gamesFile
   });
   const initialGame = gameSessions.ensureActiveGame(createInitialState);
@@ -75,6 +84,7 @@ function createApp(options = {}) {
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, initialGame.state);
   const auth = createAuthStore({
+    datastore,
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
@@ -846,6 +856,7 @@ function createApp(options = {}) {
 
   return {
     auth,
+    datastore,
     handleApi,
     parseBody,
     sendJson,
@@ -867,6 +878,7 @@ module.exports = {
   parseBody,
   sendJson,
   auth: app.auth,
+  datastore: app.datastore,
   handleApi: app.handleApi,
   server: app.server,
   state: app.state
