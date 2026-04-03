@@ -1,0 +1,7 @@
+id,name,bonus,territoryIds
+north_america,North America,5,alaska|nw_territory|greenland|alberta|ontario|quebec|western_united_states|eastern_united_states|central_america
+south_america,South America,2,venezuela|peru|brazil|argentina
+europe,Europe,5,iceland|great_britain|scandinavia|ukraine|northern_europe|western_europe|southern_europe
+africa,Africa,3,north_africa|egypt|east_africa|congo|south_africa|madagascar
+asia,Asia,7,ural|siberia|yakutsk|kamchatka|irkutsk|mongolia|japan|afghanistan|middle_east|india|siam|china
+australia,Australia,2,indonesia|new_guinea|western_australia|eastern_australia
