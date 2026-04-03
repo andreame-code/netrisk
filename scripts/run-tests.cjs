@@ -929,9 +929,9 @@ register("createInitialState supporta World Classic con i territori standard Ris
   assert.equal(snapshot.mapVisual.imageUrl, "/assets/maps/world-classic.png");
   assert.equal(snapshot.mapVisual.aspectRatio.width, 800);
   assert.equal(snapshot.mapVisual.aspectRatio.height, 533);
-  assert.equal(worldClassicMap.positions.alaska.x, 0.09);
-  assert.equal(worldClassicMap.positions.ukraine.x, 0.58);
-  assert.equal(worldClassicMap.positions.northern_europe.y, 0.32);
+  assert.equal(worldClassicMap.positions.alaska.x, 0.06);
+  assert.equal(worldClassicMap.positions.ukraine.x, 0.60);
+  assert.equal(worldClassicMap.positions.northern_europe.y, 0.30);
   assert.equal(worldClassicMap.positions.india.y, 0.54);
   assert.equal(worldClassicMap.positions.western_australia.y, 0.88);
   assert.equal(snapshot.map.find((territory) => territory.id === "ukraine").name, "Ukraine");
