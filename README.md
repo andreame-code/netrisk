@@ -1,24 +1,12 @@
 # NetRisk
 
-NetRisk e un gioco strategico a turni ispirato a Risk/Risiko. Il progetto e costruito per crescere in modo incrementale, mantenendo separate l'interfaccia utente, la logica di gioco e lo stato autorevole della partita.
+NetRisk e un gioco strategico a turni ispirato a Risk/Risiko, costruito per crescere in modo incrementale senza confondere interfaccia, orchestrazione backend e regole pure di gioco.
 
-## Obiettivo del progetto
+Il repository non e una semplice demo grafica: e una base applicativa completa per sviluppare una versione estendibile di NetRisk con lobby, profili, AI, turn flow, combattimento, carte e test automatici.
 
-Il repository non contiene solo una demo grafica: contiene una base applicativa completa per sviluppare una versione estendibile di NetRisk con:
+## Stato attuale
 
-- lobby e creazione partite
-- giocatori umani e AI
-- regole dadi configurabili
-- carte territorio e scambio set
-- flusso di turno strutturato
-- rinforzi, attacco, conquista e fortifica
-- validazione centralizzata sul backend
-- profilo giocatore con statistiche base
-- test automatici sia di gameplay sia end-to-end
-
-## Stato attuale del gioco
-
-Oggi il progetto supporta queste capacita:
+Oggi il progetto include:
 
 - registrazione, login, logout e profilo utente
 - lobby iniziale e riapertura di partite salvate
@@ -27,20 +15,85 @@ Oggi il progetto supporta queste capacita:
 - configurazione partite da 2 a 4 giocatori con primo slot umano obbligatorio
 - avvio partita e assegnazione iniziale dei territori
 - turno diviso in fasi: `reinforcement`, `attack`, `fortify`, `finished`
+- piazzamento rinforzi, attacco, conquista, movimento post-conquista e fortificazione
 - scelta del numero di dadi attacco entro i limiti consentiti
-- piazzamento rinforzi con controllo proprieta del territorio
-- attacco tra territori confinanti con risoluzione del combattimento
-- gestione della conquista e dello spostamento armate obbligatorio
 - carta territorio assegnata a fine turno se durante il turno e stata effettuata almeno una conquista
 - scambio carte durante la fase rinforzi con bonus progressivo
 - scambio obbligatorio oltre la soglia mano prevista dal ruleset standard
-- fortificazione a fine turno
 - rilevamento eliminazione giocatori e vittoria
 - pannello UI per ultimo risultato dadi del combattimento
 - pagina profilo con partite giocate, vittorie, sconfitte, partite in corso e win rate
 - eventi e sincronizzazione dello stato dal server al frontend
 
 La mappa supportata al momento e `classic-mini`.
+
+## Quick Start
+
+Prerequisiti:
+
+- Node.js
+- npm
+
+Installazione dipendenze:
+
+```bash
+npm install
+```
+
+Avvio server:
+
+```bash
+npm start
+```
+
+Applicazione disponibile su `http://localhost:3000`.
+
+## Comandi utili
+
+```bash
+npm start
+npm run backup:data
+npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+npm test
+npm run test:gameplay
+npm run test:e2e
+npm run test:all
+npm run test:all:e2e
+```
+
+- `npm test`: suite standard del repository
+- `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
+- `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
+- `npm run test:gameplay`: verifica del motore di gioco
+- `npm run test:e2e`: test Playwright sui flussi utente
+- `npm run test:all`: test repository + gameplay
+- `npm run test:all:e2e`: test repository + gameplay + e2e
+
+## Testing
+
+La suite `tests/gameplay` copre aree come:
+
+- setup partita
+- turn flow
+- rinforzi
+- validazione attacco, dadi e risoluzione combattimento
+- conquista
+- fortifica
+- vittoria ed eliminazione
+- helper carte e trade bonus
+- flussi regressivi multi-modulo
+
+La suite `e2e` copre oggi:
+
+- caricamento applicazione
+- layout principale
+- navigazione auth tra pagine
+- stati profilo: loading, errore, empty state
+- configurazione nuova partita
+- flussi gameplay principali
+- scelta dadi attacco e visualizzazione risultato combattimento
+- pannello carte, scambio riuscito, errori inline e sincronizzazione reward
+- baseline visuali della schermata principale e delle pagine secondarie
 
 ## Architettura
 
@@ -60,6 +113,8 @@ L'architettura segue un principio semplice: il frontend presenta e invia azioni,
   Test Playwright sui flussi utente principali.
 - `scripts`
   Script di esecuzione locale e test.
+
+Per una panoramica tecnica piu sintetica e orientata alla struttura del codice, vedi `ARCHITECTURE.md`.
 
 ## Flusso di gioco
 
@@ -150,74 +205,6 @@ Il server espone endpoint per:
 
 In ambiente E2E esistono anche endpoint di supporto ai test.
 
-## Avvio locale
-
-Prerequisiti:
-
-- Node.js
-- npm
-
-Installazione dipendenze:
-
-```bash
-npm install
-```
-
-Avvio server:
-
-```bash
-npm start
-```
-
-Applicazione disponibile su `http://localhost:3000`.
-
-## Comandi utili
-
-```bash
-npm start
-npm run backup:data
-npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
-npm test
-npm run test:gameplay
-npm run test:e2e
-npm run test:all
-npm run test:all:e2e
-```
-
-- `npm test`: suite standard del repository
-- `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
-- `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
-- `npm run test:gameplay`: verifica del motore di gioco
-- `npm run test:e2e`: test Playwright sui flussi utente
-- `npm run test:all`: test repository + gameplay
-- `npm run test:all:e2e`: test repository + gameplay + e2e
-
-## Copertura test
-
-La suite `tests/gameplay` copre aree come:
-
-- setup partita
-- turn flow
-- rinforzi
-- validazione attacco, dadi e risoluzione combattimento
-- conquista
-- fortifica
-- vittoria ed eliminazione
-- helper carte e trade bonus
-- flussi regressivi multi-modulo
-
-La suite `e2e` copre oggi:
-
-- caricamento applicazione
-- layout principale
-- navigazione auth tra pagine
-- stati profilo: loading, errore, empty state
-- configurazione nuova partita
-- flussi gameplay principali
-- scelta dadi attacco e visualizzazione risultato combattimento
-- pannello carte, scambio riuscito, errori inline e sincronizzazione reward
-- baseline visuali della schermata principale e delle pagine secondarie
-
 ## Persistenza e dati locali
 
 Il backend usa SQLite come source of truth locale per:
@@ -289,16 +276,16 @@ Il progetto segue queste regole:
 
 L'evoluzione prevista del gioco e:
 
-1. architettura e modelli
-2. mappa e territori
-3. turn flow
-4. reinforcement rules
-5. combat rules
-6. movement rules
-7. victory conditions
-8. AI
-9. multiplayer
-10. map editor e regole custom
+- [x] architettura e modelli
+- [x] mappa e territori
+- [x] turn flow
+- [x] reinforcement rules
+- [x] combat rules
+- [x] movement rules
+- [x] victory conditions
+- [x] AI
+- [ ] multiplayer
+- [ ] map editor e regole custom
 
 ## Documenti correlati
 
