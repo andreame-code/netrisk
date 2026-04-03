@@ -1,4 +1,5 @@
 const { chromium } = require("playwright");
+const { randomHex } = require("./backend/random.cjs");
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -8,7 +9,7 @@ const { chromium } = require("playwright");
   const outsiderPage = await outsiderContext.newPage();
 
   function unique(prefix) {
-    return prefix + '_' + Date.now().toString(36).slice(-6) + Math.random().toString(16).slice(2, 4);
+    return prefix + '_' + Date.now().toString(36).slice(-6) + randomHex(2);
   }
 
   const ownerUser = unique('owner');

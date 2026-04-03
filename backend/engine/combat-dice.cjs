@@ -1,12 +1,14 @@
+const { secureRandom } = require("../random.cjs");
+
 function sortDescending(values) {
   return values.slice().sort((left, right) => right - left);
 }
 
-function rollDie(random = Math.random) {
+function rollDie(random = secureRandom) {
   return Math.floor(random() * 6) + 1;
 }
 
-function rollCombatDice(count, random = Math.random) {
+function rollCombatDice(count, random = secureRandom) {
   const dice = [];
   for (let index = 0; index < count; index += 1) {
     dice.push(rollDie(random));
