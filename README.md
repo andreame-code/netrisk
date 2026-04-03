@@ -136,6 +136,7 @@ Nella schermata di gioco sono presenti anche:
 
 Il server espone endpoint per:
 
+- health check backend e stato datastore
 - sessione autenticata
 - profilo utente
 - elenco partite e apertura partita attiva
@@ -174,6 +175,7 @@ Applicazione disponibile su `http://localhost:3000`.
 
 ```bash
 npm start
+npm run backup:data
 npm test
 npm run test:gameplay
 npm run test:e2e
@@ -182,6 +184,7 @@ npm run test:all:e2e
 ```
 
 - `npm test`: suite standard del repository
+- `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
 - `npm run test:gameplay`: verifica del motore di gioco
 - `npm run test:e2e`: test Playwright sui flussi utente
 - `npm run test:all`: test repository + gameplay
@@ -215,7 +218,34 @@ La suite `e2e` copre oggi:
 
 ## Persistenza e dati locali
 
-Il backend salva dati runtime locali, come sessioni di gioco e dati utente, in file usati durante l'esecuzione. Questa scelta e adatta allo sviluppo locale e rende semplice sostituire in futuro il layer di persistenza.
+Il backend usa SQLite come source of truth locale per:
+
+- utenti
+- sessioni autenticate
+- partite salvate
+- metadati runtime come la partita attiva
+
+Il file database di default e `data/netrisk.sqlite`.
+
+All'avvio, se il database e vuoto, il backend puo importare una sola volta i dati legacy presenti nei file JSON storici (`users.json`, `games.json`, `sessions.json`). Dopo la migrazione, il database SQLite resta la fonte autorevole e i JSON legacy vanno trattati solo come compatibilita temporanea.
+
+Per verificare rapidamente lo stato del backend e dello storage e disponibile `GET /api/health`, che restituisce:
+
+- esito generale `ok`
+- tipo storage attivo
+- percorso del file SQLite in uso
+- conteggi base di utenti, partite e sessioni
+- presenza della partita attiva in memoria server
+
+Questa e la sonda minima consigliata per rilevare problemi di avvio, mount errati del volume dati o datastore non disponibile.
+
+Per creare un backup locale consistente del datastore:
+
+```bash
+npm run backup:data
+```
+
+Il comando usa il meccanismo di backup di SQLite e salva per default uno snapshot timestampato in `data/backups/`. E pensato come base per job schedulati o checkpoint manuali prima di deploy e manutenzioni.
 
 ## Principi di sviluppo
 
