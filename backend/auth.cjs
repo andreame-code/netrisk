@@ -1,6 +1,6 @@
 const path = require("path");
 const crypto = require("crypto");
-const { readJsonFile, writeJsonFile } = require("./json-file-store.cjs");
+const { createDatastore } = require("./datastore.cjs");
 
 function passwordRecord(secret) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -13,22 +13,6 @@ function passwordRecord(secret) {
     digest,
     hash
   };
-}
-
-function readUsers(dataFile) {
-  return readJsonFile(dataFile, [], Array.isArray);
-}
-
-function writeUsers(dataFile, users) {
-  writeJsonFile(dataFile, users);
-}
-
-function readSessions(sessionFile) {
-  return readJsonFile(sessionFile, [], Array.isArray);
-}
-
-function writeSessions(sessionFile, sessions) {
-  writeJsonFile(sessionFile, sessions);
 }
 
 function normalizeUsername(username) {
@@ -73,16 +57,20 @@ function verifyPassword(credentials, password) {
 }
 
 function createAuthStore(options = {}) {
-  const dataFile = options.dataFile || path.join(__dirname, "..", "data", "users.json");
-  const sessionsFile = options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json");
+  const datastore = options.datastore || createDatastore({
+    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+    legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
+    legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
+  });
 
   function listUsers() {
-    return readUsers(dataFile);
+    return datastore.listUsers();
   }
 
   function findByUsername(username) {
     const normalized = normalizeUsername(username);
-    return listUsers().find((user) => user.username.toLowerCase() === normalized) || null;
+    return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
   function registerPasswordUser(username, password) {
@@ -97,7 +85,6 @@ function createAuthStore(options = {}) {
       return { ok: false, error: "Utente gia registrato." };
     }
 
-    const users = listUsers();
     const user = {
       id: crypto.randomBytes(8).toString("hex"),
       username: cleanedUsername,
@@ -111,9 +98,7 @@ function createAuthStore(options = {}) {
       createdAt: new Date().toISOString()
     };
 
-    users.push(user);
-    writeUsers(dataFile, users);
-    return { ok: true, user: publicUser(user) };
+    return { ok: true, user: publicUser(datastore.createUser(user)) };
   }
 
   function loginWithPassword(username, password) {
@@ -123,22 +108,14 @@ function createAuthStore(options = {}) {
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
-      const users = listUsers();
-      const storedUser = users.find((entry) => entry.id === user.id);
-      if (storedUser) {
-        storedUser.credentials.password = passwordRecord(password);
-        writeUsers(dataFile, users);
-      }
+      datastore.updateUserCredentials(user.id, {
+        ...user.credentials,
+        password: passwordRecord(password)
+      });
     }
 
     const sessionToken = crypto.randomBytes(16).toString("hex");
-    const sessions = readSessions(sessionsFile);
-    sessions.push({
-      token: sessionToken,
-      userId: user.id,
-      createdAt: Date.now()
-    });
-    writeSessions(sessionsFile, sessions);
+    datastore.createSession(sessionToken, user.id, Date.now());
 
     return {
       ok: true,
@@ -152,22 +129,22 @@ function createAuthStore(options = {}) {
       return null;
     }
 
-    const session = readSessions(sessionsFile).find((entry) => entry.token === sessionToken);
+    const session = datastore.findSession(sessionToken);
     if (!session) {
       return null;
     }
 
-    return listUsers().find((user) => user.id === session.userId) || null;
+    return datastore.findUserById(session.user_id || session.userId) || null;
   }
 
   function logout(sessionToken) {
     if (sessionToken) {
-      writeSessions(sessionsFile, readSessions(sessionsFile).filter((entry) => entry.token !== sessionToken));
+      datastore.deleteSession(sessionToken);
     }
   }
 
   return {
-    dataFile,
+    datastore,
     findByUsername,
     getUserFromSession,
     listUsers,
