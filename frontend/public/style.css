@@ -303,9 +303,9 @@ h1 {
 }
 
 .map-board.map-id-world-classic.has-custom-background .map-board-stage {
-  inset: -2% -4% -9% -4%;
+  inset: -3% -5.5% -11% -5.5%;
   background-size: cover;
-  background-position: center 18%;
+  background-position: 49% 16%;
 }
 
 .map-board::before,
