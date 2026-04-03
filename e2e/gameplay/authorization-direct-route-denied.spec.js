@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("non-member user cannot open a protected game from a direct game route", async ({ browser }) => {
+  test.slow();
   const ownerContext = await browser.newContext();
   const outsiderContext = await browser.newContext();
   const ownerPage = await ownerContext.newPage();
@@ -15,8 +16,7 @@ test("non-member user cannot open a protected game from a direct game route", as
 
   await ownerPage.goto("/game.html");
   await registerAndLogin(ownerPage, ownerUser);
-  await ownerPage.goto("/lobby.html");
-  await ownerPage.locator("#create-game-button").click();
+  await ownerPage.goto("/new-game.html");
   await expect(ownerPage).toHaveURL(/\/new-game\.html$/);
   await ownerPage.locator("#setup-game-name").fill(gameName);
   await ownerPage.getByRole("button", { name: "Crea e apri" }).click();

@@ -31,18 +31,13 @@ test("non-member user cannot open a protected game from the lobby", async ({ bro
   await targetRow.click();
   await expect(outsiderPage.getByTestId("game-session-details")).toContainText(gameName);
 
-  const dialogPromise = outsiderPage.waitForEvent("dialog").then(async (dialog) => {
-    const message = dialog.message();
-    await dialog.dismiss();
-    return message;
-  });
   await outsiderPage.getByRole("button", { name: "Apri selezionata" }).click();
-  const dialogMessage = await dialogPromise;
-  await expect(dialogMessage).toMatch(/fai parte|membro|accesso|autorizzat/i);
 
   await expect(outsiderPage).toHaveURL(/\/lobby\.html$/);
   await expect(outsiderPage.getByTestId("game-session-details")).toContainText(gameName);
+  await expect(outsiderPage.locator("#game-list-state")).toContainText(/fai parte|membro|accesso|autorizzat/i);
 
   await ownerContext.close();
   await outsiderContext.close();
 });
+

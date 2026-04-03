@@ -4,7 +4,8 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 test("new game setup keeps player 1 locked as creator and creates the configured session", async ({ page }) => {
   await resetGame(page);
   await page.goto("/game.html");
-  await registerAndLogin(page, uniqueUser("setup_owner"));
+  const owner = uniqueUser("setup_owner");
+  await registerAndLogin(page, owner);
   await page.goto("/new-game.html");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
@@ -34,4 +35,8 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(page.locator('#game-map-meta')).toContainText('Classic Mini');
   await expect(page.locator('#game-setup-meta')).toContainText('4 giocatori');
   await expect(page.locator('#game-setup-meta')).toContainText('2 AI');
+  await expect(page.getByTestId('current-player-indicator')).toContainText(owner);
+  await expect(page.locator('#join-button')).toBeDisabled();
 });
+
+

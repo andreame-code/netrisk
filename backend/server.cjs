@@ -282,6 +282,10 @@ function createApp(options = {}) {
       try {
         const policy = authorize("game:create", { user: authContext.user });
         const configured = createConfiguredInitialState(body);
+        const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
+        if (!creatorJoin.ok) {
+          throw new Error(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.");
+        }
         const created = gameSessions.createGame(configured.state, {
           ...configured.gameInput,
           creatorUserId: policy.actor.id
@@ -291,7 +295,7 @@ function createApp(options = {}) {
         activeGameName = created.game.name;
         replaceState(created.state);
         broadcast();
-        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config });
+        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
       } catch (error) {
         const statusCode = error.statusCode || 400;
         sendJson(res, statusCode, { error: error.message || "Creazione partita non riuscita.", code: error.code || null });
@@ -789,6 +793,7 @@ module.exports = {
   server: app.server,
   state: app.state
 };
+
 
 
 
