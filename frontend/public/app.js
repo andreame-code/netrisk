@@ -21,6 +21,8 @@ const state = {
 };
 
 let pendingRequestedGameId = null;
+let eventsConnection = null;
+let eventsGameId = null;
 
 function requestedGameIdFromRoute() {
   const pathnameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
@@ -179,6 +181,10 @@ function myTerritories() {
 
 function currentExpectedVersion() {
   return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
+}
+
+function currentGamePayload() {
+  return state.currentGameId ? { gameId: state.currentGameId } : {};
 }
 
 function currentPlayerHand() {
@@ -745,7 +751,8 @@ function render() {
 
 async function fetchLatestStateSnapshot() {
   const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
-  const response = await fetch("/api/state", { headers });
+  const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
+  const response = await fetch("/api/state" + query, { headers });
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || "Impossibile caricare la partita attiva.");
@@ -799,9 +806,10 @@ async function loadState() {
     syncCurrentGameName();
     render();
   } catch (error) {
-    state.snapshot = null;
-    state.currentGameId = null;
-    state.currentGameName = null;
+    if (!state.snapshot) {
+      state.currentGameId = null;
+      state.currentGameName = null;
+    }
     render();
     throw error;
   }
@@ -813,7 +821,8 @@ async function loadGameList() {
   render();
 
   try {
-    const response = await fetch("/api/games");
+    const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
+    const response = await fetch("/api/games" + query);
     if (!response.ok) {
       throw new Error("Caricamento partite non riuscito.");
     }
@@ -860,13 +869,32 @@ async function restoreSession() {
 }
 
 function connectEvents() {
-  const query = state.sessionToken ? "?sessionToken=" + encodeURIComponent(state.sessionToken) : "";
+  if (eventsConnection) {
+    eventsConnection.close();
+    eventsConnection = null;
+  }
+  const params = new URLSearchParams();
+  if (state.sessionToken) {
+    params.set("sessionToken", state.sessionToken);
+  }
+  if (state.currentGameId) {
+    params.set("gameId", state.currentGameId);
+  }
+  const query = params.toString() ? "?" + params.toString() : "";
+  eventsGameId = state.currentGameId || null;
   const events = new EventSource("/api/events" + query);
+  eventsConnection = events;
   events.onmessage = (event) => {
     state.snapshot = JSON.parse(event.data);
     state.currentGameId = state.snapshot?.gameId || state.currentGameId;
     render();
   };
+}
+
+function ensureEventConnection() {
+  if ((state.currentGameId || null) !== eventsGameId) {
+    connectEvents();
+  }
 }
 
 async function handleCreateGame() {
@@ -905,6 +933,7 @@ async function openGameById(gameId) {
     clearPlayerIdentity();
   }
   render();
+  ensureEventConnection();
   if (state.sessionToken) {
     await loadState().catch(() => {});
   }
@@ -1039,7 +1068,7 @@ elements.logoutButton.addEventListener("click", async () => {
 
 elements.joinButton.addEventListener("click", async () => {
   try {
-    const data = await send("/api/join", { sessionToken: state.sessionToken });
+    const data = await send("/api/join", { ...currentGamePayload(), sessionToken: state.sessionToken });
     setPlayerIdentity(data.playerId);
     state.user = data.user;
     state.snapshot = data.state;
@@ -1052,6 +1081,7 @@ elements.joinButton.addEventListener("click", async () => {
 elements.startButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/start", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId
     });
@@ -1065,6 +1095,7 @@ elements.startButton.addEventListener("click", async () => {
 elements.reinforceButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "reinforce",
@@ -1163,6 +1194,7 @@ elements.map.addEventListener("click", (event) => {
 elements.attackButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "attack",
@@ -1184,6 +1216,7 @@ elements.attackButton.addEventListener("click", async () => {
 elements.conquestButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "moveAfterConquest",
@@ -1201,6 +1234,7 @@ elements.conquestButton.addEventListener("click", async () => {
 elements.fortifyButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "fortify",
@@ -1219,6 +1253,7 @@ elements.fortifyButton.addEventListener("click", async () => {
 elements.endTurnButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
+      ...currentGamePayload(),
       sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "endTurn",
@@ -1235,6 +1270,7 @@ if (elements.cardTradeButton) {
   elements.cardTradeButton.addEventListener("click", async () => {
     try {
       const data = await send("/api/cards/trade", {
+        ...currentGamePayload(),
         sessionToken: state.sessionToken,
         playerId: state.playerId,
         cardIds: state.selectedTradeCardIds,

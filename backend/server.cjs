@@ -75,9 +75,10 @@ function createApp(options = {}) {
   Object.keys(state).forEach((key) => delete state[key]);
   Object.assign(state, initialGame.state);
   const auth = createAuthStore({
-    dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json")
+    dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+    sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
-  const clients = new Set();
+  const clientsByGameId = new Map();
 
   function replaceState(nextState) {
     Object.keys(state).forEach((key) => delete state[key]);
@@ -103,24 +104,76 @@ function createApp(options = {}) {
     return snapshotForState(state, activeGameId, activeGameVersion, activeGameName);
   }
 
-  function broadcast() {
-    const payload = "data: " + JSON.stringify(snapshot()) + "\n\n";
+  function getTargetGameId(body = {}, url = null) {
+    return body.gameId || (url ? url.searchParams.get("gameId") : null) || activeGameId || null;
+  }
+
+  function loadGameContext(gameId) {
+    if (!gameId || gameId === activeGameId) {
+      return {
+        gameId: activeGameId,
+        gameName: activeGameName,
+        version: activeGameVersion,
+        state
+      };
+    }
+
+    const record = gameSessions.getGame(gameId);
+    return {
+      gameId: record.game.id,
+      gameName: record.game.name,
+      version: record.game.version,
+      state: record.state
+    };
+  }
+
+  function persistGameContext(gameContext, expectedVersion) {
+    if (!gameContext?.gameId) {
+      return null;
+    }
+
+    const savedGame = gameSessions.saveGame(gameContext.gameId, gameContext.state, expectedVersion);
+    gameContext.version = savedGame.version;
+    gameContext.gameName = savedGame.name;
+
+    if (gameContext.gameId === activeGameId) {
+      activeGameVersion = savedGame.version;
+      activeGameName = savedGame.name;
+      if (gameContext.state !== state) {
+        replaceState(gameContext.state);
+      }
+    }
+
+    return savedGame;
+  }
+
+  function broadcastGame(gameContext) {
+    if (!gameContext?.gameId) {
+      return;
+    }
+
+    const clients = clientsByGameId.get(gameContext.gameId);
+    if (!clients || !clients.size) {
+      return;
+    }
+
+    const payload = "data: " + JSON.stringify(snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)) + "\n\n";
     clients.forEach((client) => {
       client.write(payload);
     });
   }
 
-  function runAiTurnsIfNeeded() {
+  function runAiTurnsIfNeeded(targetState) {
     const reports = [];
-    const maxTurns = Math.max(4, state.players.length * 4);
+    const maxTurns = Math.max(4, targetState.players.length * 4);
 
     for (let step = 0; step < maxTurns; step += 1) {
-      const currentPlayer = getCurrentPlayer(state);
-      if (!currentPlayer || !currentPlayer.isAi || state.phase !== "active" || state.winnerId) {
+      const currentPlayer = getCurrentPlayer(targetState);
+      if (!currentPlayer || !currentPlayer.isAi || targetState.phase !== "active" || targetState.winnerId) {
         break;
       }
 
-      const result = runAiTurn(state);
+      const result = runAiTurn(targetState);
       if (!result.ok) {
         throw new Error(result.error || "Turno AI non riuscito.");
       }
@@ -131,11 +184,11 @@ function createApp(options = {}) {
     return reports;
   }
 
-  function persistWithAiTurns(expectedVersion) {
-    persistActiveGame(expectedVersion);
-    const aiReports = runAiTurnsIfNeeded();
+  function persistWithAiTurns(gameContext, expectedVersion) {
+    persistGameContext(gameContext, expectedVersion);
+    const aiReports = runAiTurnsIfNeeded(gameContext.state);
     if (aiReports.length > 0) {
-      persistActiveGame(activeGameVersion);
+      persistGameContext(gameContext, gameContext.version);
     }
     return aiReports;
   }
@@ -155,14 +208,14 @@ function createApp(options = {}) {
     return { sessionToken, user };
   }
 
-  function authorizeActiveGameRead(req, res, url) {
-    if (!activeGameId) {
-      return { ok: true, user: null };
+  function authorizeGameRead(gameId, req, res, url) {
+    if (!gameId) {
+      return { ok: true, user: null, gameRecord: null };
     }
 
-    const gameRecord = gameSessions.getGame(activeGameId);
+    const gameRecord = gameSessions.getGame(gameId);
     if (!gameRecord.game.creatorUserId) {
-      return { ok: true, user: null };
+      return { ok: true, user: null, gameRecord };
     }
 
     const authContext = requireAuth(req, res, {}, url);
@@ -178,7 +231,7 @@ function createApp(options = {}) {
       return null;
     }
 
-    return authContext;
+    return { ...authContext, gameRecord };
   }
 
   function resolvePlayerForUser(nextState, user) {
@@ -227,7 +280,7 @@ function createApp(options = {}) {
       activeGameName = resetGame.game.name;
       replaceState(resetGame.state);
       nextAttackRolls = null;
-      broadcast();
+      broadcastGame({ gameId: resetGame.game.id, gameName: resetGame.game.name, version: resetGame.game.version, state: resetGame.state });
       sendJson(res, 200, { ok: true, state: snapshot() });
       return;
     }
@@ -248,22 +301,24 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/state") {
-      const access = authorizeActiveGameRead(req, res, url);
+      const gameId = getTargetGameId({}, url);
+      const access = authorizeGameRead(gameId, req, res, url);
       if (access === null) {
         return;
       }
+      const gameContext = loadGameContext(gameId);
       const sessionUser = access && access.user ? access.user : auth.getUserFromSession(extractSessionToken(req, {}, url));
-      const resolvedPlayer = resolvePlayerForUser(state, sessionUser);
+      const resolvedPlayer = resolvePlayerForUser(gameContext.state, sessionUser);
       sendJson(res, 200, {
-        ...snapshot(),
+        ...snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
         playerId: resolvedPlayer ? resolvedPlayer.id : null,
-        ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(state, resolvedPlayer) } : {})
+        ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(gameContext.state, resolvedPlayer) } : {})
       });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/games") {
-      sendJson(res, 200, { games: gameSessions.listGames(), activeGameId });
+      sendJson(res, 200, { games: gameSessions.listGames(), activeGameId: getTargetGameId({}, url) });
       return;
     }
 
@@ -294,7 +349,7 @@ function createApp(options = {}) {
         activeGameVersion = created.game.version;
         activeGameName = created.game.name;
         replaceState(created.state);
-        broadcast();
+        broadcastGame({ gameId: created.game.id, gameName: created.game.name, version: created.game.version, state: created.state });
         sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
       } catch (error) {
         const statusCode = error.statusCode || 400;
@@ -314,13 +369,15 @@ function createApp(options = {}) {
         const gameRecord = gameSessions.getGame(body.gameId);
         authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
         const opened = gameSessions.openGame(body.gameId);
-        activeGameId = opened.game.id;
-        activeGameVersion = opened.game.version;
-        activeGameName = opened.game.name;
-        replaceState(opened.state);
-        broadcast();
         const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
-        sendJson(res, 200, { ok: true, game: opened.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), playerId: resolvedPlayer ? resolvedPlayer.id : null });
+        sendJson(res, 200, {
+          ok: true,
+          game: opened.game,
+          games: gameSessions.listGames(),
+          activeGameId: opened.game.id,
+          state: snapshotForState(opened.state, opened.game.id, opened.game.version, opened.game.name),
+          playerId: resolvedPlayer ? resolvedPlayer.id : null
+        });
       } catch (error) {
         const statusCode = error.statusCode || 400;
         sendJson(res, statusCode, { error: error.message || "Apertura partita non riuscita.", code: error.code || null });
@@ -353,19 +410,34 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/events") {
-      const access = authorizeActiveGameRead(req, res, url);
+      const gameId = getTargetGameId({}, url);
+      const access = authorizeGameRead(gameId, req, res, url);
       if (access === null) {
         return;
       }
+      const gameContext = loadGameContext(gameId);
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
         "Access-Control-Allow-Origin": "*"
       });
-      res.write("data: " + JSON.stringify(snapshot()) + "\n\n");
-      clients.add(res);
-      req.on("close", () => clients.delete(res));
+      res.write("data: " + JSON.stringify(snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)) + "\n\n");
+      const key = gameContext.gameId || "__default__";
+      if (!clientsByGameId.has(key)) {
+        clientsByGameId.set(key, new Set());
+      }
+      clientsByGameId.get(key).add(res);
+      req.on("close", () => {
+        const group = clientsByGameId.get(key);
+        if (!group) {
+          return;
+        }
+        group.delete(res);
+        if (!group.size) {
+          clientsByGameId.delete(key);
+        }
+      });
       return;
     }
 
@@ -411,17 +483,18 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/ai/join") {
       const body = await parseBody(req);
-      const result = addPlayer(state, body.name, { isAi: true });
+      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const result = addPlayer(gameContext.state, body.name, { isAi: true });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
       }
 
-      persistActiveGame();
-      broadcast();
+      persistGameContext(gameContext);
+      broadcastGame(gameContext);
       sendJson(res, result.rejoined ? 200 : 201, {
         playerId: result.player.id,
-        state: snapshot(),
+        state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
         player: result.player
       });
       return;
@@ -434,17 +507,18 @@ function createApp(options = {}) {
         return;
       }
 
-      const result = addPlayer(state, authContext.user.username, { linkedUserId: authContext.user.id });
+      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const result = addPlayer(gameContext.state, authContext.user.username, { linkedUserId: authContext.user.id });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
       }
 
-      persistActiveGame();
-      broadcast();
+      persistGameContext(gameContext);
+      broadcastGame(gameContext);
       sendJson(res, result.rejoined ? 200 : 201, {
         playerId: result.player.id,
-        state: snapshot(),
+        state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
         user: auth.publicUser(authContext.user)
       });
       return;
@@ -457,7 +531,8 @@ function createApp(options = {}) {
         return;
       }
 
-      const player = getPlayer(state, body.playerId);
+      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const player = getPlayer(gameContext.state, body.playerId);
       if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
         return;
@@ -469,33 +544,31 @@ function createApp(options = {}) {
         return;
       }
 
-      if (expectedVersion != null && expectedVersion !== activeGameVersion) {
+      if (expectedVersion != null && expectedVersion !== gameContext.version) {
         sendJson(res, 409, {
           error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
           code: "VERSION_CONFLICT",
-          currentVersion: activeGameVersion,
-          state: snapshot()
+          currentVersion: gameContext.version,
+          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
         });
         return;
       }
 
-      const result = tradeCardSet(state, body.playerId, body.cardIds);
+      const result = tradeCardSet(gameContext.state, body.playerId, body.cardIds);
       if (!result.ok) {
         sendJson(res, 400, { error: result.message });
         return;
       }
 
       try {
-        persistActiveGame(expectedVersion);
+        persistGameContext(gameContext, expectedVersion);
       } catch (error) {
         if (error && error.code === "VERSION_CONFLICT") {
-          activeGameVersion = error.currentVersion;
-          activeGameName = error.game?.name || activeGameName;
           sendJson(res, 409, {
             error: error.message,
             code: error.code,
             currentVersion: error.currentVersion,
-            state: snapshotForState(error.currentState, activeGameId, error.currentVersion, activeGameName)
+            state: snapshotForState(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName)
           });
           return;
         }
@@ -503,8 +576,8 @@ function createApp(options = {}) {
         throw error;
       }
 
-      broadcast();
-      sendJson(res, 200, { ok: true, bonus: result.bonus, validation: result.validation, state: snapshot() });
+      broadcastGame(gameContext);
+      sendJson(res, 200, { ok: true, bonus: result.bonus, validation: result.validation, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
       return;
     }
 
@@ -515,13 +588,14 @@ function createApp(options = {}) {
         return;
       }
 
-      if (state.phase !== "lobby") {
+      const gameContext = loadGameContext(getTargetGameId(body, url));
+      if (gameContext.state.phase !== "lobby") {
         sendJson(res, 400, { error: "La partita e gia iniziata." });
         return;
       }
 
       try {
-        const activeGame = gameSessions.getGame(activeGameId);
+        const activeGame = gameSessions.getGame(gameContext.gameId);
         authorize("game:start", { user: authContext.user, game: activeGame.game });
       } catch (error) {
         const statusCode = error.statusCode || 400;
@@ -529,21 +603,21 @@ function createApp(options = {}) {
         return;
       }
 
-      if (state.players.length < 2) {
+      if (gameContext.state.players.length < 2) {
         sendJson(res, 400, { error: "Servono almeno 2 giocatori." });
         return;
       }
 
-      const player = getPlayer(state, body.playerId);
+      const player = getPlayer(gameContext.state, body.playerId);
       if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
         return;
       }
 
-      startGame(state);
-      persistWithAiTurns();
-      broadcast();
-      sendJson(res, 200, { ok: true, state: snapshot() });
+      startGame(gameContext.state);
+      persistWithAiTurns(gameContext);
+      broadcastGame(gameContext);
+      sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
       return;
     }
 
@@ -562,7 +636,8 @@ function createApp(options = {}) {
         return;
       }
 
-      const player = getPlayer(state, playerId);
+      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const player = getPlayer(gameContext.state, playerId);
 
       if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
@@ -574,44 +649,42 @@ function createApp(options = {}) {
           return false;
         }
 
-        activeGameVersion = error.currentVersion;
-        activeGameName = error.game?.name || activeGameName;
         sendJson(res, 409, {
           error: error.message,
           code: error.code,
           currentVersion: error.currentVersion,
-          state: snapshotForState(error.currentState, activeGameId, error.currentVersion, activeGameName)
+          state: snapshotForState(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName)
         });
         return true;
       }
 
-      if (expectedVersion != null && expectedVersion !== activeGameVersion) {
+      if (expectedVersion != null && expectedVersion !== gameContext.version) {
         sendJson(res, 409, {
           error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
           code: "VERSION_CONFLICT",
-          currentVersion: activeGameVersion,
-          state: snapshot()
+          currentVersion: gameContext.version,
+          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
         });
         return;
       }
 
       if (type === "reinforce") {
-        const result = applyReinforcement(state, playerId, String(body.territoryId || ""));
+        const result = applyReinforcement(gameContext.state, playerId, String(body.territoryId || ""));
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
         }
 
         try {
-          persistActiveGame(expectedVersion);
+          persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
           }
           throw error;
         }
-        broadcast();
-        sendJson(res, 200, { ok: true, state: snapshot() });
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
         return;
       }
 
@@ -631,82 +704,82 @@ function createApp(options = {}) {
         }
 
         const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
-        const result = resolveAttack(state, playerId, String(body.fromId || ""), String(body.toId || ""), random, requestedAttackDice);
+        const result = resolveAttack(gameContext.state, playerId, String(body.fromId || ""), String(body.toId || ""), random, requestedAttackDice);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
         }
 
         try {
-          persistActiveGame(expectedVersion);
+          persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
           }
           throw error;
         }
-        broadcast();
-        sendJson(res, 200, { ok: true, state: snapshot() });
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
         return;
       }
 
       if (type === "moveAfterConquest") {
-        const result = moveAfterConquest(state, playerId, body.armies);
+        const result = moveAfterConquest(gameContext.state, playerId, body.armies);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
         }
 
         try {
-          persistActiveGame(expectedVersion);
+          persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
           }
           throw error;
         }
-        broadcast();
-        sendJson(res, 200, { ok: true, state: snapshot() });
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
         return;
       }
 
       if (type === "fortify") {
-        const result = applyFortify(state, playerId, String(body.fromId || ""), String(body.toId || ""), body.armies);
+        const result = applyFortify(gameContext.state, playerId, String(body.fromId || ""), String(body.toId || ""), body.armies);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
         }
 
         try {
-          persistActiveGame(expectedVersion);
+          persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
           }
           throw error;
         }
-        broadcast();
-        sendJson(res, 200, { ok: true, state: snapshot() });
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
         return;
       }
 
       if (type === "endTurn") {
-        const result = endTurn(state, playerId);
+        const result = endTurn(gameContext.state, playerId);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
         }
 
         try {
-          persistWithAiTurns(expectedVersion);
+          persistWithAiTurns(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
           }
           throw error;
         }
-        broadcast();
-        sendJson(res, 200, { ok: true, state: snapshot() });
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
         return;
       }
 

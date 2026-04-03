@@ -1,17 +1,8 @@
-const fs = require("fs");
 const path = require("path");
+const { readJsonFile } = require("./json-file-store.cjs");
 
 function readGamesDatabase(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return { games: [] };
-  }
-
-  const raw = fs.readFileSync(filePath, "utf8").trim();
-  if (!raw) {
-    return { games: [] };
-  }
-
-  const parsed = JSON.parse(raw);
+  const parsed = readJsonFile(filePath, { games: [] }, (value) => Boolean(value) && typeof value === "object");
   return {
     games: Array.isArray(parsed.games) ? parsed.games : []
   };
