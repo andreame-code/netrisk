@@ -1,6 +1,7 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
 const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
+const { secureRandom } = require("./random.cjs");
 
 const AI_GENERAL_NAMES = [
   "Caesar",
@@ -21,7 +22,7 @@ function normalizePlayerType(value) {
   return value === "ai" ? "ai" : "human";
 }
 
-function buildHistoricalAiNames(count, random = Math.random) {
+function buildHistoricalAiNames(count, random = secureRandom) {
   const pool = AI_GENERAL_NAMES.slice();
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));

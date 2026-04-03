@@ -7,6 +7,7 @@ const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
+const { secureRandom } = require("./random.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -723,7 +724,7 @@ function createApp(options = {}) {
           random = () => {
             const roll = queuedRolls.shift();
             if (!roll) {
-              return Math.random();
+              return secureRandom();
             }
 
             return (roll - 0.01) / 6;

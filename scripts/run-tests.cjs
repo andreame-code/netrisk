@@ -36,6 +36,7 @@ const { createAuthStore } = require("../backend/auth.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
+const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
@@ -47,6 +48,14 @@ const tests = [];
 
 function register(name, fn) {
   tests.push({ name, fn });
+}
+
+function uniqueSuffix() {
+  return randomHex(4);
+}
+
+function uniqueName(prefix) {
+  return `${prefix}_${uniqueSuffix()}`;
 }
 
 function setupLobby() {
@@ -150,10 +159,10 @@ function cleanupSqliteFiles(filePath) {
 }
 
 async function withServer(run) {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${uniqueSuffix()}.json`);
+  const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${uniqueSuffix()}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${Date.now()}-${uniqueSuffix()}.json`);
   const tempDbFile = path.join(__dirname, `tmp-store-${unique}.sqlite`);
   const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
   const listener = app.server.listen(0);
@@ -232,8 +241,22 @@ register("auth store registra e autentica utenti password", () => {
   cleanupSqliteFiles(tempDbFile);
 });
 
+register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
+  for (let index = 0; index < 32; index += 1) {
+    const value = secureRandom();
+    assert.equal(value >= 0, true);
+    assert.equal(value < 1, true);
+  }
+});
+
+register("randomHex restituisce una stringa esadecimale della lunghezza attesa", () => {
+  const token = randomHex(6);
+  assert.equal(token.length, 12);
+  assert.match(token, /^[0-9a-f]+$/);
+});
+
 register("auth store mantiene la sessione dopo il riavvio del processo", () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
   const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
@@ -266,7 +289,7 @@ register("auth store mantiene la sessione dopo il riavvio del processo", () => {
 });
 
 register("auth store migra password legacy in hash al login riuscito", () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
   const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
@@ -310,7 +333,7 @@ register("auth store migra password legacy in hash al login riuscito", () => {
 });
 
 register("datastore backup crea uno snapshot sqlite leggibile", async () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const sourceDbFile = path.join(__dirname, `tmp-backup-${unique}.sqlite`);
   const targetDbFile = path.join(__dirname, `tmp-backup-copy-${unique}.sqlite`);
   const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
@@ -361,7 +384,7 @@ register("datastore backup crea uno snapshot sqlite leggibile", async () => {
 });
 
 register("backup retention mantiene solo gli snapshot piu recenti", () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const backupDir = path.join(__dirname, `tmp-backups-${unique}`);
   fs.mkdirSync(backupDir, { recursive: true });
 
@@ -394,7 +417,7 @@ register("backup retention mantiene solo gli snapshot piu recenti", () => {
 });
 
 register("backup verification legge uno snapshot sqlite esistente", async () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const sourceDbFile = path.join(__dirname, `tmp-verify-${unique}.sqlite`);
   const targetDbFile = path.join(__dirname, `tmp-verify-copy-${unique}.sqlite`);
   const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
@@ -535,7 +558,7 @@ register("resolveAttack rifiuta un numero di dadi oltre il massimo disponibile",
   state.territories.aurora = { ownerId: first.id, armies: 2 };
   state.territories.bastion = { ownerId: second.id, armies: 2 };
 
-  const result = resolveAttack(state, first.id, "aurora", "bastion", Math.random, 2);
+  const result = resolveAttack(state, first.id, "aurora", "bastion", secureRandom, 2);
   assert.equal(result.ok, false);
   assert.equal(result.message, "Numero di dadi di attacco non valido.");
 });
@@ -1302,7 +1325,7 @@ register("game session store salva il creator user id", () => {
 });
 
 register("game session store importa partite legacy da JSON al primo avvio", () => {
-  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempGames = path.join(__dirname, `tmp-games-${unique}.json`);
   const tempDbFile = path.join(__dirname, `tmp-games-${unique}.sqlite`);
 
@@ -1339,8 +1362,8 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
 
 register("API state richiede membership sulla partita protetta", async () => {
   await withServer(async (baseUrl) => {
-    const owner = await createAuthenticatedSession(baseUrl, `state_owner_${Math.random().toString(16).slice(2, 8)}`);
-    const outsider = await createAuthenticatedSession(baseUrl, `state_out_${Math.random().toString(16).slice(2, 8)}`);
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("state_owner"));
+    const outsider = await createAuthenticatedSession(baseUrl, uniqueName("state_out"));
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
@@ -1364,7 +1387,7 @@ register("API state richiede membership sulla partita protetta", async () => {
 
 register("API games open richiede autenticazione", async () => {
   await withServer(async (baseUrl) => {
-    const owner = await createAuthenticatedSession(baseUrl, `open_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("open_owner"));
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
@@ -1386,7 +1409,7 @@ register("API games open richiede autenticazione", async () => {
 
 register("API games open consente al creatore di riaprire la propria partita", async () => {
   await withServer(async (baseUrl) => {
-    const owner = await createAuthenticatedSession(baseUrl, `open_member_${Math.random().toString(16).slice(2, 8)}`);
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("open_member"));
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
@@ -1406,8 +1429,8 @@ register("API games open consente al creatore di riaprire la propria partita", a
 
 register("API state e mutazioni restano isolate tra partite diverse tramite gameId", async () => {
   await withServer(async (baseUrl) => {
-    const ownerA = await createAuthenticatedSession(baseUrl, `isolate_a_${Math.random().toString(16).slice(2, 8)}`);
-    const ownerB = await createAuthenticatedSession(baseUrl, `isolate_b_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerA = await createAuthenticatedSession(baseUrl, uniqueName("isolate_a"));
+    const ownerB = await createAuthenticatedSession(baseUrl, uniqueName("isolate_b"));
 
     const createdA = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -1459,8 +1482,8 @@ register("API state e mutazioni restano isolate tra partite diverse tramite game
 
 register("API start consente solo al creatore di avviare la partita", async () => {
   await withServer(async (baseUrl) => {
-    const owner = await createAuthenticatedSession(baseUrl, `host_${Math.random().toString(16).slice(2, 8)}`);
-    const guest = await createAuthenticatedSession(baseUrl, `guest_${Math.random().toString(16).slice(2, 8)}`);
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("host"));
+    const guest = await createAuthenticatedSession(baseUrl, uniqueName("guest"));
 
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -1515,7 +1538,7 @@ register("API game options espone setup base per nuova partita", async () => {
 
 register("API games crea una sessione da configurazione strutturata", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       `creator_${Math.random().toString(16).slice(2, 8)}`
+    const session = await createAuthenticatedSession(baseUrl,       uniqueName("creator")
     );
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -1550,7 +1573,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
 
 register("API games summary espone metadati configurazione", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       `summary_${Math.random().toString(16).slice(2, 8)}`
+    const session = await createAuthenticatedSession(baseUrl,       uniqueName("summary")
     );
     const createResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -1585,7 +1608,7 @@ register("API games summary espone metadati configurazione", async () => {
 
 register("API games rifiuta configurazioni incomplete", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       `invalid_${Math.random().toString(16).slice(2, 8)}`
+    const session = await createAuthenticatedSession(baseUrl,       uniqueName("invalid")
     );
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -1605,7 +1628,7 @@ register("API games rifiuta configurazioni incomplete", async () => {
 
 register("API games create + list + open persiste e riapre una sessione", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl, `list_${Math.random().toString(16).slice(2, 8)}`);
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("list"));
     const initialList = await fetch(baseUrl + "/api/games");
     assert.equal(initialList.status, 200);
     const initialPayload = await initialList.json();
@@ -1741,7 +1764,7 @@ register("API game session restores active game across app recreation", async ()
   let app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
 
   try {
-    const firstSession = await createAuthenticatedAppSession(app, `restore_${Math.random().toString(16).slice(2, 8)}`);
+  const firstSession = await createAuthenticatedAppSession(app, uniqueName("restore"));
     const created = await fetchGame(app, "/api/games", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { name: "Sessione persistita" } });
     const createdGameId = created.game.id;
 
@@ -1822,7 +1845,7 @@ register("game session store mantiene versioni indipendenti tra partite", () => 
 
 register("API action incrementa la version e rifiuta expectedVersion stale", async () => {
   await withServer(async (baseUrl) => {
-    const ownerSession = await createAuthenticatedSession(baseUrl, `concurrency_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("concurrency_owner"));
     const createdResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(ownerSession.sessionToken),
@@ -1832,7 +1855,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     const createdPayload = await createdResponse.json();
     assert.equal(createdPayload.state.version, 1);
 
-    const uniqueVersionSuffix = Math.random().toString(16).slice(2, 8);
+    const uniqueVersionSuffix = uniqueSuffix();
     const firstUsername = `va_${uniqueVersionSuffix}`;
     const secondUsername = `vb_${uniqueVersionSuffix}`;
 
@@ -1936,7 +1959,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
 
 register("API games open ricollega il player umano corretto dopo logout e nuovo login", async () => {
   await withServer(async (baseUrl) => {
-    const username = `rebind_${Math.random().toString(16).slice(2, 8)}`;
+    const username = uniqueName("rebind");
     const ownerSession = await createAuthenticatedSession(baseUrl, username);
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -2009,7 +2032,7 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
 });
 register("API cards trade applica un set valido e persiste lo stato aggiornato", async () => {
   await withServer(async (baseUrl, context) => {
-    const login = await createAuthenticatedAppSession(context.app, `trade_api_${Math.random().toString(16).slice(2, 8)}`);
+    const login = await createAuthenticatedAppSession(context.app, uniqueName("trade_api"));
     const state = createInitialState();
     const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
     addPlayer(state, "CPU Trade", { isAi: true });
@@ -2044,7 +2067,7 @@ register("API cards trade applica un set valido e persiste lo stato aggiornato",
 
 register("API card flow rimescola il discard e continua l'award a fine turno", async () => {
   await withServer(async (baseUrl, context) => {
-    const login = await createAuthenticatedAppSession(context.app,                                                                                                                                                                                                                                                                                                                                                 'card_flow_' + Math.random().toString(16).slice(2, 8));
+    const login = await createAuthenticatedAppSession(context.app, uniqueName("card_flow"));
     const state = createInitialState();
     const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
     addPlayer(state, 'CPU Card', { isAi: true });
@@ -2099,7 +2122,7 @@ register("API card flow rimescola il discard e continua l'award a fine turno", a
 
 register("API cards trade rifiuta set invalidi senza mutare lo stato", async () => {
   await withServer(async (baseUrl, context) => {
-    const login = await createAuthenticatedAppSession(context.app, `trade_invalid_${Math.random().toString(16).slice(2, 8)}`);
+    const login = await createAuthenticatedAppSession(context.app, uniqueName("trade_invalid"));
     const state = createInitialState();
     const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
     addPlayer(state, "CPU Trade", { isAi: true });
@@ -2133,7 +2156,7 @@ register("API cards trade rifiuta set invalidi senza mutare lo stato", async () 
 
 register("API ai join + endTurn esegue automaticamente il turno AI", async () => {
   await withServer(async (baseUrl) => {
-    const ownerSession = await createAuthenticatedSession(baseUrl, `ai_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("ai_owner"));
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(ownerSession.sessionToken),
@@ -2141,7 +2164,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     });
     assert.equal(created.status, 201);
 
-    const username = `cpu_host_${Math.random().toString(16).slice(2, 8)}`;
+    const username = uniqueName("cpu_host");
 
     const humanSession = ownerSession;
 
@@ -2221,8 +2244,8 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
 register("API games open consente all'admin di aprire una partita protetta altrui", async () => {
   await withServer(async (baseUrl, context) => {
-    const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_open_${Math.random().toString(16).slice(2, 8)}`);
-    const adminSession = await createAuthenticatedSession(baseUrl, `admin_open_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("owner_admin_open"));
+    const adminSession = await createAuthenticatedSession(baseUrl, uniqueName("admin_open"));
 
     setStoredUserRole(context.app.datastore, adminSession.user.username, "admin");
 
@@ -2247,8 +2270,8 @@ register("API games open consente all'admin di aprire una partita protetta altru
 
 register("API start consente all'admin di avviare una partita protetta altrui", async () => {
   await withServer(async (baseUrl, context) => {
-    const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_start_${Math.random().toString(16).slice(2, 8)}`);
-    const adminSession = await createAuthenticatedSession(baseUrl, `admin_start_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("owner_admin_start"));
+    const adminSession = await createAuthenticatedSession(baseUrl, uniqueName("admin_start"));
 
     setStoredUserRole(context.app.datastore, adminSession.user.username, "admin");
 
@@ -2293,7 +2316,7 @@ register("API start consente all'admin di avviare una partita protetta altrui", 
 });
 register("API profile espone statistiche giocatore aggregate", async () => {
   await withServer(async (baseUrl) => {
-    const ownerSession = await createAuthenticatedSession(baseUrl, `profile_owner_${Math.random().toString(16).slice(2, 8)}`);
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("profile_owner"));
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(ownerSession.sessionToken),
@@ -2301,8 +2324,8 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     });
     assert.equal(created.status, 201);
 
-    const username = `prof_${Math.random().toString(16).slice(2, 8)}`;
-    const other = `enem_${Math.random().toString(16).slice(2, 8)}`;
+    const username = uniqueName("prof");
+    const other = uniqueName("enem");
 
     const registerOther = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
@@ -2433,7 +2456,7 @@ register("GET /api/state espone lastCombat dopo un attacco", async () => {
 
 register("API state espone solo la mano del player autenticato risolto", async () => {
   await withServer(async (baseUrl, context) => {
-    const login = await createAuthenticatedAppSession(context.app, `hand_state_${Math.random().toString(16).slice(2, 8)}`);
+    const login = await createAuthenticatedAppSession(context.app, uniqueName("hand_state"));
     const state = createInitialState();
     const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
     addPlayer(state, "CPU Observer", { isAi: true });
@@ -2460,7 +2483,7 @@ register("API state espone solo la mano del player autenticato risolto", async (
 
 register("API register + login + join completa il flusso di accesso", async () => {
   await withServer(async (baseUrl) => {
-    const unique = `api_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const unique = `api_${Date.now()}_${uniqueSuffix()}`;
     const registerResponse = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2510,13 +2533,6 @@ async function run() {
 }
 
 run();
-
-
-
-
-
-
-
 
 
 

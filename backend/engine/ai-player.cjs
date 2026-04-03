@@ -10,6 +10,7 @@ const {
   territories,
   territoriesOwnedBy
 } = require("./game-engine.cjs");
+const { secureRandom } = require("../random.cjs");
 
 
 function listEnemyNeighbors(state, territoryId, playerId) {
@@ -149,7 +150,7 @@ function chooseFortify(state, playerId) {
 }
 
 function runAiTurn(state, options = {}) {
-  const random = typeof options.random === "function" ? options.random : Math.random;
+  const random = typeof options.random === "function" ? options.random : secureRandom;
   const player = getCurrentPlayer(state);
   if (!player) {
     return { ok: false, error: "Nessun giocatore corrente." };
