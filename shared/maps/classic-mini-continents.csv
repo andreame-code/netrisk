@@ -1,0 +1,5 @@
+id,name,bonus,territoryIds
+north,North Reach,2,aurora|bastion
+central,Ash Corridor,3,cinder|delta|ember
+east,Iron Frontier,2,forge|ion
+south,Harbor Belt,2,grove|harbor

@@ -1,0 +1,43 @@
+id,name,continentId,x,y,neighbors
+alaska,Alaska,north_america,0.055,0.155,nw_territory|alberta|kamchatka
+nw_territory,North West Territory,north_america,0.175,0.115,alaska|alberta|ontario|greenland
+greenland,Greenland,north_america,0.335,0.07,nw_territory|ontario|quebec|iceland
+alberta,Alberta,north_america,0.16,0.235,alaska|nw_territory|ontario|western_united_states
+ontario,Ontario,north_america,0.245,0.24,nw_territory|greenland|quebec|alberta|western_united_states|eastern_united_states
+quebec,Quebec,north_america,0.32,0.24,greenland|ontario|eastern_united_states
+western_united_states,Western United States,north_america,0.12,0.355,alberta|ontario|eastern_united_states|central_america
+eastern_united_states,Eastern United States,north_america,0.21,0.365,ontario|quebec|western_united_states|central_america
+central_america,Central America,north_america,0.09,0.455,western_united_states|eastern_united_states|venezuela
+venezuela,Venezuela,south_america,0.22,0.55,central_america|peru|brazil
+peru,Peru,south_america,0.18,0.70,venezuela|brazil|argentina
+brazil,Brazil,south_america,0.29,0.62,venezuela|peru|argentina|north_africa
+argentina,Argentina,south_america,0.22,0.83,peru|brazil
+iceland,Iceland,europe,0.41,0.19,greenland|great_britain|scandinavia
+great_britain,Great Britain,europe,0.39,0.29,iceland|scandinavia|northern_europe|western_europe
+scandinavia,Scandinavia,europe,0.49,0.15,iceland|great_britain|northern_europe|ukraine
+ukraine,Ukraine,europe,0.59,0.22,scandinavia|northern_europe|southern_europe|ural|afghanistan|middle_east
+northern_europe,Northern Europe,europe,0.50,0.31,great_britain|scandinavia|ukraine|western_europe|southern_europe
+western_europe,Western Europe,europe,0.43,0.38,great_britain|northern_europe|southern_europe|north_africa
+southern_europe,Southern Europe,europe,0.50,0.40,western_europe|northern_europe|ukraine|middle_east|egypt|north_africa
+north_africa,North Africa,africa,0.46,0.62,brazil|western_europe|southern_europe|egypt|east_africa|congo
+egypt,Egypt,africa,0.51,0.54,southern_europe|north_africa|east_africa|middle_east
+east_africa,East Africa,africa,0.58,0.67,egypt|north_africa|congo|south_africa|madagascar|middle_east
+congo,Congo,africa,0.53,0.76,north_africa|east_africa|south_africa
+south_africa,South Africa,africa,0.53,0.89,congo|east_africa|madagascar
+madagascar,Madagascar,africa,0.63,0.82,east_africa|south_africa
+ural,Ural,asia,0.67,0.22,ukraine|siberia|china|afghanistan
+siberia,Siberia,asia,0.76,0.12,ural|yakutsk|irkutsk|mongolia|china
+yakutsk,Yakutsk,asia,0.86,0.09,siberia|irkutsk|kamchatka
+kamchatka,Kamchatka,asia,0.96,0.08,alaska|yakutsk|irkutsk|mongolia|japan
+irkutsk,Irkutsk,asia,0.80,0.22,siberia|yakutsk|kamchatka|mongolia
+mongolia,Mongolia,asia,0.80,0.32,siberia|irkutsk|kamchatka|japan|china
+japan,Japan,asia,0.93,0.30,kamchatka|mongolia
+afghanistan,Afghanistan,asia,0.66,0.33,ukraine|ural|china|india|middle_east
+middle_east,Middle East,asia,0.66,0.49,ukraine|afghanistan|india|east_africa|egypt|southern_europe
+india,India,asia,0.74,0.54,middle_east|afghanistan|china|siam
+siam,Siam,asia,0.81,0.60,india|china|indonesia
+china,China,asia,0.77,0.45,ural|siberia|mongolia|siam|india|afghanistan
+indonesia,Indonesia,australia,0.84,0.75,siam|new_guinea|western_australia
+new_guinea,New Guinea,australia,0.95,0.71,indonesia|western_australia|eastern_australia
+western_australia,Western Australia,australia,0.85,0.87,indonesia|new_guinea|eastern_australia
+eastern_australia,Eastern Australia,australia,0.94,0.85,new_guinea|western_australia
