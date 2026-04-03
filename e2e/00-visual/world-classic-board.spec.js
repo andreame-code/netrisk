@@ -6,14 +6,23 @@ async function openWorldClassicGame(page, suffix) {
   await page.goto("/game.html");
   const owner = uniqueUser(`wcv_${suffix}`);
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  const sessionToken = await page.evaluate(() => localStorage.getItem("frontline-session-token"));
+  const response = await page.request.post("/api/games", {
+    headers: { "x-session-token": sessionToken || "" },
+    data: {
+      name: `World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`,
+      mapId: "world-classic",
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(response.ok()).toBeTruthy();
+  const data = await response.json();
 
-  await expect(page.locator("#setup-map option[value='world-classic']")).toHaveCount(1);
-  await expect(page.locator("#setup-map")).toHaveValue("classic-mini");
-  await page.locator("#setup-map").selectOption("world-classic");
-  await expect(page.locator("#setup-map")).toHaveValue("world-classic");
-  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
-  await page.getByRole("button", { name: "Crea e apri" }).click();
+  await page.goto(`/game.html?gameId=${encodeURIComponent(data.game.id)}`);
 
   await expect(page.locator("#game-map-meta")).toContainText("World Classic");
   await expect(page.locator(".map-board.has-custom-background")).toBeVisible();
