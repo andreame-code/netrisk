@@ -1,7 +1,8 @@
 const { expect } = require("@playwright/test");
+const { randomHex } = require("../../backend/random.cjs");
 
 function uniqueUser(prefix) {
-  return prefix + "_" + Date.now().toString(36).slice(-6) + Math.random().toString(16).slice(2, 4);
+  return prefix + "_" + Date.now().toString(36).slice(-6) + randomHex(2);
 }
 
 async function resetGame(page) {

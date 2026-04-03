@@ -1,6 +1,7 @@
 const { validateAttackAttempt } = require("./attack-validation.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
 const { getDiceRuleSet } = require("../../shared/dice.cjs");
+const { secureRandom } = require("../random.cjs");
 
 
 function invalidFromValidation(validation) {
@@ -21,7 +22,7 @@ function resolveSingleAttackRoll(state, graph, playerId, fromTerritoryId, toTerr
 
   const attackerState = state.territories[fromTerritoryId];
   const defenderState = state.territories[toTerritoryId];
-  const random = typeof options.random === "function" ? options.random : Math.random;
+  const random = typeof options.random === "function" ? options.random : secureRandom;
   const diceRuleSet = options.diceRuleSet || getDiceRuleSet(options.diceRuleSetId || state.diceRuleSetId || "standard");
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
 
