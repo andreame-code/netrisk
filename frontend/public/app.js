@@ -429,6 +429,9 @@ function buildGraphMarkup(snapshot) {
 
   const boardStyles = [];
   const boardClasses = ["map-board"];
+  if (snapshot.mapId) {
+    boardClasses.push(`map-id-${String(snapshot.mapId).replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`);
+  }
   if (snapshot.mapVisual?.imageUrl) {
     boardClasses.push("has-custom-background");
     boardStyles.push(`--map-background-image:url('${snapshot.mapVisual.imageUrl}')`);
@@ -439,8 +442,10 @@ function buildGraphMarkup(snapshot) {
 
   return `
     <div class="${boardClasses.join(" ")}"${boardStyles.length ? ` style="${boardStyles.join("; ")}"` : ""}>
-      <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
-      ${nodes}
+      <div class="map-board-stage">
+        <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
+        ${nodes}
+      </div>
     </div>
     <div class="map-legend">${details}</div>
   `;

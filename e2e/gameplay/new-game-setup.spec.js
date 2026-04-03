@@ -65,4 +65,29 @@ test("new game setup creates and renders the selected Middle-earth map", async (
   await expect(page.locator('[data-territory-id="mordor"]')).toBeVisible();
 });
 
+test("new game setup creates and renders the selected World Classic map", async ({ page }) => {
+  await resetGame(page);
+  await page.goto("/game.html");
+  const owner = uniqueUser("world_classic_owner");
+  await registerAndLogin(page, owner);
+  await page.goto("/new-game.html");
+
+  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expect(page.locator("#setup-map")).toContainText("World Classic");
+
+  await page.locator("#setup-map").selectOption("world-classic");
+  await page.locator("#setup-game-name").fill("Global Conflict");
+  await page.getByRole("button", { name: "Crea e apri" }).click();
+
+  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
+  await expect(page.locator("#game-status")).toContainText("Global Conflict");
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic");
+  const mapBoard = page.locator(".map-board.has-custom-background");
+  await expect(mapBoard).toBeVisible();
+  await expect(mapBoard).toHaveAttribute("style", /world-classic\.png/);
+  await expect(page.locator('[data-territory-id="alaska"]')).toHaveAttribute("title", "Alaska");
+  await expect(page.locator('[data-territory-id="ukraine"]')).toBeVisible();
+  await expect(page.locator('[data-territory-id="eastern_australia"]')).toBeVisible();
+});
+
 
