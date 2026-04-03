@@ -1,19 +1,18 @@
 node_modules/
 npm-debug.log
-data/users.json
-scripts/tmp-users.json
-scripts/tmp-users-*.json
+data/*.json
+data/*.json.bak
+data/*.sqlite
+scripts/tmp-*.json
+scripts/tmp-*.json.bak
 scripts/tmp-store-*.sqlite
 scripts/tmp-store-*.sqlite-shm
 scripts/tmp-store-*.sqlite-wal
+scripts/tmp-debug-*.json
 
 playwright-report/
 test-results/
 
-data/e2e-users.json
-
-data/games.json
-data/e2e-games.json
 data/backups/
 data/*.sqlite-shm
 data/*.sqlite-wal
