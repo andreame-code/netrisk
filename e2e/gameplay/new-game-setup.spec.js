@@ -39,4 +39,30 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(page.locator('#join-button')).toBeDisabled();
 });
 
+test("new game setup creates and renders the selected Middle-earth map", async ({ page }) => {
+  await resetGame(page);
+  await page.goto("/game.html");
+  const owner = uniqueUser("middle_earth_owner");
+  await registerAndLogin(page, owner);
+  await page.goto("/new-game.html");
+
+  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expect(page.locator("#setup-map")).toContainText("Middle-earth");
+
+  await page.locator("#setup-map").selectOption("middle-earth");
+  await page.locator("#setup-game-name").fill("War of the Ring");
+  await page.getByRole("button", { name: "Crea e apri" }).click();
+
+  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
+  await expect(page.locator("#game-status")).toContainText("War of the Ring");
+  await expect(page.locator("#game-map-meta")).toContainText("Middle-earth");
+
+  const mapBoard = page.locator(".map-board.has-custom-background");
+  await expect(mapBoard).toBeVisible();
+  await expect(mapBoard).toHaveAttribute("style", /middle-earth\.jpg/);
+  await expect(page.locator('[data-territory-id="the_shire"]')).toHaveAttribute("title", "The Shire");
+  await expect(page.locator('[data-territory-id="gondor"]')).toBeVisible();
+  await expect(page.locator('[data-territory-id="mordor"]')).toBeVisible();
+});
+
 

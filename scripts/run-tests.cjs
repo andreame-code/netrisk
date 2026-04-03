@@ -10,6 +10,7 @@ const {
   computeReinforcements,
   createInitialState,
   endTurn,
+  getMapTerritories,
   moveAfterConquest,
   publicState,
   resolveAttack,
@@ -35,6 +36,7 @@ const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
+const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
@@ -790,6 +792,17 @@ register("awardTurnCardIfEligible continua ad assegnare carte su molti turni di 
   assert.deepEqual(state.hands[first.id].map((card) => card.id).sort(), ["deck-1", "discard-1", "discard-2", "discard-3"]);
 });
 
+register("getMapTerritories legge la mappa runtime con fallback legacy", () => {
+  const defaultState = createInitialState();
+  assert.deepEqual(getMapTerritories(defaultState).map((territory) => territory.id), classicMiniMap.territories.map((territory) => territory.id));
+
+  const customState = createInitialState();
+  customState.mapTerritories = [
+    { id: "alpha", name: "Alpha", neighbors: [], continentId: "x" }
+  ];
+  assert.deepEqual(getMapTerritories(customState), customState.mapTerritories);
+});
+
 register("createInitialState inizializza deck, discard pile, hands e progressione carte standard", () => {
   const state = createInitialState();
   assert.equal(state.mapId, "classic-mini");
@@ -890,6 +903,19 @@ register("publicState espone anche i metadati configurazione partita", () => {
   assert.equal(snapshot.gameConfig.diceRuleSetId, "standard");
   assert.equal(snapshot.gameConfig.totalPlayers, 4);
   assert.equal(snapshot.gameConfig.players[2].type, "ai");
+});
+
+register("createInitialState supporta Middle-earth con coordinate e immagine", () => {
+  const state = createInitialState(middleEarthMap);
+  const snapshot = publicState(state);
+
+  assert.equal(state.mapId, "middle-earth");
+  assert.equal(state.mapName, "Middle-earth");
+  assert.equal(state.mapTerritories.length, middleEarthMap.territories.length);
+  assert.equal(snapshot.mapVisual.imageUrl, "/assets/maps/middle-earth.jpg");
+  assert.equal(snapshot.mapVisual.aspectRatio.width, 463);
+  assert.equal(snapshot.map.find((territory) => territory.id === "gondor").x, middleEarthMap.positions.gondor.x);
+  assert.equal(snapshot.map.find((territory) => territory.id === "the_shire").name, "The Shire");
 });
 
 register("createConfiguredInitialState usa la mappa shared selezionata", () => {
@@ -2095,6 +2121,10 @@ async function run() {
 }
 
 run();
+
+
+
+
 
 
 

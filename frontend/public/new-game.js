@@ -167,6 +167,11 @@ elements.form.addEventListener("submit", async (event) => {
 
   try {
     const data = await send("/api/games", readConfig());
+    if (data.playerId) {
+      localStorage.setItem("frontline-player-id", data.playerId);
+    } else {
+      localStorage.removeItem("frontline-player-id");
+    }
     window.location.href = "/game.html?gameId=" + encodeURIComponent(data.game.id);
   } catch (error) {
     setFeedback(error.message, "error");

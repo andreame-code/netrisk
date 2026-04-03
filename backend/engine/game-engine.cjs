@@ -13,16 +13,14 @@ const {
 } = require("../../shared/models.cjs");
 const { detectVictory } = require("./victory-detection.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
-const classicMiniMap = require("../../shared/maps/classic-mini.cjs");
 const { findSupportedMap } = require("../../shared/maps/index.cjs");
 
-const territories = classicMiniMap.territories;
-
-const continents = classicMiniMap.continents;
-
+const defaultMap = findSupportedMap("classic-mini");
+const territories = defaultMap ? defaultMap.territories : [];
+const continents = defaultMap ? defaultMap.continents : [];
 const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
 
-function createInitialState(selectedMap = classicMiniMap) {
+function createInitialState(selectedMap = defaultMap) {
   const mapTerritories = Array.isArray(selectedMap && selectedMap.territories) && selectedMap.territories.length
     ? selectedMap.territories
     : territories;
@@ -41,6 +39,9 @@ function createInitialState(selectedMap = classicMiniMap) {
     mapId: selectedMap && selectedMap.id ? selectedMap.id : "classic-mini",
     mapName: selectedMap && selectedMap.name ? selectedMap.name : "Classic Mini",
     mapTerritories,
+    mapPositions: selectedMap && selectedMap.positions ? selectedMap.positions : {},
+    mapImageUrl: selectedMap && selectedMap.backgroundImage ? selectedMap.backgroundImage : null,
+    mapAspectRatio: selectedMap && selectedMap.aspectRatio ? selectedMap.aspectRatio : null,
     currentTurnIndex: 0,
     reinforcementPool: 0,
     winnerId: null,
@@ -84,6 +85,14 @@ function getMapTerritories(state) {
   return Array.isArray(state && state.mapTerritories) && state.mapTerritories.length
     ? state.mapTerritories
     : territories;
+}
+
+function getMapPositions(state) {
+  return state && state.mapPositions ? state.mapPositions : {};
+}
+
+function getMapPositions(state) {
+  return state && state.mapPositions ? state.mapPositions : {};
 }
 
 function territoriesOwnedBy(state, playerId) {
@@ -235,9 +244,15 @@ function publicState(state) {
       neighbors: territory.neighbors,
       continentId: territory.continentId,
       ownerId: state.territories[territory.id].ownerId,
-      armies: state.territories[territory.id].armies
+      armies: state.territories[territory.id].armies,
+      x: getMapPositions(state)[territory.id] ? getMapPositions(state)[territory.id].x : null,
+      y: getMapPositions(state)[territory.id] ? getMapPositions(state)[territory.id].y : null
     })),
     continents: state.continents,
+    mapVisual: {
+      imageUrl: state.mapImageUrl || null,
+      aspectRatio: state.mapAspectRatio || null
+    },
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
@@ -695,6 +710,7 @@ module.exports = {
   declareWinnerIfNeeded,
   endTurn,
   getCurrentPlayer,
+  getMapTerritories,
   getPlayer,
   palette,
   moveAfterConquest,
@@ -707,6 +723,15 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
+
+
+
+
+
+
+
+
+
 
 
 

@@ -5,7 +5,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, SUPPORTED_MAPS } = require("./new-game-config.cjs");
+const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -268,7 +268,7 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, { maps: SUPPORTED_MAPS, diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
+      sendJson(res, 200, { maps: listSupportedMaps(), diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
       return;
     }
 
@@ -739,7 +739,12 @@ function createApp(options = {}) {
       const contentTypes = {
         ".html": "text/html; charset=utf-8",
         ".css": "text/css; charset=utf-8",
-        ".js": "text/javascript; charset=utf-8"
+        ".js": "text/javascript; charset=utf-8",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp"
       };
 
       res.writeHead(200, {

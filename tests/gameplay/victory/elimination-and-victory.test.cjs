@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { createInitialState, declareWinnerIfNeeded, publicState, territories } = require("../../../backend/engine/game-engine.cjs");
+const { createInitialState, declareWinnerIfNeeded, getMapTerritories, publicState } = require("../../../backend/engine/game-engine.cjs");
 
 function setupLiveState() {
   const state = createInitialState();
@@ -8,7 +8,7 @@ function setupLiveState() {
     { id: "p1", name: "Alice", color: "#111111", connected: true },
     { id: "p2", name: "Bob", color: "#222222", connected: true }
   ];
-  territories.forEach((territory) => {
+  getMapTerritories(state).forEach((territory) => {
     state.territories[territory.id] = { ownerId: "p1", armies: 1 };
   });
   return state;
@@ -23,7 +23,7 @@ register("publicState marks players with zero territories as eliminated", () => 
 
 register("publicState keeps players with territories active", () => {
   const state = setupLiveState();
-  const territoryId = territories[0].id;
+  const territoryId = getMapTerritories(state)[0].id;
   state.territories[territoryId].ownerId = "p2";
   const snapshot = publicState(state);
   const player = snapshot.players.find((entry) => entry.id === "p2");
@@ -40,9 +40,10 @@ register("declareWinnerIfNeeded assigns victory when one active player remains",
 
 register("declareWinnerIfNeeded does not assign victory while more than one player owns territories", () => {
   const state = setupLiveState();
-  state.territories[territories[0].id].ownerId = "p2";
+  state.territories[getMapTerritories(state)[0].id].ownerId = "p2";
   const won = declareWinnerIfNeeded(state);
   assert.equal(won, false);
   assert.equal(state.winnerId, null);
 });
+
 
