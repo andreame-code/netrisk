@@ -43,6 +43,9 @@ function createGameState(input = {}) {
     players: input.players || [],
     territories: input.territories || {},
     continents: input.continents || [],
+    mapId: input.mapId || "classic-mini",
+    mapName: input.mapName || null,
+    mapTerritories: Array.isArray(input.mapTerritories) ? input.mapTerritories : [],
     currentTurnIndex: input.currentTurnIndex || 0,
     reinforcementPool: input.reinforcementPool || 0,
     winnerId: input.winnerId || null,
@@ -66,4 +69,3 @@ module.exports = {
   createPlayer,
   createTerritory
 };
-

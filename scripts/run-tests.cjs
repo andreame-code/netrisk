@@ -18,7 +18,7 @@ const {
   tradeCardSet,
   playerMustTradeCards
 } = require("../backend/engine/game-engine.cjs");
-const { chooseFortify, runAiTurn } = require("../backend/engine/ai-player.cjs");
+const { chooseAttack, chooseFortify, runAiTurn } = require("../backend/engine/ai-player.cjs");
 const {
   CardType,
   STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,
@@ -30,10 +30,12 @@ const {
 } = require("../shared/cards.cjs");
 const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, listDiceRuleSets, standardDiceRuleSet } = require("../shared/dice.cjs");
 const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
-const { validateNewGameConfig } = require("../backend/new-game-config.cjs");
+const { createConfiguredInitialState, validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
+const classicMiniMap = require("../shared/maps/classic-mini.cjs");
+const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
 
@@ -427,6 +429,32 @@ register("runAiTurn completa un turno AI usando il motore esistente", () => {
   assert.equal(result.conquestMoves[0].armies, 2);
 });
 
+register("chooseAttack usa la mappa salvata nello stato invece del default engine", () => {
+  const state = createInitialState();
+  const ai = addPlayer(state, "CPU Custom", { isAi: true }).player;
+  const enemy = addPlayer(state, "Enemy Custom").player;
+
+  state.phase = "active";
+  state.turnPhase = "attack";
+  state.currentTurnIndex = 0;
+  state.reinforcementPool = 0;
+  state.mapTerritories = [
+    { id: "alpha", name: "Alpha", neighbors: ["beta"], continentId: "x" },
+    { id: "beta", name: "Beta", neighbors: ["alpha"], continentId: "x" }
+  ];
+  state.territories = {
+    alpha: { ownerId: ai.id, armies: 4 },
+    beta: { ownerId: enemy.id, armies: 1 }
+  };
+
+  const attack = chooseAttack(state, ai.id);
+  assert.deepEqual(attack, {
+    fromId: "alpha",
+    toId: "beta",
+    score: 29
+  });
+});
+
 register("chooseFortify privilegia rinforzi dal retro verso un confine esposto", () => {
   const state = createInitialState();
   const ai = addPlayer(state, "CPU Fortify", { isAi: true }).player;
@@ -764,6 +792,10 @@ register("awardTurnCardIfEligible continua ad assegnare carte su molti turni di 
 
 register("createInitialState inizializza deck, discard pile, hands e progressione carte standard", () => {
   const state = createInitialState();
+  assert.equal(state.mapId, "classic-mini");
+  assert.equal(state.mapName, "Classic Mini");
+  assert.deepEqual(state.mapTerritories.map((territory) => territory.id), classicMiniMap.territories.map((territory) => territory.id));
+  assert.deepEqual(state.continents.map((continent) => continent.id), classicMiniMap.continents.map((continent) => continent.id));
   assert.equal(state.cardRuleSetId, "standard");
   assert.equal(Array.isArray(state.deck), true);
   assert.equal(state.deck.length, 11);
@@ -858,6 +890,20 @@ register("publicState espone anche i metadati configurazione partita", () => {
   assert.equal(snapshot.gameConfig.diceRuleSetId, "standard");
   assert.equal(snapshot.gameConfig.totalPlayers, 4);
   assert.equal(snapshot.gameConfig.players[2].type, "ai");
+});
+
+register("createConfiguredInitialState usa la mappa shared selezionata", () => {
+  const { state, config } = createConfiguredInitialState({
+    mapId: "classic-mini",
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai" }]
+  });
+
+  assert.equal(config.selectedMap.id, "classic-mini");
+  assert.equal(state.mapId, "classic-mini");
+  assert.equal(state.mapName, "Classic Mini");
+  assert.deepEqual(state.mapTerritories.map((territory) => territory.id), classicMiniMap.territories.map((territory) => territory.id));
+  assert.equal(state.gameConfig.mapId, "classic-mini");
 });
 
 register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
@@ -1066,8 +1112,7 @@ register("API game options espone setup base per nuova partita", async () => {
     const response = await fetch(baseUrl + "/api/game-options");
     assert.equal(response.status, 200);
     const payload = await response.json();
-    assert.equal(Array.isArray(payload.maps), true);
-    assert.equal(payload.maps[0].id, "classic-mini");
+    assert.deepEqual(payload.maps, listSupportedMaps());
     assert.equal(Array.isArray(payload.diceRuleSets), true);
     assert.equal(payload.diceRuleSets[0].id, "standard");
     assert.equal(payload.playerRange.min, 2);
@@ -2050,6 +2095,12 @@ async function run() {
 }
 
 run();
+
+
+
+
+
+
 
 
 

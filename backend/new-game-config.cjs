@@ -1,9 +1,8 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
 const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
+const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
 
-const SUPPORTED_MAPS = [
-  { id: "classic-mini", name: "Classic Mini" }
-];
+const SUPPORTED_MAPS = listSupportedMaps();
 
 const AI_GENERAL_NAMES = [
   "Caesar",
@@ -22,10 +21,6 @@ const AI_GENERAL_NAMES = [
 
 function normalizePlayerType(value) {
   return value === "ai" ? "ai" : "human";
-}
-
-function findSupportedMap(mapId) {
-  return SUPPORTED_MAPS.find((map) => map.id === mapId) || null;
 }
 
 function buildHistoricalAiNames(count, random = Math.random) {
@@ -97,6 +92,7 @@ function validateNewGameConfig(input = {}, options = {}) {
     name: input.name,
     mapId,
     mapName: selectedMap.name,
+    selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
     totalPlayers,
     players
@@ -105,7 +101,7 @@ function validateNewGameConfig(input = {}, options = {}) {
 
 function createConfiguredInitialState(configInput = {}, options = {}) {
   const config = validateNewGameConfig(configInput, options);
-  const state = createInitialState();
+  const state = createInitialState(config.selectedMap);
   state.diceRuleSetId = config.diceRuleSetId;
   state.gameConfig = {
     mapId: config.mapId,
