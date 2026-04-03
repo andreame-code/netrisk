@@ -8,8 +8,11 @@ async function openWorldClassicGame(page, suffix) {
   await registerAndLogin(page, owner);
   await page.goto("/new-game.html");
 
+  await expect(page.locator("#setup-map option[value='world-classic']")).toHaveCount(1);
+  await expect(page.locator("#setup-map")).toHaveValue("classic-mini");
   await page.locator("#setup-map").selectOption("world-classic");
-  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix}`);
+  await expect(page.locator("#setup-map")).toHaveValue("world-classic");
+  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
   await expect(page.locator("#game-map-meta")).toContainText("World Classic");
