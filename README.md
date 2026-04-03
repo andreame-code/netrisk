@@ -1,104 +1,296 @@
-# netrisk monorepo
+# NetRisk
 
-A full-stack workspace for the netrisk strategy platform. The repository is organised as a PNPM workspace with Turborepo to coordinate builds between the Next.js client, NestJS server, and shared TypeScript domain package.
+NetRisk e un gioco strategico a turni ispirato a Risk/Risiko. Il progetto e costruito per crescere in modo incrementale, mantenendo separate l'interfaccia utente, la logica di gioco e lo stato autorevole della partita.
 
-## Getting started
+## Obiettivo del progetto
 
-- **Codespaces**: Consulta la guida "NetRisk — Avvio solo online con GitHub Codespaces" in [README_Codespaces.md](README_Codespaces.md) per attivare l'ambiente cloud con servizi già configurati e pronti alla condivisione tramite URL pubblici.
-- **Local development**: Install the prerequisites below and run the installation steps on your machine.
+Il repository non contiene solo una demo grafica: contiene una base applicativa completa per sviluppare una versione estendibile di NetRisk con:
 
-## Project structure
+- lobby e creazione partite
+- giocatori umani e AI
+- regole dadi configurabili
+- carte territorio e scambio set
+- flusso di turno strutturato
+- rinforzi, attacco, conquista e fortifica
+- validazione centralizzata sul backend
+- profilo giocatore con statistiche base
+- test automatici sia di gameplay sia end-to-end
 
-```
-apps/
-  client/   # Next.js 15 + TypeScript frontend with Tailwind, Jest, and Playwright
-  server/   # NestJS 11 backend with Socket.IO, Prisma, class-validator, and Jest
-packages/
-  core/     # Shared game rules, DTOs, and validation schemas (Zod)
-```
+## Stato attuale del gioco
 
-## Prerequisites
+Oggi il progetto supporta queste capacita:
 
-- [Node.js](https://nodejs.org/) 20+
-- [PNPM](https://pnpm.io/) (the repository pins version via `packageManager`)
+- registrazione, login, logout e profilo utente
+- lobby iniziale e riapertura di partite salvate
+- creazione di una nuova partita con mappa supportata e regola dadi selezionabile
+- ingresso di giocatori umani e aggiunta di bot AI
+- configurazione partite da 2 a 4 giocatori con primo slot umano obbligatorio
+- avvio partita e assegnazione iniziale dei territori
+- turno diviso in fasi: `reinforcement`, `attack`, `fortify`, `finished`
+- scelta del numero di dadi attacco entro i limiti consentiti
+- piazzamento rinforzi con controllo proprieta del territorio
+- attacco tra territori confinanti con risoluzione del combattimento
+- gestione della conquista e dello spostamento armate obbligatorio
+- carta territorio assegnata a fine turno se durante il turno e stata effettuata almeno una conquista
+- scambio carte durante la fase rinforzi con bonus progressivo
+- scambio obbligatorio oltre la soglia mano prevista dal ruleset standard
+- fortificazione a fine turno
+- rilevamento eliminazione giocatori e vittoria
+- pannello UI per ultimo risultato dadi del combattimento
+- pagina profilo con partite giocate, vittorie, sconfitte, partite in corso e win rate
+- eventi e sincronizzazione dello stato dal server al frontend
 
-## Installation
+La mappa supportata al momento e `classic-mini`.
+
+## Architettura
+
+L'architettura segue un principio semplice: il frontend presenta e invia azioni, il backend decide cosa e valido, i moduli condivisi definiscono il dominio comune.
+
+- `frontend/public`
+  Interfaccia web statica: schermate principali, lobby, nuova partita, profilo, pagina di gioco, stile e logica client-side.
+- `backend`
+  Server HTTP, autenticazione, autorizzazione, salvataggio sessioni di gioco, configurazione nuove partite.
+- `backend/engine`
+  Regole pure del gioco: setup, rinforzi, validazione attacco, dadi di combattimento, conquista, carte, fortifica, vittoria, AI.
+- `shared`
+  Modelli, primitive e ruleset condivisi tra livelli applicativi.
+- `tests/gameplay`
+  Test focalizzati sulla logica del motore di gioco.
+- `e2e`
+  Test Playwright sui flussi utente principali.
+- `scripts`
+  Script di esecuzione locale e test.
+
+## Flusso di gioco
+
+Una partita tipica segue questo percorso:
+
+1. L'utente crea o apre una partita.
+2. I giocatori umani entrano nella lobby e opzionalmente vengono aggiunti bot AI.
+3. Il backend avvia la partita, distribuisce i territori e inizializza il turno corrente.
+4. Il giocatore attivo entra nella fase rinforzi e puo anche scambiare 3 carte valide per ottenere rinforzi extra.
+5. Il giocatore piazza i rinforzi sui propri territori.
+6. Il giocatore puo eseguire attacchi validi contro territori adiacenti nemici, scegliendo i dadi attacco consentiti.
+7. Se conquista un territorio, deve spostare armate dal territorio attaccante a quello conquistato.
+8. Se durante il turno ha conquistato almeno un territorio, a fine turno riceve una carta dal mazzo, se disponibile.
+9. Il turno passa alla fase di fortifica.
+10. Il turno termina e il backend calcola il nuovo giocatore attivo.
+11. Quando resta un solo giocatore con territori, la partita viene chiusa con vincitore.
+
+## Modelli condivisi
+
+I costrutti condivisi esposti da `shared/models.cjs` sono:
+
+- `TurnPhase`
+- `GameAction`
+- `CardType`
+- `STANDARD_DICE_RULE_SET_ID`
+- `STANDARD_CARD_RULE_SET_ID`
+- `createPlayer`
+- `createTerritory`
+- `createContinent`
+- `createGameState`
+- `createCard`
+- `createStandardDeck`
+- `getDiceRuleSet`
+- `listDiceRuleSets`
+- `getCardRuleSet`
+- `validateStandardCardSet`
+
+Lo stato di gioco contiene in particolare:
+
+- fase globale della partita
+- fase del turno corrente
+- elenco giocatori
+- stato dei territori
+- continenti e bonus
+- indice del giocatore attivo
+- pool di rinforzi
+- eventuale vincitore
+- log delle azioni
+- eventuale conquista in attesa di completamento
+- ruleset dadi attivo
+- mazzo carte, scarti e mani giocatore
+- numero scambi effettuati
+- flag di conquista nel turno per assegnazione carta
+
+## Pagine e interfaccia
+
+Le principali schermate disponibili nel frontend sono:
+
+- `index.html`: ingresso applicazione
+- `lobby.html`: ingresso giocatori e gestione lobby
+- `new-game.html`: configurazione nuova partita
+- `game.html`: partita attiva
+- `profile.html`: profilo utente
+
+La UI e pensata per restare sottile: mostra lo stato ricevuto dal server e invia azioni tramite API.
+
+Nella schermata di gioco sono presenti anche:
+
+- selettore dadi attacco con default coerente al territorio selezionato
+- pannello riepilogo ultimo combattimento con dadi e confronto
+- pannello carte del giocatore corrente con selezione set e invio scambio
+
+## API principali
+
+Il server espone endpoint per:
+
+- health check backend e stato datastore
+- sessione autenticata
+- profilo utente
+- elenco partite e apertura partita attiva
+- opzioni per la creazione partita
+- creazione nuova partita
+- join umano e join AI
+- scambio carte del giocatore corrente
+- avvio partita
+- invio azioni di gioco
+- lettura stato corrente ed eventi
+
+In ambiente E2E esistono anche endpoint di supporto ai test.
+
+## Avvio locale
+
+Prerequisiti:
+
+- Node.js
+- npm
+
+Installazione dipendenze:
 
 ```bash
-pnpm install
+npm install
 ```
 
-This installs dependencies for all workspaces and configures Husky Git hooks.
-
-## Common scripts
-
-Use Turborepo to orchestrate commands across packages:
+Avvio server:
 
 ```bash
-pnpm dev           # Run client and server in parallel
-pnpm build         # Build all workspaces
-pnpm lint          # Lint using each package's configuration
-pnpm test          # Run unit/integration tests (Jest, Vitest)
-pnpm format        # Check formatting with Prettier
+npm start
 ```
 
-You can target an individual workspace with PNPM filters, for example `pnpm --filter @netrisk/client test`.
+Applicazione disponibile su `http://localhost:3000`.
 
-## Testing
-
-Before running server or end-to-end tests on a fresh clone, build the shared core package so its compiled output is available to other workspaces:
+## Comandi utili
 
 ```bash
-pnpm --filter @netrisk/core build
+npm start
+npm run backup:data
+npm test
+npm run test:gameplay
+npm run test:e2e
+npm run test:all
+npm run test:all:e2e
 ```
 
-Then execute the individual test suites as needed:
+- `npm test`: suite standard del repository
+- `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
+- `npm run test:gameplay`: verifica del motore di gioco
+- `npm run test:e2e`: test Playwright sui flussi utente
+- `npm run test:all`: test repository + gameplay
+- `npm run test:all:e2e`: test repository + gameplay + e2e
 
-- **Client**: `pnpm --filter @netrisk/client test` (Jest) and `pnpm --filter @netrisk/client test:e2e` (Playwright)
-- **Server**: `pnpm --filter @netrisk/server test` for unit tests and `pnpm --filter @netrisk/server test:e2e` for API tests
-- **Shared core**: `pnpm --filter @netrisk/core test`
+## Copertura test
 
-## Database & Prisma
+La suite `tests/gameplay` copre aree come:
 
-The NestJS app uses Prisma with PostgreSQL. Define the `DATABASE_URL` environment variable (e.g. `postgresql://netrisk:netrisk@localhost:5432/netrisk`) before running `pnpm --filter @netrisk/server prisma:migrate` or starting the server in production.
+- setup partita
+- turn flow
+- rinforzi
+- validazione attacco, dadi e risoluzione combattimento
+- conquista
+- fortifica
+- vittoria ed eliminazione
+- helper carte e trade bonus
+- flussi regressivi multi-modulo
 
-## Docker
+La suite `e2e` copre oggi:
 
-Dockerfiles are available for the client and server, plus a `docker-compose.yml` to run the full stack locally:
+- caricamento applicazione
+- layout principale
+- navigazione auth tra pagine
+- stati profilo: loading, errore, empty state
+- configurazione nuova partita
+- flussi gameplay principali
+- scelta dadi attacco e visualizzazione risultato combattimento
+- pannello carte, scambio riuscito, errori inline e sincronizzazione reward
+- baseline visuali della schermata principale e delle pagine secondarie
+
+## Persistenza e dati locali
+
+Il backend usa SQLite come source of truth locale per:
+
+- utenti
+- sessioni autenticate
+- partite salvate
+- metadati runtime come la partita attiva
+
+Il file database di default e `data/netrisk.sqlite`.
+
+All'avvio, se il database e vuoto, il backend puo importare una sola volta i dati legacy presenti nei file JSON storici (`users.json`, `games.json`, `sessions.json`). Dopo la migrazione, il database SQLite resta la fonte autorevole e i JSON legacy vanno trattati solo come compatibilita temporanea.
+
+Per verificare rapidamente lo stato del backend e dello storage e disponibile `GET /api/health`, che restituisce:
+
+- esito generale `ok`
+- tipo storage attivo
+- percorso del file SQLite in uso
+- conteggi base di utenti, partite e sessioni
+- presenza della partita attiva in memoria server
+
+Questa e la sonda minima consigliata per rilevare problemi di avvio, mount errati del volume dati o datastore non disponibile.
+
+Per creare un backup locale consistente del datastore:
 
 ```bash
-docker compose up --build
+npm run backup:data
 ```
 
-The compose stack exposes:
+Il comando usa il meccanismo di backup di SQLite e salva per default uno snapshot timestampato in `data/backups/`. E pensato come base per job schedulati o checkpoint manuali prima di deploy e manutenzioni.
 
-- Client on http://localhost:3000
-- Server on http://localhost:3001
-- PostgreSQL on port 5432 (user/password: `netrisk` / `netrisk`)
+Per limitare la crescita della cartella backup, il comando supporta anche una retention semplice:
 
-## Binary assets
+```bash
+node scripts/backup-datastore.cjs --keep 7
+```
 
-This repository omits binary files so the history stays lean. Provide the following assets locally before shipping to
-production environments:
+Con `--keep N`, dopo la creazione del nuovo snapshot vengono mantenuti solo gli ultimi `N` backup compatibili con lo stesso prefisso file.
 
-- `apps/client/public/favicon.ico` – 32×32 (or larger) favicon referenced by the Next.js app router.
-- `apps/client/public/icon-192.png` – Web app manifest icon for installable experiences.
-- `apps/client/public/icon-512.png` – Larger manifest icon used on high-resolution devices.
-- `apps/client/public/og-image.png` – Open Graph/Twitter card preview shared from marketing pages.
+## Principi di sviluppo
 
-Feel free to swap in your own branding, but keep the filenames and dimensions consistent with the values listed above
-so the default configuration continues to work without additional changes.
+Il progetto segue queste regole:
 
-## Tooling
+- frontend limitato a rendering, input e stato locale di presentazione
+- backend come source of truth della partita
+- logica di gioco centralizzata in `backend/engine`
+- modelli condivisi in `shared`
+- modifiche piccole, incrementali e facili da rivedere
 
-- **Linting**: Shared `.eslintrc.js` plus package-specific configurations
-- **Formatting**: Prettier with `.prettierrc`
-- **TypeScript**: Root `tsconfig.base.json` with path aliases for `@netrisk/core`
-- **Git hooks**: Husky + lint-staged run formatting and linting on each commit
+## Regole implementate oggi
 
-## Contributing
+- Rinforzi minimi pari a 3 armate per turno, con bonus continenti dove applicabile.
+- Dadi standard di combattimento: attaccante fino a 3 dadi, difensore fino a 2, pareggio al difensore.
+- Carte standard: `infantry`, `cavalry`, `artillery`, `wild`.
+- Set validi per lo scambio: tris dello stesso tipo oppure uno per tipo, con jolly usabile come wildcard.
+- Progressione bonus scambio standard: `4, 6, 8, 10, 12, 15`, poi incremento di `+5`.
+- Scambio forzato quando una mano supera 5 carte nel ruleset standard.
 
-1. Create a feature branch
-2. Run the relevant lint/test commands locally
-3. Commit with the Husky pre-commit checks passing
-4. Open a pull request summarising your changes and testing steps
+## Roadmap naturale del progetto
+
+L'evoluzione prevista del gioco e:
+
+1. architettura e modelli
+2. mappa e territori
+3. turn flow
+4. reinforcement rules
+5. combat rules
+6. movement rules
+7. victory conditions
+8. AI
+9. multiplayer
+10. map editor e regole custom
+
+## Documenti correlati
+
+- `ARCHITECTURE.md`: sintesi dell'organizzazione tecnica
+- `tests/gameplay/README.md`: panoramica dei test di gameplay
+- `e2e/README.md`: panoramica dei test end-to-end

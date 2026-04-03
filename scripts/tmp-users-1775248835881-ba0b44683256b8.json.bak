@@ -1,0 +1,19 @@
+[
+  {
+    "id": "e502f761faaf48b9",
+    "username": "owner_admin_open_31110a",
+    "credentials": {
+      "password": {
+        "salt": "a11ca51009dabdc1d0bea87438353fd9",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "e31cbfb9f8f89faa2e80197059f92b6976b5e5acce618228b50a3d7314e05b20"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "owner_admin_open_31110a"
+    },
+    "createdAt": "2026-04-03T20:40:35.993Z"
+  }
+]

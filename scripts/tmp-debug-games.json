@@ -1,0 +1,166 @@
+{
+  "games": [
+    {
+      "id": "c84c1b8bec0a9856",
+      "name": "Partita 1",
+      "version": 1,
+      "creatorUserId": null,
+      "state": {
+        "phase": "lobby",
+        "turnPhase": "lobby",
+        "players": [],
+        "territories": {
+          "aurora": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "bastion": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "cinder": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "delta": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "ember": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "forge": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "grove": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "harbor": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "ion": {
+            "ownerId": null,
+            "armies": 0
+          }
+        },
+        "continents": [
+          {
+            "id": "north",
+            "name": "North Reach",
+            "bonus": 2,
+            "territoryIds": [
+              "aurora",
+              "bastion"
+            ]
+          },
+          {
+            "id": "central",
+            "name": "Ash Corridor",
+            "bonus": 3,
+            "territoryIds": [
+              "cinder",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "east",
+            "name": "Iron Frontier",
+            "bonus": 2,
+            "territoryIds": [
+              "forge",
+              "ion"
+            ]
+          },
+          {
+            "id": "south",
+            "name": "Harbor Belt",
+            "bonus": 2,
+            "territoryIds": [
+              "grove",
+              "harbor"
+            ]
+          }
+        ],
+        "currentTurnIndex": 0,
+        "reinforcementPool": 0,
+        "winnerId": null,
+        "log": [
+          "Lobby creata. Unisciti e avvia la partita."
+        ],
+        "lastAction": null,
+        "pendingConquest": null,
+        "fortifyUsed": false,
+        "cardRuleSetId": "standard",
+        "deck": [
+          {
+            "id": "card-aurora",
+            "type": "infantry",
+            "territoryId": "aurora"
+          },
+          {
+            "id": "card-bastion",
+            "type": "cavalry",
+            "territoryId": "bastion"
+          },
+          {
+            "id": "card-cinder",
+            "type": "artillery",
+            "territoryId": "cinder"
+          },
+          {
+            "id": "card-delta",
+            "type": "infantry",
+            "territoryId": "delta"
+          },
+          {
+            "id": "card-ember",
+            "type": "cavalry",
+            "territoryId": "ember"
+          },
+          {
+            "id": "card-forge",
+            "type": "artillery",
+            "territoryId": "forge"
+          },
+          {
+            "id": "card-grove",
+            "type": "infantry",
+            "territoryId": "grove"
+          },
+          {
+            "id": "card-harbor",
+            "type": "cavalry",
+            "territoryId": "harbor"
+          },
+          {
+            "id": "card-ion",
+            "type": "artillery",
+            "territoryId": "ion"
+          },
+          {
+            "id": "card-wild-1",
+            "type": "wild",
+            "territoryId": null
+          },
+          {
+            "id": "card-wild-2",
+            "type": "wild",
+            "territoryId": null
+          }
+        ],
+        "discardPile": [],
+        "hands": {},
+        "tradeCount": 0,
+        "conqueredTerritoryThisTurn": false
+      },
+      "createdAt": "2026-03-19T22:16:47.144Z",
+      "updatedAt": "2026-03-19T22:16:47.144Z"
+    }
+  ],
+  "activeGameId": "c84c1b8bec0a9856"
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "683548cbd51834fd",
+    "username": "isolate_a_10924f",
+    "credentials": {
+      "password": {
+        "salt": "a1a6f155e08767a535697b912ce13069",
+        "iterations": 120000,
+        "digest": "sha256",
+        "hash": "171cb2e38e34ab919d0b3620c1e6898732f6fc5ba8da10715b866ba651197a67"
+      }
+    },
+    "role": "user",
+    "profile": {
+      "displayName": "isolate_a_10924f"
+    },
+    "createdAt": "2026-04-03T20:40:26.990Z"
+  }
+]

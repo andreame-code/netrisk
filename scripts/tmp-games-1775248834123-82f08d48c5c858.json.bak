@@ -1,0 +1,308 @@
+{
+  "games": [
+    {
+      "id": "ec4c63fd5edc9c48",
+      "name": "Partita 1",
+      "version": 3,
+      "creatorUserId": null,
+      "state": {
+        "phase": "active",
+        "turnPhase": "reinforcement",
+        "players": [
+          {
+            "id": "41ed29c7f7fca5bd",
+            "name": "card_flow_6bd836",
+            "color": "#e85d04",
+            "connected": true,
+            "isAi": false
+          },
+          {
+            "id": "48faaf579cc32e51",
+            "name": "CPU Card",
+            "color": "#0f4c5c",
+            "connected": true,
+            "isAi": true
+          }
+        ],
+        "territories": {
+          "aurora": {
+            "ownerId": "41ed29c7f7fca5bd",
+            "armies": 2
+          },
+          "bastion": {
+            "ownerId": "41ed29c7f7fca5bd",
+            "armies": 1
+          },
+          "cinder": {
+            "ownerId": "48faaf579cc32e51",
+            "armies": 2
+          },
+          "delta": {
+            "ownerId": "48faaf579cc32e51",
+            "armies": 1
+          },
+          "ember": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "forge": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "grove": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "harbor": {
+            "ownerId": null,
+            "armies": 0
+          },
+          "ion": {
+            "ownerId": null,
+            "armies": 0
+          }
+        },
+        "continents": [
+          {
+            "id": "north",
+            "name": "North Reach",
+            "bonus": 2,
+            "territoryIds": [
+              "aurora",
+              "bastion"
+            ]
+          },
+          {
+            "id": "central",
+            "name": "Ash Corridor",
+            "bonus": 3,
+            "territoryIds": [
+              "cinder",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "east",
+            "name": "Iron Frontier",
+            "bonus": 2,
+            "territoryIds": [
+              "forge",
+              "ion"
+            ]
+          },
+          {
+            "id": "south",
+            "name": "Harbor Belt",
+            "bonus": 2,
+            "territoryIds": [
+              "grove",
+              "harbor"
+            ]
+          }
+        ],
+        "mapId": "classic-mini",
+        "mapName": "Classic Mini",
+        "mapTerritories": [
+          {
+            "id": "aurora",
+            "name": "Aurora",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "delta"
+            ]
+          },
+          {
+            "id": "bastion",
+            "name": "Bastion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "north",
+            "neighbors": [
+              "aurora",
+              "ember",
+              "forge"
+            ]
+          },
+          {
+            "id": "cinder",
+            "name": "Cinder",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "delta",
+              "ember"
+            ]
+          },
+          {
+            "id": "delta",
+            "name": "Delta",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "aurora",
+              "cinder",
+              "grove",
+              "harbor"
+            ]
+          },
+          {
+            "id": "ember",
+            "name": "Ember",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "central",
+            "neighbors": [
+              "bastion",
+              "cinder",
+              "forge",
+              "harbor"
+            ]
+          },
+          {
+            "id": "forge",
+            "name": "Forge",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "bastion",
+              "ember",
+              "harbor",
+              "ion"
+            ]
+          },
+          {
+            "id": "grove",
+            "name": "Grove",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "harbor"
+            ]
+          },
+          {
+            "id": "harbor",
+            "name": "Harbor",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "south",
+            "neighbors": [
+              "delta",
+              "ember",
+              "forge",
+              "grove",
+              "ion"
+            ]
+          },
+          {
+            "id": "ion",
+            "name": "Ion",
+            "ownerId": null,
+            "armies": 0,
+            "continentId": "east",
+            "neighbors": [
+              "forge",
+              "harbor"
+            ]
+          }
+        ],
+        "mapPositions": {
+          "aurora": {
+            "x": 0.171,
+            "y": 0.18
+          },
+          "bastion": {
+            "x": 0.408,
+            "y": 0.14
+          },
+          "cinder": {
+            "x": 0.276,
+            "y": 0.39
+          },
+          "delta": {
+            "x": 0.145,
+            "y": 0.63
+          },
+          "ember": {
+            "x": 0.507,
+            "y": 0.43
+          },
+          "forge": {
+            "x": 0.704,
+            "y": 0.25
+          },
+          "grove": {
+            "x": 0.342,
+            "y": 0.84
+          },
+          "harbor": {
+            "x": 0.618,
+            "y": 0.67
+          },
+          "ion": {
+            "x": 0.862,
+            "y": 0.5
+          }
+        },
+        "mapImageUrl": null,
+        "mapAspectRatio": null,
+        "currentTurnIndex": 1,
+        "reinforcementPool": 3,
+        "winnerId": null,
+        "log": [
+          "Nuovo turno: CPU Card riceve 3 rinforzi.",
+          "card_flow_6bd836 termina il turno.",
+          "card_flow_6bd836 riceve una carta territorio.",
+          "card_flow_6bd836 scambia un set di carte e riceve 4 rinforzi.",
+          "CPU Card entra nella lobby.",
+          "card_flow_6bd836 entra nella lobby.",
+          "Lobby creata. Unisciti e avvia la partita."
+        ],
+        "lastAction": {
+          "type": "tradeCards",
+          "summary": "card_flow_6bd836 scambia un set di carte e riceve 4 rinforzi."
+        },
+        "pendingConquest": null,
+        "fortifyUsed": false,
+        "cardRuleSetId": "standard",
+        "deck": [
+          {
+            "id": "flow-t3",
+            "type": "infantry",
+            "territoryId": null
+          },
+          {
+            "id": "flow-t1",
+            "type": "infantry",
+            "territoryId": null
+          }
+        ],
+        "discardPile": [],
+        "hands": {
+          "41ed29c7f7fca5bd": [
+            {
+              "id": "flow-t2",
+              "type": "infantry",
+              "territoryId": null
+            }
+          ]
+        },
+        "tradeCount": 1,
+        "conqueredTerritoryThisTurn": false
+      },
+      "createdAt": "2026-04-03T20:40:34.124Z",
+      "updatedAt": "2026-04-03T20:40:34.316Z"
+    }
+  ],
+  "activeGameId": "ec4c63fd5edc9c48"
+}
