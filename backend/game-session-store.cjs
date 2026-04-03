@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-
+const { findSupportedMap } = require("../shared/maps/index.cjs");
 function ensureDirectory(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
@@ -34,10 +34,8 @@ function writeDatabase(filePath, database) {
 }
 
 function readableMapName(mapId) {
-  if (mapId === "classic-mini") {
-    return "Classic Mini";
-  }
-  return mapId || null;
+  const map = findSupportedMap(mapId);
+  return map ? map.name : (mapId || null);
 }
 
 function normalizeGameName(name, fallbackIndex) {
@@ -230,3 +228,5 @@ function createGameSessionStore(options = {}) {
 module.exports = {
   createGameSessionStore
 };
+
+
