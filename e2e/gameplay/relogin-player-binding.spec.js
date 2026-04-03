@@ -17,7 +17,8 @@ test("existing game keeps the same player binding after logout and login again",
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await page.getByRole("button", { name: "Entra nella lobby" }).click();
+  await expect(page.locator("#join-button")).toBeDisabled();
+  await expect(page.locator("#identity-status")).toContainText(username);
   const joinAiResponse = await page.request.post("/api/ai/join", {
     data: { name: "CPU Rebind" }
   });
@@ -46,3 +47,4 @@ test("existing game keeps the same player binding after logout and login again",
   await page.getByRole("button", { name: "+1 armata" }).click();
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*2/i);
 });
+
