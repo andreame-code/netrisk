@@ -51,7 +51,7 @@ function syncGameRoute(gameId) {
   window.history.replaceState({}, "", url.pathname + url.search);
 }
 
-const mapLayout = {
+const classicMapLayout = {
   aurora: { x: 17.1, y: 18 },
   bastion: { x: 40.8, y: 14 },
   cinder: { x: 27.6, y: 39 },
@@ -138,6 +138,14 @@ function renderNavAvatar(username) {
 
   const label = username ? String(username).trim().charAt(0).toUpperCase() : "C";
   avatar.textContent = label || "C";
+}
+
+function territoryPosition(territory) {
+  if (territory && Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
+    return { x: territory.x * 100, y: territory.y * 100 };
+  }
+
+  return territory ? classicMapLayout[territory.id] || null : null;
 }
 
 function ownerById(ownerId) {
@@ -361,8 +369,8 @@ function buildGraphMarkup(snapshot) {
       }
 
       renderedLinks.add(key);
-      const source = mapLayout[territory.id];
-      const target = mapLayout[neighborId];
+      const source = territoryPosition(territory);
+      const target = territoryPosition(snapshot.map.find((entry) => entry.id === neighborId) || { id: neighborId });
       if (!source || !target) {
         return;
       }
@@ -376,7 +384,10 @@ function buildGraphMarkup(snapshot) {
   const nodes = snapshot.map
     .map((territory) => {
       const owner = ownerById(territory.ownerId);
-      const position = mapLayout[territory.id];
+      const position = territoryPosition(territory);
+      if (!position) {
+        return "";
+      }
       const classes = [
         "territory-node",
         territory.ownerId === state.playerId ? "is-mine" : "",
@@ -392,10 +403,10 @@ function buildGraphMarkup(snapshot) {
           type="button"
           class="${classes}"
           data-territory-id="${territory.id}"
+          title="${territory.name}"
+          aria-label="${territory.name}: ${territory.armies} armate"
           style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"};"
         >
-          <span class="territory-name">${territory.name}</span>
-          <span class="territory-meta">${owner ? owner.name : "Neutrale"}</span>
           <span class="territory-armies">${territory.armies}</span>
         </button>
       `;
@@ -416,9 +427,19 @@ function buildGraphMarkup(snapshot) {
     })
     .join("");
 
+  const boardStyles = [];
+  const boardClasses = ["map-board"];
+  if (snapshot.mapVisual?.imageUrl) {
+    boardClasses.push("has-custom-background");
+    boardStyles.push(`--map-background-image:url('${snapshot.mapVisual.imageUrl}')`);
+  }
+  if (snapshot.mapVisual?.aspectRatio?.width && snapshot.mapVisual?.aspectRatio?.height) {
+    boardStyles.push(`aspect-ratio:${snapshot.mapVisual.aspectRatio.width} / ${snapshot.mapVisual.aspectRatio.height}`);
+  }
+
   return `
-    <div class="map-board">
-      <svg class="map-lines" viewBox="0 0 760 500" aria-hidden="true">${links.join("")}</svg>
+    <div class="${boardClasses.join(" ")}"${boardStyles.length ? ` style="${boardStyles.join("; ")}"` : ""}>
+      <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
       ${nodes}
     </div>
     <div class="map-legend">${details}</div>
@@ -1219,6 +1240,8 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
+
+
 
 
 
