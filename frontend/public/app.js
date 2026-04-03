@@ -152,6 +152,19 @@ function ownerById(ownerId) {
   return state.snapshot?.players.find((player) => player.id === ownerId) || null;
 }
 
+function textColorForBackground(color) {
+  if (!color || !/^#?[0-9a-f]{6}$/i.test(color)) {
+    return "#2c1f14";
+  }
+
+  const normalized = color.startsWith("#") ? color.slice(1) : color;
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+  return luminance >= 150 ? "#2c1f14" : "#fffaf0";
+}
+
 function territoryById(territoryId) {
   return state.snapshot?.map.find((territory) => territory.id === territoryId) || null;
 }
@@ -405,7 +418,7 @@ function buildGraphMarkup(snapshot) {
           data-territory-id="${territory.id}"
           title="${territory.name}"
           aria-label="${territory.name}: ${territory.armies} armate"
-          style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"};"
+          style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
         >
           <span class="territory-armies">${territory.armies}</span>
         </button>
