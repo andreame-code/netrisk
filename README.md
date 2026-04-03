@@ -48,6 +48,8 @@ npm start
 
 Applicazione disponibile su `http://localhost:3000`.
 
+Nota: i file runtime locali sotto `data/` non vanno versionati e restano esclusi dal repository.
+
 ## Comandi utili
 
 ```bash
