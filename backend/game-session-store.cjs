@@ -1,27 +1,14 @@
-const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
-function ensureDirectory(filePath) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-}
+const { readJsonFile, writeJsonFile } = require("./json-file-store.cjs");
 
 function safeClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function readDatabase(filePath) {
-  ensureDirectory(filePath);
-  if (!fs.existsSync(filePath)) {
-    return { games: [], activeGameId: null };
-  }
-
-  const raw = fs.readFileSync(filePath, "utf8").trim();
-  if (!raw) {
-    return { games: [], activeGameId: null };
-  }
-
-  const parsed = JSON.parse(raw);
+  const parsed = readJsonFile(filePath, { games: [], activeGameId: null }, (value) => Boolean(value) && typeof value === "object");
   return {
     games: Array.isArray(parsed.games) ? parsed.games : [],
     activeGameId: parsed.activeGameId || null
@@ -29,8 +16,7 @@ function readDatabase(filePath) {
 }
 
 function writeDatabase(filePath, database) {
-  ensureDirectory(filePath);
-  fs.writeFileSync(filePath, JSON.stringify(database, null, 2) + "\n");
+  writeJsonFile(filePath, database);
 }
 
 function readableMapName(mapId) {

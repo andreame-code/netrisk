@@ -1,35 +1,34 @@
-const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { readJsonFile, writeJsonFile } = require("./json-file-store.cjs");
 
-function ensureDataFile(dataFile) {
-  const directory = path.dirname(dataFile);
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-
-  if (!fs.existsSync(dataFile)) {
-    fs.writeFileSync(dataFile, "[]\n", "utf8");
-  }
+function passwordRecord(secret) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const iterations = 120000;
+  const digest = "sha256";
+  const hash = crypto.pbkdf2Sync(String(secret || ""), salt, iterations, 32, digest).toString("hex");
+  return {
+    salt,
+    iterations,
+    digest,
+    hash
+  };
 }
 
 function readUsers(dataFile) {
-  ensureDataFile(dataFile);
-  const raw = fs.readFileSync(dataFile, "utf8").trim();
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
+  return readJsonFile(dataFile, [], Array.isArray);
 }
 
 function writeUsers(dataFile, users) {
-  fs.writeFileSync(dataFile, JSON.stringify(users, null, 2) + "\n", "utf8");
+  writeJsonFile(dataFile, users);
+}
+
+function readSessions(sessionFile) {
+  return readJsonFile(sessionFile, [], Array.isArray);
+}
+
+function writeSessions(sessionFile, sessions) {
+  writeJsonFile(sessionFile, sessions);
 }
 
 function normalizeUsername(username) {
@@ -53,9 +52,29 @@ function publicUser(user) {
   };
 }
 
+function verifyPassword(credentials, password) {
+  const record = credentials && credentials.password ? credentials.password : null;
+  if (!record) {
+    return false;
+  }
+
+  if (typeof record.secret === "string") {
+    return record.secret === String(password || "");
+  }
+
+  if (!record.salt || !record.hash) {
+    return false;
+  }
+
+  const iterations = Number.isInteger(record.iterations) ? record.iterations : 120000;
+  const digest = record.digest || "sha256";
+  const candidate = crypto.pbkdf2Sync(String(password || ""), record.salt, iterations, 32, digest).toString("hex");
+  return crypto.timingSafeEqual(Buffer.from(record.hash, "hex"), Buffer.from(candidate, "hex"));
+}
+
 function createAuthStore(options = {}) {
   const dataFile = options.dataFile || path.join(__dirname, "..", "data", "users.json");
-  const sessions = new Map();
+  const sessionsFile = options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json");
 
   function listUsers() {
     return readUsers(dataFile);
@@ -83,9 +102,7 @@ function createAuthStore(options = {}) {
       id: crypto.randomBytes(8).toString("hex"),
       username: cleanedUsername,
       credentials: {
-        password: {
-          secret: cleanedPassword
-        }
+        password: passwordRecord(cleanedPassword)
       },
       role: "user",
       profile: {
@@ -101,15 +118,27 @@ function createAuthStore(options = {}) {
 
   function loginWithPassword(username, password) {
     const user = findByUsername(username);
-    if (!user || !user.credentials?.password || user.credentials.password.secret !== String(password || "")) {
+    if (!user || !verifyPassword(user.credentials, password)) {
       return { ok: false, error: "Credenziali non valide." };
     }
 
+    if (typeof user.credentials?.password?.secret === "string") {
+      const users = listUsers();
+      const storedUser = users.find((entry) => entry.id === user.id);
+      if (storedUser) {
+        storedUser.credentials.password = passwordRecord(password);
+        writeUsers(dataFile, users);
+      }
+    }
+
     const sessionToken = crypto.randomBytes(16).toString("hex");
-    sessions.set(sessionToken, {
+    const sessions = readSessions(sessionsFile);
+    sessions.push({
+      token: sessionToken,
       userId: user.id,
       createdAt: Date.now()
     });
+    writeSessions(sessionsFile, sessions);
 
     return {
       ok: true,
@@ -123,7 +152,7 @@ function createAuthStore(options = {}) {
       return null;
     }
 
-    const session = sessions.get(sessionToken);
+    const session = readSessions(sessionsFile).find((entry) => entry.token === sessionToken);
     if (!session) {
       return null;
     }
@@ -133,7 +162,7 @@ function createAuthStore(options = {}) {
 
   function logout(sessionToken) {
     if (sessionToken) {
-      sessions.delete(sessionToken);
+      writeSessions(sessionsFile, readSessions(sessionsFile).filter((entry) => entry.token !== sessionToken));
     }
   }
 
