@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node backend/server.cjs",
     "backup:data": "node scripts/backup-datastore.cjs",
+    "backup:check": "node scripts/check-backup.cjs",
     "test": "node scripts/run-tests.cjs",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",

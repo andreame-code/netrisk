@@ -37,6 +37,7 @@ const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
+const { inspectBackup } = require("./check-backup.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
@@ -389,6 +390,50 @@ register("backup retention mantiene solo gli snapshot piu recenti", () => {
     );
   } finally {
     fs.rmSync(backupDir, { recursive: true, force: true });
+  }
+});
+
+register("backup verification legge uno snapshot sqlite esistente", async () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const sourceDbFile = path.join(__dirname, `tmp-verify-${unique}.sqlite`);
+  const targetDbFile = path.join(__dirname, `tmp-verify-copy-${unique}.sqlite`);
+  const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
+  const legacyGamesFile = path.join(__dirname, `tmp-legacy-games-${unique}.json`);
+  const legacySessionsFile = path.join(__dirname, `tmp-legacy-sessions-${unique}.json`);
+  const datastore = createDatastore({ dbFile: sourceDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+
+  try {
+    datastore.createUser({
+      id: "verify-user",
+      username: "verify-user",
+      role: "user",
+      profile: { displayName: "Verify User" },
+      credentials: { password: { hash: "x", salt: "y", iterations: 1, digest: "sha256" } },
+      createdAt: new Date().toISOString()
+    });
+    datastore.createSession("verify-session", "verify-user", Date.now());
+    datastore.createGame({
+      id: "verify-game",
+      name: "Verify Game",
+      version: 1,
+      creatorUserId: "verify-user",
+      state: createInitialState(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    datastore.setActiveGameId("verify-game");
+    await datastore.backupTo(targetDbFile);
+
+    const summary = inspectBackup(targetDbFile);
+    assert.equal(summary.ok, true);
+    assert.equal(summary.counts.users, 1);
+    assert.equal(summary.counts.games, 1);
+    assert.equal(summary.counts.sessions, 1);
+    assert.equal(summary.activeGameId, "verify-game");
+  } finally {
+    datastore.close();
+    cleanupSqliteFiles(sourceDbFile);
+    cleanupSqliteFiles(targetDbFile);
   }
 });
 
