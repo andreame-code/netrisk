@@ -10,8 +10,14 @@ const {
   territoriesOwnedBy
 } = require("./game-engine.cjs");
 
+function getMapTerritories(state) {
+  return Array.isArray(state && state.mapTerritories) && state.mapTerritories.length
+    ? state.mapTerritories
+    : territories;
+}
+
 function listEnemyNeighbors(state, territoryId, playerId) {
-  const territory = territories.find((item) => item.id === territoryId);
+  const territory = getMapTerritories(state).find((item) => item.id === territoryId);
   if (!territory) {
     return [];
   }
@@ -110,7 +116,7 @@ function chooseFortify(state, playerId) {
       return;
     }
 
-    const territoryDef = territories.find((item) => item.id === territory.id);
+    const territoryDef = getMapTerritories(state).find((item) => item.id === territory.id);
     if (!territoryDef) {
       return;
     }
