@@ -247,6 +247,14 @@ npm run backup:data
 
 Il comando usa il meccanismo di backup di SQLite e salva per default uno snapshot timestampato in `data/backups/`. E pensato come base per job schedulati o checkpoint manuali prima di deploy e manutenzioni.
 
+Per limitare la crescita della cartella backup, il comando supporta anche una retention semplice:
+
+```bash
+node scripts/backup-datastore.cjs --keep 7
+```
+
+Con `--keep N`, dopo la creazione del nuovo snapshot vengono mantenuti solo gli ultimi `N` backup compatibili con lo stesso prefisso file.
+
 ## Principi di sviluppo
 
 Il progetto segue queste regole:
