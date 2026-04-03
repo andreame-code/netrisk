@@ -307,6 +307,57 @@ register("auth store migra password legacy in hash al login riuscito", () => {
   }
 });
 
+register("datastore backup crea uno snapshot sqlite leggibile", async () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const sourceDbFile = path.join(__dirname, `tmp-backup-${unique}.sqlite`);
+  const targetDbFile = path.join(__dirname, `tmp-backup-copy-${unique}.sqlite`);
+  const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
+  const legacyGamesFile = path.join(__dirname, `tmp-legacy-games-${unique}.json`);
+  const legacySessionsFile = path.join(__dirname, `tmp-legacy-sessions-${unique}.json`);
+  const datastore = createDatastore({ dbFile: sourceDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+
+  try {
+    datastore.createUser({
+      id: "backup-user",
+      username: "backup-user",
+      role: "user",
+      profile: { displayName: "Backup User" },
+      credentials: { password: { hash: "x", salt: "y", iterations: 1, digest: "sha256" } },
+      createdAt: new Date().toISOString()
+    });
+    datastore.createSession("backup-session", "backup-user", Date.now());
+    datastore.createGame({
+      id: "backup-game",
+      name: "Backup Game",
+      version: 1,
+      creatorUserId: "backup-user",
+      state: createInitialState(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    datastore.setActiveGameId("backup-game");
+
+    const backup = await datastore.backupTo(targetDbFile);
+    assert.equal(backup.targetFile, targetDbFile);
+
+    const restored = createDatastore({ dbFile: targetDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+    try {
+      const health = restored.healthSummary();
+      assert.equal(health.ok, true);
+      assert.equal(health.counts.users, 1);
+      assert.equal(health.counts.games, 1);
+      assert.equal(health.counts.sessions, 1);
+      assert.equal(restored.getActiveGameId(), "backup-game");
+    } finally {
+      restored.close();
+    }
+  } finally {
+    datastore.close();
+    cleanupSqliteFiles(sourceDbFile);
+    cleanupSqliteFiles(targetDbFile);
+  }
+});
+
 register("addPlayer aggiunge giocatori e impedisce lobby oltre 4", () => {
   const state = createInitialState();
   ["A", "B", "C", "D"].forEach((name) => {
@@ -2250,6 +2301,22 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
     assert.equal(payload.cardState.maxHandBeforeForcedTrade, STANDARD_MAX_HAND_BEFORE_FORCED_TRADE);
     assert.equal(payload.cardState.currentPlayerMustTrade, true);
     assert.equal(Object.prototype.hasOwnProperty.call(payload, "playerHand"), false);
+  });
+});
+
+register("GET /api/health espone lo stato del datastore sqlite", async () => {
+  await withServer(async (baseUrl, context) => {
+    const response = await fetch(`${baseUrl}/api/health`);
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.ok, true);
+    assert.equal(payload.storage.storage, "sqlite");
+    assert.equal(payload.storage.journalMode, "WAL");
+    assert.equal(payload.storage.dbFile, context.tempDbFile);
+    assert.equal(typeof payload.storage.counts.users, "number");
+    assert.equal(typeof payload.storage.counts.games, "number");
+    assert.equal(typeof payload.storage.counts.sessions, "number");
+    assert.equal(payload.hasActiveGame, true);
   });
 });
 

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { DatabaseSync } = require("node:sqlite");
+const { DatabaseSync, backup } = require("node:sqlite");
 const { readJsonFile } = require("./json-file-store.cjs");
 
 function ensureDirectory(filePath) {
@@ -93,6 +93,7 @@ function createDatastore(options = {}) {
     countUsers: db.prepare("SELECT COUNT(*) AS count FROM users"),
     countGames: db.prepare("SELECT COUNT(*) AS count FROM games"),
     countSessions: db.prepare("SELECT COUNT(*) AS count FROM sessions"),
+    probe: db.prepare("SELECT 1 AS ok"),
     insertUser: db.prepare("INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)"),
     updateUserCredentials: db.prepare("UPDATE users SET credentials_json = ? WHERE id = ?"),
     updateUserRoleByUsername: db.prepare("UPDATE users SET role = ? WHERE lower(username) = lower(?)"),
@@ -203,6 +204,33 @@ function createDatastore(options = {}) {
 
   return {
     dbFile,
+    async backupTo(targetFile) {
+      if (!targetFile) {
+        throw new Error("Il backup richiede un percorso destinazione valido.");
+      }
+
+      ensureDirectory(targetFile);
+      await backup(db, targetFile);
+      return {
+        storage: "sqlite",
+        sourceFile: dbFile,
+        targetFile
+      };
+    },
+    healthSummary() {
+      const probe = statements.probe.get();
+      return {
+        ok: Boolean(probe && probe.ok === 1),
+        storage: "sqlite",
+        dbFile,
+        journalMode: "WAL",
+        counts: {
+          users: Number(statements.countUsers.get().count) || 0,
+          games: Number(statements.countGames.get().count) || 0,
+          sessions: Number(statements.countSessions.get().count) || 0
+        }
+      };
+    },
     close() {
       db.close();
     },
