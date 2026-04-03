@@ -4,17 +4,13 @@ const {
   applyReinforcement,
   endTurn,
   getCurrentPlayer,
+  getMapTerritories,
   moveAfterConquest,
   resolveAttack,
   territories,
   territoriesOwnedBy
 } = require("./game-engine.cjs");
 
-function getMapTerritories(state) {
-  return Array.isArray(state && state.mapTerritories) && state.mapTerritories.length
-    ? state.mapTerritories
-    : territories;
-}
 
 function listEnemyNeighbors(state, territoryId, playerId) {
   const territory = getMapTerritories(state).find((item) => item.id === territoryId);
@@ -271,3 +267,8 @@ module.exports = {
   chooseReinforcementTarget,
   runAiTurn
 };
+
+
+
+
+

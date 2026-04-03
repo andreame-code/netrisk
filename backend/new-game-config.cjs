@@ -2,8 +2,6 @@ const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
 const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
 
-const SUPPORTED_MAPS = listSupportedMaps();
-
 const AI_GENERAL_NAMES = [
   "Caesar",
   "Hannibal",
@@ -131,8 +129,8 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 
 module.exports = {
   AI_GENERAL_NAMES,
-  SUPPORTED_MAPS,
   listDiceRuleSets,
+  listSupportedMaps,
   buildHistoricalAiNames,
   createConfiguredInitialState,
   findSupportedMap,
