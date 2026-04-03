@@ -1,22 +1,10 @@
 const path = require("path");
 const crypto = require("crypto");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
-const { readJsonFile, writeJsonFile } = require("./json-file-store.cjs");
+const { createDatastore } = require("./datastore.cjs");
 
 function safeClone(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-function readDatabase(filePath) {
-  const parsed = readJsonFile(filePath, { games: [], activeGameId: null }, (value) => Boolean(value) && typeof value === "object");
-  return {
-    games: Array.isArray(parsed.games) ? parsed.games : [],
-    activeGameId: parsed.activeGameId || null
-  };
-}
-
-function writeDatabase(filePath, database) {
-  writeJsonFile(filePath, database);
 }
 
 function readableMapName(mapId) {
@@ -59,11 +47,15 @@ function summarizeGame(entry) {
 }
 
 function createGameSessionStore(options = {}) {
-  const dataFile = options.dataFile || path.join(__dirname, "..", "data", "games.json");
+  const datastore = options.datastore || createDatastore({
+    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+    legacyGamesFile: options.dataFile || path.join(__dirname, "..", "data", "games.json"),
+    legacyUsersFile: options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
+  });
 
   function listGames() {
-    const database = readDatabase(dataFile);
-    return database.games
+    return datastore.listGames()
       .slice()
       .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)))
       .map(summarizeGame);
@@ -74,11 +66,10 @@ function createGameSessionStore(options = {}) {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
 
-    const database = readDatabase(dataFile);
     const timestamp = new Date().toISOString();
     const entry = {
       id: crypto.randomBytes(8).toString("hex"),
-      name: normalizeGameName(input.name, database.games.length + 1),
+      name: normalizeGameName(input.name, datastore.listGames().length + 1),
       version: 1,
       creatorUserId: input.creatorUserId || null,
       state: safeClone(initialState),
@@ -86,10 +77,9 @@ function createGameSessionStore(options = {}) {
       updatedAt: timestamp
     };
 
-    database.games.push(entry);
-    database.activeGameId = entry.id;
-    writeDatabase(dataFile, database);
-    return { game: summarizeGame(entry), state: safeClone(entry.state) };
+    const created = datastore.createGame(entry);
+    datastore.setActiveGameId(created.id);
+    return { game: summarizeGame(created), state: safeClone(created.state) };
   }
 
   function setActiveGame(gameId) {
@@ -97,14 +87,12 @@ function createGameSessionStore(options = {}) {
       throw new Error("Impostare la partita attiva richiede un game id valido.");
     }
 
-    const database = readDatabase(dataFile);
-    const entry = database.games.find((game) => game.id === gameId);
+    const entry = datastore.findGameById(gameId);
     if (!entry) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
 
-    database.activeGameId = gameId;
-    writeDatabase(dataFile, database);
+    datastore.setActiveGameId(gameId);
     return summarizeGame(entry);
   }
 
@@ -113,8 +101,7 @@ function createGameSessionStore(options = {}) {
       throw new Error("Leggere una partita richiede un game id valido.");
     }
 
-    const database = readDatabase(dataFile);
-    const entry = database.games.find((game) => game.id === gameId);
+    const entry = datastore.findGameById(gameId);
     if (!entry) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
@@ -133,14 +120,12 @@ function createGameSessionStore(options = {}) {
       throw new Error("Aprire una partita richiede un game id valido.");
     }
 
-    const database = readDatabase(dataFile);
-    const entry = database.games.find((game) => game.id === gameId);
+    const entry = datastore.findGameById(gameId);
     if (!entry) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
 
-    database.activeGameId = gameId;
-    writeDatabase(dataFile, database);
+    datastore.setActiveGameId(gameId);
     return { game: summarizeGame(entry), state: safeClone(entry.state) };
   }
 
@@ -157,8 +142,7 @@ function createGameSessionStore(options = {}) {
       throw new Error("Il salvataggio richiede una expectedVersion valida.");
     }
 
-    const database = readDatabase(dataFile);
-    const entry = database.games.find((game) => game.id === gameId);
+    const entry = datastore.findGameById(gameId);
     if (!entry) {
       throw new Error(`Partita "${gameId}" non trovata.`);
     }
@@ -178,21 +162,20 @@ function createGameSessionStore(options = {}) {
     entry.state = safeClone(state);
     entry.version = currentVersion + 1;
     entry.updatedAt = new Date().toISOString();
-    writeDatabase(dataFile, database);
-    return summarizeGame(entry);
+    return summarizeGame(datastore.updateGame(entry));
   }
 
   function ensureActiveGame(createInitialState) {
-    const database = readDatabase(dataFile);
-    const preferredId = database.activeGameId && database.games.some((game) => game.id === database.activeGameId)
-      ? database.activeGameId
+    const games = datastore.listGames();
+    const activeGameId = datastore.getActiveGameId();
+    const preferredId = activeGameId && games.some((game) => game.id === activeGameId)
+      ? activeGameId
       : null;
 
     if (preferredId) {
       return openGame(preferredId);
     }
 
-    const games = listGames();
     if (games.length > 0) {
       return openGame(games[0].id);
     }
@@ -201,6 +184,7 @@ function createGameSessionStore(options = {}) {
   }
 
   return {
+    datastore,
     createGame,
     ensureActiveGame,
     getGame,
