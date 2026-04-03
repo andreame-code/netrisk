@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontline Dominion</title>
+    <meta http-equiv="refresh" content="0; url=/game.html" />
+    <script>
+      const target = "/game.html" + window.location.search + window.location.hash;
+      window.location.replace(target);
+    </script>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="app-shell board-shell">
+      <section class="page-header-panel panel">
+        <div>
+          <p class="eyebrow">Redirect</p>
+          <h1 class="page-title">Apertura partita</h1>
+          <p class="stage-copy">Reindirizzamento verso la pagina di gioco dedicata.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

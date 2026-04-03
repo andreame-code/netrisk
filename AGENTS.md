@@ -1,39 +1,77 @@
-# Repository Guidelines
+# NetRisk - Agent Instructions
 
-This file is the canonical reference for repository-specific instructions. All contributors should read it before making changes.
+## Mission
+Build and evolve NetRisk as a maintainable turn-based strategy game inspired by Risk/Risiko.
+The project must be safe to extend over time without rewriting existing work.
 
-## Development workflow
-- Break large efforts into self-contained tickets with clearly defined scope and interface contracts. Document the pre- and post-conditions for any new or updated API.
-- Assess the impact of touching existing code by mapping dependencies, inputs/outputs, and previously covered edge cases before you start editing.
-- Keep all project documentation, especially `README.md`, current with any new features or configuration steps you add.
-- Work on dedicated branches and keep commits small, focused, and descriptive about both the change and its motivation.
-- Use feature flags or toggles for risky changes so they can be isolated and rolled back quickly when needed.
-- Add or update automated tests whenever you introduce new behavior or fix a bug. If tests are not practical, document the manual verification you performed in the pull request description.
+## Core principles
+1. Never rewrite entire files unless explicitly requested.
+2. Modify only the minimum code needed for the requested change.
+3. Never delete existing code unless explicitly requested.
+4. Never rename files, folders, exported functions, or public interfaces unless strictly necessary.
+5. Preserve the existing project structure.
+6. Prefer adding new modules over heavily editing existing ones.
+7. Keep changes small, reviewable, and easy to revert.
+8. Before coding, always propose a short implementation plan.
+9. After the plan, implement only the requested step, not extra future steps.
+10. If a request would require broad refactoring, stop and explain the impact before changing code.
 
-## Code style
-- Match the existing formatting and naming conventions of the files you touch. If a formatter or linter configuration exists, run it before committing.
-- Avoid introducing unused code or dependencies. Remove dead code as you encounter it and explain the removal in your commit message when it is not obvious.
-- Comment complex or non-obvious logic, but keep straightforward code self-explanatory through clear naming.
-- Write docstrings and comments that focus on purpose and behavior rather than implementation specifics.
-- Favor pure functions and separation of responsibilities to limit cross-dependencies.
+## Architecture rules
+1. The frontend must only handle rendering, user input, and UI state.
+2. The backend is the source of truth for game state and rule validation.
+3. Shared models and types must live in the shared area.
+4. Game rules must not be duplicated between frontend and backend.
+5. Game logic must be organized in dedicated engine modules.
 
-## Pull request expectations
-- Summarize the key changes in a short, bulleted list at the top of the pull request description.
-- Provide a dedicated "Testing" section that lists the commands or manual steps you ran, along with their results.
-- Call out any follow-up work or known limitations so reviewers understand the current state of the feature.
+## Preferred structure
+- frontend: UI, map rendering, panels, local presentation state
+- backend: API, game orchestration, persistence, multiplayer support
+- backend/engine: pure game rules and turn logic
+- shared: shared types, DTOs, enums, schemas
 
-## Testing
-- Cover every new path with unit, integration, and end-to-end tests, prioritizing edge cases and known regressions.
-- Keep unit suites fast; parallelize or split out slow suites (e.g., smoke vs. full) when necessary.
-- Make tests deterministic by controlling external dependencies with mocks or fakes where appropriate.
-- Update or extend coverage when behavior changes. If you modify contracts, write the failing test first (lightweight TDD) before updating the implementation.
+## Change safety rules
+1. Always inspect relevant files before editing.
+2. Reuse existing conventions and naming.
+3. Do not introduce new dependencies unless necessary.
+4. If adding a dependency, explain why it is needed.
+5. Do not make cosmetic refactors mixed with feature work.
+6. Do not touch unrelated files.
+7. When possible, keep one concern per change.
 
-## Reviews and controls
-- Run automated static analysis, linting, type checking, and security scans before requesting a merge.
-- Seek focused code reviews guided by a checklist that verifies contract stability, backward compatibility, performance considerations, and observability (logging/monitoring).
-- Record scope, risks, and executed tests in the changelog or pull request description for reviewer context.
+## Git safety workflow
+Before large changes, remind the user to create a git checkpoint.
+After changes, summarize exactly which files were touched and why.
 
-## Post-merge monitoring
-- Integrate metrics and alerts that surface anomalies immediately after deployment.
-- Maintain rollback procedures (release branches, versioned tags) to restore previous states quickly.
-- After deploys, monitor key indicators and, if regressions appear, file bug reports with reproducible steps and failing tests.
+## Expected workflow for every task
+1. Read the current structure.
+2. Propose a concise plan.
+3. Wait for or follow the requested step scope.
+4. Implement only that scope.
+5. Summarize modified files.
+6. Mention risks or follow-up steps separately.
+
+## Communication style
+- Be direct and concise.
+- Do not overengineer.
+- Do not produce giant rewrites.
+- Prefer practical progress over speculative redesign.
+
+## For this project specifically
+NetRisk should be built incrementally in this order:
+1. architecture and models
+2. map and territories
+3. turn flow
+4. reinforcement rules
+5. combat rules
+6. movement rules
+7. victory conditions
+8. AI
+9. multiplayer
+10. map editor and custom rules
+
+## Important project guardrails
+- Do not rebuild the whole app when implementing a single feature.
+- Do not move business logic into React components.
+- Do not mix transport, persistence, and game rules in one file.
+- Do not replace working code just because another design seems cleaner.
+- Respect backward compatibility with the current project unless explicitly told otherwise.
