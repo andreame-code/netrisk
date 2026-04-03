@@ -38,6 +38,7 @@ test("current player can fortify once and pass the turn to the next player", asy
 
   await firstPage.locator("#attack-from").selectOption(attackPair.fromId);
   await firstPage.locator("#attack-to").selectOption(attackPair.toId);
+  await firstPage.locator("#attack-dice").selectOption("1");
   await queueNextAttackRolls(firstPage, 6, 1);
   await firstPage.getByRole("button", { name: "Lancia attacco" }).click();
   await expect(firstPage.locator("#conquest-group")).toBeVisible();
@@ -68,3 +69,4 @@ test("current player can fortify once and pass the turn to the next player", asy
   await firstContext.close();
   await secondContext.close();
 });
+

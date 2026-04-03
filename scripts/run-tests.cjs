@@ -1103,8 +1103,10 @@ register("API games crea una sessione da configurazione strutturata", async () =
     assert.equal(payload.config.players[0].name, null);
     assert.equal(payload.config.players[1].type, "ai");
     assert.equal(Boolean(payload.config.players[1].name), true);
-    assert.equal(payload.state.players.length, 2);
-    assert.equal(payload.state.players.every((player) => player.isAi), true);
+    assert.equal(payload.state.players.length, 3);
+    assert.equal(payload.playerId != null, true);
+    assert.equal(payload.state.players.some((player) => player.id === payload.playerId && player.name === session.user.username && player.isAi === false), true);
+    assert.equal(payload.state.players.filter((player) => player.isAi).length, 2);
   });
 });
 
@@ -1231,7 +1233,7 @@ register("API game session persists mutations across reopen", async () => {
       },
       body: JSON.stringify({ sessionToken: firstAuth.sessionToken })
     });
-    assert.equal(joinFirst.status, 201);
+    assert.equal(joinFirst.status, 200);
     const firstJoinPayload = await joinFirst.json();
 
     const loginSecond = await fetch(baseUrl + "/api/auth/login", {
@@ -1414,7 +1416,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
       },
       body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken })
     });
-    assert.equal(joinFirst.status, 201);
+    assert.equal(joinFirst.status, 200);
     const firstJoinPayload = await joinFirst.json();
 
     const loginSecond = await fetch(baseUrl + "/api/auth/login", {
@@ -1505,7 +1507,7 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
       headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
     });
-    assert.equal(joinHuman.status, 201);
+    assert.equal(joinHuman.status, 200);
     const humanJoinPayload = await joinHuman.json();
 
     const joinAi = await fetch(baseUrl + "/api/ai/join", {
@@ -1704,7 +1706,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
       headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
       body: JSON.stringify({ sessionToken: humanSession.sessionToken })
     });
-    assert.equal(joinHuman.status, 201);
+    assert.equal(joinHuman.status, 200);
     const humanJoinPayload = await joinHuman.json();
 
     const joinAi = await fetch(baseUrl + "/api/ai/join", {
@@ -1818,7 +1820,7 @@ register("API start consente all'admin di avviare una partita protetta altrui", 
       headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
     });
-    assert.equal(ownerJoin.status, 201);
+    assert.equal(ownerJoin.status, 200);
 
     const openResponse = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
@@ -2048,6 +2050,8 @@ async function run() {
 }
 
 run();
+
+
 
 
 
