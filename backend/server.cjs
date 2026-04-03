@@ -282,7 +282,24 @@ function createApp(options = {}) {
     return nextState.hands[player.id].map((card) => ({ ...card }));
   }
 
+  function healthSnapshot() {
+    const storage = datastore.healthSummary();
+    return {
+      ok: storage.ok,
+      storage,
+      activeGameId,
+      activeGameVersion,
+      hasActiveGame: Boolean(activeGameId)
+    };
+  }
+
   async function handleApi(req, res, url) {
+    if (req.method === "GET" && url.pathname === "/api/health") {
+      const health = healthSnapshot();
+      sendJson(res, health.ok ? 200 : 503, health);
+      return;
+    }
+
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
       const resetGame = gameSessions.createGame(createInitialState(), { name: "Partita test" });
       activeGameId = resetGame.game.id;
