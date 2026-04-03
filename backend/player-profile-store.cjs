@@ -1,15 +1,13 @@
 const path = require("path");
-const { readJsonFile } = require("./json-file-store.cjs");
-
-function readGamesDatabase(filePath) {
-  const parsed = readJsonFile(filePath, { games: [] }, (value) => Boolean(value) && typeof value === "object");
-  return {
-    games: Array.isArray(parsed.games) ? parsed.games : []
-  };
-}
+const { createDatastore } = require("./datastore.cjs");
 
 function createPlayerProfileStore(options = {}) {
-  const gamesFile = options.gamesFile || path.join(__dirname, "..", "data", "games.json");
+  const datastore = options.datastore || createDatastore({
+    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+    legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
+    legacyUsersFile: options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
+  });
 
   function getPlayerProfile(username) {
     const normalizedUsername = String(username || "").trim();
@@ -17,8 +15,7 @@ function createPlayerProfileStore(options = {}) {
       throw new Error("Il profilo richiede un nome giocatore valido.");
     }
 
-    const database = readGamesDatabase(gamesFile);
-    const relevantGames = database.games.filter((entry) =>
+    const relevantGames = datastore.listGames().filter((entry) =>
       Array.isArray(entry?.state?.players) &&
       entry.state.players.some((player) => player.name === normalizedUsername)
     );
@@ -49,6 +46,7 @@ function createPlayerProfileStore(options = {}) {
   }
 
   return {
+    datastore,
     getPlayerProfile
   };
 }

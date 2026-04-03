@@ -33,6 +33,7 @@ const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, listDiceRuleSets, standardDic
 const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
 const { createConfiguredInitialState, validateNewGameConfig } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
+const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { createApp } = require("../backend/server.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
@@ -131,19 +132,28 @@ async function createAuthenticatedAppSession(app, username) {
   return login;
 }
 
-function setStoredUserRole(dataFile, username, role) {
-  const users = JSON.parse(fs.readFileSync(dataFile, "utf8"));
-  const target = users.find((user) => String(user.username).toLowerCase() === String(username).toLowerCase());
+function setStoredUserRole(datastore, username, role) {
+  datastore.updateUserRoleByUsername(username, role);
+  const target = datastore.findUserByUsername(username);
   assert.equal(Boolean(target), true);
-  target.role = role;
-  fs.writeFileSync(dataFile, JSON.stringify(users, null, 2) + "\n", "utf8");
+  assert.equal(target.role, role);
+}
+
+function cleanupSqliteFiles(filePath) {
+  [filePath, `${filePath}-wal`, `${filePath}-shm`].forEach((target) => {
+    if (fs.existsSync(target)) {
+      fs.unlinkSync(target);
+    }
+  });
 }
 
 async function withServer(run) {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
   const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${Date.now()}-${Math.random().toString(16).slice(2)}.json`);
-  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile, sessionsFile: tempSessionsFile });
+  const tempDbFile = path.join(__dirname, `tmp-store-${unique}.sqlite`);
+  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
   const listener = app.server.listen(0);
 
   await new Promise((resolve, reject) => {
@@ -153,7 +163,7 @@ async function withServer(run) {
 
   try {
     const address = listener.address();
-    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile, tempSessionsFile });
+    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile, tempSessionsFile, tempDbFile });
   } finally {
     await new Promise((resolve) => {
       if (!listener.listening) {
@@ -163,6 +173,8 @@ async function withServer(run) {
 
       listener.close(() => resolve());
     });
+
+    app.datastore.close();
 
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
@@ -175,12 +187,15 @@ async function withServer(run) {
     if (fs.existsSync(tempSessionsFile)) {
       fs.unlinkSync(tempSessionsFile);
     }
+
+    cleanupSqliteFiles(tempDbFile);
   }
 }
 
 register("auth store registra e autentica utenti password", () => {
   const tempFile = path.join(__dirname, "tmp-users.json");
   const tempSessionsFile = path.join(__dirname, "tmp-sessions.json");
+  const tempDbFile = path.join(__dirname, "tmp-auth.sqlite");
   if (fs.existsSync(tempFile)) {
     fs.unlinkSync(tempFile);
   }
@@ -189,7 +204,11 @@ register("auth store registra e autentica utenti password", () => {
     fs.unlinkSync(tempSessionsFile);
   }
 
-  const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+  if (fs.existsSync(tempDbFile)) {
+    fs.unlinkSync(tempDbFile);
+  }
+
+  const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
   const registered = auth.registerPasswordUser("tester", "secret");
   assert.equal(registered.ok, true);
 
@@ -197,31 +216,40 @@ register("auth store registra e autentica utenti password", () => {
   assert.equal(login.ok, true);
   assert.equal(Boolean(login.sessionToken), true);
   assert.equal(auth.getUserFromSession(login.sessionToken).username, "tester");
-  const storedUsers = JSON.parse(fs.readFileSync(tempFile, "utf8"));
-  assert.equal(typeof storedUsers[0].credentials.password.secret, "undefined");
-  assert.equal(typeof storedUsers[0].credentials.password.hash, "string");
+  const storedUser = auth.datastore.findUserByUsername("tester");
+  assert.equal(typeof storedUser.credentials.password.secret, "undefined");
+  assert.equal(typeof storedUser.credentials.password.hash, "string");
 
-  fs.unlinkSync(tempFile);
-  fs.unlinkSync(tempSessionsFile);
+  auth.datastore.close();
+  if (fs.existsSync(tempFile)) {
+    fs.unlinkSync(tempFile);
+  }
+  if (fs.existsSync(tempSessionsFile)) {
+    fs.unlinkSync(tempSessionsFile);
+  }
+  cleanupSqliteFiles(tempDbFile);
 });
 
 register("auth store mantiene la sessione dopo il riavvio del processo", () => {
   const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
 
   try {
-    const firstStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const firstStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
     const registered = firstStore.registerPasswordUser("persisted", "secret");
     assert.equal(registered.ok, true);
 
     const login = firstStore.loginWithPassword("persisted", "secret");
     assert.equal(login.ok, true);
 
-    const restartedStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const restartedStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
     const user = restartedStore.getUserFromSession(login.sessionToken);
     assert.equal(Boolean(user), true);
     assert.equal(user.username, "persisted");
+    firstStore.datastore.close();
+    restartedStore.datastore.close();
   } finally {
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
@@ -230,6 +258,8 @@ register("auth store mantiene la sessione dopo il riavvio del processo", () => {
     if (fs.existsSync(tempSessionsFile)) {
       fs.unlinkSync(tempSessionsFile);
     }
+
+    cleanupSqliteFiles(tempDbFile);
   }
 });
 
@@ -237,6 +267,7 @@ register("auth store migra password legacy in hash al login riuscito", () => {
   const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
 
   try {
     fs.writeFileSync(tempFile, JSON.stringify([{
@@ -254,14 +285,15 @@ register("auth store migra password legacy in hash al login riuscito", () => {
       createdAt: new Date().toISOString()
     }], null, 2) + "\n", "utf8");
 
-    const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile });
+    const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
     const login = auth.loginWithPassword("legacy", "secret");
     assert.equal(login.ok, true);
 
-    const storedUsers = JSON.parse(fs.readFileSync(tempFile, "utf8"));
-    assert.equal(typeof storedUsers[0].credentials.password.secret, "undefined");
-    assert.equal(typeof storedUsers[0].credentials.password.hash, "string");
-    assert.equal(typeof storedUsers[0].credentials.password.salt, "string");
+    const storedUser = auth.datastore.findUserByUsername("legacy");
+    assert.equal(typeof storedUser.credentials.password.secret, "undefined");
+    assert.equal(typeof storedUser.credentials.password.hash, "string");
+    assert.equal(typeof storedUser.credentials.password.salt, "string");
+    auth.datastore.close();
   } finally {
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
@@ -270,6 +302,8 @@ register("auth store migra password legacy in hash al login riuscito", () => {
     if (fs.existsSync(tempSessionsFile)) {
       fs.unlinkSync(tempSessionsFile);
     }
+
+    cleanupSqliteFiles(tempDbFile);
   }
 });
 
@@ -1122,15 +1156,54 @@ register("API games richiede autenticazione per creare una partita", async () =>
 
 register("game session store salva il creator user id", () => {
   const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-creator.json`);
-  const store = createGameSessionStore({ dataFile: tempGames });
+  const tempDbFile = path.join(__dirname, `tmp-games-${Date.now()}-creator.sqlite`);
+  const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
 
   try {
     const created = store.createGame(createInitialState(), { name: "Con owner", creatorUserId: "user-123" });
     assert.equal(created.game.name, "Con owner");
-    const saved = JSON.parse(fs.readFileSync(tempGames, "utf8"));
-    assert.equal(saved.games[0].creatorUserId, "user-123");
+    const saved = store.datastore.findGameById(created.game.id);
+    assert.equal(saved.creatorUserId, "user-123");
   } finally {
+    store.datastore.close();
     if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("game session store importa partite legacy da JSON al primo avvio", () => {
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const tempGames = path.join(__dirname, `tmp-games-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-games-${unique}.sqlite`);
+
+  const legacyState = createInitialState();
+  legacyState.log.push("Migrata da json");
+
+  fs.writeFileSync(tempGames, JSON.stringify({
+    games: [{
+      id: "legacy-game",
+      name: "Legacy match",
+      version: 3,
+      creatorUserId: "legacy-user",
+      state: legacyState,
+      createdAt: "2026-04-01T10:00:00.000Z",
+      updatedAt: "2026-04-01T10:05:00.000Z"
+    }],
+    activeGameId: "legacy-game"
+  }, null, 2) + "\n", "utf8");
+
+  const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
+
+  try {
+    const reopened = store.openGame("legacy-game");
+    assert.equal(reopened.game.name, "Legacy match");
+    assert.equal(reopened.game.version, 3);
+    assert.equal(reopened.state.log.includes("Migrata da json"), true);
+    assert.equal(store.datastore.getActiveGameId(), "legacy-game");
+  } finally {
+    store.datastore.close();
+    if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+    cleanupSqliteFiles(tempDbFile);
   }
 });
 
@@ -1572,7 +1645,8 @@ register("API game session restores active game across app recreation", async ()
 
 register("game session store versiona i salvataggi e rifiuta versioni stale", () => {
   const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-version.json`);
-  const store = createGameSessionStore({ dataFile: tempGames });
+  const tempDbFile = path.join(__dirname, `tmp-games-${Date.now()}-version.sqlite`);
+  const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
 
   try {
     const created = store.createGame(createInitialState(), { name: "Versionata" });
@@ -1587,13 +1661,16 @@ register("game session store versiona i salvataggi e rifiuta versioni stale", ()
       store.saveGame(created.game.id, nextState, 1);
     }, (error) => error && error.code === "VERSION_CONFLICT" && error.currentVersion === 2);
   } finally {
+    store.datastore.close();
     if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+    cleanupSqliteFiles(tempDbFile);
   }
 });
 
 register("game session store mantiene versioni indipendenti tra partite", () => {
   const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-independent.json`);
-  const store = createGameSessionStore({ dataFile: tempGames });
+  const tempDbFile = path.join(__dirname, `tmp-games-${Date.now()}-independent.sqlite`);
+  const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
 
   try {
     const first = store.createGame(createInitialState(), { name: "Prima" });
@@ -1607,7 +1684,9 @@ register("game session store mantiene versioni indipendenti tra partite", () => 
     assert.equal(savedFirst.version, 2);
     assert.equal(reopenedSecond.game.version, 1);
   } finally {
+    store.datastore.close();
     if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+    cleanupSqliteFiles(tempDbFile);
   }
 });
 
@@ -2015,7 +2094,7 @@ register("API games open consente all'admin di aprire una partita protetta altru
     const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_open_${Math.random().toString(16).slice(2, 8)}`);
     const adminSession = await createAuthenticatedSession(baseUrl, `admin_open_${Math.random().toString(16).slice(2, 8)}`);
 
-    setStoredUserRole(context.tempFile, adminSession.user.username, "admin");
+    setStoredUserRole(context.app.datastore, adminSession.user.username, "admin");
 
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
@@ -2041,7 +2120,7 @@ register("API start consente all'admin di avviare una partita protetta altrui", 
     const ownerSession = await createAuthenticatedSession(baseUrl, `owner_admin_start_${Math.random().toString(16).slice(2, 8)}`);
     const adminSession = await createAuthenticatedSession(baseUrl, `admin_start_${Math.random().toString(16).slice(2, 8)}`);
 
-    setStoredUserRole(context.tempFile, adminSession.user.username, "admin");
+    setStoredUserRole(context.app.datastore, adminSession.user.username, "admin");
 
     const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
