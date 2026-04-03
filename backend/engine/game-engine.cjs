@@ -13,37 +13,34 @@ const {
 } = require("../../shared/models.cjs");
 const { detectVictory } = require("./victory-detection.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
+const classicMiniMap = require("../../shared/maps/classic-mini.cjs");
+const { findSupportedMap } = require("../../shared/maps/index.cjs");
 
-const territories = [
-  { id: "aurora", name: "Aurora", neighbors: ["bastion", "cinder", "delta"], continentId: "north" },
-  { id: "bastion", name: "Bastion", neighbors: ["aurora", "ember", "forge"], continentId: "north" },
-  { id: "cinder", name: "Cinder", neighbors: ["aurora", "delta", "ember"], continentId: "central" },
-  { id: "delta", name: "Delta", neighbors: ["aurora", "cinder", "grove", "harbor"], continentId: "central" },
-  { id: "ember", name: "Ember", neighbors: ["bastion", "cinder", "forge", "harbor"], continentId: "central" },
-  { id: "forge", name: "Forge", neighbors: ["bastion", "ember", "harbor", "ion"], continentId: "east" },
-  { id: "grove", name: "Grove", neighbors: ["delta", "harbor"], continentId: "south" },
-  { id: "harbor", name: "Harbor", neighbors: ["delta", "ember", "forge", "grove", "ion"], continentId: "south" },
-  { id: "ion", name: "Ion", neighbors: ["forge", "harbor"], continentId: "east" }
-];
+const territories = classicMiniMap.territories;
 
-const continents = [
-  createContinent({ id: "north", name: "North Reach", bonus: 2, territoryIds: ["aurora", "bastion"] }),
-  createContinent({ id: "central", name: "Ash Corridor", bonus: 3, territoryIds: ["cinder", "delta", "ember"] }),
-  createContinent({ id: "east", name: "Iron Frontier", bonus: 2, territoryIds: ["forge", "ion"] }),
-  createContinent({ id: "south", name: "Harbor Belt", bonus: 2, territoryIds: ["grove", "harbor"] })
-];
+const continents = classicMiniMap.continents;
 
 const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
 
-function createInitialState() {
+function createInitialState(selectedMap = classicMiniMap) {
+  const mapTerritories = Array.isArray(selectedMap && selectedMap.territories) && selectedMap.territories.length
+    ? selectedMap.territories
+    : territories;
+  const mapContinents = Array.isArray(selectedMap && selectedMap.continents) && selectedMap.continents.length
+    ? selectedMap.continents
+    : continents;
+
   return createGameState({
     phase: "lobby",
     turnPhase: TurnPhase.LOBBY,
     players: [],
     territories: Object.fromEntries(
-      territories.map((territory) => [territory.id, { ownerId: null, armies: 0 }])
+      mapTerritories.map((territory) => [territory.id, { ownerId: null, armies: 0 }])
     ),
-    continents,
+    continents: mapContinents,
+    mapId: selectedMap && selectedMap.id ? selectedMap.id : "classic-mini",
+    mapName: selectedMap && selectedMap.name ? selectedMap.name : "Classic Mini",
+    mapTerritories,
     currentTurnIndex: 0,
     reinforcementPool: 0,
     winnerId: null,
@@ -52,7 +49,7 @@ function createInitialState() {
     pendingConquest: null,
     fortifyUsed: false,
     cardRuleSetId: "standard",
-    deck: createStandardDeck(territories.map((territory) => territory.id)),
+    deck: createStandardDeck(mapTerritories.map((territory) => territory.id)),
     discardPile: [],
     hands: {},
     tradeCount: 0,
@@ -83,8 +80,14 @@ function getCurrentPlayer(state) {
   return state.players.length ? state.players[state.currentTurnIndex] : null;
 }
 
+function getMapTerritories(state) {
+  return Array.isArray(state && state.mapTerritories) && state.mapTerritories.length
+    ? state.mapTerritories
+    : territories;
+}
+
 function territoriesOwnedBy(state, playerId) {
-  return territories.filter((territory) => state.territories[territory.id].ownerId === playerId);
+  return getMapTerritories(state).filter((territory) => state.territories[territory.id].ownerId === playerId);
 }
 
 function computeReinforcements(state, playerId) {
@@ -206,10 +209,8 @@ function tradeCardSet(state, playerId, cardIds) {
 }
 
 function readableMapName(mapId) {
-  if (mapId === "classic-mini") {
-    return "Classic Mini";
-  }
-  return mapId || null;
+  const map = findSupportedMap(mapId);
+  return map ? map.name : (mapId || null);
 }
 
 function publicState(state) {
@@ -228,7 +229,7 @@ function publicState(state) {
       eliminated: state.phase !== "lobby" && territoriesOwnedBy(state, player.id).length === 0,
       cardCount: Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
     })),
-    map: territories.map((territory) => ({
+    map: getMapTerritories(state).map((territory) => ({
       id: territory.id,
       name: territory.name,
       neighbors: territory.neighbors,
@@ -270,7 +271,8 @@ function publicState(state) {
 }
 
 function startGame(state, random = Math.random) {
-  const shuffledTerritories = shuffle(territories.map((territory) => territory.id), random);
+  const mapTerritories = getMapTerritories(state);
+  const shuffledTerritories = shuffle(mapTerritories.map((territory) => territory.id), random);
   state.phase = "active";
   state.turnPhase = TurnPhase.REINFORCEMENT;
   state.winnerId = null;
@@ -415,7 +417,7 @@ function resolveAttack(state, playerId, fromId, toId, random = Math.random, requ
   const attacker = getPlayer(state, playerId);
   const from = state.territories[fromId];
   const to = state.territories[toId];
-  const territory = territories.find((item) => item.id === fromId);
+  const territory = getMapTerritories(state).find((item) => item.id === fromId);
 
   if (!attacker || !from || !to || !territory) {
     return { ok: false, message: "Territori non validi." };
@@ -614,7 +616,7 @@ function applyFortify(state, playerId, fromId, toId, armiesToMove) {
     return { ok: false, message: "Puoi spostare armate solo tra tuoi territori." };
   }
 
-  const territory = territories.find((item) => item.id === fromId);
+  const territory = getMapTerritories(state).find((item) => item.id === fromId);
   if (!territory || territory.neighbors.indexOf(toId) === -1) {
     return { ok: false, message: "Puoi fortificare solo tra territori adiacenti." };
   }
@@ -705,6 +707,11 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
+
+
+
+
+
 
 
 
