@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { secureRandom } = require("../random.cjs");
 const {
   GameAction,
   TurnPhase,
@@ -62,7 +63,7 @@ function randomId() {
   return crypto.randomBytes(8).toString("hex");
 }
 
-function shuffle(list, random = Math.random) {
+function shuffle(list, random = secureRandom) {
   const copy = list.slice();
   for (let i = copy.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
@@ -123,7 +124,7 @@ function playerMustTradeCards(state, playerId) {
   return ensurePlayerHand(state, playerId).length > getForcedTradeLimit(state);
 }
 
-function refillDeckFromDiscardIfNeeded(state, random = Math.random) {
+function refillDeckFromDiscardIfNeeded(state, random = secureRandom) {
   if (!Array.isArray(state.deck)) {
     state.deck = [];
   }
@@ -141,7 +142,7 @@ function refillDeckFromDiscardIfNeeded(state, random = Math.random) {
   return true;
 }
 
-function awardTurnCardIfEligible(state, playerId, random = Math.random) {
+function awardTurnCardIfEligible(state, playerId, random = secureRandom) {
   if (!state.conqueredTerritoryThisTurn) {
     return null;
   }
@@ -285,7 +286,7 @@ function publicState(state) {
   };
 }
 
-function startGame(state, random = Math.random) {
+function startGame(state, random = secureRandom) {
   const mapTerritories = getMapTerritories(state);
   const shuffledTerritories = shuffle(mapTerritories.map((territory) => territory.id), random);
   state.phase = "active";
@@ -428,7 +429,7 @@ function applyReinforcement(state, playerId, territoryId) {
   return { ok: true };
 }
 
-function resolveAttack(state, playerId, fromId, toId, random = Math.random, requestedAttackDice = null) {
+function resolveAttack(state, playerId, fromId, toId, random = secureRandom, requestedAttackDice = null) {
   const attacker = getPlayer(state, playerId);
   const from = state.territories[fromId];
   const to = state.territories[toId];
