@@ -176,6 +176,7 @@ Applicazione disponibile su `http://localhost:3000`.
 ```bash
 npm start
 npm run backup:data
+npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
 npm test
 npm run test:gameplay
 npm run test:e2e
@@ -185,6 +186,7 @@ npm run test:all:e2e
 
 - `npm test`: suite standard del repository
 - `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
+- `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
 - `npm run test:gameplay`: verifica del motore di gioco
 - `npm run test:e2e`: test Playwright sui flussi utente
 - `npm run test:all`: test repository + gameplay
@@ -254,6 +256,14 @@ node scripts/backup-datastore.cjs --keep 7
 ```
 
 Con `--keep N`, dopo la creazione del nuovo snapshot vengono mantenuti solo gli ultimi `N` backup compatibili con lo stesso prefisso file.
+
+Per verificare un backup prima di usarlo in una procedura di restore:
+
+```bash
+npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+```
+
+Il comando apre il file in sola lettura, verifica la presenza delle tabelle attese e stampa un riepilogo con conteggi e `activeGameId`.
 
 ## Principi di sviluppo
 
