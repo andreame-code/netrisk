@@ -753,9 +753,9 @@ button:disabled {
   border-radius: 999px;
   border: 1px solid rgba(255, 214, 150, 0.24);
   background:
-    linear-gradient(180deg, #d68a54, #a95234),
-    radial-gradient(circle at top, rgba(255, 228, 177, 0.3), transparent 55%);
-  color: #fff5e7;
+    linear-gradient(180deg, #9e4e31, #73301f),
+    radial-gradient(circle at top, rgba(255, 228, 177, 0.18), transparent 55%);
+  color: #fff8ef;
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -765,9 +765,9 @@ button:disabled {
 .lobby-create-button:hover {
   transform: translateY(-1px);
   background:
-    linear-gradient(180deg, #df9763, #b25b39),
-    radial-gradient(circle at top, rgba(255, 228, 177, 0.34), transparent 58%);
-  color: #fff8ef;
+    linear-gradient(180deg, #af5938, #833522),
+    radial-gradient(circle at top, rgba(255, 228, 177, 0.24), transparent 58%);
+  color: #fffdf8;
 }
 
 .lobby-create-button:focus-visible {
@@ -1141,6 +1141,30 @@ button:disabled {
   background: linear-gradient(180deg, rgba(245, 236, 214, 0.98), rgba(239, 226, 198, 0.97));
 }
 
+.profile-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.profile-hero-copy {
+  display: grid;
+  gap: 6px;
+  max-width: 760px;
+}
+
+.profile-hero h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+}
+
+.profile-hero-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .profile-feedback {
   padding: 18px 16px;
   border-radius: 16px;
@@ -1158,6 +1182,57 @@ button:disabled {
   gap: 16px;
 }
 
+.profile-command-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-command-card {
+  display: grid;
+  gap: 6px;
+  min-height: 132px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 48, 28, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(248, 239, 218, 0.94)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.18), transparent 42%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.profile-command-card-accent {
+  background:
+    linear-gradient(180deg, rgba(87, 55, 33, 0.96), rgba(57, 36, 23, 0.96)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.32), transparent 48%);
+  border-color: rgba(255, 220, 162, 0.12);
+  color: #f8eed5;
+}
+
+.profile-command-card-accent p,
+.profile-command-card-accent .profile-command-label {
+  color: rgba(248, 238, 213, 0.76);
+}
+
+.profile-command-card strong {
+  font-size: clamp(1.15rem, 2.8vw, 1.8rem);
+  line-height: 1.1;
+}
+
+.profile-command-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.profile-command-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: #7a6149;
+}
+
 .profile-summary-card,
 .profile-note-card,
 .profile-metric-card {
@@ -1171,12 +1246,18 @@ button:disabled {
   padding: 16px;
 }
 
+.profile-summary-card {
+  background:
+    linear-gradient(180deg, rgba(250, 244, 230, 0.96), rgba(243, 231, 204, 0.94)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.12), transparent 44%);
+}
+
 .profile-section-eyebrow {
   color: var(--muted);
   margin-bottom: 8px;
 }
 
-.profile-summary-card h2,
+.profile-summary-card h3,
 .profile-note-card h3 {
   margin: 0 0 8px;
 }
@@ -1191,6 +1272,10 @@ button:disabled {
   padding: 16px;
   display: grid;
   gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 246, 0.96), rgba(246, 236, 214, 0.94)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.1), transparent 48%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .profile-metric-label {
@@ -1234,6 +1319,9 @@ button:disabled {
   grid-column: span 2;
   display: grid;
   gap: 12px;
+  background:
+    linear-gradient(180deg, rgba(250, 244, 230, 0.96), rgba(243, 231, 204, 0.94)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.12), transparent 44%);
 }
 
 .profile-games-head {
@@ -1261,19 +1349,23 @@ button:disabled {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(255, 248, 236, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 236, 0.98), rgba(248, 239, 218, 0.95)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.08), transparent 42%);
   padding: 14px 16px;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   text-align: left;
+  color: var(--text);
   cursor: pointer;
 }
 
 .profile-game-row:hover {
   border-color: rgba(132, 92, 52, 0.4);
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(60, 35, 20, 0.1);
 }
 
 .profile-game-primary {
@@ -1291,7 +1383,8 @@ button:disabled {
 
 .profile-game-name {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.02rem;
+  color: var(--text);
 }
 
 .profile-game-meta-row {
@@ -1318,7 +1411,7 @@ button:disabled {
 }
 
 .profile-mini-lobby-title {
-  color: var(--ink);
+  color: var(--text);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -1345,11 +1438,20 @@ button:disabled {
 }
 
 .profile-mini-lobby-item strong {
-  color: var(--ink);
+  color: var(--text);
   font-size: 0.9rem;
 }
 
 @media (max-width: 1100px) {
+  .profile-hero,
+  .profile-command-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-hero {
+    display: grid;
+  }
+
   .profile-metrics-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1368,6 +1470,20 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  .profile-shell {
+    padding: 12px;
+  }
+
+  .profile-hero-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .profile-hero-actions > * {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
   .profile-metrics-grid,
   .profile-future-grid {
     grid-template-columns: 1fr;
@@ -1380,6 +1496,11 @@ button:disabled {
 
   .profile-game-row {
     grid-template-columns: 1fr;
+  }
+
+  .profile-game-meta-row {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .profile-mini-lobby-grid {
@@ -2179,4 +2300,3 @@ body[data-app-section="profile"] .main-nav-shell {
 .action-meta-list .action-help {
   margin: 0;
 }
-

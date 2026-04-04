@@ -33,6 +33,18 @@
             </div>
         </section>
         <section class="profile-shell panel" data-testid="player-profile-shell">
+          <div class="profile-hero">
+            <div class="profile-hero-copy">
+              <p class="eyebrow profile-section-eyebrow">Command Dossier</p>
+              <h2 id="profile-heading">Comandante</h2>
+              <p id="profile-subtitle" class="stage-copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
+            </div>
+            <div class="page-header-actions compact-actions profile-hero-actions">
+              <a href="/lobby.html" class="ghost-button">Torna alla lobby</a>
+              <a href="/new-game.html" class="ghost-button lobby-create-button">Crea partita</a>
+            </div>
+          </div>
+
           <div class="content-meta-line profile-meta-line">
             <span id="profile-name">Caricamento profilo...</span>
             <span class="status-divider" aria-hidden="true"></span>
@@ -42,8 +54,26 @@
           <section id="profile-content" class="profile-content" hidden>
             <div class="profile-summary-card">
               <p class="eyebrow profile-section-eyebrow">Panoramica</p>
-              <h2 id="profile-heading">Comandante</h2>
+              <h3>Dossier operativo</h3>
               <p id="profile-copy" class="stage-copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
+            </div>
+
+            <div class="profile-command-strip" aria-label="Panoramica profilo">
+              <article class="profile-command-card profile-command-card-accent">
+                <span class="profile-command-label">Comandante</span>
+                <strong id="profile-command-name">In attesa</strong>
+                <p id="profile-command-status">Accesso richiesto per consultare il dossier.</p>
+              </article>
+              <article class="profile-command-card">
+                <span class="profile-command-label">Fronte attivo</span>
+                <strong id="profile-command-focus">Nessuna partita</strong>
+                <p id="profile-command-focus-note">Apri una sessione per riprendere il teatro corrente.</p>
+              </article>
+              <article class="profile-command-card">
+                <span class="profile-command-label">Direttiva</span>
+                <strong id="profile-command-directive">Mantieni il comando</strong>
+                <p id="profile-command-directive-note">Lobby e Game restano i due accessi rapidi per creare o riaprire una campagna.</p>
+              </article>
             </div>
 
             <div class="profile-metrics-grid">
