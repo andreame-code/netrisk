@@ -29,10 +29,12 @@ test("user can join an available lobby game directly from the lobby list", async
 
   const targetRow = joinerPage.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   await expect(targetRow).toBeVisible();
+  await expect(targetRow).toContainText("1/2");
   const targetValue = await targetRow.getAttribute("data-game-id");
   await targetRow.click();
 
   await expect(joinerPage.getByTestId("game-session-details")).toContainText(gameName);
+  await expect(joinerPage.getByTestId("game-session-details")).toContainText("1/2");
   await expect(joinerPage.getByRole("button", { name: "Unisciti e apri" })).toBeVisible();
   await joinerPage.getByRole("button", { name: "Unisciti e apri" }).click();
 

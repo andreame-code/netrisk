@@ -1,6 +1,5 @@
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
-  sessionToken: localStorage.getItem("frontline-session-token") || null,
   snapshot: null,
   user: null,
   currentGameId: null,
@@ -228,7 +227,7 @@ function currentPlayerHand() {
 }
 
 function ensurePrivateStateFresh(currentPlayer) {
-  if (!state.sessionToken || !currentPlayer || privateStateRefreshInFlight) {
+  if (!state.user || !currentPlayer || privateStateRefreshInFlight) {
     return;
   }
 
@@ -249,7 +248,7 @@ function ensurePrivateStateFresh(currentPlayer) {
 }
 
 async function refreshPrivateStateIfNeeded(nextState) {
-  if (!state.sessionToken || !nextState?.players?.length) {
+  if (!state.user || !nextState?.players?.length) {
     return nextState;
   }
 
@@ -323,14 +322,8 @@ function formatCombatComparisons(comparisons) {
   return comparisons.map((comparison) => comparison.winner === "attacker" ? "A" : "D").join(" · ");
 }
 
-function setSession(sessionToken, user) {
-  state.sessionToken = sessionToken;
+function setSession(user) {
   state.user = user;
-  if (sessionToken) {
-    localStorage.setItem("frontline-session-token", sessionToken);
-  } else {
-    localStorage.removeItem("frontline-session-token");
-  }
 }
 
 function clearPlayerIdentity() {
@@ -854,9 +847,8 @@ function render() {
 
 async function fetchLatestStateSnapshot(options = {}) {
   const includeGameId = options.includeGameId !== false;
-  const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
   const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
-  const response = await fetch("/api/state" + query, { headers });
+  const response = await fetch("/api/state" + query);
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || "Impossibile caricare la partita attiva.");
@@ -865,14 +857,9 @@ async function fetchLatestStateSnapshot(options = {}) {
 }
 
 async function send(path, payload = {}, options = {}) {
-  const headers = { "Content-Type": "application/json" };
-  if (state.sessionToken) {
-    headers["x-session-token"] = state.sessionToken;
-  }
-
   const response = await fetch(path, {
     method: options.method || "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: options.method === "GET" ? undefined : JSON.stringify(payload)
   });
 
@@ -887,7 +874,7 @@ async function send(path, payload = {}, options = {}) {
     throw new Error(data.error || "Richiesta fallita.");
   }
 
-  if (path === "/api/action" && state.sessionToken) {
+  if (path === "/api/action" && state.user) {
     try {
       data.state = await fetchLatestStateSnapshot();
     } catch (error) {
@@ -925,6 +912,7 @@ async function loadGameList() {
   render();
 
   try {
+    const requestedId = pendingRequestedGameId || requestedGameIdFromRoute();
     const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
     const response = await fetch("/api/games" + query);
     if (!response.ok) {
@@ -933,7 +921,11 @@ async function loadGameList() {
 
     const data = await response.json();
     state.gameList = data.games || [];
-    state.currentGameId = data.activeGameId || state.currentGameId;
+    if (requestedId && state.gameList.some((game) => game.id === requestedId)) {
+      state.currentGameId = requestedId;
+    } else {
+      state.currentGameId = data.activeGameId || state.currentGameId;
+    }
     syncCurrentGameName();
     if (!state.selectedGameId || !state.gameList.some((game) => game.id === state.selectedGameId)) {
       updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
@@ -949,23 +941,16 @@ async function loadGameList() {
 }
 
 async function restoreSession() {
-  if (!state.sessionToken) {
-    render();
-    return;
-  }
-
   try {
-    const response = await fetch("/api/auth/session", {
-      headers: { "x-session-token": state.sessionToken }
-    });
+    const response = await fetch("/api/auth/session");
     if (!response.ok) {
       throw new Error("Sessione scaduta");
     }
 
     const data = await response.json();
-    state.user = data.user;
+    setSession(data.user);
   } catch (error) {
-    setSession(null, null);
+    setSession(null);
     clearPlayerIdentity();
   }
 
@@ -1010,7 +995,7 @@ function startSnapshotPolling() {
 function connectEvents() {
   disconnectLiveUpdates();
   eventsGameId = state.currentGameId || null;
-  if (state.sessionToken) {
+  if (state.user) {
     eventsMode = "poll";
     startSnapshotPolling();
     return;
@@ -1037,7 +1022,7 @@ function connectEvents() {
 }
 
 function ensureEventConnection() {
-  const nextMode = state.sessionToken ? "poll" : "sse";
+  const nextMode = state.user ? "poll" : "sse";
   if ((state.currentGameId || null) !== eventsGameId || eventsMode !== nextMode) {
     connectEvents();
   }
@@ -1080,7 +1065,7 @@ async function openGameById(gameId) {
   }
   render();
   ensureEventConnection();
-  if (state.sessionToken) {
+  if (state.user) {
     await loadState().catch(() => {});
   }
 }
@@ -1103,7 +1088,7 @@ async function handleOpenSelectedGame() {
 
 async function loginWithCredentials(username, password) {
   const data = await send("/api/auth/login", { username, password });
-  setSession(data.sessionToken, data.user);
+  setSession(data.user);
   clearPlayerIdentity();
   await loadState().catch(() => {});
   await loadGameList();
@@ -1174,7 +1159,7 @@ elements.registerButton.addEventListener("click", async () => {
   try {
     await send("/api/auth/register", { username, password });
     const login = await send("/api/auth/login", { username, password });
-    setSession(login.sessionToken, login.user);
+    setSession(login.user);
     clearPlayerIdentity();
     await loadState().catch(() => {});
     await loadGameList();
@@ -1202,11 +1187,11 @@ if (elements.openGameButtonSecondary) {
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
-    await send("/api/auth/logout", { sessionToken: state.sessionToken });
+    await send("/api/auth/logout", {});
   } catch (error) {
   }
 
-  setSession(null, null);
+  setSession(null);
   disconnectLiveUpdates();
   clearPlayerIdentity();
   state.snapshot = null;
@@ -1217,7 +1202,7 @@ elements.logoutButton.addEventListener("click", async () => {
 
 elements.joinButton.addEventListener("click", async () => {
   try {
-    const data = await send("/api/join", { ...currentGamePayload(), sessionToken: state.sessionToken });
+    const data = await send("/api/join", { ...currentGamePayload() });
     setPlayerIdentity(data.playerId);
     state.user = data.user;
     state.snapshot = data.state;
@@ -1231,7 +1216,6 @@ elements.startButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/start", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId
     });
     state.snapshot = data.state;
@@ -1245,7 +1229,6 @@ elements.reinforceButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "reinforce",
       territoryId: elements.reinforceSelect.value,
@@ -1344,7 +1327,6 @@ elements.attackButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "attack",
       fromId: elements.attackFrom.value,
@@ -1366,7 +1348,6 @@ elements.conquestButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "moveAfterConquest",
       armies: Number(elements.conquestArmies.value),
@@ -1384,7 +1365,6 @@ elements.fortifyButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "fortify",
       fromId: elements.fortifyFrom.value,
@@ -1403,7 +1383,6 @@ elements.endTurnButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      sessionToken: state.sessionToken,
       playerId: state.playerId,
       type: "endTurn",
       expectedVersion: currentExpectedVersion()
@@ -1423,7 +1402,6 @@ if (elements.cardTradeButton) {
     try {
       const data = await send("/api/cards/trade", {
         ...currentGamePayload(),
-        sessionToken: state.sessionToken,
         playerId: state.playerId,
         cardIds: state.selectedTradeCardIds,
         expectedVersion: currentExpectedVersion()
@@ -1433,7 +1411,7 @@ if (elements.cardTradeButton) {
       state.tradeError = "";
       state.tradeSuccess = `Set valido: +${data.bonus} rinforzi.`;
       render();
-      if (state.sessionToken) {
+      if (state.user) {
         await loadState().catch(() => {});
       }
     } catch (error) {

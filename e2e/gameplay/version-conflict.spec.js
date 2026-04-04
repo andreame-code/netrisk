@@ -31,10 +31,7 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await expect(stalePage.getByRole("button", { name: "+1 armata" })).toBeEnabled();
 
   const staleVersion = await stalePage.evaluate(async () => {
-    const token = localStorage.getItem("frontline-session-token");
-    const response = await fetch("/api/state", {
-      headers: token ? { "x-session-token": token } : {}
-    });
+    const response = await fetch("/api/state");
     const data = await response.json();
     return data.version;
   });

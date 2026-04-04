@@ -14,11 +14,16 @@ test("profile page shows a clear empty state for an authenticated user with no h
     data: { username, password }
   });
   await expect(loginResponse.ok()).toBeTruthy();
-  const loginPayload = await loginResponse.json();
+  const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
+  expect(sessionToken).toBeTruthy();
 
-  await page.addInitScript((sessionToken) => {
-    window.localStorage.setItem("frontline-session-token", sessionToken);
-  }, loginPayload.sessionToken);
+  await page.context().addCookies([{
+    name: "netrisk_session",
+    value: sessionToken,
+    url: "http://127.0.0.1:3100",
+    httpOnly: true,
+    sameSite: "Lax"
+  }]);
 
   await page.goto("/profile.html");
 

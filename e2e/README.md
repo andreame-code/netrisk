@@ -9,6 +9,10 @@ NetRisk acceptance tests use Playwright and live in `e2e/`, separate from the un
 - Update visual baselines intentionally:
   - `npm.cmd run test:e2e:update`
 
+The E2E runner starts its own server instance.
+If the default port `3100` is already in use, it automatically selects the next free local port instead of reusing or stopping the running process.
+Each run also uses a temporary SQLite database dedicated to that E2E instance, and the temporary database files are cleaned up automatically before and after the run.
+
 ## Scope today
 
 - smoke test for app load

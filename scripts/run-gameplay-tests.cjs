@@ -10,6 +10,7 @@ global.register = function register(name, fn) {
   "../tests/gameplay/setup/game-setup.test.cjs",
   "../tests/gameplay/turn-flow/turn-flow.test.cjs",
   "../tests/gameplay/reinforcement/reinforcement-calculation.test.cjs",
+  "../tests/gameplay/reinforcement/map-continent-bonuses.test.cjs",
   "../tests/gameplay/reinforcement/reinforcement-placement.test.cjs",
   "../tests/gameplay/combat/attack-validation.test.cjs",
   "../tests/gameplay/combat/combat-resolution.test.cjs",

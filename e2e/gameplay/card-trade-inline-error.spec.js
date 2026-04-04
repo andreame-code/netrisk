@@ -45,10 +45,6 @@ function mockState() {
 test("game page shows an inline trade error and clears it on selection change", async ({ page }) => {
   const currentState = mockState();
 
-  await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
-  });
-
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });

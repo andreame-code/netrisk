@@ -26,9 +26,13 @@ const { runAiTurn } = require("./engine/ai-player.cjs");
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
+const sessionCookieName = "netrisk_session";
 
-function sendJson(res, statusCode, payload) {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+function sendJson(res, statusCode, payload, headers = {}) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    ...headers
+  });
   res.end(JSON.stringify(payload));
 }
 
@@ -55,6 +59,60 @@ function parseBody(req) {
       }
     });
   });
+}
+
+function parseCookies(req) {
+  const rawCookies = String(req.headers.cookie || "");
+  if (!rawCookies) {
+    return {};
+  }
+
+  return rawCookies.split(";").reduce((cookies, entry) => {
+    const separatorIndex = entry.indexOf("=");
+    if (separatorIndex <= 0) {
+      return cookies;
+    }
+
+    const key = entry.slice(0, separatorIndex).trim();
+    const value = entry.slice(separatorIndex + 1).trim();
+    if (!key) {
+      return cookies;
+    }
+
+    cookies[key] = decodeURIComponent(value);
+    return cookies;
+  }, {});
+}
+
+function secureCookieFlag(req) {
+  return req.socket?.encrypted || req.headers["x-forwarded-proto"] === "https";
+}
+
+function buildSessionCookie(req, sessionToken) {
+  const parts = [
+    `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
+    "HttpOnly",
+    "Path=/",
+    "SameSite=Lax"
+  ];
+  if (secureCookieFlag(req)) {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
+}
+
+function clearSessionCookie(req) {
+  const parts = [
+    `${sessionCookieName}=`,
+    "HttpOnly",
+    "Path=/",
+    "SameSite=Lax",
+    "Max-Age=0"
+  ];
+  if (secureCookieFlag(req)) {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
 }
 
 function createApp(options = {}) {
@@ -218,7 +276,8 @@ function createApp(options = {}) {
   }
 
   function extractSessionToken(req, body = {}, url = null) {
-    return body.sessionToken || req.headers["x-session-token"] || null;
+    const cookies = parseCookies(req);
+    return cookies[sessionCookieName] || null;
   }
 
   function requireAuth(req, res, body, url = null) {
@@ -511,9 +570,10 @@ function createApp(options = {}) {
 
       sendJson(res, 200, {
         ok: true,
-        sessionToken: result.sessionToken,
         user: result.user,
         availableAuthProviders: ["password", "email", "google", "discord"]
+      }, {
+        "Set-Cookie": buildSessionCookie(req, result.sessionToken)
       });
       return;
     }
@@ -521,7 +581,9 @@ function createApp(options = {}) {
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
       const body = await parseBody(req);
       auth.logout(extractSessionToken(req, body));
-      sendJson(res, 200, { ok: true });
+      sendJson(res, 200, { ok: true }, {
+        "Set-Cookie": clearSessionCookie(req)
+      });
       return;
     }
 

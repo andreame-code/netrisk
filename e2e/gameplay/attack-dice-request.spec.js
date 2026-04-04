@@ -47,7 +47,6 @@ test("attack UI sends the selected dice count to the backend", async ({ page }) 
   let capturedAttackDice = null;
 
   await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
     window.localStorage.setItem("frontline-player-id", "p1");
   });
 

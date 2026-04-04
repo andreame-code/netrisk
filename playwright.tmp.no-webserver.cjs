@@ -1,4 +1,8 @@
 const { defineConfig, devices } = require("@playwright/test");
+
+const e2ePort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
+const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${e2ePort}`;
+
 module.exports = defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -7,7 +11,7 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: "http://127.0.0.1:3100",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
