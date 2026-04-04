@@ -723,13 +723,108 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.session-browser-heading {
+  display: grid;
+  gap: 6px;
+  max-width: 780px;
+}
+
 .session-eyebrow {
-  color: var(--muted);
+  color: rgba(114, 87, 67, 0.86);
   margin-bottom: 8px;
 }
 
 .session-browser-head h2 {
   margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.lobby-head-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lobby-create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 214, 150, 0.24);
+  background:
+    linear-gradient(180deg, #d68a54, #a95234),
+    radial-gradient(circle at top, rgba(255, 228, 177, 0.3), transparent 55%);
+  color: #fff5e7;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 10px 22px rgba(92, 39, 19, 0.2);
+}
+
+.lobby-create-button:hover {
+  transform: translateY(-1px);
+  background:
+    linear-gradient(180deg, #df9763, #b25b39),
+    radial-gradient(circle at top, rgba(255, 228, 177, 0.34), transparent 58%);
+  color: #fff8ef;
+}
+
+.lobby-create-button:focus-visible {
+  outline: 2px solid rgba(255, 232, 190, 0.9);
+  outline-offset: 2px;
+}
+
+.lobby-command-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.lobby-command-card {
+  display: grid;
+  gap: 6px;
+  min-height: 132px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 48, 28, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.96), rgba(248, 239, 218, 0.94)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.18), transparent 42%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.lobby-command-card-accent {
+  background:
+    linear-gradient(180deg, rgba(87, 55, 33, 0.96), rgba(57, 36, 23, 0.96)),
+    radial-gradient(circle at top right, rgba(212, 169, 79, 0.32), transparent 48%);
+  border-color: rgba(255, 220, 162, 0.12);
+  color: #f8eed5;
+}
+
+.lobby-command-card-accent p,
+.lobby-command-card-accent .lobby-command-label {
+  color: rgba(248, 238, 213, 0.76);
+}
+
+.lobby-command-card strong {
+  font-size: clamp(1.2rem, 2.8vw, 2rem);
+  line-height: 1;
+}
+
+.lobby-command-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 0.88rem;
+}
+
+.lobby-command-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: #7a6149;
 }
 
 .session-browser-actions {
@@ -755,7 +850,7 @@ button:disabled {
 .session-list-header,
 .session-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1.2fr) minmax(90px, 0.9fr) minmax(90px, 0.8fr) minmax(120px, 1fr);
+  grid-template-columns: minmax(180px, 2fr) minmax(140px, 1.15fr) minmax(90px, 0.9fr) minmax(90px, 0.8fr) minmax(120px, 1fr);
   gap: 12px;
   align-items: center;
 }
@@ -771,6 +866,17 @@ button:disabled {
 .session-list {
   display: grid;
   gap: 8px;
+}
+
+.session-list-load-more {
+  padding: 14px 12px 4px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.session-list-load-more.is-hidden {
+  display: none;
 }
 
 .session-row-button {
@@ -918,6 +1024,10 @@ button:disabled {
 }
 
 @media (max-width: 1100px) {
+  .lobby-command-strip {
+    grid-template-columns: 1fr;
+  }
+
   .session-browser-grid {
     grid-template-columns: 1fr;
   }
@@ -928,9 +1038,24 @@ button:disabled {
     flex-direction: column;
   }
 
+  .lobby-head-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .lobby-head-actions > * {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .session-list-panel,
+  .session-detail-panel {
+    padding: 12px;
+  }
+
   .session-list-header,
   .session-row {
-    grid-template-columns: minmax(0, 1.4fr) minmax(100px, 1fr) minmax(80px, 0.8fr);
+    grid-template-columns: minmax(0, 1.4fr) minmax(110px, 1fr) minmax(80px, 0.8fr);
   }
 
   .session-row > :nth-child(4),
@@ -942,6 +1067,65 @@ button:disabled {
 }
 
 @media (max-width: 640px) {
+  .session-browser {
+    padding: 12px;
+  }
+
+  .lobby-meta-line {
+    gap: 6px;
+  }
+
+  .lobby-command-card {
+    min-height: 0;
+    padding: 14px 15px;
+  }
+
+  .session-list-header {
+    display: none;
+  }
+
+  .session-row-button {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+    padding: 14px;
+  }
+
+  .session-row-button > :nth-child(4),
+  .session-row-button > :nth-child(5) {
+    display: grid;
+  }
+
+  .session-primary {
+    grid-column: 1 / -1;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(74, 48, 28, 0.1);
+  }
+
+  .session-row-button > [data-cell-label] {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .session-row-button > [data-cell-label]::before {
+    content: attr(data-cell-label);
+    font-size: 0.68rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .session-row-button > .badge[data-cell-label] {
+    align-items: flex-start;
+    justify-content: flex-start;
+    white-space: normal;
+  }
+
+  .session-row-button > .badge[data-cell-label]::before {
+    margin-bottom: 4px;
+  }
+
   .session-detail-grid {
     grid-template-columns: 1fr;
   }
