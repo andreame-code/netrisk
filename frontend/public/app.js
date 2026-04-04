@@ -113,7 +113,8 @@ const elements = {
   map: document.querySelector("#map"),
   reinforceGroup: document.querySelector("#reinforce-group"),
   reinforceSelect: document.querySelector("#reinforce-select"),
-  reinforceButton: document.querySelector("#reinforce-button"),
+  reinforceAmount: document.querySelector("#reinforce-amount"),
+  reinforceMultiButton: document.querySelector("#reinforce-multi-button"),
   attackGroup: document.querySelector("#attack-group"),
   attackFrom: document.querySelector("#attack-from"),
   attackTo: document.querySelector("#attack-to"),
@@ -338,6 +339,36 @@ function setPlayerIdentity(playerId) {
 
 function territoryOptionLabel(territory) {
   return `${territory.name} (${territory.armies})`;
+}
+
+function normalizedReinforcementAmount() {
+  const rawValue = Number.parseInt(elements.reinforceAmount?.value || "1", 10);
+  const maxAllowed = Math.max(1, Number(state.snapshot?.reinforcementPool || 1));
+  const normalized = Number.isFinite(rawValue) ? rawValue : 1;
+  return Math.max(1, Math.min(normalized, maxAllowed));
+}
+
+async function applyReinforcements(times) {
+  const total = Math.max(1, Math.floor(Number(times) || 1));
+  let latestState = state.snapshot;
+
+  for (let index = 0; index < total; index += 1) {
+    const data = await send("/api/action", {
+      ...currentGamePayload(),
+      playerId: state.playerId,
+      type: "reinforce",
+      territoryId: elements.reinforceSelect.value,
+      expectedVersion: currentExpectedVersion()
+    });
+    latestState = data.state;
+    state.snapshot = latestState;
+    if ((latestState?.reinforcementPool || 0) <= 0) {
+      break;
+    }
+  }
+
+  state.snapshot = latestState;
+  render();
 }
 
 function formatUpdatedTime(value) {
@@ -659,6 +690,12 @@ function render() {
   if (selectedReinforceId) {
     elements.reinforceSelect.value = selectedReinforceId;
   }
+  if (elements.reinforceAmount) {
+    const maxReinforcements = Math.max(1, Number(snapshot?.reinforcementPool || 1));
+    elements.reinforceAmount.min = "1";
+    elements.reinforceAmount.max = String(maxReinforcements);
+    elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+  }
 
   const selectedFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
   state.selectedAttackFromId = selectedFromId || null;
@@ -823,7 +860,12 @@ function render() {
     elements.cardTradeError.textContent = state.tradeError;
     elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
   }
-  elements.reinforceButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  if (elements.reinforceAmount) {
+    elements.reinforceAmount.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  }
+  if (elements.reinforceMultiButton) {
+    elements.reinforceMultiButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  }
   elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
@@ -1225,26 +1267,25 @@ elements.startButton.addEventListener("click", async () => {
   }
 });
 
-elements.reinforceButton.addEventListener("click", async () => {
-  try {
-    const data = await send("/api/action", {
-      ...currentGamePayload(),
-      playerId: state.playerId,
-      type: "reinforce",
-      territoryId: elements.reinforceSelect.value,
-      expectedVersion: currentExpectedVersion()
-    });
-    state.snapshot = data.state;
-    render();
-  } catch (error) {
-    alert(error.message);
-  }
-});
+if (elements.reinforceMultiButton) {
+  elements.reinforceMultiButton.addEventListener("click", async () => {
+    try {
+      await applyReinforcements(normalizedReinforcementAmount());
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
 
 elements.reinforceSelect.addEventListener("change", () => {
   state.selectedReinforceTerritoryId = elements.reinforceSelect.value || null;
   render();
 });
+if (elements.reinforceAmount) {
+  elements.reinforceAmount.addEventListener("change", () => {
+    elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+  });
+}
 elements.attackFrom.addEventListener("change", () => {
   state.selectedAttackFromId = elements.attackFrom.value || null;
   state.selectedAttackToId = null;

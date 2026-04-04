@@ -30,7 +30,7 @@ test("current player can conquer a territory and move armies after combat", asyn
 
   const attackPair = await findAttackPair(firstPage, firstUser);
   const reinforcementCount = await getReinforcementCount(firstPage);
-  const reinforceButton = firstPage.getByRole("button", { name: "+1 armata" });
+  const reinforceButton = firstPage.getByRole("button", { name: "Aggiungi" });
 
   for (let index = 0; index < reinforcementCount; index += 1) {
     await reinforceButton.click();
