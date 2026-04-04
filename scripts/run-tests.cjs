@@ -701,6 +701,34 @@ register("runAiTurn completa un turno AI usando il motore esistente", () => {
   assert.equal(result.conquestMoves[0].armies, 2);
 });
 
+register("runAiTurn scambia carte quando il bot e obbligato prima dei rinforzi", () => {
+  const state = createInitialState();
+  addPlayer(state, "Alice");
+  const ai = addPlayer(state, "CPU Trader", { isAi: true }).player;
+
+  state.phase = "active";
+  state.turnPhase = "reinforcement";
+  state.currentTurnIndex = 1;
+  state.reinforcementPool = 0;
+  state.territories.aurora = { ownerId: ai.id, armies: 3 };
+  state.territories.bastion = { ownerId: ai.id, armies: 2 };
+  state.territories.cinder = { ownerId: "enemy", armies: 1 };
+  state.hands[ai.id] = [
+    createCard({ id: "cpu-trade-1", type: CardType.INFANTRY }),
+    createCard({ id: "cpu-trade-2", type: CardType.INFANTRY }),
+    createCard({ id: "cpu-trade-3", type: CardType.INFANTRY }),
+    createCard({ id: "cpu-trade-4", type: CardType.CAVALRY }),
+    createCard({ id: "cpu-trade-5", type: CardType.ARTILLERY }),
+    createCard({ id: "cpu-trade-6", type: CardType.WILD })
+  ];
+
+  const result = runAiTurn(state, { random: () => 0.1 });
+  assert.equal(result.ok, true);
+  assert.equal(result.tradedCardSets.length >= 1, true);
+  assert.equal(state.hands[ai.id].length <= STANDARD_MAX_HAND_BEFORE_FORCED_TRADE, true);
+  assert.equal(state.tradeCount >= 1, true);
+});
+
 register("chooseAttack usa la mappa salvata nello stato invece del default engine", () => {
   const state = createInitialState();
   const ai = addPlayer(state, "CPU Custom", { isAi: true }).player;
@@ -2629,7 +2657,6 @@ async function run() {
 }
 
 run();
-
 
 
 
