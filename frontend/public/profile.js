@@ -18,7 +18,13 @@ const elements = {
   winRate: document.querySelector("#metric-win-rate"),
   gamesCount: document.querySelector("#profile-games-count"),
   gamesEmpty: document.querySelector("#profile-games-empty"),
-  gamesList: document.querySelector("#profile-games-list")
+  gamesList: document.querySelector("#profile-games-list"),
+  profileCommandName: document.querySelector("#profile-command-name"),
+  profileCommandStatus: document.querySelector("#profile-command-status"),
+  profileCommandFocus: document.querySelector("#profile-command-focus"),
+  profileCommandFocusNote: document.querySelector("#profile-command-focus-note"),
+  profileCommandDirective: document.querySelector("#profile-command-directive"),
+  profileCommandDirectiveNote: document.querySelector("#profile-command-directive-note")
 };
 
 let profileRequestId = 0;
@@ -109,13 +115,12 @@ function renderParticipatingGames(profile) {
       return (
       `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
         `<span class="profile-game-primary">` +
-          `<span class="profile-game-kicker">Partita</span>` +
+          `<span class="profile-game-kicker">Teatro operativo</span>` +
           `<span class="profile-game-name">${escapeHtml(game.name)}</span>` +
-          `<span class="profile-game-sub">ID ${escapeHtml(game.id)}</span>` +
+          `<span class="profile-game-sub">${escapeHtml(game.mapName || game.mapId || "Classic Mini")}</span>` +
         `</span>` +
         `<span class="profile-game-meta-row">` +
           `<span class="badge">${phaseLabel(game.phase)}</span>` +
-          `<span class="profile-game-meta">${escapeHtml(game.mapName || "Mappa non definita")}</span>` +
           `<span class="profile-game-meta">${game.playerCount}/${game.totalPlayers || "n/d"} giocatori</span>` +
           `<span class="profile-game-meta">Aggiornata ${formatUpdatedTime(game.updatedAt)}</span>` +
         `</span>` +
@@ -137,6 +142,8 @@ function renderParticipatingGames(profile) {
 }
 
 function showProfile(profile) {
+  const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
+  const focusGame = participatingGames[0] || null;
   elements.profileName.textContent = profile.playerName;
   if (elements.profileSubtitle) {
     elements.profileSubtitle.textContent = profile.hasHistory
@@ -152,6 +159,18 @@ function showProfile(profile) {
   elements.losses.textContent = String(profile.losses);
   elements.inProgress.textContent = String(profile.gamesInProgress);
   elements.winRate.textContent = profile.winRate == null ? "--" : `${profile.winRate}%`;
+  elements.profileCommandName.textContent = profile.playerName;
+  elements.profileCommandStatus.textContent = profile.hasHistory
+    ? `Record attivo: ${profile.gamesPlayed} campagne monitorate.`
+    : "Nessun record completo disponibile: il dossier si aggiornera dopo le prime campagne.";
+  elements.profileCommandFocus.textContent = focusGame ? focusGame.name : "Nessuna partita";
+  elements.profileCommandFocusNote.textContent = focusGame
+    ? `${phaseLabel(focusGame.phase)} su ${focusGame.mapName || focusGame.mapId || "Classic Mini"}.`
+    : "Apri una sessione dalla lobby per avere un fronte attivo nel dossier.";
+  elements.profileCommandDirective.textContent = profile.gamesInProgress > 0 ? "Riprendi il fronte" : "Pianifica una nuova campagna";
+  elements.profileCommandDirectiveNote.textContent = profile.gamesInProgress > 0
+    ? `Hai ${profile.gamesInProgress} session${profile.gamesInProgress === 1 ? "e attiva" : "i attive"} pronte da riaprire.`
+    : "Crea una nuova partita dalla lobby per iniziare a popolare il record del comandante.";
   renderParticipatingGames(profile);
 
   if (!profile.hasHistory) {
