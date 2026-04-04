@@ -204,6 +204,19 @@ function createApp(options = {}) {
     return aiReports;
   }
 
+  function resumeAiTurnsForRead(gameContext) {
+    if (!gameContext?.state || gameContext.state.phase !== "active" || gameContext.state.winnerId) {
+      return [];
+    }
+
+    const currentPlayer = getCurrentPlayer(gameContext.state);
+    if (!currentPlayer || !currentPlayer.isAi) {
+      return [];
+    }
+
+    return persistWithAiTurns(gameContext, gameContext.version);
+  }
+
   function extractSessionToken(req, body = {}, url = null) {
     return body.sessionToken || req.headers["x-session-token"] || null;
   }
@@ -335,6 +348,7 @@ function createApp(options = {}) {
         return;
       }
       const gameContext = loadGameContext(gameId);
+      resumeAiTurnsForRead(gameContext);
       const sessionUser = access && access.user ? access.user : auth.getUserFromSession(extractSessionToken(req, {}, url));
       const resolvedPlayer = resolvePlayerForUser(gameContext.state, sessionUser);
       sendJson(res, 200, {
@@ -397,6 +411,7 @@ function createApp(options = {}) {
         const gameRecord = gameSessions.getGame(body.gameId);
         authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
         const opened = gameSessions.openGame(body.gameId);
+        resumeAiTurnsForRead(opened);
         const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
         sendJson(res, 200, {
           ok: true,
@@ -444,6 +459,7 @@ function createApp(options = {}) {
         return;
       }
       const gameContext = loadGameContext(gameId);
+      resumeAiTurnsForRead(gameContext);
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",

@@ -1,5 +1,27 @@
 const path = require("path");
 const { createDatastore } = require("./datastore.cjs");
+const { findSupportedMap } = require("../shared/maps/index.cjs");
+
+function readableMapName(mapId) {
+  const map = findSupportedMap(mapId);
+  return map ? map.name : (mapId || null);
+}
+
+function summarizeParticipatingGame(entry) {
+  const config = entry?.state?.gameConfig || null;
+  const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
+  const totalPlayers = Number.isInteger(config?.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
+
+  return {
+    id: entry.id,
+    name: entry.name,
+    phase: entry?.state?.phase || "lobby",
+    playerCount: Array.isArray(entry?.state?.players) ? entry.state.players.length : 0,
+    totalPlayers: totalPlayers || null,
+    mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
+    updatedAt: entry.updatedAt
+  };
+}
 
 function createPlayerProfileStore(options = {}) {
   const datastore = options.datastore || createDatastore({
@@ -36,6 +58,10 @@ function createPlayerProfileStore(options = {}) {
       wins,
       losses,
       gamesInProgress: gamesInProgress.length,
+      participatingGames: gamesInProgress
+        .slice()
+        .sort((left, right) => String(right?.updatedAt || "").localeCompare(String(left?.updatedAt || "")))
+        .map(summarizeParticipatingGame),
       winRate,
       hasHistory: relevantGames.length > 0,
       placeholders: {

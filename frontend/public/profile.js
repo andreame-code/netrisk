@@ -15,7 +15,10 @@ const elements = {
   wins: document.querySelector("#metric-wins"),
   losses: document.querySelector("#metric-losses"),
   inProgress: document.querySelector("#metric-in-progress"),
-  winRate: document.querySelector("#metric-win-rate")
+  winRate: document.querySelector("#metric-win-rate"),
+  gamesCount: document.querySelector("#profile-games-count"),
+  gamesEmpty: document.querySelector("#profile-games-empty"),
+  gamesList: document.querySelector("#profile-games-list")
 };
 
 let profileRequestId = 0;
@@ -49,6 +52,73 @@ function showFeedback(message, tone = "neutral") {
   elements.profileContent.hidden = true;
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function phaseLabel(phase) {
+  if (phase === "active") {
+    return "In corso";
+  }
+  if (phase === "finished") {
+    return "Conclusa";
+  }
+  return "Lobby";
+}
+
+function formatUpdatedTime(value) {
+  if (!value) {
+    return "n/d";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "n/d";
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(parsed);
+}
+
+function renderParticipatingGames(profile) {
+  const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
+  const label = participatingGames.length === 1 ? "1 attiva" : `${participatingGames.length} attive`;
+  elements.gamesCount.textContent = label;
+
+  if (!participatingGames.length) {
+    elements.gamesEmpty.hidden = false;
+    elements.gamesList.hidden = true;
+    elements.gamesList.innerHTML = "";
+    return;
+  }
+
+  elements.gamesEmpty.hidden = true;
+  elements.gamesList.hidden = false;
+  elements.gamesList.innerHTML = participatingGames
+    .map((game) =>
+      `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
+        `<span class="profile-game-primary">` +
+          `<span class="profile-game-name">${escapeHtml(game.name)}</span>` +
+          `<span class="profile-game-sub">Sessione ${escapeHtml(game.id.slice(0, 8))}</span>` +
+        `</span>` +
+        `<span class="badge">${phaseLabel(game.phase)}</span>` +
+        `<span class="profile-game-meta">${escapeHtml(game.mapName || "Mappa non definita")}</span>` +
+        `<span class="profile-game-meta">${game.playerCount}/${game.totalPlayers || "n/d"} giocatori</span>` +
+        `<span class="profile-game-meta">Aggiornata ${formatUpdatedTime(game.updatedAt)}</span>` +
+      `</button>`
+    )
+    .join("");
+}
+
 function showProfile(profile) {
   elements.profileName.textContent = profile.playerName;
   if (elements.profileSubtitle) {
@@ -65,6 +135,7 @@ function showProfile(profile) {
   elements.losses.textContent = String(profile.losses);
   elements.inProgress.textContent = String(profile.gamesInProgress);
   elements.winRate.textContent = profile.winRate == null ? "--" : `${profile.winRate}%`;
+  renderParticipatingGames(profile);
 
   if (!profile.hasHistory) {
     showFeedback("Nessuna statistica disponibile: completa almeno una partita per costruire il record.");
@@ -204,3 +275,19 @@ elements.logoutButton.addEventListener("click", async () => {
   } catch (error) {
   }
 });
+
+if (elements.gamesList) {
+  elements.gamesList.addEventListener("click", async (event) => {
+    const trigger = event.target.closest("[data-open-game-id]");
+    if (!trigger) {
+      return;
+    }
+
+    const gameId = trigger.dataset.openGameId;
+    if (!gameId) {
+      return;
+    }
+
+    window.location.href = "/game/" + encodeURIComponent(gameId);
+  });
+}
