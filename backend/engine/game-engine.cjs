@@ -14,6 +14,7 @@ const {
 } = require("../../shared/models.cjs");
 const { detectVictory } = require("./victory-detection.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
+const { calculateReinforcements } = require("./reinforcement-calculator.cjs");
 const { findSupportedMap } = require("../../shared/maps/index.cjs");
 
 const defaultMap = findSupportedMap("classic-mini");
@@ -101,7 +102,7 @@ function territoriesOwnedBy(state, playerId) {
 }
 
 function computeReinforcements(state, playerId) {
-  return Math.max(3, Math.floor(territoriesOwnedBy(state, playerId).length / 3));
+  return calculateReinforcements(state, playerId).totalReinforcements;
 }
 
 function appendLog(state, message) {

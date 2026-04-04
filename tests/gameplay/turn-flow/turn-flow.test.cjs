@@ -7,6 +7,7 @@ const {
   endTurn,
   startGame
 } = require("../../../backend/engine/game-engine.cjs");
+const { findSupportedMap } = require("../../../shared/maps/index.cjs");
 const { createFixedRandom } = require("../helpers/random.cjs");
 
 function setupLiveGame() {
@@ -65,6 +66,32 @@ register("endTurn from fortify advances to the next active player reinforcement 
   assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
   assert.equal(state.reinforcementPool >= 3, true);
+});
+
+register("advanceTurn awards continent bonuses through the game engine reinforcement pool", () => {
+  const state = createInitialState(findSupportedMap("world-classic"));
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  state.currentTurnIndex = 1;
+  state.turnPhase = TurnPhase.FORTIFY;
+  state.reinforcementPool = 0;
+
+  Object.keys(state.territories).forEach((territoryId) => {
+    state.territories[territoryId] = { ownerId: "p2", armies: 1 };
+  });
+
+  ["indonesia", "new_guinea", "western_australia", "eastern_australia"].forEach((territoryId) => {
+    state.territories[territoryId] = { ownerId: "p1", armies: 1 };
+  });
+
+  advanceTurn(state);
+
+  assert.equal(state.players[state.currentTurnIndex].id, "p1");
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.reinforcementPool, 5);
 });
 
 register("endTurn fails clearly when reinforcements are still available", () => {
