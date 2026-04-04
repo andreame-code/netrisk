@@ -21,7 +21,7 @@ test("current player can distribute reinforcements and enter attack step", async
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:/i);
 
-  const reinforceButton = firstPage.getByRole("button", { name: "+1 armata" });
+  const reinforceButton = firstPage.getByRole("button", { name: "Aggiungi" });
   await expect(reinforceButton).toBeEnabled();
 
   for (;;) {

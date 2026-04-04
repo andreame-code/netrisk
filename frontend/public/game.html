@@ -95,7 +95,10 @@
                   <label for="reinforce-select">Rinforza</label>
                   <div class="action-stack">
                     <select id="reinforce-select"></select>
-                    <button id="reinforce-button">+1 armata</button>
+                    <div class="reinforce-actions-row">
+                      <input id="reinforce-amount" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantita rinforzi" />
+                      <button id="reinforce-multi-button">Aggiungi</button>
+                    </div>
                   </div>
                 </div>
 

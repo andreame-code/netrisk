@@ -514,6 +514,21 @@ h1 {
   font-weight: 700;
 }
 
+.reinforce-actions-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.reinforce-actions-row input {
+  min-width: 0;
+  text-align: center;
+}
+
+.reinforce-actions-row button {
+  background: linear-gradient(180deg, #c97346, #b85c38);
+}
+
 .card-trade-list {
   display: grid;
   gap: 8px;
@@ -670,6 +685,10 @@ button:disabled {
   .action-stack {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .reinforce-actions-row {
+    grid-template-columns: 1fr;
   }
 }
 

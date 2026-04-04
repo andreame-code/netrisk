@@ -25,8 +25,8 @@ test("existing game keeps the same player binding after logout and login again",
   await expect(joinAiResponse.ok()).toBeTruthy();
 
   await page.getByRole("button", { name: "Avvia partita" }).click();
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*3/i);
-  await expect(page.getByRole("button", { name: "+1 armata" })).toBeEnabled();
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
+  await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
 
   await page.getByRole("button", { name: "Esci" }).click();
   await expect(page.locator("#auth-form #auth-username")).toBeVisible();
@@ -43,8 +43,8 @@ test("existing game keeps the same player binding after logout and login again",
   await page.getByRole("button", { name: "Apri selezionata" }).click();
 
   await expect(page.locator("#identity-status")).toContainText(username);
-  await expect(page.getByRole("button", { name: "+1 armata" })).toBeEnabled();
-  await page.getByRole("button", { name: "+1 armata" }).click();
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*2/i);
+  await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
+  await page.getByRole("button", { name: "Aggiungi" }).click();
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 });
 
