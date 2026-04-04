@@ -108,6 +108,8 @@ const elements = {
   selectedGameStatus: document.querySelector("#selected-game-status"),
   turnBadge: document.querySelector("#turn-badge"),
   statusSummary: document.querySelector("#status-summary"),
+  tradeAlert: document.querySelector("#trade-alert"),
+  tradeAlertText: document.querySelector("#trade-alert-text"),
   players: document.querySelector("#players"),
   map: document.querySelector("#map"),
   reinforceGroup: document.querySelector("#reinforce-group"),
@@ -127,6 +129,7 @@ const elements = {
   fortifyArmies: document.querySelector("#fortify-armies"),
   fortifyButton: document.querySelector("#fortify-button"),
   cardTradeGroup: document.querySelector("#card-trade-group"),
+  cardTradeAlert: document.querySelector("#card-trade-alert"),
   cardTradeList: document.querySelector("#card-trade-list"),
   cardTradeSummary: document.querySelector("#card-trade-summary"),
   cardTradeBonus: document.querySelector("#card-trade-bonus"),
@@ -798,8 +801,19 @@ function render() {
   }
   const mustTradeCards = Boolean(me) && isCurrentPlayer() && Boolean(snapshot?.cardState?.currentPlayerMustTrade);
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
+  if (elements.tradeAlert) {
+    elements.tradeAlert.hidden = !mustTradeCards;
+  }
+  if (elements.tradeAlertText) {
+    elements.tradeAlertText.textContent = mustTradeCards
+      ? `Hai ${playerHand.length} carte in mano: scambiane 3 per continuare. Limite mano ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
+      : "Devi scambiare 3 carte per continuare il turno.";
+  }
   if (elements.cardTradeGroup) {
     elements.cardTradeGroup.hidden = !canInteract || !inReinforcement || Boolean(pendingConquest) || !showTradePanel;
+    if (elements.cardTradeAlert) {
+      elements.cardTradeAlert.hidden = !mustTradeCards;
+    }
     elements.cardTradeSummary.textContent = `Carte in mano: ${playerHand.length}.`;
     elements.cardTradeBonus.textContent = `Prossimo scambio: +${snapshot?.cardState?.nextTradeBonus || 4} rinforzi.`;
     elements.cardTradeList.innerHTML = playerHand.length

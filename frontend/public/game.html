@@ -41,6 +41,10 @@
                 <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
               </div>
               <div id="status-summary" class="status-summary command-summary" data-testid="status-summary"></div>
+              <div id="trade-alert" class="turn-alert turn-alert-danger" hidden>
+                <strong>Scambio obbligatorio</strong>
+                <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
+              </div>
               <div class="rail-section game-meta-stack">
                 <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
                 <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
@@ -125,6 +129,9 @@
 
                 <div class="action-group compact-group" id="card-trade-group" hidden>
                   <label for="card-trade-list">Carte</label>
+                  <div id="card-trade-alert" class="trade-emphasis" hidden>
+                    Devi scambiare subito 3 carte prima di poter continuare.
+                  </div>
                   <div class="action-meta-list">
                     <p id="card-trade-summary" class="action-help">Carte in mano: 0.</p>
                     <p id="card-trade-bonus" class="action-help">Prossimo scambio: +4 rinforzi.</p>
