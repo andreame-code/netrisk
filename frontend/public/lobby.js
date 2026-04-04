@@ -1,7 +1,10 @@
+const VISIBLE_GAMES_BATCH_SIZE = 15;
+
 const state = {
   currentGameId: null,
   selectedGameId: null,
   gameList: [],
+  visibleGameCount: VISIBLE_GAMES_BATCH_SIZE,
   gameListState: "loading",
   gameListError: "",
   user: null
@@ -19,9 +22,16 @@ const elements = {
   logoutButton: document.querySelector("#logout-button"),
   gameListState: document.querySelector("#game-list-state"),
   gameSessionList: document.querySelector("#game-session-list"),
+  gameListLoadMoreState: document.querySelector("#game-list-load-more-state"),
   gameSessionDetails: document.querySelector("#game-session-details"),
-  selectedGameStatus: document.querySelector("#selected-game-status")
+  selectedGameStatus: document.querySelector("#selected-game-status"),
+  lobbyTotalGames: document.querySelector("#lobby-total-games"),
+  lobbyReadyGames: document.querySelector("#lobby-ready-games"),
+  lobbyActiveFocus: document.querySelector("#lobby-active-focus"),
+  lobbyFocusNote: document.querySelector("#lobby-focus-note")
 };
+
+let gameListObserver = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -92,6 +102,14 @@ function selectedGame() {
   return state.gameList.find((game) => game.id === selectedId) || null;
 }
 
+function visibleGames() {
+  return state.gameList.slice(0, state.visibleGameCount);
+}
+
+function canLoadMoreGames() {
+  return state.visibleGameCount < state.gameList.length;
+}
+
 function canJoinGame(game) {
   if (!game || !state.user) {
     return false;
@@ -141,9 +159,12 @@ async function loginWithCredentials(username, password) {
 }
 
 function render() {
+  const renderedGames = visibleGames();
   const selected = selectedGame();
   const selectedId = state.selectedGameId || state.currentGameId;
   const hasGames = state.gameList.length > 0;
+  const readyGames = state.gameList.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
+  const activeGame = state.gameList.find((game) => game.id === state.currentGameId) || null;
 
   elements.gameListState.className = "session-feedback" + (state.gameListState === "error" ? " is-error" : "") + (hasGames ? " is-hidden" : "");
   if (state.gameListState === "loading") {
@@ -154,17 +175,16 @@ function render() {
     elements.gameListState.textContent = "Nessuna partita disponibile. Creane una nuova per iniziare.";
   }
 
-  elements.gameSessionList.innerHTML = state.gameList
+  elements.gameSessionList.innerHTML = renderedGames
     .map((game) => 
       '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
-        '<span class="session-primary">' +
+        '<span class="session-primary" data-cell-label="Partita">' +
           '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + escapeHtml(game.name) + '</span>' +
-          '<span class="session-sub">Sessione ' + game.id.slice(0, 8) + '</span>' +
         '</span>' +
-        '<span class="session-cell-muted">' + game.id + '</span>' +
-        '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '">' + phaseLabel(game.phase) + '</span>' +
-        '<span class="session-cell-muted">' + gameCapacityLabel(game) + '</span>' +
-        '<span class="session-cell-muted">' + formatUpdatedTime(game.updatedAt) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="Mappa">' + escapeHtml(game.mapName || game.mapId || 'Classic Mini') + '</span>' +
+        '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '" data-cell-label="Stato">' + phaseLabel(game.phase) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="Giocatori">' + gameCapacityLabel(game) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="Aggiornata">' + formatUpdatedTime(game.updatedAt) + '</span>' +
       '</button>'
     )
     .join("");
@@ -187,6 +207,23 @@ function render() {
   elements.gameStatus.textContent = state.currentGameId
     ? "Partita attiva: " + (((state.gameList.find((game) => game.id === state.currentGameId) || {}).name) || state.currentGameId)
     : "Nessuna partita attiva";
+  elements.lobbyTotalGames.textContent = String(renderedGames.length);
+  elements.lobbyReadyGames.textContent = String(readyGames);
+  elements.lobbyActiveFocus.textContent = activeGame ? activeGame.name : "Nessuna";
+  elements.lobbyFocusNote.textContent = activeGame
+    ? "Sessione aperta: " + phaseLabel(activeGame.phase) + ". Torna nel tabellone quando vuoi."
+    : (state.user
+      ? "Seleziona una sessione e aprila per passare al tabellone."
+      : "Autenticati per aprire e gestire una sessione.");
+
+  elements.gameListLoadMoreState.className = "session-list-load-more" + (hasGames ? "" : " is-hidden");
+  if (!hasGames) {
+    elements.gameListLoadMoreState.textContent = "";
+  } else if (canLoadMoreGames()) {
+    elements.gameListLoadMoreState.textContent = "Mostrate " + renderedGames.length + " di " + state.gameList.length + " partite. Scorri per caricarne altre.";
+  } else {
+    elements.gameListLoadMoreState.textContent = "Tutte le " + state.gameList.length + " partite sono visibili.";
+  }
 
   elements.gameSessionDetails.innerHTML = selected
     ? '<div class="session-detail-hero">' +
@@ -213,6 +250,51 @@ function render() {
     : '<div class="session-empty-copy">Seleziona una partita per vedere lo stato corrente, la prontezza operativa e aprirla nel tabellone di gioco.</div>';
 
   elements.openGameButton.disabled = !selected;
+}
+
+function resetVisibleGameCount() {
+  state.visibleGameCount = Math.min(state.gameList.length, VISIBLE_GAMES_BATCH_SIZE);
+}
+
+function loadMoreGames() {
+  if (!canLoadMoreGames()) {
+    return false;
+  }
+
+  state.visibleGameCount = Math.min(state.gameList.length, state.visibleGameCount + VISIBLE_GAMES_BATCH_SIZE);
+  render();
+  setupInfiniteScroll();
+  return true;
+}
+
+function setupInfiniteScroll() {
+  if (!elements.gameListLoadMoreState) {
+    return;
+  }
+
+  if (gameListObserver) {
+    gameListObserver.disconnect();
+    gameListObserver = null;
+  }
+
+  if (!canLoadMoreGames() || typeof IntersectionObserver !== "function") {
+    return;
+  }
+
+  gameListObserver = new IntersectionObserver((entries) => {
+    const entry = entries[0];
+    if (!entry || !entry.isIntersecting) {
+      return;
+    }
+
+    loadMoreGames();
+  }, {
+    root: null,
+    rootMargin: "0px 0px 240px 0px",
+    threshold: 0.1
+  });
+
+  gameListObserver.observe(elements.gameListLoadMoreState);
 }
 
 async function send(path, body) {
@@ -248,6 +330,7 @@ async function loadGameList(options = {}) {
     }
 
     state.gameList = data.games || [];
+    resetVisibleGameCount();
     state.currentGameId = data.activeGameId || null;
     if (!state.selectedGameId || !state.gameList.some((game) => game.id === state.selectedGameId)) {
       updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
@@ -255,12 +338,14 @@ async function loadGameList(options = {}) {
     state.gameListState = state.gameList.length ? "ready" : "empty";
   } catch (error) {
     state.gameList = [];
+    resetVisibleGameCount();
     state.gameListState = "error";
     state.gameListError = error.message || "Impossibile caricare le partite.";
   }
 
   if (renderOnChange) {
     render();
+    setupInfiniteScroll();
   }
 }
 
@@ -271,11 +356,13 @@ function navigateToGameRoute(gameId) {
 async function openGameById(gameId) {
   const data = await send("/api/games/open", { gameId });
   state.gameList = data.games || [];
+  resetVisibleGameCount();
   state.currentGameId = data.activeGameId || null;
   state.currentGameName = data.game?.name || null;
   updateGameSelection(state.currentGameId);
   state.gameListState = state.gameList.length ? "ready" : "empty";
   render();
+  setupInfiniteScroll();
   navigateToGameRoute(gameId);
 }
 
@@ -376,6 +463,7 @@ await Promise.all([
   restoreSession({ renderOnChange: false })
 ]);
 render();
+setupInfiniteScroll();
 
 if (elements.headerLoginForm) {
   elements.headerLoginForm.addEventListener("submit", async (event) => {
