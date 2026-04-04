@@ -24,6 +24,15 @@ const elements = {
   selectedGameStatus: document.querySelector("#selected-game-status")
 };
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function renderNavAvatar(username) {
   const avatar = document.querySelector("#nav-avatar");
   if (!avatar) {
@@ -132,7 +141,7 @@ function render() {
     .map((game) => 
       '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
         '<span class="session-primary">' +
-          '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + game.name + '</span>' +
+          '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + escapeHtml(game.name) + '</span>' +
           '<span class="session-sub">Sessione ' + game.id.slice(0, 8) + '</span>' +
         '</span>' +
         '<span class="session-cell-muted">' + game.id + '</span>' +
@@ -165,16 +174,16 @@ function render() {
   elements.gameSessionDetails.innerHTML = selected
     ? '<div class="session-detail-hero">' +
         '<p class="session-detail-kicker">Sessione selezionata</p>' +
-        '<h4 class="session-detail-title">' + selected.name + '</h4>' +
+        '<h4 class="session-detail-title">' + escapeHtml(selected.name) + '</h4>' +
         '<p class="session-detail-copy">' + readinessLabel(selected) + '. Stato corrente: ' + phaseLabel(selected.phase) + '.</p>' +
       '</div>' +
       '<div class="session-detail-grid">' +
-        '<div class="session-detail-item"><span>Nome</span><strong>' + selected.name + '</strong></div>' +
+        '<div class="session-detail-item"><span>Nome</span><strong>' + escapeHtml(selected.name) + '</strong></div>' +
         '<div class="session-detail-item"><span>ID</span><strong>' + selected.id + '</strong></div>' +
         '<div class="session-detail-item"><span>Stato</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
         '<div class="session-detail-item"><span>Giocatori presenti</span><strong>' + selected.playerCount + '/4</strong></div>' +
         '<div class="session-detail-item"><span>Giocatori configurati</span><strong>' + (selected.totalPlayers || 'n/d') + '</strong></div>' +
-        '<div class="session-detail-item"><span>Mappa</span><strong>' + (selected.mapName || selected.mapId || 'Classic Mini') + '</strong></div>' +
+        '<div class="session-detail-item"><span>Mappa</span><strong>' + escapeHtml(selected.mapName || selected.mapId || 'Classic Mini') + '</strong></div>' +
         '<div class="session-detail-item"><span>AI</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
         '<div class="session-detail-item"><span>Ultimo update</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
         '<div class="session-detail-item"><span>Focus</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
