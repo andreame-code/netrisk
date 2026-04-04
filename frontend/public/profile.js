@@ -19,6 +19,12 @@ const elements = {
   gamesCount: document.querySelector("#profile-games-count"),
   gamesEmpty: document.querySelector("#profile-games-empty"),
   gamesList: document.querySelector("#profile-games-list"),
+  profileRankingTitle: document.querySelector("#profile-ranking-title"),
+  profileRankingCopy: document.querySelector("#profile-ranking-copy"),
+  profileMapTitle: document.querySelector("#profile-map-title"),
+  profileMapCopy: document.querySelector("#profile-map-copy"),
+  profileAdvancedTitle: document.querySelector("#profile-advanced-title"),
+  profileAdvancedCopy: document.querySelector("#profile-advanced-copy"),
   profileCommandName: document.querySelector("#profile-command-name"),
   profileCommandStatus: document.querySelector("#profile-command-status"),
   profileCommandFocus: document.querySelector("#profile-command-focus"),
@@ -144,16 +150,29 @@ function renderParticipatingGames(profile) {
 function showProfile(profile) {
   const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
   const focusGame = participatingGames[0] || null;
+  const knownMaps = participatingGames
+    .map((game) => game.mapName || game.mapId)
+    .filter(Boolean);
+  const rankingTitle = profile.winRate == null
+    ? "Recluta"
+    : profile.winRate >= 70
+      ? "Stratega Supremo"
+      : profile.winRate >= 55
+        ? "Comandante d'Armata"
+        : profile.winRate >= 40
+          ? "Ufficiale di Linea"
+          : "Recluta";
+  const momentum = profile.wins - profile.losses;
   elements.profileName.textContent = profile.playerName;
   if (elements.profileSubtitle) {
     elements.profileSubtitle.textContent = profile.hasHistory
       ? "Record operativo delle campagne completate e delle sessioni ancora aperte."
-      : "Nessuna campagna registrata per questo comandante, ma il profilo e pronto a crescere.";
+      : "Il dossier e' pronto: la prima campagna completera il quadro operativo del comandante.";
   }
   elements.profileHeading.textContent = profile.playerName;
   elements.profileCopy.textContent = profile.hasHistory
-    ? "Una lettura rapida del rendimento complessivo, mantenendo la pagina pronta per espansioni future."
-    : "Il comandante non ha ancora uno storico completo. Avvia o completa una partita per popolare il dossier.";
+    ? "Una lettura rapida del rendimento complessivo, pensata per rientrare subito in partita con il contesto giusto."
+    : "Il comandante non ha ancora uno storico completo. Avvia o completa una partita per aprire il primo dossier operativo.";
   elements.gamesPlayed.textContent = String(profile.gamesPlayed);
   elements.wins.textContent = String(profile.wins);
   elements.losses.textContent = String(profile.losses);
@@ -171,6 +190,20 @@ function showProfile(profile) {
   elements.profileCommandDirectiveNote.textContent = profile.gamesInProgress > 0
     ? `Hai ${profile.gamesInProgress} session${profile.gamesInProgress === 1 ? "e attiva" : "i attive"} pronte da riaprire.`
     : "Crea una nuova partita dalla lobby per iniziare a popolare il record del comandante.";
+  elements.profileRankingTitle.textContent = rankingTitle;
+  elements.profileRankingCopy.textContent = profile.gamesPlayed > 0
+    ? `${profile.wins} vittorie, ${profile.losses} sconfitte e win rate ${profile.winRate == null ? "--" : `${profile.winRate}%`} nel dossier corrente.`
+    : "Completa almeno una campagna per assegnare il primo grado operativo.";
+  elements.profileMapTitle.textContent = knownMaps[0] || "Nessuna mappa osservata";
+  elements.profileMapCopy.textContent = knownMaps.length
+    ? `Fronti tracciati nel profilo: ${knownMaps.join(", ")}.`
+    : "Apri o completa una partita per registrare il primo fronte nel dossier mappe.";
+  elements.profileAdvancedTitle.textContent = profile.gamesPlayed > 0
+    ? `Momentum ${momentum >= 0 ? "+" : ""}${momentum}`
+    : "Quadro operativo";
+  elements.profileAdvancedCopy.textContent = profile.gamesPlayed > 0
+    ? `${profile.gamesInProgress} front${profile.gamesInProgress === 1 ? "e aperto" : "i aperti"} e ${profile.gamesPlayed} campagne registrate nel dossier.`
+    : "Il riepilogo avanzato mostrera il ritmo di campagna non appena saranno registrati i primi risultati.";
   renderParticipatingGames(profile);
 
   if (!profile.hasHistory) {
