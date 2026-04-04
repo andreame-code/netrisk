@@ -1,0 +1,60 @@
+const { test, expect } = require("@playwright/test");
+const { uniqueUser } = require("../support/game-helpers");
+
+test("profile page lists participating games and opens the selected game route", async ({ page }) => {
+  const username = uniqueUser("profile_games");
+  const password = "secret123";
+
+  const registerResponse = await page.request.post("/api/auth/register", {
+    data: { username, password }
+  });
+  await expect(registerResponse.ok()).toBeTruthy();
+
+  const loginResponse = await page.request.post("/api/auth/login", {
+    data: { username, password }
+  });
+  await expect(loginResponse.ok()).toBeTruthy();
+  const loginPayload = await loginResponse.json();
+  const sessionToken = loginPayload.sessionToken;
+  const gameName = `Profilo partita ${Date.now().toString(36).slice(-4)}`;
+
+  const createGameResponse = await page.request.post("/api/games", {
+    headers: { "x-session-token": sessionToken || "" },
+    data: {
+      name: gameName,
+      mapId: "world-classic",
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(createGameResponse.ok()).toBeTruthy();
+  const createdGame = await createGameResponse.json();
+
+  await page.addInitScript((storedSessionToken) => {
+    window.localStorage.setItem("frontline-session-token", storedSessionToken);
+  }, sessionToken);
+
+  await page.goto("/profile.html");
+
+  await expect(page.getByTestId("player-profile-shell")).toBeVisible();
+  await expect(page.locator("#profile-feedback")).toBeHidden();
+  await expect(page.locator("#profile-content")).not.toHaveAttribute("hidden", "");
+  await expect(page.locator("#metric-in-progress")).toContainText("1");
+  await expect(page.locator("#profile-games-count")).toContainText("1 attiva");
+
+  const gameRow = page.locator("[data-open-game-id='" + createdGame.game.id + "']");
+  await expect(gameRow).toBeVisible();
+  await expect(gameRow).toContainText(gameName);
+  await expect(gameRow).toContainText("World Classic");
+  await expect(gameRow).toContainText("Lobby");
+  await expect(gameRow).toContainText("/2 giocatori");
+
+  await gameRow.click();
+
+  await page.waitForURL("**/game/" + createdGame.game.id);
+  await expect(page.locator("#game-status")).toContainText(gameName);
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic");
+});
