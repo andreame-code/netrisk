@@ -30,7 +30,7 @@ test("current player can fortify once and pass the turn to the next player", asy
 
   const attackPair = await findAttackPair(firstPage, firstUser);
   const reinforcementCount = await getReinforcementCount(firstPage);
-  const reinforceButton = firstPage.getByRole("button", { name: "+1 armata" });
+  const reinforceButton = firstPage.getByRole("button", { name: "Aggiungi" });
 
   for (let index = 0; index < reinforcementCount; index += 1) {
     await reinforceButton.click();
@@ -63,7 +63,7 @@ test("current player can fortify once and pass the turn to the next player", asy
   await firstPage.locator("#end-turn-button").click();
 
   await expect(secondPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
-  await expect(secondPage.getByRole("button", { name: "+1 armata" })).toBeEnabled();
+  await expect(secondPage.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
   await expect(firstPage.getByText(/^Osservazione$/i)).toBeVisible({ timeout: 10000 });
 
   await firstContext.close();

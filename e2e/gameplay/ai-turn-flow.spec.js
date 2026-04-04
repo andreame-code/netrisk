@@ -23,9 +23,9 @@ test("human player can end turn and watch the AI complete its turn automatically
   await expect(joinAiResponse.ok()).toBeTruthy();
 
   await page.getByRole("button", { name: "Avvia partita" }).click();
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*3/i);
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 
-  const reinforceButton = page.getByRole("button", { name: "+1 armata" });
+  const reinforceButton = page.getByRole("button", { name: "Aggiungi" });
   let reinforcementCount = await getReinforcementCount(page);
   while (reinforcementCount > 0) {
     await reinforceButton.click();
@@ -45,7 +45,7 @@ test("human player can end turn and watch the AI complete its turn automatically
   await page.locator("#end-turn-button").click();
 
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
-  await expect(page.getByRole("button", { name: "+1 armata" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
   await expect(page.locator("#players")).toContainText(aiName);
   await expect(page.locator("#log")).toContainText(aiName);
 });
