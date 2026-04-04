@@ -7,10 +7,64 @@ function readableMapName(mapId) {
   return map ? map.name : (mapId || null);
 }
 
-function summarizeParticipatingGame(entry) {
+function territoriesOwnedBy(entry, playerId) {
+  if (!playerId || !entry?.state?.territories) {
+    return 0;
+  }
+
+  return Object.values(entry.state.territories).filter((territory) => territory?.ownerId === playerId).length;
+}
+
+function statusLabelForPlayer(entry, player, territoryCount) {
+  if (!player) {
+    return "Profilo non collegato";
+  }
+
+  if (entry?.state?.phase === "lobby") {
+    return "In attesa avvio";
+  }
+
+  if (entry?.state?.phase === "finished") {
+    return entry.state.winnerId === player.id ? "Vittoria" : "Sconfitta";
+  }
+
+  return territoryCount > 0 ? "Operativo" : "Eliminato";
+}
+
+function focusLabelForPlayer(entry, player) {
+  if (!player) {
+    return "Non assegnato";
+  }
+
+  if (entry?.state?.phase !== "active") {
+    return "Lobby";
+  }
+
+  return entry.state.players[entry.state.currentTurnIndex]?.id === player.id ? "Tocca a te" : "In attesa";
+}
+
+function turnPhaseLabel(turnPhase) {
+  if (turnPhase === "reinforcement") {
+    return "Rinforzi";
+  }
+  if (turnPhase === "attack") {
+    return "Attacco";
+  }
+  if (turnPhase === "fortify") {
+    return "Fortifica";
+  }
+  return "Lobby";
+}
+
+function summarizeParticipatingGame(entry, username) {
   const config = entry?.state?.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
   const totalPlayers = Number.isInteger(config?.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
+  const player = Array.isArray(entry?.state?.players)
+    ? entry.state.players.find((candidate) => candidate?.name === username)
+    : null;
+  const territoryCount = territoriesOwnedBy(entry, player?.id);
+  const cardCount = player?.id && Array.isArray(entry?.state?.hands?.[player.id]) ? entry.state.hands[player.id].length : 0;
 
   return {
     id: entry.id,
@@ -19,7 +73,15 @@ function summarizeParticipatingGame(entry) {
     playerCount: Array.isArray(entry?.state?.players) ? entry.state.players.length : 0,
     totalPlayers: totalPlayers || null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
-    updatedAt: entry.updatedAt
+    updatedAt: entry.updatedAt,
+    myLobby: {
+      playerName: player?.name || username,
+      statusLabel: statusLabelForPlayer(entry, player, territoryCount),
+      focusLabel: focusLabelForPlayer(entry, player),
+      turnPhaseLabel: turnPhaseLabel(entry?.state?.turnPhase),
+      territoryCount,
+      cardCount
+    }
   };
 }
 
@@ -61,7 +123,7 @@ function createPlayerProfileStore(options = {}) {
       participatingGames: gamesInProgress
         .slice()
         .sort((left, right) => String(right?.updatedAt || "").localeCompare(String(left?.updatedAt || "")))
-        .map(summarizeParticipatingGame),
+        .map((entry) => summarizeParticipatingGame(entry, normalizedUsername)),
       winRate,
       hasHistory: relevantGames.length > 0,
       placeholders: {

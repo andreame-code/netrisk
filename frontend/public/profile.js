@@ -104,18 +104,35 @@ function renderParticipatingGames(profile) {
   elements.gamesEmpty.hidden = true;
   elements.gamesList.hidden = false;
   elements.gamesList.innerHTML = participatingGames
-    .map((game) =>
+    .map((game) => {
+      const lobby = game.myLobby || {};
+      return (
       `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
         `<span class="profile-game-primary">` +
+          `<span class="profile-game-kicker">Partita</span>` +
           `<span class="profile-game-name">${escapeHtml(game.name)}</span>` +
-          `<span class="profile-game-sub">Sessione ${escapeHtml(game.id.slice(0, 8))}</span>` +
+          `<span class="profile-game-sub">ID ${escapeHtml(game.id)}</span>` +
         `</span>` +
-        `<span class="badge">${phaseLabel(game.phase)}</span>` +
-        `<span class="profile-game-meta">${escapeHtml(game.mapName || "Mappa non definita")}</span>` +
-        `<span class="profile-game-meta">${game.playerCount}/${game.totalPlayers || "n/d"} giocatori</span>` +
-        `<span class="profile-game-meta">Aggiornata ${formatUpdatedTime(game.updatedAt)}</span>` +
+        `<span class="profile-game-meta-row">` +
+          `<span class="badge">${phaseLabel(game.phase)}</span>` +
+          `<span class="profile-game-meta">${escapeHtml(game.mapName || "Mappa non definita")}</span>` +
+          `<span class="profile-game-meta">${game.playerCount}/${game.totalPlayers || "n/d"} giocatori</span>` +
+          `<span class="profile-game-meta">Aggiornata ${formatUpdatedTime(game.updatedAt)}</span>` +
+        `</span>` +
+        `<span class="profile-mini-lobby" aria-label="Mini lobby personale">` +
+          `<span class="profile-mini-lobby-title">Mini lobby personale</span>` +
+          `<span class="profile-mini-lobby-grid">` +
+            `<span class="profile-mini-lobby-item"><span>Comandante</span><strong>${escapeHtml(lobby.playerName || profile.playerName)}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>Stato</span><strong>${escapeHtml(lobby.statusLabel || "n/d")}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>Focus</span><strong>${escapeHtml(lobby.focusLabel || "n/d")}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>Fase</span><strong>${escapeHtml(lobby.turnPhaseLabel || "Lobby")}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>Territori</span><strong>${Number(lobby.territoryCount || 0)}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>Carte</span><strong>${Number(lobby.cardCount || 0)}</strong></span>` +
+          `</span>` +
+        `</span>` +
       `</button>`
-    )
+      );
+    })
     .join("");
 }
 
