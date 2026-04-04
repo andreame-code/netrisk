@@ -13,6 +13,7 @@ const state = {
   selectedAttackFromId: null,
   selectedAttackToId: null,
   selectedAttackDiceCount: "3",
+  attackBanzaiInFlight: false,
   selectedFortifyFromId: null,
   selectedFortifyToId: null,
   tradeError: "",
@@ -120,6 +121,7 @@ const elements = {
   attackTo: document.querySelector("#attack-to"),
   attackDice: document.querySelector("#attack-dice"),
   attackButton: document.querySelector("#attack-button"),
+  attackBanzaiButton: document.querySelector("#attack-banzai-button"),
   conquestGroup: document.querySelector("#conquest-group"),
   conquestArmies: document.querySelector("#conquest-armies"),
   conquestButton: document.querySelector("#conquest-button"),
@@ -341,6 +343,34 @@ function territoryOptionLabel(territory) {
   return `${territory.name} (${territory.armies})`;
 }
 
+function selectedAttackContext() {
+  const fromId = elements.attackFrom?.value || "";
+  const toId = elements.attackTo?.value || "";
+  const from = territoryById(fromId);
+  const to = territoryById(toId);
+  return { fromId, toId, from, to };
+}
+
+function normalizedAttackDiceValue() {
+  const { from } = selectedAttackContext();
+  if (!from) {
+    return null;
+  }
+
+  const diceRuleSet = currentDiceRuleSet();
+  const maxAttackDice = Math.max(0, Math.min(diceRuleSet.attackerMaxDice || 3, from.armies - 1));
+  if (maxAttackDice < 1) {
+    return null;
+  }
+
+  const selectedDice = Number.parseInt(elements.attackDice?.value || "", 10);
+  if (!Number.isInteger(selectedDice) || selectedDice < 1) {
+    return maxAttackDice;
+  }
+
+  return Math.min(selectedDice, maxAttackDice);
+}
+
 function normalizedReinforcementAmount() {
   const rawValue = Number.parseInt(elements.reinforceAmount?.value || "1", 10);
   const maxAllowed = Math.max(1, Number(state.snapshot?.reinforcementPool || 1));
@@ -369,6 +399,62 @@ async function applyReinforcements(times) {
 
   state.snapshot = latestState;
   render();
+}
+
+async function executeAttack(fromId, toId, attackDice) {
+  const data = await send("/api/action", {
+    ...currentGamePayload(),
+    playerId: state.playerId,
+    type: "attack",
+    fromId,
+    toId,
+    attackDice,
+    expectedVersion: currentExpectedVersion()
+  });
+  state.snapshot = data.state;
+  if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+    elements.conquestArmies.value = "";
+  }
+  render();
+  return data.state;
+}
+
+async function runBanzaiAttack() {
+  const initialContext = selectedAttackContext();
+  if (!initialContext.fromId || !initialContext.toId) {
+    return;
+  }
+
+  state.attackBanzaiInFlight = true;
+  render();
+
+  try {
+    while (true) {
+      const { fromId, toId, from, to } = selectedAttackContext();
+      if (!fromId || !toId || !from || !to) {
+        break;
+      }
+
+      if (from.armies <= 1 || to.ownerId === state.playerId || state.snapshot?.pendingConquest) {
+        break;
+      }
+
+      const attackDice = normalizedAttackDiceValue();
+      if (!attackDice) {
+        break;
+      }
+
+      const nextState = await executeAttack(fromId, toId, attackDice);
+      const updatedFrom = nextState?.map?.find((territory) => territory.id === fromId) || null;
+      const updatedTo = nextState?.map?.find((territory) => territory.id === toId) || null;
+      if (!updatedFrom || updatedFrom.armies <= 1 || nextState?.pendingConquest || updatedTo?.ownerId === state.playerId) {
+        break;
+      }
+    }
+  } finally {
+    state.attackBanzaiInFlight = false;
+    render();
+  }
 }
 
 function formatUpdatedTime(value) {
@@ -866,7 +952,11 @@ function render() {
   if (elements.reinforceMultiButton) {
     elements.reinforceMultiButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
   }
-  elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
+  elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
+  if (elements.attackBanzaiButton) {
+    elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
+    elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? "Banzai..." : "Banzai";
+  }
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
   elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
@@ -1366,24 +1456,29 @@ elements.map.addEventListener("click", (event) => {
 
 elements.attackButton.addEventListener("click", async () => {
   try {
-    const data = await send("/api/action", {
-      ...currentGamePayload(),
-      playerId: state.playerId,
-      type: "attack",
-      fromId: elements.attackFrom.value,
-      toId: elements.attackTo.value,
-      attackDice: Number(elements.attackDice.value),
-      expectedVersion: currentExpectedVersion()
-    });
-    state.snapshot = data.state;
-    if (!state.snapshot.pendingConquest && elements.conquestArmies) {
-      elements.conquestArmies.value = "";
-    }
-    render();
+    await executeAttack(
+      elements.attackFrom.value,
+      elements.attackTo.value,
+      Number(elements.attackDice.value)
+    );
   } catch (error) {
     alert(error.message);
   }
 });
+
+if (elements.attackBanzaiButton) {
+  elements.attackBanzaiButton.addEventListener("click", async () => {
+    if (state.attackBanzaiInFlight) {
+      return;
+    }
+
+    try {
+      await runBanzaiAttack();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
 
 elements.conquestButton.addEventListener("click", async () => {
   try {
