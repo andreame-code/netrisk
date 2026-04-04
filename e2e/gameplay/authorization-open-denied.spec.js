@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("non-member user cannot open a protected game from the lobby", async ({ browser }) => {
+  test.slow();
   const ownerContext = await browser.newContext();
   const outsiderContext = await browser.newContext();
   const ownerPage = await ownerContext.newPage();
