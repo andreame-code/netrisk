@@ -93,6 +93,22 @@ function selectedGame() {
   return state.gameList.find((game) => game.id === selectedId) || null;
 }
 
+function canJoinGame(game) {
+  if (!game || !state.user) {
+    return false;
+  }
+
+  if (game.phase !== "lobby") {
+    return false;
+  }
+
+  const maxPlayers = Number.isInteger(game.totalPlayers) && game.totalPlayers > 0
+    ? game.totalPlayers
+    : 4;
+
+  return game.playerCount < maxPlayers;
+}
+
 function updateGameSelection(gameId) {
   state.selectedGameId = gameId || null;
 }
@@ -189,7 +205,10 @@ function render() {
         '<div class="session-detail-item"><span>Focus</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
       '</div>' +
       '<div class="session-detail-note">La Lobby gestisce creazione, selezione e apertura. Il tabellone Game resta dedicato al comando della partita attiva.</div>' +
-      '<div class="session-detail-actions"><button type="button" id="open-selected-inline">Apri nel teatro di guerra</button></div>'
+      '<div class="session-detail-actions">' +
+        '<button type="button" id="open-selected-inline">Apri nel teatro di guerra</button>' +
+        (canJoinGame(selected) ? '<button type="button" id="join-selected-inline" class="ghost-button">Unisciti e apri</button>' : '') +
+      '</div>'
     : '<div class="session-empty-copy">Seleziona una partita per vedere lo stato corrente, la prontezza operativa e aprirla nel tabellone di gioco.</div>';
 
   elements.openGameButton.disabled = !selected;
@@ -275,6 +294,23 @@ async function handleOpenSelectedGame() {
   }
 }
 
+async function handleJoinSelectedGame() {
+  const selected = selectedGame();
+  if (!selected || !canJoinGame(selected)) {
+    return;
+  }
+
+  try {
+    await send("/api/join", { gameId: selected.id });
+    await openGameById(selected.id);
+  } catch (error) {
+    state.gameListState = "error";
+    state.gameListError = error.message;
+    render();
+    alert(error.message);
+  }
+}
+
 elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
 elements.gameSessionList.addEventListener("click", async (event) => {
   const gameNameTrigger = event.target.closest("[data-open-game-id]");
@@ -300,6 +336,12 @@ elements.gameSessionList.addEventListener("click", async (event) => {
   render();
 });
 elements.gameSessionDetails.addEventListener("click", (event) => {
+  const joinTrigger = event.target.closest("#join-selected-inline");
+  if (joinTrigger) {
+    handleJoinSelectedGame();
+    return;
+  }
+
   const trigger = event.target.closest("#open-selected-inline");
   if (!trigger) {
     return;
