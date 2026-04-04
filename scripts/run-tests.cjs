@@ -2242,6 +2242,102 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
   });
 });
 
+register("API games open riprende automaticamente una partita salvata sul turno AI", async () => {
+  await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("resume_ai_owner"));
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Resume AI Match" })
+    });
+    assert.equal(created.status, 201);
+
+    const joinHuman = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+    });
+    assert.equal(joinHuman.status, 200);
+    const humanJoinPayload = await joinHuman.json();
+
+    const joinAi = await fetch(baseUrl + "/api/ai/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "CPU Resume" })
+    });
+    assert.equal(joinAi.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+    let currentState = (await startResponse.json()).state;
+
+    const ownedTerritoryId = currentState.map.find((territory) => territory.ownerId === humanJoinPayload.playerId).id;
+
+    while (currentState.reinforcementPool > 0) {
+      const reinforceResponse = await fetch(baseUrl + "/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+        body: JSON.stringify({
+          sessionToken: ownerSession.sessionToken,
+          playerId: humanJoinPayload.playerId,
+          type: "reinforce",
+          territoryId: ownedTerritoryId
+        })
+      });
+      assert.equal(reinforceResponse.status, 200);
+      currentState = (await reinforceResponse.json()).state;
+    }
+
+    const toFortify = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({
+        sessionToken: ownerSession.sessionToken,
+        playerId: humanJoinPayload.playerId,
+        type: "endTurn"
+      })
+    });
+    assert.equal(toFortify.status, 200);
+
+    const finishTurn = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      body: JSON.stringify({
+        sessionToken: ownerSession.sessionToken,
+        playerId: humanJoinPayload.playerId,
+        type: "endTurn"
+      })
+    });
+    assert.equal(finishTurn.status, 200);
+
+    const stateDuringAiTurn = await fetch(baseUrl + "/api/state", {
+      headers: { "x-session-token": ownerSession.sessionToken }
+    });
+    assert.equal(stateDuringAiTurn.status, 200);
+    const resumedPayload = await stateDuringAiTurn.json();
+
+    assert.equal(resumedPayload.currentPlayerId, humanJoinPayload.playerId);
+    assert.equal(resumedPayload.turnPhase, "reinforcement");
+    assert.equal(resumedPayload.reinforcementPool >= 3, true);
+    assert.equal(resumedPayload.log.some((line) => line.indexOf("CPU Resume") !== -1), true);
+
+    const reopenResponse = await fetch(baseUrl + "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ gameId: resumedPayload.gameId })
+    });
+    assert.equal(reopenResponse.status, 200);
+    const reopenPayload = await reopenResponse.json();
+
+    assert.equal(reopenPayload.state.currentPlayerId, humanJoinPayload.playerId);
+    assert.equal(reopenPayload.state.turnPhase, "reinforcement");
+  });
+});
+
 register("API games open consente all'admin di aprire una partita protetta altrui", async () => {
   await withServer(async (baseUrl, context) => {
     const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("owner_admin_open"));
@@ -2533,7 +2629,6 @@ async function run() {
 }
 
 run();
-
 
 
 
