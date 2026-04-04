@@ -48,9 +48,14 @@ test("profile page lists participating games and opens the selected game route",
   const gameRow = page.locator("[data-open-game-id='" + createdGame.game.id + "']");
   await expect(gameRow).toBeVisible();
   await expect(gameRow).toContainText(gameName);
+  await expect(gameRow).toContainText(`ID ${createdGame.game.id}`);
   await expect(gameRow).toContainText("World Classic");
   await expect(gameRow).toContainText("Lobby");
   await expect(gameRow).toContainText("/2 giocatori");
+  await expect(gameRow).toContainText("Mini lobby personale");
+  await expect(gameRow).toContainText(username);
+  await expect(gameRow).toContainText("In attesa avvio");
+  await expect(gameRow).toContainText("Lobby");
 
   await gameRow.click();
 
