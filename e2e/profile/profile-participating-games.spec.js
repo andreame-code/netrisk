@@ -14,12 +14,12 @@ test("profile page lists participating games and opens the selected game route",
     data: { username, password }
   });
   await expect(loginResponse.ok()).toBeTruthy();
-  const loginPayload = await loginResponse.json();
-  const sessionToken = loginPayload.sessionToken;
+  const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
+  expect(sessionToken).toBeTruthy();
   const gameName = `Profilo partita ${Date.now().toString(36).slice(-4)}`;
 
   const createGameResponse = await page.request.post("/api/games", {
-    headers: { "x-session-token": sessionToken || "" },
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken || "")}` },
     data: {
       name: gameName,
       mapId: "world-classic",
@@ -33,9 +33,13 @@ test("profile page lists participating games and opens the selected game route",
   await expect(createGameResponse.ok()).toBeTruthy();
   const createdGame = await createGameResponse.json();
 
-  await page.addInitScript((storedSessionToken) => {
-    window.localStorage.setItem("frontline-session-token", storedSessionToken);
-  }, sessionToken);
+  await page.context().addCookies([{
+    name: "netrisk_session",
+    value: sessionToken,
+    url: "http://127.0.0.1:3100",
+    httpOnly: true,
+    sameSite: "Lax"
+  }]);
 
   await page.goto("/profile.html");
 

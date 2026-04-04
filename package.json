@@ -8,8 +8,8 @@
     "backup:data": "node scripts/backup-datastore.cjs",
     "backup:check": "node scripts/check-backup.cjs",
     "test": "node scripts/run-tests.cjs",
-    "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots",
+    "test:e2e": "node scripts/run-e2e.cjs",
+    "test:e2e:update": "node scripts/run-e2e.cjs --update-snapshots",
     "test:gameplay": "node scripts/run-gameplay-tests.cjs",
     "test:all": "npm run test && npm run test:gameplay",
     "test:all:e2e": "npm run test && npm run test:gameplay && npm run test:e2e"

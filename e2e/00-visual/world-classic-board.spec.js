@@ -6,9 +6,10 @@ async function openWorldClassicGame(page, suffix) {
   await page.goto("/game.html");
   const owner = uniqueUser(`wcv_${suffix}`);
   await registerAndLogin(page, owner);
-  const sessionToken = await page.evaluate(() => localStorage.getItem("frontline-session-token"));
+  const sessionToken = (await page.context().cookies())
+    .find((cookie) => cookie.name === "netrisk_session")?.value;
   const response = await page.request.post("/api/games", {
-    headers: { "x-session-token": sessionToken || "" },
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken || "")}` },
     data: {
       name: `World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`,
       mapId: "world-classic",

@@ -4,7 +4,6 @@ const state = {
   gameList: [],
   gameListState: "loading",
   gameListError: "",
-  sessionToken: localStorage.getItem("frontline-session-token") || null,
   user: null
 };
 
@@ -109,18 +108,20 @@ function canJoinGame(game) {
   return game.playerCount < maxPlayers;
 }
 
+function gameCapacityLabel(game) {
+  const maxPlayers = Number.isInteger(game?.totalPlayers) && game.totalPlayers > 0
+    ? game.totalPlayers
+    : 4;
+
+  return game.playerCount + "/" + maxPlayers;
+}
+
 function updateGameSelection(gameId) {
   state.selectedGameId = gameId || null;
 }
 
-function setSession(sessionToken, user) {
-  state.sessionToken = sessionToken || null;
+function setSession(user) {
   state.user = user || null;
-  if (state.sessionToken) {
-    localStorage.setItem("frontline-session-token", state.sessionToken);
-  } else {
-    localStorage.removeItem("frontline-session-token");
-  }
 }
 
 async function loginWithCredentials(username, password) {
@@ -134,7 +135,7 @@ async function loginWithCredentials(username, password) {
     throw new Error(data.error || "Accesso non riuscito.");
   }
 
-  setSession(data.sessionToken, data.user);
+  setSession(data.user);
   await loadGameList();
   render();
 }
@@ -162,7 +163,7 @@ function render() {
         '</span>' +
         '<span class="session-cell-muted">' + game.id + '</span>' +
         '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '">' + phaseLabel(game.phase) + '</span>' +
-        '<span class="session-cell-muted">' + game.playerCount + '/4</span>' +
+        '<span class="session-cell-muted">' + gameCapacityLabel(game) + '</span>' +
         '<span class="session-cell-muted">' + formatUpdatedTime(game.updatedAt) + '</span>' +
       '</button>'
     )
@@ -197,7 +198,7 @@ function render() {
         '<div class="session-detail-item"><span>Nome</span><strong>' + escapeHtml(selected.name) + '</strong></div>' +
         '<div class="session-detail-item"><span>ID</span><strong>' + selected.id + '</strong></div>' +
         '<div class="session-detail-item"><span>Stato</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Giocatori presenti</span><strong>' + selected.playerCount + '/4</strong></div>' +
+        '<div class="session-detail-item"><span>Giocatori presenti</span><strong>' + gameCapacityLabel(selected) + '</strong></div>' +
         '<div class="session-detail-item"><span>Giocatori configurati</span><strong>' + (selected.totalPlayers || 'n/d') + '</strong></div>' +
         '<div class="session-detail-item"><span>Mappa</span><strong>' + escapeHtml(selected.mapName || selected.mapId || 'Classic Mini') + '</strong></div>' +
         '<div class="session-detail-item"><span>AI</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
@@ -215,16 +216,11 @@ function render() {
 }
 
 async function send(path, body) {
-  const headers = {
-    "Content-Type": "application/json"
-  };
-  if (state.sessionToken) {
-    headers["x-session-token"] = state.sessionToken;
-  }
-
   const response = await fetch(path, {
     method: "POST",
-    headers,
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(body)
   });
 
@@ -236,10 +232,13 @@ async function send(path, body) {
   return data;
 }
 
-async function loadGameList() {
+async function loadGameList(options = {}) {
+  const renderOnChange = options.renderOnChange !== false;
   state.gameListState = "loading";
   state.gameListError = "";
-  render();
+  if (renderOnChange) {
+    render();
+  }
 
   try {
     const response = await fetch("/api/games");
@@ -260,7 +259,9 @@ async function loadGameList() {
     state.gameListError = error.message || "Impossibile caricare le partite.";
   }
 
-  render();
+  if (renderOnChange) {
+    render();
+  }
 }
 
 function navigateToGameRoute(gameId) {
@@ -350,34 +351,31 @@ elements.gameSessionDetails.addEventListener("click", (event) => {
   handleOpenSelectedGame();
 });
 
-await loadGameList();
-await restoreSession();
-
-async function restoreSession() {
-  if (!state.sessionToken) {
-    render();
-    return;
-  }
-
+async function restoreSession(options = {}) {
+  const renderOnChange = options.renderOnChange !== false;
   try {
-    const response = await fetch("/api/auth/session", {
-      headers: { "x-session-token": state.sessionToken }
-    });
+    const response = await fetch("/api/auth/session");
 
     if (!response.ok) {
       throw new Error("Sessione scaduta");
     }
 
     const data = await response.json();
-    state.user = data.user;
+    setSession(data.user);
   } catch (error) {
-    state.user = null;
-    state.sessionToken = null;
-    localStorage.removeItem("frontline-session-token");
+    setSession(null);
   }
 
-  render();
+  if (renderOnChange) {
+    render();
+  }
 }
+
+await Promise.all([
+  loadGameList({ renderOnChange: false }),
+  restoreSession({ renderOnChange: false })
+]);
+render();
 
 if (elements.headerLoginForm) {
   elements.headerLoginForm.addEventListener("submit", async (event) => {
@@ -399,11 +397,11 @@ if (elements.headerLoginForm) {
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
-    await send("/api/auth/logout", { sessionToken: state.sessionToken });
+    await send("/api/auth/logout", {});
   } catch (error) {
   }
 
-  setSession(null, null);
+  setSession(null);
   render();
 });
 

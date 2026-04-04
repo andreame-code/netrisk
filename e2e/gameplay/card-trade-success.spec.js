@@ -49,10 +49,6 @@ test("game page shows inline success after a valid trade and clears it on resele
     mustTrade: true
   });
 
-  await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
-  });
-
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });

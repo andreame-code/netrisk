@@ -1,8 +1,8 @@
 const state = {
   maps: [],
-  sessionToken: localStorage.getItem("frontline-session-token") || null,
   user: null,
-  creating: false
+  creating: false,
+  sessionReady: false
 };
 
 const elements = {
@@ -12,6 +12,7 @@ const elements = {
   gameName: document.querySelector("#setup-game-name"),
   logoutButton: document.querySelector("#logout-button"),
   map: document.querySelector("#setup-map"),
+  mapDetails: document.querySelector("#setup-map-details"),
   playerSlots: document.querySelector("#setup-player-slots"),
   submit: document.querySelector("#submit-new-game"),
   totalPlayers: document.querySelector("#setup-total-players")
@@ -72,6 +73,37 @@ function setFeedback(message, type = "") {
   elements.feedback.textContent = message || "";
 }
 
+function updateSubmitState() {
+  elements.submit.disabled = state.creating || !state.sessionReady || !state.user;
+}
+
+function selectedMapSummary() {
+  return state.maps.find((map) => map.id === elements.map.value) || null;
+}
+
+function renderMapDetails() {
+  const map = selectedMapSummary();
+  if (!map) {
+    elements.mapDetails.innerHTML = "";
+    return;
+  }
+
+  const bonuses = Array.isArray(map.continentBonuses) ? map.continentBonuses : [];
+  const bonusMarkup = bonuses.map((continent) =>
+    '<li><span>' + continent.name + '</span><strong>+' + continent.bonus + ' · ' + continent.territoryCount + ' territori</strong></li>'
+  ).join("");
+
+  elements.mapDetails.innerHTML =
+    '<div class="map-setup-card-head">' +
+      '<strong>' + map.name + '</strong>' +
+      '<span class="badge">'
+        + map.territoryCount + ' territori · ' + map.continentCount + ' continenti' +
+      '</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">Bonus continente disponibili nella mappa selezionata.</p>' +
+    '<ul class="map-setup-bonus-list">' + bonusMarkup + '</ul>';
+}
+
 function readConfig() {
   const totalPlayers = Number(elements.totalPlayers.value || 2);
   const players = Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]"))
@@ -89,14 +121,9 @@ function readConfig() {
 }
 
 async function send(path, body) {
-  const headers = { "Content-Type": "application/json" };
-  if (state.sessionToken) {
-    headers["x-session-token"] = state.sessionToken;
-  }
-
   const response = await fetch(path, {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
   const data = await response.json();
@@ -115,20 +142,12 @@ async function loadOptions() {
 
   state.maps = data.maps || [];
   elements.map.innerHTML = state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join("");
+  renderMapDetails();
 }
 
 async function restoreSession() {
-  if (!state.sessionToken) {
-    renderNavAvatar();
-    elements.logoutButton.hidden = true;
-    elements.authStatus.textContent = "Configurazione locale pronta.";
-    return;
-  }
-
   try {
-    const response = await fetch("/api/auth/session", {
-      headers: { "x-session-token": state.sessionToken }
-    });
+    const response = await fetch("/api/auth/session");
 
     if (!response.ok) {
       throw new Error("Sessione scaduta");
@@ -138,16 +157,17 @@ async function restoreSession() {
     state.user = data.user;
   } catch (error) {
     state.user = null;
-    state.sessionToken = null;
-    localStorage.removeItem("frontline-session-token");
   }
 
   elements.logoutButton.hidden = !state.user;
   elements.authStatus.textContent = state.user ? "Comandante: " + state.user.username : "Configurazione locale pronta.";
   renderNavAvatar(state.user && state.user.username);
+  state.sessionReady = true;
+  updateSubmitState();
 }
 
 elements.totalPlayers.addEventListener("change", renderSlots);
+elements.map.addEventListener("change", renderMapDetails);
 elements.playerSlots.addEventListener("change", (event) => {
   if (!event.target.matches('[data-role="type"]')) {
     return;
@@ -157,12 +177,16 @@ elements.playerSlots.addEventListener("change", (event) => {
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (state.creating) {
+  if (state.creating || !state.sessionReady) {
+    return;
+  }
+  if (!state.user) {
+    setFeedback("Sessione non valida.", "error");
     return;
   }
 
   state.creating = true;
-  elements.submit.disabled = true;
+  updateSubmitState();
   setFeedback("Creazione partita in corso...");
 
   try {
@@ -177,24 +201,25 @@ elements.form.addEventListener("submit", async (event) => {
     setFeedback(error.message, "error");
   } finally {
     state.creating = false;
-    elements.submit.disabled = false;
+    updateSubmitState();
   }
 });
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
-    await send("/api/auth/logout", { sessionToken: state.sessionToken });
+    await send("/api/auth/logout", {});
   } catch (error) {
   }
 
   state.user = null;
-  state.sessionToken = null;
-  localStorage.removeItem("frontline-session-token");
+  state.sessionReady = true;
   elements.logoutButton.hidden = true;
   elements.authStatus.textContent = "Configurazione locale pronta.";
   renderNavAvatar();
+  updateSubmitState();
 });
 
 await loadOptions();
 renderSlots();
+updateSubmitState();
 await restoreSession();

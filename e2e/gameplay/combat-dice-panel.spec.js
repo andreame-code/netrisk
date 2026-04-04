@@ -89,7 +89,6 @@ test("game page shows the latest combat dice result from public state", async ({
   const currentState = mockState();
 
   await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
     window.localStorage.setItem("frontline-player-id", "p1");
   });
 

@@ -170,12 +170,7 @@ async function loadProfile() {
   let sessionUser = null;
 
   try {
-    const sessionToken = localStorage.getItem("frontline-session-token") || "";
-    const sessionResponse = await fetch("/api/auth/session", {
-      headers: {
-        "x-session-token": sessionToken
-      }
-    });
+    const sessionResponse = await fetch("/api/auth/session");
 
     if (!sessionResponse.ok) {
       throw new Error("Accedi prima di consultare il profilo giocatore.");
@@ -189,11 +184,7 @@ async function loadProfile() {
     elements.authStatus.textContent = "Autenticato come " + session.user.username + ".";
     renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
-    const profileResponse = await fetch("/api/profile", {
-      headers: {
-        "x-session-token": sessionToken
-      }
-    });
+    const profileResponse = await fetch("/api/profile");
 
     if (!profileResponse.ok) {
       const payload = await profileResponse.json();
@@ -257,7 +248,6 @@ if (elements.headerLoginForm) {
         throw new Error(data.error || "Accesso non riuscito.");
       }
 
-      localStorage.setItem("frontline-session-token", data.sessionToken);
       elements.headerAuthPassword.value = "";
       await loadProfile();
     } catch (error) {
@@ -270,9 +260,6 @@ if (elements.headerLoginForm) {
 
 elements.logoutButton.addEventListener("click", async () => {
   profileRequestId += 1;
-  const sessionToken = localStorage.getItem("frontline-session-token") || "";
-
-  localStorage.removeItem("frontline-session-token");
   localStorage.removeItem("frontline-player-id");
   renderAuthArea(null);
   elements.authStatus.textContent = "Sessione terminata.";
@@ -287,7 +274,7 @@ elements.logoutButton.addEventListener("click", async () => {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ sessionToken })
+      body: JSON.stringify({})
     });
   } catch (error) {
   }
