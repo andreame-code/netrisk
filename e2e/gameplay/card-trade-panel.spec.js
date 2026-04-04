@@ -83,7 +83,12 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
 
   await page.goto("/game.html");
 
+  await expect(page.locator("#trade-alert")).toBeVisible();
+  await expect(page.locator("#trade-alert")).toContainText("Scambio obbligatorio");
+  await expect(page.locator("#trade-alert")).toContainText("scambiane 3 per continuare");
   await expect(page.locator("#card-trade-group")).toBeVisible();
+  await expect(page.locator("#card-trade-alert")).toBeVisible();
+  await expect(page.locator("#card-trade-alert")).toContainText("Devi scambiare subito 3 carte prima di poter continuare");
   await expect(page.locator("#card-trade-summary")).toContainText("Carte in mano: 4");
   await expect(page.locator("#card-trade-bonus")).toContainText("Prossimo scambio: +4 rinforzi");
   await expect(page.locator("#card-trade-help")).toContainText("Scambio obbligatorio");
