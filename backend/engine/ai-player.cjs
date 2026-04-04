@@ -6,11 +6,14 @@ const {
   getCurrentPlayer,
   getMapTerritories,
   moveAfterConquest,
+  playerMustTradeCards,
   resolveAttack,
+  tradeCardSet,
   territories,
   territoriesOwnedBy
 } = require("./game-engine.cjs");
 const { secureRandom } = require("../random.cjs");
+const { validateStandardCardSet } = require("../../shared/models.cjs");
 
 
 function listEnemyNeighbors(state, territoryId, playerId) {
@@ -149,6 +152,27 @@ function chooseFortify(state, playerId) {
   return candidates[0] || null;
 }
 
+function chooseTradeSet(state, playerId) {
+  const hand = Array.isArray(state.hands?.[playerId]) ? state.hands[playerId] : [];
+  if (hand.length < 3) {
+    return null;
+  }
+
+  for (let first = 0; first < hand.length - 2; first += 1) {
+    for (let second = first + 1; second < hand.length - 1; second += 1) {
+      for (let third = second + 1; third < hand.length; third += 1) {
+        const candidate = [hand[first], hand[second], hand[third]];
+        const validation = validateStandardCardSet(candidate);
+        if (validation.ok) {
+          return candidate.map((card) => card.id);
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 function runAiTurn(state, options = {}) {
   const random = typeof options.random === "function" ? options.random : secureRandom;
   const player = getCurrentPlayer(state);
@@ -167,6 +191,7 @@ function runAiTurn(state, options = {}) {
   const report = {
     ok: true,
     playerId: player.id,
+    tradedCardSets: [],
     reinforcementTargets: [],
     attacks: [],
     conquestMoves: [],
@@ -197,6 +222,21 @@ function runAiTurn(state, options = {}) {
         return { ok: false, error: move.message, report };
       }
       report.conquestMoves.push({ fromId: pending.fromId, toId: pending.toId, armies: armiesToMove });
+      continue;
+    }
+
+    if (state.turnPhase === TurnPhase.REINFORCEMENT && playerMustTradeCards(state, player.id)) {
+      const cardIds = chooseTradeSet(state, player.id);
+      if (!cardIds) {
+        return { ok: false, error: "AI senza un set di carte valido da scambiare.", report };
+      }
+
+      const trade = tradeCardSet(state, player.id, cardIds);
+      if (!trade.ok) {
+        return { ok: false, error: trade.message, report };
+      }
+
+      report.tradedCardSets.push(cardIds);
       continue;
     }
 
