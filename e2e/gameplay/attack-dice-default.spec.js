@@ -46,7 +46,6 @@ test("attack dice default tracks the maximum allowed for the selected territory"
   const currentState = mockState();
 
   await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
     window.localStorage.setItem("frontline-player-id", "p1");
   });
 

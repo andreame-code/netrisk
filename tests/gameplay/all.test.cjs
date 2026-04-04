@@ -1,6 +1,7 @@
 require("./setup/game-setup.test.cjs");
 require("./turn-flow/turn-flow.test.cjs");
 require("./reinforcement/reinforcement-calculation.test.cjs");
+require("./reinforcement/map-continent-bonuses.test.cjs");
 require("./reinforcement/reinforcement-placement.test.cjs");
 require("./combat/attack-validation.test.cjs");
 require("./combat/combat-resolution.test.cjs");

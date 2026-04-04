@@ -109,6 +109,12 @@ async function fetchGame(app, pathname, options = {}) {
   return (await callApp(app, options.method || "GET", pathname, options.body, options.headers)).payload;
 }
 
+function sessionTokenFromSetCookie(rawSetCookie) {
+  const value = Array.isArray(rawSetCookie) ? rawSetCookie.join("; ") : String(rawSetCookie || "");
+  const match = value.match(/netrisk_session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
 
 async function createAuthenticatedSession(baseUrl, username) {
   const password = "secret";
@@ -125,13 +131,17 @@ async function createAuthenticatedSession(baseUrl, username) {
     body: JSON.stringify({ username, password })
   });
   assert.equal(loginResponse.status, 200);
-  return await loginResponse.json();
+  const payload = await loginResponse.json();
+  return {
+    ...payload,
+    sessionToken: sessionTokenFromSetCookie(loginResponse.headers.get("set-cookie"))
+  };
 }
 
 function authHeaders(sessionToken) {
   return {
     "Content-Type": "application/json",
-    "x-session-token": sessionToken
+    cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
   };
 }
 
@@ -547,6 +557,25 @@ register("resolveAttack usa i dadi richiesti dall'attaccante entro il limite dis
   assert.equal(result.combat.defendDiceCount, 2);
   assert.deepEqual(result.combat.attackerRolls, [6]);
   assert.deepEqual(result.combat.defenderRolls, [2, 1]);
+});
+
+register("listSupportedMaps espone riepiloghi con bonus continente per il setup", () => {
+  const maps = listSupportedMaps();
+  const classicMini = maps.find((map) => map.id === classicMiniMap.id);
+  const middleEarth = maps.find((map) => map.id === middleEarthMap.id);
+  const worldClassic = maps.find((map) => map.id === worldClassicMap.id);
+
+  assert.equal(classicMini.territoryCount, classicMiniMap.territories.length);
+  assert.equal(classicMini.continentCount, classicMiniMap.continents.length);
+  assert.deepEqual(classicMini.continentBonuses.map((continent) => continent.bonus), [1, 2, 1, 1]);
+
+  assert.equal(middleEarth.territoryCount, middleEarthMap.territories.length);
+  assert.equal(middleEarth.continentCount, middleEarthMap.continents.length);
+  assert.deepEqual(middleEarth.continentBonuses.map((continent) => continent.bonus), [2, 3, 4, 3, 2, 2, 3, 2]);
+
+  assert.equal(worldClassic.territoryCount, worldClassicMap.territories.length);
+  assert.equal(worldClassic.continentCount, worldClassicMap.continents.length);
+  assert.deepEqual(worldClassic.continentBonuses.map((continent) => continent.bonus), [5, 2, 5, 3, 7, 2]);
 });
 
 register("resolveAttack rifiuta un numero di dadi oltre il massimo disponibile", () => {
@@ -1400,14 +1429,14 @@ register("API state richiede membership sulla partita protetta", async () => {
     assert.equal(created.status, 201);
 
     const outsiderState = await fetch(baseUrl + "/api/state", {
-      headers: { "x-session-token": outsider.sessionToken }
+      headers: authHeaders(outsider.sessionToken)
     });
     assert.equal(outsiderState.status, 403);
     const outsiderPayload = await outsiderState.json();
     assert.equal(outsiderPayload.code, "MEMBER_ONLY");
 
     const ownerState = await fetch(baseUrl + "/api/state", {
-      headers: { "x-session-token": owner.sessionToken }
+      headers: authHeaders(owner.sessionToken)
     });
     assert.equal(ownerState.status, 200);
   });
@@ -1716,10 +1745,7 @@ register("API game session persists mutations across reopen", async () => {
 
     const joinFirst = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstAuth.sessionToken
-      },
+      headers: authHeaders(firstAuth.sessionToken),
       body: JSON.stringify({ sessionToken: firstAuth.sessionToken })
     });
     assert.equal(joinFirst.status, 200);
@@ -1730,24 +1756,22 @@ register("API game session persists mutations across reopen", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: secondUser, password: "secret" })
     });
-    const secondAuth = await loginSecond.json();
+    const secondAuthPayload = await loginSecond.json();
+    const secondAuth = {
+      ...secondAuthPayload,
+      sessionToken: sessionTokenFromSetCookie(loginSecond.headers.get("set-cookie"))
+    };
 
     const joinSecond = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": secondAuth.sessionToken
-      },
+      headers: authHeaders(secondAuth.sessionToken),
       body: JSON.stringify({ sessionToken: secondAuth.sessionToken })
     });
     assert.equal(joinSecond.status, 201);
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstAuth.sessionToken
-      },
+      headers: authHeaders(firstAuth.sessionToken),
       body: JSON.stringify({ sessionToken: firstAuth.sessionToken, playerId: firstJoinPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
@@ -1757,10 +1781,7 @@ register("API game session persists mutations across reopen", async () => {
 
     const reinforceResponse = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstAuth.sessionToken
-      },
+      headers: authHeaders(firstAuth.sessionToken),
       body: JSON.stringify({
         sessionToken: firstAuth.sessionToken,
         playerId: firstJoinPayload.playerId,
@@ -1905,10 +1926,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
 
     const joinFirst = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstLoginPayload.sessionToken
-      },
+      headers: authHeaders(firstLoginPayload.sessionToken),
       body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken })
     });
     assert.equal(joinFirst.status, 200);
@@ -1919,24 +1937,22 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: secondUsername, password: "secret" })
     });
-    const secondLoginPayload = await loginSecond.json();
+    const secondLoginBody = await loginSecond.json();
+    const secondLoginPayload = {
+      ...secondLoginBody,
+      sessionToken: sessionTokenFromSetCookie(loginSecond.headers.get("set-cookie"))
+    };
 
     const joinSecond = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": secondLoginPayload.sessionToken
-      },
+      headers: authHeaders(secondLoginPayload.sessionToken),
       body: JSON.stringify({ sessionToken: secondLoginPayload.sessionToken })
     });
     assert.equal(joinSecond.status, 201);
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstLoginPayload.sessionToken
-      },
+      headers: authHeaders(firstLoginPayload.sessionToken),
       body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken, playerId: firstJoinPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
@@ -1947,10 +1963,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
 
     const actionResponse = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstLoginPayload.sessionToken
-      },
+      headers: authHeaders(firstLoginPayload.sessionToken),
       body: JSON.stringify({
         sessionToken: firstLoginPayload.sessionToken,
         playerId: firstJoinPayload.playerId,
@@ -1965,10 +1978,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
 
     const staleResponse = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": firstLoginPayload.sessionToken
-      },
+      headers: authHeaders(firstLoginPayload.sessionToken),
       body: JSON.stringify({
         sessionToken: firstLoginPayload.sessionToken,
         playerId: firstJoinPayload.playerId,
@@ -1999,7 +2009,7 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
     });
     assert.equal(joinHuman.status, 200);
@@ -2014,14 +2024,14 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
 
     const logoutResponse = await fetch(baseUrl + "/api/auth/logout", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
     });
     assert.equal(logoutResponse.status, 200);
@@ -2032,7 +2042,11 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
       body: JSON.stringify({ username, password: "secret" })
     });
     assert.equal(reloginResponse.status, 200);
-    const reloginPayload = await reloginResponse.json();
+    const reloginBody = await reloginResponse.json();
+    const reloginPayload = {
+      ...reloginBody,
+      sessionToken: sessionTokenFromSetCookie(reloginResponse.headers.get("set-cookie"))
+    };
 
     const reopened = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
@@ -2198,7 +2212,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      headers: authHeaders(humanSession.sessionToken),
       body: JSON.stringify({ sessionToken: humanSession.sessionToken })
     });
     assert.equal(joinHuman.status, 200);
@@ -2215,7 +2229,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      headers: authHeaders(humanSession.sessionToken),
       body: JSON.stringify({ sessionToken: humanSession.sessionToken, playerId: humanJoinPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
@@ -2228,7 +2242,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     while (currentState.reinforcementPool > 0) {
       const reinforceResponse = await fetch(baseUrl + "/api/action", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+        headers: authHeaders(humanSession.sessionToken),
         body: JSON.stringify({
           sessionToken: humanSession.sessionToken,
           playerId: humanJoinPayload.playerId,
@@ -2242,7 +2256,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
     const toFortify = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      headers: authHeaders(humanSession.sessionToken),
       body: JSON.stringify({
         sessionToken: humanSession.sessionToken,
         playerId: humanJoinPayload.playerId,
@@ -2253,7 +2267,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
     const finishTurn = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": humanSession.sessionToken },
+      headers: authHeaders(humanSession.sessionToken),
       body: JSON.stringify({
         sessionToken: humanSession.sessionToken,
         playerId: humanJoinPayload.playerId,
@@ -2282,7 +2296,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
     });
     assert.equal(joinHuman.status, 200);
@@ -2297,7 +2311,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
@@ -2308,7 +2322,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
     while (currentState.reinforcementPool > 0) {
       const reinforceResponse = await fetch(baseUrl + "/api/action", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+        headers: authHeaders(ownerSession.sessionToken),
         body: JSON.stringify({
           sessionToken: ownerSession.sessionToken,
           playerId: humanJoinPayload.playerId,
@@ -2322,7 +2336,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
 
     const toFortify = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({
         sessionToken: ownerSession.sessionToken,
         playerId: humanJoinPayload.playerId,
@@ -2333,7 +2347,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
 
     const finishTurn = await fetch(baseUrl + "/api/action", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": ownerSession.sessionToken },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({
         sessionToken: ownerSession.sessionToken,
         playerId: humanJoinPayload.playerId,
@@ -2343,7 +2357,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
     assert.equal(finishTurn.status, 200);
 
     const stateDuringAiTurn = await fetch(baseUrl + "/api/state", {
-      headers: { "x-session-token": ownerSession.sessionToken }
+      headers: authHeaders(ownerSession.sessionToken)
     });
     assert.equal(stateDuringAiTurn.status, 200);
     const resumedPayload = await stateDuringAiTurn.json();
@@ -2462,7 +2476,7 @@ register("API profile espone statistiche giocatore aggregate", async () => {
 
     const joinUser = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": userSession.sessionToken },
+      headers: authHeaders(userSession.sessionToken),
       body: JSON.stringify({ sessionToken: userSession.sessionToken })
     });
     const joinUserPayload = await joinUser.json();
@@ -2472,24 +2486,28 @@ register("API profile espone statistiche giocatore aggregate", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: other, password: "secret" })
     });
-    const otherSession = await loginOther.json();
+    const otherSessionBody = await loginOther.json();
+    const otherSession = {
+      ...otherSessionBody,
+      sessionToken: sessionTokenFromSetCookie(loginOther.headers.get("set-cookie"))
+    };
 
     const joinOther = await fetch(baseUrl + "/api/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": otherSession.sessionToken },
+      headers: authHeaders(otherSession.sessionToken),
       body: JSON.stringify({ sessionToken: otherSession.sessionToken })
     });
     assert.equal(joinOther.status, 201);
 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-session-token": userSession.sessionToken },
+      headers: authHeaders(userSession.sessionToken),
       body: JSON.stringify({ sessionToken: userSession.sessionToken, playerId: joinUserPayload.playerId })
     });
     assert.equal(startResponse.status, 200);
 
     const profileResponse = await fetch(baseUrl + "/api/profile", {
-      headers: { "x-session-token": userSession.sessionToken }
+      headers: authHeaders(userSession.sessionToken)
     });
     assert.equal(profileResponse.status, 200);
     const profilePayload = await profileResponse.json();
@@ -2621,14 +2639,15 @@ register("API register + login + join completa il flusso di accesso", async () =
       body: JSON.stringify({ username: unique, password: "secret" })
     });
     assert.equal(loginResponse.status, 200);
-    const loginPayload = await loginResponse.json();
+    const loginBody = await loginResponse.json();
+    const loginPayload = {
+      ...loginBody,
+      sessionToken: sessionTokenFromSetCookie(loginResponse.headers.get("set-cookie"))
+    };
 
     const joinResponse = await fetch(`${baseUrl}/api/join`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-session-token": loginPayload.sessionToken
-      },
+      headers: authHeaders(loginPayload.sessionToken),
       body: JSON.stringify({ sessionToken: loginPayload.sessionToken })
     });
     assert.equal(joinResponse.status, 201);
@@ -2657,13 +2676,3 @@ async function run() {
 }
 
 run();
-
-
-
-
-
-
-
-
-
-

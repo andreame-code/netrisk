@@ -50,10 +50,6 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
     mustTrade: true
   });
 
-  await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
-  });
-
   await page.route("**/api/auth/session", async (route) => {
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });

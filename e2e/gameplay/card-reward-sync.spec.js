@@ -50,7 +50,6 @@ test("game page refreshes player hand after an action updates card rewards", asy
   let stateCalls = 0;
 
   await page.addInitScript(() => {
-    window.localStorage.setItem("frontline-session-token", "session-test");
     window.localStorage.setItem("frontline-player-id", "p1");
   });
 
