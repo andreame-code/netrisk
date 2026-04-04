@@ -34,13 +34,13 @@
         </section>
         <section class="session-browser panel" data-testid="game-lobby-shell">
           <div class="session-browser-head">
-            <div>
-              <p class="eyebrow session-eyebrow">Game Sessions</p>
-              <h2>Lista Partite</h2>
-              <p class="stage-copy">Ogni sessione resta separata e persistita sul backend, pronta a essere riaperta.</p>
+            <div class="session-browser-heading">
+              <p class="eyebrow session-eyebrow">War Room</p>
+              <h2>Lobby di Comando</h2>
+              <p class="stage-copy">Monitora le sessioni, valuta la prontezza operativa e riapri il teatro corretto in pochi tocchi.</p>
             </div>
-            <div class="page-header-actions compact-actions">
-              <a href="/new-game.html" id="create-game-button" class="ghost-button">Crea partita</a>
+            <div class="page-header-actions compact-actions lobby-head-actions">
+              <a href="/new-game.html" id="create-game-button" class="ghost-button lobby-create-button">Crea partita</a>
               <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
             </div>
           </div>
@@ -51,17 +51,36 @@
             <span id="game-status">Nessuna partita attiva</span>
           </div>
 
+          <div class="lobby-command-strip" aria-label="Panoramica lobby">
+            <article class="lobby-command-card lobby-command-card-accent">
+              <span class="lobby-command-label">Sessioni visibili</span>
+              <strong id="lobby-total-games">0</strong>
+              <p>Tutte le partite persistite disponibili nel backend.</p>
+            </article>
+            <article class="lobby-command-card">
+              <span class="lobby-command-label">Pronte al via</span>
+              <strong id="lobby-ready-games">0</strong>
+              <p>Lobby che possono essere avviate senza configurazioni extra.</p>
+            </article>
+            <article class="lobby-command-card">
+              <span class="lobby-command-label">Sessione attiva</span>
+              <strong id="lobby-active-focus">Nessuna</strong>
+              <p id="lobby-focus-note">Apri una partita per continuare dal teatro corrente.</p>
+            </article>
+          </div>
+
           <div class="session-browser-grid">
             <div class="session-list-panel">
               <div class="session-list-header session-row session-row-head">
                 <span>Partita</span>
-                <span>ID</span>
+                <span>Mappa</span>
                 <span>Stato</span>
                 <span>Giocatori</span>
                 <span>Aggiornata</span>
               </div>
               <div id="game-list-state" class="session-feedback">Caricamento sessioni...</div>
               <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
+              <div id="game-list-load-more-state" class="session-list-load-more" aria-live="polite"></div>
             </div>
 
             <aside class="session-detail-panel" data-testid="game-session-details">
