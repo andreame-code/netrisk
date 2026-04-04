@@ -205,7 +205,7 @@ function createApp(options = {}) {
   }
 
   function extractSessionToken(req, body = {}, url = null) {
-    return body.sessionToken || req.headers["x-session-token"] || (url ? url.searchParams.get("sessionToken") : null) || null;
+    return body.sessionToken || req.headers["x-session-token"] || null;
   }
 
   function requireAuth(req, res, body, url = null) {

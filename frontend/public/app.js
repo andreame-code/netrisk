@@ -23,6 +23,19 @@ const state = {
 let pendingRequestedGameId = null;
 let eventsConnection = null;
 let eventsGameId = null;
+let eventsMode = null;
+let snapshotPollTimer = null;
+let snapshotPollInFlight = false;
+let privateStateRefreshInFlight = false;
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function requestedGameIdFromRoute() {
   const pathnameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
@@ -171,12 +184,32 @@ function territoryById(territoryId) {
   return state.snapshot?.map.find((territory) => territory.id === territoryId) || null;
 }
 
+function resolveCurrentPlayer() {
+  if (!state.snapshot?.players?.length) {
+    return null;
+  }
+
+  if (state.playerId) {
+    const byId = state.snapshot.players.find((player) => player.id === state.playerId) || null;
+    if (byId) {
+      return byId;
+    }
+  }
+
+  if (state.user?.username) {
+    return state.snapshot.players.find((player) => player.name === state.user.username) || null;
+  }
+
+  return null;
+}
+
 function isCurrentPlayer() {
-  return state.snapshot?.currentPlayerId === state.playerId;
+  return state.snapshot?.currentPlayerId === resolveCurrentPlayer()?.id;
 }
 
 function myTerritories() {
-  return (state.snapshot?.map || []).filter((territory) => territory.ownerId === state.playerId);
+  const currentPlayer = resolveCurrentPlayer();
+  return (state.snapshot?.map || []).filter((territory) => territory.ownerId === currentPlayer?.id);
 }
 
 function currentExpectedVersion() {
@@ -189,6 +222,57 @@ function currentGamePayload() {
 
 function currentPlayerHand() {
   return Array.isArray(state.snapshot?.playerHand) ? state.snapshot.playerHand : [];
+}
+
+function ensurePrivateStateFresh(currentPlayer) {
+  if (!state.sessionToken || !currentPlayer || privateStateRefreshInFlight) {
+    return;
+  }
+
+  const expectedCardCount = Number.isInteger(currentPlayer.cardCount) ? currentPlayer.cardCount : null;
+  if (expectedCardCount == null || currentPlayerHand().length >= expectedCardCount) {
+    return;
+  }
+
+  privateStateRefreshInFlight = true;
+  setTimeout(async () => {
+    try {
+      await loadState();
+    } catch (error) {
+    } finally {
+      privateStateRefreshInFlight = false;
+    }
+  }, 0);
+}
+
+async function refreshPrivateStateIfNeeded(nextState) {
+  if (!state.sessionToken || !nextState?.players?.length) {
+    return nextState;
+  }
+
+  const currentPlayerId = state.playerId || resolveCurrentPlayer()?.id || null;
+  const currentPlayer = nextState.players.find((player) => player.id === currentPlayerId) || null;
+  const hand = Array.isArray(nextState.playerHand) ? nextState.playerHand : [];
+  if (!currentPlayer || !Number.isInteger(currentPlayer.cardCount) || hand.length >= currentPlayer.cardCount) {
+    return nextState;
+  }
+
+  let latestState = nextState;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      latestState = await fetchLatestStateSnapshot({ includeGameId: false });
+      const latestHand = Array.isArray(latestState.playerHand) ? latestState.playerHand : [];
+      if (latestHand.length >= currentPlayer.cardCount) {
+        return latestState;
+      }
+    } catch (error) {
+      return latestState;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return latestState;
 }
 
 function currentDiceRuleSet() {
@@ -314,7 +398,7 @@ function renderGameSessionBrowser() {
   }
 
   elements.gameList.innerHTML = state.gameList
-    .map((game) => `<option value="${game.id}">${game.name}</option>`)
+    .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name)}</option>`)
     .join("") || '<option value="">Nessuna partita</option>';
 
   if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
@@ -339,7 +423,7 @@ function renderGameSessionBrowser() {
     .map((game) => `
       <button type="button" class="session-row session-row-button${game.id === selectedId ? " is-selected" : ""}" data-game-id="${game.id}">
         <span class="session-primary">
-          <span class="session-name">${game.name}</span>
+          <span class="session-name">${escapeHtml(game.name)}</span>
           <span class="session-sub">Sessione ${game.id.slice(0, 8)}</span>
         </span>
         <span class="session-cell-muted">${game.id}</span>
@@ -354,7 +438,7 @@ function renderGameSessionBrowser() {
   elements.gameSessionDetails.innerHTML = selected
     ? `
       <div class="session-detail-grid">
-        <div class="session-detail-item"><span>Nome</span><strong>${selected.name}</strong></div>
+        <div class="session-detail-item"><span>Nome</span><strong>${escapeHtml(selected.name)}</strong></div>
         <div class="session-detail-item"><span>ID</span><strong>${selected.id}</strong></div>
         <div class="session-detail-item"><span>Stato</span><strong>${phaseLabel(selected.phase)}</strong></div>
         <div class="session-detail-item"><span>Giocatori</span><strong>${selected.playerCount}/4</strong></div>
@@ -422,11 +506,12 @@ function buildGraphMarkup(snapshot) {
           type="button"
           class="${classes}"
           data-territory-id="${territory.id}"
-          title="${territory.name}"
-          aria-label="${territory.name}: ${territory.armies} armate"
+          title="${escapeHtml(territory.name)}"
+          aria-label="${escapeHtml(`${territory.name}: ${territory.armies} armate`)}"
           style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
         >
           <span class="territory-armies">${territory.armies}</span>
+          <span class="visually-hidden">${escapeHtml(owner?.name || "neutrale")}</span>
         </button>
       `;
     })
@@ -437,10 +522,10 @@ function buildGraphMarkup(snapshot) {
       const owner = ownerById(territory.ownerId);
       return `
         <article class="territory-card">
-          <strong>${territory.name}</strong>
-          <div>Controllo: ${owner ? owner.name : "neutrale"}</div>
+          <strong>${escapeHtml(territory.name)}</strong>
+          <div>Controllo: ${escapeHtml(owner ? owner.name : "neutrale")}</div>
           <div>Armate: ${territory.armies}</div>
-          <div>Confini: ${territory.neighbors.join(", ")}</div>
+          <div>Confini: ${escapeHtml(territory.neighbors.join(", "))}</div>
         </article>
       `;
     })
@@ -496,8 +581,12 @@ function render() {
   if (snapshot?.gameId) {
     state.currentGameId = snapshot.gameId;
   }
-  const me = snapshot?.players.find((player) => player.id === state.playerId) || null;
+  const me = resolveCurrentPlayer();
+  if (me && me.id !== state.playerId) {
+    setPlayerIdentity(me.id);
+  }
   const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
+  ensurePrivateStateFresh(me);
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
   const playerHand = currentPlayerHand();
   state.selectedTradeCardIds = state.selectedTradeCardIds.filter((cardId) => playerHand.some((card) => card.id === cardId));
@@ -547,7 +636,7 @@ function render() {
     ? `
       <div>Fase: <strong>${snapshot.phase}</strong></div>
       <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
-      <div>Vincitore: <strong>${winner ? winner.name : "nessuno"}</strong></div>
+      <div>Vincitore: <strong>${escapeHtml(winner ? winner.name : "nessuno")}</strong></div>
     `
     : "<div>Caricamento stato...</div>";
 
@@ -555,7 +644,7 @@ function render() {
     .map(
       (player) => `
         <article class="player-card">
-          <strong>${player.name}</strong>
+          <strong>${escapeHtml(player.name)}</strong>
           <div>Territori: ${player.territoryCount}</div>
           <div>Stato: ${player.eliminated ? "eliminato" : "attivo"}</div>
           <div style="margin-top: 8px; height: 10px; border-radius: 99px; background: ${player.color};"></div>
@@ -596,7 +685,7 @@ function render() {
     attackTargets
       .map((territory) => {
         const owner = ownerById(territory.ownerId);
-        return `<option value="${territory.id}">${territory.name} vs ${owner?.name || "?"} (${territory.armies})</option>`;
+        return `<option value="${territory.id}">${escapeHtml(territory.name)} vs ${escapeHtml(owner?.name || "?")} (${territory.armies})</option>`;
       })
       .join("") || '<option value="">Nessun bersaglio</option>';
 
@@ -645,7 +734,7 @@ function render() {
   }
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
-  elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${entry}</li>`).join("");
+  elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
@@ -749,9 +838,10 @@ function render() {
       : "Login";
 }
 
-async function fetchLatestStateSnapshot() {
+async function fetchLatestStateSnapshot(options = {}) {
+  const includeGameId = options.includeGameId !== false;
   const headers = state.sessionToken ? { "x-session-token": state.sessionToken } : undefined;
-  const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
+  const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
   const response = await fetch("/api/state" + query, { headers });
   const data = await response.json();
   if (!response.ok) {
@@ -868,20 +958,56 @@ async function restoreSession() {
   render();
 }
 
-function connectEvents() {
+function disconnectLiveUpdates() {
   if (eventsConnection) {
     eventsConnection.close();
     eventsConnection = null;
   }
-  const params = new URLSearchParams();
-  if (state.sessionToken) {
-    params.set("sessionToken", state.sessionToken);
+  if (snapshotPollTimer) {
+    clearInterval(snapshotPollTimer);
+    snapshotPollTimer = null;
   }
+  snapshotPollInFlight = false;
+  eventsMode = null;
+}
+
+function startSnapshotPolling() {
+  if (snapshotPollTimer) {
+    clearInterval(snapshotPollTimer);
+  }
+  snapshotPollTimer = setInterval(async () => {
+    if (snapshotPollInFlight) {
+      return;
+    }
+
+    snapshotPollInFlight = true;
+    try {
+      const data = await fetchLatestStateSnapshot();
+      state.snapshot = data;
+      state.currentGameId = data.gameId || state.currentGameId;
+      render();
+    } catch (error) {
+    } finally {
+      snapshotPollInFlight = false;
+    }
+  }, 3000);
+}
+
+function connectEvents() {
+  disconnectLiveUpdates();
+  eventsGameId = state.currentGameId || null;
+  if (state.sessionToken) {
+    eventsMode = "poll";
+    startSnapshotPolling();
+    return;
+  }
+
+  const params = new URLSearchParams();
   if (state.currentGameId) {
     params.set("gameId", state.currentGameId);
   }
   const query = params.toString() ? "?" + params.toString() : "";
-  eventsGameId = state.currentGameId || null;
+  eventsMode = "sse";
   const events = new EventSource("/api/events" + query);
   eventsConnection = events;
   events.onmessage = (event) => {
@@ -889,10 +1015,16 @@ function connectEvents() {
     state.currentGameId = state.snapshot?.gameId || state.currentGameId;
     render();
   };
+  events.onerror = () => {
+    if (eventsConnection === events) {
+      disconnectLiveUpdates();
+    }
+  };
 }
 
 function ensureEventConnection() {
-  if ((state.currentGameId || null) !== eventsGameId) {
+  const nextMode = state.sessionToken ? "poll" : "sse";
+  if ((state.currentGameId || null) !== eventsGameId || eventsMode !== nextMode) {
     connectEvents();
   }
 }
@@ -963,6 +1095,7 @@ async function loginWithCredentials(username, password) {
   await loadGameList();
   await openRequestedGameIfNeeded();
   render();
+  ensureEventConnection();
 }
 
 async function openRequestedGameIfNeeded() {
@@ -1033,6 +1166,7 @@ elements.registerButton.addEventListener("click", async () => {
     await loadGameList();
     await openRequestedGameIfNeeded();
     render();
+    ensureEventConnection();
   } catch (error) {
     alert(error.message);
   }
@@ -1059,6 +1193,7 @@ elements.logoutButton.addEventListener("click", async () => {
   }
 
   setSession(null, null);
+  disconnectLiveUpdates();
   clearPlayerIdentity();
   state.snapshot = null;
   state.currentGameId = null;
@@ -1259,7 +1394,10 @@ elements.endTurnButton.addEventListener("click", async () => {
       type: "endTurn",
       expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = data.state;
+    state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+    if (state.snapshot?.playerId) {
+      setPlayerIdentity(state.snapshot.playerId);
+    }
     render();
   } catch (error) {
     alert(error.message);
@@ -1276,10 +1414,14 @@ if (elements.cardTradeButton) {
         cardIds: state.selectedTradeCardIds,
         expectedVersion: currentExpectedVersion()
       });
+      state.snapshot = data.state || state.snapshot;
       state.selectedTradeCardIds = [];
       state.tradeError = "";
       state.tradeSuccess = `Set valido: +${data.bonus} rinforzi.`;
-      await loadState();
+      render();
+      if (state.sessionToken) {
+        await loadState().catch(() => {});
+      }
     } catch (error) {
       state.tradeSuccess = "";
       state.tradeError = error.message;

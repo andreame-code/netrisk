@@ -39,6 +39,7 @@ test("current player can conquer a territory and move armies after combat", asyn
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
   await firstPage.locator("#attack-from").selectOption(attackPair.fromId);
   await firstPage.locator("#attack-to").selectOption(attackPair.toId);
+  await firstPage.locator("#attack-dice").selectOption("1");
 
   await queueNextAttackRolls(firstPage, 6, 1);
   await firstPage.getByRole("button", { name: "Lancia attacco" }).click();
