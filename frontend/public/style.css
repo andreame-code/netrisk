@@ -1831,6 +1831,19 @@ body[data-app-section="game"] .board-shell {
   padding: 12px;
 }
 
+.game-actions-rail {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-actions-rail .log-section {
+  flex: 1 1 auto;
+}
+
+.surrender-section {
+  margin-top: auto;
+}
+
 .game-map-stage {
   min-width: 0;
 }
