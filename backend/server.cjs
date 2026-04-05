@@ -30,6 +30,14 @@ const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 
+function defaultDbFile() {
+  if (process.env.VERCEL) {
+    return path.join("/tmp", "netrisk.sqlite");
+  }
+
+  return path.join(__dirname, "..", "data", "netrisk.sqlite");
+}
+
 function sendJson(res, statusCode, payload, headers = {}) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
@@ -124,7 +132,7 @@ function createApp(options = {}) {
   let activeGameName = null;
   let nextAttackRolls = null;
   const datastore = createDatastore({
-    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+    dbFile: options.dbFile || defaultDbFile(),
     legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
     legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
