@@ -147,6 +147,7 @@ const elements = {
   combatComparisons: document.querySelector("#combat-comparisons"),
   actionHint: document.querySelector("#action-hint"),
   endTurnButton: document.querySelector("#end-turn-button"),
+  surrenderButton: document.querySelector("#surrender-button"),
   log: document.querySelector("#log")
 };
 
@@ -858,6 +859,7 @@ function render() {
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
   const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
+  const canSurrender = Boolean(me) && snapshot?.phase === "active" && !me.eliminated;
   const pendingConquest = snapshot?.pendingConquest || null;
   const isAuthenticated = Boolean(state.user);
   elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
@@ -962,6 +964,10 @@ function render() {
   elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.textContent = inAttack ? "Vai a fortifica" : "Termina turno";
+  if (elements.surrenderButton) {
+    elements.surrenderButton.hidden = !canSurrender;
+    elements.surrenderButton.disabled = !canSurrender;
+  }
   elements.actionHint.textContent = canInteract
     ? pendingConquest
       ? "Conquista"
@@ -1532,6 +1538,28 @@ elements.endTurnButton.addEventListener("click", async () => {
     alert(error.message);
   }
 });
+
+if (elements.surrenderButton) {
+  elements.surrenderButton.addEventListener("click", async () => {
+    const confirmed = window.confirm("Vuoi davvero arrenderti e abbandonare la partita? Verrai eliminato definitivamente da questa sessione.");
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const data = await send("/api/action", {
+        ...currentGamePayload(),
+        playerId: state.playerId,
+        type: "surrender",
+        expectedVersion: currentExpectedVersion()
+      });
+      state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+      render();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
 
 if (elements.cardTradeButton) {
   elements.cardTradeButton.addEventListener("click", async () => {

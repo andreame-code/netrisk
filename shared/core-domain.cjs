@@ -12,7 +12,9 @@ function createPlayer(input = {}) {
     name: input.name || "",
     color: input.color || "#9aa6b2",
     connected: Boolean(input.connected),
-    isAi: Boolean(input.isAi)
+    isAi: Boolean(input.isAi),
+    linkedUserId: input.linkedUserId || null,
+    surrendered: Boolean(input.surrendered)
   };
 }
 

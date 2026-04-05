@@ -28,7 +28,7 @@ function statusLabelForPlayer(entry, player, territoryCount) {
     return entry.state.winnerId === player.id ? "Vittoria" : "Sconfitta";
   }
 
-  return territoryCount > 0 ? "Operativo" : "Eliminato";
+  return territoryCount > 0 && !player.surrendered ? "Operativo" : "Eliminato";
 }
 
 function focusLabelForPlayer(entry, player) {

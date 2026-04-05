@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const { createInitialState, declareWinnerIfNeeded, getMapTerritories, publicState } = require("../../../backend/engine/game-engine.cjs");
+const { createInitialState, declareWinnerIfNeeded, getMapTerritories, publicState, surrenderPlayer } = require("../../../backend/engine/game-engine.cjs");
 
 function setupLiveState() {
   const state = createInitialState();
@@ -44,6 +44,20 @@ register("declareWinnerIfNeeded does not assign victory while more than one play
   const won = declareWinnerIfNeeded(state);
   assert.equal(won, false);
   assert.equal(state.winnerId, null);
+});
+
+register("surrenderPlayer elimina il giocatore e assegna la vittoria se resta un solo vivo", () => {
+  const state = setupLiveState();
+  state.territories[getMapTerritories(state)[0].id].ownerId = "p2";
+  const ownedBefore = publicState(state).players.find((entry) => entry.id === "p2").territoryCount;
+
+  const result = surrenderPlayer(state, "p2");
+
+  assert.equal(result.ok, true);
+  assert.equal(state.winnerId, "p1");
+  assert.equal(state.phase, "finished");
+  assert.equal(publicState(state).players.find((entry) => entry.id === "p2").eliminated, true);
+  assert.equal(publicState(state).players.find((entry) => entry.id === "p2").territoryCount, ownedBefore);
 });
 
 

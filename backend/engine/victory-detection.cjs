@@ -7,6 +7,10 @@ function territoryCountByPlayer(state, playerId) {
   }, 0);
 }
 
+function isActivePlayer(state, player) {
+  return Boolean(player && !player.surrendered && territoryCountByPlayer(state, player.id) > 0);
+}
+
 function validateState(state) {
   if (!state || typeof state !== "object") {
     throw new Error("Victory detection requires a valid game state.");
@@ -37,7 +41,7 @@ function validateState(state) {
 function detectVictory(state, options = {}) {
   validateState(state);
 
-  const activePlayers = state.players.filter((player) => territoryCountByPlayer(state, player.id) > 0);
+  const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
   if (activePlayers.length === 0) {
     throw new Error("Victory detection found no active players with territories.");
   }
