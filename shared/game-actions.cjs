@@ -3,7 +3,8 @@ const GameAction = Object.freeze({
   START: "start",
   REINFORCE: "reinforce",
   ATTACK: "attack",
-  END_TURN: "endTurn"
+  END_TURN: "endTurn",
+  SURRENDER: "surrender"
 });
 
 module.exports = {

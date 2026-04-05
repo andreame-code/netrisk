@@ -49,3 +49,20 @@ register("detectVictory throws for impossible states with no active players", ()
 
   assert.throws(() => detectVictory(state), /no active players/i);
 });
+
+register("detectVictory ignores surrendered players even if they still own territories", () => {
+  const players = makePlayers(["Alice", "Bob"]);
+  players[1].surrendered = true;
+  const state = makeState({
+    players,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p2", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK
+  });
+
+  const result = detectVictory(state);
+  assert.equal(result.code, "VICTORY_DECLARED");
+  assert.equal(result.victory.winnerId, "p1");
+});

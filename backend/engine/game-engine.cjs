@@ -101,6 +101,10 @@ function territoriesOwnedBy(state, playerId) {
   return getMapTerritories(state).filter((territory) => state.territories[territory.id].ownerId === playerId);
 }
 
+function isPlayerAlive(state, player) {
+  return Boolean(player && !player.surrendered && territoriesOwnedBy(state, player.id).length > 0);
+}
+
 function computeReinforcements(state, playerId) {
   return calculateReinforcements(state, playerId).totalReinforcements;
 }
@@ -236,8 +240,9 @@ function publicState(state) {
       color: player.color,
       connected: player.connected,
       isAi: Boolean(player.isAi),
+      surrendered: Boolean(player.surrendered),
       territoryCount: territoriesOwnedBy(state, player.id).length,
-      eliminated: state.phase !== "lobby" && territoriesOwnedBy(state, player.id).length === 0,
+      eliminated: state.phase !== "lobby" && !isPlayerAlive(state, player),
       cardCount: Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
     })),
     map: getMapTerritories(state).map((territory) => ({
@@ -305,6 +310,7 @@ function startGame(state, random = secureRandom) {
 
   shuffledTerritories.forEach((territoryId, index) => {
     const player = state.players[index % state.players.length];
+    player.surrendered = false;
     state.territories[territoryId] = { ownerId: player.id, armies: 1 };
   });
 
@@ -332,7 +338,7 @@ function advanceTurn(state) {
   for (let step = 0; step < state.players.length; step += 1) {
     nextIndex = (nextIndex + 1) % state.players.length;
     const candidate = state.players[nextIndex];
-    if (territoriesOwnedBy(state, candidate.id).length > 0) {
+    if (isPlayerAlive(state, candidate)) {
       state.currentTurnIndex = nextIndex;
       state.turnPhase = TurnPhase.REINFORCEMENT;
       state.reinforcementPool = computeReinforcements(state, candidate.id);
@@ -698,6 +704,62 @@ function endTurn(state, playerId) {
   return { ok: true, awardedCard };
 }
 
+function surrenderPlayer(state, playerId) {
+  const player = getPlayer(state, playerId);
+
+  if (!player) {
+    return { ok: false, message: "Giocatore non valido." };
+  }
+
+  if (state.phase !== "active") {
+    return { ok: false, message: "Puoi arrenderti solo durante una partita attiva." };
+  }
+
+  if (player.surrendered) {
+    return { ok: false, message: "Il giocatore si e gia arreso." };
+  }
+
+  if (territoriesOwnedBy(state, playerId).length === 0) {
+    return { ok: false, message: "Il giocatore e gia eliminato." };
+  }
+
+  if (Array.isArray(state.hands?.[playerId]) && state.hands[playerId].length > 0) {
+    if (!Array.isArray(state.discardPile)) {
+      state.discardPile = [];
+    }
+    state.discardPile.push(...state.hands[playerId]);
+  }
+  if (state.hands) {
+    state.hands[playerId] = [];
+  }
+
+  player.connected = false;
+  player.surrendered = true;
+  if (getCurrentPlayer(state)?.id === playerId) {
+    state.pendingConquest = null;
+    state.reinforcementPool = 0;
+    state.fortifyUsed = false;
+  }
+
+  const summary = player.name + " si arrende e abbandona la partita.";
+  state.lastAction = {
+    type: GameAction.SURRENDER,
+    summary,
+    playerId
+  };
+  appendLog(state, summary);
+
+  if (declareWinnerIfNeeded(state)) {
+    return { ok: true, eliminatedPlayerId: playerId, winnerId: state.winnerId };
+  }
+
+  if (getCurrentPlayer(state)?.id === playerId) {
+    advanceTurn(state);
+  }
+
+  return { ok: true, eliminatedPlayerId: playerId, winnerId: state.winnerId };
+}
+
 module.exports = {
   GameAction,
   TurnPhase,
@@ -719,6 +781,7 @@ module.exports = {
   publicState,
   resolveAttack,
   awardTurnCardIfEligible,
+  surrenderPlayer,
   startGame,
   territories,
   territoriesOwnedBy,
