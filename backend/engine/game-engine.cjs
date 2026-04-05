@@ -326,7 +326,7 @@ function declareWinnerIfNeeded(state) {
     }
   });
 
-  return result.code === "VICTORY_DECLARED";
+  return state.phase === "finished";
 }
 
 function advanceTurn(state) {

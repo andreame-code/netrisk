@@ -11,6 +11,10 @@ function isActivePlayer(state, player) {
   return Boolean(player && !player.surrendered && territoryCountByPlayer(state, player.id) > 0);
 }
 
+function isActiveHumanPlayer(player) {
+  return Boolean(player && !player.isAi);
+}
+
 function validateState(state) {
   if (!state || typeof state !== "object") {
     throw new Error("Victory detection requires a valid game state.");
@@ -44,6 +48,31 @@ function detectVictory(state, options = {}) {
   const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
   if (activePlayers.length === 0) {
     throw new Error("Victory detection found no active players with territories.");
+  }
+
+  const activeHumanPlayers = activePlayers.filter((player) => isActiveHumanPlayer(player));
+  if (activeHumanPlayers.length === 0) {
+    state.winnerId = null;
+    state.phase = "finished";
+    state.turnPhase = TurnPhase.FINISHED;
+
+    const summary = "La partita si chiude: restano attive solo AI.";
+    if (typeof options.appendLog === "function") {
+      options.appendLog(summary);
+    }
+
+    return {
+      ok: true,
+      code: "AI_ONLY_REMAIN",
+      message: "Game closed because only AI players remain active.",
+      details: {
+        activePlayerIds: activePlayers.map((player) => player.id),
+        activePlayerCount: activePlayers.length,
+        activeHumanPlayerIds: [],
+        activeHumanPlayerCount: 0
+      },
+      victory: null
+    };
   }
 
   if (activePlayers.length > 1) {
