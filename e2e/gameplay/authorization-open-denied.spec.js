@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
-test("non-member user cannot open a protected game from the lobby", async ({ browser }) => {
+test("non-member user can open a lobby game in spectator mode without auto-joining", async ({ browser }) => {
   test.slow();
   const ownerContext = await browser.newContext();
   const outsiderContext = await browser.newContext();
@@ -34,9 +34,13 @@ test("non-member user cannot open a protected game from the lobby", async ({ bro
 
   await outsiderPage.getByRole("button", { name: "Apri selezionata" }).click();
 
-  await expect(outsiderPage).toHaveURL(/\/lobby\.html$/);
-  await expect(outsiderPage.getByTestId("game-session-details")).toContainText(gameName);
-  await expect(outsiderPage.locator("#game-list-state")).toContainText(/fai parte|membro|accesso|autorizzat/i);
+  await expect(outsiderPage).toHaveURL(/\/game\//);
+  await expect(outsiderPage.locator("#game-status")).toContainText(gameName);
+  await expect(outsiderPage.getByTestId("phase-indicator")).toContainText(/Lobby/i);
+  await expect(outsiderPage.getByTestId("current-player-indicator")).not.toContainText(outsiderUser);
+  await expect(outsiderPage.locator("#players")).not.toContainText(outsiderUser);
+  await expect(outsiderPage.locator("#join-button")).toBeVisible();
+  await expect(outsiderPage.locator("#join-button")).toBeEnabled();
 
   await ownerContext.close();
   await outsiderContext.close();
