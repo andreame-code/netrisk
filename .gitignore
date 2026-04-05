@@ -1,5 +1,8 @@
 node_modules/
 npm-debug.log
+.env
+.env.local
+.env.*.local
 data/*.json
 data/*.json.bak
 data/*.sqlite
@@ -16,3 +19,5 @@ test-results/
 data/backups/
 data/*.sqlite-shm
 data/*.sqlite-wal
+
+.vercel

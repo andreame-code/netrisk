@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { createDatastore } = require("./datastore.cjs");
+const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
 
 function safeClone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -55,10 +56,10 @@ function createGameSessionStore(options = {}) {
   });
 
   function listGames() {
-    return datastore.listGames()
+    return mapMaybe(datastore.listGames(), (games) => games
       .slice()
       .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)))
-      .map(summarizeGame);
+      .map(summarizeGame));
   }
 
   function createGame(initialState, input = {}) {
@@ -66,20 +67,24 @@ function createGameSessionStore(options = {}) {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
 
-    const timestamp = new Date().toISOString();
-    const entry = {
-      id: crypto.randomBytes(8).toString("hex"),
-      name: normalizeGameName(input.name, datastore.listGames().length + 1),
-      version: 1,
-      creatorUserId: input.creatorUserId || null,
-      state: safeClone(initialState),
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
+    return chainMaybe(datastore.listGames(), (games) => {
+      const timestamp = new Date().toISOString();
+      const entry = {
+        id: crypto.randomBytes(8).toString("hex"),
+        name: normalizeGameName(input.name, games.length + 1),
+        version: 1,
+        creatorUserId: input.creatorUserId || null,
+        state: safeClone(initialState),
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
 
-    const created = datastore.createGame(entry);
-    datastore.setActiveGameId(created.id);
-    return { game: summarizeGame(created), state: safeClone(created.state) };
+      return chainMaybe(datastore.createGame(entry), (created) =>
+        mapMaybe(datastore.setActiveGameId(created.id), () => ({
+          game: summarizeGame(created),
+          state: safeClone(created.state)
+        })));
+    });
   }
 
   function setActiveGame(gameId) {
@@ -87,13 +92,13 @@ function createGameSessionStore(options = {}) {
       throw new Error("Impostare la partita attiva richiede un game id valido.");
     }
 
-    const entry = datastore.findGameById(gameId);
-    if (!entry) {
-      throw new Error(`Partita "${gameId}" non trovata.`);
-    }
+    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+      if (!entry) {
+        throw new Error(`Partita "${gameId}" non trovata.`);
+      }
 
-    datastore.setActiveGameId(gameId);
-    return summarizeGame(entry);
+      return mapMaybe(datastore.setActiveGameId(gameId), () => summarizeGame(entry));
+    });
   }
 
   function getGame(gameId) {
@@ -101,18 +106,19 @@ function createGameSessionStore(options = {}) {
       throw new Error("Leggere una partita richiede un game id valido.");
     }
 
-    const entry = datastore.findGameById(gameId);
-    if (!entry) {
-      throw new Error(`Partita "${gameId}" non trovata.`);
-    }
+    return mapMaybe(datastore.findGameById(gameId), (entry) => {
+      if (!entry) {
+        throw new Error(`Partita "${gameId}" non trovata.`);
+      }
 
-    return {
-      game: {
-        ...summarizeGame(entry),
-        creatorUserId: entry.creatorUserId || null
-      },
-      state: safeClone(entry.state)
-    };
+      return {
+        game: {
+          ...summarizeGame(entry),
+          creatorUserId: entry.creatorUserId || null
+        },
+        state: safeClone(entry.state)
+      };
+    });
   }
 
   function openGame(gameId) {
@@ -120,13 +126,16 @@ function createGameSessionStore(options = {}) {
       throw new Error("Aprire una partita richiede un game id valido.");
     }
 
-    const entry = datastore.findGameById(gameId);
-    if (!entry) {
-      throw new Error(`Partita "${gameId}" non trovata.`);
-    }
+    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+      if (!entry) {
+        throw new Error(`Partita "${gameId}" non trovata.`);
+      }
 
-    datastore.setActiveGameId(gameId);
-    return { game: summarizeGame(entry), state: safeClone(entry.state) };
+      return mapMaybe(datastore.setActiveGameId(gameId), () => ({
+        game: summarizeGame(entry),
+        state: safeClone(entry.state)
+      }));
+    });
   }
 
   function saveGame(gameId, state, expectedVersion) {
@@ -142,45 +151,47 @@ function createGameSessionStore(options = {}) {
       throw new Error("Il salvataggio richiede una expectedVersion valida.");
     }
 
-    const entry = datastore.findGameById(gameId);
-    if (!entry) {
-      throw new Error(`Partita "${gameId}" non trovata.`);
-    }
+    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+      if (!entry) {
+        throw new Error(`Partita "${gameId}" non trovata.`);
+      }
 
-    const currentVersion = Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1;
-    entry.version = currentVersion;
+      const currentVersion = Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1;
+      entry.version = currentVersion;
 
-    if (expectedVersion != null && expectedVersion !== currentVersion) {
-      const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.");
-      conflict.code = "VERSION_CONFLICT";
-      conflict.currentVersion = currentVersion;
-      conflict.currentState = safeClone(entry.state);
-      conflict.game = summarizeGame(entry);
-      throw conflict;
-    }
+      if (expectedVersion != null && expectedVersion !== currentVersion) {
+        const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.");
+        conflict.code = "VERSION_CONFLICT";
+        conflict.currentVersion = currentVersion;
+        conflict.currentState = safeClone(entry.state);
+        conflict.game = summarizeGame(entry);
+        throw conflict;
+      }
 
-    entry.state = safeClone(state);
-    entry.version = currentVersion + 1;
-    entry.updatedAt = new Date().toISOString();
-    return summarizeGame(datastore.updateGame(entry));
+      entry.state = safeClone(state);
+      entry.version = currentVersion + 1;
+      entry.updatedAt = new Date().toISOString();
+      return mapMaybe(datastore.updateGame(entry), summarizeGame);
+    });
   }
 
   function ensureActiveGame(createInitialState) {
-    const games = datastore.listGames();
-    const activeGameId = datastore.getActiveGameId();
-    const preferredId = activeGameId && games.some((game) => game.id === activeGameId)
-      ? activeGameId
-      : null;
+    return chainMaybe(datastore.listGames(), (games) =>
+      chainMaybe(datastore.getActiveGameId(), (activeGameId) => {
+        const preferredId = activeGameId && games.some((game) => game.id === activeGameId)
+          ? activeGameId
+          : null;
 
-    if (preferredId) {
-      return openGame(preferredId);
-    }
+        if (preferredId) {
+          return openGame(preferredId);
+        }
 
-    if (games.length > 0) {
-      return openGame(games[0].id);
-    }
+        if (games.length > 0) {
+          return openGame(games[0].id);
+        }
 
-    return createGame(createInitialState(), { name: "Partita 1" });
+        return createGame(createInitialState(), { name: "Partita 1" });
+      }));
   }
 
   return {

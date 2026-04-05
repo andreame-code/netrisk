@@ -8,6 +8,7 @@ const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
+const { isPromiseLike } = require("./maybe-async.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -137,30 +138,65 @@ function createApp(options = {}) {
     datastore,
     gamesFile
   });
-  const initialGame = gameSessions.ensureActiveGame(createInitialState);
-  activeGameId = initialGame.game.id;
-  activeGameVersion = initialGame.game.version;
-  activeGameName = initialGame.game.name;
-  Object.keys(state).forEach((key) => delete state[key]);
-  Object.assign(state, initialGame.state);
   const auth = createAuthStore({
     datastore,
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
   const clientsByGameId = new Map();
+  let initPromise = null;
+
+  const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
+  if (isPromiseLike(eagerInitialGame)) {
+    initPromise = eagerInitialGame
+      .then((initialGame) => {
+        activeGameId = initialGame.game.id;
+        activeGameVersion = initialGame.game.version;
+        activeGameName = initialGame.game.name;
+        replaceState(initialGame.state);
+      })
+      .finally(() => {
+        initPromise = null;
+      });
+  } else {
+    activeGameId = eagerInitialGame.game.id;
+    activeGameVersion = eagerInitialGame.game.version;
+    activeGameName = eagerInitialGame.game.name;
+    replaceState(eagerInitialGame.state);
+  }
 
   function replaceState(nextState) {
     Object.keys(state).forEach((key) => delete state[key]);
     Object.assign(state, nextState);
   }
 
-  function persistActiveGame(expectedVersion) {
+  async function initializeActiveGame() {
+    if (activeGameId) {
+      return;
+    }
+
+    if (!initPromise) {
+      initPromise = Promise.resolve(gameSessions.ensureActiveGame(createInitialState))
+        .then((initialGame) => {
+          activeGameId = initialGame.game.id;
+          activeGameVersion = initialGame.game.version;
+          activeGameName = initialGame.game.name;
+          replaceState(initialGame.state);
+        })
+        .finally(() => {
+          initPromise = null;
+        });
+    }
+
+    await initPromise;
+  }
+
+  async function persistActiveGame(expectedVersion) {
     if (!activeGameId) {
       return null;
     }
 
-    const savedGame = gameSessions.saveGame(activeGameId, state, expectedVersion);
+    const savedGame = await gameSessions.saveGame(activeGameId, state, expectedVersion);
     activeGameVersion = savedGame.version;
     activeGameName = savedGame.name;
     return savedGame;
@@ -178,7 +214,9 @@ function createApp(options = {}) {
     return body.gameId || (url ? url.searchParams.get("gameId") : null) || activeGameId || null;
   }
 
-  function loadGameContext(gameId) {
+  async function loadGameContext(gameId) {
+    await initializeActiveGame();
+
     if (!gameId || gameId === activeGameId) {
       return {
         gameId: activeGameId,
@@ -188,7 +226,7 @@ function createApp(options = {}) {
       };
     }
 
-    const record = gameSessions.getGame(gameId);
+    const record = await gameSessions.getGame(gameId);
     return {
       gameId: record.game.id,
       gameName: record.game.name,
@@ -197,12 +235,12 @@ function createApp(options = {}) {
     };
   }
 
-  function persistGameContext(gameContext, expectedVersion) {
+  async function persistGameContext(gameContext, expectedVersion) {
     if (!gameContext?.gameId) {
       return null;
     }
 
-    const savedGame = gameSessions.saveGame(gameContext.gameId, gameContext.state, expectedVersion);
+    const savedGame = await gameSessions.saveGame(gameContext.gameId, gameContext.state, expectedVersion);
     gameContext.version = savedGame.version;
     gameContext.gameName = savedGame.name;
 
@@ -254,16 +292,16 @@ function createApp(options = {}) {
     return reports;
   }
 
-  function persistWithAiTurns(gameContext, expectedVersion) {
-    persistGameContext(gameContext, expectedVersion);
+  async function persistWithAiTurns(gameContext, expectedVersion) {
+    await persistGameContext(gameContext, expectedVersion);
     const aiReports = runAiTurnsIfNeeded(gameContext.state);
     if (aiReports.length > 0) {
-      persistGameContext(gameContext, gameContext.version);
+      await persistGameContext(gameContext, gameContext.version);
     }
     return aiReports;
   }
 
-  function resumeAiTurnsForRead(gameContext) {
+  async function resumeAiTurnsForRead(gameContext) {
     if (!gameContext?.state || gameContext.state.phase !== "active" || gameContext.state.winnerId) {
       return [];
     }
@@ -281,9 +319,9 @@ function createApp(options = {}) {
     return cookies[sessionCookieName] || null;
   }
 
-  function requireAuth(req, res, body, url = null) {
+  async function requireAuth(req, res, body, url = null) {
     const sessionToken = extractSessionToken(req, body, url);
-    const user = auth.getUserFromSession(sessionToken);
+    const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
       sendJson(res, 401, { error: "Sessione non valida.", code: "AUTH_REQUIRED" });
       return null;
@@ -292,17 +330,17 @@ function createApp(options = {}) {
     return { sessionToken, user };
   }
 
-  function authorizeGameRead(gameId, req, res, url) {
+  async function authorizeGameRead(gameId, req, res, url) {
     if (!gameId) {
       return { ok: true, user: null, gameRecord: null };
     }
 
-    const gameRecord = gameSessions.getGame(gameId);
+    const gameRecord = await gameSessions.getGame(gameId);
     if (!gameRecord.game.creatorUserId) {
       return { ok: true, user: null, gameRecord };
     }
 
-    const authContext = requireAuth(req, res, {}, url);
+    const authContext = await requireAuth(req, res, {}, url);
     if (!authContext) {
       return null;
     }
@@ -356,8 +394,9 @@ function createApp(options = {}) {
     return nextState.hands[player.id].map((card) => ({ ...card }));
   }
 
-  function healthSnapshot() {
-    const storage = datastore.healthSummary();
+  async function healthSnapshot() {
+    await initializeActiveGame();
+    const storage = await datastore.healthSummary();
     return {
       ok: storage.ok,
       storage,
@@ -368,14 +407,16 @@ function createApp(options = {}) {
   }
 
   async function handleApi(req, res, url) {
+    await initializeActiveGame();
+
     if (req.method === "GET" && url.pathname === "/api/health") {
-      const health = healthSnapshot();
+      const health = await healthSnapshot();
       sendJson(res, health.ok ? 200 : 503, health);
       return;
     }
 
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
-      const resetGame = gameSessions.createGame(createInitialState(), { name: "Partita test" });
+      const resetGame = await gameSessions.createGame(createInitialState(), { name: "Partita test" });
       activeGameId = resetGame.game.id;
       activeGameVersion = resetGame.game.version;
       activeGameName = resetGame.game.name;
@@ -403,13 +444,13 @@ function createApp(options = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/state") {
       const gameId = getTargetGameId({}, url);
-      const access = authorizeGameRead(gameId, req, res, url);
+      const access = await authorizeGameRead(gameId, req, res, url);
       if (access === null) {
         return;
       }
-      const gameContext = loadGameContext(gameId);
-      resumeAiTurnsForRead(gameContext);
-      const sessionUser = access && access.user ? access.user : auth.getUserFromSession(extractSessionToken(req, {}, url));
+      const gameContext = await loadGameContext(gameId);
+      await resumeAiTurnsForRead(gameContext);
+      const sessionUser = access && access.user ? access.user : await auth.getUserFromSession(extractSessionToken(req, {}, url));
       const resolvedPlayer = resolvePlayerForUser(gameContext.state, sessionUser);
       sendJson(res, 200, {
         ...snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
@@ -420,7 +461,7 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/games") {
-      sendJson(res, 200, { games: gameSessions.listGames(), activeGameId: getTargetGameId({}, url) });
+      sendJson(res, 200, { games: await gameSessions.listGames(), activeGameId: getTargetGameId({}, url) });
       return;
     }
 
@@ -431,7 +472,7 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
@@ -443,7 +484,7 @@ function createApp(options = {}) {
         if (!creatorJoin.ok) {
           throw new Error(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.");
         }
-        const created = gameSessions.createGame(configured.state, {
+        const created = await gameSessions.createGame(configured.state, {
           ...configured.gameInput,
           creatorUserId: policy.actor.id
         });
@@ -452,7 +493,7 @@ function createApp(options = {}) {
         activeGameName = created.game.name;
         replaceState(created.state);
         broadcastGame({ gameId: created.game.id, gameName: created.game.name, version: created.game.version, state: created.state });
-        sendJson(res, 201, { ok: true, game: created.game, games: gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
+        sendJson(res, 201, { ok: true, game: created.game, games: await gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
       } catch (error) {
         const statusCode = error.statusCode || 400;
         sendJson(res, statusCode, { error: error.message || "Creazione partita non riuscita.", code: error.code || null });
@@ -462,21 +503,21 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games/open") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
 
       try {
-        const gameRecord = gameSessions.getGame(body.gameId);
+        const gameRecord = await gameSessions.getGame(body.gameId);
         authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
-        const opened = gameSessions.openGame(body.gameId);
-        resumeAiTurnsForRead(opened);
+        const opened = await gameSessions.openGame(body.gameId);
+        await resumeAiTurnsForRead(opened);
         const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
         sendJson(res, 200, {
           ok: true,
           game: opened.game,
-          games: gameSessions.listGames(),
+          games: await gameSessions.listGames(),
           activeGameId: opened.game.id,
           state: snapshotForState(opened.state, opened.game.id, opened.game.version, opened.game.name),
           playerId: resolvedPlayer ? resolvedPlayer.id : null
@@ -489,7 +530,7 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/auth/session") {
-      const authContext = requireAuth(req, res, {});
+      const authContext = await requireAuth(req, res, {});
       if (!authContext) {
         return;
       }
@@ -499,13 +540,13 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/profile") {
-      const authContext = requireAuth(req, res, {});
+      const authContext = await requireAuth(req, res, {});
       if (!authContext) {
         return;
       }
 
       try {
-        sendJson(res, 200, { profile: playerProfiles.getPlayerProfile(authContext.user.username) });
+        sendJson(res, 200, { profile: await playerProfiles.getPlayerProfile(authContext.user.username) });
       } catch (error) {
         sendJson(res, 400, { error: error.message || "Profilo non disponibile." });
       }
@@ -514,12 +555,12 @@ function createApp(options = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/events") {
       const gameId = getTargetGameId({}, url);
-      const access = authorizeGameRead(gameId, req, res, url);
+      const access = await authorizeGameRead(gameId, req, res, url);
       if (access === null) {
         return;
       }
-      const gameContext = loadGameContext(gameId);
-      resumeAiTurnsForRead(gameContext);
+      const gameContext = await loadGameContext(gameId);
+      await resumeAiTurnsForRead(gameContext);
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -547,7 +588,7 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
       const body = await parseBody(req);
-      const result = auth.registerPasswordUser(body.username, body.password);
+      const result = await auth.registerPasswordUser(body.username, body.password);
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
@@ -563,7 +604,7 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseBody(req);
-      const result = auth.loginWithPassword(body.username, body.password);
+      const result = await auth.loginWithPassword(body.username, body.password);
       if (!result.ok) {
         sendJson(res, 401, { error: result.error });
         return;
@@ -581,7 +622,7 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
       const body = await parseBody(req);
-      auth.logout(extractSessionToken(req, body));
+      await auth.logout(extractSessionToken(req, body));
       sendJson(res, 200, { ok: true }, {
         "Set-Cookie": clearSessionCookie(req)
       });
@@ -590,14 +631,14 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/ai/join") {
       const body = await parseBody(req);
-      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const gameContext = await loadGameContext(getTargetGameId(body, url));
       const result = addPlayer(gameContext.state, body.name, { isAi: true });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
       }
 
-      persistGameContext(gameContext);
+      await persistGameContext(gameContext);
       broadcastGame(gameContext);
       sendJson(res, result.rejoined ? 200 : 201, {
         playerId: result.player.id,
@@ -609,19 +650,19 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/join") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
 
-      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const gameContext = await loadGameContext(getTargetGameId(body, url));
       const result = addPlayer(gameContext.state, authContext.user.username, { linkedUserId: authContext.user.id });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
       }
 
-      persistGameContext(gameContext);
+      await persistGameContext(gameContext);
       broadcastGame(gameContext);
       sendJson(res, result.rejoined ? 200 : 201, {
         playerId: result.player.id,
@@ -633,12 +674,12 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/cards/trade") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
 
-      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const gameContext = await loadGameContext(getTargetGameId(body, url));
       const player = getPlayer(gameContext.state, body.playerId);
       if (!player || !playerBelongsToUser(player, authContext.user)) {
         sendJson(res, 403, { error: "Giocatore non valido." });
@@ -668,7 +709,7 @@ function createApp(options = {}) {
       }
 
       try {
-        persistGameContext(gameContext, expectedVersion);
+        await persistGameContext(gameContext, expectedVersion);
       } catch (error) {
         if (error && error.code === "VERSION_CONFLICT") {
           sendJson(res, 409, {
@@ -690,19 +731,19 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/start") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
 
-      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const gameContext = await loadGameContext(getTargetGameId(body, url));
       if (gameContext.state.phase !== "lobby") {
         sendJson(res, 400, { error: "La partita e gia iniziata." });
         return;
       }
 
       try {
-        const activeGame = gameSessions.getGame(gameContext.gameId);
+        const activeGame = await gameSessions.getGame(gameContext.gameId);
         authorize("game:start", { user: authContext.user, game: activeGame.game });
       } catch (error) {
         const statusCode = error.statusCode || 400;
@@ -722,7 +763,7 @@ function createApp(options = {}) {
       }
 
       startGame(gameContext.state);
-      persistWithAiTurns(gameContext);
+      await persistWithAiTurns(gameContext);
       broadcastGame(gameContext);
       sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
       return;
@@ -730,7 +771,7 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/action") {
       const body = await parseBody(req);
-      const authContext = requireAuth(req, res, body);
+      const authContext = await requireAuth(req, res, body);
       if (!authContext) {
         return;
       }
@@ -743,7 +784,7 @@ function createApp(options = {}) {
         return;
       }
 
-      const gameContext = loadGameContext(getTargetGameId(body, url));
+      const gameContext = await loadGameContext(getTargetGameId(body, url));
       const player = getPlayer(gameContext.state, playerId);
 
       if (!player || !playerBelongsToUser(player, authContext.user)) {
@@ -783,7 +824,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistGameContext(gameContext, expectedVersion);
+          await persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -818,7 +859,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistGameContext(gameContext, expectedVersion);
+          await persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -838,7 +879,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistGameContext(gameContext, expectedVersion);
+          await persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -858,7 +899,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistGameContext(gameContext, expectedVersion);
+          await persistGameContext(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -878,7 +919,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistWithAiTurns(gameContext, expectedVersion);
+          await persistWithAiTurns(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -898,7 +939,7 @@ function createApp(options = {}) {
         }
 
         try {
-          persistWithAiTurns(gameContext, expectedVersion);
+          await persistWithAiTurns(gameContext, expectedVersion);
         } catch (error) {
           if (handleVersionConflict(error)) {
             return;
@@ -954,7 +995,7 @@ function createApp(options = {}) {
     });
   }
 
-  const server = http.createServer((req, res) => {
+  function handleRequest(req, res) {
     const url = new URL(req.url, "http://" + req.headers.host);
 
     Promise.resolve()
@@ -969,12 +1010,15 @@ function createApp(options = {}) {
       .catch((error) => {
         sendJson(res, 500, { error: error.message || "Errore interno." });
       });
-  });
+  }
+
+  const server = http.createServer(handleRequest);
 
   return {
     auth,
     datastore,
     handleApi,
+    handleRequest,
     parseBody,
     sendJson,
     server,
@@ -997,6 +1041,7 @@ module.exports = {
   auth: app.auth,
   datastore: app.datastore,
   handleApi: app.handleApi,
+  handleRequest: app.handleRequest,
   server: app.server,
   state: app.state
 };
