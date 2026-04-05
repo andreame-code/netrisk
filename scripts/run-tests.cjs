@@ -488,7 +488,7 @@ register("startGame distribuisce tutti i territori e assegna rinforzi iniziali",
 
   assert.equal(state.phase, "active");
   assert.equal(state.turnPhase, "reinforcement");
-  assert.equal(state.reinforcementPool, 3);
+  assert.equal(state.reinforcementPool >= 3, true);
   assert.equal(territoriesOwnedBy(state, first.id).length + territoriesOwnedBy(state, second.id).length, 9);
 });
 

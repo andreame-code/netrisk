@@ -5,6 +5,7 @@ const {
   applyReinforcement,
   createInitialState,
   endTurn,
+  surrenderPlayer,
   startGame
 } = require("../../../backend/engine/game-engine.cjs");
 const { findSupportedMap } = require("../../../shared/maps/index.cjs");
@@ -116,5 +117,24 @@ register("advanceTurn skips players with zero territories and can finish the gam
 
   assert.equal(state.winnerId, "p1");
   assert.equal(state.phase, "finished");
+});
+
+register("surrenderPlayer during the active turn hands off play to the next surviving player", () => {
+  const state = setupLiveGame();
+  state.players.push({ id: "p3", name: "Carol", color: "#333333", connected: true });
+  const reassignedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === "p2");
+  state.territories[reassignedTerritoryId].ownerId = "p3";
+  state.territories[reassignedTerritoryId].armies = 1;
+  const currentPlayer = state.players[state.currentTurnIndex];
+
+  const result = surrenderPlayer(state, currentPlayer.id);
+
+  assert.equal(result.ok, true);
+  assert.equal(state.phase, "active");
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.players.find((player) => player.id === currentPlayer.id).surrendered, true);
+  assert.equal(state.territories[Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id)].ownerId, currentPlayer.id);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.reinforcementPool >= 3, true);
 });
 

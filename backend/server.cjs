@@ -20,6 +20,7 @@ const {
   publicState,
   resolveAttack,
   startGame,
+  surrenderPlayer,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
@@ -871,6 +872,26 @@ function createApp(options = {}) {
 
       if (type === "endTurn") {
         const result = endTurn(gameContext.state, playerId);
+        if (!result.ok) {
+          sendJson(res, 400, { error: result.message });
+          return;
+        }
+
+        try {
+          persistWithAiTurns(gameContext, expectedVersion);
+        } catch (error) {
+          if (handleVersionConflict(error)) {
+            return;
+          }
+          throw error;
+        }
+        broadcastGame(gameContext);
+        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        return;
+      }
+
+      if (type === "surrender") {
+        const result = surrenderPlayer(gameContext.state, playerId);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;

@@ -624,6 +624,10 @@ button:disabled {
   background: linear-gradient(180deg, #5e4631, #433024);
 }
 
+.danger-button {
+  background: linear-gradient(180deg, #b53b2e, #8c2f21);
+}
+
 .full-width {
   width: 100%;
 }
