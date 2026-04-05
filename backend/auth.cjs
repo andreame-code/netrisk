@@ -1,6 +1,7 @@
 const path = require("path");
 const crypto = require("crypto");
 const { createDatastore } = require("./datastore.cjs");
+const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
 
 function passwordRecord(secret) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -81,47 +82,50 @@ function createAuthStore(options = {}) {
       return { ok: false, error: "Inserisci utente e password." };
     }
 
-    if (findByUsername(cleanedUsername)) {
-      return { ok: false, error: "Utente gia registrato." };
-    }
+    return chainMaybe(findByUsername(cleanedUsername), (existingUser) => {
+      if (existingUser) {
+        return { ok: false, error: "Utente gia registrato." };
+      }
 
-    const user = {
-      id: crypto.randomBytes(8).toString("hex"),
-      username: cleanedUsername,
-      credentials: {
-        password: passwordRecord(cleanedPassword)
-      },
-      role: "user",
-      profile: {
-        displayName: cleanedUsername
-      },
-      createdAt: new Date().toISOString()
-    };
+      const user = {
+        id: crypto.randomBytes(8).toString("hex"),
+        username: cleanedUsername,
+        credentials: {
+          password: passwordRecord(cleanedPassword)
+        },
+        role: "user",
+        profile: {
+          displayName: cleanedUsername
+        },
+        createdAt: new Date().toISOString()
+      };
 
-    return { ok: true, user: publicUser(datastore.createUser(user)) };
+      return mapMaybe(datastore.createUser(user), (createdUser) => ({ ok: true, user: publicUser(createdUser) }));
+    });
   }
 
   function loginWithPassword(username, password) {
-    const user = findByUsername(username);
-    if (!user || !verifyPassword(user.credentials, password)) {
-      return { ok: false, error: "Credenziali non valide." };
-    }
+    return chainMaybe(findByUsername(username), (user) => {
+      if (!user || !verifyPassword(user.credentials, password)) {
+        return { ok: false, error: "Credenziali non valide." };
+      }
 
-    if (typeof user.credentials?.password?.secret === "string") {
-      datastore.updateUserCredentials(user.id, {
-        ...user.credentials,
-        password: passwordRecord(password)
-      });
-    }
+      const sessionToken = crypto.randomBytes(16).toString("hex");
+      const createSession = () => mapMaybe(datastore.createSession(sessionToken, user.id, Date.now()), () => ({
+        ok: true,
+        sessionToken,
+        user: publicUser(user)
+      }));
 
-    const sessionToken = crypto.randomBytes(16).toString("hex");
-    datastore.createSession(sessionToken, user.id, Date.now());
+      if (typeof user.credentials?.password?.secret === "string") {
+        return chainMaybe(datastore.updateUserCredentials(user.id, {
+          ...user.credentials,
+          password: passwordRecord(password)
+        }), createSession);
+      }
 
-    return {
-      ok: true,
-      sessionToken,
-      user: publicUser(user)
-    };
+      return createSession();
+    });
   }
 
   function getUserFromSession(sessionToken) {
@@ -129,18 +133,21 @@ function createAuthStore(options = {}) {
       return null;
     }
 
-    const session = datastore.findSession(sessionToken);
-    if (!session) {
-      return null;
-    }
+    return chainMaybe(datastore.findSession(sessionToken), (session) => {
+      if (!session) {
+        return null;
+      }
 
-    return datastore.findUserById(session.user_id || session.userId) || null;
+      return datastore.findUserById(session.user_id || session.userId) || null;
+    });
   }
 
   function logout(sessionToken) {
     if (sessionToken) {
-      datastore.deleteSession(sessionToken);
+      return datastore.deleteSession(sessionToken);
     }
+
+    return null;
   }
 
   return {
