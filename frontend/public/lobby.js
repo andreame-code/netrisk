@@ -308,7 +308,9 @@ async function send(path, body) {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Richiesta fallita.");
+    const error = new Error(data.error || "Richiesta fallita.");
+    error.code = data.code || null;
+    throw error;
   }
 
   return data;
@@ -367,13 +369,13 @@ async function openGameById(gameId) {
 }
 
 async function handleOpenSelectedGame() {
-  const selectedId = state.selectedGameId;
-  if (!selectedId) {
+  const selected = selectedGame();
+  if (!selected) {
     return;
   }
 
   try {
-    await openGameById(selectedId);
+    await openGameById(selected.id);
   } catch (error) {
     state.gameListState = "error";
     state.gameListError = error.message;

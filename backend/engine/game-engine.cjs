@@ -354,6 +354,9 @@ function advanceTurn(state) {
 function addPlayer(state, name, options = {}) {
   const normalizedName = String(name || "").trim().slice(0, 24);
   const linkedUserId = options.isAi ? null : (options.linkedUserId || null);
+  const maxPlayers = Number.isInteger(state?.gameConfig?.totalPlayers) && state.gameConfig.totalPlayers > 0
+    ? state.gameConfig.totalPlayers
+    : 4;
   if (!normalizedName) {
     return { ok: false, error: "Inserisci un nome." };
   }
@@ -384,7 +387,7 @@ function addPlayer(state, name, options = {}) {
     return { ok: false, error: "La partita e gia iniziata." };
   }
 
-  if (state.players.length >= 4) {
+  if (state.players.length >= maxPlayers) {
     return { ok: false, error: "La lobby e piena." };
   }
 
