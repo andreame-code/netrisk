@@ -60,4 +60,23 @@ register("surrenderPlayer elimina il giocatore e assegna la vittoria se resta un
   assert.equal(publicState(state).players.find((entry) => entry.id === "p2").territoryCount, ownedBefore);
 });
 
+register("declareWinnerIfNeeded chiude la partita quando restano solo AI attive", () => {
+  const state = setupLiveState();
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true, surrendered: true },
+    { id: "p2", name: "Bot Alpha", color: "#222222", connected: true, isAi: true },
+    { id: "p3", name: "Bot Beta", color: "#333333", connected: true, isAi: true }
+  ];
+  const territoryIds = getMapTerritories(state).map((territory) => territory.id);
+  territoryIds.forEach((territoryId, index) => {
+    state.territories[territoryId] = { ownerId: index % 2 === 0 ? "p2" : "p3", armies: 1 };
+  });
+
+  const closed = declareWinnerIfNeeded(state);
+
+  assert.equal(closed, true);
+  assert.equal(state.phase, "finished");
+  assert.equal(state.winnerId, null);
+});
+
 

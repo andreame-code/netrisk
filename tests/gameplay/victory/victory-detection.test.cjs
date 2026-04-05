@@ -66,3 +66,26 @@ register("detectVictory ignores surrendered players even if they still own terri
   assert.equal(result.code, "VICTORY_DECLARED");
   assert.equal(result.victory.winnerId, "p1");
 });
+
+register("detectVictory closes the game when only AI players remain active", () => {
+  const players = makePlayers(["Alice", "Bot Alpha", "Bot Beta"]);
+  players[1].isAi = true;
+  players[2].isAi = true;
+  players[0].surrendered = true;
+  const state = makeState({
+    players,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p2", armies: 1 },
+      { id: "c", ownerId: "p3", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK
+  });
+
+  const result = detectVictory(state);
+  assert.equal(result.code, "AI_ONLY_REMAIN");
+  assert.equal(result.victory, null);
+  assert.equal(state.winnerId, null);
+  assert.equal(state.phase, "finished");
+  assert.equal(state.turnPhase, TurnPhase.FINISHED);
+});
