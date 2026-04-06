@@ -24,6 +24,7 @@ const {
   surrenderPlayer,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
+const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
@@ -875,7 +876,7 @@ function createApp(options = {}) {
         return;
       }
 
-      if (type === "attack") {
+      if (type === "attack" || type === "attackBanzai") {
         let random;
         if (process.env.E2E === "true" && Array.isArray(nextAttackRolls) && nextAttackRolls.length === 2) {
           const queuedRolls = nextAttackRolls.slice();
@@ -891,7 +892,11 @@ function createApp(options = {}) {
         }
 
         const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
-        const result = resolveAttack(gameContext.state, playerId, String(body.fromId || ""), String(body.toId || ""), random, requestedAttackDice);
+        const actionFromId = String(body.fromId || "");
+        const actionToId = String(body.toId || "");
+        const result = type === "attackBanzai"
+          ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
+          : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
@@ -966,7 +971,7 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
@@ -986,7 +991,11 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, {
+          ok: true,
+          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
+          rounds: Array.isArray(result.rounds) ? result.rounds : undefined
+        });
         return;
       }
 
