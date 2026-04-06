@@ -179,9 +179,8 @@ function buildProfile(username, email, protector) {
 }
 
 function createAuthStore(options = {}) {
-  const datastore = createAuthRepository({
+  const datastore = options.datastore || createAuthRepository({
     driver: options.driver || process.env.DATASTORE_DRIVER || "local",
-    datastore: options.datastore,
     dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
