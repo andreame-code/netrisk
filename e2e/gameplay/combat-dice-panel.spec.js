@@ -96,11 +96,11 @@ test("game page shows the latest combat dice result from public state", async ({
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });
 
-  await page.route("**/api/games", async (route) => {
+  await page.route("**/api/games**", async (route) => {
     await route.fulfill({ json: { games: [{ id: "g-1", name: "Combat Match", updatedAt: "2026-03-19T10:00:00.000Z", phase: "active", playerCount: 2 }], activeGameId: "g-1" } });
   });
 
-  await page.route("**/api/state", async (route) => {
+  await page.route("**/api/state**", async (route) => {
     await route.fulfill({ json: currentState });
   });
 

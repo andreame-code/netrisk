@@ -49,11 +49,11 @@ test("game page shows an inline trade error and clears it on selection change", 
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });
 
-  await page.route("**/api/games", async (route) => {
+  await page.route("**/api/games**", async (route) => {
     await route.fulfill({ json: { games: [{ id: "g-1", name: "Trade Invalid Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
   });
 
-  await page.route("**/api/state", async (route) => {
+  await page.route("**/api/state**", async (route) => {
     await route.fulfill({ json: currentState });
   });
 
