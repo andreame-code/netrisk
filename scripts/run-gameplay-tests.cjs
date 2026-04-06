@@ -7,6 +7,7 @@ global.register = function register(name, fn) {
 };
 
 [
+  "../tests/gameplay/ai/ai-player.test.cjs",
   "../tests/gameplay/setup/game-setup.test.cjs",
   "../tests/gameplay/turn-flow/turn-flow.test.cjs",
   "../tests/gameplay/reinforcement/reinforcement-calculation.test.cjs",
