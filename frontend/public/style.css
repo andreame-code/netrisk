@@ -2074,6 +2074,7 @@ body[data-app-section="profile"] .main-nav-shell {
 }
 
 .top-nav-login,
+.top-nav-register,
 .top-nav-logout {
   min-height: 34px;
   padding: 0 12px;
@@ -2196,9 +2197,79 @@ body[data-app-section="profile"] .main-nav-shell {
   gap: 10px;
 }
 
+.auth-stack {
+  display: grid;
+  gap: 8px;
+}
+
 .rail-auth-form {
   display: grid;
   gap: 8px;
+}
+
+.auth-form-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.auth-feedback {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(57, 110, 73, 0.1);
+  color: #295f36;
+  font-size: 0.82rem;
+}
+
+.auth-feedback.is-error {
+  background: rgba(151, 54, 41, 0.12);
+  color: #8a2d22;
+}
+
+.auth-feedback.is-success {
+  background: rgba(57, 110, 73, 0.1);
+  color: #295f36;
+}
+
+.register-shell {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.register-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.register-meta-line {
+  margin: 0;
+}
+
+.register-card {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 34rem;
+  padding: 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 248, 237, 0.62);
+}
+
+.register-guidelines {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.register-guidelines p {
+  margin: 0;
 }
 
 .rail-action-group {

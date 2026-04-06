@@ -40,6 +40,7 @@ The project must be safe to extend over time without rewriting existing work.
 
 ## Git safety workflow
 Before large changes, remind the user to create a git checkpoint.
+Before heavy code changes requested by the user, automatically create and switch to a new git branch before editing files.
 After changes, summarize exactly which files were touched and why.
 
 ## Expected workflow for every task

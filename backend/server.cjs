@@ -596,7 +596,11 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
       const body = await parseBody(req);
-      const result = await auth.registerPasswordUser(body.username, body.password);
+      const result = await auth.registerPasswordUser({
+        username: body.username,
+        password: body.password,
+        email: body.email
+      });
       if (!result.ok) {
         sendJson(res, 400, { error: result.error });
         return;
@@ -1053,10 +1057,4 @@ module.exports = {
   server: app.server,
   state: app.state
 };
-
-
-
-
-
-
 

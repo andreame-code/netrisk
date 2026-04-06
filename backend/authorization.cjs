@@ -30,10 +30,6 @@ function canOpenGame(actor, game, state) {
     return true;
   }
 
-  if (state && state.phase === "lobby") {
-    return true;
-  }
-
   if (game.creatorUserId && game.creatorUserId === actor.id) {
     return true;
   }
