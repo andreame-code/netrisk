@@ -30,6 +30,10 @@ function canOpenGame(actor, game, state) {
     return true;
   }
 
+   if (game.phase === "lobby") {
+    return true;
+  }
+
   if (game.creatorUserId && game.creatorUserId === actor.id) {
     return true;
   }
@@ -48,6 +52,10 @@ function canReadGame(actor, game, state) {
   }
 
   if (actor.role === Roles.ADMIN) {
+    return true;
+  }
+
+  if (game.phase === "lobby") {
     return true;
   }
 
