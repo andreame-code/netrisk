@@ -38,16 +38,14 @@
 
           <section class="battlefield-layout game-battlefield-layout" data-testid="battlefield-layout">
             <aside class="left-rail panel game-info-rail" data-testid="info-panel">
-              <div class="panel-header tight-header">
-                <h2>Comando</h2>
+              <div class="panel-header tight-header game-compact-heading">
+                <div>
+                  <p class="eyebrow">Command</p>
+                  <h2>Quadro turno</h2>
+                </div>
                 <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
               </div>
-              <div id="status-summary" class="status-summary command-summary" data-testid="status-summary"></div>
-              <div id="trade-alert" class="turn-alert turn-alert-danger" hidden>
-                <strong>Scambio obbligatorio</strong>
-                <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
-              </div>
-              <div class="rail-section game-meta-stack">
+              <div class="rail-section game-meta-stack game-session-card">
                 <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
                 <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
                 <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
@@ -66,7 +64,7 @@
                   <button id="start-button" class="ghost-button">Avvia partita</button>
                 </div>
               </div>
-              <div class="rail-section">
+              <div class="rail-section game-roster-section">
                 <div class="section-title-row">
                   <h3>Giocatori</h3>
                   <span class="badge accent">Live</span>
@@ -79,18 +77,33 @@
               <div class="panel-header map-stage-header">
                 <div>
                   <h2>Teatro di Guerra</h2>
-                  <p class="stage-copy">La mappa e il campo principale: seleziona territori e segui il turno in tempo reale.</p>
+                  <p class="stage-copy">La mappa resta il focus principale: leggi il turno qui e usa il pannello azioni solo quando serve.</p>
                 </div>
                 <span id="action-hint" class="badge accent">In attesa</span>
+              </div>
+              <div class="map-stage-command-strip">
+                <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
+                <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
+                  <strong>Scambio obbligatorio</strong>
+                  <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
+                </div>
               </div>
               <div id="map" class="map tactical-map" data-testid="map-region"></div>
             </section>
 
             <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
               <div class="rail-section actions-section">
-                <div class="section-title-row">
-                  <h3>Azioni</h3>
+                <div class="section-title-row action-title-row">
+                  <div>
+                    <h3>Azioni</h3>
+                    <p class="stage-copy action-stage-copy">Esegui solo l'azione richiesta dalla fase corrente, poi passa al prossimo passaggio del turno.</p>
+                  </div>
                   <span class="badge">Turno</span>
+                </div>
+                <div class="phase-ladder" aria-hidden="true">
+                  <span class="phase-step">1. Rinforza</span>
+                  <span class="phase-step">2. Attacca</span>
+                  <span class="phase-step">3. Consolida</span>
                 </div>
 
                 <div class="action-group compact-group" id="reinforce-group">
