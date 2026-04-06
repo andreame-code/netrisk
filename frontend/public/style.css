@@ -621,7 +621,14 @@ button:disabled {
 }
 
 .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(180deg, #5e4631, #433024);
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
 }
 
 .danger-button {
@@ -2106,6 +2113,47 @@ body[data-app-section="profile"] .main-nav-shell {
 
   .top-nav-links {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .top-nav-bar {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .top-nav-links,
+  .top-nav-actions,
+  .top-nav-auth-form {
+    flex-wrap: wrap;
+  }
+
+  .top-nav-links,
+  .top-nav-actions {
+    width: 100%;
+  }
+
+  .top-nav-links {
+    justify-content: stretch;
+  }
+
+  .top-nav-bar .nav-link {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .top-nav-actions {
+    justify-content: flex-end;
+  }
+
+  .top-nav-auth-form {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .top-nav-auth-form input {
+    flex: 1 1 140px;
+    width: auto;
   }
 }
 
