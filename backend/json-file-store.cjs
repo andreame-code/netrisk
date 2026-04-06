@@ -23,8 +23,6 @@ function safeReadJson(filePath, fallbackValue) {
 }
 
 function readJsonFile(filePath, fallbackValue, isValid) {
-  ensureDirectory(filePath);
-
   const validate = typeof isValid === "function"
     ? isValid
     : () => true;
