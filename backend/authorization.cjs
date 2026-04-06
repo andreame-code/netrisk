@@ -55,6 +55,10 @@ function canReadGame(actor, game, state) {
     return true;
   }
 
+  if (game.phase === "lobby") {
+    return true;
+  }
+
   if (game.creatorUserId && game.creatorUserId === actor.id) {
     return true;
   }
