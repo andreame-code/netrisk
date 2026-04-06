@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { DatabaseSync, backup } = require("node:sqlite");
 const { readJsonFile } = require("./json-file-store.cjs");
+const { createSupabaseDatastore } = require("./datastore-supabase.cjs");
 
 function ensureDirectory(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -51,6 +52,12 @@ function normalizeGame(row) {
 }
 
 function createDatastore(options = {}) {
+  const requestedDriver = String(options.driver || process.env.DATASTORE_DRIVER || "").trim().toLowerCase();
+  const shouldUseSupabase = requestedDriver === "supabase" || (requestedDriver !== "sqlite" && Boolean(process.env.SUPABASE_URL));
+  if (shouldUseSupabase) {
+    return createSupabaseDatastore(options);
+  }
+
   const dbFile = options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite");
   const legacyUsersFile = options.legacyUsersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json");
   const legacyGamesFile = options.legacyGamesFile || options.gamesFile || path.join(__dirname, "..", "data", "games.json");
