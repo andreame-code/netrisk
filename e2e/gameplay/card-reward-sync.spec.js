@@ -61,7 +61,7 @@ test("game page refreshes player hand after an action updates card rewards", asy
     await route.fulfill({ json: { games: [{ id: "g-1", name: "Reward Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
   });
 
-  await page.route("**/api/state", async (route) => {
+  await page.route("**/api/state**", async (route) => {
     stateCalls += 1;
     await route.fulfill({ json: stateCalls === 1 ? initialState : refreshedState });
   });

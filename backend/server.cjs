@@ -277,9 +277,11 @@ function createApp(options = {}) {
       return;
     }
 
-    const payload = "data: " + JSON.stringify(snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)) + "\n\n";
     clients.forEach((client) => {
-      client.write(payload);
+      const payload = "data: " + JSON.stringify(
+        snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, client.user)
+      ) + "\n\n";
+      client.res.write(payload);
     });
   }
 
@@ -412,6 +414,17 @@ function createApp(options = {}) {
     return nextState.hands[player.id].map((card) => ({ ...card }));
   }
 
+  function snapshotForUser(nextState, gameId, version, gameName, user) {
+    const baseSnapshot = snapshotForState(nextState, gameId, version, gameName);
+    const resolvedPlayer = resolvePlayerForUser(nextState, user);
+
+    return {
+      ...baseSnapshot,
+      playerId: resolvedPlayer ? resolvedPlayer.id : null,
+      ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(nextState, resolvedPlayer) } : {})
+    };
+  }
+
   async function healthSnapshot() {
     await initializeActiveGame();
     const storage = await datastore.healthSummary();
@@ -472,12 +485,7 @@ function createApp(options = {}) {
       const gameContext = await loadGameContext(gameId);
       await resumeAiTurnsForRead(gameContext);
       const sessionUser = access && access.user ? access.user : await auth.getUserFromSession(extractSessionToken(req, {}, url));
-      const resolvedPlayer = resolvePlayerForUser(gameContext.state, sessionUser);
-      sendJson(res, 200, {
-        ...snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
-        playerId: resolvedPlayer ? resolvedPlayer.id : null,
-        ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(gameContext.state, resolvedPlayer) } : {})
-      });
+      sendJson(res, 200, snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, sessionUser));
       return;
     }
 
@@ -588,18 +596,19 @@ function createApp(options = {}) {
         Connection: "keep-alive",
         "Access-Control-Allow-Origin": "*"
       });
-      res.write("data: " + JSON.stringify(snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)) + "\n\n");
+      res.write("data: " + JSON.stringify(snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, access.user || null)) + "\n\n");
       const key = gameContext.gameId || "__default__";
       if (!clientsByGameId.has(key)) {
         clientsByGameId.set(key, new Set());
       }
-      clientsByGameId.get(key).add(res);
+      const client = { res, user: access.user || null };
+      clientsByGameId.get(key).add(client);
       req.on("close", () => {
         const group = clientsByGameId.get(key);
         if (!group) {
           return;
         }
-        group.delete(res);
+        group.delete(client);
         if (!group.size) {
           clientsByGameId.delete(key);
         }
@@ -826,7 +835,7 @@ function createApp(options = {}) {
           error: error.message,
           code: error.code,
           currentVersion: error.currentVersion,
-          state: snapshotForState(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName)
+          state: snapshotForUser(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName, authContext.user)
         });
         return true;
       }
@@ -836,13 +845,18 @@ function createApp(options = {}) {
           error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
           code: "VERSION_CONFLICT",
           currentVersion: gameContext.version,
-          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
+          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
         });
         return;
       }
 
       if (type === "reinforce") {
-        const result = applyReinforcement(gameContext.state, playerId, String(body.territoryId || ""));
+        const result = applyReinforcement(
+          gameContext.state,
+          playerId,
+          String(body.territoryId || ""),
+          body.amount
+        );
         if (!result.ok) {
           sendJson(res, 400, { error: result.message });
           return;
@@ -857,7 +871,7 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
@@ -892,7 +906,7 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
@@ -912,7 +926,7 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
@@ -932,7 +946,7 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
