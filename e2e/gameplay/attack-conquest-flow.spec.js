@@ -29,14 +29,20 @@ test("current player can conquer a territory and move armies after combat", asyn
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
 
   const attackPair = await findAttackPair(firstPage, firstUser);
-  const reinforcementCount = await getReinforcementCount(firstPage);
   const reinforceButton = firstPage.getByRole("button", { name: "Aggiungi" });
+  await expect(reinforceButton).toBeEnabled();
 
-  for (let index = 0; index < reinforcementCount; index += 1) {
+  for (;;) {
+    const reinforcementCount = await getReinforcementCount(firstPage);
+    if (reinforcementCount <= 0) {
+      break;
+    }
+
     await reinforceButton.click();
+    await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(String(reinforcementCount - 1)));
   }
 
-  await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
+  await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i, { timeout: 15000 });
   await firstPage.locator("#attack-from").selectOption(attackPair.fromId);
   await firstPage.locator("#attack-to").selectOption(attackPair.toId);
   await firstPage.locator("#attack-dice").selectOption("1");

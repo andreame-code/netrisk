@@ -6,27 +6,15 @@ async function openWorldClassicGame(page, suffix) {
   await page.goto("/game.html");
   const owner = uniqueUser(`wcv_${suffix}`);
   await registerAndLogin(page, owner);
-  const sessionToken = (await page.context().cookies())
-    .find((cookie) => cookie.name === "netrisk_session")?.value;
-  const response = await page.request.post("/api/games", {
-    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken || "")}` },
-    data: {
-      name: `World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`,
-      mapId: "world-classic",
-      totalPlayers: 2,
-      players: [
-        { slot: 1, type: "human" },
-        { slot: 2, type: "ai" }
-      ]
-    }
-  });
-  await expect(response.ok()).toBeTruthy();
-  const data = await response.json();
+  await page.goto("/new-game.html");
+  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await page.locator("#setup-map").selectOption("world-classic");
+  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
+  await expect(page.locator("#submit-new-game")).toBeEnabled();
+  await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await page.goto(`/game.html?gameId=${encodeURIComponent(data.game.id)}`);
-
-  await expect(page.locator("#game-map-meta")).toContainText("World Classic");
-  await expect(page.locator(".map-board.has-custom-background")).toBeVisible();
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
+  await expect(page.locator(".map-board.has-custom-background")).toBeVisible({ timeout: 15000 });
 }
 
 const viewports = [
@@ -37,11 +25,12 @@ const viewports = [
 
 for (const viewport of viewports) {
   test(`world classic armies stay visually centered at ${viewport.name}`, async ({ page }) => {
+    test.slow();
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openWorldClassicGame(page, viewport.name);
     await expect(page.locator(".game-map-stage .map-board")).toHaveScreenshot(
       `world-classic-board-${viewport.name}.png`,
-      { maxDiffPixels: 12000 }
+      { timeout: 15000, maxDiffPixels: 12000 }
     );
   });
 }

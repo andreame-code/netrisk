@@ -109,6 +109,7 @@ test("game page shows the latest combat dice result from public state", async ({
   });
 
   await page.goto("/game.html");
+  await expect(page.locator("#game-status")).toContainText("Combat Match", { timeout: 15000 });
 
   await expect(page.locator("#combat-result-group")).toBeVisible();
   await expect(page.locator("#combat-result-summary")).toContainText("Aurora -> Bastion");

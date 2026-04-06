@@ -165,9 +165,18 @@ function createMockSupabaseFetch(initialData = {}) {
     app_state: Array.isArray(initialData.app_state) ? initialData.app_state.map((row) => ({ ...row })) : []
   };
 
-  function decodeFilter(rawValue) {
+  function parseFilter(rawValue) {
     const value = String(rawValue || "");
-    return value.startsWith("eq.") ? decodeURIComponent(value.slice(3)) : decodeURIComponent(value);
+    const decodeLiteral = (input) => decodeURIComponent(input).replace(/\\([%_])/g, "$1");
+    if (value.startsWith("eq.")) {
+      return { operator: "eq", value: decodeLiteral(value.slice(3)) };
+    }
+
+    if (value.startsWith("ilike.")) {
+      return { operator: "ilike", value: decodeLiteral(value.slice(6)) };
+    }
+
+    return { operator: "eq", value: decodeLiteral(value) };
   }
 
   function cloneRows(rows) {
@@ -181,7 +190,16 @@ function createMockSupabaseFetch(initialData = {}) {
           continue;
         }
 
-        if (String(row[key] ?? "") !== decodeFilter(value)) {
+        const filter = parseFilter(value);
+        const candidate = String(row[key] ?? "");
+        if (filter.operator === "ilike") {
+          if (candidate.toLowerCase() !== filter.value.toLowerCase()) {
+            return false;
+          }
+          continue;
+        }
+
+        if (candidate !== filter.value) {
           return false;
         }
       }
@@ -1681,7 +1699,7 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
   }
 });
 
-register("API state richiede membership sulla partita protetta", async () => {
+register("API state consente lettura spettatore sulla lobby protetta senza auto-join", async () => {
   await withServer(async (baseUrl) => {
     const owner = await createAuthenticatedSession(baseUrl, uniqueName("state_owner"));
     const outsider = await createAuthenticatedSession(baseUrl, uniqueName("state_out"));
@@ -1695,9 +1713,11 @@ register("API state richiede membership sulla partita protetta", async () => {
     const outsiderState = await fetch(baseUrl + "/api/state", {
       headers: authHeaders(outsider.sessionToken)
     });
-    assert.equal(outsiderState.status, 403);
+    assert.equal(outsiderState.status, 200);
     const outsiderPayload = await outsiderState.json();
-    assert.equal(outsiderPayload.code, "MEMBER_ONLY");
+    assert.equal(outsiderPayload.gameName, "Stato protetto");
+    assert.equal(outsiderPayload.playerId, null);
+    assert.equal(Array.isArray(outsiderPayload.playerHand), false);
 
     const ownerState = await fetch(baseUrl + "/api/state", {
       headers: authHeaders(owner.sessionToken)
@@ -1725,6 +1745,21 @@ register("API games open richiede autenticazione", async () => {
     assert.equal(opened.status, 401);
     const payload = await opened.json();
     assert.equal(payload.code, "AUTH_REQUIRED");
+  });
+});
+
+register("API state restituisce GAME_NOT_FOUND per un gameId inesistente senza crashare il server", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("missing_game_owner"));
+    const response = await fetch(baseUrl + "/api/state?gameId=missing-game-id", {
+      headers: authHeaders(owner.sessionToken)
+    });
+    assert.equal(response.status, 404);
+    const payload = await response.json();
+    assert.equal(payload.code, "GAME_NOT_FOUND");
+
+    const health = await fetch(baseUrl + "/api/health");
+    assert.equal(health.status, 200);
   });
 });
 

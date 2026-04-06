@@ -1,16 +1,11 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("game header follows the single-row blueprint", async ({ page }) => {
   const username = uniqueUser("commander");
-  const password = "secret123";
 
   await resetGame(page);
-  await page.goto("/game.html");
-
-  await page.locator("#auth-form #auth-username").fill(username);
-  await page.locator("#auth-form #auth-password").fill(password);
-  await page.getByRole("button", { name: "Registrati" }).click();
+  await registerAndLogin(page, username);
 
   const header = page.locator(".top-nav-bar");
   await expect(header).toBeVisible();
