@@ -41,6 +41,30 @@
               <section class="center-stage panel map-stage-panel game-map-stage" data-testid="map-panel">
                 <div id="map" class="map tactical-map" data-testid="map-region"></div>
               </section>
+
+              <section class="panel game-info-rail game-info-bottom" data-testid="info-panel">
+                <div class="panel-header tight-header game-compact-heading">
+                  <div>
+                    <p class="eyebrow">Command</p>
+                    <h2>Quadro turno</h2>
+                  </div>
+                  <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
+                </div>
+                <div class="rail-section map-stage-command-strip game-status-bottom-strip">
+                  <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
+                  <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
+                    <strong>Scambio obbligatorio</strong>
+                    <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
+                  </div>
+                </div>
+                <div class="rail-section game-meta-stack game-session-card">
+                  <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
+                  <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
+                  <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
+                  <div class="game-meta-line"><span>Setup</span><strong id="game-setup-meta">2 players · 0 AI</strong></div>
+                  <div class="game-meta-line"><span>Access</span><span id="auth-status">Registrati o accedi per entrare nella lobby.</span></div>
+                </div>
+              </section>
             </section>
 
             <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
@@ -162,29 +186,6 @@
             </aside>
           </section>
 
-          <section class="panel game-info-rail game-info-bottom" data-testid="info-panel">
-            <div class="panel-header tight-header game-compact-heading">
-              <div>
-                <p class="eyebrow">Command</p>
-                <h2>Quadro turno</h2>
-              </div>
-              <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
-            </div>
-            <div class="rail-section map-stage-command-strip game-status-bottom-strip">
-              <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
-              <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
-                <strong>Scambio obbligatorio</strong>
-                <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
-              </div>
-            </div>
-            <div class="rail-section game-meta-stack game-session-card">
-              <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
-              <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
-              <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
-              <div class="game-meta-line"><span>Setup</span><strong id="game-setup-meta">2 players · 0 AI</strong></div>
-              <div class="game-meta-line"><span>Access</span><span id="auth-status">Registrati o accedi per entrare nella lobby.</span></div>
-            </div>
-          </section>
         </section>
       </main>
     </div>
