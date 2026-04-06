@@ -404,9 +404,10 @@ function addPlayer(state, name, options = {}) {
   return { ok: true, player, rejoined: false };
 }
 
-function applyReinforcement(state, playerId, territoryId) {
+function applyReinforcement(state, playerId, territoryId, requestedAmount = 1) {
   const territoryState = state.territories[territoryId];
   const player = getPlayer(state, playerId);
+  const reinforcementAmount = Math.floor(Number(requestedAmount));
 
   if (!player) {
     return { ok: false, message: "Giocatore non valido." };
@@ -424,18 +425,29 @@ function applyReinforcement(state, playerId, territoryId) {
     return { ok: false, message: "Non hai rinforzi disponibili." };
   }
 
+  if (!Number.isFinite(reinforcementAmount) || reinforcementAmount <= 0) {
+    return { ok: false, message: "Quantita rinforzi non valida." };
+  }
+
+  if (reinforcementAmount > state.reinforcementPool) {
+    return { ok: false, message: "Stai tentando di usare piu rinforzi di quelli disponibili." };
+  }
+
   if (!territoryState || territoryState.ownerId !== playerId) {
     return { ok: false, message: "Puoi rinforzare solo un tuo territorio." };
   }
 
-  territoryState.armies += 1;
-  state.reinforcementPool -= 1;
+  territoryState.armies += reinforcementAmount;
+  state.reinforcementPool -= reinforcementAmount;
   state.lastAction = {
     type: GameAction.REINFORCE,
-    summary: player.name + " rinforza " + territoryId + "."
+    summary: player.name + " rinforza " + territoryId + " con " + reinforcementAmount + " armate."
   };
   state.turnPhase = state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId) ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
-  appendLog(state, player.name + " aggiunge 1 armata a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".");
+  appendLog(
+    state,
+    player.name + " aggiunge " + reinforcementAmount + " " + (reinforcementAmount === 1 ? "armata" : "armate") + " a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + "."
+  );
   return { ok: true };
 }
 

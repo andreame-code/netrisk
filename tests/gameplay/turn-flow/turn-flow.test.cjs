@@ -35,6 +35,21 @@ register("applyReinforcement transitions from reinforcement to attack when pool 
   assert.equal(state.reinforcementPool, 0);
 });
 
+register("applyReinforcement supports batched placement in a single action", () => {
+  const state = setupLiveGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const startingArmies = state.territories[ownedTerritoryId].armies;
+  const totalReinforcements = state.reinforcementPool;
+
+  const result = applyReinforcement(state, currentPlayer.id, ownedTerritoryId, totalReinforcements);
+
+  assert.equal(result.ok, true);
+  assert.equal(state.territories[ownedTerritoryId].armies, startingArmies + totalReinforcements);
+  assert.equal(state.reinforcementPool, 0);
+  assert.equal(state.turnPhase, TurnPhase.ATTACK);
+});
+
 register("endTurn transitions from attack to fortify before advancing the turn", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
