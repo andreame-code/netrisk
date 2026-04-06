@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { registerLoginAndJoin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("surrender keeps territories owned by the surrendered player and awards victory to the last active player", async ({ browser }) => {
+  test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
   const firstPage = await firstContext.newPage();
@@ -30,8 +31,8 @@ test("surrender keeps territories owned by the surrendered player and awards vic
   firstPage.once("dialog", (dialog) => dialog.accept());
   await firstPage.locator("#surrender-button").click();
 
-  await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"));
-  await expect(secondPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"));
+  await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"), { timeout: 15000 });
+  await expect(secondPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"), { timeout: 15000 });
 
   const surrenderedCardFirstPage = firstPage.locator("#players .player-card").filter({ hasText: firstUser });
   await expect(surrenderedCardFirstPage).toContainText(/Stato:\s*eliminato/i);

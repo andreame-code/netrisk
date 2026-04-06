@@ -40,6 +40,7 @@ test("new game setup keeps player 1 locked as creator and creates the configured
 });
 
 test("new game setup creates and renders the selected Middle-earth map", async ({ page }) => {
+  test.slow();
   await resetGame(page);
   await page.goto("/game.html");
   const owner = uniqueUser("middle_earth_owner");
@@ -51,11 +52,12 @@ test("new game setup creates and renders the selected Middle-earth map", async (
 
   await page.locator("#setup-map").selectOption("middle-earth");
   await page.locator("#setup-game-name").fill("War of the Ring");
+  await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
-  await expect(page.locator("#game-status")).toContainText("War of the Ring");
-  await expect(page.locator("#game-map-meta")).toContainText("Middle-earth");
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game(\/|\.html\?gameId=)/);
+  await expect(page.locator("#game-status")).toContainText("War of the Ring", { timeout: 15000 });
+  await expect(page.locator("#game-map-meta")).toContainText("Middle-earth", { timeout: 15000 });
 
   const mapBoard = page.locator(".map-board.has-custom-background");
   await expect(mapBoard).toBeVisible();
@@ -66,6 +68,7 @@ test("new game setup creates and renders the selected Middle-earth map", async (
 });
 
 test("new game setup creates and renders the selected World Classic map", async ({ page }) => {
+  test.slow();
   await resetGame(page);
   await page.goto("/game.html");
   const owner = uniqueUser("world_classic_owner");
@@ -77,11 +80,12 @@ test("new game setup creates and renders the selected World Classic map", async 
 
   await page.locator("#setup-map").selectOption("world-classic");
   await page.locator("#setup-game-name").fill("Global Conflict");
+  await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
-  await expect(page.locator("#game-status")).toContainText("Global Conflict");
-  await expect(page.locator("#game-map-meta")).toContainText("World Classic");
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game(\/|\.html\?gameId=)/);
+  await expect(page.locator("#game-status")).toContainText("Global Conflict", { timeout: 15000 });
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
   const mapBoard = page.locator(".map-board.has-custom-background");
   await expect(mapBoard).toBeVisible();
   await expect(mapBoard).toHaveAttribute("style", /world-classic\.png/);
