@@ -40,16 +40,37 @@
             <div>
               <p class="eyebrow">New Game Setup</p>
               <h2>Configura una nuova partita</h2>
-              <p class="stage-copy">Prepara la sessione prima di crearla: nome, mappa, numero giocatori e slot umani o AI. I nomi umani arrivano dai giocatori che entrano, gli AI ricevono un generale storico dal server.</p>
+              <p class="stage-copy">Definisci il teatro, controlla quanti slot vuoi aprire e verifica subito come entreranno umani e AI prima di creare la sessione.</p>
             </div>
             <div class="content-meta-line new-game-meta-line">
               <span id="setup-auth-status">Configurazione locale pronta.</span>
             </div>
           </div>
 
+          <div class="new-game-brief">
+            <article class="new-game-brief-card new-game-brief-card-accent">
+              <span class="lobby-command-label">Obiettivo</span>
+              <strong>Preparazione rapida</strong>
+              <p>Tieni visibili solo le decisioni che servono davvero: nome, mappa, posti al tavolo e natura di ogni slot.</p>
+            </article>
+            <article class="new-game-brief-card">
+              <span class="lobby-command-label">Sequenza</span>
+              <ul class="new-game-sequence">
+                <li>1. Scegli mappa e nome</li>
+                <li>2. Definisci i posti al tavolo</li>
+                <li>3. Verifica gli slot umani e AI</li>
+              </ul>
+            </article>
+          </div>
+
           <form id="new-game-form" class="new-game-grid">
             <section class="new-game-panel">
-              <h3>Impostazioni</h3>
+              <div class="section-title-row compact-row">
+                <div>
+                  <h3>Impostazioni</h3>
+                  <p class="stage-copy">Qui scegli il teatro e la dimensione della sessione.</p>
+                </div>
+              </div>
               <label class="field-stack">
                 <span>Nome partita</span>
                 <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" />
@@ -71,7 +92,10 @@
 
             <section class="new-game-panel">
               <div class="section-title-row compact-row">
-                <h3>Slot giocatori</h3>
+                <div>
+                  <h3>Slot giocatori</h3>
+                  <p class="stage-copy">Il primo posto e sempre tuo; gli altri definiscono chi arrivera in lobby e chi nascera come AI.</p>
+                </div>
                 <span class="badge">Human / AI</span>
               </div>
               <div id="setup-player-slots" class="setup-player-slots"></div>
