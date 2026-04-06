@@ -57,7 +57,7 @@ test("game page refreshes player hand after an action updates card rewards", asy
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });
 
-  await page.route("**/api/games", async (route) => {
+  await page.route("**/api/games**", async (route) => {
     await route.fulfill({ json: { games: [{ id: "g-1", name: "Reward Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
   });
 
