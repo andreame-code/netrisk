@@ -381,24 +381,15 @@ function normalizedReinforcementAmount() {
 
 async function applyReinforcements(times) {
   const total = Math.max(1, Math.floor(Number(times) || 1));
-  let latestState = state.snapshot;
-
-  for (let index = 0; index < total; index += 1) {
-    const data = await send("/api/action", {
-      ...currentGamePayload(),
-      playerId: state.playerId,
-      type: "reinforce",
-      territoryId: elements.reinforceSelect.value,
-      expectedVersion: currentExpectedVersion()
-    });
-    latestState = data.state;
-    state.snapshot = latestState;
-    if ((latestState?.reinforcementPool || 0) <= 0) {
-      break;
-    }
-  }
-
-  state.snapshot = latestState;
+  const data = await send("/api/action", {
+    ...currentGamePayload(),
+    playerId: state.playerId,
+    type: "reinforce",
+    territoryId: elements.reinforceSelect.value,
+    amount: total,
+    expectedVersion: currentExpectedVersion()
+  });
+  state.snapshot = data.state;
   render();
 }
 
@@ -1014,13 +1005,6 @@ async function send(path, payload = {}, options = {}) {
     throw new Error(data.error || "Richiesta fallita.");
   }
 
-  if (path === "/api/action" && state.user) {
-    try {
-      data.state = await fetchLatestStateSnapshot();
-    } catch (error) {
-    }
-  }
-
   return data;
 }
 
@@ -1144,12 +1128,6 @@ function startSnapshotPolling() {
 function connectEvents() {
   disconnectLiveUpdates();
   eventsGameId = state.currentGameId || null;
-  if (state.user) {
-    eventsMode = "poll";
-    startSnapshotPolling();
-    return;
-  }
-
   const params = new URLSearchParams();
   if (state.currentGameId) {
     params.set("gameId", state.currentGameId);
@@ -1171,7 +1149,7 @@ function connectEvents() {
 }
 
 function ensureEventConnection() {
-  const nextMode = state.user ? "poll" : "sse";
+  const nextMode = "sse";
   if ((state.currentGameId || null) !== eventsGameId || eventsMode !== nextMode) {
     connectEvents();
   }
