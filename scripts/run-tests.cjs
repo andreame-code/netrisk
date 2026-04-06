@@ -145,6 +145,202 @@ function authHeaders(sessionToken) {
   };
 }
 
+function createMockSupabaseResponse(status, payload) {
+  const text = payload == null ? "" : JSON.stringify(payload);
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    async text() {
+      return text;
+    }
+  };
+}
+
+function createMockSupabaseFetch(initialData = {}) {
+  const tables = {
+    users: Array.isArray(initialData.users) ? initialData.users.map((row) => ({ ...row })) : [],
+    games: Array.isArray(initialData.games) ? initialData.games.map((row) => ({ ...row })) : [],
+    sessions: Array.isArray(initialData.sessions) ? initialData.sessions.map((row) => ({ ...row })) : [],
+    app_state: Array.isArray(initialData.app_state) ? initialData.app_state.map((row) => ({ ...row })) : []
+  };
+
+  function decodeFilter(rawValue) {
+    const value = String(rawValue || "");
+    return value.startsWith("eq.") ? decodeURIComponent(value.slice(3)) : decodeURIComponent(value);
+  }
+
+  function cloneRows(rows) {
+    return rows.map((row) => ({ ...row }));
+  }
+
+  function applyFilters(rows, searchParams) {
+    return rows.filter((row) => {
+      for (const [key, value] of searchParams.entries()) {
+        if (key === "select" || key === "limit" || key === "order" || key === "on_conflict") {
+          continue;
+        }
+
+        if (String(row[key] ?? "") !== decodeFilter(value)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  function applyOrdering(rows, order) {
+    if (!order) {
+      return rows;
+    }
+
+    const [field, direction = "asc"] = String(order).split(".");
+    const factor = direction === "desc" ? -1 : 1;
+    return [...rows].sort((left, right) => {
+      const a = String(left[field] ?? "");
+      const b = String(right[field] ?? "");
+      return a.localeCompare(b) * factor;
+    });
+  }
+
+  function applySelection(rows, select) {
+    if (!select || select === "*") {
+      return cloneRows(rows);
+    }
+
+    const fields = String(select)
+      .split(",")
+      .map((field) => field.trim())
+      .filter(Boolean);
+
+    return rows.map((row) => {
+      const projected = {};
+      fields.forEach((field) => {
+        projected[field] = row[field];
+      });
+      return projected;
+    });
+  }
+
+  async function fetchMock(url, init = {}) {
+    const requestUrl = new URL(url);
+    const tableName = requestUrl.pathname.split("/").pop();
+    const table = tables[tableName];
+    if (!table) {
+      return createMockSupabaseResponse(404, { error: "unknown_table" });
+    }
+
+    const method = String(init.method || "GET").toUpperCase();
+    const searchParams = requestUrl.searchParams;
+
+    if (method === "GET") {
+      let rows = applyFilters(table, searchParams);
+      rows = applyOrdering(rows, searchParams.get("order"));
+      const limit = Number(searchParams.get("limit"));
+      if (Number.isInteger(limit) && limit > 0) {
+        rows = rows.slice(0, limit);
+      }
+      return createMockSupabaseResponse(200, applySelection(rows, searchParams.get("select")));
+    }
+
+    if (method === "POST") {
+      const payload = JSON.parse(init.body || "[]");
+      const rows = Array.isArray(payload) ? payload : [payload];
+      const onConflict = searchParams.get("on_conflict");
+      const inserted = [];
+
+      rows.forEach((row) => {
+        const nextRow = { ...row };
+        if (onConflict) {
+          const existingIndex = table.findIndex((candidate) => String(candidate[onConflict] ?? "") === String(nextRow[onConflict] ?? ""));
+          if (existingIndex >= 0) {
+            table[existingIndex] = { ...table[existingIndex], ...nextRow };
+            inserted.push({ ...table[existingIndex] });
+            return;
+          }
+        }
+
+        table.push(nextRow);
+        inserted.push({ ...nextRow });
+      });
+
+      return createMockSupabaseResponse(201, inserted);
+    }
+
+    if (method === "PATCH") {
+      const patch = JSON.parse(init.body || "{}");
+      const updated = [];
+      table.forEach((row, index) => {
+        const matches = applyFilters([row], searchParams).length === 1;
+        if (!matches) {
+          return;
+        }
+
+        table[index] = { ...row, ...patch };
+        updated.push({ ...table[index] });
+      });
+
+      return createMockSupabaseResponse(200, updated);
+    }
+
+    if (method === "DELETE") {
+      const remaining = [];
+      table.forEach((row) => {
+        const matches = applyFilters([row], searchParams).length === 1;
+        if (!matches) {
+          remaining.push(row);
+        }
+      });
+      tables[tableName] = remaining;
+      return createMockSupabaseResponse(204, null);
+    }
+
+    return createMockSupabaseResponse(405, { error: "unsupported_method" });
+  }
+
+  return {
+    tables,
+    fetch: fetchMock
+  };
+}
+
+async function withMockSupabase(run, initialData = {}) {
+  const originalFetch = global.fetch;
+  const envKeys = [
+    "DATASTORE_DRIVER",
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+    "SUPABASE_DB_SCHEMA",
+    "VERCEL"
+  ];
+  const originalEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  const mock = createMockSupabaseFetch(initialData);
+
+  process.env.DATASTORE_DRIVER = "supabase";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-test-key";
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "publishable-test-key";
+  process.env.SUPABASE_DB_SCHEMA = "public";
+  delete process.env.VERCEL;
+  global.fetch = mock.fetch;
+
+  try {
+    return await run(mock);
+  } finally {
+    global.fetch = originalFetch;
+    envKeys.forEach((key) => {
+      if (typeof originalEnv[key] === "undefined") {
+        delete process.env[key];
+        return;
+      }
+      process.env[key] = originalEnv[key];
+    });
+  }
+}
+
 async function createAuthenticatedAppSession(app, username) {
   const registered = app.auth.registerPasswordUser(username, "secret");
   assert.equal(registered.ok, true);
@@ -2561,6 +2757,72 @@ register("GET /api/health espone lo stato del datastore sqlite", async () => {
     assert.equal(typeof payload.storage.counts.games, "number");
     assert.equal(typeof payload.storage.counts.sessions, "number");
     assert.equal(payload.hasActiveGame, true);
+  });
+});
+
+register("datastore supabase espone healthSummary async quando configurato via env", async () => {
+  await withMockSupabase(async () => {
+    const datastore = createDatastore({
+      legacyUsersFile: null,
+      legacyGamesFile: null,
+      legacySessionsFile: null
+    });
+
+    const health = await datastore.healthSummary();
+    assert.equal(datastore.driver, "supabase");
+    assert.equal(health.ok, true);
+    assert.equal(health.storage, "supabase");
+    assert.equal(health.url, "https://example.supabase.co");
+    assert.equal(health.schema, "public");
+    assert.deepEqual(health.counts, { users: 0, games: 0, sessions: 0 });
+
+    datastore.close();
+  });
+});
+
+register("app usa Supabase per auth/session e non crea sqlite locale quando il driver e remoto", async () => {
+  await withMockSupabase(async (mock) => {
+    const unique = `${Date.now()}-${uniqueSuffix()}`;
+    const tempFile = path.join(__dirname, `tmp-supabase-users-${unique}.json`);
+    const tempGamesFile = path.join(__dirname, `tmp-supabase-games-${unique}.json`);
+    const tempSessionsFile = path.join(__dirname, `tmp-supabase-sessions-${unique}.json`);
+    const tempDbFile = path.join(__dirname, `tmp-supabase-store-${unique}.sqlite`);
+    const app = createApp({
+      dataFile: tempFile,
+      gamesFile: tempGamesFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+
+    try {
+      const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
+      assert.equal(registered.ok, true);
+
+      const login = await app.auth.loginWithPassword("supa_tester", "secret");
+      assert.equal(login.ok, true);
+      assert.equal(typeof login.sessionToken, "string");
+
+      const sessionResponse = await callApp(app, "GET", "/api/auth/session", undefined, authHeaders(login.sessionToken));
+      assert.equal(sessionResponse.statusCode, 200);
+      assert.equal(sessionResponse.payload.user.username, "supa_tester");
+
+      const healthResponse = await callApp(app, "GET", "/api/health");
+      assert.equal(healthResponse.statusCode, 200);
+      assert.equal(healthResponse.payload.storage.storage, "supabase");
+
+      assert.equal(mock.tables.users.length, 1);
+      assert.equal(mock.tables.sessions.length, 1);
+      assert.equal(typeof JSON.parse(mock.tables.users[0].credentials_json).password.hash, "string");
+      assert.equal(fs.existsSync(tempDbFile), false);
+    } finally {
+      app.datastore.close();
+      [tempFile, tempGamesFile, tempSessionsFile].forEach((target) => {
+        if (fs.existsSync(target)) {
+          fs.unlinkSync(target);
+        }
+      });
+      cleanupSqliteFiles(tempDbFile);
+    }
   });
 });
 
