@@ -78,6 +78,7 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   });
 
   await page.goto("/game.html");
+  await expect(page.locator("#game-status")).toContainText("Trade Match", { timeout: 15000 });
 
   await expect(page.locator("#trade-alert")).toBeVisible();
   await expect(page.locator("#trade-alert")).toContainText("Scambio obbligatorio");

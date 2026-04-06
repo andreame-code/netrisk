@@ -1,17 +1,12 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("auth status and logout stay coherent across Game, Lobby, and Profile", async ({ page }) => {
   test.slow();
   const username = uniqueUser("commander");
-  const password = "secret123";
 
   await resetGame(page);
-  await page.goto("/game.html");
-
-  await page.locator("#auth-username").fill(username);
-  await page.locator("#auth-password").fill(password);
-  await page.getByRole("button", { name: "Registrati" }).click();
+  await registerAndLogin(page, username);
 
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();

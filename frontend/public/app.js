@@ -1025,6 +1025,11 @@ async function send(path, payload = {}, options = {}) {
 }
 
 async function loadState() {
+  if (!state.currentGameId) {
+    render();
+    return;
+  }
+
   try {
     const data = await fetchLatestStateSnapshot();
     state.snapshot = data;
@@ -1061,9 +1066,13 @@ async function loadGameList() {
 
     const data = await response.json();
     state.gameList = data.games || [];
+    const activeGame = state.gameList.find((game) => game.id === data.activeGameId) || null;
+    const canAutoSelectActiveGame = !activeGame
+      || !activeGame.creatorUserId
+      || activeGame.creatorUserId === state.user?.id;
     if (!requestedId) {
-      state.currentGameId = data.activeGameId || state.currentGameId;
-    } else if (!state.currentGameId) {
+      state.currentGameId = canAutoSelectActiveGame ? (data.activeGameId || state.currentGameId) : null;
+    } else {
       state.currentGameId = null;
     }
     syncCurrentGameName();
@@ -1256,6 +1265,8 @@ async function openRequestedGameIfNeeded() {
   const canAutoOpenRequestedGame = !requestedGame.creatorUserId
     || requestedGame.creatorUserId === state.user?.id;
   if (!canAutoOpenRequestedGame) {
+    pendingRequestedGameId = null;
+    syncGameRoute(null);
     return;
   }
 
@@ -1579,8 +1590,6 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
-
-
 
 
 

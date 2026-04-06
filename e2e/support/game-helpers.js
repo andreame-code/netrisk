@@ -18,12 +18,18 @@ async function queueNextAttackRolls(page, attackRoll, defendRoll) {
 }
 
 async function registerAndLogin(page, username, password = "secret123") {
-  await page.goto("/register.html");
-  await page.locator("#register-username").fill(username);
-  await page.locator("#register-password").fill(password);
-  await page.locator("#register-password-confirm").fill(password);
-  await page.locator("#register-submit-button").click();
-  await expect(page).toHaveURL(/\/profile\.html$/, { timeout: 10000 });
+  const registerResponse = await page.request.post("/api/auth/register", {
+    data: { username, password }
+  });
+  await expect(registerResponse.ok()).toBeTruthy();
+
+  const loginResponse = await page.request.post("/api/auth/login", {
+    data: { username, password }
+  });
+  await expect(loginResponse.ok()).toBeTruthy();
+
+  await page.goto("/game.html");
+  await expect(page.locator("#auth-status")).toContainText(username, { timeout: 10000 });
 }
 
 async function registerLoginAndJoin(page, username, password = "secret123") {

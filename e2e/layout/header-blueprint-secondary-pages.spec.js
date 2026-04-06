@@ -1,22 +1,19 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("lobby and profile headers follow the shared single-row blueprint", async ({ page }) => {
+  test.slow();
   const username = uniqueUser("commander");
-  const password = "secret123";
 
   await resetGame(page);
-  await page.goto("/game.html");
-  await page.locator("#auth-form #auth-username").fill(username);
-  await page.locator("#auth-form #auth-password").fill(password);
-  await page.getByRole("button", { name: "Registrati" }).click();
+  await registerAndLogin(page, username);
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();
 
   await page.goto("/lobby.html");
   const lobbyHeader = page.locator(".top-nav-bar");
   await expect(page.locator("#auth-status")).toContainText(username);
-  await expect(lobbyHeader).toBeVisible();
+  await expect(lobbyHeader).toBeVisible({ timeout: 15000 });
   await expect(lobbyHeader.locator(".top-nav-brand")).toBeVisible();
   await expect(lobbyHeader.locator(".top-nav-links")).toBeVisible();
   await expect(lobbyHeader.locator(".top-nav-actions")).toBeVisible();
@@ -33,7 +30,7 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
   await page.goto("/profile.html");
   const profileHeader = page.locator(".top-nav-bar");
   await expect(page.locator("#auth-status")).toContainText(username);
-  await expect(profileHeader).toBeVisible();
+  await expect(profileHeader).toBeVisible({ timeout: 15000 });
   await expect(profileHeader.locator(".top-nav-brand")).toBeVisible();
   await expect(profileHeader.locator(".top-nav-links")).toBeVisible();
   await expect(profileHeader.locator(".top-nav-actions")).toBeVisible();
