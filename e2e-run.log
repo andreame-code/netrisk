@@ -1,0 +1,30 @@
+
+> netrisk@0.1.0 test:e2e
+> node scripts/run-e2e.cjs
+
+(node:9460) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+E2E server attivo su http://127.0.0.1:3100
+
+Running 44 tests using 1 worker
+
+  x   1 [chromium] › e2e\00-visual\main-screen.spec.js:4:1 › battlefield layout matches the baseline (34.6s)
+  ok  2 [chromium] › e2e\00-visual\secondary-pages-mobile.spec.js:7:3 › secondary pages mobile baselines › lobby mobile layout matches the baseline (15.0s)
+  ok  3 [chromium] › e2e\00-visual\secondary-pages-mobile.spec.js:20:3 › secondary pages mobile baselines › profile mobile layout matches the baseline without a session (16.6s)
+  ok  4 [chromium] › e2e\00-visual\secondary-pages.spec.js:4:1 › lobby layout matches the baseline (12.6s)
+  ok  5 [chromium] › e2e\00-visual\secondary-pages.spec.js:17:1 › new game setup layout matches the baseline (11.3s)
+  ok  6 [chromium] › e2e\00-visual\secondary-pages.spec.js:28:1 › profile layout matches the baseline without a session (9.7s)
+  x   7 [chromium] › e2e\00-visual\world-classic-board.spec.js:39:3 › world classic armies stay visually centered at desktop (29.3s)
+  ok  8 [chromium] › e2e\00-visual\world-classic-board.spec.js:39:3 › world classic armies stay visually centered at laptop (19.0s)
+  ok  9 [chromium] › e2e\00-visual\world-classic-board.spec.js:39:3 › world classic armies stay visually centered at tablet (14.2s)
+  ok 10 [chromium] › e2e\gameplay\ai-turn-flow.spec.js:9:1 › human player can end turn and watch the AI complete its turn automatically (19.7s)
+  ok 11 [chromium] › e2e\gameplay\attack-conquest-flow.spec.js:11:1 › current player can conquer a territory and move armies after combat (26.2s)
+  ok 12 [chromium] › e2e\gameplay\attack-dice-default.spec.js:45:1 › attack dice default tracks the maximum allowed for the selected territory (9.0s)
+  ok 13 [chromium] › e2e\gameplay\attack-dice-request.spec.js:45:1 › attack UI sends the selected dice count to the backend (12.0s)
+  x  14 [chromium] › e2e\gameplay\authorization-direct-route-denied.spec.js:4:1 › non-member user cannot open a protected game from a direct game route (1.5m)
+  x  15 [chromium] › e2e\gameplay\authorization-open-denied.spec.js:4:1 › non-member user can open a lobby game in spectator mode without auto-joining (1.5m)
+  ok 16 [chromium] › e2e\gameplay\card-reward-sync.spec.js:41:1 › game page refreshes player hand after an action updates card rewards (5.9s)
+  ok 17 [chromium] › e2e\gameplay\card-trade-inline-error.spec.js:45:1 › game page shows an inline trade error and clears it on selection change (8.0s)
+  ok 18 [chromium] › e2e\gameplay\card-trade-panel.spec.js:42:1 › game page lets the authenticated player select 3 cards and submit a trade (8.4s)
+  ok 19 [chromium] › e2e\gameplay\card-trade-success.spec.js:41:1 › game page shows inline success after a valid trade and clears it on reselection (8.7s)
+  ok 20 [chromium] › e2e\gameplay\combat-dice-panel.spec.js:88:1 › game page shows the latest combat dice result from public state (6.0s)
