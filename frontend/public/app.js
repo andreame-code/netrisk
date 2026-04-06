@@ -1061,10 +1061,10 @@ async function loadGameList() {
 
     const data = await response.json();
     state.gameList = data.games || [];
-    if (requestedId && state.gameList.some((game) => game.id === requestedId)) {
-      state.currentGameId = requestedId;
-    } else {
+    if (!requestedId) {
       state.currentGameId = data.activeGameId || state.currentGameId;
+    } else if (!state.currentGameId) {
+      state.currentGameId = null;
     }
     syncCurrentGameName();
     if (!state.selectedGameId || !state.gameList.some((game) => game.id === state.selectedGameId)) {
@@ -1248,7 +1248,14 @@ async function openRequestedGameIfNeeded() {
     return;
   }
 
-  if (!state.gameList.some((game) => game.id === requestedId)) {
+  const requestedGame = state.gameList.find((game) => game.id === requestedId);
+  if (!requestedGame) {
+    return;
+  }
+
+  const canAutoOpenRequestedGame = !requestedGame.creatorUserId
+    || requestedGame.creatorUserId === state.user?.id;
+  if (!canAutoOpenRequestedGame) {
     return;
   }
 
@@ -1572,7 +1579,6 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
-
 
 
 

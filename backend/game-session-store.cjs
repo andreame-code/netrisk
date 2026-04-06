@@ -35,6 +35,7 @@ function summarizeGame(entry) {
     id: entry.id,
     name: entry.name,
     version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
+    creatorUserId: entry.creatorUserId || null,
     phase: entry.state && entry.state.phase ? entry.state.phase : "lobby",
     playerCount: Array.isArray(entry.state && entry.state.players) ? entry.state.players.length : 0,
     mapId: config && config.mapId ? config.mapId : null,
@@ -209,5 +210,4 @@ function createGameSessionStore(options = {}) {
 module.exports = {
   createGameSessionStore
 };
-
 
