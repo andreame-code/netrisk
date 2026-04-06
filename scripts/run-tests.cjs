@@ -1681,7 +1681,7 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
   }
 });
 
-register("API state richiede membership sulla partita protetta", async () => {
+register("API state consente lettura spettatore sulla lobby protetta senza auto-join", async () => {
   await withServer(async (baseUrl) => {
     const owner = await createAuthenticatedSession(baseUrl, uniqueName("state_owner"));
     const outsider = await createAuthenticatedSession(baseUrl, uniqueName("state_out"));
@@ -1695,9 +1695,11 @@ register("API state richiede membership sulla partita protetta", async () => {
     const outsiderState = await fetch(baseUrl + "/api/state", {
       headers: authHeaders(outsider.sessionToken)
     });
-    assert.equal(outsiderState.status, 403);
+    assert.equal(outsiderState.status, 200);
     const outsiderPayload = await outsiderState.json();
-    assert.equal(outsiderPayload.code, "MEMBER_ONLY");
+    assert.equal(outsiderPayload.gameName, "Stato protetto");
+    assert.equal(outsiderPayload.playerId, null);
+    assert.equal(Array.isArray(outsiderPayload.playerHand), false);
 
     const ownerState = await fetch(baseUrl + "/api/state", {
       headers: authHeaders(owner.sessionToken)

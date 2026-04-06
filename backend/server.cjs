@@ -39,6 +39,10 @@ function defaultDbFile() {
 }
 
 function sendJson(res, statusCode, payload, headers = {}) {
+  if (res.headersSent || res.writableEnded) {
+    return;
+  }
+
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     ...headers
@@ -343,7 +347,13 @@ function createApp(options = {}) {
       return { ok: true, user: null, gameRecord: null };
     }
 
-    const gameRecord = await gameSessions.getGame(gameId);
+    let gameRecord = null;
+    try {
+      gameRecord = await gameSessions.getGame(gameId);
+    } catch (error) {
+      sendJson(res, 404, { error: error.message || "Partita non trovata.", code: "GAME_NOT_FOUND" });
+      return null;
+    }
     if (!gameRecord.game.creatorUserId) {
       return { ok: true, user: null, gameRecord };
     }
@@ -1057,4 +1067,3 @@ module.exports = {
   server: app.server,
   state: app.state
 };
-
