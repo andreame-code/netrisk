@@ -1025,6 +1025,11 @@ async function send(path, payload = {}, options = {}) {
 }
 
 async function loadState() {
+  if (!state.currentGameId) {
+    render();
+    return;
+  }
+
   try {
     const data = await fetchLatestStateSnapshot();
     state.snapshot = data;

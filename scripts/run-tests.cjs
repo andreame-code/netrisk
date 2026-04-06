@@ -1730,6 +1730,21 @@ register("API games open richiede autenticazione", async () => {
   });
 });
 
+register("API state restituisce GAME_NOT_FOUND per un gameId inesistente senza crashare il server", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("missing_game_owner"));
+    const response = await fetch(baseUrl + "/api/state?gameId=missing-game-id", {
+      headers: authHeaders(owner.sessionToken)
+    });
+    assert.equal(response.status, 404);
+    const payload = await response.json();
+    assert.equal(payload.code, "GAME_NOT_FOUND");
+
+    const health = await fetch(baseUrl + "/api/health");
+    assert.equal(health.status, 200);
+  });
+});
+
 register("API games open consente al creatore di riaprire la propria partita", async () => {
   await withServer(async (baseUrl) => {
     const owner = await createAuthenticatedSession(baseUrl, uniqueName("open_member"));

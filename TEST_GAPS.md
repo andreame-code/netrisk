@@ -21,6 +21,8 @@
 - Core E2E gameplay flows: reinforcement, attack/conquest, fortify handoff, turn guard, version conflict
 - AI autoplay E2E
 - Authorization E2E: non-member denied on protected game open and direct game route read
+- Authorization E2E: creator can reopen a protected lobby from a direct game route
+- Backend API: unknown `gameId` returns `GAME_NOT_FOUND` without killing the server
 - Lobby/Game/Profile header and auth cross-page layout coverage
 - New game setup happy path
 - New game setup negative validation: invalid map selection shows in-page error
