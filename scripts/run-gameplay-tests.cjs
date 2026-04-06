@@ -15,6 +15,7 @@ global.register = function register(name, fn) {
   "../tests/gameplay/reinforcement/reinforcement-placement.test.cjs",
   "../tests/gameplay/combat/attack-validation.test.cjs",
   "../tests/gameplay/combat/combat-resolution.test.cjs",
+  "../tests/gameplay/combat/banzai-attack.test.cjs",
   "../tests/gameplay/conquest/conquest-resolution.test.cjs",
   "../tests/gameplay/fortify/fortify-movement.test.cjs",
   "../tests/gameplay/victory/victory-detection.test.cjs",

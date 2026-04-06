@@ -421,28 +421,25 @@ async function runBanzaiAttack() {
   render();
 
   try {
-    while (true) {
-      const { fromId, toId, from, to } = selectedAttackContext();
-      if (!fromId || !toId || !from || !to) {
-        break;
-      }
-
-      if (from.armies <= 1 || to.ownerId === state.playerId || state.snapshot?.pendingConquest) {
-        break;
-      }
-
-      const attackDice = normalizedAttackDiceValue();
-      if (!attackDice) {
-        break;
-      }
-
-      const nextState = await executeAttack(fromId, toId, attackDice);
-      const updatedFrom = nextState?.map?.find((territory) => territory.id === fromId) || null;
-      const updatedTo = nextState?.map?.find((territory) => territory.id === toId) || null;
-      if (!updatedFrom || updatedFrom.armies <= 1 || nextState?.pendingConquest || updatedTo?.ownerId === state.playerId) {
-        break;
-      }
+    const attackDice = normalizedAttackDiceValue();
+    if (!attackDice) {
+      return;
     }
+
+    const data = await send("/api/action", {
+      ...currentGamePayload(),
+      playerId: state.playerId,
+      type: "attackBanzai",
+      fromId: initialContext.fromId,
+      toId: initialContext.toId,
+      attackDice,
+      expectedVersion: currentExpectedVersion()
+    });
+    state.snapshot = data.state;
+    if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+      elements.conquestArmies.value = "";
+    }
+    render();
   } finally {
     state.attackBanzaiInFlight = false;
     render();
@@ -1568,11 +1565,6 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
-
-
-
-
-
 
 
 
