@@ -4,7 +4,8 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
   await page.goto("/game.html");
-  const owner = uniqueUser(`mapfit_${suffix}`);
+  const normalizedSuffix = String(suffix).replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase();
+  const owner = uniqueUser(`mf_${normalizedSuffix}`);
   await registerAndLogin(page, owner);
   await page.goto("/new-game.html");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
@@ -71,5 +72,37 @@ for (const viewport of viewports) {
     expect(metrics.viewportOverflowBottom).toBeFalsy();
     expect(metrics.boardWidth).toBe(metrics.appliedWidth);
     expect(metrics.boardHeight).toBe(metrics.appliedHeight);
+  });
+
+  test(`turn summary panel stays under the map and inside the left column at ${viewport.name}`, async ({ page }) => {
+    test.slow();
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openWorldClassicGame(page, `${viewport.name}-summary`);
+
+    const metrics = await page.evaluate(() => {
+      const mainColumn = document.querySelector(".game-main-column");
+      const mapStage = document.querySelector(".game-map-stage");
+      const infoPanel = document.querySelector(".game-info-bottom");
+      if (!mainColumn || !mapStage || !infoPanel) {
+        return null;
+      }
+
+      const mainRect = mainColumn.getBoundingClientRect();
+      const mapRect = mapStage.getBoundingClientRect();
+      const infoRect = infoPanel.getBoundingClientRect();
+
+      return {
+        infoStartsBelowMap: infoRect.top >= mapRect.bottom - 1,
+        infoInsideLeftColumnLeft: infoRect.left >= mainRect.left - 1,
+        infoInsideLeftColumnRight: infoRect.right <= mainRect.right + 1,
+        widthMatchesMainColumn: Math.abs(infoRect.width - mainRect.width) <= 2
+      };
+    });
+
+    expect(metrics).not.toBeNull();
+    expect(metrics.infoStartsBelowMap).toBeTruthy();
+    expect(metrics.infoInsideLeftColumnLeft).toBeTruthy();
+    expect(metrics.infoInsideLeftColumnRight).toBeTruthy();
+    expect(metrics.widthMatchesMainColumn).toBeTruthy();
   });
 }

@@ -1894,7 +1894,7 @@ body[data-app-section="game"] .board-shell {
   gap: 12px;
   min-width: 0;
   height: 100%;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   --game-map-max-height: calc(100vh - 340px);
 }
 
@@ -1931,7 +1931,6 @@ body[data-app-section="game"] .board-shell {
 
 .game-info-bottom {
   min-width: 0;
-  margin-top: 12px;
 }
 
 .game-info-bottom .panel-header {
@@ -2127,7 +2126,6 @@ body[data-app-section="game"] .main-nav-shell {
   }
 
   .game-info-bottom {
-    margin-top: 12px;
   }
 
   .game-main-column {
@@ -2153,7 +2151,6 @@ body[data-app-section="game"] .main-nav-shell {
   }
 
   .game-info-bottom {
-    margin-top: 12px;
   }
 
   .game-info-bottom .game-compact-heading {
