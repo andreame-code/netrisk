@@ -39,11 +39,7 @@
             <div class="session-browser-heading">
               <p class="eyebrow session-eyebrow">War Room</p>
               <h2>Lobby di Comando</h2>
-              <p class="stage-copy">Monitora le sessioni, valuta la prontezza operativa e riapri il teatro corretto in pochi tocchi.</p>
-            </div>
-            <div class="page-header-actions compact-actions lobby-head-actions">
-              <a href="/new-game.html" id="create-game-button" class="ghost-button lobby-create-button">Crea partita</a>
-              <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+              <p class="stage-copy">Riapri la partita giusta in fretta, controlla quali lobby sono pronte e scegli subito il prossimo teatro da aprire.</p>
             </div>
           </div>
 
@@ -51,6 +47,18 @@
             <span id="auth-status">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</span>
             <span class="status-divider" aria-hidden="true"></span>
             <span id="game-status">Nessuna partita attiva</span>
+          </div>
+
+          <div class="lobby-focus-band">
+            <article class="lobby-focus-card">
+              <span class="lobby-command-label">Sessione in primo piano</span>
+              <strong id="lobby-active-focus">Nessuna</strong>
+              <p id="lobby-focus-note">Apri una partita per continuare dal teatro corrente.</p>
+            </article>
+            <div class="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
+              <a href="/new-game.html" id="create-game-button" class="ghost-button lobby-create-button">Crea partita</a>
+              <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+            </div>
           </div>
 
           <div class="lobby-command-strip" aria-label="Panoramica lobby">
@@ -65,14 +73,20 @@
               <p>Lobby che possono essere avviate senza configurazioni extra.</p>
             </article>
             <article class="lobby-command-card">
-              <span class="lobby-command-label">Sessione attiva</span>
-              <strong id="lobby-active-focus">Nessuna</strong>
-              <p id="lobby-focus-note">Apri una partita per continuare dal teatro corrente.</p>
+              <span class="lobby-command-label">Prontezza operativa</span>
+              <strong>Seleziona</strong>
+              <p>Usa lista e pannello dettagli per confrontare rapidamente composizione, stato e ultimo aggiornamento.</p>
             </article>
           </div>
 
           <div class="session-browser-grid">
             <div class="session-list-panel">
+              <div class="section-title-row session-list-title-row">
+                <div>
+                  <h3>Sessioni disponibili</h3>
+                  <p class="stage-copy">Seleziona una lobby per vedere subito se vale la pena riaprirla.</p>
+                </div>
+              </div>
               <div class="session-list-header session-row session-row-head">
                 <span>Partita</span>
                 <span>Mappa</span>
@@ -87,7 +101,10 @@
 
             <aside class="session-detail-panel" data-testid="game-session-details">
               <div class="section-title-row">
-                <h3>Dettagli sessione</h3>
+                <div>
+                  <h3>Dettagli sessione</h3>
+                  <p class="stage-copy">Qui controlli stato reale, occupazione slot e ultimo contesto utile prima di aprire.</p>
+                </div>
                 <span id="selected-game-status" class="badge">Nessuna selezione</span>
               </div>
               <div id="game-session-details" class="session-details-card">
