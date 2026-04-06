@@ -87,7 +87,7 @@ const elements = {
   headerAuthPassword: document.querySelector("#header-auth-password"),
   headerLoginButton: document.querySelector("#header-login-button"),
   authStatus: document.querySelector("#auth-status"),
-  registerButton: document.querySelector("#register-button"),
+  registerLink: document.querySelector("#register-link"),
   loginButton: document.querySelector("#login-button"),
   logoutButton: document.querySelector("#logout-button"),
   identityStatus: document.querySelector("#identity-status"),
@@ -865,10 +865,12 @@ function render() {
   elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
   elements.authUsername.hidden = isAuthenticated;
   elements.authPassword.hidden = isAuthenticated;
-  elements.registerButton.hidden = isAuthenticated;
   elements.loginButton.hidden = isAuthenticated;
-  elements.registerButton.disabled = isAuthenticated;
   elements.loginButton.disabled = isAuthenticated;
+  if (elements.registerLink) {
+    elements.registerLink.hidden = isAuthenticated;
+    elements.registerLink.setAttribute("aria-hidden", isAuthenticated ? "true" : "false");
+  }
   if (elements.headerLoginForm) {
     elements.headerLoginForm.hidden = isAuthenticated;
     elements.headerAuthUsername.disabled = isAuthenticated;
@@ -1286,28 +1288,6 @@ if (elements.headerLoginForm) {
     }
   });
 }
-
-elements.registerButton.addEventListener("click", async () => {
-  const username = elements.authUsername.value.trim();
-  const password = elements.authPassword.value;
-  if (!username || !password) {
-    return;
-  }
-
-  try {
-    await send("/api/auth/register", { username, password });
-    const login = await send("/api/auth/login", { username, password });
-    setSession(login.user);
-    clearPlayerIdentity();
-    await loadState().catch(() => {});
-    await loadGameList();
-    await openRequestedGameIfNeeded();
-    render();
-    ensureEventConnection();
-  } catch (error) {
-    alert(error.message);
-  }
-});
 
 if (elements.createGameButton) {
   elements.createGameButton.addEventListener("click", handleCreateGame);
