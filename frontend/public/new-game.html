@@ -23,6 +23,12 @@
           </nav>
 
           <div class="top-nav-zone top-nav-actions">
+            <form id="header-login-form" class="top-nav-auth-form">
+              <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
+              <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
+              <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
+              <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+            </form>
             <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
             <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
           </div>

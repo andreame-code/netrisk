@@ -10,6 +10,10 @@ const elements = {
   feedback: document.querySelector("#new-game-feedback"),
   form: document.querySelector("#new-game-form"),
   gameName: document.querySelector("#setup-game-name"),
+  headerLoginForm: document.querySelector("#header-login-form"),
+  headerAuthUsername: document.querySelector("#header-auth-username"),
+  headerAuthPassword: document.querySelector("#header-auth-password"),
+  headerLoginButton: document.querySelector("#header-login-button"),
   logoutButton: document.querySelector("#logout-button"),
   map: document.querySelector("#setup-map"),
   mapDetails: document.querySelector("#setup-map-details"),
@@ -160,10 +164,33 @@ async function restoreSession() {
   }
 
   elements.logoutButton.hidden = !state.user;
+  if (elements.headerLoginForm) {
+    const isAuthenticated = Boolean(state.user);
+    elements.headerLoginForm.hidden = isAuthenticated;
+    elements.headerAuthUsername.disabled = isAuthenticated;
+    elements.headerAuthPassword.disabled = isAuthenticated;
+    elements.headerLoginButton.disabled = isAuthenticated;
+  }
   elements.authStatus.textContent = state.user ? "Comandante: " + state.user.username : "Configurazione locale pronta.";
   renderNavAvatar(state.user && state.user.username);
   state.sessionReady = true;
   updateSubmitState();
+}
+
+async function loginWithCredentials(username, password) {
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Accesso non riuscito.");
+  }
+
+  state.user = data.user;
+  elements.headerAuthPassword.value = "";
+  await restoreSession();
 }
 
 elements.totalPlayers.addEventListener("change", renderSlots);
@@ -218,6 +245,23 @@ elements.logoutButton.addEventListener("click", async () => {
   renderNavAvatar();
   updateSubmitState();
 });
+
+if (elements.headerLoginForm) {
+  elements.headerLoginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = elements.headerAuthUsername.value.trim();
+    const password = elements.headerAuthPassword.value;
+    if (!username || !password) {
+      return;
+    }
+
+    try {
+      await loginWithCredentials(username, password);
+    } catch (error) {
+      setFeedback(error.message, "error");
+    }
+  });
+}
 
 await loadOptions();
 renderSlots();

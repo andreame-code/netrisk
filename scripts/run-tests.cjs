@@ -45,6 +45,7 @@ const worldClassicMap = require("../shared/maps/world-classic.cjs");
 const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
+const TEST_PASSWORD = "Secret123!";
 
 function register(name, fn) {
   tests.push({ name, fn });
@@ -117,7 +118,7 @@ function sessionTokenFromSetCookie(rawSetCookie) {
 
 
 async function createAuthenticatedSession(baseUrl, username) {
-  const password = "secret";
+  const password = TEST_PASSWORD;
   const registerResponse = await fetch(baseUrl + "/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -342,9 +343,9 @@ async function withMockSupabase(run, initialData = {}) {
 }
 
 async function createAuthenticatedAppSession(app, username) {
-  const registered = app.auth.registerPasswordUser(username, "secret");
+  const registered = await app.auth.registerPasswordUser(username, TEST_PASSWORD);
   assert.equal(registered.ok, true);
-  const login = app.auth.loginWithPassword(username, "secret");
+  const login = await app.auth.loginWithPassword(username, TEST_PASSWORD);
   assert.equal(login.ok, true);
   return login;
 }
@@ -409,7 +410,7 @@ async function withServer(run) {
   }
 }
 
-register("auth store registra e autentica utenti password", () => {
+register("auth store registra e autentica utenti password", async () => {
   const tempFile = path.join(__dirname, "tmp-users.json");
   const tempSessionsFile = path.join(__dirname, "tmp-sessions.json");
   const tempDbFile = path.join(__dirname, "tmp-auth.sqlite");
@@ -425,17 +426,28 @@ register("auth store registra e autentica utenti password", () => {
     fs.unlinkSync(tempDbFile);
   }
 
-  const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
-  const registered = auth.registerPasswordUser("tester", "secret");
+  const auth = createAuthStore({
+    dataFile: tempFile,
+    sessionsFile: tempSessionsFile,
+    dbFile: tempDbFile,
+    encryptionKey: "test-auth-encryption-key"
+  });
+  const registered = await auth.registerPasswordUser({
+    username: "tester",
+    password: TEST_PASSWORD,
+    email: "tester@example.com"
+  });
   assert.equal(registered.ok, true);
 
-  const login = auth.loginWithPassword("tester", "secret");
+  const login = await auth.loginWithPassword("tester", TEST_PASSWORD);
   assert.equal(login.ok, true);
   assert.equal(Boolean(login.sessionToken), true);
-  assert.equal(auth.getUserFromSession(login.sessionToken).username, "tester");
-  const storedUser = auth.datastore.findUserByUsername("tester");
+  assert.equal((await auth.getUserFromSession(login.sessionToken)).username, "tester");
+  const storedUser = await auth.datastore.findUserByUsername("tester");
   assert.equal(typeof storedUser.credentials.password.secret, "undefined");
   assert.equal(typeof storedUser.credentials.password.hash, "string");
+  assert.equal(storedUser.credentials.password.algorithm, "scrypt");
+  assert.equal(typeof storedUser.profile.contact.emailEncrypted, "string");
 
   auth.datastore.close();
   if (fs.existsSync(tempFile)) {
@@ -461,7 +473,7 @@ register("randomHex restituisce una stringa esadecimale della lunghezza attesa",
   assert.match(token, /^[0-9a-f]+$/);
 });
 
-register("auth store mantiene la sessione dopo il riavvio del processo", () => {
+register("auth store mantiene la sessione dopo il riavvio del processo", async () => {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
@@ -469,14 +481,14 @@ register("auth store mantiene la sessione dopo il riavvio del processo", () => {
 
   try {
     const firstStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
-    const registered = firstStore.registerPasswordUser("persisted", "secret");
+    const registered = await firstStore.registerPasswordUser("persisted", TEST_PASSWORD);
     assert.equal(registered.ok, true);
 
-    const login = firstStore.loginWithPassword("persisted", "secret");
+    const login = await firstStore.loginWithPassword("persisted", TEST_PASSWORD);
     assert.equal(login.ok, true);
 
     const restartedStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
-    const user = restartedStore.getUserFromSession(login.sessionToken);
+    const user = await restartedStore.getUserFromSession(login.sessionToken);
     assert.equal(Boolean(user), true);
     assert.equal(user.username, "persisted");
     firstStore.datastore.close();
@@ -494,7 +506,7 @@ register("auth store mantiene la sessione dopo il riavvio del processo", () => {
   }
 });
 
-register("auth store migra password legacy in hash al login riuscito", () => {
+register("auth store migra password legacy in hash al login riuscito", async () => {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
   const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
@@ -517,15 +529,71 @@ register("auth store migra password legacy in hash al login riuscito", () => {
     }], null, 2) + "\n", "utf8");
 
     const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
-    const login = auth.loginWithPassword("legacy", "secret");
+    const login = await auth.loginWithPassword("legacy", "secret");
     assert.equal(login.ok, true);
 
-    const storedUser = auth.datastore.findUserByUsername("legacy");
+    const storedUser = await auth.datastore.findUserByUsername("legacy");
     assert.equal(typeof storedUser.credentials.password.secret, "undefined");
     assert.equal(typeof storedUser.credentials.password.hash, "string");
     assert.equal(typeof storedUser.credentials.password.salt, "string");
+    assert.equal(storedUser.credentials.password.algorithm, "scrypt");
     auth.datastore.close();
   } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("auth store accetta email opzionale ma rifiuta password debole", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+  let auth = null;
+
+  try {
+    auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile,
+      encryptionKey: "test-auth-encryption-key"
+    });
+
+    const weak = await auth.registerPasswordUser({
+      username: "weak-user",
+      password: "123",
+      email: "weak@example.com"
+    });
+    assert.equal(weak.ok, false);
+
+    const noEmail = await auth.registerPasswordUser({
+      username: "solid-user",
+      password: TEST_PASSWORD
+    });
+    assert.equal(noEmail.ok, true);
+
+    const withEmail = await auth.registerPasswordUser({
+      username: "solid-mail",
+      password: TEST_PASSWORD,
+      email: "solid@example.com"
+    });
+    assert.equal(withEmail.ok, true);
+
+    const storedUser = await auth.datastore.findUserByUsername("solid-mail");
+    assert.equal(Boolean(storedUser.profile.contact.emailEncrypted), true);
+    assert.equal(storedUser.profile.contact.emailEncrypted.includes("solid@example.com"), false);
+  } finally {
+    if (auth) {
+      auth.datastore.close();
+    }
+
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
     }
@@ -1933,7 +2001,7 @@ register("API game session persists mutations across reopen", async () => {
     const registerSecond = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: secondUser, password: "secret" })
+      body: JSON.stringify({ username: secondUser, password: TEST_PASSWORD })
     });
     assert.equal(registerSecond.status, 201);
 
@@ -1950,7 +2018,7 @@ register("API game session persists mutations across reopen", async () => {
     const loginSecond = await fetch(baseUrl + "/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: secondUser, password: "secret" })
+      body: JSON.stringify({ username: secondUser, password: TEST_PASSWORD })
     });
     const secondAuthPayload = await loginSecond.json();
     const secondAuth = {
@@ -2021,7 +2089,7 @@ register("API game session restores active game across app recreation", async ()
     app.server.close();
     app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
 
-    const relogin = app.auth.loginWithPassword(firstSession.user.username, "secret");
+    const relogin = await app.auth.loginWithPassword(firstSession.user.username, TEST_PASSWORD);
     assert.equal(relogin.ok, true);
 
     const stateResponse = await callApp(app, "GET", "/api/state", undefined, authHeaders(relogin.sessionToken));
@@ -2107,14 +2175,14 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     const registerFirst = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: firstUsername, password: "secret" })
+      body: JSON.stringify({ username: firstUsername, password: TEST_PASSWORD })
     });
     assert.equal(registerFirst.status, 201);
 
     const registerSecond = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: secondUsername, password: "secret" })
+      body: JSON.stringify({ username: secondUsername, password: TEST_PASSWORD })
     });
     assert.equal(registerSecond.status, 201);
 
@@ -2131,7 +2199,7 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     const loginSecond = await fetch(baseUrl + "/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: secondUsername, password: "secret" })
+      body: JSON.stringify({ username: secondUsername, password: TEST_PASSWORD })
     });
     const secondLoginBody = await loginSecond.json();
     const secondLoginPayload = {
@@ -2235,7 +2303,7 @@ register("API games open ricollega il player umano corretto dopo logout e nuovo 
     const reloginResponse = await fetch(baseUrl + "/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: "secret" })
+      body: JSON.stringify({ username, password: TEST_PASSWORD })
     });
     assert.equal(reloginResponse.status, 200);
     const reloginBody = await reloginResponse.json();
@@ -2664,7 +2732,7 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     const registerOther = await fetch(baseUrl + "/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: other, password: "secret" })
+      body: JSON.stringify({ username: other, password: TEST_PASSWORD })
     });
     assert.equal(registerOther.status, 201);
 
@@ -2680,7 +2748,7 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     const loginOther = await fetch(baseUrl + "/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: other, password: "secret" })
+      body: JSON.stringify({ username: other, password: TEST_PASSWORD })
     });
     const otherSessionBody = await loginOther.json();
     const otherSession = {
@@ -2891,14 +2959,14 @@ register("API register + login + join completa il flusso di accesso", async () =
     const registerResponse = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: unique, password: "secret" })
+      body: JSON.stringify({ username: unique, password: TEST_PASSWORD })
     });
     assert.equal(registerResponse.status, 201);
 
     const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: unique, password: "secret" })
+      body: JSON.stringify({ username: unique, password: TEST_PASSWORD })
     });
     assert.equal(loginResponse.status, 200);
     const loginBody = await loginResponse.json();
