@@ -434,6 +434,9 @@ function createApp(options = {}) {
     }
 
     if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset") {
+      if (typeof datastore.resetForTests === "function") {
+        await datastore.resetForTests();
+      }
       const resetGame = await gameSessions.createGame(createInitialState(), { name: "Partita test" });
       activeGameId = resetGame.game.id;
       activeGameVersion = resetGame.game.version;

@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { registerLoginAndJoin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 test("territory selection updates action controls for the current player", async ({ browser }) => {
+  test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
   const firstPage = await firstContext.newPage();

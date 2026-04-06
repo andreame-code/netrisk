@@ -165,9 +165,18 @@ function createMockSupabaseFetch(initialData = {}) {
     app_state: Array.isArray(initialData.app_state) ? initialData.app_state.map((row) => ({ ...row })) : []
   };
 
-  function decodeFilter(rawValue) {
+  function parseFilter(rawValue) {
     const value = String(rawValue || "");
-    return value.startsWith("eq.") ? decodeURIComponent(value.slice(3)) : decodeURIComponent(value);
+    const decodeLiteral = (input) => decodeURIComponent(input).replace(/\\([%_])/g, "$1");
+    if (value.startsWith("eq.")) {
+      return { operator: "eq", value: decodeLiteral(value.slice(3)) };
+    }
+
+    if (value.startsWith("ilike.")) {
+      return { operator: "ilike", value: decodeLiteral(value.slice(6)) };
+    }
+
+    return { operator: "eq", value: decodeLiteral(value) };
   }
 
   function cloneRows(rows) {
@@ -181,7 +190,16 @@ function createMockSupabaseFetch(initialData = {}) {
           continue;
         }
 
-        if (String(row[key] ?? "") !== decodeFilter(value)) {
+        const filter = parseFilter(value);
+        const candidate = String(row[key] ?? "");
+        if (filter.operator === "ilike") {
+          if (candidate.toLowerCase() !== filter.value.toLowerCase()) {
+            return false;
+          }
+          continue;
+        }
+
+        if (candidate !== filter.value) {
           return false;
         }
       }

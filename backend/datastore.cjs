@@ -211,6 +211,16 @@ function createDatastore(options = {}) {
 
   return {
     dbFile,
+    resetForTests() {
+      transaction(() => {
+        db.exec(`
+          DELETE FROM sessions;
+          DELETE FROM users;
+          DELETE FROM games;
+          DELETE FROM app_state;
+        `);
+      });
+    },
     async backupTo(targetFile) {
       if (!targetFile) {
         throw new Error("Il backup richiede un percorso destinazione valido.");
