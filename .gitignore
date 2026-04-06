@@ -3,6 +3,8 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
+.tmp-SUPABASE_URL.txt
+.vercel/
 data/*.json
 data/*.json.bak
 data/*.sqlite
