@@ -39,6 +39,8 @@ The project must be safe to extend over time without rewriting existing work.
 7. When possible, keep one concern per change.
 
 ## Git safety workflow
+For every new chat, automatically create and switch to a dedicated git branch before making changes.
+Each chat must always continue on its own dedicated branch, even when switching between different chats.
 Before large changes, remind the user to create a git checkpoint.
 Before heavy code changes requested by the user, automatically create and switch to a new git branch before editing files.
 After changes, summarize exactly which files were touched and why.
