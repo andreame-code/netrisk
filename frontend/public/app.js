@@ -1072,7 +1072,7 @@ async function loadGameList() {
       || activeGame.creatorUserId === state.user?.id;
     if (!requestedId) {
       state.currentGameId = canAutoSelectActiveGame ? (data.activeGameId || state.currentGameId) : null;
-    } else {
+    } else if (state.currentGameId && !state.gameList.some((game) => game.id === state.currentGameId)) {
       state.currentGameId = null;
     }
     syncCurrentGameName();
