@@ -53,11 +53,11 @@ test("attack dice default tracks the maximum allowed for the selected territory"
     await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
   });
 
-  await page.route("**/api/games", async (route) => {
+  await page.route("**/api/games**", async (route) => {
     await route.fulfill({ json: { games: [{ id: "g-1", name: "Attack Dice Match", updatedAt: "2026-04-02T10:00:00.000Z", phase: "active", playerCount: 2 }], activeGameId: "g-1" } });
   });
 
-  await page.route("**/api/state", async (route) => {
+  await page.route("**/api/state**", async (route) => {
     await route.fulfill({ json: currentState });
   });
 
