@@ -46,6 +46,27 @@ function canOpenGame(actor, game, state) {
   return !game.creatorUserId;
 }
 
+function canReadGame(actor, game, state) {
+  if (!actor || !actor.id || !game) {
+    return false;
+  }
+
+  if (actor.role === Roles.ADMIN) {
+    return true;
+  }
+
+  if (game.creatorUserId && game.creatorUserId === actor.id) {
+    return true;
+  }
+
+  const players = Array.isArray(state && state.players) ? state.players : [];
+  if (players.some((player) => player && player.name === actor.username)) {
+    return true;
+  }
+
+  return !game.creatorUserId;
+}
+
 function canStartGame(actor, game) {
   if (!actor || !actor.id || !game) {
     return false;
@@ -91,7 +112,11 @@ function authorize(action, context = {}) {
       throw error;
     }
 
-    if (!canOpenGame(actor, context.game, context.state)) {
+    const allowed = action === "game:read"
+      ? canReadGame(actor, context.game, context.state)
+      : canOpenGame(actor, context.game, context.state);
+
+    if (!allowed) {
       const error = new Error("Puoi aprire solo partite di cui fai parte.");
       error.statusCode = 403;
       error.code = "MEMBER_ONLY";
@@ -129,6 +154,7 @@ module.exports = {
   Roles,
   actorForUser,
   authorize,
+  canReadGame,
   canCreateGame,
   canOpenGame,
   canStartGame
