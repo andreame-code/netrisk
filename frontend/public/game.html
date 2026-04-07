@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Frontline Dominion</title>
+    <title data-i18n="game.title">Frontline Dominion</title>
     <link rel="stylesheet" href="/style.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
@@ -14,11 +14,11 @@
         <section class="app-shell board-shell" data-testid="app-shell">
           <section class="panel top-nav-bar">
             <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-              <p class="eyebrow">NetRisk</p>
-              <h1>Frontline Dominion</h1>
+              <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
+              <h1 data-i18n="app.title">Frontline Dominion</h1>
             </a>
 
-            <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+            <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
               <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
               <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
               <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
@@ -26,13 +26,13 @@
 
             <div class="top-nav-zone top-nav-actions">
               <form id="header-login-form" class="top-nav-auth-form">
-                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
-                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
-                <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
-                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
+                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+                <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
+                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
               </form>
-              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
-              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
+              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
             </div>
           </section>
 
@@ -45,143 +45,143 @@
               <section class="panel game-info-rail game-info-bottom" data-testid="info-panel">
                 <div class="panel-header tight-header game-compact-heading">
                   <div>
-                    <p class="eyebrow">Command</p>
-                    <h2>Quadro turno</h2>
+                    <p class="eyebrow" data-i18n="game.command.eyebrow">Command</p>
+                    <h2 data-i18n="game.command.heading">Quadro turno</h2>
                   </div>
-                  <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
+                  <span id="turn-badge" class="badge" data-testid="phase-indicator" data-i18n="game.phaseBadge">Lobby</span>
                 </div>
                 <div class="rail-section map-stage-command-strip game-status-bottom-strip">
                   <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
                   <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
-                    <strong>Scambio obbligatorio</strong>
-                    <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
+                    <strong data-i18n="game.tradeAlert.title">Scambio obbligatorio</strong>
+                    <span id="trade-alert-text" data-i18n="game.tradeAlert.copy">Devi scambiare 3 carte per continuare il turno.</span>
                   </div>
                 </div>
                 <div class="rail-section game-meta-stack game-session-card">
-                  <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
-                  <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
-                  <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
-                  <div class="game-meta-line"><span>Setup</span><strong id="game-setup-meta">2 players · 0 AI</strong></div>
-                  <div class="game-meta-line"><span>Access</span><span id="auth-status">Registrati o accedi per entrare nella lobby.</span></div>
+                  <div class="game-meta-line"><span data-i18n="game.meta.player">Player</span><strong id="identity-status" data-testid="current-player-indicator" data-i18n="game.meta.identity">Accedi per collegarti alla partita.</strong></div>
+                  <div class="game-meta-line"><span data-i18n="game.meta.activeGame">Active game</span><strong id="game-status" data-i18n="game.meta.noActiveGame">Nessuna partita attiva</strong></div>
+                  <div class="game-meta-line"><span data-i18n="game.meta.map">Map</span><strong id="game-map-meta">classic-mini</strong></div>
+                  <div class="game-meta-line"><span data-i18n="game.meta.setup">Setup</span><strong id="game-setup-meta" data-i18n="game.meta.setupDefault">2 players · 0 AI</strong></div>
+                  <div class="game-meta-line"><span data-i18n="game.meta.access">Access</span><span id="auth-status" data-i18n="game.meta.accessCopy">Registrati o accedi per entrare nella lobby.</span></div>
                 </div>
               </section>
             </section>
 
             <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
               <div class="rail-section game-phase-banner" id="phase-banner">
-                <span>Fase: <strong id="phase-banner-value">Lobby</strong></span>
+                <span><span data-i18n="game.phaseBanner">Fase:</span> <strong id="phase-banner-value" data-i18n="game.phaseValue">Lobby</strong></span>
               </div>
 
               <div class="rail-section game-reinforcement-banner" id="reinforcement-banner" hidden>
-                <span>Rinforzi disponibili: <strong id="reinforcement-banner-value">0</strong></span>
+                <span><span data-i18n="game.reinforcementBanner">Rinforzi disponibili:</span> <strong id="reinforcement-banner-value">0</strong></span>
               </div>
 
               <div class="rail-section game-lobby-controls" id="lobby-controls-section">
                 <form id="auth-form" class="auth-form compact-form rail-auth-form">
-                  <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" required />
-                  <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
-                  <button type="submit" id="login-button" class="ghost-button">Accedi</button>
-                  <a href="/register.html" id="register-link" class="ghost-button full-width">Registrati</a>
+                  <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" required data-i18n-placeholder="game.auth.username.placeholder" />
+                  <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required data-i18n-placeholder="game.auth.password.placeholder" />
+                  <button type="submit" id="login-button" class="ghost-button" data-i18n="auth.login">Accedi</button>
+                  <a href="/register.html" id="register-link" class="ghost-button full-width" data-i18n="auth.register">Registrati</a>
                 </form>
                 <div class="identity-actions compact-actions rail-action-group" id="lobby-action-buttons">
-                  <button id="join-button">Entra nella lobby</button>
-                  <button id="start-button" class="ghost-button">Avvia partita</button>
+                  <button id="join-button" data-i18n="game.join">Entra nella lobby</button>
+                  <button id="start-button" class="ghost-button" data-i18n="game.start">Avvia partita</button>
                 </div>
               </div>
 
               <div class="rail-section actions-section">
                 <div class="action-group compact-group" id="reinforce-group">
-                  <label for="reinforce-select">Rinforza</label>
+                  <label for="reinforce-select" data-i18n="game.actions.reinforce">Rinforza</label>
                   <div class="action-stack">
                     <select id="reinforce-select"></select>
                     <div class="reinforce-actions-row">
-                      <input id="reinforce-amount" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantita rinforzi" />
-                      <button id="reinforce-multi-button">Aggiungi</button>
+                      <input id="reinforce-amount" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantita rinforzi" data-i18n-aria-label="game.actions.reinforceAmountAria" />
+                      <button id="reinforce-multi-button" data-i18n="game.actions.add">Aggiungi</button>
                     </div>
                   </div>
                 </div>
 
                 <div class="action-group compact-group" id="attack-group">
-                  <label for="attack-from">Attacca</label>
+                  <label for="attack-from" data-i18n="game.actions.attack">Attacca</label>
                   <div class="action-stack">
                     <select id="attack-from"></select>
                     <select id="attack-to"></select>
                     <select id="attack-dice"></select>
                     <div class="action-row">
-                      <button id="attack-button">Lancia attacco</button>
-                      <button id="attack-banzai-button" type="button">Banzai</button>
+                      <button id="attack-button" data-i18n="game.actions.launchAttack">Lancia attacco</button>
+                      <button id="attack-banzai-button" type="button" data-i18n="game.actions.banzai">Banzai</button>
                     </div>
                   </div>
                 </div>
 
                 <div class="action-group compact-group" id="conquest-group" hidden>
-                  <label for="conquest-armies">Dopo conquista</label>
+                  <label for="conquest-armies" data-i18n="game.actions.afterConquest">Dopo conquista</label>
                   <div class="action-stack">
                     <input id="conquest-armies" type="number" min="1" step="1" />
-                    <button id="conquest-button">Sposta armate</button>
+                    <button id="conquest-button" data-i18n="game.actions.moveArmies">Sposta armate</button>
                   </div>
                 </div>
 
                 <div class="action-group compact-group" id="fortify-group" hidden>
-                  <label for="fortify-from">Fortifica</label>
+                  <label for="fortify-from" data-i18n="game.actions.fortify">Fortifica</label>
                   <div class="action-stack">
                     <select id="fortify-from"></select>
                     <select id="fortify-to"></select>
                     <input id="fortify-armies" type="number" min="1" step="1" />
-                    <button id="fortify-button">Sposta armate</button>
+                    <button id="fortify-button" data-i18n="game.actions.moveArmies">Sposta armate</button>
                   </div>
                 </div>
 
                 <div class="action-group compact-group" id="card-trade-group" hidden>
-                  <label for="card-trade-list">Carte</label>
+                  <label for="card-trade-list" data-i18n="game.actions.cards">Carte</label>
                   <div id="card-trade-alert" class="trade-emphasis" hidden>
-                    Devi scambiare subito 3 carte prima di poter continuare.
+                    <span data-i18n="game.cards.alert">Devi scambiare subito 3 carte prima di poter continuare.</span>
                   </div>
                   <div class="action-meta-list">
-                    <p id="card-trade-summary" class="action-help">Carte in mano: 0.</p>
-                    <p id="card-trade-bonus" class="action-help">Prossimo scambio: +4 rinforzi.</p>
+                    <p id="card-trade-summary" class="action-help" data-i18n="game.cards.summary">Carte in mano: 0.</p>
+                    <p id="card-trade-bonus" class="action-help" data-i18n="game.cards.bonus">Prossimo scambio: +4 rinforzi.</p>
                   </div>
                   <div id="card-trade-list" class="card-trade-list" data-testid="card-trade-list"></div>
-                  <p id="card-trade-help" class="action-help">Seleziona 3 carte valide per lo scambio.</p>
+                  <p id="card-trade-help" class="action-help" data-i18n="game.cards.help">Seleziona 3 carte valide per lo scambio.</p>
                   <p id="card-trade-success" class="action-success" hidden></p>
                   <p id="card-trade-error" class="action-error" hidden></p>
-                  <button id="card-trade-button" class="ghost-button full-width">Scambia set</button>
+                  <button id="card-trade-button" class="ghost-button full-width" data-i18n="game.cards.tradeSet">Scambia set</button>
                 </div>
 
-                <button id="end-turn-button" class="ghost-button full-width">Termina turno</button>
+                <button id="end-turn-button" class="ghost-button full-width" data-i18n="game.actions.endTurn">Termina turno</button>
               </div>
 
               <div class="rail-section combat-result-section" id="combat-result-group" hidden>
                 <div class="section-title-row">
-                  <h3>Ultimo combattimento</h3>
-                  <span class="badge accent" id="combat-result-badge">Risolto</span>
+                  <h3 data-i18n="game.combat.heading">Ultimo combattimento</h3>
+                  <span class="badge accent" id="combat-result-badge" data-i18n="game.combat.badge">Risolto</span>
                 </div>
                 <div id="combat-result-summary" class="combat-result-summary"></div>
                 <div class="combat-result-grid">
-                  <div class="combat-result-line"><span>Attaccante</span><strong id="combat-attacker-rolls">-</strong></div>
-                  <div class="combat-result-line"><span>Difensore</span><strong id="combat-defender-rolls">-</strong></div>
-                  <div class="combat-result-line"><span>Confronti</span><strong id="combat-comparisons">-</strong></div>
+                  <div class="combat-result-line"><span data-i18n="game.combat.attacker">Attaccante</span><strong id="combat-attacker-rolls">-</strong></div>
+                  <div class="combat-result-line"><span data-i18n="game.combat.defender">Difensore</span><strong id="combat-defender-rolls">-</strong></div>
+                  <div class="combat-result-line"><span data-i18n="game.combat.comparisons">Confronti</span><strong id="combat-comparisons">-</strong></div>
                 </div>
               </div>
 
               <div class="rail-section game-roster-section">
                 <div class="section-title-row">
-                  <h3>Giocatori</h3>
-                  <span class="badge accent">Live</span>
+                  <h3 data-i18n="game.players.heading">Giocatori</h3>
+                  <span class="badge accent" data-i18n="game.players.badge">Live</span>
                 </div>
                 <div id="players" class="players rail-players"></div>
               </div>
 
               <div class="rail-section log-section">
                 <div class="section-title-row">
-                  <h3>Registro</h3>
-                  <span class="badge accent">Cronologia</span>
+                  <h3 data-i18n="game.log.heading">Registro</h3>
+                  <span class="badge accent" data-i18n="game.log.badge">Cronologia</span>
                 </div>
                 <ul id="log" class="log-list rail-log"></ul>
               </div>
 
               <div class="rail-section surrender-section">
-                <button id="surrender-button" class="danger-button full-width" hidden>Arrenditi e abbandona partita</button>
+                <button id="surrender-button" class="danger-button full-width" hidden data-i18n="game.surrender">Arrenditi e abbandona partita</button>
               </div>
             </aside>
           </section>

@@ -1,3 +1,5 @@
+import { formatDate, t, translateMessagePayload, translateServerMessage } from "./i18n.js";
+
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
   snapshot: null,
@@ -335,18 +337,23 @@ function selectOrFallback(selectedId, options, fallbackId = "") {
 
 function attackDiceOptions(maxDice) {
   if (maxDice < 1) {
-    return '<option value="">Nessun dado disponibile</option>';
+    return '<option value="">' + t("game.runtime.noDiceAvailable") + '</option>';
   }
 
   return Array.from({ length: maxDice }, (_, index) => {
     const value = String(index + 1);
-    return '<option value="' + value + '">' + value + ' dado' + (value === '1' ? '' : 'i') + '</option>';
+    return '<option value="' + value + '">' + t("game.runtime.attackDiceOption", { count: value, suffix: value === "1" ? "" : "i" }) + '</option>';
   }).join("");
 }
 
 function cardTypeLabel(type) {
-  const labels = { infantry: "Fanteria", cavalry: "Cavalleria", artillery: "Artiglieria", wild: "Jolly" };
-  return labels[type] || String(type || "Carta");
+  const labels = {
+    infantry: t("game.runtime.cardType.infantry"),
+    cavalry: t("game.runtime.cardType.cavalry"),
+    artillery: t("game.runtime.cardType.artillery"),
+    wild: t("game.runtime.cardType.wild")
+  };
+  return labels[type] || String(type || t("game.runtime.cardType.default"));
 }
 
 function cardDisplayLabel(card) {
@@ -488,30 +495,30 @@ async function runBanzaiAttack() {
 
 function formatUpdatedTime(value) {
   if (!value) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return formatDate(parsed, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(parsed);
+  });
 }
 
 function phaseLabel(phase) {
   if (phase === "active") {
-    return "In corso";
+    return t("common.phase.active");
   }
   if (phase === "finished") {
-    return "Conclusa";
+    return t("common.phase.finished");
   }
-  return "Lobby";
+  return t("common.phase.lobby");
 }
 
 function selectedGame() {
@@ -541,7 +548,7 @@ function renderGameSessionBrowser() {
 
   elements.gameList.innerHTML = state.gameList
     .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name)}</option>`)
-    .join("") || '<option value="">Nessuna partita</option>';
+    .join("") || '<option value="">' + t("game.runtime.noGamesOption") + '</option>';
 
   if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
     elements.gameList.value = selectedId;
@@ -554,11 +561,11 @@ function renderGameSessionBrowser() {
 
   elements.gameListState.className = `session-feedback${state.gameListState === "error" ? " is-error" : ""}${hasGames ? " is-hidden" : ""}`;
   if (state.gameListState === "loading") {
-    elements.gameListState.textContent = "Caricamento sessioni...";
+    elements.gameListState.textContent = t("lobby.loading");
   } else if (state.gameListState === "error") {
-    elements.gameListState.textContent = state.gameListError || "Impossibile caricare le partite.";
+    elements.gameListState.textContent = state.gameListError || t("lobby.errors.loadGames");
   } else {
-    elements.gameListState.textContent = "Nessuna partita disponibile. Creane una nuova per iniziare.";
+    elements.gameListState.textContent = t("lobby.empty");
   }
 
   elements.gameSessionList.innerHTML = state.gameList
@@ -566,7 +573,7 @@ function renderGameSessionBrowser() {
       <button type="button" class="session-row session-row-button${game.id === selectedId ? " is-selected" : ""}" data-game-id="${game.id}">
         <span class="session-primary">
           <span class="session-name">${escapeHtml(game.name)}</span>
-          <span class="session-sub">Sessione ${game.id.slice(0, 8)}</span>
+          <span class="session-sub">${t("game.runtime.sessionShort", { id: game.id.slice(0, 8) })}</span>
         </span>
         <span class="session-cell-muted">${game.id}</span>
         <span class="badge${game.id === state.currentGameId ? " accent" : ""}">${phaseLabel(game.phase)}</span>
@@ -576,22 +583,22 @@ function renderGameSessionBrowser() {
     `)
     .join("");
 
-  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : "Nessuna selezione";
+  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : t("lobby.details.emptyBadge");
   elements.gameSessionDetails.innerHTML = selected
     ? `
       <div class="session-detail-grid">
-        <div class="session-detail-item"><span>Nome</span><strong>${escapeHtml(selected.name)}</strong></div>
-        <div class="session-detail-item"><span>ID</span><strong>${selected.id}</strong></div>
-        <div class="session-detail-item"><span>Stato</span><strong>${phaseLabel(selected.phase)}</strong></div>
-        <div class="session-detail-item"><span>Giocatori</span><strong>${selected.playerCount}/4</strong></div>
-        <div class="session-detail-item"><span>Ultimo update</span><strong>${formatUpdatedTime(selected.updatedAt)}</strong></div>
-        <div class="session-detail-item"><span>Focus</span><strong>${selected.id === state.currentGameId ? "Sessione aperta" : "Disponibile"}</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.name")}</span><strong>${escapeHtml(selected.name)}</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.id")}</span><strong>${selected.id}</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.status")}</span><strong>${phaseLabel(selected.phase)}</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.playersPresent")}</span><strong>${selected.playerCount}/4</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.updated")}</span><strong>${formatUpdatedTime(selected.updatedAt)}</strong></div>
+        <div class="session-detail-item"><span>${t("lobby.details.focus")}</span><strong>${selected.id === state.currentGameId ? t("lobby.focus.openSession") : t("lobby.focus.available")}</strong></div>
       </div>
       <div class="session-detail-actions">
-        <button type="button" id="open-selected-inline">Apri partita</button>
+        <button type="button" id="open-selected-inline">${t("game.runtime.openGame")}</button>
       </div>
     `
-    : '<div class="session-empty-copy">Seleziona una partita dalla lista per vedere dettagli, stato e azioni principali.</div>';
+    : '<div class="session-empty-copy">' + t("game.runtime.selectGameFromList") + '</div>';
 
   const hasSelection = Boolean(selected);
   if (elements.openGameButton) {
@@ -739,8 +746,8 @@ function render() {
   }
 
   elements.authStatus.textContent = state.user
-    ? state.user.username
-    : "Accesso richiesto";
+    ? t("game.runtime.loggedIn", { username: state.user.username })
+    : t("game.runtime.accessRequired");
   renderNavAvatar(state.user?.username);
 
   renderGameSessionBrowser();
@@ -748,48 +755,48 @@ function render() {
   syncCurrentGameName();
   elements.gameStatus.textContent = state.currentGameId
     ? (state.currentGameName || state.currentGameId)
-    : "Nessuna";
-  elements.gameMapMeta.textContent = snapshot?.gameConfig?.mapName || snapshot?.gameConfig?.mapId || "Classic Mini";
+    : t("game.runtime.none");
+  elements.gameMapMeta.textContent = snapshot?.gameConfig?.mapName || snapshot?.gameConfig?.mapId || t("common.classicMini");
   const totalPlayers = snapshot?.gameConfig?.totalPlayers || 2;
   const aiCount = Array.isArray(snapshot?.gameConfig?.players)
     ? snapshot.gameConfig.players.filter((player) => player.type === "ai").length
     : 0;
-  const playerLabel = totalPlayers === 1 ? "giocatore" : "giocatori";
-  elements.gameSetupMeta.textContent = totalPlayers + " " + playerLabel + " · " + aiCount + " AI";
+  const playerLabel = totalPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural");
+  elements.gameSetupMeta.textContent = t("game.runtime.setupMeta", { totalPlayers, playerLabel, aiCount });
   syncGameRoute(state.currentGameId);
 
   elements.identityStatus.textContent = state.user
     ? me
       ? me.name
-      : "Non assegnato"
-    : "Non connesso";
+      : t("game.runtime.unassigned")
+    : t("game.runtime.notConnected");
 
   elements.turnBadge.textContent =
     !snapshot
       ? "Lobby"
       : snapshot.phase === "lobby"
-        ? "Lobby"
-        : snapshot.phase === "finished"
-          ? "Partita conclusa"
+      ? "Lobby"
+      : snapshot.phase === "finished"
+          ? t("game.runtime.finished")
           : currentPlayer
-            ? `Turno di ${currentPlayer.name}`
-            : "In attesa";
+            ? t("game.runtime.turnOf", { name: currentPlayer.name })
+            : t("game.runtime.waiting");
 
   elements.statusSummary.innerHTML = snapshot
     ? `
       <div>Fase: <strong>${escapeHtml(snapshot.phase)}</strong></div>
-      <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
-      <div>Vincitore: <strong>${escapeHtml(winner ? winner.name : "nessuno")}</strong></div>
+      <div>${t("game.reinforcementBanner")} <strong>${snapshot.reinforcementPool}</strong></div>
+      <div>${t("game.runtime.winner")}: <strong>${escapeHtml(winner ? winner.name : t("game.runtime.noneLower"))}</strong></div>
     `
-    : "<div>Caricamento stato...</div>";
+    : "<div>" + t("game.runtime.loadingState") + "</div>";
 
   elements.players.innerHTML = (snapshot?.players || [])
     .map(
       (player) => `
         <article class="player-card">
           <strong>${escapeHtml(player.name)}</strong>
-          <div>Territori: ${player.territoryCount}</div>
-          <div>Stato: ${player.eliminated ? "eliminato" : "attivo"}</div>
+          <div>${t("game.runtime.territories")}: ${player.territoryCount}</div>
+          <div>${t("lobby.table.status")}: ${player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}</div>
           <div style="margin-top: 8px; height: 10px; border-radius: 99px; background: ${player.color};"></div>
         </article>
       `
@@ -802,7 +809,7 @@ function render() {
     .join("");
   const selectedReinforceId = selectOrFallback(state.selectedReinforceTerritoryId, territories);
   state.selectedReinforceTerritoryId = selectedReinforceId || null;
-  elements.reinforceSelect.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  elements.reinforceSelect.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
   if (selectedReinforceId) {
     elements.reinforceSelect.value = selectedReinforceId;
   }
@@ -815,7 +822,7 @@ function render() {
 
   const selectedFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
   state.selectedAttackFromId = selectedFromId || null;
-  elements.attackFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  elements.attackFrom.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
   if (selectedFromId) {
     elements.attackFrom.value = selectedFromId;
   }
@@ -836,7 +843,7 @@ function render() {
         const owner = ownerById(territory.ownerId);
         return `<option value="${territory.id}">${escapeHtml(territory.name)} vs ${escapeHtml(owner?.name || "?")} (${territory.armies})</option>`;
       })
-      .join("") || '<option value="">Nessun bersaglio</option>';
+      .join("") || '<option value="">' + t("game.runtime.noTarget") + '</option>';
 
   if (selectedAttackToId) {
     elements.attackTo.value = selectedAttackToId;
@@ -857,7 +864,7 @@ function render() {
 
   const selectedFortifyFromId = selectOrFallback(state.selectedFortifyFromId, territories, selectedReinforceId);
   state.selectedFortifyFromId = selectedFortifyFromId || null;
-  elements.fortifyFrom.innerHTML = reinforceOptions || '<option value="">Nessun territorio</option>';
+  elements.fortifyFrom.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
   if (selectedFortifyFromId) {
     elements.fortifyFrom.value = selectedFortifyFromId;
   }
@@ -872,7 +879,7 @@ function render() {
   elements.fortifyTo.innerHTML =
     fortifyTargets
       .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
-      .join("") || '<option value="">Nessun territorio adiacente</option>';
+      .join("") || '<option value="">' + t("game.runtime.noAdjacentTerritory") + '</option>';
 
   if (selectedFortifyToId) {
     elements.fortifyTo.value = selectedFortifyToId;
@@ -884,7 +891,10 @@ function render() {
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
   fitMapBoardToViewport();
-  elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
+  const logEntries = Array.isArray(snapshot?.logEntries) && snapshot.logEntries.length
+    ? snapshot.logEntries.map((entry) => translateMessagePayload(entry, entry.message || ""))
+    : (snapshot?.log || []);
+  elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
@@ -910,7 +920,7 @@ function render() {
   elements.logoutButton.hidden = !isAuthenticated;
   elements.logoutButton.disabled = !isAuthenticated;
   if (elements.phaseBannerValue) {
-    elements.phaseBannerValue.textContent = snapshot?.phase || "lobby";
+    elements.phaseBannerValue.textContent = phaseLabel(snapshot?.phase);
   }
   if (elements.lobbyControlsSection) {
     elements.lobbyControlsSection.hidden = !inLobby;
@@ -958,7 +968,7 @@ function render() {
   if (elements.combatResultGroup) {
     elements.combatResultGroup.hidden = !lastCombat;
     if (lastCombat) {
-      const conquestText = lastCombat.conqueredTerritory ? "Territorio conquistato" : lastCombat.defenderReducedToZero ? "Difesa spezzata" : "Scambio risolto";
+      const conquestText = lastCombat.conqueredTerritory ? t("game.runtime.combat.conquered") : lastCombat.defenderReducedToZero ? t("game.runtime.combat.defenseBroken") : t("game.runtime.combat.resolved");
       elements.combatResultBadge.textContent = conquestText;
       elements.combatResultSummary.textContent = `${territoryById(lastCombat.fromTerritoryId)?.name || lastCombat.fromTerritoryId} -> ${territoryById(lastCombat.toTerritoryId)?.name || lastCombat.toTerritoryId}`;
       elements.combatAttackerRolls.textContent = formatDiceList(lastCombat.attackerRolls);
@@ -973,24 +983,24 @@ function render() {
   }
   if (elements.tradeAlertText) {
     elements.tradeAlertText.textContent = mustTradeCards
-      ? `Hai ${playerHand.length} carte in mano: scambiane 3 per continuare. Limite mano ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
-      : "Devi scambiare 3 carte per continuare il turno.";
+      ? t("game.runtime.tradeAlert.mustTradeNow", { cardCount: playerHand.length, limit: snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
+      : t("game.tradeAlert.copy");
   }
   if (elements.cardTradeGroup) {
     elements.cardTradeGroup.hidden = !canInteract || !inReinforcement || Boolean(pendingConquest) || !showTradePanel;
     if (elements.cardTradeAlert) {
       elements.cardTradeAlert.hidden = !mustTradeCards;
     }
-    elements.cardTradeSummary.textContent = `Carte in mano: ${playerHand.length}.`;
-    elements.cardTradeBonus.textContent = `Prossimo scambio: +${snapshot?.cardState?.nextTradeBonus || 4} rinforzi.`;
+    elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", { count: playerHand.length });
+    elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", { bonus: snapshot?.cardState?.nextTradeBonus || 4 });
     elements.cardTradeList.innerHTML = playerHand.length
       ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
-      : '<p class="card-trade-empty">Nessuna carta disponibile.</p>';
+      : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>';
     elements.cardTradeHelp.textContent = mustTradeCards
-      ? `Scambio obbligatorio: devi scambiare 3 carte per continuare. Limite mano: ${snapshot?.cardState?.maxHandBeforeForcedTrade || 5}.`
+      ? t("game.runtime.tradeHelp.mustTrade", { limit: snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
       : playerHand.length
-        ? `${state.selectedTradeCardIds.length}/3 carte selezionate.`
-        : "Nessuna carta disponibile.";
+        ? t("game.runtime.tradeHelp.selected", { selected: state.selectedTradeCardIds.length })
+        : t("game.runtime.noCardsAvailable");
     elements.cardTradeSuccess.hidden = !state.tradeSuccess;
     elements.cardTradeSuccess.textContent = state.tradeSuccess;
     elements.cardTradeError.hidden = !state.tradeError;
@@ -1006,13 +1016,13 @@ function render() {
   elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
   if (elements.attackBanzaiButton) {
     elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
-    elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? "Banzai..." : "Banzai";
+    elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
   }
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
   elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
-  elements.endTurnButton.textContent = inAttack ? "Vai a fortifica" : "Termina turno";
+  elements.endTurnButton.textContent = inAttack ? t("game.runtime.goToFortify") : t("game.actions.endTurn");
   if (elements.surrenderButton) {
     elements.surrenderButton.hidden = !canSurrender;
     elements.surrenderButton.disabled = !canSurrender;
@@ -1020,17 +1030,17 @@ function render() {
   if (elements.actionHint) {
     elements.actionHint.textContent = canInteract
       ? pendingConquest
-        ? "Conquista"
+        ? t("game.runtime.conquest")
         : inReinforcement
-          ? "Rinforzi"
+          ? t("game.runtime.hint.reinforcements")
           : inFortify
             ? snapshot.fortifyUsed
-              ? "Chiudi turno"
-              : "Fortifica"
-            : "Attacco"
+              ? t("game.runtime.hint.closeTurn")
+              : t("game.actions.fortify")
+            : t("game.runtime.hint.attack")
       : state.user
-        ? "Osservazione"
-        : "Login";
+        ? t("game.runtime.hint.observation")
+        : t("game.runtime.hint.login");
   }
 }
 
@@ -1040,7 +1050,7 @@ async function fetchLatestStateSnapshot(options = {}) {
   const response = await fetch("/api/state" + query);
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Impossibile caricare la partita attiva.");
+    throw new Error(translateServerMessage(data, t("game.errors.loadActiveGame")));
   }
   return data;
 }
@@ -1100,9 +1110,9 @@ async function send(path, payload = {}, options = {}) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
       applySnapshot(data.state, { clearPlayerIdentity: false });
       await loadGameList();
-      throw new Error(data.error || "La partita e stata aggiornata. Ho ricaricato lo stato piu recente.");
+      throw new Error(translateServerMessage(data, t("game.errors.versionConflict")));
     }
-    throw new Error(data.error || "Richiesta fallita.");
+    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
   }
 
   return data;
@@ -1138,7 +1148,8 @@ async function loadGameList() {
     const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
     const response = await fetch("/api/games" + query);
     if (!response.ok) {
-      throw new Error("Caricamento partite non riuscito.");
+      const payload = await response.json();
+      throw new Error(translateServerMessage(payload, t("lobby.errors.loadGames")));
     }
 
     const data = await response.json();
@@ -1160,7 +1171,7 @@ async function loadGameList() {
   } catch (error) {
     state.gameList = [];
     state.gameListState = "error";
-    state.gameListError = error.message || "Impossibile caricare le partite.";
+    state.gameListError = error.message || t("lobby.errors.loadGames");
   }
 
   render();
@@ -1170,7 +1181,7 @@ async function restoreSession() {
   try {
     const response = await fetch("/api/auth/session");
     if (!response.ok) {
-      throw new Error("Sessione scaduta");
+      throw new Error(t("auth.sessionExpired"));
     }
 
     const data = await response.json();
@@ -1608,7 +1619,7 @@ elements.endTurnButton.addEventListener("click", async () => {
 
 if (elements.surrenderButton) {
   elements.surrenderButton.addEventListener("click", async () => {
-    const confirmed = window.confirm("Vuoi davvero arrenderti e abbandonare la partita? Verrai eliminato definitivamente da questa sessione.");
+    const confirmed = window.confirm(t("game.runtime.confirmSurrender"));
     if (!confirmed) {
       return;
     }
@@ -1640,7 +1651,7 @@ if (elements.cardTradeButton) {
       state.snapshot = data.state || state.snapshot;
       state.selectedTradeCardIds = [];
       state.tradeError = "";
-      state.tradeSuccess = `Set valido: +${data.bonus} rinforzi.`;
+      state.tradeSuccess = t("game.runtime.tradeSuccess", { bonus: data.bonus });
       render();
       if (state.user) {
         await loadState().catch(() => {});

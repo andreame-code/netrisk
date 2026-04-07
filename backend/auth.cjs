@@ -1,6 +1,7 @@
 const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
+const { createLocalizedError } = require("../shared/messages.cjs");
 
 function passwordRecord(secret) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -93,7 +94,7 @@ function createFieldProtector(options = {}) {
     },
     encrypt(value) {
       if (!key) {
-        throw new Error("AUTH_ENCRYPTION_KEY mancante.");
+        throw createLocalizedError("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
       }
 
       const iv = crypto.randomBytes(12);
@@ -126,28 +127,35 @@ function registrationInput(inputOrUsername, password) {
   };
 }
 
+function authFailure(error, errorKey, errorParams = {}) {
+  return { ok: false, error, errorKey, errorParams };
+}
+
 function registrationValidationError(input, protector) {
   if (!input.username || !input.password) {
-    return "Inserisci utente e password.";
+    return authFailure("Inserisci utente e password.", "auth.register.requiredFields");
   }
 
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(input.username)) {
-    return "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.";
+    return authFailure("Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.", "auth.register.invalidUsername");
   }
 
   if (input.password.length < 4) {
-    return "Password troppo corta: usa almeno 4 caratteri.";
+    return authFailure("Password troppo corta: usa almeno 4 caratteri.", "auth.register.shortPassword");
   }
 
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
-    return "Email non valida.";
+    return authFailure("Email non valida.", "auth.register.invalidEmail");
   }
 
   if (input.email && !protector.isConfigured()) {
-    return "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.";
+    return authFailure(
+      "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.",
+      "auth.register.emailProtectionUnavailable"
+    );
   }
 
-  return "";
+  return null;
 }
 
 function maskEmail(email) {
@@ -204,11 +212,11 @@ function createAuthStore(options = {}) {
     const input = registrationInput(inputOrUsername, password);
     const validationError = registrationValidationError(input, protector);
     if (validationError) {
-      return { ok: false, error: validationError };
+      return validationError;
     }
 
     if (await findByUsername(input.username)) {
-      return { ok: false, error: "Utente gia registrato." };
+      return authFailure("Utente gia registrato.", "auth.register.userExists");
     }
 
     const user = {
@@ -228,7 +236,7 @@ function createAuthStore(options = {}) {
   async function loginWithPassword(username, password) {
     const user = await findByUsername(username);
     if (!user || !verifyPassword(user.credentials, password)) {
-      return { ok: false, error: "Credenziali non valide." };
+      return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
     }
 
     if (typeof user.credentials?.password?.secret === "string") {

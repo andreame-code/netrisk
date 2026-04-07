@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Frontline Dominion - Lobby</title>
+    <title data-i18n="lobby.title">Frontline Dominion - Lobby</title>
     <link rel="stylesheet" href="/style.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
@@ -13,11 +13,11 @@
       <main class="page-shell top-nav-page-shell">
         <section class="panel top-nav-bar">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-            <p class="eyebrow">NetRisk</p>
-            <h1>Frontline Dominion</h1>
+            <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
+            <h1 data-i18n="app.title">Frontline Dominion</h1>
           </a>
 
-          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
             <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
             <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
             <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
@@ -25,57 +25,57 @@
 
           <div class="top-nav-zone top-nav-actions">
               <form id="header-login-form" class="top-nav-auth-form">
-                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
-                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
-                <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
-                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
+                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+                <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
+                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
               </form>
-              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
-              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
+              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
             </div>
         </section>
         <section class="session-browser panel" data-testid="game-lobby-shell">
           <div class="session-browser-head">
             <div class="session-browser-heading">
-              <p class="eyebrow session-eyebrow">War Room</p>
-              <h2>Lobby di Comando</h2>
-              <p class="stage-copy">Riapri la partita giusta in fretta, controlla quali lobby sono pronte e scegli subito il prossimo teatro da aprire.</p>
+              <p class="eyebrow session-eyebrow" data-i18n="lobby.eyebrow">War Room</p>
+              <h2 data-i18n="lobby.heading">Lobby di Comando</h2>
+              <p class="stage-copy" data-i18n="lobby.copy">Riapri la partita giusta in fretta, controlla quali lobby sono pronte e scegli subito il prossimo teatro da aprire.</p>
             </div>
           </div>
 
           <div class="content-meta-line lobby-meta-line">
-            <span id="auth-status">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</span>
+            <span id="auth-status" data-i18n="lobby.authStatus">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</span>
             <span class="status-divider" aria-hidden="true"></span>
-            <span id="game-status">Nessuna partita attiva</span>
+            <span id="game-status" data-i18n="lobby.gameStatus">Nessuna partita attiva</span>
           </div>
 
           <div class="lobby-focus-band">
             <article class="lobby-focus-card">
-              <span class="lobby-command-label">Sessione in primo piano</span>
-              <strong id="lobby-active-focus">Nessuna</strong>
-              <p id="lobby-focus-note">Apri una partita per continuare dal teatro corrente.</p>
+              <span class="lobby-command-label" data-i18n="lobby.focus.label">Sessione in primo piano</span>
+              <strong id="lobby-active-focus" data-i18n="lobby.focus.value">Nessuna</strong>
+              <p id="lobby-focus-note" data-i18n="lobby.focus.note">Apri una partita per continuare dal teatro corrente.</p>
             </article>
             <div class="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
-              <a href="/new-game.html" id="create-game-button" class="ghost-button lobby-create-button">Crea partita</a>
-              <button type="button" id="open-game-button" class="ghost-button">Apri selezionata</button>
+              <a href="/new-game.html" id="create-game-button" class="ghost-button lobby-create-button" data-i18n="lobby.createGame">Crea partita</a>
+              <button type="button" id="open-game-button" class="ghost-button" data-i18n="lobby.openSelected">Apri selezionata</button>
             </div>
           </div>
 
-          <div class="lobby-command-strip" aria-label="Panoramica lobby">
+          <div class="lobby-command-strip" aria-label="Panoramica lobby" data-i18n-aria-label="lobby.overviewAria">
             <article class="lobby-command-card lobby-command-card-accent">
-              <span class="lobby-command-label">Sessioni visibili</span>
+              <span class="lobby-command-label" data-i18n="lobby.visibleSessions.label">Sessioni visibili</span>
               <strong id="lobby-total-games">0</strong>
-              <p>Tutte le partite persistite disponibili nel backend.</p>
+              <p data-i18n="lobby.visibleSessions.copy">Tutte le partite persistite disponibili nel backend.</p>
             </article>
             <article class="lobby-command-card">
-              <span class="lobby-command-label">Pronte al via</span>
+              <span class="lobby-command-label" data-i18n="lobby.readySessions.label">Pronte al via</span>
               <strong id="lobby-ready-games">0</strong>
-              <p>Lobby che possono essere avviate senza configurazioni extra.</p>
+              <p data-i18n="lobby.readySessions.copy">Lobby che possono essere avviate senza configurazioni extra.</p>
             </article>
             <article class="lobby-command-card">
-              <span class="lobby-command-label">Prontezza operativa</span>
-              <strong>Seleziona</strong>
-              <p>Usa lista e pannello dettagli per confrontare rapidamente composizione, stato e ultimo aggiornamento.</p>
+              <span class="lobby-command-label" data-i18n="lobby.readiness.label">Prontezza operativa</span>
+              <strong data-i18n="lobby.readiness.value">Seleziona</strong>
+              <p data-i18n="lobby.readiness.copy">Usa lista e pannello dettagli per confrontare rapidamente composizione, stato e ultimo aggiornamento.</p>
             </article>
           </div>
 
@@ -83,18 +83,18 @@
             <div class="session-list-panel">
               <div class="section-title-row session-list-title-row">
                 <div>
-                  <h3>Sessioni disponibili</h3>
-                  <p class="stage-copy">Seleziona una lobby per vedere subito se vale la pena riaprirla.</p>
+                  <h3 data-i18n="lobby.availableSessions.heading">Sessioni disponibili</h3>
+                  <p class="stage-copy" data-i18n="lobby.availableSessions.copy">Seleziona una lobby per vedere subito se vale la pena riaprirla.</p>
                 </div>
               </div>
               <div class="session-list-header session-row session-row-head">
-                <span>Partita</span>
-                <span>Mappa</span>
-                <span>Stato</span>
-                <span>Giocatori</span>
-                <span>Aggiornata</span>
+                <span data-i18n="lobby.table.game">Partita</span>
+                <span data-i18n="lobby.table.map">Mappa</span>
+                <span data-i18n="lobby.table.status">Stato</span>
+                <span data-i18n="lobby.table.players">Giocatori</span>
+                <span data-i18n="lobby.table.updated">Aggiornata</span>
               </div>
-              <div id="game-list-state" class="session-feedback">Caricamento sessioni...</div>
+              <div id="game-list-state" class="session-feedback" data-i18n="lobby.loading">Caricamento sessioni...</div>
               <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
               <div id="game-list-load-more-state" class="session-list-load-more" aria-live="polite"></div>
             </div>
@@ -102,13 +102,13 @@
             <aside class="session-detail-panel" data-testid="game-session-details">
               <div class="section-title-row">
                 <div>
-                  <h3>Dettagli sessione</h3>
-                  <p class="stage-copy">Qui controlli stato reale, occupazione slot e ultimo contesto utile prima di aprire.</p>
+                  <h3 data-i18n="lobby.details.heading">Dettagli sessione</h3>
+                  <p class="stage-copy" data-i18n="lobby.details.copy">Qui controlli stato reale, occupazione slot e ultimo contesto utile prima di aprire.</p>
                 </div>
-                <span id="selected-game-status" class="badge">Nessuna selezione</span>
+                <span id="selected-game-status" class="badge" data-i18n="lobby.details.emptyBadge">Nessuna selezione</span>
               </div>
               <div id="game-session-details" class="session-details-card">
-                <div class="session-empty-copy">Seleziona una partita per vedere lo stato corrente e aprirla nel tabellone di gioco.</div>
+                <div class="session-empty-copy" data-i18n="lobby.details.empty">Seleziona una partita per vedere lo stato corrente e aprirla nel tabellone di gioco.</div>
               </div>
             </aside>
           </div>
