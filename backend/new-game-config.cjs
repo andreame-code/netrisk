@@ -2,6 +2,7 @@ const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
 const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
 const { secureRandom } = require("./random.cjs");
+const { createLocalizedError } = require("../shared/messages.cjs");
 
 const AI_GENERAL_NAMES = [
   "Caesar",
@@ -46,19 +47,19 @@ function buildHistoricalAiNames(count, random = secureRandom) {
 function validateNewGameConfig(input = {}, options = {}) {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
   if (!Number.isInteger(totalPlayers) || totalPlayers < 2 || totalPlayers > 4) {
-    throw new Error("Il numero totale di giocatori deve essere compreso tra 2 e 4.");
+    throw createLocalizedError("Il numero totale di giocatori deve essere compreso tra 2 e 4.", "newGame.invalidTotalPlayers");
   }
 
   const mapId = String(input.mapId || "classic-mini");
   const selectedMap = findSupportedMap(mapId);
   if (!selectedMap) {
-    throw new Error("La mappa selezionata non e supportata.");
+    throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
 
   const requestedDiceRuleSetId = String(input.diceRuleSetId || STANDARD_DICE_RULE_SET_ID);
   const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
-    throw new Error("La regola dadi selezionata non e supportata.");
+    throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
   }
 
   const requestedPlayers = Array.isArray(input.players)
@@ -66,12 +67,12 @@ function validateNewGameConfig(input = {}, options = {}) {
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
 
   if (requestedPlayers.length !== totalPlayers) {
-    throw new Error("Configura tutti gli slot giocatore prima di creare la partita.");
+    throw createLocalizedError("Configura tutti gli slot giocatore prima di creare la partita.", "newGame.invalidPlayers");
   }
 
   const firstSlotType = normalizePlayerType(requestedPlayers[0] && requestedPlayers[0].type);
   if (firstSlotType !== "human") {
-    throw new Error("Il giocatore 1 deve essere sempre il creatore umano.");
+    throw createLocalizedError("Il giocatore 1 deve essere sempre il creatore umano.", "newGame.invalidCreatorSlot");
   }
 
   const aiCount = requestedPlayers.slice(1).filter((slot) => normalizePlayerType(slot && slot.type) === "ai").length;
@@ -117,7 +118,7 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 
     const result = addPlayer(state, player.name, { isAi: true });
     if (!result.ok) {
-      throw new Error(result.error || "Impossibile aggiungere il giocatore AI.");
+      throw createLocalizedError(result.error || "Impossibile aggiungere il giocatore AI.", result.errorKey || "newGame.addAiFailed", result.errorParams);
     }
   });
 

@@ -105,7 +105,8 @@ function formatUpdatedTime(value) {
 
 function renderParticipatingGames(profile) {
   const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
-  const label = t("profile.games.activeCount", { count: participatingGames.length });
+  const count = participatingGames.length;
+  const label = t(count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other", { count });
   elements.gamesCount.textContent = label;
 
   if (!participatingGames.length) {
