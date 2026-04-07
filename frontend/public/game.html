@@ -25,7 +25,7 @@
             </nav>
 
             <div class="top-nav-zone top-nav-actions">
-              <form id="header-login-form" class="top-nav-auth-form">
+              <form id="header-login-form" class="top-nav-auth-form" method="post">
                 <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
                 <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
                 <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
@@ -77,7 +77,7 @@
               </div>
 
               <div class="rail-section game-lobby-controls" id="lobby-controls-section">
-                <form id="auth-form" class="auth-form compact-form rail-auth-form">
+                <form id="auth-form" class="auth-form compact-form rail-auth-form" method="post">
                   <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" required data-i18n-placeholder="game.auth.username.placeholder" />
                   <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required data-i18n-placeholder="game.auth.password.placeholder" />
                   <button type="submit" id="login-button" class="ghost-button" data-i18n="auth.login">Accedi</button>

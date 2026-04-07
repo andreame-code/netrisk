@@ -251,6 +251,7 @@ elements.logoutButton.addEventListener("click", async () => {
 });
 
 if (elements.headerLoginForm) {
+  elements.headerLoginForm.dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();
