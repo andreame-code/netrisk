@@ -1096,7 +1096,7 @@ async function send(path, payload = {}, options = {}) {
   const data = await response.json();
   if (!response.ok) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
-      applySnapshot(data.state);
+      applySnapshot(data.state, { clearPlayerIdentity: false });
       await loadGameList();
       throw new Error(data.error || "La partita e stata aggiornata. Ho ricaricato lo stato piu recente.");
     }
