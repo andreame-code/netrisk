@@ -443,5 +443,6 @@ export const it = Object.freeze({
   ,"server.endpoint.notFound": "Endpoint non trovato."
   ,"server.static.accessDenied": "Accesso negato."
   ,"server.static.fileNotFound": "File non trovato."
+  ,"server.deploy.missingEnv": "Configurazione Vercel incompleta. Variabili mancanti: {keys}."
   ,"server.internalError": "Errore interno."
 });

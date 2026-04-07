@@ -10,6 +10,7 @@ const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
+const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -163,6 +164,18 @@ function clearSessionCookie(req) {
 }
 
 function createApp(options = {}) {
+  if (shouldValidateDeployEnv(process.env)) {
+    const missingEnvKeys = missingRequiredDeployEnv(process.env);
+    if (missingEnvKeys.length) {
+      throw createLocalizedError(
+        "Configurazione Vercel incompleta.",
+        "server.deploy.missingEnv",
+        { keys: missingEnvKeys.join(", ") },
+        "MISSING_DEPLOY_ENV"
+      );
+    }
+  }
+
   const state = createInitialState();
   let activeGameId = null;
   let activeGameVersion = null;
