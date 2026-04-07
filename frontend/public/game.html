@@ -37,75 +37,59 @@
           </section>
 
           <section class="battlefield-layout game-battlefield-layout" data-testid="battlefield-layout">
-            <aside class="left-rail panel game-info-rail" data-testid="info-panel">
-              <div class="panel-header tight-header game-compact-heading">
-                <div>
-                  <p class="eyebrow">Command</p>
-                  <h2>Quadro turno</h2>
+            <section class="game-main-column" data-testid="game-main-column">
+              <section class="center-stage panel map-stage-panel game-map-stage" data-testid="map-panel">
+                <div id="map" class="map tactical-map" data-testid="map-region"></div>
+              </section>
+
+              <section class="panel game-info-rail game-info-bottom" data-testid="info-panel">
+                <div class="panel-header tight-header game-compact-heading">
+                  <div>
+                    <p class="eyebrow">Command</p>
+                    <h2>Quadro turno</h2>
+                  </div>
+                  <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
                 </div>
-                <span id="turn-badge" class="badge" data-testid="phase-indicator">Lobby</span>
+                <div class="rail-section map-stage-command-strip game-status-bottom-strip">
+                  <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
+                  <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
+                    <strong>Scambio obbligatorio</strong>
+                    <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
+                  </div>
+                </div>
+                <div class="rail-section game-meta-stack game-session-card">
+                  <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
+                  <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
+                  <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
+                  <div class="game-meta-line"><span>Setup</span><strong id="game-setup-meta">2 players · 0 AI</strong></div>
+                  <div class="game-meta-line"><span>Access</span><span id="auth-status">Registrati o accedi per entrare nella lobby.</span></div>
+                </div>
+              </section>
+            </section>
+
+            <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
+              <div class="rail-section game-phase-banner" id="phase-banner">
+                <span>Fase: <strong id="phase-banner-value">Lobby</strong></span>
               </div>
-              <div class="rail-section game-meta-stack game-session-card">
-                <div class="game-meta-line"><span>Player</span><strong id="identity-status" data-testid="current-player-indicator">Accedi per collegarti alla partita.</strong></div>
-                <div class="game-meta-line"><span>Active game</span><strong id="game-status">Nessuna partita attiva</strong></div>
-                <div class="game-meta-line"><span>Map</span><strong id="game-map-meta">classic-mini</strong></div>
-                <div class="game-meta-line"><span>Setup</span><strong id="game-setup-meta">2 players · 0 AI</strong></div>
-                <div class="game-meta-line"><span>Access</span><span id="auth-status">Registrati o accedi per entrare nella lobby.</span></div>
+
+              <div class="rail-section game-reinforcement-banner" id="reinforcement-banner" hidden>
+                <span>Rinforzi disponibili: <strong id="reinforcement-banner-value">0</strong></span>
               </div>
-              <div class="rail-section game-side-ops">
+
+              <div class="rail-section game-lobby-controls" id="lobby-controls-section">
                 <form id="auth-form" class="auth-form compact-form rail-auth-form">
                   <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" required />
                   <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required />
                   <button type="submit" id="login-button" class="ghost-button">Accedi</button>
                   <a href="/register.html" id="register-link" class="ghost-button full-width">Registrati</a>
                 </form>
-                <div class="identity-actions compact-actions rail-action-group">
+                <div class="identity-actions compact-actions rail-action-group" id="lobby-action-buttons">
                   <button id="join-button">Entra nella lobby</button>
                   <button id="start-button" class="ghost-button">Avvia partita</button>
                 </div>
               </div>
-              <div class="rail-section game-roster-section">
-                <div class="section-title-row">
-                  <h3>Giocatori</h3>
-                  <span class="badge accent">Live</span>
-                </div>
-                <div id="players" class="players rail-players"></div>
-              </div>
-            </aside>
 
-            <section class="center-stage panel map-stage-panel game-map-stage" data-testid="map-panel">
-              <div class="panel-header map-stage-header">
-                <div>
-                  <h2>Teatro di Guerra</h2>
-                  <p class="stage-copy">La mappa resta il focus principale: leggi il turno qui e usa il pannello azioni solo quando serve.</p>
-                </div>
-                <span id="action-hint" class="badge accent">In attesa</span>
-              </div>
-              <div class="map-stage-command-strip">
-                <div id="status-summary" class="status-summary command-summary map-command-summary" data-testid="status-summary"></div>
-                <div id="trade-alert" class="turn-alert turn-alert-danger map-trade-alert" hidden>
-                  <strong>Scambio obbligatorio</strong>
-                  <span id="trade-alert-text">Devi scambiare 3 carte per continuare il turno.</span>
-                </div>
-              </div>
-              <div id="map" class="map tactical-map" data-testid="map-region"></div>
-            </section>
-
-            <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
               <div class="rail-section actions-section">
-                <div class="section-title-row action-title-row">
-                  <div>
-                    <h3>Azioni</h3>
-                    <p class="stage-copy action-stage-copy">Esegui solo l'azione richiesta dalla fase corrente, poi passa al prossimo passaggio del turno.</p>
-                  </div>
-                  <span class="badge">Turno</span>
-                </div>
-                <div class="phase-ladder" aria-hidden="true">
-                  <span class="phase-step">1. Rinforza</span>
-                  <span class="phase-step">2. Attacca</span>
-                  <span class="phase-step">3. Consolida</span>
-                </div>
-
                 <div class="action-group compact-group" id="reinforce-group">
                   <label for="reinforce-select">Rinforza</label>
                   <div class="action-stack">
@@ -180,6 +164,14 @@
                 </div>
               </div>
 
+              <div class="rail-section game-roster-section">
+                <div class="section-title-row">
+                  <h3>Giocatori</h3>
+                  <span class="badge accent">Live</span>
+                </div>
+                <div id="players" class="players rail-players"></div>
+              </div>
+
               <div class="rail-section log-section">
                 <div class="section-title-row">
                   <h3>Registro</h3>
@@ -193,6 +185,7 @@
               </div>
             </aside>
           </section>
+
         </section>
       </main>
     </div>
