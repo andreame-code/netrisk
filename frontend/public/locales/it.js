@@ -29,6 +29,7 @@ export const it = Object.freeze({
   "auth.register.invalidEmail": "Email non valida.",
   "auth.register.emailProtectionUnavailable": "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.",
   "auth.register.userExists": "Utente gia registrato.",
+  "auth.internal.missingEncryptionKey": "AUTH_ENCRYPTION_KEY mancante.",
   "common.cancel": "Annulla",
   "errors.requestFailed": "Richiesta fallita.",
   "errors.loginFailed": "Accesso non riuscito.",
@@ -368,6 +369,12 @@ export const it = Object.freeze({
   ,"game.victory.aiOnlyRemain": "La partita si chiude: restano attive solo AI."
   ,"game.victory.pending": "La vittoria non e' ancora stata determinata."
   ,"game.victory.declared": "Vittoria assegnata a {playerName}."
+  ,"game.victory.internal.invalidState": "Victory detection richiede uno stato partita valido."
+  ,"game.victory.internal.noPlayers": "Victory detection richiede almeno un giocatore."
+  ,"game.victory.internal.missingTerritories": "Victory detection richiede i dati di controllo dei territori."
+  ,"game.victory.internal.invalidPlayer": "Victory detection ha trovato un giocatore non valido all'indice {index}."
+  ,"game.victory.internal.duplicatePlayer": "Victory detection ha trovato un id giocatore duplicato \"{playerId}\"."
+  ,"game.victory.internal.noActivePlayers": "Victory detection non ha trovato giocatori attivi con territori."
   ,"cards.invalidSetLength": "I set di carte devono contenere esattamente tre carte."
   ,"cards.unsupportedType": "Il set contiene un tipo di carta non supportato."
   ,"cards.invalidTrade": "Il set selezionato non corrisponde a uno scambio valido."
