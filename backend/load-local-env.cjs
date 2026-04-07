@@ -58,7 +58,7 @@ function loadEnvFile(filePath) {
 }
 
 function loadLocalEnv() {
-  if (String(process.env.E2E || "").toLowerCase() === "true") {
+  if (String(process.env.E2E || "").toLowerCase() === "true" || String(process.env.TEST || "").toLowerCase() === "true" || String(process.env.NODE_ENV || "").toLowerCase() === "test") {
     return;
   }
 
