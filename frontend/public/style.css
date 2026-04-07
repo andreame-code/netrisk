@@ -2287,6 +2287,23 @@ body[data-app-section="profile"] .main-nav-shell {
   gap: 8px;
 }
 
+.top-nav-locale {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.top-nav-locale-select {
+  width: auto;
+  min-width: 102px;
+  height: 34px;
+  padding: 0 34px 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(90, 62, 41, 0.16);
+  background: rgba(255, 253, 249, 0.95);
+  color: var(--text);
+}
+
 .top-nav-auth-form {
   display: inline-flex;
   align-items: center;
@@ -2394,6 +2411,14 @@ body[data-app-section="profile"] .main-nav-shell {
 
   .top-nav-actions {
     justify-content: flex-end;
+  }
+
+  .top-nav-locale {
+    flex: 1 1 120px;
+  }
+
+  .top-nav-locale-select {
+    width: 100%;
   }
 
   .top-nav-auth-form {

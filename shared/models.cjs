@@ -24,6 +24,13 @@ const {
   validateStandardCardSet
 } = require("./cards.cjs");
 const { GameAction } = require("./game-actions.cjs");
+const {
+  createActionFailure,
+  createDomainFailure,
+  createLogEntry,
+  createLocalizedError,
+  createValidationFailure
+} = require("./messages.cjs");
 
 module.exports = {
   CardType,
@@ -37,10 +44,15 @@ module.exports = {
   STANDARD_MAX_HAND_BEFORE_FORCED_TRADE,
   TurnPhase,
   createCard,
+  createActionFailure,
   createContinent,
+  createDomainFailure,
   createGameState,
+  createLogEntry,
+  createLocalizedError,
   createPlayer,
   createStandardDeck,
+  createValidationFailure,
   createTerritory,
   getCardRuleSet,
   standardCardRuleSet,

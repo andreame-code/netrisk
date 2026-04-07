@@ -3,6 +3,9 @@ const { secureRandom } = require("../random.cjs");
 const {
   GameAction,
   TurnPhase,
+  createActionFailure,
+  createDomainFailure,
+  createLogEntry,
   createContinent,
   createGameState,
   createPlayer,
@@ -48,6 +51,7 @@ function createInitialState(selectedMap = defaultMap) {
     reinforcementPool: 0,
     winnerId: null,
     log: ["Lobby creata. Unisciti e avvia la partita."],
+    logEntries: [createLogEntry("Lobby creata. Unisciti e avvia la partita.", "game.log.lobbyCreated")],
     lastAction: null,
     pendingConquest: null,
     fortifyUsed: false,
@@ -109,7 +113,12 @@ function computeReinforcements(state, playerId) {
   return calculateReinforcements(state, playerId).totalReinforcements;
 }
 
-function appendLog(state, message) {
+function appendLog(state, message, messageKey = null, messageParams = {}) {
+  if (!Array.isArray(state.logEntries)) {
+    state.logEntries = [];
+  }
+  state.logEntries.unshift(createLogEntry(message, messageKey, messageParams));
+  state.logEntries = state.logEntries.slice(0, 12);
   state.log.unshift(message);
   state.log = state.log.slice(0, 12);
 }
@@ -165,46 +174,46 @@ function awardTurnCardIfEligible(state, playerId, random = secureRandom) {
   const nextCard = state.deck.shift();
   ensurePlayerHand(state, playerId).push(nextCard);
   state.conqueredTerritoryThisTurn = false;
-  appendLog(state, player.name + " riceve una carta territorio.");
+  appendLog(state, player.name + " riceve una carta territorio.", "game.log.turnCardAwarded", { playerName: player.name });
   return nextCard;
 }
 
 function tradeCardSet(state, playerId, cardIds) {
   const player = getPlayer(state, playerId);
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (state.turnPhase !== TurnPhase.REINFORCEMENT) {
-    return { ok: false, message: "Puoi scambiare carte solo nella fase di rinforzo." };
+    return createActionFailure("Puoi scambiare carte solo nella fase di rinforzo.", "game.tradeCards.reinforcementOnly");
   }
 
   if (!Array.isArray(cardIds) || cardIds.length !== 3) {
-    return { ok: false, message: "Devi selezionare esattamente 3 carte." };
+    return createActionFailure("Devi selezionare esattamente 3 carte.", "game.tradeCards.exactlyThree");
   }
 
   const uniqueCardIds = [...new Set(cardIds)];
   if (uniqueCardIds.length !== 3) {
-    return { ok: false, message: "Non puoi usare la stessa carta due volte." };
+    return createActionFailure("Non puoi usare la stessa carta due volte.", "game.tradeCards.noDuplicateCards");
   }
 
   const hand = ensurePlayerHand(state, playerId);
   const selectedCards = uniqueCardIds.map((cardId) => hand.find((card) => card.id === cardId));
   if (selectedCards.some((card) => !card)) {
-    return { ok: false, message: "Le carte selezionate non sono disponibili nella mano del giocatore." };
+    return createActionFailure("Le carte selezionate non sono disponibili nella mano del giocatore.", "game.tradeCards.cardsUnavailable");
   }
 
   const validation = validateStandardCardSet(selectedCards);
   if (!validation.ok) {
-    return { ok: false, message: validation.reason };
+    return createActionFailure(validation.reason, validation.reasonKey, validation.reasonParams);
   }
 
   const bonus = standardTradeBonusForIndex(state.tradeCount || 0);
@@ -217,9 +226,17 @@ function tradeCardSet(state, playerId, cardIds) {
   state.reinforcementPool += bonus;
   state.lastAction = {
     type: "tradeCards",
-    summary: player.name + " scambia un set di carte e riceve " + bonus + " rinforzi."
+    summary: player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
+    summaryKey: "game.log.tradeCompleted",
+    summaryParams: {
+      playerName: player.name,
+      bonus
+    }
   };
-  appendLog(state, player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.");
+  appendLog(state, player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.", "game.log.tradeCompleted", {
+    playerName: player.name,
+    bonus
+  });
   return { ok: true, bonus, validation };
 }
 
@@ -270,6 +287,7 @@ function publicState(state) {
         }
       : null,
     log: state.log,
+    logEntries: state.logEntries,
     lastAction: state.lastAction,
     lastCombat: state.lastAction && state.lastAction.type === GameAction.ATTACK ? state.lastAction.combat || null : null,
     diceRuleSet: {
@@ -316,15 +334,24 @@ function startGame(state, random = secureRandom) {
 
   const firstPlayer = getCurrentPlayer(state);
   state.reinforcementPool = computeReinforcements(state, firstPlayer.id);
-  appendLog(state, "Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.");
+  appendLog(state, "Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.", "game.log.gameStarted", {
+    playerName: firstPlayer.name,
+    reinforcementPool: state.reinforcementPool
+  });
 }
 
 function declareWinnerIfNeeded(state) {
-  const result = detectVictory(state, {
-    appendLog(message) {
-      appendLog(state, message.replace("conquers the map and wins the game.", "conquista la mappa e vince la partita."));
-    }
-  });
+  const result = detectVictory(state);
+  if (result.code === "AI_ONLY_REMAIN") {
+    appendLog(state, "La partita si chiude: restano attive solo AI.", "game.log.aiOnlyRemain", result.messageParams || {});
+  } else if (result.code === "VICTORY_DECLARED" && result.victory) {
+    appendLog(
+      state,
+      result.victory.summary.replace("conquers the map and wins the game.", "conquista la mappa e vince la partita."),
+      result.victory.summaryKey || "game.log.victoryDeclared",
+      result.victory.summaryParams || { playerName: result.victory.winnerName }
+    );
+  }
 
   return state.phase === "finished";
 }
@@ -345,7 +372,10 @@ function advanceTurn(state) {
       state.pendingConquest = null;
       state.fortifyUsed = false;
       state.conqueredTerritoryThisTurn = false;
-      appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.");
+      appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.", "game.log.turnStarted", {
+        playerName: candidate.name,
+        reinforcementPool: state.reinforcementPool
+      });
       return;
     }
   }
@@ -358,7 +388,7 @@ function addPlayer(state, name, options = {}) {
     ? state.gameConfig.totalPlayers
     : 4;
   if (!normalizedName) {
-    return { ok: false, error: "Inserisci un nome." };
+    return createDomainFailure("Inserisci un nome.", "game.addPlayer.nameRequired");
   }
 
   const existing = state.players.find((player) => {
@@ -379,16 +409,16 @@ function addPlayer(state, name, options = {}) {
     } else if (linkedUserId && !existing.linkedUserId) {
       existing.linkedUserId = linkedUserId;
     }
-    appendLog(state, existing.name + " si ricollega alla lobby.");
+    appendLog(state, existing.name + " si ricollega alla lobby.", "game.log.playerRejoined", { playerName: existing.name });
     return { ok: true, player: existing, rejoined: true };
   }
 
   if (state.phase !== "lobby") {
-    return { ok: false, error: "La partita e gia iniziata." };
+    return createDomainFailure("La partita e gia iniziata.", "game.addPlayer.alreadyStarted");
   }
 
   if (state.players.length >= maxPlayers) {
-    return { ok: false, error: "La lobby e piena." };
+    return createDomainFailure("La lobby e piena.", "game.addPlayer.lobbyFull");
   }
 
   const player = createPlayer({
@@ -400,7 +430,7 @@ function addPlayer(state, name, options = {}) {
     linkedUserId
   });
   state.players.push(player);
-  appendLog(state, player.name + " entra nella lobby.");
+  appendLog(state, player.name + " entra nella lobby.", "game.log.playerJoined", { playerName: player.name });
   return { ok: true, player, rejoined: false };
 }
 
@@ -410,43 +440,57 @@ function applyReinforcement(state, playerId, territoryId, requestedAmount = 1) {
   const reinforcementAmount = Math.floor(Number(requestedAmount));
 
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (state.reinforcementPool <= 0) {
-    return { ok: false, message: "Non hai rinforzi disponibili." };
+    return createActionFailure("Non hai rinforzi disponibili.", "game.reinforce.noneAvailable");
   }
 
   if (!Number.isFinite(reinforcementAmount) || reinforcementAmount <= 0) {
-    return { ok: false, message: "Quantita rinforzi non valida." };
+    return createActionFailure("Quantita rinforzi non valida.", "game.reinforce.invalidAmount");
   }
 
   if (reinforcementAmount > state.reinforcementPool) {
-    return { ok: false, message: "Stai tentando di usare piu rinforzi di quelli disponibili." };
+    return createActionFailure("Stai tentando di usare piu rinforzi di quelli disponibili.", "game.reinforce.tooMany");
   }
 
   if (!territoryState || territoryState.ownerId !== playerId) {
-    return { ok: false, message: "Puoi rinforzare solo un tuo territorio." };
+    return createActionFailure("Puoi rinforzare solo un tuo territorio.", "game.reinforce.mustOwnTerritory");
   }
 
   territoryState.armies += reinforcementAmount;
   state.reinforcementPool -= reinforcementAmount;
   state.lastAction = {
     type: GameAction.REINFORCE,
-    summary: player.name + " rinforza " + territoryId + " con " + reinforcementAmount + " armate."
+    summary: player.name + " rinforza " + territoryId + " con " + reinforcementAmount + " armate.",
+    summaryKey: "game.log.reinforced",
+    summaryParams: {
+      playerName: player.name,
+      reinforcementAmount,
+      territoryId,
+      reinforcementPool: state.reinforcementPool
+    }
   };
   state.turnPhase = state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId) ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
   appendLog(
     state,
-    player.name + " aggiunge " + reinforcementAmount + " " + (reinforcementAmount === 1 ? "armata" : "armate") + " a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + "."
+    player.name + " aggiunge " + reinforcementAmount + " " + (reinforcementAmount === 1 ? "armata" : "armate") + " a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".",
+    "game.log.reinforced",
+    {
+      playerName: player.name,
+      reinforcementAmount,
+      territoryId,
+      reinforcementPool: state.reinforcementPool
+    }
   );
   return { ok: true };
 }
@@ -458,39 +502,39 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
   const territory = getMapTerritories(state).find((item) => item.id === fromId);
 
   if (!attacker || !from || !to || !territory) {
-    return { ok: false, message: "Territori non validi." };
+    return createActionFailure("Territori non validi.", "game.attack.invalidTerritories");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (state.reinforcementPool > 0) {
-    return { ok: false, message: "Devi prima spendere tutti i rinforzi." };
+    return createActionFailure("Devi prima spendere tutti i rinforzi.", "game.attack.mustSpendReinforcements");
   }
 
   if (playerMustTradeCards(state, playerId)) {
-    return { ok: false, message: "Devi prima scambiare carte: hai superato il limite di mano." };
+    return createActionFailure("Devi prima scambiare carte: hai superato il limite di mano.", "game.attack.mustTradeCards");
   }
 
   if (state.pendingConquest) {
-    return { ok: false, message: "Devi prima spostare le armate nel territorio conquistato." };
+    return createActionFailure("Devi prima spostare le armate nel territorio conquistato.", "game.attack.mustMoveAfterConquest");
   }
 
   if (from.ownerId !== playerId || to.ownerId === playerId) {
-    return { ok: false, message: "Puoi attaccare solo da un tuo territorio verso uno nemico." };
+    return createActionFailure("Puoi attaccare solo da un tuo territorio verso uno nemico.", "game.attack.invalidOwnership");
   }
 
   if (territory.neighbors.indexOf(toId) === -1) {
-    return { ok: false, message: "I territori non sono confinanti." };
+    return createActionFailure("I territori non sono confinanti.", "game.attack.notAdjacent");
   }
 
   if (from.armies < 2) {
-    return { ok: false, message: "Servono almeno 2 armate per attaccare." };
+    return createActionFailure("Servono almeno 2 armate per attaccare.", "game.attack.notEnoughArmies");
   }
 
   state.turnPhase = TurnPhase.ATTACK;
@@ -502,13 +546,13 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve);
   if (maxAttackDice < 1) {
-    return { ok: false, message: "Non hai abbastanza armate per tirare dadi in attacco." };
+    return createActionFailure("Non hai abbastanza armate per tirare dadi in attacco.", "game.attack.notEnoughDiceArmies");
   }
   const attackDiceCount = requestedAttackDice == null
     ? maxAttackDice
     : Number(requestedAttackDice);
   if (!Number.isInteger(attackDiceCount) || attackDiceCount < 1 || attackDiceCount > maxAttackDice) {
-    return { ok: false, message: "Numero di dadi di attacco non valido." };
+    return createActionFailure("Numero di dadi di attacco non valido.", "game.attack.invalidDiceCount");
   }
   const defendDiceCount = Math.min(diceRuleSet.defenderMaxDice, to.armies);
   const attackRolls = rollCombatDice(attackDiceCount, random);
@@ -566,8 +610,28 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
     conqueredTerritory: Boolean(state.pendingConquest)
   };
 
-  state.lastAction = { type: GameAction.ATTACK, summary, fromId, toId, combat };
-  appendLog(state, summary);
+  state.lastAction = {
+    type: GameAction.ATTACK,
+    summary,
+    summaryKey: state.pendingConquest ? "game.log.attackConquered" : defenderLosses > 0 ? "game.log.attackDamaged" : "game.log.attackFailed",
+    summaryParams: {
+      attackerName: attacker.name,
+      toId,
+      attackRolls: attackRolls.join("-"),
+      defendRolls: defendRolls.join("-"),
+      defenderLosses
+    },
+    fromId,
+    toId,
+    combat
+  };
+  appendLog(state, summary, state.pendingConquest ? "game.log.attackConquered" : defenderLosses > 0 ? "game.log.attackDamaged" : "game.log.attackFailed", {
+    attackerName: attacker.name,
+    toId,
+    attackRolls: attackRolls.join("-"),
+    defendRolls: defendRolls.join("-"),
+    defenderLosses
+  });
   declareWinnerIfNeeded(state);
   return { ok: true, summary, combat, pendingConquest: state.pendingConquest };
 }
@@ -577,24 +641,24 @@ function moveAfterConquest(state, playerId, armiesToMove) {
   const pending = state.pendingConquest;
 
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (!pending) {
-    return { ok: false, message: "Nessuna conquista in attesa." };
+    return createActionFailure("Nessuna conquista in attesa.", "game.conquest.nonePending");
   }
 
   const moveCount = Number(armiesToMove);
   if (!Number.isInteger(moveCount)) {
-    return { ok: false, message: "Inserisci un numero intero di armate." };
+    return createActionFailure("Inserisci un numero intero di armate.", "game.conquest.invalidArmyCount");
   }
 
   const from = state.territories[pending.fromId];
@@ -602,11 +666,11 @@ function moveAfterConquest(state, playerId, armiesToMove) {
   const maxArmies = Math.max(1, from.armies - 1);
 
   if (moveCount < pending.minArmies) {
-    return { ok: false, message: "Devi spostare almeno " + pending.minArmies + " armata." };
+    return createActionFailure("Devi spostare almeno " + pending.minArmies + " armata.", "game.conquest.minArmies", { minArmies: pending.minArmies });
   }
 
   if (moveCount > maxArmies) {
-    return { ok: false, message: "Devi lasciare almeno 1 armata nel territorio di partenza." };
+    return createActionFailure("Devi lasciare almeno 1 armata nel territorio di partenza.", "game.conquest.leaveOneBehind");
   }
 
   from.armies -= moveCount;
@@ -615,9 +679,19 @@ function moveAfterConquest(state, playerId, armiesToMove) {
   state.pendingConquest = null;
   state.lastAction = {
     type: "moveAfterConquest",
-    summary: player.name + " sposta " + moveCount + " armate in " + pending.toId + "."
+    summary: player.name + " sposta " + moveCount + " armate in " + pending.toId + ".",
+    summaryKey: "game.log.moveAfterConquest",
+    summaryParams: {
+      playerName: player.name,
+      moveCount,
+      territoryId: pending.toId
+    }
   };
-  appendLog(state, player.name + " sposta " + moveCount + " armate in " + pending.toId + ".");
+  appendLog(state, player.name + " sposta " + moveCount + " armate in " + pending.toId + ".", "game.log.moveAfterConquest", {
+    playerName: player.name,
+    moveCount,
+    territoryId: pending.toId
+  });
   return { ok: true };
 }
 
@@ -627,45 +701,45 @@ function applyFortify(state, playerId, fromId, toId, armiesToMove) {
   const to = state.territories[toId];
 
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (state.turnPhase !== TurnPhase.FORTIFY) {
-    return { ok: false, message: "Puoi fortificare solo nella fase di fortifica." };
+    return createActionFailure("Puoi fortificare solo nella fase di fortifica.", "game.fortify.phaseOnly");
   }
 
   if (state.fortifyUsed) {
-    return { ok: false, message: "Hai gia usato la fortifica in questo turno." };
+    return createActionFailure("Hai gia usato la fortifica in questo turno.", "game.fortify.alreadyUsed");
   }
 
   if (!from || !to || fromId === toId) {
-    return { ok: false, message: "Seleziona due territori validi e distinti." };
+    return createActionFailure("Seleziona due territori validi e distinti.", "game.fortify.invalidTerritories");
   }
 
   if (from.ownerId !== playerId || to.ownerId !== playerId) {
-    return { ok: false, message: "Puoi spostare armate solo tra tuoi territori." };
+    return createActionFailure("Puoi spostare armate solo tra tuoi territori.", "game.fortify.mustOwnTerritories");
   }
 
   const territory = getMapTerritories(state).find((item) => item.id === fromId);
   if (!territory || territory.neighbors.indexOf(toId) === -1) {
-    return { ok: false, message: "Puoi fortificare solo tra territori adiacenti." };
+    return createActionFailure("Puoi fortificare solo tra territori adiacenti.", "game.fortify.notAdjacent");
   }
 
   const moveCount = Number(armiesToMove);
   if (!Number.isInteger(moveCount) || moveCount < 1) {
-    return { ok: false, message: "Inserisci almeno 1 armata da spostare." };
+    return createActionFailure("Inserisci almeno 1 armata da spostare.", "game.fortify.invalidArmyCount");
   }
 
   if (from.armies - moveCount < 1) {
-    return { ok: false, message: "Devi lasciare almeno 1 armata nel territorio di partenza." };
+    return createActionFailure("Devi lasciare almeno 1 armata nel territorio di partenza.", "game.fortify.leaveOneBehind");
   }
 
   from.armies -= moveCount;
@@ -673,9 +747,21 @@ function applyFortify(state, playerId, fromId, toId, armiesToMove) {
   state.fortifyUsed = true;
   state.lastAction = {
     type: "fortify",
-    summary: player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + "."
+    summary: player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".",
+    summaryKey: "game.log.fortified",
+    summaryParams: {
+      playerName: player.name,
+      moveCount,
+      fromId,
+      toId
+    }
   };
-  appendLog(state, player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".");
+  appendLog(state, player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".", "game.log.fortified", {
+    playerName: player.name,
+    moveCount,
+    fromId,
+    toId
+  });
   return { ok: true };
 }
 
@@ -683,38 +769,38 @@ function endTurn(state, playerId) {
   const player = getPlayer(state, playerId);
 
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "La partita non e attiva." };
+    return createActionFailure("La partita non e attiva.", "game.notActive");
   }
 
   if (!getCurrentPlayer(state) || getCurrentPlayer(state).id !== playerId) {
-    return { ok: false, message: "Non e il tuo turno." };
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
   }
 
   if (state.reinforcementPool > 0) {
-    return { ok: false, message: "Spendi prima tutti i rinforzi." };
+    return createActionFailure("Spendi prima tutti i rinforzi.", "game.endTurn.mustSpendReinforcements");
   }
 
   if (playerMustTradeCards(state, playerId)) {
-    return { ok: false, message: "Devi prima scambiare carte: hai superato il limite di mano." };
+    return createActionFailure("Devi prima scambiare carte: hai superato il limite di mano.", "game.endTurn.mustTradeCards");
   }
 
   if (state.pendingConquest) {
-    return { ok: false, message: "Sposta prima le armate nel territorio conquistato." };
+    return createActionFailure("Sposta prima le armate nel territorio conquistato.", "game.endTurn.mustMoveAfterConquest");
   }
 
   if (state.turnPhase === TurnPhase.ATTACK) {
     state.turnPhase = TurnPhase.FORTIFY;
     state.fortifyUsed = false;
-    appendLog(state, player.name + " entra nella fase di fortifica.");
+    appendLog(state, player.name + " entra nella fase di fortifica.", "game.log.enterFortify", { playerName: player.name });
     return { ok: true, requiresFortifyDecision: true };
   }
 
   const awardedCard = awardTurnCardIfEligible(state, playerId);
-  appendLog(state, player.name + " termina il turno.");
+  appendLog(state, player.name + " termina il turno.", "game.log.endTurn", { playerName: player.name });
   advanceTurn(state);
   return { ok: true, awardedCard };
 }
@@ -723,19 +809,19 @@ function surrenderPlayer(state, playerId) {
   const player = getPlayer(state, playerId);
 
   if (!player) {
-    return { ok: false, message: "Giocatore non valido." };
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
   if (state.phase !== "active") {
-    return { ok: false, message: "Puoi arrenderti solo durante una partita attiva." };
+    return createActionFailure("Puoi arrenderti solo durante una partita attiva.", "game.surrender.activeOnly");
   }
 
   if (player.surrendered) {
-    return { ok: false, message: "Il giocatore si e gia arreso." };
+    return createActionFailure("Il giocatore si e gia arreso.", "game.surrender.alreadySurrendered");
   }
 
   if (territoriesOwnedBy(state, playerId).length === 0) {
-    return { ok: false, message: "Il giocatore e gia eliminato." };
+    return createActionFailure("Il giocatore e gia eliminato.", "game.surrender.alreadyEliminated");
   }
 
   if (Array.isArray(state.hands?.[playerId]) && state.hands[playerId].length > 0) {
@@ -760,9 +846,11 @@ function surrenderPlayer(state, playerId) {
   state.lastAction = {
     type: GameAction.SURRENDER,
     summary,
+    summaryKey: "game.log.surrender",
+    summaryParams: { playerName: player.name },
     playerId
   };
-  appendLog(state, summary);
+  appendLog(state, summary, "game.log.surrender", { playerName: player.name });
 
   if (declareWinnerIfNeeded(state)) {
     return { ok: true, eliminatedPlayerId: playerId, winnerId: state.winnerId };
@@ -803,19 +891,6 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

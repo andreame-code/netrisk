@@ -1,3 +1,5 @@
+import { t, translateServerMessage } from "./i18n.js";
+
 const state = {
   user: null,
   submitting: false
@@ -44,23 +46,23 @@ function setFeedback(message = "", tone = "") {
 
 function registrationClientError(username, email, password, confirmPassword) {
   if (!username || !password || !confirmPassword) {
-    return "Compila i campi obbligatori.";
+    return t("register.errors.requiredFields");
   }
 
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(username)) {
-    return "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.";
+    return t("register.errors.invalidUsername");
   }
 
   if (password.length < 4) {
-    return "Usa una password con almeno 4 caratteri.";
+    return t("register.errors.shortPassword");
   }
 
   if (password !== confirmPassword) {
-    return "Le password non coincidono.";
+    return t("register.errors.passwordMismatch");
   }
 
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return "Email non valida.";
+    return t("register.errors.invalidEmail");
   }
 
   return "";
@@ -74,7 +76,7 @@ async function loginWithCredentials(username, password) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Accesso non riuscito.");
+    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
 
   state.user = data.user;
@@ -86,7 +88,7 @@ async function restoreSession() {
   try {
     const response = await fetch("/api/auth/session");
     if (!response.ok) {
-      throw new Error("Sessione scaduta");
+      throw new Error(t("auth.sessionExpired"));
     }
 
     const data = await response.json();
@@ -109,8 +111,8 @@ function render() {
   elements.logoutButton.disabled = !isAuthenticated;
   elements.submit.disabled = state.submitting || isAuthenticated;
   elements.authStatus.textContent = isAuthenticated
-    ? `Hai gia effettuato l'accesso come ${state.user.username}.`
-    : "Compila il modulo per creare l'account.";
+    ? t("register.auth.loggedIn", { username: state.user.username })
+    : t("register.authStatus");
   renderNavAvatar(state.user?.username);
 }
 
@@ -174,7 +176,7 @@ elements.form.addEventListener("submit", async (event) => {
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Registrazione non riuscita.");
+      throw new Error(translateServerMessage(data, t("register.errors.submitFailed")));
     }
 
     await loginWithCredentials(username, password);
