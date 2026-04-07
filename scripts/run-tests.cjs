@@ -148,6 +148,10 @@ function authHeaders(sessionToken) {
   };
 }
 
+function readPublicHtml(fileName) {
+  return fs.readFileSync(path.join(__dirname, "..", "frontend", "public", fileName), "utf8");
+}
+
 function createMockSupabaseResponse(status, payload) {
   const text = payload == null ? "" : JSON.stringify(payload);
   return {
@@ -477,6 +481,32 @@ register("auth store registra e autentica utenti password", async () => {
     fs.unlinkSync(tempSessionsFile);
   }
   cleanupSqliteFiles(tempDbFile);
+});
+
+register("i form di login pubblici usano POST per non esporre credenziali nella query string", () => {
+  const headerLoginPages = [
+    "game.html",
+    "lobby.html",
+    "new-game.html",
+    "profile.html",
+    "register.html"
+  ];
+
+  headerLoginPages.forEach((fileName) => {
+    const html = readPublicHtml(fileName);
+    assert.match(
+      html,
+      /<form id="header-login-form"[^>]*method="post"/,
+      `${fileName} deve usare POST per il form di login header`
+    );
+  });
+
+  const gameHtml = readPublicHtml("game.html");
+  assert.match(
+    gameHtml,
+    /<form id="auth-form"[^>]*method="post"/,
+    "game.html deve usare POST per il form login principale"
+  );
 });
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
