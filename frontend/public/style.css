@@ -341,6 +341,7 @@ h1 {
 }
 
 .map-board.has-custom-background .map-board-stage {
+  inset: 0;
   background-image: var(--map-background-image);
   background-position: center;
   background-repeat: no-repeat;
@@ -348,9 +349,9 @@ h1 {
 }
 
 .map-board.map-id-world-classic.has-custom-background .map-board-stage {
-  inset: -3% -5.5% -11% -5.5%;
-  background-size: cover;
-  background-position: 49% 16%;
+  inset: 0;
+  background-size: contain;
+  background-position: center;
 }
 
 .map-board::before,
@@ -1761,6 +1762,7 @@ body[data-app-section="game"] .board-shell {
   width: 100%;
   max-width: none;
   padding-top: 2px;
+  padding-bottom: 8px;
 }
 
 .game-ops-bar,
@@ -1880,9 +1882,20 @@ body[data-app-section="game"] .board-shell {
 }
 
 .game-battlefield-layout {
-  grid-template-columns: 172px minmax(0, 2.2fr) 260px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 12px;
-  min-height: calc(100vh - 106px);
+  align-items: stretch;
+  min-height: calc(100vh - 92px);
+  height: calc(100vh - 92px);
+}
+
+.game-main-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  --game-map-max-height: calc(100vh - 340px);
 }
 
 .game-info-rail,
@@ -1896,8 +1909,50 @@ body[data-app-section="game"] .board-shell {
   flex-direction: column;
 }
 
+.game-lobby-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.game-phase-banner,
+.game-reinforcement-banner {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  color: rgba(44, 31, 20, 0.82);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 .game-info-rail {
   gap: 10px;
+}
+
+.game-info-bottom {
+  min-width: 0;
+}
+
+.game-info-bottom .panel-header {
+  margin-bottom: 8px;
+}
+
+.game-info-bottom .game-compact-heading {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-info-bottom .game-compact-heading .eyebrow {
+  margin-bottom: 2px;
+}
+
+.game-info-bottom .game-compact-heading h2 {
+  font-size: 1.55rem;
+}
+
+.game-status-bottom-strip {
+  margin-bottom: 0;
+  padding: 10px 14px;
 }
 
 .game-compact-heading {
@@ -1914,8 +1969,7 @@ body[data-app-section="game"] .board-shell {
 
 .game-session-card,
 .game-roster-section,
-.map-stage-command-strip,
-.phase-ladder {
+.map-stage-command-strip {
   border-radius: 18px;
 }
 
@@ -1925,14 +1979,17 @@ body[data-app-section="game"] .board-shell {
   border: 1px solid rgba(96, 65, 41, 0.08);
 }
 
+.game-info-bottom .game-session-card {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px 16px;
+  padding: 10px 14px;
+}
+
 .game-roster-section {
   padding: 12px;
   background: rgba(255, 248, 237, 0.55);
   border: 1px solid rgba(96, 65, 41, 0.08);
-}
-
-.game-actions-rail .log-section {
-  flex: 1 1 auto;
 }
 
 .surrender-section {
@@ -1941,6 +1998,10 @@ body[data-app-section="game"] .board-shell {
 
 .game-map-stage {
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .map-stage-command-strip {
@@ -1954,10 +2015,35 @@ body[data-app-section="game"] .board-shell {
 
 .map-command-summary {
   margin-bottom: 0;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  align-items: center;
+  column-gap: 18px;
 }
 
 .map-command-summary .status-line:last-child {
   margin-bottom: 0;
+}
+
+.game-info-bottom .command-summary > div {
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.game-info-bottom .game-meta-line {
+  display: grid;
+  gap: 2px;
+  align-items: start;
+}
+
+.game-info-bottom .game-meta-line span:first-child {
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.game-info-bottom .game-meta-line strong,
+.game-info-bottom .game-meta-line span:last-child {
+  font-size: 0.96rem;
 }
 
 .map-trade-alert {
@@ -1965,42 +2051,31 @@ body[data-app-section="game"] .board-shell {
 }
 
 .game-map-stage .map {
-  min-height: calc(100vh - 258px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  overflow: hidden;
 }
 
 .game-map-stage .map-board {
-  aspect-ratio: 820 / 520;
+  aspect-ratio: auto;
+  width: auto;
+  height: auto;
+  max-height: none;
+  margin: 0 auto;
 }
 
-.action-title-row {
-  align-items: flex-start;
+.game-map-stage .map-board-stage {
+  inset: 0;
+  background-size: contain;
+  background-position: center;
 }
 
-.action-stage-copy {
-  margin-top: 6px;
-  max-width: 24rem;
-}
-
-.phase-ladder {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0 0 14px;
-}
-
-.phase-step {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: rgba(44, 31, 20, 0.06);
-  color: rgba(44, 31, 20, 0.78);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+.game-map-stage .map-legend {
+  display: none;
 }
 
 body[data-app-section="game"] .main-nav-shell {
@@ -2039,7 +2114,22 @@ body[data-app-section="game"] .main-nav-shell {
   }
 
   .game-battlefield-layout {
-    grid-template-columns: 160px minmax(0, 1fr) 236px;
+    grid-template-columns: minmax(0, 1fr) 236px;
+  }
+
+  .game-info-bottom .game-session-card {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .map-command-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-info-bottom {
+  }
+
+  .game-main-column {
+    --game-map-max-height: calc(100vh - 332px);
   }
 }
 
@@ -2047,15 +2137,31 @@ body[data-app-section="game"] .main-nav-shell {
   .game-battlefield-layout {
     grid-template-columns: 1fr;
     min-height: auto;
+    height: auto;
+  }
+
+  .game-actions-rail {
+    max-height: none;
+    overflow: visible;
   }
 
   .game-map-stage .map {
-    min-height: 500px;
+    height: auto;
+    min-height: 420px;
   }
 
-  .phase-ladder {
+  .game-info-bottom {
+  }
+
+  .game-info-bottom .game-compact-heading {
+    align-items: flex-start;
+  }
+
+  .game-info-bottom .game-session-card,
+  .map-command-summary {
     grid-template-columns: 1fr;
   }
+
 }
 
 

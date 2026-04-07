@@ -93,6 +93,8 @@ const elements = {
   identityStatus: document.querySelector("#identity-status"),
   joinButton: document.querySelector("#join-button"),
   startButton: document.querySelector("#start-button"),
+  lobbyControlsSection: document.querySelector("#lobby-controls-section"),
+  lobbyActionButtons: document.querySelector("#lobby-action-buttons"),
   gameName: document.querySelector("#game-name"),
   createGameButton: document.querySelector("#create-game-button"),
   gameList: document.querySelector("#game-list"),
@@ -102,6 +104,9 @@ const elements = {
   gameStatus: document.querySelector("#game-status"),
   gameMapMeta: document.querySelector("#game-map-meta"),
   gameSetupMeta: document.querySelector("#game-setup-meta"),
+  phaseBannerValue: document.querySelector("#phase-banner-value"),
+  reinforcementBanner: document.querySelector("#reinforcement-banner"),
+  reinforcementBannerValue: document.querySelector("#reinforcement-banner-value"),
   gameListState: document.querySelector("#game-list-state"),
   gameSessionList: document.querySelector("#game-session-list"),
   gameSessionDetails: document.querySelector("#game-session-details"),
@@ -159,6 +164,41 @@ function renderNavAvatar(username) {
 
   const label = username ? String(username).trim().charAt(0).toUpperCase() : "C";
   avatar.textContent = label || "C";
+}
+
+function fitMapBoardToViewport() {
+  const mapStage = document.querySelector(".game-map-stage");
+  const mapContainer = document.querySelector(".game-map-stage .map");
+  const mapBoard = document.querySelector(".game-map-stage .map-board");
+  if (!mapStage || !mapContainer || !mapBoard) {
+    return;
+  }
+
+  const stageStyles = window.getComputedStyle(mapStage);
+  const stagePaddingX =
+    Number.parseFloat(stageStyles.paddingLeft || "0") + Number.parseFloat(stageStyles.paddingRight || "0");
+  const stagePaddingY =
+    Number.parseFloat(stageStyles.paddingTop || "0") + Number.parseFloat(stageStyles.paddingBottom || "0");
+  const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
+  const stageRect = mapStage.getBoundingClientRect();
+  const visibleViewportHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
+  const availableHeight = Math.max(0, Math.min(mapStage.clientHeight - stagePaddingY, visibleViewportHeight));
+  if (!availableWidth || !availableHeight) {
+    return;
+  }
+
+  const aspectRatioValue = mapBoard.style.aspectRatio || window.getComputedStyle(mapBoard).aspectRatio || "760 / 500";
+  const aspectRatioMatch = aspectRatioValue.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+  const aspectRatio = aspectRatioMatch
+    ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
+    : 760 / 500;
+  const widthFromHeight = availableHeight * aspectRatio;
+  const width = Math.min(availableWidth, widthFromHeight);
+  const height = width / aspectRatio;
+
+  mapBoard.style.width = `${Math.floor(width)}px`;
+  mapBoard.style.height = `${Math.floor(height)}px`;
+  mapContainer.style.height = `${Math.floor(availableHeight)}px`;
 }
 
 function territoryPosition(territory) {
@@ -690,6 +730,7 @@ function render() {
   const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
   ensurePrivateStateFresh(me);
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
+  const inLobby = snapshot?.phase === "lobby";
   const playerHand = currentPlayerHand();
   state.selectedTradeCardIds = state.selectedTradeCardIds.filter((cardId) => playerHand.some((card) => card.id === cardId));
   if (!playerHand.length) {
@@ -736,8 +777,6 @@ function render() {
 
   elements.statusSummary.innerHTML = snapshot
     ? `
-      <div>Fase: <strong>${snapshot.phase}</strong></div>
-      <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
       <div>Vincitore: <strong>${escapeHtml(winner ? winner.name : "nessuno")}</strong></div>
     `
     : "<div>Caricamento stato...</div>";
@@ -842,6 +881,7 @@ function render() {
   }
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
+  fitMapBoardToViewport();
   elements.log.innerHTML = (snapshot?.log || []).map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
@@ -867,8 +907,25 @@ function render() {
   }
   elements.logoutButton.hidden = !isAuthenticated;
   elements.logoutButton.disabled = !isAuthenticated;
-  elements.joinButton.disabled = !state.user || Boolean(me) || snapshot?.phase !== "lobby";
-  elements.startButton.disabled = !me || snapshot?.phase !== "lobby" || snapshot.players.length < 2;
+  if (elements.phaseBannerValue) {
+    elements.phaseBannerValue.textContent = snapshot?.phase || "lobby";
+  }
+  if (elements.lobbyControlsSection) {
+    elements.lobbyControlsSection.hidden = !inLobby;
+  }
+  if (elements.reinforcementBanner) {
+    elements.reinforcementBanner.hidden = !canInteract || !inReinforcement;
+  }
+  if (elements.reinforcementBannerValue) {
+    elements.reinforcementBannerValue.textContent = String(snapshot?.reinforcementPool ?? 0);
+  }
+  if (elements.lobbyActionButtons) {
+    elements.lobbyActionButtons.hidden = !inLobby;
+  }
+  elements.joinButton.hidden = !inLobby;
+  elements.startButton.hidden = !inLobby;
+  elements.joinButton.disabled = !state.user || Boolean(me) || !inLobby;
+  elements.startButton.disabled = !me || !inLobby || snapshot.players.length < 2;
   if (elements.createGameButton) {
     elements.createGameButton.disabled = false;
   }
@@ -958,19 +1015,21 @@ function render() {
     elements.surrenderButton.hidden = !canSurrender;
     elements.surrenderButton.disabled = !canSurrender;
   }
-  elements.actionHint.textContent = canInteract
-    ? pendingConquest
-      ? "Conquista"
-      : inReinforcement
-        ? "Rinforzi"
-        : inFortify
-          ? snapshot.fortifyUsed
-            ? "Chiudi turno"
-            : "Fortifica"
-          : "Attacco"
-    : state.user
-      ? "Osservazione"
-      : "Login";
+  if (elements.actionHint) {
+    elements.actionHint.textContent = canInteract
+      ? pendingConquest
+        ? "Conquista"
+        : inReinforcement
+          ? "Rinforzi"
+          : inFortify
+            ? snapshot.fortifyUsed
+              ? "Chiudi turno"
+              : "Fortifica"
+            : "Attacco"
+      : state.user
+        ? "Osservazione"
+        : "Login";
+  }
 }
 
 async function fetchLatestStateSnapshot(options = {}) {
@@ -1566,6 +1625,4 @@ await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
 
-
-
-
+window.addEventListener("resize", fitMapBoardToViewport);
