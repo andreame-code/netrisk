@@ -32,11 +32,11 @@ test("existing game keeps the same player binding after logout and login again",
   await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
 
   await page.getByRole("button", { name: "Esci" }).click();
-  await expect(page.locator("#auth-form #auth-username")).toBeVisible();
+  await expect(page.locator("#header-auth-username")).toBeVisible();
 
-  await page.locator("#auth-form #auth-username").fill(username);
-  await page.locator("#auth-form #auth-password").fill("secret123");
-  await page.locator("#auth-form #login-button").click();
+  await page.locator("#header-auth-username").fill(username);
+  await page.locator("#header-auth-password").fill("secret123");
+  await page.locator("#header-login-button").click();
   await expect(page.locator("#auth-status")).toContainText(username);
 
   await page.goto("/lobby.html");

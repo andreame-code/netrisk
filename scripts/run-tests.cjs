@@ -1,6 +1,8 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
+
+process.env.TEST = "true";
 const {
   addPlayer,
   advanceTurn,
