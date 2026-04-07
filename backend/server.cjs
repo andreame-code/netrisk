@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
@@ -27,6 +28,8 @@ const {
 const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
+
+loadLocalEnv();
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
