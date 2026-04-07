@@ -2988,6 +2988,57 @@ register("API state espone solo la mano del player autenticato risolto", async (
   });
 });
 
+register("API surrender mantiene lo snapshot per-user anche dopo la resa", async () => {
+  await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("surrender_owner"));
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Surrender snapshot" })
+    });
+    assert.equal(created.status, 201);
+
+    const joinOwner = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+    });
+    assert.equal(joinOwner.status, 200);
+    const ownerPayload = await joinOwner.json();
+
+    const otherSession = await createAuthenticatedSession(baseUrl, uniqueName("surrender_other"));
+    const joinOther = await fetch(baseUrl + "/api/join", {
+      method: "POST",
+      headers: authHeaders(otherSession.sessionToken),
+      body: JSON.stringify({ sessionToken: otherSession.sessionToken })
+    });
+    assert.equal(joinOther.status, 201);
+
+    const startResponse = await fetch(baseUrl + "/api/start", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: ownerPayload.playerId })
+    });
+    assert.equal(startResponse.status, 200);
+
+    const response = await fetch(baseUrl + "/api/action", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({
+        sessionToken: ownerSession.sessionToken,
+        playerId: ownerPayload.playerId,
+        type: "surrender"
+      })
+    });
+
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.state.playerId, ownerPayload.playerId);
+    assert.equal(payload.state.players.find((player) => player.id === ownerPayload.playerId).surrendered, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(payload, "rounds"), false);
+  });
+});
+
 register("API register + login + join completa il flusso di accesso", async () => {
   await withServer(async (baseUrl) => {
   const unique = `api_${Date.now()}_${uniqueSuffix()}`;

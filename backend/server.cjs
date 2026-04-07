@@ -872,7 +872,10 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
+        sendJson(res, 200, {
+          ok: true,
+          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
+        });
         return;
       }
 
@@ -911,7 +914,11 @@ function createApp(options = {}) {
           throw error;
         }
         broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
+        sendJson(res, 200, {
+          ok: true,
+          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user),
+          rounds: Array.isArray(result.rounds) ? result.rounds : undefined
+        });
         return;
       }
 
@@ -993,8 +1000,7 @@ function createApp(options = {}) {
         broadcastGame(gameContext);
         sendJson(res, 200, {
           ok: true,
-          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
-          rounds: Array.isArray(result.rounds) ? result.rounds : undefined
+          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
         });
         return;
       }
