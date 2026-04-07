@@ -1043,6 +1043,49 @@ async function fetchLatestStateSnapshot(options = {}) {
   return data;
 }
 
+function shouldAcceptSnapshot(nextSnapshot, options = {}) {
+  if (!nextSnapshot || typeof nextSnapshot !== "object") {
+    return false;
+  }
+
+  const currentSnapshot = state.snapshot;
+  if (!currentSnapshot || typeof currentSnapshot !== "object") {
+    return true;
+  }
+
+  const nextGameId = nextSnapshot.gameId || state.currentGameId || null;
+  const currentGameId = currentSnapshot.gameId || state.currentGameId || null;
+  if (nextGameId && currentGameId && nextGameId !== currentGameId) {
+    return options.allowGameSwitch === true;
+  }
+
+  const nextVersion = Number.isInteger(nextSnapshot.version) ? nextSnapshot.version : null;
+  const currentVersion = Number.isInteger(currentSnapshot.version) ? currentSnapshot.version : null;
+  if (nextVersion != null && currentVersion != null && nextVersion < currentVersion) {
+    return false;
+  }
+
+  return true;
+}
+
+function applySnapshot(nextSnapshot, options = {}) {
+  if (!shouldAcceptSnapshot(nextSnapshot, options)) {
+    return false;
+  }
+
+  state.snapshot = nextSnapshot;
+  state.currentGameId = nextSnapshot.gameId || state.currentGameId;
+  syncCurrentGameName();
+
+  if (nextSnapshot.playerId) {
+    setPlayerIdentity(nextSnapshot.playerId);
+  } else if (options.clearPlayerIdentity !== false) {
+    clearPlayerIdentity();
+  }
+
+  return true;
+}
+
 async function send(path, payload = {}, options = {}) {
   const response = await fetch(path, {
     method: options.method || "POST",
@@ -1053,8 +1096,7 @@ async function send(path, payload = {}, options = {}) {
   const data = await response.json();
   if (!response.ok) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
-      state.snapshot = data.state;
-      state.currentGameId = data.state.gameId || state.currentGameId;
+      applySnapshot(data.state);
       await loadGameList();
       throw new Error(data.error || "La partita e stata aggiornata. Ho ricaricato lo stato piu recente.");
     }
@@ -1072,14 +1114,7 @@ async function loadState() {
 
   try {
     const data = await fetchLatestStateSnapshot();
-    state.snapshot = data;
-    if (data.playerId) {
-      setPlayerIdentity(data.playerId);
-    } else {
-      clearPlayerIdentity();
-    }
-    state.currentGameId = state.snapshot?.gameId || state.currentGameId;
-    syncCurrentGameName();
+    applySnapshot(data);
     render();
   } catch (error) {
     if (!state.snapshot) {
@@ -1171,8 +1206,7 @@ function startSnapshotPolling() {
     snapshotPollInFlight = true;
     try {
       const data = await fetchLatestStateSnapshot();
-      state.snapshot = data;
-      state.currentGameId = data.gameId || state.currentGameId;
+      applySnapshot(data);
       render();
     } catch (error) {
     } finally {
@@ -1193,8 +1227,7 @@ function connectEvents() {
   const events = new EventSource("/api/events" + query);
   eventsConnection = events;
   events.onmessage = (event) => {
-    state.snapshot = JSON.parse(event.data);
-    state.currentGameId = state.snapshot?.gameId || state.currentGameId;
+    applySnapshot(JSON.parse(event.data));
     render();
   };
   events.onerror = () => {
