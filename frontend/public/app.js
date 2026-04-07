@@ -777,6 +777,8 @@ function render() {
 
   elements.statusSummary.innerHTML = snapshot
     ? `
+      <div>Fase: <strong>${escapeHtml(snapshot.phase)}</strong></div>
+      <div>Rinforzi disponibili: <strong>${snapshot.reinforcementPool}</strong></div>
       <div>Vincitore: <strong>${escapeHtml(winner ? winner.name : "nessuno")}</strong></div>
     `
     : "<div>Caricamento stato...</div>";
