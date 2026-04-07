@@ -1,4 +1,4 @@
-import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t } from "./i18n.js";
+import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.js";
 
 const section = document.body.dataset.appSection || "";
 const query = new URLSearchParams(window.location.search);
@@ -75,3 +75,59 @@ document.querySelectorAll(".top-nav-links").forEach((nav) => {
 document.querySelectorAll(".top-nav-actions").forEach((container) => {
   buildLocaleControl(container);
 });
+
+async function fallbackHeaderLogin(username, password) {
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
+  }
+
+  return data;
+}
+
+function sanitizedCurrentUrl() {
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.delete("header-username");
+  nextUrl.searchParams.delete("header-password");
+  return nextUrl;
+}
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target instanceof HTMLFormElement ? event.target : null;
+  if (!form || form.id !== "header-login-form") {
+    return;
+  }
+
+  if (form.dataset.headerLoginManaged === "true") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+
+  const usernameInput = form.querySelector("#header-auth-username");
+  const passwordInput = form.querySelector("#header-auth-password");
+  const username = usernameInput?.value?.trim() || "";
+  const password = passwordInput?.value || "";
+  if (!username || !password) {
+    return;
+  }
+
+  try {
+    await fallbackHeaderLogin(username, password);
+    const nextUrl = sanitizedCurrentUrl();
+    if (nextUrl.pathname === "/register.html") {
+      window.location.href = "/profile.html";
+      return;
+    }
+
+    window.location.href = nextUrl.toString();
+  } catch (error) {
+    window.alert(error.message || t("errors.loginFailed"));
+  }
+}, true);
