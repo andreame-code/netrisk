@@ -19,6 +19,7 @@ const { detectVictory } = require("./victory-detection.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
 const { calculateReinforcements } = require("./reinforcement-calculator.cjs");
 const { findSupportedMap } = require("../../shared/maps/index.cjs");
+const { getEnabledRuleModifierIds, getPlayerPalette, getStateCombatRule, getStatePieceTheme } = require("./runtime-config.cjs");
 
 const defaultMap = findSupportedMap("classic-mini");
 const territories = defaultMap ? defaultMap.territories : [];
@@ -247,7 +248,8 @@ function readableMapName(mapId) {
 
 function publicState(state) {
   const currentPlayer = getCurrentPlayer(state);
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = getStateCombatRule(state);
+  const pieceTheme = getStatePieceTheme(state);
   return {
     phase: state.phase,
     turnPhase: state.turnPhase,
@@ -286,6 +288,13 @@ function publicState(state) {
           mapName: state.gameConfig.mapName || readableMapName(state.gameConfig.mapId)
         }
       : null,
+    pieceTheme: pieceTheme
+      ? {
+          id: pieceTheme.id,
+          name: pieceTheme.name,
+          palette: Array.isArray(pieceTheme.palette) ? pieceTheme.palette : []
+        }
+      : null,
     log: state.log,
     logEntries: state.logEntries,
     lastAction: state.lastAction,
@@ -295,6 +304,7 @@ function publicState(state) {
       attackerMaxDice: diceRuleSet.attackerMaxDice,
       defenderMaxDice: diceRuleSet.defenderMaxDice
     },
+    ruleModifiers: getEnabledRuleModifierIds(state),
     pendingConquest: state.pendingConquest,
     fortifyUsed: Boolean(state.fortifyUsed),
     conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
@@ -421,10 +431,11 @@ function addPlayer(state, name, options = {}) {
     return createDomainFailure("La lobby e piena.", "game.addPlayer.lobbyFull");
   }
 
+  const activePalette = getPlayerPalette(state);
   const player = createPlayer({
     id: randomId(),
     name: normalizedName,
-    color: palette[state.players.length % palette.length],
+    color: activePalette[state.players.length % activePalette.length] || palette[state.players.length % palette.length],
     connected: true,
     isAi: Boolean(options.isAi),
     linkedUserId
@@ -542,7 +553,7 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
   const defenderOwnerId = to.ownerId;
   const attackerArmiesBefore = from.armies;
   const defenderArmiesBefore = to.armies;
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = getStateCombatRule(state);
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve);
   if (maxAttackDice < 1) {
@@ -891,7 +902,3 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
-
-
-
-

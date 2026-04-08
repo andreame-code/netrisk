@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetRisk - Engine Studio</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="/speed-insights.js"></script>
+  </head>
+  <body data-app-section="engine">
+    <div class="backdrop"></div>
+    <div class="app-frame top-nav-page-frame">
+      <main class="page-shell top-nav-page-shell">
+        <section class="panel top-nav-bar">
+          <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
+            <p class="eyebrow">NetRisk</p>
+            <h1>Frontline Dominion</h1>
+          </a>
+
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+            <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
+            <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
+            <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
+          </nav>
+
+          <div class="top-nav-zone top-nav-actions">
+            <a href="/new-game.html" class="ghost-button">Nuova partita</a>
+            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">E</div>
+          </div>
+        </section>
+
+        <section class="panel new-game-shell">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">Engine Studio</p>
+              <h2>Builder contenuti e ruleset</h2>
+              <p class="stage-copy">Crea mappe, pedine cosmetiche, obiettivi vittoria e composizioni di ruleset senza spostare la logica fuori dal backend.</p>
+            </div>
+          </div>
+
+          <div id="engine-feedback" class="session-feedback is-hidden"></div>
+
+          <div class="new-game-grid">
+            <section class="new-game-panel">
+              <div class="section-title-row compact-row">
+                <div>
+                  <h3>Map Builder</h3>
+                  <p class="stage-copy">Le mappe seed si caricano come template. Le mappe custom si aggiornano in place.</p>
+                </div>
+              </div>
+              <div class="engine-map-builder-shell">
+                <div class="engine-map-stage-card">
+                  <div class="section-title-row compact-row">
+                    <div>
+                      <h4>Visual Board</h4>
+                      <p class="stage-copy">Aggiungi territori, trascinali sul piano e definisci i confini senza lasciare la board.</p>
+                    </div>
+                    <button type="button" class="ghost-button" id="engine-map-add-territory">Aggiungi territorio</button>
+                  </div>
+                  <div id="engine-map-board" class="engine-map-board">
+                    <svg id="engine-map-links" class="engine-map-links" viewBox="0 0 100 100" aria-hidden="true"></svg>
+                    <div id="engine-map-nodes" class="engine-map-nodes"></div>
+                    <div class="engine-map-board-copy">
+                      <strong>Board visuale</strong>
+                      <span>Click sulla board per piazzare un nuovo territorio quando il builder e in modalita aggiunta. Trascina i nodi per riposizionarli.</span>
+                    </div>
+                  </div>
+                  <p class="setup-slot-note">Il builder visuale mantiene sincronizzati JSON, coordinate, continenti e adiacenze con la stessa API del backend.</p>
+                </div>
+
+                <div class="engine-map-editor-grid">
+                  <div class="engine-map-card">
+                    <label class="field-stack">
+                      <span>Mappa esistente</span>
+                      <select id="engine-map-select"></select>
+                    </label>
+                    <label class="field-stack">
+                      <span>Nome</span>
+                      <input id="engine-map-name" />
+                    </label>
+                    <label class="field-stack">
+                      <span>Background image</span>
+                      <input id="engine-map-background" placeholder="/assets/maps/custom.png" />
+                    </label>
+                    <div class="engine-map-aspect-grid">
+                      <label class="field-stack">
+                        <span>Aspect width</span>
+                        <input id="engine-map-aspect-width" type="number" />
+                      </label>
+                      <label class="field-stack">
+                        <span>Aspect height</span>
+                        <input id="engine-map-aspect-height" type="number" />
+                      </label>
+                    </div>
+                    <div class="new-game-actions engine-map-actions">
+                      <button type="button" class="ghost-button" id="engine-map-clear">Nuova bozza</button>
+                      <button type="button" class="ghost-button" id="engine-map-delete">Elimina custom</button>
+                      <button type="button" class="ghost-button" id="engine-map-save">Salva mappa</button>
+                    </div>
+                  </div>
+
+                  <div class="engine-map-card">
+                    <div class="section-title-row compact-row">
+                      <div>
+                        <h4>Territori</h4>
+                        <p class="stage-copy">Seleziona un territorio per modificare identita, continente e collegamenti.</p>
+                      </div>
+                      <button type="button" class="ghost-button" id="engine-map-remove-territory">Rimuovi</button>
+                    </div>
+                    <div id="engine-map-territory-list" class="engine-map-chip-list"></div>
+                    <label class="field-stack">
+                      <span>Territory id</span>
+                      <input id="engine-territory-id" />
+                    </label>
+                    <label class="field-stack">
+                      <span>Territory name</span>
+                      <input id="engine-territory-name" />
+                    </label>
+                    <label class="field-stack">
+                      <span>Continent</span>
+                      <select id="engine-territory-continent"></select>
+                    </label>
+                    <div class="field-stack">
+                      <span>Neighbor links</span>
+                      <div id="engine-territory-neighbors" class="engine-map-checkbox-grid"></div>
+                    </div>
+                  </div>
+
+                  <div class="engine-map-card">
+                    <div class="section-title-row compact-row">
+                      <div>
+                        <h4>Continenti</h4>
+                        <p class="stage-copy">Crea i gruppi di controllo e assegna i bonus. I territori collegati al continente vengono derivati automaticamente.</p>
+                      </div>
+                      <div class="engine-map-inline-actions">
+                        <button type="button" class="ghost-button" id="engine-map-add-continent">Aggiungi continente</button>
+                        <button type="button" class="ghost-button" id="engine-map-remove-continent">Rimuovi</button>
+                      </div>
+                    </div>
+                    <div id="engine-map-continent-list" class="engine-map-chip-list"></div>
+                    <label class="field-stack">
+                      <span>Continent id</span>
+                      <input id="engine-continent-id" />
+                    </label>
+                    <label class="field-stack">
+                      <span>Continent name</span>
+                      <input id="engine-continent-name" />
+                    </label>
+                    <label class="field-stack">
+                      <span>Bonus</span>
+                      <input id="engine-continent-bonus" type="number" min="0" />
+                    </label>
+                  </div>
+
+                  <details class="engine-map-card engine-map-advanced">
+                    <summary>Advanced JSON</summary>
+                    <label class="field-stack">
+                      <span>Territories JSON</span>
+                      <textarea id="engine-map-territories" rows="8"></textarea>
+                    </label>
+                    <label class="field-stack">
+                      <span>Continents JSON</span>
+                      <textarea id="engine-map-continents" rows="6"></textarea>
+                    </label>
+                    <label class="field-stack">
+                      <span>Positions JSON</span>
+                      <textarea id="engine-map-positions" rows="6"></textarea>
+                    </label>
+                  </details>
+                </div>
+              </div>
+            </section>
+
+            <section class="new-game-panel">
+              <div class="section-title-row compact-row">
+                <div>
+                  <h3>Piece Themes</h3>
+                  <p class="stage-copy">Solo cosmetica nel v1: palette, token e nomenclatura armate.</p>
+                </div>
+              </div>
+              <label class="field-stack">
+                <span>Pedina esistente</span>
+                <select id="engine-piece-select"></select>
+              </label>
+              <label class="field-stack">
+                <span>Nome</span>
+                <input id="engine-piece-name" />
+              </label>
+              <label class="field-stack">
+                <span>Palette JSON</span>
+                <textarea id="engine-piece-palette" rows="4"></textarea>
+              </label>
+              <label class="field-stack">
+                <span>Icon</span>
+                <input id="engine-piece-icon" />
+              </label>
+              <label class="field-stack">
+                <span>Token shape</span>
+                <input id="engine-piece-shape" />
+              </label>
+              <label class="field-stack">
+                <span>Army label</span>
+                <input id="engine-piece-army-label" />
+              </label>
+              <div class="new-game-actions">
+                <button type="button" class="ghost-button" id="engine-piece-clear">Nuova bozza</button>
+                <button type="button" class="ghost-button" id="engine-piece-delete">Elimina custom</button>
+                <button type="button" class="ghost-button" id="engine-piece-save">Salva pedina</button>
+              </div>
+            </section>
+
+            <section class="new-game-panel">
+              <div class="section-title-row compact-row">
+                <div>
+                  <h3>Victory Rules</h3>
+                  <p class="stage-copy">Scegli il modulo vittoria e definisci la configurazione.</p>
+                </div>
+              </div>
+              <label class="field-stack">
+                <span>Regola esistente</span>
+                <select id="engine-victory-select"></select>
+              </label>
+              <label class="field-stack">
+                <span>Nome</span>
+                <input id="engine-victory-name" />
+              </label>
+              <label class="field-stack">
+                <span>Modulo</span>
+                <select id="engine-victory-module"></select>
+              </label>
+              <label class="field-stack">
+                <span>Descrizione</span>
+                <input id="engine-victory-description" />
+              </label>
+              <label class="field-stack">
+                <span>Config JSON</span>
+                <textarea id="engine-victory-config" rows="5"></textarea>
+              </label>
+              <div class="new-game-actions">
+                <button type="button" class="ghost-button" id="engine-victory-clear">Nuova bozza</button>
+                <button type="button" class="ghost-button" id="engine-victory-delete">Elimina custom</button>
+                <button type="button" class="ghost-button" id="engine-victory-save">Salva regola</button>
+              </div>
+            </section>
+
+            <section class="new-game-panel">
+              <div class="section-title-row compact-row">
+                <div>
+                  <h3>Ruleset Builder</h3>
+                  <p class="stage-copy">Componi il pacchetto completo che verra poi scelto in creazione partita.</p>
+                </div>
+              </div>
+              <label class="field-stack">
+                <span>Ruleset esistente</span>
+                <select id="engine-ruleset-select"></select>
+              </label>
+              <label class="field-stack">
+                <span>Nome</span>
+                <input id="engine-ruleset-name" />
+              </label>
+              <label class="field-stack">
+                <span>Descrizione</span>
+                <input id="engine-ruleset-description" />
+              </label>
+              <label class="field-stack">
+                <span>Mappa</span>
+                <select id="engine-ruleset-map"></select>
+              </label>
+              <label class="field-stack">
+                <span>Pedina</span>
+                <select id="engine-ruleset-piece-theme"></select>
+              </label>
+              <label class="field-stack">
+                <span>Vittoria</span>
+                <select id="engine-ruleset-victory"></select>
+              </label>
+              <label class="field-stack">
+                <span>Combattimento</span>
+                <select id="engine-ruleset-combat"></select>
+              </label>
+              <div class="field-stack">
+                <span>Rule modifiers</span>
+                <div id="engine-ruleset-modifiers" class="setup-player-slots"></div>
+              </div>
+              <div class="new-game-actions">
+                <button type="button" class="ghost-button" id="engine-ruleset-clear">Nuova bozza</button>
+                <button type="button" class="ghost-button" id="engine-ruleset-delete">Elimina custom</button>
+                <button type="button" class="ghost-button" id="engine-ruleset-save">Salva ruleset</button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/layout.mjs"></script>
+    <script type="module" src="/engine-studio.mjs"></script>
+  </body>
+</html>

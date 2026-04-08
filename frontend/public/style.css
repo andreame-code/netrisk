@@ -2812,6 +2812,226 @@ body[data-app-section="profile"] .main-nav-shell {
   font-weight: 600;
 }
 
+.engine-map-builder-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.engine-map-stage-card,
+.engine-map-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(132, 92, 52, 0.14);
+  background: rgba(255, 252, 246, 0.82);
+}
+
+.engine-map-board {
+  --engine-map-image: none;
+  position: relative;
+  min-height: 22rem;
+  border-radius: 1.2rem;
+  border: 1px solid rgba(132, 92, 52, 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(212, 169, 79, 0.28), transparent 35%),
+    linear-gradient(180deg, rgba(100, 71, 43, 0.94), rgba(62, 43, 27, 0.94));
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  box-shadow: inset 0 0 0 1px rgba(255, 239, 211, 0.12);
+}
+
+.engine-map-board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--engine-map-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.engine-map-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 246, 227, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 246, 227, 0.06) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+  pointer-events: none;
+}
+
+.engine-map-board.is-placement-mode {
+  box-shadow:
+    inset 0 0 0 2px rgba(212, 169, 79, 0.36),
+    0 0 0 4px rgba(212, 169, 79, 0.12);
+}
+
+.engine-map-links,
+.engine-map-nodes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.engine-map-links {
+  z-index: 1;
+}
+
+.engine-map-link {
+  stroke: rgba(250, 238, 212, 0.55);
+  stroke-width: 1.65;
+  stroke-linecap: round;
+}
+
+.engine-map-nodes {
+  z-index: 2;
+}
+
+.engine-map-node {
+  position: absolute;
+  width: 3rem;
+  height: 3rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 245, 226, 0.82);
+  background: linear-gradient(180deg, rgba(232, 93, 4, 0.96), rgba(184, 92, 56, 0.96));
+  color: #fff7ec;
+  box-shadow:
+    0 0 0 1px rgba(41, 24, 11, 0.22),
+    0 0.75rem 1.6rem rgba(24, 14, 8, 0.24);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  touch-action: none;
+  z-index: 3;
+}
+
+.engine-map-node.is-selected {
+  box-shadow:
+    0 0 0 3px rgba(255, 248, 220, 0.92),
+    0 0 0 8px rgba(104, 139, 69, 0.68),
+    0 0.85rem 1.8rem rgba(24, 14, 8, 0.28);
+}
+
+.engine-map-board-copy {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 4;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.9rem;
+  background: rgba(27, 19, 13, 0.76);
+  color: rgba(255, 243, 220, 0.94);
+  backdrop-filter: blur(8px);
+}
+
+.engine-map-board-copy strong {
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.engine-map-board-copy span {
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.engine-map-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.engine-map-aspect-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.engine-map-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.engine-map-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.engine-map-chip {
+  padding: 0.7rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 92, 52, 0.18);
+  background: rgba(255, 249, 238, 0.92);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.engine-map-chip:hover {
+  transform: none;
+  border-color: rgba(184, 92, 56, 0.34);
+}
+
+.engine-map-chip.is-selected {
+  background: linear-gradient(180deg, rgba(255, 241, 221, 0.98), rgba(255, 233, 206, 0.95));
+  border-color: rgba(184, 92, 56, 0.42);
+}
+
+.engine-map-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.engine-map-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(132, 92, 52, 0.06);
+}
+
+.engine-map-checkbox input {
+  width: auto;
+}
+
+.engine-map-inline-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.engine-map-advanced summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.engine-map-advanced {
+  grid-column: 1 / -1;
+  z-index: 0;
+}
+
+@media (max-width: 980px) {
+  .engine-map-editor-grid,
+  .engine-map-checkbox-grid,
+  .engine-map-aspect-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 

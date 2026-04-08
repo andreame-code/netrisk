@@ -38,6 +38,25 @@ async function registerLoginAndJoin(page, username, password = "secret123") {
   await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
 }
 
+async function createEngineRuleset(page, options = {}) {
+  const payload = {
+    name: options.name || `Ruleset ${Date.now().toString(36)}`,
+    description: options.description || "",
+    mapId: options.mapId || "classic-mini",
+    pieceThemeId: options.pieceThemeId || "classic-commanders",
+    victoryRuleId: options.victoryRuleId || "domination",
+    combatRuleId: options.combatRuleId || "standard",
+    ruleModifierIds: Array.isArray(options.ruleModifierIds) ? options.ruleModifierIds : ["banzai-attack"]
+  };
+
+  const response = await page.request.post("/api/engine/game-rulesets", {
+    data: payload
+  });
+  await expect(response.ok()).toBeTruthy();
+  const data = await response.json();
+  return data.gameRuleset;
+}
+
 async function getReinforcementCount(page) {
   const summaryText = await page.getByTestId("status-summary").innerText();
   const match = summaryText.match(/Rinforzi disponibili:\s*(\d+)/i);
@@ -72,6 +91,7 @@ module.exports = {
   findAttackPair,
   getReinforcementCount,
   queueNextAttackRolls,
+  createEngineRuleset,
   registerAndLogin,
   registerLoginAndJoin,
   resetGame,

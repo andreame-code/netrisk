@@ -54,13 +54,15 @@ function makeState(options = {}) {
     players: options.players || makePlayers(),
     territories: options.territories || {},
     continents: options.continents || [],
+    gameConfig: options.gameConfig || null,
     currentTurnIndex: options.currentTurnIndex || 0,
     reinforcementPool: options.reinforcementPool || 0,
     winnerId: options.winnerId || null,
     log: options.log || [],
     lastAction: options.lastAction || null,
     pendingConquest: options.pendingConquest || null,
-    fortifyUsed: Boolean(options.fortifyUsed)
+    fortifyUsed: Boolean(options.fortifyUsed),
+    resolvedGameConfig: options.resolvedGameConfig || null
   });
   state.fortifyMoveUsed = Boolean(options.fortifyMoveUsed);
   return state;
