@@ -57,6 +57,17 @@ function summarizeDeployment(deployment) {
   });
 }
 
+function listAutomationBypasses(protectionBypass) {
+  return Object.entries(protectionBypass || {})
+    .filter(([, value]) => value && value.scope === "automation-bypass")
+    .map(([secret, value]) => ({
+      secret,
+      isEnvVar: value.isEnvVar === true,
+      createdAt: Number(value.createdAt || 0)
+    }))
+    .sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0));
+}
+
 async function vercelRequest(pathname, init = {}) {
   const token = requiredEnv("VERCEL_TOKEN");
   const orgId = resolveOrgId();
@@ -78,6 +89,10 @@ async function vercelRequest(pathname, init = {}) {
   }
 
   return payload;
+}
+
+async function readProject(projectId) {
+  return await vercelRequest(`/v9/projects/${encodeURIComponent(projectId)}`);
 }
 
 function isMatchingDeployment(deployment, context) {
@@ -139,18 +154,28 @@ async function waitForPreviewDeployment(context) {
 }
 
 async function getAutomationBypassToken(projectId) {
+  const project = await readProject(projectId);
+  const existingBypasses = listAutomationBypasses(project && project.protectionBypass);
+  const preferredExisting = existingBypasses.find((entry) => entry.isEnvVar) || existingBypasses[0];
+  if (preferredExisting) {
+    return preferredExisting.secret;
+  }
+
   const payload = await vercelRequest(`/v1/projects/${encodeURIComponent(projectId)}/protection-bypass`, {
     method: "PATCH",
-    body: "{}"
+    body: JSON.stringify({
+      generate: {
+        note: "GitHub Preview Smoke"
+      }
+    })
   });
 
-  const protectionBypass = payload && payload.protectionBypass ? payload.protectionBypass : {};
-  const entry = Object.entries(protectionBypass).find(([, value]) => value && value.scope === "automation-bypass");
+  const entry = listAutomationBypasses(payload && payload.protectionBypass)[0];
   if (!entry) {
     throw new Error("No automation-bypass token found in Vercel protection bypass settings.");
   }
 
-  return entry[0];
+  return entry.secret;
 }
 
 function previewBaseUrl(deployment) {

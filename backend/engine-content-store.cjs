@@ -90,6 +90,12 @@ function createEngineContentStore(options = {}) {
     });
   }
 
+  function assertSeedIdIsReadonly(seedItems, entityId, message, messageKey, params) {
+    if (seedItems.some((item) => item.id === entityId)) {
+      throw createLocalizedError(message, messageKey, params);
+    }
+  }
+
   async function listMaps() {
     const state = await readCustomState();
     return mergeSeedAndCustom(listMapDefinitions(), state.maps);
@@ -139,10 +145,13 @@ function createEngineContentStore(options = {}) {
       editable: true
     });
 
-    const seedCollision = listMapDefinitions().find((map) => map.id === normalized.id);
-    if (seedCollision && existingId == null) {
-      throw createLocalizedError("Non puoi sovrascrivere una mappa seed.", "engine.map.seedReadonly", { mapId: normalized.id });
-    }
+    assertSeedIdIsReadonly(
+      listMapDefinitions(),
+      normalized.id,
+      "Non puoi sovrascrivere una mappa seed.",
+      "engine.map.seedReadonly",
+      { mapId: normalized.id }
+    );
 
     const nextMaps = state.maps.filter((map) => map.id !== normalized.id);
     nextMaps.push(normalized);
@@ -179,10 +188,13 @@ function createEngineContentStore(options = {}) {
       editable: true
     });
 
-    const seedCollision = listPieceThemeDefinitions().find((theme) => theme.id === normalized.id);
-    if (seedCollision && existingId == null) {
-      throw createLocalizedError("Non puoi sovrascrivere una pedina seed.", "engine.pieceTheme.seedReadonly", { pieceThemeId: normalized.id });
-    }
+    assertSeedIdIsReadonly(
+      listPieceThemeDefinitions(),
+      normalized.id,
+      "Non puoi sovrascrivere una pedina seed.",
+      "engine.pieceTheme.seedReadonly",
+      { pieceThemeId: normalized.id }
+    );
 
     const nextPieceThemes = state.pieceThemes.filter((theme) => theme.id !== normalized.id);
     nextPieceThemes.push(normalized);
@@ -224,10 +236,13 @@ function createEngineContentStore(options = {}) {
       throw createLocalizedError("Il modulo vittoria selezionato non e supportato.", "engine.victoryRule.invalidModule", { moduleId: normalized.moduleId });
     }
 
-    const seedCollision = listVictoryRuleDefinitions().find((rule) => rule.id === normalized.id);
-    if (seedCollision && existingId == null) {
-      throw createLocalizedError("Non puoi sovrascrivere una regola seed.", "engine.victoryRule.seedReadonly", { victoryRuleId: normalized.id });
-    }
+    assertSeedIdIsReadonly(
+      listVictoryRuleDefinitions(),
+      normalized.id,
+      "Non puoi sovrascrivere una regola seed.",
+      "engine.victoryRule.seedReadonly",
+      { victoryRuleId: normalized.id }
+    );
 
     const nextVictoryRules = state.victoryRules.filter((rule) => rule.id !== normalized.id);
     nextVictoryRules.push(normalized);
@@ -288,10 +303,13 @@ function createEngineContentStore(options = {}) {
 
     validateRuleModifierIds(normalized.ruleModifierIds);
 
-    const seedCollision = listGameRulesetDefinitions().find((ruleset) => ruleset.id === normalized.id);
-    if (seedCollision && existingId == null) {
-      throw createLocalizedError("Non puoi sovrascrivere un ruleset seed.", "engine.ruleset.seedReadonly", { rulesetId: normalized.id });
-    }
+    assertSeedIdIsReadonly(
+      listGameRulesetDefinitions(),
+      normalized.id,
+      "Non puoi sovrascrivere un ruleset seed.",
+      "engine.ruleset.seedReadonly",
+      { rulesetId: normalized.id }
+    );
 
     const nextRulesets = state.gameRulesets.filter((ruleset) => ruleset.id !== normalized.id);
     nextRulesets.push(normalized);
