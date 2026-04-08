@@ -7,6 +7,7 @@
     "start": "node backend/server.cjs",
     "backup:data": "node scripts/backup-datastore.cjs",
     "backup:check": "node scripts/check-backup.cjs",
+    "vercel:env:check": "node scripts/check-vercel-env-parity.cjs",
     "test": "node scripts/run-tests.cjs",
     "test:e2e": "node scripts/run-e2e.cjs",
     "test:e2e:update": "node scripts/run-e2e.cjs --update-snapshots",

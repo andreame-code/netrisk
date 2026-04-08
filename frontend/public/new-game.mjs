@@ -1,3 +1,5 @@
+import { t, translateServerMessage } from "./i18n.mjs";
+
 const state = {
   maps: [],
   user: null,
@@ -34,26 +36,26 @@ function renderNavAvatar(username) {
 
 function slotDescription(type, index) {
   if (index === 0) {
-    return "Slot bloccato: questo e il creatore della partita.";
+    return t("newGame.slot.locked");
   }
 
   return type === "ai"
-    ? "Nome assegnato dal server da una lista di generali storici."
-    : "Il nome verra preso dal giocatore quando entrera nella lobby.";
+    ? t("newGame.slot.aiDescription")
+    : t("newGame.slot.humanDescription");
 }
 
 function slotMarkup(index) {
   if (index === 0) {
     return '<div class="setup-slot is-fixed" data-slot-index="0">' +
-      '<div class="setup-slot-head"><strong>Player 1</strong><span class="badge accent">Creator</span></div>' +
-      '<div class="field-stack"><span>Tipo</span><div class="setup-fixed-value">Human</div></div>' +
+      '<div class="setup-slot-head"><strong>' + t("newGame.slot.playerLabel", { number: index + 1 }) + '</strong><span class="badge accent">' + t("newGame.slot.creatorBadge") + '</span></div>' +
+      '<div class="field-stack"><span>' + t("newGame.slot.typeLabel") + '</span><div class="setup-fixed-value">' + t("newGame.slot.humanOption") + '</div></div>' +
       '<p class="setup-slot-note" data-role="note">' + slotDescription("human", 0) + '</p>' +
     '</div>';
   }
 
   return '<div class="setup-slot" data-slot-index="' + index + '">' +
-    '<div class="setup-slot-head"><strong>Player ' + (index + 1) + '</strong></div>' +
-    '<label class="field-stack"><span>Tipo</span><select data-role="type"><option value="human">Human</option><option value="ai">AI</option></select></label>' +
+    '<div class="setup-slot-head"><strong>' + t("newGame.slot.playerLabel", { number: index + 1 }) + '</strong></div>' +
+    '<label class="field-stack"><span>' + t("newGame.slot.typeLabel") + '</span><select data-role="type"><option value="human">' + t("newGame.slot.humanOption") + '</option><option value="ai">' + t("newGame.slot.aiOption") + '</option></select></label>' +
     '<p class="setup-slot-note" data-role="note">' + slotDescription("human", index) + '</p>' +
   '</div>';
 }
@@ -94,17 +96,17 @@ function renderMapDetails() {
 
   const bonuses = Array.isArray(map.continentBonuses) ? map.continentBonuses : [];
   const bonusMarkup = bonuses.map((continent) =>
-    '<li><span>' + continent.name + '</span><strong>+' + continent.bonus + ' · ' + continent.territoryCount + ' territori</strong></li>'
+    '<li><span>' + continent.name + '</span><strong>' + t("newGame.map.bonusLine", { bonus: continent.bonus, territoryCount: continent.territoryCount }) + '</strong></li>'
   ).join("");
 
   elements.mapDetails.innerHTML =
     '<div class="map-setup-card-head">' +
       '<strong>' + map.name + '</strong>' +
       '<span class="badge">'
-        + map.territoryCount + ' territori · ' + map.continentCount + ' continenti' +
+        + t("newGame.map.summary", { territoryCount: map.territoryCount, continentCount: map.continentCount }) +
       '</span>' +
     '</div>' +
-    '<p class="map-setup-copy">Bonus continente disponibili nella mappa selezionata.</p>' +
+    '<p class="map-setup-copy">' + t("newGame.map.copy") + '</p>' +
     '<ul class="map-setup-bonus-list">' + bonusMarkup + '</ul>';
 }
 
@@ -132,7 +134,7 @@ async function send(path, body) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Richiesta fallita.");
+    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
   }
   return data;
 }
@@ -141,7 +143,7 @@ async function loadOptions() {
   const response = await fetch("/api/game-options");
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Impossibile caricare le opzioni di creazione.");
+    throw new Error(translateServerMessage(data, t("newGame.errors.loadOptions")));
   }
 
   state.maps = data.maps || [];
@@ -154,7 +156,7 @@ async function restoreSession() {
     const response = await fetch("/api/auth/session");
 
     if (!response.ok) {
-      throw new Error("Sessione scaduta");
+      throw new Error(t("auth.sessionExpired"));
     }
 
     const data = await response.json();
@@ -171,7 +173,9 @@ async function restoreSession() {
     elements.headerAuthPassword.disabled = isAuthenticated;
     elements.headerLoginButton.disabled = isAuthenticated;
   }
-  elements.authStatus.textContent = state.user ? "Comandante: " + state.user.username : "Configurazione locale pronta.";
+  elements.authStatus.textContent = state.user
+    ? t("newGame.auth.commander", { username: state.user.username })
+    : t("newGame.authStatus");
   renderNavAvatar(state.user && state.user.username);
   state.sessionReady = true;
   updateSubmitState();
@@ -185,7 +189,7 @@ async function loginWithCredentials(username, password) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Accesso non riuscito.");
+    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
 
   state.user = data.user;
@@ -208,13 +212,13 @@ elements.form.addEventListener("submit", async (event) => {
     return;
   }
   if (!state.user) {
-    setFeedback("Sessione non valida.", "error");
+    setFeedback(t("newGame.errors.invalidSession"), "error");
     return;
   }
 
   state.creating = true;
   updateSubmitState();
-  setFeedback("Creazione partita in corso...");
+  setFeedback(t("newGame.feedback.creating"));
 
   try {
     const data = await send("/api/games", readConfig());
@@ -241,12 +245,13 @@ elements.logoutButton.addEventListener("click", async () => {
   state.user = null;
   state.sessionReady = true;
   elements.logoutButton.hidden = true;
-  elements.authStatus.textContent = "Configurazione locale pronta.";
+  elements.authStatus.textContent = t("newGame.authStatus");
   renderNavAvatar();
   updateSubmitState();
 });
 
 if (elements.headerLoginForm) {
+  elements.headerLoginForm.dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();

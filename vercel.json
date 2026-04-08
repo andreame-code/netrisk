@@ -1,9 +1,14 @@
 {
   "version": 2,
+  "buildCommand": "node scripts/sync-public-assets.cjs",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/game/(.*)",
+      "destination": "/game.html"
     }
   ]
 }

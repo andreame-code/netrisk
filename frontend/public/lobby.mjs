@@ -1,3 +1,5 @@
+import { formatDate, t, translateServerMessage } from "./i18n.mjs";
+
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
 const state = {
@@ -54,47 +56,47 @@ function renderNavAvatar(username) {
 
 function formatUpdatedTime(value) {
   if (!value) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return formatDate(parsed, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(parsed);
+  });
 }
 
 function phaseLabel(phase) {
   if (phase === "active") {
-    return "In corso";
+    return t("common.phase.active");
   }
   if (phase === "finished") {
-    return "Conclusa";
+    return t("common.phase.finished");
   }
-  return "Lobby";
+  return t("common.phase.lobby");
 }
 
 function readinessLabel(game) {
   if (game.phase === "finished") {
-    return "Archivio campagna";
+    return t("lobby.readiness.archive");
   }
   if (game.phase === "active") {
-    return "Teatro operativo aperto";
+    return t("lobby.readiness.active");
   }
   if (game.playerCount >= 2) {
-    return "Pronta all'avvio";
+    return t("lobby.readiness.ready");
   }
-  return "In attesa rinforzi";
+  return t("lobby.readiness.waiting");
 }
 
 function sessionFocusLabel(game) {
-  return game.id === state.currentGameId ? "Sessione aperta" : "Disponibile";
+  return game.id === state.currentGameId ? t("lobby.focus.openSession") : t("lobby.focus.available");
 }
 
 function selectedGame() {
@@ -150,7 +152,7 @@ async function loginWithCredentials(username, password) {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || "Accesso non riuscito.");
+    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
 
   setSession(data.user);
@@ -168,30 +170,30 @@ function render() {
 
   elements.gameListState.className = "session-feedback" + (state.gameListState === "error" ? " is-error" : "") + (hasGames ? " is-hidden" : "");
   if (state.gameListState === "loading") {
-    elements.gameListState.textContent = "Caricamento sessioni...";
+    elements.gameListState.textContent = t("lobby.loading");
   } else if (state.gameListState === "error") {
-    elements.gameListState.textContent = state.gameListError || "Impossibile caricare le partite.";
+    elements.gameListState.textContent = state.gameListError || t("lobby.errors.loadGames");
   } else {
-    elements.gameListState.textContent = "Nessuna partita disponibile. Creane una nuova per iniziare.";
+    elements.gameListState.textContent = t("lobby.empty");
   }
 
   elements.gameSessionList.innerHTML = renderedGames
     .map((game) => 
       '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
-        '<span class="session-primary" data-cell-label="Partita">' +
+        '<span class="session-primary" data-cell-label="' + t("lobby.table.game") + '">' +
           '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + escapeHtml(game.name) + '</span>' +
         '</span>' +
-        '<span class="session-cell-muted" data-cell-label="Mappa">' + escapeHtml(game.mapName || game.mapId || 'Classic Mini') + '</span>' +
-        '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '" data-cell-label="Stato">' + phaseLabel(game.phase) + '</span>' +
-        '<span class="session-cell-muted" data-cell-label="Giocatori">' + gameCapacityLabel(game) + '</span>' +
-        '<span class="session-cell-muted" data-cell-label="Aggiornata">' + formatUpdatedTime(game.updatedAt) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.map") + '">' + escapeHtml(game.mapName || game.mapId || t("common.classicMini")) + '</span>' +
+        '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '" data-cell-label="' + t("lobby.table.status") + '">' + phaseLabel(game.phase) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.players") + '">' + gameCapacityLabel(game) + '</span>' +
+        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.updated") + '">' + formatUpdatedTime(game.updatedAt) + '</span>' +
       '</button>'
     )
     .join("");
 
   elements.authStatus.textContent = state.user
-    ? "Autenticato come " + state.user.username + ". Usa Game per entrare nella partita attiva."
-    : "Accedi per aprire e gestire le tue sessioni.";
+    ? t("lobby.auth.loggedIn", { username: state.user.username })
+    : t("lobby.auth.loggedOut");
   if (elements.headerLoginForm) {
     const isAuthenticated = Boolean(state.user);
     elements.headerLoginForm.hidden = isAuthenticated;
@@ -203,51 +205,51 @@ function render() {
   elements.logoutButton.disabled = !state.user;
   renderNavAvatar(state.user?.username);
 
-  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : "Nessuna selezione";
+  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : t("lobby.details.emptyBadge");
   elements.gameStatus.textContent = state.currentGameId
-    ? "Partita attiva: " + (((state.gameList.find((game) => game.id === state.currentGameId) || {}).name) || state.currentGameId)
-    : "Nessuna partita attiva";
+    ? t("lobby.status.activeGame", { name: (((state.gameList.find((game) => game.id === state.currentGameId) || {}).name) || state.currentGameId) })
+    : t("lobby.gameStatus");
   elements.lobbyTotalGames.textContent = String(renderedGames.length);
   elements.lobbyReadyGames.textContent = String(readyGames);
-  elements.lobbyActiveFocus.textContent = activeGame ? activeGame.name : "Nessuna";
+  elements.lobbyActiveFocus.textContent = activeGame ? activeGame.name : t("lobby.focus.value");
   elements.lobbyFocusNote.textContent = activeGame
-    ? "Sessione aperta: " + phaseLabel(activeGame.phase) + ". Torna nel tabellone quando vuoi."
+    ? t("lobby.focus.activeNote", { phase: phaseLabel(activeGame.phase) })
     : (state.user
-      ? "Seleziona una sessione e aprila per passare al tabellone."
-      : "Autenticati per aprire e gestire una sessione.");
+      ? t("lobby.focus.selectNote")
+      : t("lobby.focus.loginNote"));
 
   elements.gameListLoadMoreState.className = "session-list-load-more" + (hasGames ? "" : " is-hidden");
   if (!hasGames) {
     elements.gameListLoadMoreState.textContent = "";
   } else if (canLoadMoreGames()) {
-    elements.gameListLoadMoreState.textContent = "Mostrate " + renderedGames.length + " di " + state.gameList.length + " partite. Scorri per caricarne altre.";
+    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.partial", { visible: renderedGames.length, total: state.gameList.length });
   } else {
-    elements.gameListLoadMoreState.textContent = "Tutte le " + state.gameList.length + " partite sono visibili.";
+    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.complete", { total: state.gameList.length });
   }
 
   elements.gameSessionDetails.innerHTML = selected
     ? '<div class="session-detail-hero">' +
-        '<p class="session-detail-kicker">Sessione selezionata</p>' +
+        '<p class="session-detail-kicker">' + t("lobby.details.selectedKicker") + '</p>' +
         '<h4 class="session-detail-title">' + escapeHtml(selected.name) + '</h4>' +
-        '<p class="session-detail-copy">' + readinessLabel(selected) + '. Stato corrente: ' + phaseLabel(selected.phase) + '.</p>' +
+        '<p class="session-detail-copy">' + t("lobby.details.summary", { readiness: readinessLabel(selected), phase: phaseLabel(selected.phase) }) + '</p>' +
       '</div>' +
       '<div class="session-detail-grid">' +
-        '<div class="session-detail-item"><span>Nome</span><strong>' + escapeHtml(selected.name) + '</strong></div>' +
-        '<div class="session-detail-item"><span>ID</span><strong>' + selected.id + '</strong></div>' +
-        '<div class="session-detail-item"><span>Stato</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Giocatori presenti</span><strong>' + gameCapacityLabel(selected) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Giocatori configurati</span><strong>' + (selected.totalPlayers || 'n/d') + '</strong></div>' +
-        '<div class="session-detail-item"><span>Mappa</span><strong>' + escapeHtml(selected.mapName || selected.mapId || 'Classic Mini') + '</strong></div>' +
-        '<div class="session-detail-item"><span>AI</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Ultimo update</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
-        '<div class="session-detail-item"><span>Focus</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.name") + '</span><strong>' + escapeHtml(selected.name) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.id") + '</span><strong>' + selected.id + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.status") + '</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.playersPresent") + '</span><strong>' + gameCapacityLabel(selected) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.playersConfigured") + '</span><strong>' + (selected.totalPlayers || t("common.notAvailable")) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.map") + '</span><strong>' + escapeHtml(selected.mapName || selected.mapId || t("common.classicMini")) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.ai") + '</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.updated") + '</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.focus") + '</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
       '</div>' +
-      '<div class="session-detail-note">La Lobby gestisce creazione, selezione e apertura. Il tabellone Game resta dedicato al comando della partita attiva.</div>' +
+      '<div class="session-detail-note">' + t("lobby.details.note") + '</div>' +
       '<div class="session-detail-actions">' +
-        '<button type="button" id="open-selected-inline">Apri nel teatro di guerra</button>' +
-        (canJoinGame(selected) ? '<button type="button" id="join-selected-inline" class="ghost-button">Unisciti e apri</button>' : '') +
+        '<button type="button" id="open-selected-inline">' + t("lobby.details.open") + '</button>' +
+        (canJoinGame(selected) ? '<button type="button" id="join-selected-inline" class="ghost-button">' + t("lobby.details.joinOpen") + '</button>' : '') +
       '</div>'
-    : '<div class="session-empty-copy">Seleziona una partita per vedere lo stato corrente, la prontezza operativa e aprirla nel tabellone di gioco.</div>';
+    : '<div class="session-empty-copy">' + t("lobby.details.emptyExtended") + '</div>';
 
   elements.openGameButton.disabled = !selected;
 }
@@ -308,7 +310,7 @@ async function send(path, body) {
 
   const data = await response.json();
   if (!response.ok) {
-    const error = new Error(data.error || "Richiesta fallita.");
+    const error = new Error(translateServerMessage(data, t("errors.requestFailed")));
     error.code = data.code || null;
     throw error;
   }
@@ -328,7 +330,7 @@ async function loadGameList(options = {}) {
     const response = await fetch("/api/games");
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Caricamento partite non riuscito.");
+      throw new Error(translateServerMessage(data, t("lobby.errors.loadGames")));
     }
 
     state.gameList = data.games || [];
@@ -342,7 +344,7 @@ async function loadGameList(options = {}) {
     state.gameList = [];
     resetVisibleGameCount();
     state.gameListState = "error";
-    state.gameListError = error.message || "Impossibile caricare le partite.";
+    state.gameListError = error.message || t("lobby.errors.loadGames");
   }
 
   if (renderOnChange) {
@@ -446,7 +448,7 @@ async function restoreSession(options = {}) {
     const response = await fetch("/api/auth/session");
 
     if (!response.ok) {
-      throw new Error("Sessione scaduta");
+      throw new Error(t("auth.sessionExpired"));
     }
 
     const data = await response.json();
@@ -468,6 +470,7 @@ render();
 setupInfiniteScroll();
 
 if (elements.headerLoginForm) {
+  elements.headerLoginForm.dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();

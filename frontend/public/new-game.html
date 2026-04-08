@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Frontline Dominion - Nuova Partita</title>
+    <title data-i18n="newGame.title">Frontline Dominion - Nuova Partita</title>
     <link rel="stylesheet" href="/style.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
@@ -13,52 +13,52 @@
       <main class="page-shell top-nav-page-shell">
         <section class="panel top-nav-bar">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-            <p class="eyebrow">NetRisk</p>
-            <h1>Frontline Dominion</h1>
+            <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
+            <h1 data-i18n="app.title">Frontline Dominion</h1>
           </a>
 
-          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
             <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
             <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
             <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
           </nav>
 
           <div class="top-nav-zone top-nav-actions">
-            <form id="header-login-form" class="top-nav-auth-form">
-              <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
-              <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
-              <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
-              <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+            <form id="header-login-form" class="top-nav-auth-form" method="post">
+              <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
+              <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+              <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
+              <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
             </form>
-            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
-            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
+            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
           </div>
         </section>
 
         <section class="panel new-game-shell" data-testid="new-game-shell">
           <div class="section-title-row">
             <div>
-              <p class="eyebrow">New Game Setup</p>
-              <h2>Configura una nuova partita</h2>
-              <p class="stage-copy">Definisci il teatro, controlla quanti slot vuoi aprire e verifica subito come entreranno umani e AI prima di creare la sessione.</p>
+              <p class="eyebrow" data-i18n="newGame.eyebrow">New Game Setup</p>
+              <h2 data-i18n="newGame.heading">Configura una nuova partita</h2>
+              <p class="stage-copy" data-i18n="newGame.copy">Definisci il teatro, controlla quanti slot vuoi aprire e verifica subito come entreranno umani e AI prima di creare la sessione.</p>
             </div>
             <div class="content-meta-line new-game-meta-line">
-              <span id="setup-auth-status">Configurazione locale pronta.</span>
+              <span id="setup-auth-status" data-i18n="newGame.authStatus">Configurazione locale pronta.</span>
             </div>
           </div>
 
           <div class="new-game-brief">
             <article class="new-game-brief-card new-game-brief-card-accent">
-              <span class="lobby-command-label">Obiettivo</span>
-              <strong>Preparazione rapida</strong>
-              <p>Tieni visibili solo le decisioni che servono davvero: nome, mappa, posti al tavolo e natura di ogni slot.</p>
+              <span class="lobby-command-label" data-i18n="newGame.goal.label">Obiettivo</span>
+              <strong data-i18n="newGame.goal.title">Preparazione rapida</strong>
+              <p data-i18n="newGame.goal.copy">Tieni visibili solo le decisioni che servono davvero: nome, mappa, posti al tavolo e natura di ogni slot.</p>
             </article>
             <article class="new-game-brief-card">
-              <span class="lobby-command-label">Sequenza</span>
+              <span class="lobby-command-label" data-i18n="newGame.sequence.label">Sequenza</span>
               <ul class="new-game-sequence">
-                <li>1. Scegli mappa e nome</li>
-                <li>2. Definisci i posti al tavolo</li>
-                <li>3. Verifica gli slot umani e AI</li>
+                <li data-i18n="newGame.sequence.step1">1. Scegli mappa e nome</li>
+                <li data-i18n="newGame.sequence.step2">2. Definisci i posti al tavolo</li>
+                <li data-i18n="newGame.sequence.step3">3. Verifica gli slot umani e AI</li>
               </ul>
             </article>
           </div>
@@ -67,21 +67,21 @@
             <section class="new-game-panel">
               <div class="section-title-row compact-row">
                 <div>
-                  <h3>Impostazioni</h3>
-                  <p class="stage-copy">Qui scegli il teatro e la dimensione della sessione.</p>
+                  <h3 data-i18n="newGame.settings.heading">Impostazioni</h3>
+                  <p class="stage-copy" data-i18n="newGame.settings.copy">Qui scegli il teatro e la dimensione della sessione.</p>
                 </div>
               </div>
               <label class="field-stack">
-                <span>Nome partita</span>
-                <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" />
+                <span data-i18n="newGame.name.label">Nome partita</span>
+                <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" data-i18n-placeholder="newGame.name.placeholder" />
               </label>
               <label class="field-stack">
-                <span>Mappa</span>
+                <span data-i18n="newGame.map.label">Mappa</span>
                 <select id="setup-map"></select>
               </label>
               <div id="setup-map-details" class="map-setup-card" aria-live="polite"></div>
               <label class="field-stack">
-                <span>Giocatori totali</span>
+                <span data-i18n="newGame.totalPlayers.label">Giocatori totali</span>
                 <select id="setup-total-players">
                   <option value="2">2</option>
                   <option value="3">3</option>
@@ -93,10 +93,10 @@
             <section class="new-game-panel">
               <div class="section-title-row compact-row">
                 <div>
-                  <h3>Slot giocatori</h3>
-                  <p class="stage-copy">Il primo posto e sempre tuo; gli altri definiscono chi arrivera in lobby e chi nascera come AI.</p>
+                  <h3 data-i18n="newGame.playerSlots.heading">Slot giocatori</h3>
+                  <p class="stage-copy" data-i18n="newGame.playerSlots.copy">Il primo posto e sempre tuo; gli altri definiscono chi arrivera in lobby e chi nascera come AI.</p>
                 </div>
-                <span class="badge">Human / AI</span>
+                <span class="badge" data-i18n="newGame.playerSlots.badge">Human / AI</span>
               </div>
               <div id="setup-player-slots" class="setup-player-slots"></div>
             </section>
@@ -105,14 +105,14 @@
           <div id="new-game-feedback" class="session-feedback is-hidden"></div>
 
           <div class="new-game-actions">
-            <a href="/lobby.html" class="ghost-button">Annulla</a>
-            <button type="submit" form="new-game-form" id="submit-new-game" class="ghost-button">Crea e apri</button>
+            <a href="/lobby.html" class="ghost-button" data-i18n="common.cancel">Annulla</a>
+            <button type="submit" form="new-game-form" id="submit-new-game" class="ghost-button" data-i18n="newGame.createOpen">Crea e apri</button>
           </div>
         </section>
       </main>
     </div>
 
-    <script type="module" src="/layout.js"></script>
-    <script type="module" src="/new-game.js"></script>
+    <script type="module" src="/layout.mjs"></script>
+    <script type="module" src="/new-game.mjs"></script>
   </body>
 </html>

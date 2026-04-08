@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Frontline Dominion - Registrazione</title>
+    <title data-i18n="register.title">Frontline Dominion - Registrazione</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body data-app-section="register">
@@ -12,76 +12,76 @@
       <main class="page-shell top-nav-page-shell">
         <section class="panel top-nav-bar">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-            <p class="eyebrow">NetRisk</p>
-            <h1>Frontline Dominion</h1>
+            <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
+            <h1 data-i18n="app.title">Frontline Dominion</h1>
           </a>
 
-          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
             <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
             <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
             <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
           </nav>
 
           <div class="top-nav-zone top-nav-actions">
-            <form id="header-login-form" class="top-nav-auth-form">
-              <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
-              <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
-              <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
-              <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+            <form id="header-login-form" class="top-nav-auth-form" method="post">
+              <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
+              <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+              <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
+              <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
             </form>
-            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
-            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+            <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
+            <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
           </div>
         </section>
 
         <section class="panel register-shell" data-testid="register-shell">
           <div class="register-hero">
             <div>
-              <p class="eyebrow">Account Setup</p>
-              <h2>Crea il tuo profilo comandante</h2>
-              <p class="stage-copy">Registrazione standard, email facoltativa, password forte e dati sensibili protetti lato server.</p>
+              <p class="eyebrow" data-i18n="register.eyebrow">Account Setup</p>
+              <h2 data-i18n="register.heading">Crea il tuo profilo comandante</h2>
+              <p class="stage-copy" data-i18n="register.copy">Registrazione standard, email facoltativa, password forte e dati sensibili protetti lato server.</p>
             </div>
             <div class="content-meta-line register-meta-line">
-              <span id="register-auth-status">Compila il modulo per creare l'account.</span>
+              <span id="register-auth-status" data-i18n="register.authStatus">Compila il modulo per creare l'account.</span>
             </div>
           </div>
 
           <form id="register-form" class="register-card">
             <label class="field-stack">
-              <span>Username</span>
-              <input id="register-username" name="register-username" maxlength="32" autocomplete="username" placeholder="Comandante_01" required />
+              <span data-i18n="register.username.label">Username</span>
+              <input id="register-username" name="register-username" maxlength="32" autocomplete="username" placeholder="Comandante_01" required data-i18n-placeholder="register.username.placeholder" />
             </label>
             <label class="field-stack">
-              <span>Email</span>
-              <input id="register-email" name="register-email" type="email" maxlength="128" autocomplete="email" placeholder="opzionale@esempio.it" />
+              <span data-i18n="register.email.label">Email</span>
+              <input id="register-email" name="register-email" type="email" maxlength="128" autocomplete="email" placeholder="opzionale@esempio.it" data-i18n-placeholder="register.email.placeholder" />
             </label>
             <label class="field-stack">
-              <span>Password</span>
-              <input id="register-password" name="register-password" type="password" autocomplete="new-password" placeholder="Password forte" required />
+              <span data-i18n="register.password.label">Password</span>
+              <input id="register-password" name="register-password" type="password" autocomplete="new-password" placeholder="Password forte" required data-i18n-placeholder="register.password.placeholder" />
             </label>
             <label class="field-stack">
-              <span>Conferma password</span>
-              <input id="register-password-confirm" name="register-password-confirm" type="password" autocomplete="new-password" placeholder="Ripeti la password" required />
+              <span data-i18n="register.passwordConfirm.label">Conferma password</span>
+              <input id="register-password-confirm" name="register-password-confirm" type="password" autocomplete="new-password" placeholder="Ripeti la password" required data-i18n-placeholder="register.passwordConfirm.placeholder" />
             </label>
 
             <div class="register-guidelines">
-              <p>Username: 3-32 caratteri, lettere, numeri, underscore o trattino.</p>
-              <p>Email non obbligatoria.</p>
-              <p>Password: almeno 4 caratteri.</p>
+              <p data-i18n="register.guideline.username">Username: 3-32 caratteri, lettere, numeri, underscore o trattino.</p>
+              <p data-i18n="register.guideline.email">Email non obbligatoria.</p>
+              <p data-i18n="register.guideline.password">Password: almeno 4 caratteri.</p>
             </div>
 
             <p id="register-feedback" class="auth-feedback" hidden></p>
 
             <div class="new-game-actions register-actions">
-              <a href="/game.html" class="ghost-button">Annulla</a>
-              <button type="submit" id="register-submit-button" class="ghost-button">Registrati</button>
+              <a href="/game.html" class="ghost-button" data-i18n="common.cancel">Annulla</a>
+              <button type="submit" id="register-submit-button" class="ghost-button" data-i18n="register.submit">Registrati</button>
             </div>
           </form>
         </section>
       </main>
     </div>
 
-    <script type="module" src="/layout.js"></script>
-    <script type="module" src="/register.js"></script>
+    <script type="module" src="/layout.mjs"></script>
+    <script type="module" src="/register.mjs"></script>
   </body>
 </html>
