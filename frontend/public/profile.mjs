@@ -1,3 +1,5 @@
+import { formatDate, t, translateServerMessage } from "./i18n.mjs";
+
 const elements = {
   profileName: document.querySelector("#profile-name"),
   profileSubtitle: document.querySelector("#profile-subtitle"),
@@ -75,35 +77,36 @@ function escapeHtml(value) {
 
 function phaseLabel(phase) {
   if (phase === "active") {
-    return "In corso";
+    return t("common.phase.active");
   }
   if (phase === "finished") {
-    return "Conclusa";
+    return t("common.phase.finished");
   }
-  return "Lobby";
+  return t("common.phase.lobby");
 }
 
 function formatUpdatedTime(value) {
   if (!value) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "n/d";
+    return t("common.notAvailable");
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return formatDate(parsed, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(parsed);
+  });
 }
 
 function renderParticipatingGames(profile) {
   const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
-  const label = participatingGames.length === 1 ? "1 attiva" : `${participatingGames.length} attive`;
+  const count = participatingGames.length;
+  const label = t(count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other", { count });
   elements.gamesCount.textContent = label;
 
   if (!participatingGames.length) {
@@ -121,24 +124,24 @@ function renderParticipatingGames(profile) {
       return (
       `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
         `<span class="profile-game-primary">` +
-          `<span class="profile-game-kicker">Teatro operativo</span>` +
+          `<span class="profile-game-kicker">${t("profile.games.kicker")}</span>` +
           `<span class="profile-game-name">${escapeHtml(game.name)}</span>` +
-          `<span class="profile-game-sub">${escapeHtml(game.mapName || game.mapId || "Classic Mini")}</span>` +
+          `<span class="profile-game-sub">${escapeHtml(game.mapName || game.mapId || t("common.classicMini"))}</span>` +
         `</span>` +
         `<span class="profile-game-meta-row">` +
           `<span class="badge">${phaseLabel(game.phase)}</span>` +
-          `<span class="profile-game-meta">${game.playerCount}/${game.totalPlayers || "n/d"} giocatori</span>` +
-          `<span class="profile-game-meta">Aggiornata ${formatUpdatedTime(game.updatedAt)}</span>` +
+          `<span class="profile-game-meta">${t("profile.games.playerCount", { current: game.playerCount, total: game.totalPlayers || t("common.notAvailable") })}</span>` +
+          `<span class="profile-game-meta">${t("profile.games.updatedAt", { updatedAt: formatUpdatedTime(game.updatedAt) })}</span>` +
         `</span>` +
-        `<span class="profile-mini-lobby" aria-label="Mini lobby personale">` +
-          `<span class="profile-mini-lobby-title">Mini lobby personale</span>` +
+        `<span class="profile-mini-lobby" aria-label="${t("profile.games.personalLobbyAria")}">` +
+          `<span class="profile-mini-lobby-title">${t("profile.games.personalLobbyTitle")}</span>` +
           `<span class="profile-mini-lobby-grid">` +
-            `<span class="profile-mini-lobby-item"><span>Comandante</span><strong>${escapeHtml(lobby.playerName || profile.playerName)}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>Stato</span><strong>${escapeHtml(lobby.statusLabel || "n/d")}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>Focus</span><strong>${escapeHtml(lobby.focusLabel || "n/d")}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>Fase</span><strong>${escapeHtml(lobby.turnPhaseLabel || "Lobby")}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>Territori</span><strong>${Number(lobby.territoryCount || 0)}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>Carte</span><strong>${Number(lobby.cardCount || 0)}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.commander")}</span><strong>${escapeHtml(lobby.playerName || profile.playerName)}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.status")}</span><strong>${escapeHtml(lobby.statusLabel || t("common.notAvailable"))}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.focus")}</span><strong>${escapeHtml(lobby.focusLabel || t("common.notAvailable"))}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.phase")}</span><strong>${escapeHtml(lobby.turnPhaseLabel || t("common.phase.lobby"))}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.territories")}</span><strong>${Number(lobby.territoryCount || 0)}</strong></span>` +
+            `<span class="profile-mini-lobby-item"><span>${t("profile.games.cards")}</span><strong>${Number(lobby.cardCount || 0)}</strong></span>` +
           `</span>` +
         `</span>` +
       `</button>`
@@ -154,25 +157,25 @@ function showProfile(profile) {
     .map((game) => game.mapName || game.mapId)
     .filter(Boolean);
   const rankingTitle = profile.winRate == null
-    ? "Recluta"
+    ? t("profile.ranks.recruit")
     : profile.winRate >= 70
-      ? "Stratega Supremo"
+      ? t("profile.ranks.supremeStrategist")
       : profile.winRate >= 55
-        ? "Comandante d'Armata"
+        ? t("profile.ranks.armyCommander")
         : profile.winRate >= 40
-          ? "Ufficiale di Linea"
-          : "Recluta";
+          ? t("profile.ranks.lineOfficer")
+          : t("profile.ranks.recruit");
   const momentum = profile.wins - profile.losses;
   elements.profileName.textContent = profile.playerName;
   if (elements.profileSubtitle) {
     elements.profileSubtitle.textContent = profile.hasHistory
-      ? "Record operativo delle campagne completate e delle sessioni ancora aperte."
-      : "Il dossier e' pronto: la prima campagna completera il quadro operativo del comandante.";
+      ? t("profile.runtime.subtitle.withHistory")
+      : t("profile.runtime.subtitle.noHistory");
   }
   elements.profileHeading.textContent = profile.playerName;
   elements.profileCopy.textContent = profile.hasHistory
-    ? "Una lettura rapida del rendimento complessivo, pensata per rientrare subito in partita con il contesto giusto."
-    : "Il comandante non ha ancora uno storico completo. Avvia o completa una partita per aprire il primo dossier operativo.";
+    ? t("profile.runtime.copy.withHistory")
+    : t("profile.runtime.copy.noHistory");
   elements.gamesPlayed.textContent = String(profile.gamesPlayed);
   elements.wins.textContent = String(profile.wins);
   elements.losses.textContent = String(profile.losses);
@@ -180,34 +183,34 @@ function showProfile(profile) {
   elements.winRate.textContent = profile.winRate == null ? "--" : `${profile.winRate}%`;
   elements.profileCommandName.textContent = profile.playerName;
   elements.profileCommandStatus.textContent = profile.hasHistory
-    ? `Record attivo: ${profile.gamesPlayed} campagne monitorate.`
-    : "Nessun record completo disponibile: il dossier si aggiornera dopo le prime campagne.";
-  elements.profileCommandFocus.textContent = focusGame ? focusGame.name : "Nessuna partita";
+    ? t("profile.runtime.commandStatus.withHistory", { gamesPlayed: profile.gamesPlayed })
+    : t("profile.runtime.commandStatus.noHistory");
+  elements.profileCommandFocus.textContent = focusGame ? focusGame.name : t("profile.front.value");
   elements.profileCommandFocusNote.textContent = focusGame
-    ? `${phaseLabel(focusGame.phase)} su ${focusGame.mapName || focusGame.mapId || "Classic Mini"}.`
-    : "Apri una sessione dalla lobby per avere un fronte attivo nel dossier.";
-  elements.profileCommandDirective.textContent = profile.gamesInProgress > 0 ? "Riprendi il fronte" : "Pianifica una nuova campagna";
+    ? t("profile.runtime.commandFocusNote.active", { phase: phaseLabel(focusGame.phase), mapName: focusGame.mapName || focusGame.mapId || t("common.classicMini") })
+    : t("profile.runtime.commandFocusNote.none");
+  elements.profileCommandDirective.textContent = profile.gamesInProgress > 0 ? t("profile.runtime.directive.resume") : t("profile.runtime.directive.plan");
   elements.profileCommandDirectiveNote.textContent = profile.gamesInProgress > 0
-    ? `Hai ${profile.gamesInProgress} session${profile.gamesInProgress === 1 ? "e attiva" : "i attive"} pronte da riaprire.`
-    : "Crea una nuova partita dalla lobby per iniziare a popolare il record del comandante.";
+    ? t("profile.runtime.directiveNote.active", { count: profile.gamesInProgress })
+    : t("profile.runtime.directiveNote.none");
   elements.profileRankingTitle.textContent = rankingTitle;
   elements.profileRankingCopy.textContent = profile.gamesPlayed > 0
-    ? `${profile.wins} vittorie, ${profile.losses} sconfitte e win rate ${profile.winRate == null ? "--" : `${profile.winRate}%`} nel dossier corrente.`
-    : "Completa almeno una campagna per assegnare il primo grado operativo.";
-  elements.profileMapTitle.textContent = knownMaps[0] || "Nessuna mappa osservata";
+    ? t("profile.runtime.rankingCopy.withHistory", { wins: profile.wins, losses: profile.losses, winRate: profile.winRate == null ? "--" : `${profile.winRate}%` })
+    : t("profile.runtime.rankingCopy.noHistory");
+  elements.profileMapTitle.textContent = knownMaps[0] || t("profile.map.title");
   elements.profileMapCopy.textContent = knownMaps.length
-    ? `Fronti tracciati nel profilo: ${knownMaps.join(", ")}.`
-    : "Apri o completa una partita per registrare il primo fronte nel dossier mappe.";
+    ? t("profile.runtime.mapCopy.withHistory", { maps: knownMaps.join(", ") })
+    : t("profile.runtime.mapCopy.noHistory");
   elements.profileAdvancedTitle.textContent = profile.gamesPlayed > 0
-    ? `Momentum ${momentum >= 0 ? "+" : ""}${momentum}`
-    : "Quadro operativo";
+    ? t("profile.runtime.advancedTitle.withHistory", { momentum: `${momentum >= 0 ? "+" : ""}${momentum}` })
+    : t("profile.advanced.title");
   elements.profileAdvancedCopy.textContent = profile.gamesPlayed > 0
-    ? `${profile.gamesInProgress} front${profile.gamesInProgress === 1 ? "e aperto" : "i aperti"} e ${profile.gamesPlayed} campagne registrate nel dossier.`
-    : "Il riepilogo avanzato mostrera il ritmo di campagna non appena saranno registrati i primi risultati.";
+    ? t("profile.runtime.advancedCopy.withHistory", { inProgress: profile.gamesInProgress, gamesPlayed: profile.gamesPlayed })
+    : t("profile.runtime.advancedCopy.noHistory");
   renderParticipatingGames(profile);
 
   if (!profile.hasHistory) {
-    showFeedback("Nessuna statistica disponibile: completa almeno una partita per costruire il record.");
+    showFeedback(t("profile.runtime.noStats"));
     return;
   }
 
@@ -217,7 +220,7 @@ function showProfile(profile) {
 
 async function loadProfile() {
   const requestId = ++profileRequestId;
-  showFeedback("Caricamento dati giocatore...");
+  showFeedback(t("profile.feedback"));
 
   let sessionUser = null;
 
@@ -225,7 +228,7 @@ async function loadProfile() {
     const sessionResponse = await fetch("/api/auth/session");
 
     if (!sessionResponse.ok) {
-      throw new Error("Accedi prima di consultare il profilo giocatore.");
+      throw new Error(t("profile.errors.loginRequired"));
     }
 
     const session = await sessionResponse.json();
@@ -233,14 +236,14 @@ async function loadProfile() {
       return;
     }
     sessionUser = session.user;
-    elements.authStatus.textContent = "Autenticato come " + session.user.username + ".";
+    elements.authStatus.textContent = t("profile.auth.loggedIn", { username: session.user.username });
     renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
     const profileResponse = await fetch("/api/profile");
 
     if (!profileResponse.ok) {
       const payload = await profileResponse.json();
-      throw new Error(payload.error || "Profilo non disponibile.");
+      throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
     }
 
     const payload = await profileResponse.json();
@@ -253,26 +256,24 @@ async function loadProfile() {
     if (requestId !== profileRequestId) {
       return;
     }
-    showFeedback(error.message || "Impossibile caricare il profilo.", "error");
+    showFeedback(error.message || t("profile.errors.loadFailed"), "error");
     if (sessionUser) {
-      elements.authStatus.textContent = "Autenticato come " + sessionUser.username + ".";
+      elements.authStatus.textContent = t("profile.auth.loggedIn", { username: sessionUser.username });
       renderAuthArea(sessionUser);
       renderNavAvatar(sessionUser.username);
       elements.profileName.textContent = sessionUser.username;
       if (elements.profileSubtitle) {
-        elements.profileSubtitle.textContent = "Profilo temporaneamente non disponibile.";
+        elements.profileSubtitle.textContent = t("profile.runtime.temporarilyUnavailable");
       }
       return;
     }
 
-    elements.authStatus.textContent = "Sessione non disponibile.";
+    elements.authStatus.textContent = t("profile.auth.unavailable");
     renderAuthArea(null);
     renderNavAvatar();
-    elements.profileName.textContent = "Profilo non disponibile";
+    elements.profileName.textContent = t("profile.runtime.unavailableTitle");
     if (elements.profileSubtitle) {
-      if (elements.profileSubtitle) {
-    elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
-  }
+      elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
     }
   }
 }
@@ -281,6 +282,7 @@ await loadProfile();
 
 
 if (elements.headerLoginForm) {
+  elements.headerLoginForm.dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();
@@ -297,13 +299,13 @@ if (elements.headerLoginForm) {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Accesso non riuscito.");
+        throw new Error(translateServerMessage(data, t("errors.loginFailed")));
       }
 
       elements.headerAuthPassword.value = "";
       await loadProfile();
     } catch (error) {
-      showFeedback(error.message || "Accesso non riuscito.", "error");
+      showFeedback(error.message || t("errors.loginFailed"), "error");
       renderAuthArea(null);
       renderNavAvatar();
     }
@@ -314,11 +316,11 @@ elements.logoutButton.addEventListener("click", async () => {
   profileRequestId += 1;
   localStorage.removeItem("frontline-player-id");
   renderAuthArea(null);
-  elements.authStatus.textContent = "Sessione terminata.";
+  elements.authStatus.textContent = t("profile.auth.loggedOut");
   renderNavAvatar();
-  showFeedback("Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.", "error");
-  elements.profileName.textContent = "Profilo non disponibile";
-  elements.profileSubtitle.textContent = "Verifica la sessione o riprova piu tardi.";
+  showFeedback(t("profile.runtime.loggedOutFeedback"), "error");
+  elements.profileName.textContent = t("profile.runtime.unavailableTitle");
+  elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
 
   try {
     await fetch("/api/auth/logout", {

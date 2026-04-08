@@ -21,7 +21,7 @@ test("non-current player stays in observation and cannot use turn actions", asyn
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 
-  await expect(secondPage.getByText(/^Osservazione$/i)).toBeVisible({ timeout: 15000 });
+  await expect(secondPage.locator("#identity-status")).toContainText(secondUser, { timeout: 15000 });
   await expect(secondPage.locator("#reinforce-group")).toBeHidden();
   await expect(secondPage.locator("#attack-group")).toBeHidden();
   await expect(secondPage.locator("#fortify-group")).toBeHidden();

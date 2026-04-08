@@ -1,6 +1,9 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
+const { pathToFileURL } = require("url");
+
+process.env.TEST = "true";
 const {
   addPlayer,
   advanceTurn,
@@ -46,6 +49,7 @@ const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
 const TEST_PASSWORD = "Secret123!";
+const frontendI18nModulePromise = import(pathToFileURL(path.join(__dirname, "..", "frontend", "public", "i18n.mjs")).href);
 
 function register(name, fn) {
   tests.push({ name, fn });
@@ -145,6 +149,39 @@ function authHeaders(sessionToken) {
     cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
   };
 }
+
+function readPublicHtml(fileName) {
+  return fs.readFileSync(path.join(__dirname, "..", "frontend", "public", fileName), "utf8");
+}
+
+register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
+  const { setLocale, translateGameLogEntries } = await frontendI18nModulePromise;
+  setLocale("it", {
+    storage: { setItem() {} },
+    applyDocument: false
+  });
+
+  const snapshot = {
+    logEntries: [
+      {
+        message: "Lobby creata. Unisciti e avvia la partita.",
+        messageKey: "game.log.lobbyCreated",
+        messageParams: {}
+      }
+    ],
+    log: [
+      "Lobby creata. Unisciti e avvia la partita.",
+      "Partita iniziata",
+      "Alice conquista Kamchatka"
+    ]
+  };
+
+  assert.deepEqual(translateGameLogEntries(snapshot), [
+    "Lobby creata. Unisciti e avvia la partita.",
+    "Partita iniziata",
+    "Alice conquista Kamchatka"
+  ]);
+});
 
 function createMockSupabaseResponse(status, payload) {
   const text = payload == null ? "" : JSON.stringify(payload);
@@ -475,6 +512,32 @@ register("auth store registra e autentica utenti password", async () => {
     fs.unlinkSync(tempSessionsFile);
   }
   cleanupSqliteFiles(tempDbFile);
+});
+
+register("i form di login pubblici usano POST per non esporre credenziali nella query string", () => {
+  const headerLoginPages = [
+    "game.html",
+    "lobby.html",
+    "new-game.html",
+    "profile.html",
+    "register.html"
+  ];
+
+  headerLoginPages.forEach((fileName) => {
+    const html = readPublicHtml(fileName);
+    assert.match(
+      html,
+      /<form id="header-login-form"[^>]*method="post"/,
+      `${fileName} deve usare POST per il form di login header`
+    );
+  });
+
+  const gameHtml = readPublicHtml("game.html");
+  assert.match(
+    gameHtml,
+    /<form id="auth-form"[^>]*method="post"/,
+    "game.html deve usare POST per il form login principale"
+  );
 });
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {

@@ -1,5 +1,7 @@
 const path = require("path");
 
+process.env.TEST = "true";
+
 const tests = [];
 
 global.register = function register(name, fn) {
