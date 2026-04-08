@@ -2067,6 +2067,34 @@ register("API engine catalog valida le mappe custom e crea partite da ruleset cu
     const invalidMapPayload = await invalidMapResponse.json();
     assert.equal(invalidMapPayload.messageKey, "engine.map.unknownNeighbor");
 
+    const seedMapUpdateResponse = await fetch(baseUrl + "/api/engine/maps/classic-mini", {
+      method: "PUT",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "Classic Mini Override",
+        territories: [
+          {
+            id: "alpha",
+            name: "Alpha",
+            neighbors: ["beta"]
+          },
+          {
+            id: "beta",
+            name: "Beta",
+            neighbors: ["alpha"]
+          }
+        ],
+        continents: [],
+        positions: {
+          alpha: { x: 20, y: 20 },
+          beta: { x: 80, y: 80 }
+        }
+      })
+    });
+    assert.equal(seedMapUpdateResponse.status, 400);
+    const seedMapUpdatePayload = await seedMapUpdateResponse.json();
+    assert.equal(seedMapUpdatePayload.messageKey, "engine.map.seedReadonly");
+
     const victoryRuleResponse = await fetch(baseUrl + "/api/engine/victory-rules", {
       method: "POST",
       headers: authHeaders(session.sessionToken),
@@ -2124,7 +2152,9 @@ register("API engine catalog valida le mappe custom e crea partite da ruleset cu
     assert.equal(createPayload.state.gameConfig.mapId, "world-classic");
     assert.equal(createPayload.state.gameConfig.victoryRuleName, "Hold Four Territories");
     assert.equal(createPayload.state.gameConfig.diceRuleSetId, "standard-3-defense");
+    assert.deepEqual(createPayload.state.gameConfig.ruleModifierIds, []);
     assert.equal(createPayload.state.diceRuleSet.id, "standard-3-defense");
+    assert.deepEqual(createPayload.config.resolvedGameConfig.ruleModifiers, []);
     assert.equal(createPayload.config.selectedCombatRule.id, "standard-3-defense");
     assert.equal(createPayload.config.selectedVictoryRule.id, victoryRulePayload.victoryRule.id);
     assert.equal(createPayload.state.map.length, worldClassicMap.territories.length);
