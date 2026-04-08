@@ -17,6 +17,9 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+      VERCEL_PROJECT_ID: prj_R61andzsXOZjOAfvj9GSOjS35aLv
     permissions:
       contents: read
       pull-requests: read
@@ -24,14 +27,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Resolve Vercel project metadata
-        shell: bash
-        run: |
-          vercel_org_id="$(node -p "require('./.vercel/project.json').orgId")"
-          vercel_project_id="$(node -p "require('./.vercel/project.json').projectId")"
-          echo "VERCEL_ORG_ID=$vercel_org_id" >> "$GITHUB_ENV"
-          echo "VERCEL_PROJECT_ID=$vercel_project_id" >> "$GITHUB_ENV"
 
       - name: Smoke test Vercel preview
         env:

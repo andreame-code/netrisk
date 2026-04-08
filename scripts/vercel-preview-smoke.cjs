@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 
 const VERCEL_API_BASE_URL = "https://api.vercel.com";
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -11,6 +12,27 @@ function requiredEnv(name) {
   }
 
   return value;
+}
+
+function readLocalProjectMetadata() {
+  const projectFile = path.join(process.cwd(), ".vercel", "project.json");
+  if (!fs.existsSync(projectFile)) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(projectFile, "utf8"));
+  } catch (error) {
+    return {};
+  }
+}
+
+function resolveProjectId() {
+  return String(process.env.VERCEL_PROJECT_ID || readLocalProjectMetadata().projectId || "").trim() || requiredEnv("VERCEL_PROJECT_ID");
+}
+
+function resolveOrgId() {
+  return String(process.env.VERCEL_ORG_ID || readLocalProjectMetadata().orgId || "").trim() || requiredEnv("VERCEL_ORG_ID");
 }
 
 function sleep(ms) {
@@ -37,7 +59,7 @@ function summarizeDeployment(deployment) {
 
 async function vercelRequest(pathname, init = {}) {
   const token = requiredEnv("VERCEL_TOKEN");
-  const orgId = requiredEnv("VERCEL_ORG_ID");
+  const orgId = resolveOrgId();
   const separator = pathname.includes("?") ? "&" : "?";
   const response = await fetch(`${VERCEL_API_BASE_URL}${pathname}${separator}teamId=${encodeURIComponent(orgId)}`, {
     method: init.method || "GET",
@@ -270,7 +292,7 @@ function appendStepSummary(message) {
 
 async function main() {
   const context = {
-    projectId: requiredEnv("VERCEL_PROJECT_ID"),
+    projectId: resolveProjectId(),
     prNumber: requiredEnv("GITHUB_PR_NUMBER"),
     headRef: requiredEnv("GITHUB_HEAD_REF"),
     headSha: requiredEnv("GITHUB_HEAD_SHA")
