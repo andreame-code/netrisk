@@ -17,6 +17,8 @@ scripts/tmp-debug-*.json
 
 playwright-report/
 test-results/
+/public/
+.tmp-server-*.log
 
 data/backups/
 data/*.sqlite-shm

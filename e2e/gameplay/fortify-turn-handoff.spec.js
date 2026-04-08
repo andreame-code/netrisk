@@ -64,7 +64,10 @@ test("current player can fortify once and pass the turn to the next player", asy
 
   await expect(secondPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
   await expect(secondPage.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
-  await expect(firstPage.getByText(/^Osservazione$/i)).toBeVisible({ timeout: 10000 });
+  await expect(firstPage.locator("#reinforce-group")).toBeHidden({ timeout: 10000 });
+  await expect(firstPage.locator("#attack-group")).toBeHidden();
+  await expect(firstPage.locator("#fortify-group")).toBeHidden();
+  await expect(firstPage.locator("#end-turn-button")).toBeHidden();
 
   await firstContext.close();
   await secondContext.close();

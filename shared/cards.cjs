@@ -1,3 +1,5 @@
+const { createLocalizedError, createValidationFailure } = require("./messages.cjs");
+
 const CardType = Object.freeze({
   INFANTRY: "infantry",
   CAVALRY: "cavalry",
@@ -25,21 +27,18 @@ function countTypes(cards) {
   }, {});
 }
 
-function buildInvalidResult(reason) {
-  return {
-    ok: false,
-    reason
-  };
+function buildInvalidResult(reason, reasonKey, reasonParams = {}) {
+  return createValidationFailure(reason, reasonKey, reasonParams);
 }
 
 function validateStandardCardSet(cards) {
   if (!Array.isArray(cards) || cards.length !== 3) {
-    return buildInvalidResult("Card sets must contain exactly three cards.");
+    return buildInvalidResult("Card sets must contain exactly three cards.", "cards.invalidSetLength");
   }
 
   const invalidCard = cards.find((card) => !card || !Object.values(CardType).includes(card.type));
   if (invalidCard) {
-    return buildInvalidResult("Card set contains an unsupported card type.");
+    return buildInvalidResult("Card set contains an unsupported card type.", "cards.unsupportedType");
   }
 
   const counts = countTypes(cards);
@@ -64,12 +63,12 @@ function validateStandardCardSet(cards) {
     };
   }
 
-  return buildInvalidResult("Card set does not match a valid standard trade.");
+  return buildInvalidResult("Card set does not match a valid standard trade.", "cards.invalidTrade");
 }
 
 function standardTradeBonusForIndex(tradeIndex) {
   if (!Number.isInteger(tradeIndex) || tradeIndex < 0) {
-    throw new Error("Trade index must be a non-negative integer.");
+    throw createLocalizedError("Trade index must be a non-negative integer.", "cards.invalidTradeIndex");
   }
 
   if (tradeIndex < STANDARD_TRADE_VALUES.length) {
@@ -109,7 +108,7 @@ function getCardRuleSet(ruleSetId = STANDARD_CARD_RULE_SET_ID) {
     return standardCardRuleSet;
   }
 
-  throw new Error("Unsupported card rule set.");
+  throw createLocalizedError("Unsupported card rule set.", "cards.unsupportedRuleSet");
 }
 
 module.exports = {

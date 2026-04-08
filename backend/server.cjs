@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
@@ -9,6 +10,7 @@ const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
+const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
 const {
   addPlayer,
   applyFortify,
@@ -26,6 +28,9 @@ const {
 } = require("./engine/game-engine.cjs");
 const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
+const { createLocalizedError } = require("../shared/messages.cjs");
+
+loadLocalEnv();
 
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
@@ -57,7 +62,7 @@ function parseBody(req) {
     req.on("data", (chunk) => {
       raw += chunk;
       if (raw.length > 1000000) {
-        reject(new Error("Payload troppo grande"));
+        reject(createLocalizedError("Payload troppo grande", "server.payloadTooLarge"));
         req.destroy();
       }
     });
@@ -70,9 +75,37 @@ function parseBody(req) {
       try {
         resolve(JSON.parse(raw));
       } catch (error) {
-        reject(new Error("JSON non valido"));
+        reject(createLocalizedError("JSON non valido", "server.invalidJson"));
       }
     });
+  });
+}
+
+function localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams = {}, code = null) {
+  const isObject = input && typeof input === "object";
+  const message = isObject
+    ? (input.message || input.error || input.reason || input.defaultMessage || fallbackMessage)
+    : fallbackMessage;
+  const messageKey = isObject
+    ? (input.messageKey || input.errorKey || input.reasonKey || null)
+    : null;
+  const messageParams = isObject
+    ? (input.messageParams || input.errorParams || input.reasonParams || {})
+    : {};
+
+  return {
+    error: message || fallbackMessage,
+    messageKey: messageKey || fallbackKey || null,
+    messageParams: messageKey ? messageParams : (fallbackKey ? fallbackParams : {})
+  };
+}
+
+function sendLocalizedError(res, statusCode, input, fallbackMessage, fallbackKey, fallbackParams = {}, code = null, extra = {}) {
+  const payload = localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams, code);
+  sendJson(res, statusCode, {
+    ...payload,
+    code: code || (input && input.code) || null,
+    ...extra
   });
 }
 
@@ -131,6 +164,18 @@ function clearSessionCookie(req) {
 }
 
 function createApp(options = {}) {
+  if (shouldValidateDeployEnv(process.env)) {
+    const missingEnvKeys = missingRequiredDeployEnv(process.env);
+    if (missingEnvKeys.length) {
+      throw createLocalizedError(
+        "Configurazione Vercel incompleta.",
+        "server.deploy.missingEnv",
+        { keys: missingEnvKeys.join(", ") },
+        "MISSING_DEPLOY_ENV"
+      );
+    }
+  }
+
   const state = createInitialState();
   let activeGameId = null;
   let activeGameVersion = null;
@@ -298,7 +343,7 @@ function createApp(options = {}) {
 
       const result = runAiTurn(targetState);
       if (!result.ok) {
-        throw new Error(result.error || "Turno AI non riuscito.");
+        throw createLocalizedError(result.error || "Turno AI non riuscito.", result.errorKey || "server.aiTurn.failed", result.errorParams);
       }
 
       reports.push(result);
@@ -338,7 +383,7 @@ function createApp(options = {}) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
-      sendJson(res, 401, { error: "Sessione non valida.", code: "AUTH_REQUIRED" });
+      sendLocalizedError(res, 401, null, "Sessione non valida.", "server.auth.invalidSession", {}, "AUTH_REQUIRED");
       return null;
     }
 
@@ -354,7 +399,7 @@ function createApp(options = {}) {
     try {
       gameRecord = await gameSessions.getGame(gameId);
     } catch (error) {
-      sendJson(res, 404, { error: error.message || "Partita non trovata.", code: "GAME_NOT_FOUND" });
+      sendLocalizedError(res, 404, error, "Partita non trovata.", "server.game.notFound", {}, "GAME_NOT_FOUND");
       return null;
     }
     if (!gameRecord.game.creatorUserId) {
@@ -370,7 +415,7 @@ function createApp(options = {}) {
       authorize("game:read", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
     } catch (error) {
       const statusCode = error.statusCode || 400;
-      sendJson(res, statusCode, { error: error.message || "Accesso partita non autorizzato.", code: error.code || null });
+      sendLocalizedError(res, statusCode, error, "Accesso partita non autorizzato.", "server.game.readUnauthorized");
       return null;
     }
 
@@ -468,7 +513,7 @@ function createApp(options = {}) {
       const defendRoll = Number(body.defendRoll);
 
       if (!Number.isInteger(attackRoll) || attackRoll < 1 || attackRoll > 6 || !Number.isInteger(defendRoll) || defendRoll < 1 || defendRoll > 6) {
-        sendJson(res, 400, { error: "I lanci di test devono essere interi tra 1 e 6." });
+        sendLocalizedError(res, 400, null, "I lanci di test devono essere interi tra 1 e 6.", "server.test.invalidRolls");
         return;
       }
 
@@ -512,7 +557,7 @@ function createApp(options = {}) {
         const configured = createConfiguredInitialState(body);
         const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
         if (!creatorJoin.ok) {
-          throw new Error(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.");
+          throw createLocalizedError(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.", creatorJoin.errorKey || "server.game.create.creatorJoinFailed", creatorJoin.errorParams);
         }
         const created = await gameSessions.createGame(configured.state, {
           ...configured.gameInput,
@@ -526,7 +571,7 @@ function createApp(options = {}) {
         sendJson(res, 201, { ok: true, game: created.game, games: await gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
       } catch (error) {
         const statusCode = error.statusCode || 400;
-        sendJson(res, statusCode, { error: error.message || "Creazione partita non riuscita.", code: error.code || null });
+        sendLocalizedError(res, statusCode, error, "Creazione partita non riuscita.", "server.game.createFailed");
       }
       return;
     }
@@ -554,7 +599,7 @@ function createApp(options = {}) {
         });
       } catch (error) {
         const statusCode = error.statusCode || 400;
-        sendJson(res, statusCode, { error: error.message || "Apertura partita non riuscita.", code: error.code || null });
+        sendLocalizedError(res, statusCode, error, "Apertura partita non riuscita.", "server.game.openFailed");
       }
       return;
     }
@@ -578,7 +623,7 @@ function createApp(options = {}) {
       try {
         sendJson(res, 200, { profile: await playerProfiles.getPlayerProfile(authContext.user.username) });
       } catch (error) {
-        sendJson(res, 400, { error: error.message || "Profilo non disponibile." });
+        sendLocalizedError(res, 400, error, "Profilo non disponibile.", "server.profile.unavailable");
       }
       return;
     }
@@ -625,7 +670,7 @@ function createApp(options = {}) {
         email: body.email
       });
       if (!result.ok) {
-        sendJson(res, 400, { error: result.error });
+        sendLocalizedError(res, 400, result, result.error, result.errorKey || "register.errors.submitFailed", result.errorParams);
         return;
       }
 
@@ -641,7 +686,7 @@ function createApp(options = {}) {
       const body = await parseBody(req);
       const result = await auth.loginWithPassword(body.username, body.password);
       if (!result.ok) {
-        sendJson(res, 401, { error: result.error });
+        sendLocalizedError(res, 401, result, result.error, result.errorKey || "errors.loginFailed", result.errorParams);
         return;
       }
 
@@ -669,7 +714,7 @@ function createApp(options = {}) {
       const gameContext = await loadGameContext(getTargetGameId(body, url));
       const result = addPlayer(gameContext.state, body.name, { isAi: true });
       if (!result.ok) {
-        sendJson(res, 400, { error: result.error });
+        sendLocalizedError(res, 400, result, result.error, result.errorKey || "server.aiJoin.failed", result.errorParams);
         return;
       }
 
@@ -693,7 +738,7 @@ function createApp(options = {}) {
       const gameContext = await loadGameContext(getTargetGameId(body, url));
       const result = addPlayer(gameContext.state, authContext.user.username, { linkedUserId: authContext.user.id });
       if (!result.ok) {
-        sendJson(res, 400, { error: result.error });
+        sendLocalizedError(res, 400, result, result.error, result.errorKey || "server.join.failed", result.errorParams);
         return;
       }
 
@@ -717,20 +762,18 @@ function createApp(options = {}) {
       const gameContext = await loadGameContext(getTargetGameId(body, url));
       const player = getPlayer(gameContext.state, body.playerId);
       if (!player || !playerBelongsToUser(player, authContext.user)) {
-        sendJson(res, 403, { error: "Giocatore non valido." });
+        sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
         return;
       }
 
       const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
       if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
-        sendJson(res, 400, { error: "expectedVersion non valida." });
+        sendLocalizedError(res, 400, null, "expectedVersion non valida.", "server.invalidExpectedVersion");
         return;
       }
 
       if (expectedVersion != null && expectedVersion !== gameContext.version) {
-        sendJson(res, 409, {
-          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
-          code: "VERSION_CONFLICT",
+        sendLocalizedError(res, 409, null, "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.", "server.versionConflict", {}, "VERSION_CONFLICT", {
           currentVersion: gameContext.version,
           state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
         });
@@ -739,7 +782,7 @@ function createApp(options = {}) {
 
       const result = tradeCardSet(gameContext.state, body.playerId, body.cardIds);
       if (!result.ok) {
-        sendJson(res, 400, { error: result.message });
+        sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
         return;
       }
 
@@ -747,9 +790,7 @@ function createApp(options = {}) {
         await persistGameContext(gameContext, expectedVersion);
       } catch (error) {
         if (error && error.code === "VERSION_CONFLICT") {
-          sendJson(res, 409, {
-            error: error.message,
-            code: error.code,
+          sendLocalizedError(res, 409, error, error.message, error.messageKey || "server.versionConflict", {}, error.code, {
             currentVersion: error.currentVersion,
             state: snapshotForState(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName)
           });
@@ -773,7 +814,7 @@ function createApp(options = {}) {
 
       const gameContext = await loadGameContext(getTargetGameId(body, url));
       if (gameContext.state.phase !== "lobby") {
-        sendJson(res, 400, { error: "La partita e gia iniziata." });
+        sendLocalizedError(res, 400, null, "La partita e gia iniziata.", "server.game.alreadyStarted");
         return;
       }
 
@@ -782,18 +823,18 @@ function createApp(options = {}) {
         authorize("game:start", { user: authContext.user, game: activeGame.game });
       } catch (error) {
         const statusCode = error.statusCode || 400;
-        sendJson(res, statusCode, { error: error.message || "Avvio partita non autorizzato.", code: error.code || null });
+        sendLocalizedError(res, statusCode, error, "Avvio partita non autorizzato.", "server.game.startUnauthorized");
         return;
       }
 
       if (gameContext.state.players.length < 2) {
-        sendJson(res, 400, { error: "Servono almeno 2 giocatori." });
+        sendLocalizedError(res, 400, null, "Servono almeno 2 giocatori.", "server.game.notEnoughPlayers");
         return;
       }
 
       const player = getPlayer(gameContext.state, body.playerId);
       if (!player || !playerBelongsToUser(player, authContext.user)) {
-        sendJson(res, 403, { error: "Giocatore non valido." });
+        sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
         return;
       }
 
@@ -815,7 +856,7 @@ function createApp(options = {}) {
       const type = body.type;
       const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
       if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
-        sendJson(res, 400, { error: "expectedVersion non valida." });
+        sendLocalizedError(res, 400, null, "expectedVersion non valida.", "server.invalidExpectedVersion");
         return;
       }
 
@@ -823,7 +864,7 @@ function createApp(options = {}) {
       const player = getPlayer(gameContext.state, playerId);
 
       if (!player || !playerBelongsToUser(player, authContext.user)) {
-        sendJson(res, 403, { error: "Giocatore non valido." });
+        sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
         return;
       }
 
@@ -833,7 +874,7 @@ function createApp(options = {}) {
         }
 
         sendJson(res, 409, {
-          error: error.message,
+          ...localizedPayload(error, error.message, error.messageKey || "server.versionConflict"),
           code: error.code,
           currentVersion: error.currentVersion,
           state: snapshotForUser(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName, authContext.user)
@@ -843,7 +884,7 @@ function createApp(options = {}) {
 
       if (expectedVersion != null && expectedVersion !== gameContext.version) {
         sendJson(res, 409, {
-          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          ...localizedPayload(null, "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.", "server.versionConflict"),
           code: "VERSION_CONFLICT",
           currentVersion: gameContext.version,
           state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
@@ -859,7 +900,7 @@ function createApp(options = {}) {
           body.amount
         );
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -901,7 +942,7 @@ function createApp(options = {}) {
           ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
           : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -925,7 +966,7 @@ function createApp(options = {}) {
       if (type === "moveAfterConquest") {
         const result = moveAfterConquest(gameContext.state, playerId, body.armies);
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -945,7 +986,7 @@ function createApp(options = {}) {
       if (type === "fortify") {
         const result = applyFortify(gameContext.state, playerId, String(body.fromId || ""), String(body.toId || ""), body.armies);
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -965,7 +1006,7 @@ function createApp(options = {}) {
       if (type === "endTurn") {
         const result = endTurn(gameContext.state, playerId);
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -985,7 +1026,7 @@ function createApp(options = {}) {
       if (type === "surrender") {
         const result = surrenderPlayer(gameContext.state, playerId);
         if (!result.ok) {
-          sendJson(res, 400, { error: result.message });
+          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;
         }
 
@@ -1005,11 +1046,11 @@ function createApp(options = {}) {
         return;
       }
 
-      sendJson(res, 400, { error: "Azione non supportata." });
+      sendLocalizedError(res, 400, null, "Azione non supportata.", "server.action.unsupported");
       return;
     }
 
-    sendJson(res, 404, { error: "Endpoint non trovato." });
+    sendLocalizedError(res, 404, null, "Endpoint non trovato.", "server.endpoint.notFound");
   }
 
   function serveStatic(res, url) {
@@ -1020,13 +1061,13 @@ function createApp(options = {}) {
         : url.pathname;
     const filePath = path.join(publicDir, relativePath);
     if (filePath.indexOf(publicDir) !== 0) {
-      sendJson(res, 403, { error: "Accesso negato." });
+      sendLocalizedError(res, 403, null, "Accesso negato.", "server.static.accessDenied");
       return;
     }
 
     fs.readFile(filePath, (error, data) => {
       if (error) {
-        sendJson(res, 404, { error: "File non trovato." });
+        sendLocalizedError(res, 404, null, "File non trovato.", "server.static.fileNotFound");
         return;
       }
 
@@ -1035,6 +1076,7 @@ function createApp(options = {}) {
         ".html": "text/html; charset=utf-8",
         ".css": "text/css; charset=utf-8",
         ".js": "text/javascript; charset=utf-8",
+        ".mjs": "text/javascript; charset=utf-8",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".png": "image/png",
@@ -1062,7 +1104,7 @@ function createApp(options = {}) {
         return null;
       })
       .catch((error) => {
-        sendJson(res, 500, { error: error.message || "Errore interno." });
+        sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
       });
   }
 

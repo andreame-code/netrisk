@@ -12,6 +12,8 @@ module.exports = defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
+    locale: "it-IT",
+    timezoneId: "Europe/Rome",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

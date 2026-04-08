@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Frontline Dominion - Profilo</title>
+    <title data-i18n="profile.title">Frontline Dominion - Profilo</title>
     <link rel="stylesheet" href="/style.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
@@ -13,90 +13,90 @@
       <main class="page-shell top-nav-page-shell">
         <section class="panel top-nav-bar">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-            <p class="eyebrow">NetRisk</p>
-            <h1>Frontline Dominion</h1>
+            <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
+            <h1 data-i18n="app.title">Frontline Dominion</h1>
           </a>
 
-          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali">
+          <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
             <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
             <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
             <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
           </nav>
 
           <div class="top-nav-zone top-nav-actions">
-              <form id="header-login-form" class="top-nav-auth-form">
-                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" />
-                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" />
-                <button type="submit" id="header-login-button" class="ghost-button top-nav-login">Accedi</button>
-                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register">Registrati</a>
+              <form id="header-login-form" class="top-nav-auth-form" method="post">
+                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
+                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+                <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
+                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
               </form>
-              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden>Esci</button>
-              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente">C</div>
+              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
+              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
             </div>
         </section>
         <section class="profile-shell panel" data-testid="player-profile-shell">
           <div class="profile-hero">
             <div class="profile-hero-copy">
-              <p class="eyebrow profile-section-eyebrow">Command Dossier</p>
-              <h2 id="profile-heading">Comandante</h2>
-              <p id="profile-subtitle" class="stage-copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
+              <p class="eyebrow profile-section-eyebrow" data-i18n="profile.eyebrow">Command Dossier</p>
+              <h2 id="profile-heading" data-i18n="profile.heading">Comandante</h2>
+              <p id="profile-subtitle" class="stage-copy" data-i18n="profile.subtitle">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
             </div>
             <div class="page-header-actions compact-actions profile-hero-actions">
-              <a href="/lobby.html" class="ghost-button profile-back-button">Torna alla lobby</a>
-              <a href="/new-game.html" class="ghost-button lobby-create-button">Crea partita</a>
+              <a href="/lobby.html" class="ghost-button profile-back-button" data-i18n="profile.backToLobby">Torna alla lobby</a>
+              <a href="/new-game.html" class="ghost-button lobby-create-button" data-i18n="profile.createGame">Crea partita</a>
             </div>
           </div>
 
           <div class="content-meta-line profile-meta-line">
-            <span id="profile-name">Caricamento profilo...</span>
+            <span id="profile-name" data-i18n="profile.nameLoading">Caricamento profilo...</span>
             <span class="status-divider" aria-hidden="true"></span>
-            <span id="auth-status">Verifica della sessione in corso...</span>
+            <span id="auth-status" data-i18n="profile.authStatus">Verifica della sessione in corso...</span>
           </div>
-          <div id="profile-feedback" class="profile-feedback">Caricamento dati giocatore...</div>
+          <div id="profile-feedback" class="profile-feedback" data-i18n="profile.feedback">Caricamento dati giocatore...</div>
           <section id="profile-content" class="profile-content" hidden>
             <div class="profile-summary-card">
-              <p class="eyebrow profile-section-eyebrow">Panoramica</p>
-              <h3>Dossier operativo</h3>
-              <p id="profile-copy" class="stage-copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
+              <p class="eyebrow profile-section-eyebrow" data-i18n="profile.summary.eyebrow">Panoramica</p>
+              <h3 data-i18n="profile.summary.heading">Dossier operativo</h3>
+              <p id="profile-copy" class="stage-copy" data-i18n="profile.summary.copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
             </div>
 
-            <div class="profile-command-strip" aria-label="Panoramica profilo">
+            <div class="profile-command-strip" aria-label="Panoramica profilo" data-i18n-aria-label="profile.overviewAria">
               <article class="profile-command-card profile-command-card-accent">
-                <span class="profile-command-label">Comandante</span>
-                <strong id="profile-command-name">In attesa</strong>
-                <p id="profile-command-status">Accesso richiesto per consultare il dossier.</p>
+                <span class="profile-command-label" data-i18n="profile.commander.label">Comandante</span>
+                <strong id="profile-command-name" data-i18n="profile.commander.value">In attesa</strong>
+                <p id="profile-command-status" data-i18n="profile.commander.copy">Accesso richiesto per consultare il dossier.</p>
               </article>
               <article class="profile-command-card">
-                <span class="profile-command-label">Fronte attivo</span>
-                <strong id="profile-command-focus">Nessuna partita</strong>
-                <p id="profile-command-focus-note">Apri una sessione per riprendere il teatro corrente.</p>
+                <span class="profile-command-label" data-i18n="profile.front.label">Fronte attivo</span>
+                <strong id="profile-command-focus" data-i18n="profile.front.value">Nessuna partita</strong>
+                <p id="profile-command-focus-note" data-i18n="profile.front.copy">Apri una sessione per riprendere il teatro corrente.</p>
               </article>
               <article class="profile-command-card">
-                <span class="profile-command-label">Direttiva</span>
-                <strong id="profile-command-directive">Mantieni il comando</strong>
-                <p id="profile-command-directive-note">Lobby e Game restano i due accessi rapidi per creare o riaprire una campagna.</p>
+                <span class="profile-command-label" data-i18n="profile.directive.label">Direttiva</span>
+                <strong id="profile-command-directive" data-i18n="profile.directive.value">Mantieni il comando</strong>
+                <p id="profile-command-directive-note" data-i18n="profile.directive.copy">Lobby e Game restano i due accessi rapidi per creare o riaprire una campagna.</p>
               </article>
             </div>
 
             <div class="profile-metrics-grid">
               <article class="profile-metric-card">
-                <span class="profile-metric-label">Partite giocate</span>
+                <span class="profile-metric-label" data-i18n="profile.metrics.gamesPlayed">Partite giocate</span>
                 <strong id="metric-games-played" class="profile-metric-value">0</strong>
               </article>
               <article class="profile-metric-card accent-win">
-                <span class="profile-metric-label">Vittorie</span>
+                <span class="profile-metric-label" data-i18n="profile.metrics.wins">Vittorie</span>
                 <strong id="metric-wins" class="profile-metric-value">0</strong>
               </article>
               <article class="profile-metric-card accent-loss">
-                <span class="profile-metric-label">Sconfitte</span>
+                <span class="profile-metric-label" data-i18n="profile.metrics.losses">Sconfitte</span>
                 <strong id="metric-losses" class="profile-metric-value">0</strong>
               </article>
               <article class="profile-metric-card accent-neutral">
-                <span class="profile-metric-label">In corso</span>
+                <span class="profile-metric-label" data-i18n="profile.metrics.inProgress">In corso</span>
                 <strong id="metric-in-progress" class="profile-metric-value">0</strong>
               </article>
               <article class="profile-metric-card accent-gold wide-card">
-                <span class="profile-metric-label">Win rate</span>
+                <span class="profile-metric-label" data-i18n="profile.metrics.winRate">Win rate</span>
                 <strong id="metric-win-rate" class="profile-metric-value">--</strong>
               </article>
             </div>
@@ -105,35 +105,35 @@
               <article class="profile-note-card profile-games-card">
                 <div class="profile-games-head">
                   <div>
-                    <p class="eyebrow profile-section-eyebrow">Partite</p>
-                    <h3>Partite a cui stai partecipando</h3>
+                    <p class="eyebrow profile-section-eyebrow" data-i18n="profile.games.eyebrow">Partite</p>
+                    <h3 data-i18n="profile.games.heading">Partite a cui stai partecipando</h3>
                   </div>
-                  <span id="profile-games-count" class="badge">0 attive</span>
+                  <span id="profile-games-count" class="badge" data-i18n="profile.games.count">0 attive</span>
                 </div>
-                <div id="profile-games-empty" class="profile-games-empty">Nessuna partita attiva collegata al tuo profilo.</div>
+                <div id="profile-games-empty" class="profile-games-empty" data-i18n="profile.games.empty">Nessuna partita attiva collegata al tuo profilo.</div>
                 <div id="profile-games-list" class="profile-games-list" hidden></div>
               </article>
               <article class="profile-note-card">
-                <h3>Spazio comandante</h3>
-                <p>Usa questo spazio come punto rapido per leggere il tuo stato operativo prima di rientrare in lobby o sul tabellone.</p>
+                <h3 data-i18n="profile.space.heading">Spazio comandante</h3>
+                <p data-i18n="profile.space.copy">Usa questo spazio come punto rapido per leggere il tuo stato operativo prima di rientrare in lobby o sul tabellone.</p>
               </article>
             </div>
 
             <div class="profile-intel-grid">
               <article class="profile-note-card profile-intel-card">
-                <p class="eyebrow profile-section-eyebrow">Ranking</p>
-                <h3 id="profile-ranking-title">Recluta</h3>
-                <p id="profile-ranking-copy">Completa campagne e migliora il win rate per scalare il grado operativo.</p>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.ranking.eyebrow">Ranking</p>
+                <h3 id="profile-ranking-title" data-i18n="profile.ranking.title">Recluta</h3>
+                <p id="profile-ranking-copy" data-i18n="profile.ranking.copy">Completa campagne e migliora il win rate per scalare il grado operativo.</p>
               </article>
               <article class="profile-note-card profile-intel-card">
-                <p class="eyebrow profile-section-eyebrow">Dettaglio mappe</p>
-                <h3 id="profile-map-title">Nessuna mappa osservata</h3>
-                <p id="profile-map-copy">Apri o completa una partita per costruire una prima lettura dei fronti giocati.</p>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.map.eyebrow">Dettaglio mappe</p>
+                <h3 id="profile-map-title" data-i18n="profile.map.title">Nessuna mappa osservata</h3>
+                <p id="profile-map-copy" data-i18n="profile.map.copy">Apri o completa una partita per costruire una prima lettura dei fronti giocati.</p>
               </article>
               <article class="profile-note-card profile-intel-card">
-                <p class="eyebrow profile-section-eyebrow">Statistiche avanzate</p>
-                <h3 id="profile-advanced-title">Quadro operativo</h3>
-                <p id="profile-advanced-copy">Una lettura sintetica del ritmo campagna tra fronti aperti, risultati e continuita operativa.</p>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.advanced.eyebrow">Statistiche avanzate</p>
+                <h3 id="profile-advanced-title" data-i18n="profile.advanced.title">Quadro operativo</h3>
+                <p id="profile-advanced-copy" data-i18n="profile.advanced.copy">Una lettura sintetica del ritmo campagna tra fronti aperti, risultati e continuita operativa.</p>
               </article>
             </div>
           </section>
@@ -141,7 +141,7 @@
       </main>
     </div>
 
-    <script type="module" src="/layout.js"></script>
-    <script type="module" src="/profile.js"></script>
+    <script type="module" src="/layout.mjs"></script>
+    <script type="module" src="/profile.mjs"></script>
   </body>
 </html>

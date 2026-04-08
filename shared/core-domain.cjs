@@ -55,6 +55,7 @@ function createGameState(input = {}) {
     reinforcementPool: input.reinforcementPool || 0,
     winnerId: input.winnerId || null,
     log: input.log || [],
+    logEntries: Array.isArray(input.logEntries) ? input.logEntries : [],
     lastAction: input.lastAction || null,
     pendingConquest: input.pendingConquest || null,
     fortifyUsed: Boolean(input.fortifyUsed),
