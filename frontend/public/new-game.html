@@ -76,8 +76,13 @@
                 <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" data-i18n-placeholder="newGame.name.placeholder" />
               </label>
               <label class="field-stack">
+                <span>Ruleset</span>
+                <select id="setup-ruleset"></select>
+              </label>
+              <div id="setup-ruleset-details" class="map-setup-card" aria-live="polite"></div>
+              <label class="field-stack">
                 <span data-i18n="newGame.map.label">Mappa</span>
-                <select id="setup-map"></select>
+                <select id="setup-map" disabled></select>
               </label>
               <div id="setup-map-details" class="map-setup-card" aria-live="polite"></div>
               <label class="field-stack">
@@ -106,6 +111,7 @@
 
           <div class="new-game-actions">
             <a href="/lobby.html" class="ghost-button" data-i18n="common.cancel">Annulla</a>
+            <a href="/engine.html" class="ghost-button">Engine Studio</a>
             <button type="submit" form="new-game-form" id="submit-new-game" class="ghost-button" data-i18n="newGame.createOpen">Crea e apri</button>
           </div>
         </section>

@@ -2,6 +2,9 @@ import { t, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   maps: [],
+  combatRules: [],
+  gameRulesets: [],
+  victoryRules: [],
   user: null,
   creating: false,
   sessionReady: false
@@ -17,6 +20,8 @@ const elements = {
   headerAuthPassword: document.querySelector("#header-auth-password"),
   headerLoginButton: document.querySelector("#header-login-button"),
   logoutButton: document.querySelector("#logout-button"),
+  ruleset: document.querySelector("#setup-ruleset"),
+  rulesetDetails: document.querySelector("#setup-ruleset-details"),
   map: document.querySelector("#setup-map"),
   mapDetails: document.querySelector("#setup-map-details"),
   playerSlots: document.querySelector("#setup-player-slots"),
@@ -83,8 +88,53 @@ function updateSubmitState() {
   elements.submit.disabled = state.creating || !state.sessionReady || !state.user;
 }
 
+function selectedRuleset() {
+  return state.gameRulesets.find((ruleset) => ruleset.id === elements.ruleset.value) || null;
+}
+
 function selectedMapSummary() {
   return state.maps.find((map) => map.id === elements.map.value) || null;
+}
+
+function selectedCombatRule() {
+  const ruleset = selectedRuleset();
+  return state.combatRules.find((rule) => rule.id === ruleset?.combatRuleId) || null;
+}
+
+function selectedVictoryRule() {
+  const ruleset = selectedRuleset();
+  return state.victoryRules.find((rule) => rule.id === ruleset?.victoryRuleId) || null;
+}
+
+function syncMapFromRuleset() {
+  const ruleset = selectedRuleset();
+  if (!ruleset || !elements.map) {
+    return;
+  }
+
+  elements.map.value = ruleset.mapId || "";
+}
+
+function renderRulesetDetails() {
+  const ruleset = selectedRuleset();
+  if (!ruleset) {
+    elements.rulesetDetails.innerHTML = "";
+    return;
+  }
+
+  const combatRule = selectedCombatRule();
+  const victoryRule = selectedVictoryRule();
+  elements.rulesetDetails.innerHTML =
+    '<div class="map-setup-card-head">' +
+      '<strong>' + ruleset.name + '</strong>' +
+      '<span class="badge">Engine Ruleset</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">' + (ruleset.description || "Composizione pronta di mappa, obiettivo e regole combattimento.") + '</p>' +
+    '<ul class="map-setup-bonus-list">' +
+      '<li><span>Mappa</span><strong>' + (state.maps.find((map) => map.id === ruleset.mapId)?.name || ruleset.mapId) + '</strong></li>' +
+      '<li><span>Vittoria</span><strong>' + (victoryRule?.name || ruleset.victoryRuleId) + '</strong></li>' +
+      '<li><span>Combattimento</span><strong>' + (combatRule?.name || ruleset.combatRuleId) + '</strong></li>' +
+    '</ul>';
 }
 
 function renderMapDetails() {
@@ -120,6 +170,7 @@ function readConfig() {
 
   return {
     name: elements.gameName.value.trim() || undefined,
+    rulesetId: elements.ruleset.value,
     mapId: elements.map.value,
     totalPlayers,
     players
@@ -147,7 +198,13 @@ async function loadOptions() {
   }
 
   state.maps = data.maps || [];
+  state.gameRulesets = data.gameRulesets || [];
+  state.combatRules = data.combatRules || data.diceRuleSets || [];
+  state.victoryRules = data.victoryRules || [];
+  elements.ruleset.innerHTML = state.gameRulesets.map((ruleset) => '<option value="' + ruleset.id + '">' + ruleset.name + '</option>').join("");
   elements.map.innerHTML = state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join("");
+  syncMapFromRuleset();
+  renderRulesetDetails();
   renderMapDetails();
 }
 
@@ -198,6 +255,11 @@ async function loginWithCredentials(username, password) {
 }
 
 elements.totalPlayers.addEventListener("change", renderSlots);
+elements.ruleset.addEventListener("change", () => {
+  syncMapFromRuleset();
+  renderRulesetDetails();
+  renderMapDetails();
+});
 elements.map.addEventListener("change", renderMapDetails);
 elements.playerSlots.addEventListener("change", (event) => {
   if (!event.target.matches('[data-role="type"]')) {

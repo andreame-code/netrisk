@@ -7,7 +7,8 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
+const { createConfiguredInitialStateAsync, listGameOptions } = require("./new-game-config.cjs");
+const { createEngineContentStore } = require("./engine-content-store.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
@@ -27,6 +28,7 @@ const {
   tradeCardSet
 } = require("./engine/game-engine.cjs");
 const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
+const { hasRuleModifier } = require("./engine/runtime-config.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
@@ -189,6 +191,10 @@ function createApp(options = {}) {
   });
   const gamesFile = options.gamesFile || path.join(__dirname, "..", "data", "games.json");
   const gameSessions = createGameSessionStore({
+    datastore,
+    dataFile: gamesFile
+  });
+  const engineContent = createEngineContentStore({
     datastore,
     dataFile: gamesFile
   });
@@ -541,7 +547,229 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, { maps: listSupportedMaps(), diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
+      sendJson(res, 200, await listGameOptions({ contentStore: engineContent }));
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/engine/catalog") {
+      sendJson(res, 200, await engineContent.listCatalog());
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/engine/maps") {
+      sendJson(res, 200, { maps: await engineContent.listMaps() });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/engine/piece-themes") {
+      sendJson(res, 200, { pieceThemes: await engineContent.listPieceThemes() });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/engine/victory-rules") {
+      sendJson(res, 200, { victoryRules: await engineContent.listVictoryRules() });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/engine/game-rulesets") {
+      sendJson(res, 200, { gameRulesets: await engineContent.listGameRulesets() });
+      return;
+    }
+
+    const engineMapMatch = url.pathname.match(/^\/api\/engine\/maps\/([^/]+)$/);
+    const enginePieceThemeMatch = url.pathname.match(/^\/api\/engine\/piece-themes\/([^/]+)$/);
+    const engineVictoryRuleMatch = url.pathname.match(/^\/api\/engine\/victory-rules\/([^/]+)$/);
+    const engineRulesetMatch = url.pathname.match(/^\/api\/engine\/game-rulesets\/([^/]+)$/);
+
+    if (req.method === "POST" && url.pathname === "/api/engine/maps") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 201, { ok: true, map: await engineContent.createOrUpdateMap(body) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Salvataggio mappa non riuscito.", "engine.map.saveFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PUT" && engineMapMatch) {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 200, { ok: true, map: await engineContent.createOrUpdateMap(body, decodeURIComponent(engineMapMatch[1])) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Aggiornamento mappa non riuscito.", "engine.map.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "DELETE" && engineMapMatch) {
+      const authContext = await requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        await engineContent.deleteMap(decodeURIComponent(engineMapMatch[1]));
+        sendJson(res, 200, { ok: true });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Eliminazione mappa non riuscita.", "engine.map.deleteFailed");
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/engine/piece-themes") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 201, { ok: true, pieceTheme: await engineContent.createOrUpdatePieceTheme(body) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Salvataggio pedina non riuscito.", "engine.pieceTheme.saveFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PUT" && enginePieceThemeMatch) {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 200, { ok: true, pieceTheme: await engineContent.createOrUpdatePieceTheme(body, decodeURIComponent(enginePieceThemeMatch[1])) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Aggiornamento pedina non riuscito.", "engine.pieceTheme.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "DELETE" && enginePieceThemeMatch) {
+      const authContext = await requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        await engineContent.deletePieceTheme(decodeURIComponent(enginePieceThemeMatch[1]));
+        sendJson(res, 200, { ok: true });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Eliminazione pedina non riuscita.", "engine.pieceTheme.deleteFailed");
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/engine/victory-rules") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 201, { ok: true, victoryRule: await engineContent.createOrUpdateVictoryRule(body) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Salvataggio regola vittoria non riuscito.", "engine.victoryRule.saveFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PUT" && engineVictoryRuleMatch) {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 200, { ok: true, victoryRule: await engineContent.createOrUpdateVictoryRule(body, decodeURIComponent(engineVictoryRuleMatch[1])) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Aggiornamento regola vittoria non riuscito.", "engine.victoryRule.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "DELETE" && engineVictoryRuleMatch) {
+      const authContext = await requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        await engineContent.deleteVictoryRule(decodeURIComponent(engineVictoryRuleMatch[1]));
+        sendJson(res, 200, { ok: true });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Eliminazione regola vittoria non riuscita.", "engine.victoryRule.deleteFailed");
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/engine/game-rulesets") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 201, { ok: true, gameRuleset: await engineContent.createOrUpdateGameRuleset(body) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Salvataggio ruleset non riuscito.", "engine.ruleset.saveFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PUT" && engineRulesetMatch) {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        sendJson(res, 200, { ok: true, gameRuleset: await engineContent.createOrUpdateGameRuleset(body, decodeURIComponent(engineRulesetMatch[1])) });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Aggiornamento ruleset non riuscito.", "engine.ruleset.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "DELETE" && engineRulesetMatch) {
+      const authContext = await requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("game:create", { user: authContext.user });
+        await engineContent.deleteGameRuleset(decodeURIComponent(engineRulesetMatch[1]));
+        sendJson(res, 200, { ok: true });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Eliminazione ruleset non riuscita.", "engine.ruleset.deleteFailed");
+      }
       return;
     }
 
@@ -554,7 +782,7 @@ function createApp(options = {}) {
 
       try {
         const policy = authorize("game:create", { user: authContext.user });
-        const configured = createConfiguredInitialState(body);
+        const configured = await createConfiguredInitialStateAsync(body, { contentStore: engineContent });
         const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
         if (!creatorJoin.ok) {
           throw createLocalizedError(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.", creatorJoin.errorKey || "server.game.create.creatorJoinFailed", creatorJoin.errorParams);
@@ -921,6 +1149,11 @@ function createApp(options = {}) {
       }
 
       if (type === "attack" || type === "attackBanzai") {
+        if (type === "attackBanzai" && !hasRuleModifier(gameContext.state, "banzai-attack")) {
+          sendLocalizedError(res, 400, null, "Il ruleset corrente non abilita l'attacco banzai.", "game.attack.banzaiDisabled");
+          return;
+        }
+
         let random;
         if (process.env.E2E === "true" && Array.isArray(nextAttackRolls) && nextAttackRolls.length === 2) {
           const queuedRolls = nextAttackRolls.slice();

@@ -1,15 +1,21 @@
 const { test, expect } = require("@playwright/test");
-const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { createEngineRuleset, registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
   await page.goto("/game.html");
   const owner = uniqueUser(`wcv_${suffix}`);
   await registerAndLogin(page, owner);
+  const ruleset = await createEngineRuleset(page, {
+    name: `World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`,
+    description: "World Classic visual coverage",
+    mapId: "world-classic"
+  });
   await page.goto("/new-game.html");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
-  await page.locator("#setup-map").selectOption("world-classic");
-  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
+  await page.locator("#setup-ruleset").selectOption(ruleset.id);
+  await expect(page.locator("#setup-map")).toHaveValue("world-classic");
+  await page.locator("#setup-game-name").fill(`World Classic Visual Match ${suffix} ${Date.now().toString(36).slice(-4)}`);
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 

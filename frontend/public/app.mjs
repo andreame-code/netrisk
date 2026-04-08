@@ -1013,7 +1013,9 @@ function render() {
   }
   elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
   if (elements.attackBanzaiButton) {
-    elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
+    const banzaiEnabled = Array.isArray(snapshot?.ruleModifiers) ? snapshot.ruleModifiers.includes("banzai-attack") : true;
+    elements.attackBanzaiButton.hidden = !banzaiEnabled;
+    elements.attackBanzaiButton.disabled = !banzaiEnabled || !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || (snapshot?.reinforcementPool || 0) > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
     elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
   }
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;

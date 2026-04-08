@@ -51,6 +51,9 @@ function createGameState(input = {}) {
     mapPositions: input.mapPositions || {},
     mapImageUrl: input.mapImageUrl || null,
     mapAspectRatio: input.mapAspectRatio || null,
+    gameConfig: input.gameConfig || null,
+    gameRulesetId: input.gameRulesetId || null,
+    pieceThemeId: input.pieceThemeId || null,
     currentTurnIndex: input.currentTurnIndex || 0,
     reinforcementPool: input.reinforcementPool || 0,
     winnerId: input.winnerId || null,
@@ -64,7 +67,8 @@ function createGameState(input = {}) {
     discardPile: Array.isArray(input.discardPile) ? input.discardPile : [],
     hands: input.hands || {},
     tradeCount: Number.isInteger(input.tradeCount) ? input.tradeCount : 0,
-    conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn)
+    conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn),
+    resolvedGameConfig: input.resolvedGameConfig || null
   };
 }
 

@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-resolution.cjs");
 const { compareCombatDice, rollCombatDice } = require("../../../backend/engine/combat-dice.cjs");
-const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet } = require("../../../shared/dice.cjs");
+const { STANDARD_DICE_RULE_SET_ID, THREE_DEFENSE_DICE_RULE_SET_ID, getDiceRuleSet } = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 
@@ -92,6 +92,15 @@ register("standard dice rule set espone i limiti classici di combattimento", () 
   assert.equal(ruleSet.id, STANDARD_DICE_RULE_SET_ID);
   assert.equal(ruleSet.attackerMaxDice, 3);
   assert.equal(ruleSet.defenderMaxDice, 2);
+  assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
+  assert.equal(ruleSet.defenderWinsTies, true);
+});
+
+register("three-defense rule set espone la difesa fino a 3 dadi", () => {
+  const ruleSet = getDiceRuleSet(THREE_DEFENSE_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.id, THREE_DEFENSE_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.attackerMaxDice, 3);
+  assert.equal(ruleSet.defenderMaxDice, 3);
   assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
   assert.equal(ruleSet.defenderWinsTies, true);
 });

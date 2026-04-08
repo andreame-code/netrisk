@@ -1,5 +1,5 @@
-const { getDiceRuleSet } = require("../../shared/dice.cjs");
 const { resolveAttack } = require("./game-engine.cjs");
+const { getStateCombatRule } = require("./runtime-config.cjs");
 
 function buildBanzaiRound(roundIndex, combat) {
   return {
@@ -30,7 +30,7 @@ function normalizeRequestedAttackDice(state, fromId, requestedAttackDice) {
     return requestedAttackDice;
   }
 
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = getStateCombatRule(state);
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.max(0, Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve));
   if (maxAttackDice < 1) {

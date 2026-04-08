@@ -1950,8 +1950,123 @@ register("API game options espone setup base per nuova partita", async () => {
     assert.deepEqual(payload.maps, listSupportedMaps());
     assert.equal(Array.isArray(payload.diceRuleSets), true);
     assert.equal(payload.diceRuleSets[0].id, "standard");
+    assert.equal(Array.isArray(payload.combatRules), true);
+    assert.equal(payload.combatRules.some((rule) => rule.id === "standard-3-defense"), true);
+    assert.equal(Array.isArray(payload.gameRulesets), true);
+    assert.equal(payload.gameRulesets.some((ruleset) => ruleset.id === "classic-three-defense"), true);
+    assert.equal(Array.isArray(payload.victoryRules), true);
+    assert.equal(payload.victoryRules.some((rule) => rule.id === "domination"), true);
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
+  });
+});
+
+register("API engine catalog valida le mappe custom e crea partite da ruleset custom", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("engine"));
+
+    const invalidMapResponse = await fetch(baseUrl + "/api/engine/maps", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "Broken Front",
+        territories: [
+          {
+            id: "alpha",
+            name: "Alpha",
+            continentId: "north",
+            neighbors: ["ghost"]
+          }
+        ],
+        continents: [
+          {
+            id: "north",
+            name: "North",
+            bonus: 2,
+            territoryIds: ["alpha"]
+          }
+        ],
+        positions: {
+          alpha: { x: 30, y: 40 }
+        }
+      })
+    });
+    assert.equal(invalidMapResponse.status, 400);
+    const invalidMapPayload = await invalidMapResponse.json();
+    assert.equal(invalidMapPayload.messageKey, "engine.map.unknownNeighbor");
+
+    const victoryRuleResponse = await fetch(baseUrl + "/api/engine/victory-rules", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "Hold Four Territories",
+        moduleId: "capture-territories",
+        description: "Win after controlling four territories.",
+        config: {
+          targetTerritoryCount: 4
+        }
+      })
+    });
+    assert.equal(victoryRuleResponse.status, 201);
+    const victoryRulePayload = await victoryRuleResponse.json();
+
+    const rulesetResponse = await fetch(baseUrl + "/api/engine/game-rulesets", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "World Triple Defense",
+        description: "World Classic with 3-dice defense.",
+        mapId: "world-classic",
+        pieceThemeId: "classic-commanders",
+        victoryRuleId: victoryRulePayload.victoryRule.id,
+        combatRuleId: "standard-3-defense",
+        ruleModifierIds: []
+      })
+    });
+    assert.equal(rulesetResponse.status, 201);
+    const rulesetPayload = await rulesetResponse.json();
+
+    const catalogResponse = await fetch(baseUrl + "/api/engine/catalog");
+    assert.equal(catalogResponse.status, 200);
+    const catalogPayload = await catalogResponse.json();
+    assert.equal(catalogPayload.gameRulesets.some((ruleset) => ruleset.id === rulesetPayload.gameRuleset.id), true);
+    assert.equal(catalogPayload.modules.victory.some((manifest) => manifest.id === "capture-territories"), true);
+
+    const createResponse = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "Custom Engine Match",
+        rulesetId: rulesetPayload.gameRuleset.id,
+        totalPlayers: 2,
+        players: [
+          { type: "human" },
+          { type: "ai" }
+        ]
+      })
+    });
+    assert.equal(createResponse.status, 201);
+    const createPayload = await createResponse.json();
+    assert.equal(createPayload.config.gameRulesetId, rulesetPayload.gameRuleset.id);
+    assert.equal(createPayload.state.gameConfig.rulesetId, rulesetPayload.gameRuleset.id);
+    assert.equal(createPayload.state.gameConfig.mapId, "world-classic");
+    assert.equal(createPayload.state.gameConfig.victoryRuleName, "Hold Four Territories");
+    assert.equal(createPayload.state.gameConfig.diceRuleSetId, "standard-3-defense");
+    assert.equal(createPayload.state.diceRuleSet.id, "standard-3-defense");
+    assert.equal(createPayload.config.selectedCombatRule.id, "standard-3-defense");
+    assert.equal(createPayload.config.selectedVictoryRule.id, victoryRulePayload.victoryRule.id);
+    assert.equal(createPayload.state.map.length, worldClassicMap.territories.length);
+
+    const deleteVictoryRuleResponse = await fetch(
+      baseUrl + "/api/engine/victory-rules/" + encodeURIComponent(victoryRulePayload.victoryRule.id),
+      {
+        method: "DELETE",
+        headers: authHeaders(session.sessionToken)
+      }
+    );
+    assert.equal(deleteVictoryRuleResponse.status, 400);
+    const deleteVictoryRulePayload = await deleteVictoryRuleResponse.json();
+    assert.equal(deleteVictoryRulePayload.messageKey, "engine.victoryRule.inUse");
   });
 });
 

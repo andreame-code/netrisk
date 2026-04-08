@@ -334,9 +334,18 @@ function createDatastore(options = {}) {
       const row = statements.getAppState.get("activeGameId");
       return row ? parseJson(row.value_json, null) : null;
     },
+    getAppStateValue(key, fallbackValue = null) {
+      const row = statements.getAppState.get(String(key || ""));
+      return row ? parseJson(row.value_json, fallbackValue) : fallbackValue;
+    },
     setActiveGameId(gameId) {
       transaction(() => {
         statements.setAppState.run("activeGameId", JSON.stringify(gameId || null));
+      });
+    },
+    setAppStateValue(key, value) {
+      transaction(() => {
+        statements.setAppState.run(String(key || ""), JSON.stringify(value));
       });
     }
   };

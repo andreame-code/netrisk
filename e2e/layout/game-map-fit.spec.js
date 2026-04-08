@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
+const { createEngineRuleset, registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers.js");
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
@@ -7,9 +7,15 @@ async function openWorldClassicGame(page, suffix) {
   const normalizedSuffix = String(suffix).replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase();
   const owner = uniqueUser(`mf_${normalizedSuffix}`);
   await registerAndLogin(page, owner);
+  const ruleset = await createEngineRuleset(page, {
+    name: `World Classic Fit ${normalizedSuffix} ${Date.now().toString(36).slice(-4)}`,
+    description: "World Classic map-fit coverage",
+    mapId: "world-classic"
+  });
   await page.goto("/new-game.html");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
-  await page.locator("#setup-map").selectOption("world-classic");
+  await page.locator("#setup-ruleset").selectOption(ruleset.id);
+  await expect(page.locator("#setup-map")).toHaveValue("world-classic");
   await page.locator("#setup-game-name").fill(`Map Fit ${suffix} ${Date.now().toString(36).slice(-4)}`);
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
