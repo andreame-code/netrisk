@@ -1,4 +1,4 @@
-import { formatDate, t, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
+import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
@@ -891,9 +891,7 @@ function render() {
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
   fitMapBoardToViewport();
-  const logEntries = Array.isArray(snapshot?.logEntries) && snapshot.logEntries.length
-    ? snapshot.logEntries.map((entry) => translateMessagePayload(entry, entry.message || ""))
-    : (snapshot?.log || []);
+  const logEntries = translateGameLogEntries(snapshot);
   elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
