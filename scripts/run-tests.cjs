@@ -46,6 +46,7 @@ const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
 const { listSupportedMaps } = require("../shared/maps/index.cjs");
+const { listAuthProviderIds } = require("../shared/auth-providers.cjs");
 
 const tests = [];
 const TEST_PASSWORD = "Secret123!";
@@ -1952,6 +1953,17 @@ register("API game options espone setup base per nuova partita", async () => {
     assert.equal(payload.diceRuleSets[0].id, "standard");
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
+  });
+});
+
+register("API auth providers espone password e provider social supportati", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(baseUrl + "/api/auth/providers");
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.providers.map((provider) => provider.id), listAuthProviderIds());
+    assert.equal(payload.providers.some((provider) => provider.id === "google" && provider.type === "social"), true);
+    assert.equal(payload.providers.some((provider) => provider.id === "discord" && provider.type === "social"), true);
   });
 });
 

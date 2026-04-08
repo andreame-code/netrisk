@@ -31,6 +31,7 @@ const {
 } = require("./engine/game-engine.cjs");
 const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
+const { listAuthProviderIds, listAuthProviders } = require("../shared/auth-providers.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
 loadLocalEnv();
@@ -787,6 +788,13 @@ function createApp(options = {}) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/providers") {
+      sendJson(res, 200, {
+        providers: listAuthProviders()
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/profile") {
       const authContext = await requireAuth(req, res, {});
       if (!authContext) {
@@ -854,7 +862,7 @@ function createApp(options = {}) {
       sendJson(res, 201, {
         ok: true,
         user: result.user,
-        nextAuthProviders: ["password", "email", "google", "discord"]
+        nextAuthProviders: listAuthProviderIds()
       });
       return;
     }
@@ -870,7 +878,7 @@ function createApp(options = {}) {
       sendJson(res, 200, {
         ok: true,
         user: result.user,
-        availableAuthProviders: ["password", "email", "google", "discord"]
+        availableAuthProviders: listAuthProviderIds()
       }, {
         "Set-Cookie": buildSessionCookie(req, result.sessionToken)
       });
