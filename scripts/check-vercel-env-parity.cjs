@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { REQUIRED_DEPLOY_ENV_KEYS } = require("../backend/required-runtime-env.cjs");
+const { REQUIRED_DEPLOY_ENV_KEYS, missingRequiredDeployEnv } = require("../backend/required-runtime-env.cjs");
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -58,6 +58,12 @@ function summarizeMissing(keys, source, target) {
   return keys.filter((key) => source[key] && !target[key]);
 }
 
+function requiredKeysFor(values) {
+  return missingRequiredDeployEnv(values)
+    .concat(REQUIRED_DEPLOY_ENV_KEYS.filter((key) => values[key]))
+    .filter((key, index, items) => items.indexOf(key) === index);
+}
+
 function main() {
   const branch = process.env.VERCEL_ENV_CHECK_BRANCH || currentBranch();
   const productionFile = tempFile(`.vercel.env-check-production-${process.pid}.env`);
@@ -66,10 +72,13 @@ function main() {
   try {
     const production = pullEnv(productionFile, "production");
     const preview = pullEnv(previewFile, "preview", branch);
+    const productionRequiredKeys = requiredKeysFor(production);
+    const previewRequiredKeys = requiredKeysFor(preview);
 
-    const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !production[key]);
-    const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !preview[key]);
-    const missingFromPreviewComparedToProduction = summarizeMissing(REQUIRED_DEPLOY_ENV_KEYS, production, preview);
+    const missingInProduction = missingRequiredDeployEnv(production);
+    const missingInPreview = missingRequiredDeployEnv(preview);
+    const missingFromPreviewComparedToProduction = summarizeMissing(productionRequiredKeys, production, preview)
+      .filter((key) => previewRequiredKeys.includes(key));
 
     if (!missingInProduction.length && !missingInPreview.length && !missingFromPreviewComparedToProduction.length) {
       console.log(`Vercel env parity OK for branch ${branch}.`);
