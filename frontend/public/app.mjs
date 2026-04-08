@@ -264,6 +264,22 @@ function currentExpectedVersion() {
   return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
 }
 
+async function parseResponsePayload(response) {
+  const raw = await response.text();
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return {
+      error: raw,
+      code: "NON_JSON_RESPONSE"
+    };
+  }
+}
+
 function currentGamePayload() {
   return state.currentGameId ? { gameId: state.currentGameId } : {};
 }
@@ -1046,7 +1062,7 @@ async function fetchLatestStateSnapshot(options = {}) {
   const includeGameId = options.includeGameId !== false;
   const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
   const response = await fetch("/api/state" + query);
-  const data = await response.json();
+  const data = await parseResponsePayload(response);
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("game.errors.loadActiveGame")));
   }
@@ -1103,7 +1119,7 @@ async function send(path, payload = {}, options = {}) {
     body: options.method === "GET" ? undefined : JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const data = await parseResponsePayload(response);
   if (!response.ok) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
       applySnapshot(data.state, { clearPlayerIdentity: false });
@@ -1145,12 +1161,10 @@ async function loadGameList() {
     const requestedId = pendingRequestedGameId || requestedGameIdFromRoute();
     const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
     const response = await fetch("/api/games" + query);
+    const data = await parseResponsePayload(response);
     if (!response.ok) {
-      const payload = await response.json();
-      throw new Error(translateServerMessage(payload, t("lobby.errors.loadGames")));
+      throw new Error(translateServerMessage(data, t("lobby.errors.loadGames")));
     }
-
-    const data = await response.json();
     state.gameList = data.games || [];
     const activeGame = state.gameList.find((game) => game.id === data.activeGameId) || null;
     const canAutoSelectActiveGame = !activeGame
@@ -1178,11 +1192,10 @@ async function loadGameList() {
 async function restoreSession() {
   try {
     const response = await fetch("/api/auth/session");
+    const data = await parseResponsePayload(response);
     if (!response.ok) {
-      throw new Error(t("auth.sessionExpired"));
+      throw new Error(translateServerMessage(data, t("auth.sessionExpired")));
     }
-
-    const data = await response.json();
     setSession(data.user);
   } catch (error) {
     setSession(null);
