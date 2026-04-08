@@ -54,6 +54,7 @@ Applicazione disponibile su `http://localhost:3000`.
 npm start
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+npm run vercel:env:check
 npm test
 npm run test:gameplay
 npm run test:e2e
@@ -64,10 +65,28 @@ npm run test:all:e2e
 - `npm test`: suite standard del repository
 - `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
 - `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
+- `npm run vercel:env:check`: confronta le env richieste tra `production` e `preview` per il branch corrente
 - `npm run test:gameplay`: verifica del motore di gioco
 - `npm run test:e2e`: test Playwright sui flussi utente
 - `npm run test:all`: test repository + gameplay
 - `npm run test:all:e2e`: test repository + gameplay + e2e
+
+## Deploy Vercel
+
+Le preview Vercel usano gli stessi bootstrap checks del backend di produzione. Se un endpoint `/api/*` risponde con HTML o testo e il client mostra errori tipo `Unexpected token` durante il parse JSON, la causa piu probabile e una variabile mancante in `Preview`.
+
+Le env obbligatorie per i deploy Vercel sono:
+
+- `AUTH_ENCRYPTION_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DATASTORE_DRIVER`
+
+Non basta averle come secret globali o in `Production`: devono essere disponibili anche nell'ambiente `Preview` del progetto. Per verificare rapidamente la parita tra `production` e `preview` del branch corrente:
+
+```bash
+npm run vercel:env:check
+```
 
 ## Testing
 
