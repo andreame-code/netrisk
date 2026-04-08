@@ -1,3 +1,5 @@
+const { applyRuleHook } = require("./rule-modules/index.cjs");
+
 function validateState(state) {
   if (!state || typeof state !== "object") {
     throw new Error("Reinforcement calculation requires a valid game state.");
@@ -71,7 +73,7 @@ function calculateReinforcements(state, playerId) {
 
   const continentBonusTotal = continentBonuses.reduce((total, entry) => total + entry.bonus, 0);
 
-  return {
+  const breakdown = {
     playerId,
     playerName: player.name,
     territoryCount,
@@ -80,8 +82,17 @@ function calculateReinforcements(state, playerId) {
     minimumApplied,
     continentBonuses,
     continentBonusTotal,
+    moduleBonuses: [],
     totalReinforcements: baseReinforcements + continentBonusTotal
   };
+
+  applyRuleHook(state, "onCalculateReinforcements", {
+    player,
+    playerId,
+    breakdown
+  });
+
+  return breakdown;
 }
 
 module.exports = {

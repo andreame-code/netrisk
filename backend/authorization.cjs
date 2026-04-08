@@ -87,6 +87,22 @@ function canStartGame(actor, game) {
   return game.creatorUserId === actor.id;
 }
 
+function canManageCommunity(actor, community, membership = null) {
+  if (!actor || !actor.id || !community) {
+    return false;
+  }
+
+  if (actor.role === Roles.ADMIN) {
+    return true;
+  }
+
+  if (community.ownerUserId === actor.id) {
+    return true;
+  }
+
+  return Boolean(membership && membership.role === "owner");
+}
+
 function authorize(action, context = {}) {
   const actor = actorForUser(context.user);
 
@@ -148,6 +164,35 @@ function authorize(action, context = {}) {
     return { ok: true, actor };
   }
 
+  if (action === "community:create") {
+    if (!actor) {
+      const error = new Error("Sessione non valida.");
+      error.statusCode = 401;
+      error.code = "AUTH_REQUIRED";
+      throw error;
+    }
+
+    return { ok: true, actor };
+  }
+
+  if (action === "community:manage") {
+    if (!actor) {
+      const error = new Error("Sessione non valida.");
+      error.statusCode = 401;
+      error.code = "AUTH_REQUIRED";
+      throw error;
+    }
+
+    if (!canManageCommunity(actor, context.community, context.membership)) {
+      const error = new Error("Permessi community insufficienti.");
+      error.statusCode = 403;
+      error.code = "COMMUNITY_FORBIDDEN";
+      throw error;
+    }
+
+    return { ok: true, actor };
+  }
+
   const error = new Error("Policy non supportata: " + action);
   error.statusCode = 500;
   error.code = "POLICY_NOT_IMPLEMENTED";
@@ -160,6 +205,7 @@ module.exports = {
   authorize,
   canReadGame,
   canCreateGame,
+  canManageCommunity,
   canOpenGame,
   canStartGame
 };

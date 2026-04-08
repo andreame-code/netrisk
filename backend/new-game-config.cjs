@@ -1,6 +1,8 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
 const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
+const { createGameModeDefinition, listVictoryRules, findVictoryRule } = require("../shared/models.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
+const { findRuleModule, listRuleModules } = require("./engine/rule-modules/index.cjs");
 const { secureRandom } = require("./random.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
@@ -62,6 +64,26 @@ function validateNewGameConfig(input = {}, options = {}) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
   }
 
+  const requestedVictoryRuleId = String(input.victoryRuleId || "standard-elimination");
+  const selectedVictoryRule = findVictoryRule(requestedVictoryRuleId);
+  if (!selectedVictoryRule) {
+    throw createLocalizedError("La regola vittoria selezionata non e supportata.", "newGame.invalidVictoryRule");
+  }
+
+  const enabledRuleModuleIds = Array.isArray(input.enabledRuleModuleIds)
+    ? [...new Set(input.enabledRuleModuleIds.map((entry) => String(entry || "").trim()).filter(Boolean))]
+    : [];
+
+  enabledRuleModuleIds.forEach((ruleModuleId) => {
+    if (!findRuleModule(ruleModuleId)) {
+      throw createLocalizedError("La regola opzionale selezionata non e supportata.", "newGame.invalidRuleModule", { ruleModuleId });
+    }
+  });
+
+  const setupOptions = input.setupOptions && typeof input.setupOptions === "object" && !Array.isArray(input.setupOptions)
+    ? { ...input.setupOptions }
+    : {};
+
   const requestedPlayers = Array.isArray(input.players)
     ? input.players
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
@@ -88,12 +110,26 @@ function validateNewGameConfig(input = {}, options = {}) {
     };
   });
 
+  const gameModeDefinition = createGameModeDefinition({
+    id: input.gameModeId || null,
+    name: input.gameModeName || "Modalita standard",
+    mapId,
+    diceRuleSetId: selectedDiceRuleSet.id,
+    victoryRuleId: selectedVictoryRule.id,
+    enabledRuleModuleIds,
+    setupOptions
+  });
+
   return {
     name: input.name,
     mapId,
     mapName: selectedMap.name,
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
+    victoryRuleId: selectedVictoryRule.id,
+    enabledRuleModuleIds,
+    setupOptions,
+    gameModeDefinition,
     totalPlayers,
     players
   };
@@ -103,10 +139,17 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
   const config = validateNewGameConfig(configInput, options);
   const state = createInitialState(config.selectedMap);
   state.diceRuleSetId = config.diceRuleSetId;
+  state.communityId = configInput.communityId || null;
+  state.gameModeId = config.gameModeDefinition.id;
+  state.gameModeDefinition = config.gameModeDefinition;
   state.gameConfig = {
     mapId: config.mapId,
     mapName: config.mapName,
     diceRuleSetId: config.diceRuleSetId,
+    victoryRuleId: config.victoryRuleId,
+    enabledRuleModuleIds: config.enabledRuleModuleIds,
+    setupOptions: config.setupOptions,
+    gameModeDefinition: config.gameModeDefinition,
     totalPlayers: config.totalPlayers,
     players: config.players
   };
@@ -132,7 +175,9 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 module.exports = {
   AI_GENERAL_NAMES,
   listDiceRuleSets,
+  listRuleModules,
   listSupportedMaps,
+  listVictoryRules,
   buildHistoricalAiNames,
   createConfiguredInitialState,
   findSupportedMap,

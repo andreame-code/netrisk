@@ -1,4 +1,5 @@
-const { TurnPhase, createLocalizedError } = require("../../shared/models.cjs");
+const { TurnPhase, createLocalizedError, findVictoryRule } = require("../../shared/models.cjs");
+const { applyRuleHook } = require("./rule-modules/index.cjs");
 
 function territoryCountByPlayer(state, playerId) {
   return Object.keys(state.territories).reduce((total, territoryId) => {
@@ -85,6 +86,54 @@ function detectVictory(state) {
   }
 
   if (activePlayers.length > 1) {
+    const configuredVictoryRuleId = state?.gameModeDefinition?.victoryRuleId || "standard-elimination";
+    if (configuredVictoryRuleId !== "standard-elimination") {
+      const configuredVictoryRule = findVictoryRule(configuredVictoryRuleId);
+      const setupOptions = state?.gameModeDefinition?.setupOptions || {};
+
+      if (configuredVictoryRule?.id === "territory-control") {
+        const targetTerritoryCount = Number(setupOptions.targetTerritoryCount);
+        if (Number.isInteger(targetTerritoryCount) && targetTerritoryCount > 0) {
+          const winner = activePlayers.find((player) => territoryCountByPlayer(state, player.id) >= targetTerritoryCount) || null;
+          if (winner) {
+            state.winnerId = winner.id;
+            state.phase = "finished";
+            state.turnPhase = TurnPhase.FINISHED;
+
+            const objectiveResult = {
+              ok: true,
+              code: "VICTORY_DECLARED",
+              message: "Victory declared.",
+              messageKey: "game.victory.declared",
+              messageParams: { playerName: winner.name },
+              details: {
+                activePlayerIds: activePlayers.map((player) => player.id),
+                activePlayerCount: activePlayers.length,
+                targetTerritoryCount
+              },
+              victory: {
+                winnerId: winner.id,
+                winnerName: winner.name,
+                phase: state.phase,
+                turnPhase: state.turnPhase,
+                summary: winner.name + " completa l'obiettivo e vince la partita.",
+                summaryKey: "game.log.victoryDeclared",
+                summaryParams: {
+                  playerName: winner.name
+                }
+              }
+            };
+
+            applyRuleHook(state, "onCheckVictory", {
+              result: objectiveResult
+            });
+
+            return objectiveResult;
+          }
+        }
+      }
+    }
+
     return {
       ok: true,
       code: "NO_VICTORY",
@@ -105,7 +154,7 @@ function detectVictory(state) {
   state.turnPhase = TurnPhase.FINISHED;
 
   const summary = winner.name + " conquers the map and wins the game.";
-  return {
+  const result = {
     ok: true,
     code: "VICTORY_DECLARED",
     message: "Victory declared.",
@@ -127,6 +176,12 @@ function detectVictory(state) {
       }
     }
   };
+
+  applyRuleHook(state, "onCheckVictory", {
+    result
+  });
+
+  return result;
 }
 
 module.exports = {

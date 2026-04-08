@@ -10,19 +10,7 @@ global.register = function register(name, fn) {
 
 [
   "../tests/gameplay/ai/ai-player.test.cjs",
-  "../tests/gameplay/setup/game-setup.test.cjs",
-  "../tests/gameplay/turn-flow/turn-flow.test.cjs",
-  "../tests/gameplay/reinforcement/reinforcement-calculation.test.cjs",
-  "../tests/gameplay/reinforcement/map-continent-bonuses.test.cjs",
-  "../tests/gameplay/reinforcement/reinforcement-placement.test.cjs",
-  "../tests/gameplay/combat/attack-validation.test.cjs",
-  "../tests/gameplay/combat/combat-resolution.test.cjs",
-  "../tests/gameplay/combat/banzai-attack.test.cjs",
-  "../tests/gameplay/conquest/conquest-resolution.test.cjs",
-  "../tests/gameplay/fortify/fortify-movement.test.cjs",
-  "../tests/gameplay/victory/victory-detection.test.cjs",
-  "../tests/gameplay/victory/elimination-and-victory.test.cjs",
-  "../tests/gameplay/regression/full-flows.test.cjs"
+  "../tests/gameplay/all.test.cjs"
 ].forEach((relativePath) => {
   require(path.join(__dirname, relativePath));
 });
