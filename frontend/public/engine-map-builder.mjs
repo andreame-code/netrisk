@@ -180,7 +180,7 @@ export function createMapBuilder(options = {}) {
     }
 
     const background = String(elements.mapBackground?.value || "").trim();
-    elements.mapBoard.style.setProperty("--engine-map-image", background ? `url('${background.replace(/'/g, "\\'")}')` : "none");
+    elements.mapBoard.style.setProperty("--engine-map-image", background ? `url('${background.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}')` : "none");
 
     const width = Number(elements.mapAspectWidth?.value);
     const height = Number(elements.mapAspectHeight?.value);
