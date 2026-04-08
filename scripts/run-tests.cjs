@@ -63,6 +63,15 @@ function uniqueName(prefix) {
   return `${prefix}_${uniqueSuffix()}`;
 }
 
+function restoreEnvValue(key, value) {
+  if (value == null) {
+    delete process.env[key];
+    return;
+  }
+
+  process.env[key] = value;
+}
+
 function setupLobby() {
   const state = createInitialState();
   const first = addPlayer(state, "Alice");
@@ -106,6 +115,7 @@ async function callApp(app, method, pathname, body, headers = {}) {
   await promise;
   return {
     statusCode: res.statusCode,
+    headers: res.headers,
     payload: res.body ? JSON.parse(res.body) : null
   };
 }
@@ -683,6 +693,211 @@ register("auth store accetta email opzionale ma rifiuta password debole", async 
       fs.unlinkSync(tempSessionsFile);
     }
 
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("auth store collega Google a un account password esistente tramite email verificata", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+  let auth = null;
+
+  try {
+    auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile,
+      encryptionKey: "test-auth-encryption-key"
+    });
+
+    const registered = await auth.registerPasswordUser({
+      username: "google_linked",
+      password: TEST_PASSWORD,
+      email: "google.linked@example.com"
+    });
+    assert.equal(registered.ok, true);
+
+    const social = await auth.loginWithGoogleIdentity({
+      subject: "google-subject-1",
+      email: "google.linked@example.com",
+      emailVerified: true,
+      fullName: "Google Linked"
+    });
+    assert.equal(social.ok, true);
+    assert.deepEqual(social.user.authMethods.sort(), ["google", "password"]);
+
+    const users = await auth.listUsers();
+    assert.equal(users.length, 1);
+    assert.equal(users[0].credentials.google.subject, "google-subject-1");
+    assert.equal(users[0].credentials.google.email, "google.linked@example.com");
+  } finally {
+    if (auth) {
+      auth.datastore.close();
+    }
+
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("auth store crea un nuovo account locale quando arriva un login Google sconosciuto", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+  let auth = null;
+
+  try {
+    auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile,
+      encryptionKey: "test-auth-encryption-key"
+    });
+
+    const social = await auth.loginWithGoogleIdentity({
+      subject: "google-subject-2",
+      email: "new.google.user@example.com",
+      emailVerified: true,
+      preferredUsername: "new.google.user"
+    });
+    assert.equal(social.ok, true);
+    assert.deepEqual(social.user.authMethods, ["google"]);
+
+    const users = await auth.listUsers();
+    assert.equal(users.length, 1);
+    assert.match(users[0].username, /^new_google_user/);
+    assert.equal(Boolean(users[0].profile.contact.emailEncrypted), true);
+  } finally {
+    if (auth) {
+      auth.datastore.close();
+    }
+
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("api auth social exchange rifiuta un token Google non valido", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDbFile = path.join(__dirname, `tmp-app-${unique}.sqlite`);
+  const previousEnv = {
+    SUPABASE_AUTH_GOOGLE_ENABLED: process.env.SUPABASE_AUTH_GOOGLE_ENABLED,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    AUTH_ENCRYPTION_KEY: process.env.AUTH_ENCRYPTION_KEY
+  };
+
+  process.env.SUPABASE_AUTH_GOOGLE_ENABLED = "true";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "public-anon-key";
+  process.env.AUTH_ENCRYPTION_KEY = "test-auth-encryption-key";
+
+  try {
+    const app = createApp({
+      driver: "sqlite",
+      dbFile: tempDbFile,
+      fetchImpl: async () => ({
+        ok: false,
+        status: 401,
+        async json() {
+          return { error: "invalid_token" };
+        }
+      })
+    });
+
+    const response = await callApp(app, "POST", "/api/auth/social/exchange", {
+      provider: "google",
+      accessToken: "bad-token"
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(response.payload.messageKey, "auth.social.google.invalidToken");
+    app.datastore.close();
+  } finally {
+    restoreEnvValue("SUPABASE_AUTH_GOOGLE_ENABLED", previousEnv.SUPABASE_AUTH_GOOGLE_ENABLED);
+    restoreEnvValue("SUPABASE_URL", previousEnv.SUPABASE_URL);
+    restoreEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY", previousEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY);
+    restoreEnvValue("AUTH_ENCRYPTION_KEY", previousEnv.AUTH_ENCRYPTION_KEY);
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("api auth social exchange apre una sessione NetRisk per Google e preserva il next path", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDbFile = path.join(__dirname, `tmp-app-${unique}.sqlite`);
+  const previousEnv = {
+    SUPABASE_AUTH_GOOGLE_ENABLED: process.env.SUPABASE_AUTH_GOOGLE_ENABLED,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    AUTH_ENCRYPTION_KEY: process.env.AUTH_ENCRYPTION_KEY
+  };
+
+  process.env.SUPABASE_AUTH_GOOGLE_ENABLED = "true";
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "public-anon-key";
+  process.env.AUTH_ENCRYPTION_KEY = "test-auth-encryption-key";
+
+  try {
+    const app = createApp({
+      driver: "sqlite",
+      dbFile: tempDbFile,
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            id: "google-user-1",
+            email: "captain.google@example.com",
+            email_confirmed_at: new Date().toISOString(),
+            app_metadata: {
+              provider: "google",
+              providers: ["google"]
+            },
+            user_metadata: {
+              full_name: "Captain Google",
+              preferred_username: "captain.google"
+            }
+          };
+        }
+      })
+    });
+
+    const response = await callApp(app, "POST", "/api/auth/social/exchange", {
+      provider: "google",
+      accessToken: "good-token",
+      next: "/game/test-match?tab=overview"
+    }, {
+      host: "127.0.0.1:3000"
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.payload.user.username.startsWith("captain_google"), true);
+    assert.deepEqual(response.payload.user.authMethods, ["google"]);
+    assert.equal(response.payload.nextPath, "/game/test-match?tab=overview");
+    assert.match(String(response.headers["Set-Cookie"] || ""), /netrisk_session=/);
+    app.datastore.close();
+  } finally {
+    restoreEnvValue("SUPABASE_AUTH_GOOGLE_ENABLED", previousEnv.SUPABASE_AUTH_GOOGLE_ENABLED);
+    restoreEnvValue("SUPABASE_URL", previousEnv.SUPABASE_URL);
+    restoreEnvValue("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY", previousEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY);
+    restoreEnvValue("AUTH_ENCRYPTION_KEY", previousEnv.AUTH_ENCRYPTION_KEY);
     cleanupSqliteFiles(tempDbFile);
   }
 });

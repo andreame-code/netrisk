@@ -1,4 +1,5 @@
 import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
+import { setupGoogleSocialButton } from "./social-auth.mjs";
 
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
@@ -90,6 +91,7 @@ const elements = {
   headerLoginButton: document.querySelector("#header-login-button"),
   authStatus: document.querySelector("#auth-status"),
   registerLink: document.querySelector("#register-link"),
+  googleLoginButton: document.querySelector("#google-login-button"),
   loginButton: document.querySelector("#login-button"),
   logoutButton: document.querySelector("#logout-button"),
   identityStatus: document.querySelector("#identity-status"),
@@ -1364,6 +1366,16 @@ elements.authForm.addEventListener("submit", async (event) => {
     await loginWithCredentials(username, password);
   } catch (error) {
     alert(error.message);
+  }
+});
+
+await setupGoogleSocialButton(elements.googleLoginButton, {
+  nextPath: window.location.pathname + window.location.search,
+  onPending() {
+    elements.authStatus.textContent = t("auth.social.redirecting");
+  },
+  onError(error) {
+    alert(error.message || t("auth.social.google.unavailable"));
   }
 });
 

@@ -107,6 +107,24 @@ function createFieldProtector(options = {}) {
         tag.toString("base64url"),
         encrypted.toString("base64url")
       ].join(".");
+    },
+    decrypt(value) {
+      if (!key) {
+        throw createLocalizedError("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
+      }
+
+      const raw = String(value || "").trim();
+      const parts = raw.split(".");
+      if (parts.length !== 4 || parts[0] !== "v1") {
+        throw createLocalizedError("Valore protetto non valido.", "auth.internal.invalidProtectedValue");
+      }
+
+      const iv = Buffer.from(parts[1], "base64url");
+      const tag = Buffer.from(parts[2], "base64url");
+      const encrypted = Buffer.from(parts[3], "base64url");
+      const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+      decipher.setAuthTag(tag);
+      return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
     }
   };
 }
@@ -186,6 +204,33 @@ function buildProfile(username, email, protector) {
   return profile;
 }
 
+function readEmailFromProfile(user, protector) {
+  const encrypted = user?.profile?.contact?.emailEncrypted;
+  if (!encrypted || !protector.isConfigured()) {
+    return "";
+  }
+
+  try {
+    return normalizeEmail(protector.decrypt(encrypted));
+  } catch (error) {
+    return "";
+  }
+}
+
+function sanitizeUsernameCandidate(value) {
+  const sanitized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^-+/, "")
+    .replace(/^_+/, "")
+    .replace(/[_-]+$/, "");
+
+  const base = sanitized.replace(/^[^a-z0-9]+/, "");
+  return base.slice(0, 32);
+}
+
 function createAuthStore(options = {}) {
   const datastore = options.datastore || createAuthRepository({
     driver: options.driver || process.env.DATASTORE_DRIVER || "local",
@@ -206,6 +251,50 @@ function createAuthStore(options = {}) {
   async function findByUsername(username) {
     const normalized = normalizeUsername(username);
     return normalized ? datastore.findUserByUsername(normalized) : null;
+  }
+
+  async function findByEmail(email) {
+    const normalized = normalizeEmail(email);
+    if (!normalized || !protector.isConfigured()) {
+      return null;
+    }
+
+    const users = await listUsers();
+    return users.find((user) => readEmailFromProfile(user, protector) === normalized) || null;
+  }
+
+  async function findByGoogleSubject(subject) {
+    const normalized = String(subject || "").trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const users = await listUsers();
+    return users.find((user) => user?.credentials?.google?.subject === normalized) || null;
+  }
+
+  async function reserveUsername(rawCandidate) {
+    const baseCandidate = sanitizeUsernameCandidate(rawCandidate) || "commander";
+    let candidate = baseCandidate;
+    let suffix = 1;
+
+    while (await findByUsername(candidate)) {
+      const suffixLabel = String(suffix);
+      candidate = `${baseCandidate.slice(0, Math.max(1, 32 - suffixLabel.length - 1))}_${suffixLabel}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
+  async function createSessionForUser(user) {
+    const sessionToken = crypto.randomBytes(16).toString("hex");
+    await datastore.createSession(sessionToken, user.id, Date.now());
+    return {
+      ok: true,
+      sessionToken,
+      user: publicUser(user)
+    };
   }
 
   async function registerPasswordUser(inputOrUsername, password) {
@@ -251,14 +340,71 @@ function createAuthStore(options = {}) {
       });
     }
 
-    const sessionToken = crypto.randomBytes(16).toString("hex");
-    await datastore.createSession(sessionToken, user.id, Date.now());
+    return createSessionForUser(user);
+  }
 
-    return {
-      ok: true,
-      sessionToken,
-      user: publicUser(user)
+  async function loginWithGoogleIdentity(identity) {
+    if (!protector.isConfigured()) {
+      return authFailure("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
+    }
+
+    const subject = String(identity?.subject || "").trim();
+    const email = normalizeEmail(identity?.email);
+    const emailVerified = Boolean(identity?.emailVerified);
+    if (!subject) {
+      return authFailure("Identita Google non valida.", "auth.social.invalidIdentity");
+    }
+
+    if (!email || !emailVerified) {
+      return authFailure("Email Google verificata richiesta.", "auth.social.google.emailRequired");
+    }
+
+    let user = await findByGoogleSubject(subject);
+    if (!user) {
+      user = await findByEmail(email);
+    }
+
+    const googleCredentials = {
+      provider: "google",
+      subject,
+      email,
+      linkedAt: user?.credentials?.google?.linkedAt || new Date().toISOString(),
+      lastSignInAt: new Date().toISOString(),
+      metadata: {
+        fullName: String(identity?.fullName || "").trim() || null,
+        avatarUrl: String(identity?.avatarUrl || "").trim() || null
+      }
     };
+
+    if (!user) {
+      const usernameSeed = identity?.preferredUsername || email.split("@")[0] || identity?.fullName || "commander";
+      const username = await reserveUsername(usernameSeed);
+      user = await datastore.createUser({
+        id: crypto.randomBytes(8).toString("hex"),
+        username,
+        credentials: {
+          google: googleCredentials
+        },
+        role: "user",
+        profile: buildProfile(username, email, protector),
+        createdAt: new Date().toISOString()
+      });
+
+      return createSessionForUser(user);
+    }
+
+    const updatedUser = await datastore.updateUserCredentials(user.id, {
+      ...user.credentials,
+      google: googleCredentials
+    });
+
+    return createSessionForUser(updatedUser || {
+      ...user,
+      credentials: {
+        ...user.credentials,
+        google: googleCredentials
+      }
+    });
   }
 
   async function getUserFromSession(sessionToken) {
@@ -287,7 +433,9 @@ function createAuthStore(options = {}) {
     findByUsername,
     getUserFromSession,
     listUsers,
+    findByEmail,
     loginWithPassword,
+    loginWithGoogleIdentity,
     logout,
     publicUser,
     registerPasswordUser

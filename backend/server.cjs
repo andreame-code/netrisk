@@ -163,6 +163,146 @@ function clearSessionCookie(req) {
   return parts.join("; ");
 }
 
+function envFlag(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || "").trim());
+}
+
+function availableAuthProviders() {
+  const providers = ["password"];
+  if (envFlag(process.env.SUPABASE_AUTH_GOOGLE_ENABLED)) {
+    providers.push("google");
+  }
+  return providers;
+}
+
+function requestOrigin(req) {
+  const protocol = req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http");
+  const host = req.headers["x-forwarded-host"] || req.headers.host || `localhost:${port}`;
+  return `${protocol}://${host}`;
+}
+
+function sanitizeNextPath(input, fallbackPath = "/profile.html") {
+  const raw = String(input || "").trim();
+  if (!raw) {
+    return fallbackPath;
+  }
+
+  try {
+    const resolved = new URL(raw, "http://netrisk.local");
+    if (resolved.origin !== "http://netrisk.local") {
+      return fallbackPath;
+    }
+
+    const nextPath = `${resolved.pathname}${resolved.search}${resolved.hash}`;
+    return nextPath.startsWith("/") ? nextPath : fallbackPath;
+  } catch (error) {
+    return fallbackPath;
+  }
+}
+
+function requiredSupabasePublicKey() {
+  const value = String(
+    process.env.SUPABASE_ANON_KEY
+    || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+    || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    || ""
+  ).trim();
+
+  if (!value) {
+    throw createLocalizedError("Chiave pubblica Supabase mancante.", "auth.social.supabase.missingPublicKey");
+  }
+
+  return value;
+}
+
+function requiredSupabaseUrl() {
+  const value = String(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/\/+$/, "");
+  if (!value) {
+    throw createLocalizedError("SUPABASE_URL mancante.", "auth.social.supabase.missingUrl");
+  }
+
+  return value;
+}
+
+function assertGoogleSocialLoginConfigured() {
+  if (!envFlag(process.env.SUPABASE_AUTH_GOOGLE_ENABLED)) {
+    throw createLocalizedError("Social login Google non configurato.", "auth.social.google.disabled");
+  }
+
+  if (!String(process.env.AUTH_ENCRYPTION_KEY || "").trim()) {
+    throw createLocalizedError("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
+  }
+
+  return {
+    supabaseUrl: requiredSupabaseUrl(),
+    supabasePublicKey: requiredSupabasePublicKey()
+  };
+}
+
+function buildSupabaseGoogleAuthorizeUrl(req, nextPath) {
+  const { supabaseUrl } = assertGoogleSocialLoginConfigured();
+  const callbackUrl = new URL("/auth-callback.html", requestOrigin(req));
+  callbackUrl.searchParams.set("provider", "google");
+  callbackUrl.searchParams.set("next", sanitizeNextPath(nextPath, "/game.html"));
+
+  const authorizeUrl = new URL("/auth/v1/authorize", supabaseUrl);
+  authorizeUrl.searchParams.set("provider", "google");
+  authorizeUrl.searchParams.set("redirect_to", callbackUrl.toString());
+  return authorizeUrl.toString();
+}
+
+async function fetchSupabaseGoogleIdentity(accessToken, fetchImpl) {
+  const { supabaseUrl, supabasePublicKey } = assertGoogleSocialLoginConfigured();
+  if (typeof fetchImpl !== "function") {
+    throw createLocalizedError("Fetch non disponibile per la verifica Supabase.", "auth.social.supabase.fetchUnavailable");
+  }
+
+  const response = await fetchImpl(`${supabaseUrl}/auth/v1/user`, {
+    method: "GET",
+    headers: {
+      apikey: supabasePublicKey,
+      Authorization: `Bearer ${String(accessToken || "").trim()}`
+    }
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    payload = null;
+  }
+
+  if (!response.ok || !payload) {
+    throw createLocalizedError("Token Google non valido.", "auth.social.google.invalidToken");
+  }
+
+  const providers = Array.isArray(payload.app_metadata?.providers) ? payload.app_metadata.providers : [];
+  const googleIdentity = Array.isArray(payload.identities)
+    ? payload.identities.find((identity) => identity?.provider === "google")
+    : null;
+  const identityProvider = payload.app_metadata?.provider || googleIdentity?.provider || payload.identities?.[0]?.provider || "";
+  const isGoogleIdentity = identityProvider === "google" || providers.includes("google");
+  if (!isGoogleIdentity) {
+    throw createLocalizedError("Identita Google non valida.", "auth.social.invalidIdentity");
+  }
+
+  return {
+    subject: String(
+      googleIdentity?.identity_id
+      || googleIdentity?.id
+      || googleIdentity?.user_id
+      || payload.user_metadata?.sub
+      || payload.id
+      || ""
+    ).trim(),
+    email: String(payload.email || "").trim(),
+    emailVerified: Boolean(payload.email_confirmed_at),
+    fullName: String(payload.user_metadata?.full_name || payload.user_metadata?.name || "").trim(),
+    preferredUsername: String(payload.user_metadata?.user_name || payload.user_metadata?.preferred_username || "").trim(),
+    avatarUrl: String(payload.user_metadata?.avatar_url || "").trim()
+  };
+}
+
 function createApp(options = {}) {
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
@@ -182,6 +322,7 @@ function createApp(options = {}) {
   let activeGameName = null;
   let nextAttackRolls = null;
   const datastore = createDatastore({
+    driver: options.driver,
     dbFile: options.dbFile || defaultDbFile(),
     legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
@@ -196,6 +337,7 @@ function createApp(options = {}) {
     datastore,
     gamesFile
   });
+  const fetchImpl = options.fetchImpl || global.fetch;
   const auth = createAuthStore({
     datastore,
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
@@ -628,6 +770,15 @@ function createApp(options = {}) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/providers") {
+      const providers = availableAuthProviders();
+      sendJson(res, 200, {
+        providers,
+        availableAuthProviders: providers
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/events") {
       const gameId = getTargetGameId({}, url);
       const access = await authorizeGameRead(gameId, req, res, url);
@@ -677,7 +828,7 @@ function createApp(options = {}) {
       sendJson(res, 201, {
         ok: true,
         user: result.user,
-        nextAuthProviders: ["password", "email", "google", "discord"]
+        nextAuthProviders: availableAuthProviders()
       });
       return;
     }
@@ -693,10 +844,61 @@ function createApp(options = {}) {
       sendJson(res, 200, {
         ok: true,
         user: result.user,
-        availableAuthProviders: ["password", "email", "google", "discord"]
+        availableAuthProviders: availableAuthProviders()
       }, {
         "Set-Cookie": buildSessionCookie(req, result.sessionToken)
       });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/auth/social/google/start") {
+      try {
+        const nextPath = sanitizeNextPath(url.searchParams.get("next"), "/game.html");
+        sendJson(res, 200, {
+          ok: true,
+          provider: "google",
+          authorizeUrl: buildSupabaseGoogleAuthorizeUrl(req, nextPath),
+          nextPath
+        });
+      } catch (error) {
+        sendLocalizedError(res, 400, error, "Social login Google non disponibile.", "auth.social.google.unavailable");
+      }
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/social/exchange") {
+      const body = await parseBody(req);
+      if (String(body.provider || "").trim() !== "google") {
+        sendLocalizedError(res, 400, null, "Provider social non supportato.", "auth.social.unsupportedProvider");
+        return;
+      }
+
+      const accessToken = String(body.accessToken || "").trim();
+      if (!accessToken) {
+        sendLocalizedError(res, 400, null, "Token social mancante.", "auth.social.missingAccessToken");
+        return;
+      }
+
+      try {
+        const identity = await fetchSupabaseGoogleIdentity(accessToken, fetchImpl);
+        const result = await auth.loginWithGoogleIdentity(identity);
+        if (!result.ok) {
+          sendLocalizedError(res, 401, result, result.error, result.errorKey || "auth.social.exchangeFailed", result.errorParams);
+          return;
+        }
+
+        const nextPath = sanitizeNextPath(body.next, "/profile.html");
+        sendJson(res, 200, {
+          ok: true,
+          user: result.user,
+          nextPath,
+          availableAuthProviders: availableAuthProviders()
+        }, {
+          "Set-Cookie": buildSessionCookie(req, result.sessionToken)
+        });
+      } catch (error) {
+        sendLocalizedError(res, 401, error, "Accesso Google non riuscito.", "auth.social.google.exchangeFailed");
+      }
       return;
     }
 

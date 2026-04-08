@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="auth.social.callbackTitle">Frontline Dominion - Accesso Google</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="app-shell board-shell">
+      <section class="panel register-shell" data-testid="social-auth-callback">
+        <div class="register-hero">
+          <div>
+            <p class="eyebrow" data-i18n="auth.social.callbackEyebrow">Social Login</p>
+            <h1 data-i18n="auth.social.callbackHeading">Collegamento account</h1>
+            <p class="stage-copy" id="auth-callback-message" data-i18n="auth.social.callbackLoading">Verifica accesso Google in corso...</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/auth-callback.mjs"></script>
+  </body>
+</html>
