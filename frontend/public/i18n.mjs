@@ -1,5 +1,5 @@
-import { it } from "./locales/it.js";
-import { en } from "./locales/en.js";
+import { it } from "./locales/it.mjs";
+import { en } from "./locales/en.mjs";
 
 export const SUPPORTED_LOCALES = Object.freeze(["it", "en"]);
 export const DEFAULT_LOCALE = "it";

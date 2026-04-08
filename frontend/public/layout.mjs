@@ -1,4 +1,4 @@
-import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.js";
+import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
 
 const section = document.body.dataset.appSection || "";
 const query = new URLSearchParams(window.location.search);
