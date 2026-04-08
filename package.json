@@ -7,6 +7,8 @@
     "start": "node backend/server.cjs",
     "backup:data": "node scripts/backup-datastore.cjs",
     "backup:check": "node scripts/check-backup.cjs",
+    "pr45:branch": "node scripts/pr45-start-child.cjs",
+    "pr45:pr": "node scripts/pr45-open-child-pr.cjs",
     "vercel:env:check": "node scripts/check-vercel-env-parity.cjs",
     "test": "node scripts/run-tests.cjs",
     "test:e2e": "node scripts/run-e2e.cjs",
