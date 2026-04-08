@@ -1,4 +1,4 @@
-import { formatDate, t, translateMessagePayload, translateServerMessage } from "./i18n.js";
+import { formatDate, t, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
