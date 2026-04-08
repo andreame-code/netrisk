@@ -10,7 +10,6 @@ const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const { createConfiguredInitialStateAsync, listGameOptions } = require("./new-game-config.cjs");
 const { createEngineContentStore } = require("./engine-content-store.cjs");
 const { secureRandom } = require("./random.cjs");
-const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
 const {
   addPlayer,
@@ -165,6 +164,23 @@ function clearSessionCookie(req) {
   return parts.join("; ");
 }
 
+function shouldDeferActiveGameBootstrap(datastore, env = process.env) {
+  if (!datastore || datastore.driver !== "supabase") {
+    return false;
+  }
+
+  if (!env || !env.VERCEL) {
+    return false;
+  }
+
+  const targetEnv = String(env.VERCEL_ENV || "").toLowerCase();
+  if (targetEnv !== "preview") {
+    return false;
+  }
+
+  return !String(env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+}
+
 function createApp(options = {}) {
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
@@ -209,24 +225,27 @@ function createApp(options = {}) {
   });
   const clientsByGameId = new Map();
   let initPromise = null;
+  const deferActiveGameBootstrap = shouldDeferActiveGameBootstrap(datastore, process.env);
 
-  const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
-  if (isPromiseLike(eagerInitialGame)) {
-    initPromise = eagerInitialGame
-      .then((initialGame) => {
-        activeGameId = initialGame.game.id;
-        activeGameVersion = initialGame.game.version;
-        activeGameName = initialGame.game.name;
-        replaceState(initialGame.state);
-      })
-      .finally(() => {
-        initPromise = null;
-      });
-  } else {
-    activeGameId = eagerInitialGame.game.id;
-    activeGameVersion = eagerInitialGame.game.version;
-    activeGameName = eagerInitialGame.game.name;
-    replaceState(eagerInitialGame.state);
+  if (!deferActiveGameBootstrap) {
+    const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
+    if (eagerInitialGame && typeof eagerInitialGame.then === "function") {
+      initPromise = eagerInitialGame
+        .then((initialGame) => {
+          activeGameId = initialGame.game.id;
+          activeGameVersion = initialGame.game.version;
+          activeGameName = initialGame.game.name;
+          replaceState(initialGame.state);
+        })
+        .finally(() => {
+          initPromise = null;
+        });
+    } else {
+      activeGameId = eagerInitialGame.game.id;
+      activeGameVersion = eagerInitialGame.game.version;
+      activeGameName = eagerInitialGame.game.name;
+      replaceState(eagerInitialGame.state);
+    }
   }
 
   function replaceState(nextState) {
@@ -478,7 +497,10 @@ function createApp(options = {}) {
   }
 
   async function healthSnapshot() {
-    await initializeActiveGame();
+    if (!deferActiveGameBootstrap) {
+      await initializeActiveGame();
+    }
+
     const storage = await datastore.healthSummary();
     return {
       ok: storage.ok,
@@ -490,7 +512,9 @@ function createApp(options = {}) {
   }
 
   async function handleApi(req, res, url) {
-    await initializeActiveGame();
+    if (!deferActiveGameBootstrap) {
+      await initializeActiveGame();
+    }
 
     if (req.method === "GET" && url.pathname === "/api/health") {
       const health = await healthSnapshot();

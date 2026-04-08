@@ -105,6 +105,7 @@ function createSupabaseDatastore(options = {}) {
   const legacyGamesFile = options.legacyGamesFile || options.gamesFile || null;
   const legacySessionsFile = options.legacySessionsFile || options.sessionsFile || null;
   let initialized = false;
+  const hasWriteAccess = Boolean(String(options.supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim());
 
   async function request(pathname, init = {}) {
     const response = await fetch(restBaseUrl + pathname, {
@@ -292,9 +293,11 @@ function createSupabaseDatastore(options = {}) {
       return;
     }
 
-    await migrateLegacyUsers();
-    await migrateLegacyGames();
-    await migrateLegacySessions();
+    if (hasWriteAccess) {
+      await migrateLegacyUsers();
+      await migrateLegacyGames();
+      await migrateLegacySessions();
+    }
     initialized = true;
   }
 
