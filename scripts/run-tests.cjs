@@ -38,6 +38,7 @@ const { createConfiguredInitialState, validateNewGameConfig } = require("../back
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
+const { missingRequiredDeployEnv } = require("../backend/required-runtime-env.cjs");
 const { createApp } = require("../backend/server.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -360,7 +361,7 @@ function createMockSupabaseFetch(initialData = {}) {
   };
 }
 
-async function withMockSupabase(run, initialData = {}) {
+async function withMockSupabase(run, initialData = {}, envOverrides = {}) {
   const originalFetch = global.fetch;
   const envKeys = [
     "DATASTORE_DRIVER",
@@ -381,6 +382,14 @@ async function withMockSupabase(run, initialData = {}) {
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "publishable-test-key";
   process.env.SUPABASE_DB_SCHEMA = "public";
   delete process.env.VERCEL;
+  Object.entries(envOverrides).forEach(([key, value]) => {
+    if (typeof value === "undefined") {
+      delete process.env[key];
+      return;
+    }
+
+    process.env[key] = value;
+  });
   global.fetch = mock.fetch;
 
   try {
@@ -418,6 +427,33 @@ function cleanupSqliteFiles(filePath) {
       fs.unlinkSync(target);
     }
   });
+}
+
+async function withEnv(values, run) {
+  const previous = {};
+  Object.keys(values).forEach((key) => {
+    previous[key] = process.env[key];
+    const nextValue = values[key];
+    if (typeof nextValue === "undefined") {
+      delete process.env[key];
+      return;
+    }
+
+    process.env[key] = nextValue;
+  });
+
+  try {
+    return await run();
+  } finally {
+    Object.keys(values).forEach((key) => {
+      if (typeof previous[key] === "undefined") {
+        delete process.env[key];
+        return;
+      }
+
+      process.env[key] = previous[key];
+    });
+  }
 }
 
 async function withServer(run) {
@@ -3058,6 +3094,108 @@ register("datastore supabase espone healthSummary async quando configurato via e
     assert.deepEqual(health.counts, { users: 0, games: 0, sessions: 0 });
 
     datastore.close();
+  });
+});
+
+register("deploy env validation non richiede Supabase quando il preview usa sqlite", () => {
+  const missing = missingRequiredDeployEnv({
+    VERCEL: "1",
+    VERCEL_ENV: "preview",
+    DATASTORE_DRIVER: "sqlite",
+    AUTH_ENCRYPTION_KEY: "",
+    SUPABASE_URL: "",
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    NEXT_PUBLIC_SUPABASE_URL: "",
+    SUPABASE_ANON_KEY: "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "",
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+  });
+
+  assert.deepEqual(missing, []);
+});
+
+register("deploy env validation accetta preview Supabase con chiave publishable", () => {
+  const missing = missingRequiredDeployEnv({
+    VERCEL: "1",
+    VERCEL_ENV: "preview",
+    DATASTORE_DRIVER: "supabase",
+    AUTH_ENCRYPTION_KEY: "",
+    SUPABASE_URL: "",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    SUPABASE_ANON_KEY: "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "publishable-test-key",
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+  });
+
+  assert.deepEqual(missing, []);
+});
+
+register("createApp parte su Vercel preview con sqlite anche senza env Supabase", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-preview-users-${unique}.json`);
+  const tempGamesFile = path.join(__dirname, `tmp-preview-games-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-preview-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-preview-store-${unique}.sqlite`);
+
+  await withEnv({
+    VERCEL: "1",
+    VERCEL_ENV: "preview",
+    DATASTORE_DRIVER: "sqlite",
+    AUTH_ENCRYPTION_KEY: "",
+    SUPABASE_URL: "",
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    NEXT_PUBLIC_SUPABASE_URL: "",
+    SUPABASE_ANON_KEY: "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "",
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+  }, async () => {
+    const app = createApp({
+      dataFile: tempFile,
+      gamesFile: tempGamesFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+
+    try {
+      const response = await callApp(app, "GET", "/api/health");
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.payload.ok, true);
+      assert.equal(response.payload.storage.storage, "sqlite");
+    } finally {
+      app.datastore.close();
+    }
+  });
+
+  [tempFile, tempGamesFile, tempSessionsFile].forEach((target) => {
+    if (fs.existsSync(target)) {
+      fs.unlinkSync(target);
+    }
+  });
+  cleanupSqliteFiles(tempDbFile);
+});
+
+register("createApp parte su Vercel preview con Supabase e chiave publishable", async () => {
+  await withMockSupabase(async () => {
+    await withEnv({
+      VERCEL: "1",
+      VERCEL_ENV: "preview",
+      AUTH_ENCRYPTION_KEY: "",
+      SUPABASE_SERVICE_ROLE_KEY: ""
+    }, async () => {
+      const app = createApp();
+      try {
+        const response = await callApp(app, "GET", "/api/health");
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.payload.ok, true);
+        assert.equal(response.payload.storage.storage, "supabase");
+      } finally {
+        app.datastore.close();
+      }
+    });
+  }, {}, {
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "publishable-test-key"
   });
 });
 
