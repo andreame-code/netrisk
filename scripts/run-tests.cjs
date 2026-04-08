@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
+const { pathToFileURL } = require("url");
 
 process.env.TEST = "true";
 const {
@@ -48,6 +49,7 @@ const { listSupportedMaps } = require("../shared/maps/index.cjs");
 
 const tests = [];
 const TEST_PASSWORD = "Secret123!";
+const frontendI18nModulePromise = import(pathToFileURL(path.join(__dirname, "..", "frontend", "public", "i18n.mjs")).href);
 
 function register(name, fn) {
   tests.push({ name, fn });
@@ -151,6 +153,35 @@ function authHeaders(sessionToken) {
 function readPublicHtml(fileName) {
   return fs.readFileSync(path.join(__dirname, "..", "frontend", "public", fileName), "utf8");
 }
+
+register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
+  const { setLocale, translateGameLogEntries } = await frontendI18nModulePromise;
+  setLocale("it", {
+    storage: { setItem() {} },
+    applyDocument: false
+  });
+
+  const snapshot = {
+    logEntries: [
+      {
+        message: "Lobby creata. Unisciti e avvia la partita.",
+        messageKey: "game.log.lobbyCreated",
+        messageParams: {}
+      }
+    ],
+    log: [
+      "Lobby creata. Unisciti e avvia la partita.",
+      "Partita iniziata",
+      "Alice conquista Kamchatka"
+    ]
+  };
+
+  assert.deepEqual(translateGameLogEntries(snapshot), [
+    "Lobby creata. Unisciti e avvia la partita.",
+    "Partita iniziata",
+    "Alice conquista Kamchatka"
+  ]);
+});
 
 function createMockSupabaseResponse(status, payload) {
   const text = payload == null ? "" : JSON.stringify(payload);

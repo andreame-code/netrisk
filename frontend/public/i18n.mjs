@@ -165,6 +165,38 @@ export function translateServerMessage(payload, fallback = "") {
   return translateMessagePayload(payload, fallback);
 }
 
+export function translateGameLogEntries(snapshot) {
+  const localizedEntries = Array.isArray(snapshot?.logEntries)
+    ? snapshot.logEntries
+      .map((entry) => translateMessagePayload(entry, entry?.message || ""))
+      .filter(Boolean)
+    : [];
+  const legacyEntries = Array.isArray(snapshot?.log)
+    ? snapshot.log.filter(Boolean)
+    : [];
+
+  if (!localizedEntries.length) {
+    return legacyEntries;
+  }
+
+  if (!legacyEntries.length) {
+    return localizedEntries;
+  }
+
+  const mergedEntries = localizedEntries.slice();
+  const seenEntries = new Set(localizedEntries);
+  for (const entry of legacyEntries) {
+    if (seenEntries.has(entry)) {
+      continue;
+    }
+
+    mergedEntries.push(entry);
+    seenEntries.add(entry);
+  }
+
+  return mergedEntries;
+}
+
 export function applyTranslations(root = document, locale = getLocale()) {
   if (!root || typeof root.querySelectorAll !== "function") {
     return;
