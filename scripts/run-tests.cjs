@@ -406,6 +406,42 @@ async function withMockSupabase(run, initialData = {}, envOverrides = {}) {
   }
 }
 
+async function withReadOnlyPreviewSupabase(run, initialData = {}) {
+  return withMockSupabase(async (mock) => {
+    const originalFetch = global.fetch;
+    global.fetch = async (url, init = {}) => {
+      const requestUrl = new URL(url);
+      const tableName = requestUrl.pathname.split("/").pop();
+      const method = String(init.method || "GET").toUpperCase();
+
+      if ((tableName === "games" || tableName === "app_state") && method !== "GET") {
+        return createMockSupabaseResponse(401, {
+          code: "42501",
+          details: null,
+          hint: null,
+          message: `new row violates row-level security policy for table "${tableName}"`
+        });
+      }
+
+      return mock.fetch(url, init);
+    };
+
+    try {
+      return await withEnv({
+        VERCEL: "1",
+        VERCEL_ENV: "preview",
+        AUTH_ENCRYPTION_KEY: "",
+        SUPABASE_SERVICE_ROLE_KEY: ""
+      }, async () => run(mock));
+    } finally {
+      global.fetch = originalFetch;
+    }
+  }, initialData, {
+    SUPABASE_SERVICE_ROLE_KEY: "",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "publishable-test-key"
+  });
+}
+
 async function createAuthenticatedAppSession(app, username) {
   const registered = await app.auth.registerPasswordUser(username, TEST_PASSWORD);
   assert.equal(registered.ok, true);
@@ -3196,6 +3232,29 @@ register("createApp parte su Vercel preview con Supabase e chiave publishable", 
   }, {}, {
     SUPABASE_SERVICE_ROLE_KEY: "",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: "publishable-test-key"
+  });
+});
+
+register("preview Supabase read-only non rompe lobby, health e auth/session", async () => {
+  await withReadOnlyPreviewSupabase(async () => {
+    const app = createApp();
+    try {
+      const healthResponse = await callApp(app, "GET", "/api/health");
+      assert.equal(healthResponse.statusCode, 200);
+      assert.equal(healthResponse.payload.ok, true);
+      assert.equal(healthResponse.payload.storage.storage, "supabase");
+      assert.equal(healthResponse.payload.hasActiveGame, false);
+
+      const gamesResponse = await callApp(app, "GET", "/api/games");
+      assert.equal(gamesResponse.statusCode, 200);
+      assert.deepEqual(gamesResponse.payload, { games: [], activeGameId: null });
+
+      const sessionResponse = await callApp(app, "GET", "/api/auth/session");
+      assert.equal(sessionResponse.statusCode, 401);
+      assert.equal(sessionResponse.payload.code, "AUTH_REQUIRED");
+    } finally {
+      app.datastore.close();
+    }
   });
 });
 
