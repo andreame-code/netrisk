@@ -1,4 +1,5 @@
 import { t, translateServerMessage } from "./i18n.mjs";
+import { setupGoogleSocialButton } from "./social-auth.mjs";
 
 const state = {
   user: null,
@@ -18,7 +19,8 @@ const elements = {
   password: document.querySelector("#register-password"),
   passwordConfirm: document.querySelector("#register-password-confirm"),
   feedback: document.querySelector("#register-feedback"),
-  submit: document.querySelector("#register-submit-button")
+  submit: document.querySelector("#register-submit-button"),
+  googleLoginButton: document.querySelector("#register-google-login-button")
 };
 
 function renderNavAvatar(username) {
@@ -42,6 +44,12 @@ function setFeedback(message = "", tone = "") {
   elements.feedback.hidden = false;
   elements.feedback.textContent = message;
   elements.feedback.className = `auth-feedback${tone === "error" ? " is-error" : " is-success"}`;
+}
+
+function setAuthStatus(message) {
+  if (elements.authStatus) {
+    elements.authStatus.textContent = message;
+  }
 }
 
 function registrationClientError(username, email, password, confirmPassword) {
@@ -110,6 +118,11 @@ function render() {
   elements.logoutButton.hidden = !isAuthenticated;
   elements.logoutButton.disabled = !isAuthenticated;
   elements.submit.disabled = state.submitting || isAuthenticated;
+  if (elements.googleLoginButton) {
+    const socialAvailable = elements.googleLoginButton.dataset.socialAuthAvailable === "true";
+    elements.googleLoginButton.hidden = isAuthenticated || !socialAvailable;
+    elements.googleLoginButton.disabled = state.submitting || isAuthenticated || !socialAvailable;
+  }
   elements.authStatus.textContent = isAuthenticated
     ? t("register.auth.loggedIn", { username: state.user.username })
     : t("register.authStatus");
@@ -190,4 +203,14 @@ elements.form.addEventListener("submit", async (event) => {
 });
 
 await restoreSession();
+await setupGoogleSocialButton(elements.googleLoginButton, {
+  nextPath: "/profile.html",
+  onPending() {
+    setFeedback();
+    setAuthStatus(t("auth.social.redirecting"));
+  },
+  onError(error) {
+    setFeedback(error.message || t("auth.social.google.unavailable"), "error");
+  }
+});
 render();
