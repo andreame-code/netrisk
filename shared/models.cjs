@@ -45,6 +45,15 @@ const {
   createLeaderboardEntry,
   createPieceThemeDefinition
 } = require("./community-models.cjs");
+const {
+  DISCORD_AUTH_PROVIDER_ID,
+  EMAIL_AUTH_PROVIDER_ID,
+  GOOGLE_AUTH_PROVIDER_ID,
+  PASSWORD_AUTH_PROVIDER_ID,
+  findAuthProvider,
+  listAuthProviderIds,
+  listAuthProviders
+} = require("./auth-providers.cjs");
 const { GameAction } = require("./game-actions.cjs");
 const {
   createActionFailure,
@@ -56,8 +65,15 @@ const {
 
 module.exports = {
   CardType,
+  DISCORD_AUTH_PROVIDER_ID,
   DEFAULT_VICTORY_RULE_ID,
+  EMAIL_AUTH_PROVIDER_ID,
+  findAuthProvider,
   GameAction,
+  GOOGLE_AUTH_PROVIDER_ID,
+  listAuthProviderIds,
+  listAuthProviders,
+  PASSWORD_AUTH_PROVIDER_ID,
   STANDARD_DICE_RULE_SET_ID,
   STANDARD_THREE_DEFENSE_DICE_RULE_SET_ID,
   STANDARD_TWO_DEFENSE_DICE_RULE_SET_ID,
