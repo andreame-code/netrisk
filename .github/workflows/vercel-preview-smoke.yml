@@ -1,0 +1,42 @@
+name: Vercel Preview Smoke
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: vercel-preview-smoke-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Vercel project metadata
+        shell: bash
+        run: |
+          vercel_org_id="$(node -p "require('./.vercel/project.json').orgId")"
+          vercel_project_id="$(node -p "require('./.vercel/project.json').projectId")"
+          echo "VERCEL_ORG_ID=$vercel_org_id" >> "$GITHUB_ENV"
+          echo "VERCEL_PROJECT_ID=$vercel_project_id" >> "$GITHUB_ENV"
+
+      - name: Smoke test Vercel preview
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/vercel-preview-smoke.cjs
