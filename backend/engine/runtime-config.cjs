@@ -47,11 +47,11 @@ function getStateVictoryRule(state) {
 
 function getEnabledRuleModifierIds(state) {
   const resolved = getResolvedGameConfig(state);
-  if (resolved && Array.isArray(resolved.ruleModifiers) && resolved.ruleModifiers.length) {
+  if (resolved && Array.isArray(resolved.ruleModifiers)) {
     return resolved.ruleModifiers.map((modifier) => modifier.id);
   }
 
-  if (Array.isArray(state?.gameConfig?.ruleModifierIds) && state.gameConfig.ruleModifierIds.length) {
+  if (Array.isArray(state?.gameConfig?.ruleModifierIds)) {
     return state.gameConfig.ruleModifierIds.map((modifierId) => String(modifierId));
   }
 

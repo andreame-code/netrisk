@@ -1,7 +1,8 @@
 const assert = require("node:assert/strict");
 const { createInitialGameState } = require("../../../backend/engine/game-setup.cjs");
-const { createConfiguredInitialState } = require("../../../backend/new-game-config.cjs");
+const { createConfiguredInitialState, createConfiguredInitialStateAsync } = require("../../../backend/new-game-config.cjs");
 const { createEngineContentStore } = require("../../../backend/engine-content-store.cjs");
+const { getEnabledRuleModifierIds, hasRuleModifier } = require("../../../backend/engine/runtime-config.cjs");
 const { createDatastore } = require("../../../backend/datastore.cjs");
 const { makeMapDefinition, makePlayers, makeTerritory } = require("../helpers/state-builder.cjs");
 
@@ -67,6 +68,33 @@ register("createConfiguredInitialState resolves a ruleset snapshot and keeps com
   assert.equal(configured.state.resolvedGameConfig.map.id, "classic-mini");
   assert.equal(configured.state.gameConfig.rulesetId, "classic-three-defense");
   assert.equal(configured.state.gameConfig.ruleModifierIds.includes("banzai-attack"), true);
+
+  datastore.close();
+});
+
+register("getEnabledRuleModifierIds preserves explicit empty modifier selections", async () => {
+  const datastore = createDatastore({ dbFile: ":memory:" });
+  const contentStore = createEngineContentStore({ datastore });
+  const customRuleset = await contentStore.createOrUpdateGameRuleset({
+    name: "No Modifiers",
+    description: "Ruleset without optional modifiers.",
+    mapId: "classic-mini",
+    pieceThemeId: "classic-commanders",
+    victoryRuleId: "domination",
+    combatRuleId: "standard",
+    ruleModifierIds: []
+  });
+
+  const configured = await createConfiguredInitialStateAsync({
+    name: "No Modifier Match",
+    rulesetId: customRuleset.id,
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai" }]
+  }, { contentStore });
+
+  assert.deepEqual(getEnabledRuleModifierIds(configured.state), []);
+  assert.equal(hasRuleModifier(configured.state, "banzai-attack"), false);
+  assert.deepEqual(getEnabledRuleModifierIds({ gameConfig: { ruleModifierIds: [] } }), []);
 
   datastore.close();
 });
