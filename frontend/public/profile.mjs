@@ -1,4 +1,4 @@
-import { formatDate, t, translateServerMessage } from "./i18n.js";
+import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const elements = {
   profileName: document.querySelector("#profile-name"),

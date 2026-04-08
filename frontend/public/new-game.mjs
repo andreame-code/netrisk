@@ -1,4 +1,4 @@
-import { t, translateServerMessage } from "./i18n.js";
+import { t, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   maps: [],
