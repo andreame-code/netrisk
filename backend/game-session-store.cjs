@@ -41,6 +41,9 @@ function summarizeGame(entry) {
     mapId: config && config.mapId ? config.mapId : null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
     diceRuleSetId: config && config.diceRuleSetId ? config.diceRuleSetId : null,
+    victoryRuleId: config && config.victoryRuleId ? config.victoryRuleId : null,
+    gameModeId: entry.state && entry.state.gameModeId ? entry.state.gameModeId : null,
+    communityId: entry.state && entry.state.communityId ? entry.state.communityId : null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
     createdAt: entry.createdAt,
@@ -210,4 +213,3 @@ function createGameSessionStore(options = {}) {
 module.exports = {
   createGameSessionStore
 };
-

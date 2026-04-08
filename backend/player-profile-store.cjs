@@ -57,7 +57,7 @@ function turnPhaseLabel(turnPhase) {
   return "Lobby";
 }
 
-function summarizeParticipatingGame(entry, username) {
+function summarizeParticipatingGame(entry, username, communityId = null) {
   const config = entry?.state?.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
   const totalPlayers = Number.isInteger(config?.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
@@ -70,6 +70,7 @@ function summarizeParticipatingGame(entry, username) {
   return {
     id: entry.id,
     name: entry.name,
+    communityId: entry?.state?.communityId || null,
     phase: entry?.state?.phase || "lobby",
     playerCount: Array.isArray(entry?.state?.players) ? entry.state.players.length : 0,
     totalPlayers: totalPlayers || null,
@@ -94,14 +95,16 @@ function createPlayerProfileStore(options = {}) {
     legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
 
-  function getPlayerProfile(username) {
+  function getPlayerProfile(username, options = {}) {
     const normalizedUsername = String(username || "").trim();
+    const scopedCommunityId = options.communityId || null;
     if (!normalizedUsername) {
       throw new Error("Il profilo richiede un nome giocatore valido.");
     }
 
     return mapMaybe(datastore.listGames(), (games) => {
       const relevantGames = games.filter((entry) =>
+        (!scopedCommunityId || entry?.state?.communityId === scopedCommunityId) &&
         Array.isArray(entry?.state?.players) &&
         entry.state.players.some((player) => player.name === normalizedUsername)
       );
@@ -125,7 +128,7 @@ function createPlayerProfileStore(options = {}) {
         participatingGames: gamesInProgress
           .slice()
           .sort((left, right) => String(right?.updatedAt || "").localeCompare(String(left?.updatedAt || "")))
-          .map((entry) => summarizeParticipatingGame(entry, normalizedUsername)),
+          .map((entry) => summarizeParticipatingGame(entry, normalizedUsername, scopedCommunityId)),
         winRate,
         hasHistory: relevantGames.length > 0,
         placeholders: {

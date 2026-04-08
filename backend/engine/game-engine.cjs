@@ -4,6 +4,7 @@ const {
   GameAction,
   TurnPhase,
   createActionFailure,
+  createDefaultGameModeDefinition,
   createDomainFailure,
   createLogEntry,
   createContinent,
@@ -19,21 +20,33 @@ const { detectVictory } = require("./victory-detection.cjs");
 const { compareCombatDice, rollCombatDice } = require("./combat-dice.cjs");
 const { calculateReinforcements } = require("./reinforcement-calculator.cjs");
 const { findSupportedMap } = require("../../shared/maps/index.cjs");
+const { applyRuleHook } = require("./rule-modules/index.cjs");
 
 const defaultMap = findSupportedMap("classic-mini");
 const territories = defaultMap ? defaultMap.territories : [];
 const continents = defaultMap ? defaultMap.continents : [];
 const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
 
-function createInitialState(selectedMap = defaultMap) {
+function resolveGameModeDefinition(selectedMap, existingDefinition = null) {
+  if (existingDefinition && typeof existingDefinition === "object") {
+    return existingDefinition;
+  }
+
+  return createDefaultGameModeDefinition({
+    mapId: selectedMap && selectedMap.id ? selectedMap.id : "classic-mini"
+  });
+}
+
+function createInitialState(selectedMap = defaultMap, gameModeDefinition = null) {
   const mapTerritories = Array.isArray(selectedMap && selectedMap.territories) && selectedMap.territories.length
     ? selectedMap.territories
     : territories;
   const mapContinents = Array.isArray(selectedMap && selectedMap.continents) && selectedMap.continents.length
     ? selectedMap.continents
     : continents;
+  const resolvedGameModeDefinition = resolveGameModeDefinition(selectedMap, gameModeDefinition);
 
-  return createGameState({
+  const state = createGameState({
     phase: "lobby",
     turnPhase: TurnPhase.LOBBY,
     players: [],
@@ -47,6 +60,7 @@ function createInitialState(selectedMap = defaultMap) {
     mapPositions: selectedMap && selectedMap.positions ? selectedMap.positions : {},
     mapImageUrl: selectedMap && selectedMap.backgroundImage ? selectedMap.backgroundImage : null,
     mapAspectRatio: selectedMap && selectedMap.aspectRatio ? selectedMap.aspectRatio : null,
+    gameModeDefinition: resolvedGameModeDefinition,
     currentTurnIndex: 0,
     reinforcementPool: 0,
     winnerId: null,
@@ -62,6 +76,14 @@ function createInitialState(selectedMap = defaultMap) {
     tradeCount: 0,
     conqueredTerritoryThisTurn: false
   });
+
+  state.diceRuleSetId = resolvedGameModeDefinition.diceRuleSetId;
+
+  applyRuleHook(state, "onSetup", {
+    setupStage: "initial-state"
+  });
+
+  return state;
 }
 
 function randomId() {
@@ -277,9 +299,12 @@ function publicState(state) {
       imageUrl: state.mapImageUrl || null,
       aspectRatio: state.mapAspectRatio || null
     },
+    communityId: state.communityId || null,
+    gameModeId: state.gameModeId || null,
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
+    gameModeDefinition: state.gameModeDefinition || null,
     gameConfig: state.gameConfig
       ? {
           ...state.gameConfig,
@@ -312,6 +337,9 @@ function publicState(state) {
 
 function startGame(state, random = secureRandom) {
   const mapTerritories = getMapTerritories(state);
+  applyRuleHook(state, "onSetup", {
+    setupStage: "before-start"
+  });
   const shuffledTerritories = shuffle(mapTerritories.map((territory) => territory.id), random);
   state.phase = "active";
   state.turnPhase = TurnPhase.REINFORCEMENT;
@@ -334,6 +362,10 @@ function startGame(state, random = secureRandom) {
 
   const firstPlayer = getCurrentPlayer(state);
   state.reinforcementPool = computeReinforcements(state, firstPlayer.id);
+  applyRuleHook(state, "onTurnStarted", {
+    player: firstPlayer,
+    playerId: firstPlayer.id
+  });
   appendLog(state, "Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.", "game.log.gameStarted", {
     playerName: firstPlayer.name,
     reinforcementPool: state.reinforcementPool
@@ -372,6 +404,10 @@ function advanceTurn(state) {
       state.pendingConquest = null;
       state.fortifyUsed = false;
       state.conqueredTerritoryThisTurn = false;
+      applyRuleHook(state, "onTurnStarted", {
+        player: candidate,
+        playerId: candidate.id
+      });
       appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.", "game.log.turnStarted", {
         playerName: candidate.name,
         reinforcementPool: state.reinforcementPool
@@ -537,6 +573,19 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
     return createActionFailure("Servono almeno 2 armate per attaccare.", "game.attack.notEnoughArmies");
   }
 
+  const validationHookResults = applyRuleHook(state, "onValidateAttack", {
+    attacker,
+    playerId,
+    fromId,
+    toId,
+    from,
+    to
+  });
+  const blockingResult = validationHookResults.find((result) => result && result.ok === false);
+  if (blockingResult) {
+    return blockingResult;
+  }
+
   state.turnPhase = TurnPhase.ATTACK;
 
   const defenderOwnerId = to.ownerId;
@@ -585,6 +634,12 @@ function resolveAttack(state, playerId, fromId, toId, random = secureRandom, req
     };
     state.conqueredTerritoryThisTurn = true;
     summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
+    applyRuleHook(state, "onAfterConquest", {
+      attacker,
+      playerId,
+      fromId,
+      toId
+    });
   } else if (defenderLosses > 0) {
     summary += " Il difensore perde " + defenderLosses + " armata" + (defenderLosses > 1 ? "e" : "") + ".";
   } else {
@@ -792,6 +847,11 @@ function endTurn(state, playerId) {
     return createActionFailure("Sposta prima le armate nel territorio conquistato.", "game.endTurn.mustMoveAfterConquest");
   }
 
+  applyRuleHook(state, "onBeforeEndTurn", {
+    player,
+    playerId
+  });
+
   if (state.turnPhase === TurnPhase.ATTACK) {
     state.turnPhase = TurnPhase.FORTIFY;
     state.fortifyUsed = false;
@@ -802,6 +862,11 @@ function endTurn(state, playerId) {
   const awardedCard = awardTurnCardIfEligible(state, playerId);
   appendLog(state, player.name + " termina il turno.", "game.log.endTurn", { playerName: player.name });
   advanceTurn(state);
+  applyRuleHook(state, "onAfterEndTurn", {
+    player,
+    playerId,
+    awardedCard
+  });
   return { ok: true, awardedCard };
 }
 
@@ -882,6 +947,7 @@ module.exports = {
   palette,
   moveAfterConquest,
   publicState,
+  resolveGameModeDefinition,
   resolveAttack,
   awardTurnCardIfEligible,
   surrenderPlayer,
@@ -891,7 +957,4 @@ module.exports = {
   tradeCardSet,
   playerMustTradeCards
 };
-
-
-
 

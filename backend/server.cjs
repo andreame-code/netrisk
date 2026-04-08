@@ -7,7 +7,10 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
+const { createCommunityStore } = require("./community-store.cjs");
+const { createCommunityModeStore } = require("./community-mode-store.cjs");
+const { createLeaderboardStore } = require("./leaderboard-store.cjs");
+const { createConfiguredInitialState, listDiceRuleSets, listRuleModules, listSupportedMaps, listVictoryRules } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
@@ -202,6 +205,9 @@ function createApp(options = {}) {
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
   const clientsByGameId = new Map();
+  const communities = createCommunityStore({ datastore });
+  const communityModes = createCommunityModeStore({ datastore });
+  const leaderboards = createLeaderboardStore({ datastore });
   let initPromise = null;
 
   const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
@@ -422,6 +428,33 @@ function createApp(options = {}) {
     return { ...authContext, gameRecord };
   }
 
+  async function requireCommunityManager(req, res, body, communityId) {
+    const authContext = await requireAuth(req, res, body);
+    if (!authContext) {
+      return null;
+    }
+
+    const community = await communities.getCommunity(communityId);
+    if (!community) {
+      sendLocalizedError(res, 404, null, "Community non trovata.", "server.community.notFound");
+      return null;
+    }
+
+    const membership = await communities.getMembership(authContext.user.id, communityId);
+    try {
+      authorize("community:manage", { user: authContext.user, community, membership });
+    } catch (error) {
+      sendLocalizedError(res, error.statusCode || 403, error, "Permessi community insufficienti.", "server.community.forbidden");
+      return null;
+    }
+
+    return {
+      ...authContext,
+      community,
+      membership
+    };
+  }
+
   function resolvePlayerForUser(nextState, user) {
     if (!user || !nextState || !Array.isArray(nextState.players)) {
       return null;
@@ -541,7 +574,127 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, { maps: listSupportedMaps(), diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
+      const communityId = url.searchParams.get("communityId") || null;
+      sendJson(res, 200, {
+        maps: listSupportedMaps(),
+        diceRuleSets: listDiceRuleSets(),
+        victoryRules: listVictoryRules(),
+        ruleModules: listRuleModules(),
+        communityModes: communityId ? await communityModes.listModesForCommunity(communityId) : [],
+        playerRange: { min: 2, max: 4 }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/communities") {
+      const authContext = await requireAuth(req, res, {});
+      if (!authContext) {
+        return;
+      }
+
+      sendJson(res, 200, { communities: await communities.listCommunitiesForUser(authContext.user.id) });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/communities") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      try {
+        authorize("community:create", { user: authContext.user });
+        const community = await communities.createOwnedCommunity(body, authContext.user);
+        sendJson(res, 201, { ok: true, community });
+      } catch (error) {
+        sendLocalizedError(res, error.statusCode || 400, error, "Creazione community non riuscita.", "server.community.createFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PATCH" && url.pathname.startsWith("/api/communities/")) {
+      const body = await parseBody(req);
+      const communityId = url.pathname.split("/").pop();
+      const managerContext = await requireCommunityManager(req, res, body, communityId);
+      if (!managerContext) {
+        return;
+      }
+
+      try {
+        const community = await communities.updateCommunity(communityId, body);
+        sendJson(res, 200, { ok: true, community });
+      } catch (error) {
+        sendLocalizedError(res, 400, error, "Aggiornamento community non riuscito.", "server.community.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/community-modes") {
+      const communityId = url.searchParams.get("communityId") || null;
+      if (!communityId) {
+        sendLocalizedError(res, 400, null, "communityId obbligatorio.", "server.communityMode.communityIdRequired");
+        return;
+      }
+
+      sendJson(res, 200, { modes: await communityModes.listModesForCommunity(communityId) });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/community-modes") {
+      const body = await parseBody(req);
+      const managerContext = await requireCommunityManager(req, res, body, body.communityId);
+      if (!managerContext) {
+        return;
+      }
+
+      try {
+        const mode = await communityModes.createMode({
+          communityId: body.communityId,
+          name: body.name,
+          definition: body.definition
+        });
+        sendJson(res, 201, { ok: true, mode });
+      } catch (error) {
+        sendLocalizedError(res, 400, error, "Creazione modalita non riuscita.", "server.communityMode.createFailed");
+      }
+      return;
+    }
+
+    if (req.method === "PATCH" && url.pathname.startsWith("/api/community-modes/")) {
+      const body = await parseBody(req);
+      const modeId = url.pathname.split("/").pop();
+      const existingMode = await communityModes.getMode(modeId);
+      if (!existingMode) {
+        sendLocalizedError(res, 404, null, "Modalita non trovata.", "server.communityMode.notFound");
+        return;
+      }
+
+      const managerContext = await requireCommunityManager(req, res, body, existingMode.communityId);
+      if (!managerContext) {
+        return;
+      }
+
+      try {
+        const mode = await communityModes.updateMode(modeId, body);
+        sendJson(res, 200, { ok: true, mode });
+      } catch (error) {
+        sendLocalizedError(res, 400, error, "Aggiornamento modalita non riuscito.", "server.communityMode.updateFailed");
+      }
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/leaderboards") {
+      const communityId = url.searchParams.get("communityId") || null;
+      const gameModeId = url.searchParams.get("gameModeId") || null;
+      if (!communityId) {
+        sendLocalizedError(res, 400, null, "communityId obbligatorio.", "server.leaderboard.communityIdRequired");
+        return;
+      }
+
+      sendJson(res, 200, {
+        entries: await leaderboards.listLeaderboardEntries(communityId, gameModeId)
+      });
       return;
     }
 
@@ -554,7 +707,27 @@ function createApp(options = {}) {
 
       try {
         const policy = authorize("game:create", { user: authContext.user });
-        const configured = createConfiguredInitialState(body);
+        let modeDefinitionPatch = body;
+        let selectedMode = null;
+        if (body.gameModeId) {
+          selectedMode = await communityModes.getMode(body.gameModeId);
+          if (!selectedMode) {
+            throw createLocalizedError("La modalita selezionata non esiste.", "server.game.invalidMode");
+          }
+          modeDefinitionPatch = {
+            ...body,
+            communityId: body.communityId || selectedMode.communityId,
+            gameModeId: selectedMode.id,
+            gameModeName: selectedMode.name,
+            mapId: selectedMode.definition.mapId,
+            diceRuleSetId: selectedMode.definition.diceRuleSetId,
+            victoryRuleId: selectedMode.definition.victoryRuleId,
+            enabledRuleModuleIds: selectedMode.definition.enabledRuleModuleIds,
+            setupOptions: selectedMode.definition.setupOptions
+          };
+        }
+
+        const configured = createConfiguredInitialState(modeDefinitionPatch);
         const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
         if (!creatorJoin.ok) {
           throw createLocalizedError(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.", creatorJoin.errorKey || "server.game.create.creatorJoinFailed", creatorJoin.errorParams);
@@ -621,7 +794,11 @@ function createApp(options = {}) {
       }
 
       try {
-        sendJson(res, 200, { profile: await playerProfiles.getPlayerProfile(authContext.user.username) });
+        sendJson(res, 200, {
+          profile: await playerProfiles.getPlayerProfile(authContext.user.username, {
+            communityId: url.searchParams.get("communityId") || null
+          })
+        });
       } catch (error) {
         sendLocalizedError(res, 400, error, "Profilo non disponibile.", "server.profile.unavailable");
       }
@@ -1112,13 +1289,16 @@ function createApp(options = {}) {
 
   return {
     auth,
+    communities,
+    communityModes,
     datastore,
     handleApi,
     handleRequest,
     parseBody,
     sendJson,
     server,
-    state
+    state,
+    leaderboards
   };
 }
 

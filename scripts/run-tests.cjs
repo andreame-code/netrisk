@@ -1955,6 +1955,75 @@ register("API game options espone setup base per nuova partita", async () => {
   });
 });
 
+register("API communities crea e lista community dell'utente autenticato", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("community_owner"));
+    const created = await fetch(baseUrl + "/api/communities", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        slug: uniqueName("arena").toLowerCase(),
+        name: "Arena Strategica",
+        branding: { themeColor: "#123456" }
+      })
+    });
+    assert.equal(created.status, 201);
+    const createdPayload = await created.json();
+    assert.equal(createdPayload.community.name, "Arena Strategica");
+
+    const listed = await fetch(baseUrl + "/api/communities", {
+      headers: authHeaders(session.sessionToken)
+    });
+    assert.equal(listed.status, 200);
+    const listedPayload = await listed.json();
+    assert.equal(listedPayload.communities.length, 1);
+    assert.equal(listedPayload.communities[0].id, createdPayload.community.id);
+  });
+});
+
+register("API community modes persiste una modalita tenant-specific e la espone in game options", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("mode_owner"));
+    const communityResponse = await fetch(baseUrl + "/api/communities", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        slug: uniqueName("league").toLowerCase(),
+        name: "League"
+      })
+    });
+    const community = (await communityResponse.json()).community;
+
+    const modeResponse = await fetch(baseUrl + "/api/community-modes", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        communityId: community.id,
+        name: "Territory Sprint",
+        definition: {
+          mapId: "classic-mini",
+          diceRuleSetId: "standard-3-defense",
+          victoryRuleId: "territory-control",
+          enabledRuleModuleIds: ["reinforcement-bonus"],
+          setupOptions: {
+            targetTerritoryCount: 5,
+            extraReinforcementsPerTurn: 2
+          }
+        }
+      })
+    });
+    assert.equal(modeResponse.status, 201);
+    const mode = (await modeResponse.json()).mode;
+    assert.equal(mode.definition.victoryRuleId, "territory-control");
+
+    const optionsResponse = await fetch(baseUrl + `/api/game-options?communityId=${encodeURIComponent(community.id)}`);
+    assert.equal(optionsResponse.status, 200);
+    const optionsPayload = await optionsResponse.json();
+    assert.equal(optionsPayload.communityModes.length, 1);
+    assert.equal(optionsPayload.communityModes[0].id, mode.id);
+  });
+});
+
 register("API games crea una sessione da configurazione strutturata", async () => {
   await withServer(async (baseUrl) => {
     const session = await createAuthenticatedSession(baseUrl,       uniqueName("creator")
@@ -1987,6 +2056,57 @@ register("API games crea una sessione da configurazione strutturata", async () =
     assert.equal(payload.playerId != null, true);
     assert.equal(payload.state.players.some((player) => player.id === payload.playerId && player.name === session.user.username && player.isAi === false), true);
     assert.equal(payload.state.players.filter((player) => player.isAi).length, 2);
+  });
+});
+
+register("API games puo creare una partita a partire da una community mode persistita", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("mode_game_owner"));
+    const communityResponse = await fetch(baseUrl + "/api/communities", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        slug: uniqueName("guild").toLowerCase(),
+        name: "Guild"
+      })
+    });
+    const community = (await communityResponse.json()).community;
+
+    const modeResponse = await fetch(baseUrl + "/api/community-modes", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        communityId: community.id,
+        name: "Guild Control",
+        definition: {
+          mapId: "classic-mini",
+          diceRuleSetId: "standard-3-defense",
+          victoryRuleId: "territory-control",
+          setupOptions: {
+            targetTerritoryCount: 5
+          }
+        }
+      })
+    });
+    const mode = (await modeResponse.json()).mode;
+
+    const createGameResponse = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: "Guild Match",
+        communityId: community.id,
+        gameModeId: mode.id,
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      })
+    });
+    assert.equal(createGameResponse.status, 201);
+    const payload = await createGameResponse.json();
+    assert.equal(payload.state.communityId, community.id);
+    assert.equal(payload.state.gameModeId, mode.id);
+    assert.equal(payload.state.gameConfig.gameModeDefinition.victoryRuleId, "territory-control");
+    assert.equal(payload.game.communityId, community.id);
   });
 });
 
@@ -2877,6 +2997,84 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     assert.equal(profilePayload.profile.gamesInProgress, 1);
     assert.equal(profilePayload.profile.gamesPlayed, 0);
     assert.equal(profilePayload.profile.winRate, null);
+  });
+});
+
+register("API leaderboards separa le classifiche per community", async () => {
+  await withServer(async (baseUrl, context) => {
+    const alphaOwner = await createAuthenticatedSession(baseUrl, uniqueName("alpha_owner"));
+    const betaOwner = await createAuthenticatedSession(baseUrl, uniqueName("beta_owner"));
+
+    const alphaCommunity = (await (await fetch(baseUrl + "/api/communities", {
+      method: "POST",
+      headers: authHeaders(alphaOwner.sessionToken),
+      body: JSON.stringify({ slug: uniqueName("alpha").toLowerCase(), name: "Alpha" })
+    })).json()).community;
+    const betaCommunity = (await (await fetch(baseUrl + "/api/communities", {
+      method: "POST",
+      headers: authHeaders(betaOwner.sessionToken),
+      body: JSON.stringify({ slug: uniqueName("beta").toLowerCase(), name: "Beta" })
+    })).json()).community;
+
+    const alphaGame = createInitialState();
+    alphaGame.communityId = alphaCommunity.id;
+    alphaGame.gameModeId = "alpha-default";
+    alphaGame.phase = "finished";
+    alphaGame.players = [
+      { id: "a1", name: alphaOwner.user.username, isAi: false },
+      { id: "a2", name: "Opponent Alpha", isAi: false }
+    ];
+    alphaGame.winnerId = "a1";
+    alphaGame.territories = {
+      a: { ownerId: "a1", armies: 1 },
+      b: { ownerId: "a2", armies: 1 }
+    };
+
+    const betaGame = createInitialState();
+    betaGame.communityId = betaCommunity.id;
+    betaGame.gameModeId = "beta-default";
+    betaGame.phase = "finished";
+    betaGame.players = [
+      { id: "b1", name: betaOwner.user.username, isAi: false },
+      { id: "b2", name: "Opponent Beta", isAi: false }
+    ];
+    betaGame.winnerId = "b2";
+    betaGame.territories = {
+      a: { ownerId: "b1", armies: 1 },
+      b: { ownerId: "b2", armies: 1 }
+    };
+
+    const timestamp = new Date().toISOString();
+    context.app.datastore.createGame({
+      id: `alpha-${uniqueSuffix()}`,
+      name: "Alpha Finished",
+      version: 1,
+      creatorUserId: alphaOwner.user.id,
+      state: alphaGame,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+    context.app.datastore.createGame({
+      id: `beta-${uniqueSuffix()}`,
+      name: "Beta Finished",
+      version: 1,
+      creatorUserId: betaOwner.user.id,
+      state: betaGame,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    });
+
+    const alphaBoard = await fetch(baseUrl + `/api/leaderboards?communityId=${encodeURIComponent(alphaCommunity.id)}`);
+    assert.equal(alphaBoard.status, 200);
+    const alphaPayload = await alphaBoard.json();
+    assert.equal(alphaPayload.entries.length, 2);
+    assert.equal(alphaPayload.entries[0].playerName, alphaOwner.user.username);
+
+    const betaBoard = await fetch(baseUrl + `/api/leaderboards?communityId=${encodeURIComponent(betaCommunity.id)}`);
+    assert.equal(betaBoard.status, 200);
+    const betaPayload = await betaBoard.json();
+    assert.equal(betaPayload.entries.length, 2);
+    assert.equal(betaPayload.entries[0].playerName, "Opponent Beta");
   });
 });
 
