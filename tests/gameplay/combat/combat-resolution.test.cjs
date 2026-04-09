@@ -1,7 +1,12 @@
 const assert = require("node:assert/strict");
 const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-resolution.cjs");
 const { compareCombatDice, rollCombatDice } = require("../../../backend/engine/combat-dice.cjs");
-const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet } = require("../../../shared/dice.cjs");
+const {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
+  STANDARD_DICE_RULE_SET_ID,
+  getDiceRuleSet,
+  listDiceRuleSets
+} = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 
@@ -94,6 +99,33 @@ register("standard dice rule set espone i limiti classici di combattimento", () 
   assert.equal(ruleSet.defenderMaxDice, 2);
   assert.equal(ruleSet.attackerMustLeaveOneArmyBehind, true);
   assert.equal(ruleSet.defenderWinsTies, true);
+});
+
+register("defense 3 dice rule set espone l'opzione difensiva estesa", () => {
+  const ruleSet = getDiceRuleSet(DEFENSE_THREE_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.id, DEFENSE_THREE_DICE_RULE_SET_ID);
+  assert.equal(ruleSet.attackerMaxDice, 3);
+  assert.equal(ruleSet.defenderMaxDice, 3);
+
+  const listedIds = listDiceRuleSets().map((entry) => entry.id);
+  assert.equal(listedIds.includes(DEFENSE_THREE_DICE_RULE_SET_ID), true);
+});
+
+register("resolveSingleAttackRoll supporta fino a 3 dadi in difesa con il rule set esteso", () => {
+  const { graph, state } = setupCombatState(5, 4);
+  const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+    diceRuleSet: getDiceRuleSet(DEFENSE_THREE_DICE_RULE_SET_ID),
+    attackDice: 3,
+    defendDice: 3,
+    random: createFixedRandom(rollsToRandomValues([6, 5, 1, 4, 3, 2]))
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.diceRuleSetId, DEFENSE_THREE_DICE_RULE_SET_ID);
+  assert.equal(result.combat.attackDiceCount, 3);
+  assert.equal(result.combat.defendDiceCount, 3);
+  assert.deepEqual(result.combat.attackerRolls, [6, 5, 1]);
+  assert.deepEqual(result.combat.defenderRolls, [4, 3, 2]);
 });
 
 register("combat dice helpers tirano ordinato e confrontano in modo puro", () => {
