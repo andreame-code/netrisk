@@ -202,7 +202,22 @@ function createApp(options = {}) {
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
   const clientsByGameId = new Map();
+  const authRateLimitMap = new Map();
   let initPromise = null;
+
+  function checkAuthRateLimit(req) {
+    const ip = req.socket?.remoteAddress || req.headers["x-forwarded-for"] || "unknown";
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const maxAttempts = 10;
+    const entry = authRateLimitMap.get(ip);
+    if (!entry || now > entry.resetAt) {
+      authRateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
+      return true;
+    }
+    entry.count++;
+    return entry.count <= maxAttempts;
+  }
 
   const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
   if (isPromiseLike(eagerInitialGame)) {
@@ -436,7 +451,7 @@ function createApp(options = {}) {
         return player.linkedUserId === user.id;
       }
 
-      return player.name === user.username;
+      return false;
     }) || null;
   }
 
@@ -445,11 +460,11 @@ function createApp(options = {}) {
       return false;
     }
 
-    if (player.linkedUserId) {
-      return player.linkedUserId === user.id;
+    if (!player.linkedUserId) {
+      return false;
     }
 
-    return player.name === user.username;
+    return player.linkedUserId === user.id;
   }
 
   function visibleHandForPlayer(nextState, player) {
@@ -636,11 +651,13 @@ function createApp(options = {}) {
       }
       const gameContext = await loadGameContext(gameId);
       await resumeAiTurnsForRead(gameContext);
+      const allowedOrigin = req.headers.origin || null;
+      const corsHeaders = allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin, "Vary": "Origin" } : {};
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "*"
+        ...corsHeaders
       });
       res.write("data: " + JSON.stringify(snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, access.user || null)) + "\n\n");
       const key = gameContext.gameId || "__default__";
@@ -663,6 +680,10 @@ function createApp(options = {}) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
+      if (!checkAuthRateLimit(req)) {
+        sendLocalizedError(res, 429, null, "Troppi tentativi. Riprova tra 15 minuti.", "auth.rateLimitExceeded");
+        return;
+      }
       const body = await parseBody(req);
       const result = await auth.registerPasswordUser({
         username: body.username,
@@ -683,6 +704,10 @@ function createApp(options = {}) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
+      if (!checkAuthRateLimit(req)) {
+        sendLocalizedError(res, 429, null, "Troppi tentativi. Riprova tra 15 minuti.", "auth.rateLimitExceeded");
+        return;
+      }
       const body = await parseBody(req);
       const result = await auth.loginWithPassword(body.username, body.password);
       if (!result.ok) {
@@ -1059,8 +1084,9 @@ function createApp(options = {}) {
       : url.pathname.indexOf("/game/") === 0
         ? "/game.html"
         : url.pathname;
-    const filePath = path.join(publicDir, relativePath);
-    if (filePath.indexOf(publicDir) !== 0) {
+    const resolvedPublicDir = path.resolve(publicDir);
+    const filePath = path.resolve(path.join(publicDir, relativePath));
+    if (filePath !== resolvedPublicDir && !filePath.startsWith(resolvedPublicDir + path.sep)) {
       sendLocalizedError(res, 403, null, "Accesso negato.", "server.static.accessDenied");
       return;
     }
@@ -1091,8 +1117,18 @@ function createApp(options = {}) {
     });
   }
 
+  function addSecurityHeaders(res) {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Content-Security-Policy",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+  }
+
   function handleRequest(req, res) {
     const url = new URL(req.url, "http://" + req.headers.host);
+
+    addSecurityHeaders(res);
 
     Promise.resolve()
       .then(() => {
