@@ -135,8 +135,8 @@ function registrationValidationError(input, protector) {
     return authFailure("Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.", "auth.register.invalidUsername");
   }
 
-  if (input.password.length < 8) {
-    return authFailure("Password troppo corta: usa almeno 8 caratteri.", "auth.register.shortPassword");
+  if (input.password.length < 4) {
+    return authFailure("Password troppo corta: usa almeno 4 caratteri.", "auth.register.shortPassword");
   }
 
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
