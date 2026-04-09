@@ -1,4 +1,5 @@
 const STANDARD_DICE_RULE_SET_ID = "standard";
+const DEFENSE_THREE_DICE_RULE_SET_ID = "defense-3";
 
 const standardDiceRuleSet = Object.freeze({
   id: STANDARD_DICE_RULE_SET_ID,
@@ -9,8 +10,18 @@ const standardDiceRuleSet = Object.freeze({
   defenderWinsTies: true
 });
 
+const defenseThreeDiceRuleSet = Object.freeze({
+  id: DEFENSE_THREE_DICE_RULE_SET_ID,
+  name: "Defense 3 Dice",
+  attackerMaxDice: 3,
+  defenderMaxDice: 3,
+  attackerMustLeaveOneArmyBehind: true,
+  defenderWinsTies: true
+});
+
 const diceRuleSets = Object.freeze({
-  [STANDARD_DICE_RULE_SET_ID]: standardDiceRuleSet
+  [STANDARD_DICE_RULE_SET_ID]: standardDiceRuleSet,
+  [DEFENSE_THREE_DICE_RULE_SET_ID]: defenseThreeDiceRuleSet
 });
 
 function findDiceRuleSet(ruleSetId) {
@@ -35,7 +46,9 @@ function listDiceRuleSets() {
 }
 
 module.exports = {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
   STANDARD_DICE_RULE_SET_ID,
+  defenseThreeDiceRuleSet,
   findDiceRuleSet,
   getDiceRuleSet,
   listDiceRuleSets,

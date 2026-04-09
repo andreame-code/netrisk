@@ -7,7 +7,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
+const { createConfiguredInitialState, listDiceRuleSets, listNewGameRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
@@ -541,7 +541,12 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, { maps: listSupportedMaps(), diceRuleSets: listDiceRuleSets(), playerRange: { min: 2, max: 4 } });
+      sendJson(res, 200, {
+        ruleSets: listNewGameRuleSets(),
+        maps: listSupportedMaps(),
+        diceRuleSets: listDiceRuleSets(),
+        playerRange: { min: 2, max: 4 }
+      });
       return;
     }
 

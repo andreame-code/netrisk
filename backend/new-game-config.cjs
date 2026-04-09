@@ -1,5 +1,10 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
-const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
+const {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
+  findDiceRuleSet,
+  listDiceRuleSets,
+  STANDARD_DICE_RULE_SET_ID
+} = require("../shared/dice.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
 const { secureRandom } = require("./random.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
@@ -19,8 +24,45 @@ const AI_GENERAL_NAMES = [
   "Grant"
 ];
 
+const STANDARD_NEW_GAME_RULE_SET_ID = "classic";
+
+const standardNewGameRuleSet = Object.freeze({
+  id: STANDARD_NEW_GAME_RULE_SET_ID,
+  name: "Classic",
+  defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID
+});
+
+const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
+
+const defenseThreeNewGameRuleSet = Object.freeze({
+  id: DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
+  name: "Classic Defense 3",
+  defaultDiceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID
+});
+
+const newGameRuleSets = Object.freeze({
+  [STANDARD_NEW_GAME_RULE_SET_ID]: standardNewGameRuleSet,
+  [DEFENSE_THREE_NEW_GAME_RULE_SET_ID]: defenseThreeNewGameRuleSet
+});
+
 function normalizePlayerType(value) {
   return value === "ai" ? "ai" : "human";
+}
+
+function findNewGameRuleSet(ruleSetId) {
+  if (!ruleSetId) {
+    return null;
+  }
+
+  return newGameRuleSets[ruleSetId] || null;
+}
+
+function listNewGameRuleSets() {
+  return Object.values(newGameRuleSets).map((ruleSet) => ({
+    id: ruleSet.id,
+    name: ruleSet.name,
+    defaultDiceRuleSetId: ruleSet.defaultDiceRuleSetId
+  }));
 }
 
 function buildHistoricalAiNames(count, random = secureRandom) {
@@ -50,13 +92,19 @@ function validateNewGameConfig(input = {}, options = {}) {
     throw createLocalizedError("Il numero totale di giocatori deve essere compreso tra 2 e 4.", "newGame.invalidTotalPlayers");
   }
 
+  const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
+  const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
+  if (!selectedRuleSet) {
+    throw createLocalizedError("Il ruleset selezionato non e supportato.", "newGame.invalidRuleSet");
+  }
+
   const mapId = String(input.mapId || "classic-mini");
   const selectedMap = findSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
 
-  const requestedDiceRuleSetId = String(input.diceRuleSetId || STANDARD_DICE_RULE_SET_ID);
+  const requestedDiceRuleSetId = String(input.diceRuleSetId || selectedRuleSet.defaultDiceRuleSetId || STANDARD_DICE_RULE_SET_ID);
   const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
@@ -90,6 +138,8 @@ function validateNewGameConfig(input = {}, options = {}) {
 
   return {
     name: input.name,
+    ruleSetId: selectedRuleSet.id,
+    ruleSetName: selectedRuleSet.name,
     mapId,
     mapName: selectedMap.name,
     selectedMap,
@@ -104,6 +154,8 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
   const state = createInitialState(config.selectedMap);
   state.diceRuleSetId = config.diceRuleSetId;
   state.gameConfig = {
+    ruleSetId: config.ruleSetId,
+    ruleSetName: config.ruleSetName,
     mapId: config.mapId,
     mapName: config.mapName,
     diceRuleSetId: config.diceRuleSetId,
@@ -131,10 +183,16 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 
 module.exports = {
   AI_GENERAL_NAMES,
+  DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
+  STANDARD_NEW_GAME_RULE_SET_ID,
+  defenseThreeNewGameRuleSet,
   listDiceRuleSets,
+  listNewGameRuleSets,
   listSupportedMaps,
   buildHistoricalAiNames,
   createConfiguredInitialState,
+  findNewGameRuleSet,
   findSupportedMap,
+  standardNewGameRuleSet,
   validateNewGameConfig
 };
