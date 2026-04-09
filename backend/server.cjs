@@ -451,7 +451,7 @@ function createApp(options = {}) {
         return player.linkedUserId === user.id;
       }
 
-      return false;
+      return player.name === user.username;
     }) || null;
   }
 
