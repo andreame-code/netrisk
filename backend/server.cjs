@@ -202,22 +202,7 @@ function createApp(options = {}) {
     sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
   const clientsByGameId = new Map();
-  const authRateLimitMap = new Map();
   let initPromise = null;
-
-  function checkAuthRateLimit(req) {
-    const ip = req.socket?.remoteAddress || req.headers["x-forwarded-for"] || "unknown";
-    const now = Date.now();
-    const windowMs = 15 * 60 * 1000;
-    const maxAttempts = 10;
-    const entry = authRateLimitMap.get(ip);
-    if (!entry || now > entry.resetAt) {
-      authRateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-      return true;
-    }
-    entry.count++;
-    return entry.count <= maxAttempts;
-  }
 
   const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
   if (isPromiseLike(eagerInitialGame)) {
@@ -651,13 +636,11 @@ function createApp(options = {}) {
       }
       const gameContext = await loadGameContext(gameId);
       await resumeAiTurnsForRead(gameContext);
-      const allowedOrigin = req.headers.origin || null;
-      const corsHeaders = allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin, "Vary": "Origin" } : {};
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
-        ...corsHeaders
+        "Access-Control-Allow-Origin": "*"
       });
       res.write("data: " + JSON.stringify(snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, access.user || null)) + "\n\n");
       const key = gameContext.gameId || "__default__";
@@ -680,10 +663,6 @@ function createApp(options = {}) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
-      if (!checkAuthRateLimit(req)) {
-        sendLocalizedError(res, 429, null, "Troppi tentativi. Riprova tra 15 minuti.", "auth.rateLimitExceeded");
-        return;
-      }
       const body = await parseBody(req);
       const result = await auth.registerPasswordUser({
         username: body.username,
@@ -704,10 +683,6 @@ function createApp(options = {}) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
-      if (!checkAuthRateLimit(req)) {
-        sendLocalizedError(res, 429, null, "Troppi tentativi. Riprova tra 15 minuti.", "auth.rateLimitExceeded");
-        return;
-      }
       const body = await parseBody(req);
       const result = await auth.loginWithPassword(body.username, body.password);
       if (!result.ok) {
