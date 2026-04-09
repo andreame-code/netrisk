@@ -1,5 +1,10 @@
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs");
-const { findDiceRuleSet, listDiceRuleSets, STANDARD_DICE_RULE_SET_ID } = require("../shared/dice.cjs");
+const {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
+  findDiceRuleSet,
+  listDiceRuleSets,
+  STANDARD_DICE_RULE_SET_ID
+} = require("../shared/dice.cjs");
 const { findSupportedMap, listSupportedMaps } = require("../shared/maps/index.cjs");
 const { secureRandom } = require("./random.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
@@ -27,8 +32,17 @@ const standardNewGameRuleSet = Object.freeze({
   defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID
 });
 
+const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
+
+const defenseThreeNewGameRuleSet = Object.freeze({
+  id: DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
+  name: "Classic Defense 3",
+  defaultDiceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID
+});
+
 const newGameRuleSets = Object.freeze({
-  [STANDARD_NEW_GAME_RULE_SET_ID]: standardNewGameRuleSet
+  [STANDARD_NEW_GAME_RULE_SET_ID]: standardNewGameRuleSet,
+  [DEFENSE_THREE_NEW_GAME_RULE_SET_ID]: defenseThreeNewGameRuleSet
 });
 
 function normalizePlayerType(value) {
@@ -169,7 +183,9 @@ function createConfiguredInitialState(configInput = {}, options = {}) {
 
 module.exports = {
   AI_GENERAL_NAMES,
+  DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
   STANDARD_NEW_GAME_RULE_SET_ID,
+  defenseThreeNewGameRuleSet,
   listDiceRuleSets,
   listNewGameRuleSets,
   listSupportedMaps,

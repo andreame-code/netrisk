@@ -10,8 +10,12 @@ test("new game setup keeps player 1 locked as creator and creates the configured
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#setup-ruleset")).toBeVisible();
+  await expect(page.locator("#setup-ruleset")).toContainText("Classic Defense 3");
   await expect(page.locator("#setup-map")).toBeEnabled();
   await expect(page.locator("#setup-dice-ruleset")).toBeHidden();
+
+  await page.locator("#setup-ruleset").selectOption("classic-defense-3");
+  await expect(page.locator("#setup-ruleset-summary")).toContainText("Defense 3 Dice");
 
   await page.locator("#setup-customize-options").check();
   await expect(page.locator("#setup-dice-ruleset")).toBeVisible();
