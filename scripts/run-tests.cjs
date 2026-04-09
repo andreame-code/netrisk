@@ -32,9 +32,19 @@ const {
   standardTradeBonusForIndex,
   validateStandardCardSet
 } = require("../shared/cards.cjs");
-const { STANDARD_DICE_RULE_SET_ID, getDiceRuleSet, listDiceRuleSets, standardDiceRuleSet } = require("../shared/dice.cjs");
+const {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
+  STANDARD_DICE_RULE_SET_ID,
+  getDiceRuleSet,
+  listDiceRuleSets,
+  standardDiceRuleSet
+} = require("../shared/dice.cjs");
 const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
-const { createConfiguredInitialState, validateNewGameConfig } = require("../backend/new-game-config.cjs");
+const {
+  DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
+  createConfiguredInitialState,
+  validateNewGameConfig
+} = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
@@ -1640,6 +1650,15 @@ register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
   });
   assert.equal(defaultConfig.diceRuleSetId, "standard");
 
+  const defenseThreeRuleSetConfig = validateNewGameConfig({
+    ruleSetId: DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
+    mapId: "classic-mini",
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai" }]
+  });
+  assert.equal(defenseThreeRuleSetConfig.ruleSetId, DEFENSE_THREE_NEW_GAME_RULE_SET_ID);
+  assert.equal(defenseThreeRuleSetConfig.diceRuleSetId, DEFENSE_THREE_DICE_RULE_SET_ID);
+
   const explicitConfig = validateNewGameConfig({
     mapId: "classic-mini",
     diceRuleSetId: "standard",
@@ -1948,8 +1967,11 @@ register("API game options espone setup base per nuova partita", async () => {
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.deepEqual(payload.maps, listSupportedMaps());
+    assert.equal(Array.isArray(payload.ruleSets), true);
+    assert.equal(payload.ruleSets.some((ruleSet) => ruleSet.id === DEFENSE_THREE_NEW_GAME_RULE_SET_ID), true);
     assert.equal(Array.isArray(payload.diceRuleSets), true);
     assert.equal(payload.diceRuleSets[0].id, "standard");
+    assert.equal(payload.diceRuleSets.some((ruleSet) => ruleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID), true);
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
   });
