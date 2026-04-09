@@ -47,10 +47,6 @@ function verifyPassword(credentials, password) {
     return false;
   }
 
-  if (typeof record.secret === "string") {
-    return record.secret === String(password || "");
-  }
-
   if (!record.salt || !record.hash) {
     return false;
   }
@@ -78,7 +74,6 @@ function dataProtectionKey(options = {}) {
   const raw = String(
     options.encryptionKey
     || process.env.AUTH_ENCRYPTION_KEY
-    || process.env.SUPABASE_SERVICE_ROLE_KEY
     || ""
   ).trim();
 
@@ -140,8 +135,8 @@ function registrationValidationError(input, protector) {
     return authFailure("Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.", "auth.register.invalidUsername");
   }
 
-  if (input.password.length < 4) {
-    return authFailure("Password troppo corta: usa almeno 4 caratteri.", "auth.register.shortPassword");
+  if (input.password.length < 8) {
+    return authFailure("Password troppo corta: usa almeno 8 caratteri.", "auth.register.shortPassword");
   }
 
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
@@ -268,6 +263,13 @@ function createAuthStore(options = {}) {
 
     const session = await datastore.findSession(sessionToken);
     if (!session) {
+      return null;
+    }
+
+    const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 giorni
+    const createdAt = session.created_at || session.createdAt || 0;
+    if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
+      await datastore.deleteSession(sessionToken);
       return null;
     }
 
