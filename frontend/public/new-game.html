@@ -76,10 +76,33 @@
                 <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" data-i18n-placeholder="newGame.name.placeholder" />
               </label>
               <label class="field-stack">
+                <span data-i18n="newGame.ruleset.label">Ruleset</span>
+                <select id="setup-ruleset"></select>
+              </label>
+              <div id="setup-ruleset-summary" class="setup-ruleset-card" aria-live="polite"></div>
+              <label class="field-stack">
                 <span data-i18n="newGame.map.label">Mappa</span>
                 <select id="setup-map"></select>
               </label>
               <div id="setup-map-details" class="map-setup-card" aria-live="polite"></div>
+              <section class="setup-options-stack" aria-labelledby="setup-options-heading">
+                <div class="section-title-row compact-row">
+                  <div>
+                    <h4 id="setup-options-heading" data-i18n="newGame.options.heading">Opzioni</h4>
+                    <p class="stage-copy" data-i18n="newGame.options.copy">Puoi lasciare le impostazioni del ruleset oppure aprire la personalizzazione.</p>
+                  </div>
+                </div>
+                <label class="setup-options-toggle" for="setup-customize-options">
+                  <input id="setup-customize-options" type="checkbox" />
+                  <span data-i18n="newGame.options.customizeLabel">Personalizza opzioni</span>
+                </label>
+                <div id="setup-advanced-options" class="setup-advanced-options" hidden>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.dice.label">Dadi</span>
+                    <select id="setup-dice-ruleset"></select>
+                  </label>
+                </div>
+              </section>
               <label class="field-stack">
                 <span data-i18n="newGame.totalPlayers.label">Giocatori totali</span>
                 <select id="setup-total-players">

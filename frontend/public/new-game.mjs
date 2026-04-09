@@ -1,7 +1,9 @@
 import { t, translateServerMessage } from "./i18n.mjs";
 
 const state = {
+  ruleSets: [],
   maps: [],
+  diceRuleSets: [],
   user: null,
   creating: false,
   sessionReady: false
@@ -17,8 +19,13 @@ const elements = {
   headerAuthPassword: document.querySelector("#header-auth-password"),
   headerLoginButton: document.querySelector("#header-login-button"),
   logoutButton: document.querySelector("#logout-button"),
+  ruleSet: document.querySelector("#setup-ruleset"),
+  ruleSetSummary: document.querySelector("#setup-ruleset-summary"),
   map: document.querySelector("#setup-map"),
   mapDetails: document.querySelector("#setup-map-details"),
+  customizeOptions: document.querySelector("#setup-customize-options"),
+  advancedOptions: document.querySelector("#setup-advanced-options"),
+  diceRuleSet: document.querySelector("#setup-dice-ruleset"),
   playerSlots: document.querySelector("#setup-player-slots"),
   submit: document.querySelector("#submit-new-game"),
   totalPlayers: document.querySelector("#setup-total-players")
@@ -87,6 +94,65 @@ function selectedMapSummary() {
   return state.maps.find((map) => map.id === elements.map.value) || null;
 }
 
+function selectedRuleSet() {
+  return state.ruleSets.find((ruleSet) => ruleSet.id === elements.ruleSet.value) || null;
+}
+
+function selectedDiceRuleSet() {
+  return state.diceRuleSets.find((ruleSet) => ruleSet.id === elements.diceRuleSet.value) || null;
+}
+
+function diceRuleSetLabel(ruleSet) {
+  if (!ruleSet) {
+    return t("common.notAvailable");
+  }
+
+  return ruleSet.name + " (" + ruleSet.attackerMaxDice + "/" + ruleSet.defenderMaxDice + ")";
+}
+
+function syncRuleSetDefaults() {
+  const ruleSet = selectedRuleSet();
+  if (!ruleSet) {
+    return;
+  }
+
+  elements.diceRuleSet.value = ruleSet.defaultDiceRuleSetId;
+}
+
+function renderRuleSetSummary() {
+  const ruleSet = selectedRuleSet();
+  if (!ruleSet) {
+    elements.ruleSetSummary.innerHTML = "";
+    return;
+  }
+
+  const activeDiceRuleSet = elements.customizeOptions.checked
+    ? selectedDiceRuleSet()
+    : state.diceRuleSets.find((entry) => entry.id === ruleSet.defaultDiceRuleSetId) || null;
+
+  elements.ruleSetSummary.innerHTML =
+    '<div class="map-setup-card-head">' +
+      '<strong>' + ruleSet.name + '</strong>' +
+      '<span class="badge">' + diceRuleSetLabel(activeDiceRuleSet) + '</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">' +
+      t(
+        elements.customizeOptions.checked
+          ? "newGame.ruleset.summary.custom"
+          : "newGame.ruleset.summary.default",
+        {
+          ruleset: ruleSet.name,
+          dice: diceRuleSetLabel(activeDiceRuleSet)
+        }
+      ) +
+    '</p>';
+}
+
+function renderAdvancedOptions() {
+  elements.advancedOptions.hidden = !elements.customizeOptions.checked;
+  renderRuleSetSummary();
+}
+
 function renderMapDetails() {
   const map = selectedMapSummary();
   if (!map) {
@@ -120,7 +186,9 @@ function readConfig() {
 
   return {
     name: elements.gameName.value.trim() || undefined,
+    ruleSetId: elements.ruleSet.value,
     mapId: elements.map.value,
+    ...(elements.customizeOptions.checked ? { diceRuleSetId: elements.diceRuleSet.value } : {}),
     totalPlayers,
     players
   };
@@ -147,7 +215,13 @@ async function loadOptions() {
   }
 
   state.maps = data.maps || [];
+  state.ruleSets = data.ruleSets || [];
+  state.diceRuleSets = data.diceRuleSets || [];
+  elements.ruleSet.innerHTML = state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join("");
   elements.map.innerHTML = state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join("");
+  elements.diceRuleSet.innerHTML = state.diceRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + diceRuleSetLabel(ruleSet) + '</option>').join("");
+  syncRuleSetDefaults();
+  renderRuleSetSummary();
   renderMapDetails();
 }
 
@@ -198,7 +272,13 @@ async function loginWithCredentials(username, password) {
 }
 
 elements.totalPlayers.addEventListener("change", renderSlots);
+elements.ruleSet.addEventListener("change", () => {
+  syncRuleSetDefaults();
+  renderRuleSetSummary();
+});
 elements.map.addEventListener("change", renderMapDetails);
+elements.customizeOptions.addEventListener("change", renderAdvancedOptions);
+elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
 elements.playerSlots.addEventListener("change", (event) => {
   if (!event.target.matches('[data-role="type"]')) {
     return;
@@ -270,5 +350,6 @@ if (elements.headerLoginForm) {
 
 await loadOptions();
 renderSlots();
+renderAdvancedOptions();
 updateSubmitState();
 await restoreSession();
