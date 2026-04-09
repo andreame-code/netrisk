@@ -47,10 +47,6 @@ function verifyPassword(credentials, password) {
     return false;
   }
 
-  if (typeof record.secret === "string") {
-    return record.secret === String(password || "");
-  }
-
   if (!record.salt || !record.hash) {
     return false;
   }
@@ -78,7 +74,6 @@ function dataProtectionKey(options = {}) {
   const raw = String(
     options.encryptionKey
     || process.env.AUTH_ENCRYPTION_KEY
-    || process.env.SUPABASE_SERVICE_ROLE_KEY
     || ""
   ).trim();
 
@@ -235,20 +230,26 @@ function createAuthStore(options = {}) {
 
   async function loginWithPassword(username, password) {
     const user = await findByUsername(username);
-    if (!user || !verifyPassword(user.credentials, password)) {
-      return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
-    }
 
-    if (typeof user.credentials?.password?.secret === "string") {
+    if (typeof user?.credentials?.password?.secret === "string") {
+      // Password in chiaro (legacy): verifica e migra subito a scrypt
+      if (!user || user.credentials.password.secret !== String(password || "")) {
+        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
+      }
       await datastore.updateUserCredentials(user.id, {
         ...user.credentials,
         password: passwordRecord(password)
       });
-    } else if (user.credentials?.password?.algorithm !== "scrypt") {
-      await datastore.updateUserCredentials(user.id, {
-        ...user.credentials,
-        password: passwordRecord(password)
-      });
+    } else {
+      if (!user || !verifyPassword(user.credentials, password)) {
+        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
+      }
+      if (user.credentials?.password?.algorithm !== "scrypt") {
+        await datastore.updateUserCredentials(user.id, {
+          ...user.credentials,
+          password: passwordRecord(password)
+        });
+      }
     }
 
     const sessionToken = crypto.randomBytes(16).toString("hex");
@@ -268,6 +269,13 @@ function createAuthStore(options = {}) {
 
     const session = await datastore.findSession(sessionToken);
     if (!session) {
+      return null;
+    }
+
+    const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 giorni
+    const createdAt = session.created_at || session.createdAt || 0;
+    if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
+      await datastore.deleteSession(sessionToken);
       return null;
     }
 
