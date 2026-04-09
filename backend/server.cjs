@@ -445,11 +445,11 @@ function createApp(options = {}) {
       return false;
     }
 
-    if (player.linkedUserId) {
-      return player.linkedUserId === user.id;
+    if (!player.linkedUserId) {
+      return false;
     }
 
-    return player.name === user.username;
+    return player.linkedUserId === user.id;
   }
 
   function visibleHandForPlayer(nextState, player) {
@@ -1059,8 +1059,9 @@ function createApp(options = {}) {
       : url.pathname.indexOf("/game/") === 0
         ? "/game.html"
         : url.pathname;
-    const filePath = path.join(publicDir, relativePath);
-    if (filePath.indexOf(publicDir) !== 0) {
+    const resolvedPublicDir = path.resolve(publicDir);
+    const filePath = path.resolve(path.join(publicDir, relativePath));
+    if (filePath !== resolvedPublicDir && !filePath.startsWith(resolvedPublicDir + path.sep)) {
       sendLocalizedError(res, 403, null, "Accesso negato.", "server.static.accessDenied");
       return;
     }
@@ -1091,8 +1092,18 @@ function createApp(options = {}) {
     });
   }
 
+  function addSecurityHeaders(res) {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Content-Security-Policy",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+  }
+
   function handleRequest(req, res) {
     const url = new URL(req.url, "http://" + req.headers.host);
+
+    addSecurityHeaders(res);
 
     Promise.resolve()
       .then(() => {
