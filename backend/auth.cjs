@@ -230,20 +230,26 @@ function createAuthStore(options = {}) {
 
   async function loginWithPassword(username, password) {
     const user = await findByUsername(username);
-    if (!user || !verifyPassword(user.credentials, password)) {
-      return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
-    }
 
-    if (typeof user.credentials?.password?.secret === "string") {
+    if (typeof user?.credentials?.password?.secret === "string") {
+      // Password in chiaro (legacy): verifica e migra subito a scrypt
+      if (!user || user.credentials.password.secret !== String(password || "")) {
+        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
+      }
       await datastore.updateUserCredentials(user.id, {
         ...user.credentials,
         password: passwordRecord(password)
       });
-    } else if (user.credentials?.password?.algorithm !== "scrypt") {
-      await datastore.updateUserCredentials(user.id, {
-        ...user.credentials,
-        password: passwordRecord(password)
-      });
+    } else {
+      if (!user || !verifyPassword(user.credentials, password)) {
+        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
+      }
+      if (user.credentials?.password?.algorithm !== "scrypt") {
+        await datastore.updateUserCredentials(user.id, {
+          ...user.credentials,
+          password: passwordRecord(password)
+        });
+      }
     }
 
     const sessionToken = crypto.randomBytes(16).toString("hex");
