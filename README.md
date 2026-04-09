@@ -4,6 +4,8 @@ NetRisk e un gioco strategico a turni ispirato a Risk/Risiko, costruito per cres
 
 Il repository non e una semplice demo grafica: e una base applicativa completa per sviluppare una versione estendibile di NetRisk con lobby, profili, AI, turn flow, combattimento, carte e test automatici.
 
+Nel codice e nella documentazione tecnica il progetto resta identificato come `NetRisk`. Nell'interfaccia utente web, il titolo visualizzato oggi e `Frontline Dominion`, con `NetRisk` mantenuto come brand label.
+
 ## Stato attuale
 
 Oggi il progetto include:
@@ -25,7 +27,7 @@ Oggi il progetto include:
 - pagina profilo con partite giocate, vittorie, sconfitte, partite in corso e win rate
 - eventi e sincronizzazione dello stato dal server al frontend
 
-La mappa supportata al momento e `classic-mini`.
+Le mappe supportate al momento sono `classic-mini`, `middle-earth` e `world-classic`.
 
 ## Quick Start
 
@@ -40,6 +42,14 @@ Installazione dipendenze:
 npm install
 ```
 
+Configurazione ambiente locale opzionale:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Per lo sviluppo locale senza Supabase puoi anche omettere `.env.local`: in quel caso il backend usa il datastore SQLite locale di default.
+
 Avvio server:
 
 ```bash
@@ -48,15 +58,31 @@ npm start
 
 Applicazione disponibile su `http://localhost:3000`.
 
+## Configurazione datastore
+
+Il progetto supporta due modalita principali:
+
+- `sqlite`: fallback locale predefinito per sviluppo rapido, con file in `data/netrisk.sqlite`
+- `supabase`: datastore remoto abilitato quando `DATASTORE_DRIVER=supabase` oppure quando sono presenti variabili `SUPABASE_*`
+
+La configurazione di esempio in `.env.example` e pensata per ambiente Supabase/Vercel. In locale, se non vuoi dipendere da servizi esterni, puoi lasciare assente il file `.env.local` oppure impostare esplicitamente:
+
+```bash
+DATASTORE_DRIVER=sqlite
+PORT=3000
+```
+
 ## Comandi utili
 
 ```bash
 npm start
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+npm run vercel:env:check
 npm test
 npm run test:gameplay
 npm run test:e2e
+npm run test:e2e:update
 npm run test:all
 npm run test:all:e2e
 ```
@@ -64,8 +90,10 @@ npm run test:all:e2e
 - `npm test`: suite standard del repository
 - `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
 - `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
+- `npm run vercel:env:check`: controlla la parita tra variabili richieste per deploy e configurazione attesa
 - `npm run test:gameplay`: verifica del motore di gioco
 - `npm run test:e2e`: test Playwright sui flussi utente
+- `npm run test:e2e:update`: aggiorna intenzionalmente le baseline visuali Playwright
 - `npm run test:all`: test repository + gameplay
 - `npm run test:all:e2e`: test repository + gameplay + e2e
 
@@ -178,8 +206,11 @@ Le principali schermate disponibili nel frontend sono:
 - `new-game.html`: configurazione nuova partita
 - `game.html`: partita attiva
 - `profile.html`: profilo utente
+- `register.html`: creazione nuovo account
 
 La UI e pensata per restare sottile: mostra lo stato ricevuto dal server e invia azioni tramite API.
+
+Dal punto di vista del naming, le pagine frontend mostrano oggi il titolo `Frontline Dominion`, mentre il dominio tecnico del progetto continua a usare `NetRisk`.
 
 Nella schermata di gioco sono presenti anche:
 
@@ -207,14 +238,19 @@ In ambiente E2E esistono anche endpoint di supporto ai test.
 
 ## Persistenza e dati locali
 
-Il backend usa SQLite come source of truth locale per:
+Il backend seleziona il datastore a runtime:
+
+- in locale, senza configurazione Supabase, usa SQLite come fallback operativo
+- con `DATASTORE_DRIVER=supabase` e relative variabili ambiente, usa Supabase come source of truth remota
+
+Quando il driver attivo e SQLite, il backend usa questo storage per:
 
 - utenti
 - sessioni autenticate
 - partite salvate
 - metadati runtime come la partita attiva
 
-Il file database di default e `data/netrisk.sqlite`.
+Il file database SQLite di default e `data/netrisk.sqlite`.
 
 All'avvio, se il database e vuoto, il backend puo importare una sola volta i dati legacy presenti nei file JSON storici (`users.json`, `games.json`, `sessions.json`). Dopo la migrazione, il database SQLite resta la fonte autorevole e i JSON legacy vanno trattati solo come compatibilita temporanea.
 
@@ -222,13 +258,13 @@ Per verificare rapidamente lo stato del backend e dello storage e disponibile `G
 
 - esito generale `ok`
 - tipo storage attivo
-- percorso del file SQLite in uso
+- dettagli della connessione attiva, ad esempio file SQLite oppure URL/schema Supabase
 - conteggi base di utenti, partite e sessioni
 - presenza della partita attiva in memoria server
 
 Questa e la sonda minima consigliata per rilevare problemi di avvio, mount errati del volume dati o datastore non disponibile.
 
-Per creare un backup locale consistente del datastore:
+Per creare un backup locale consistente del datastore SQLite:
 
 ```bash
 npm run backup:data
