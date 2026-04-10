@@ -8,6 +8,7 @@ NetRisk separa in modo netto presentazione, orchestrazione e regole. Il browser 
 
 `/frontend/public`
 UI web, pagine HTML, script client-side, rendering stato e input utente.
+E l'unica cartella statica servita dal runtime applicativo.
 
 `/backend`
 Server HTTP, autenticazione, autorizzazione, sessioni di gioco, configurazione partite e persistenza locale.

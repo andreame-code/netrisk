@@ -5,36 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="game.title">Frontline Dominion</title>
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/shell.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
-  <body data-app-section="game">
+  <body data-shell-kind="app" data-app-section="game">
     <div class="backdrop"></div>
     <div class="app-frame game-app-frame">
       <main class="page-shell game-page-shell campaign-page-shell">
         <section class="app-shell board-shell" data-testid="app-shell">
-          <section class="panel top-nav-bar campaign-nav">
-            <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
-              <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
-              <h1 data-i18n="app.title">Frontline Dominion</h1>
-            </a>
-
-            <nav class="top-nav-zone top-nav-links" aria-label="Sezioni principali" data-i18n-aria-label="nav.aria.primary">
-              <a href="/lobby.html" class="nav-link" data-nav-section="lobby">Lobby</a>
-              <a href="/game.html" class="nav-link" data-nav-section="game">Game</a>
-              <a href="/profile.html" class="nav-link" data-nav-section="profile">Profile</a>
-            </nav>
-
-            <div class="top-nav-zone top-nav-actions">
-              <form id="header-login-form" class="top-nav-auth-form" method="post">
-                <input id="header-auth-username" name="header-username" maxlength="32" placeholder="Utente" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
-                <input id="header-auth-password" name="header-password" type="password" placeholder="Password" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
-                <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">Accedi</button>
-                <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">Registrati</a>
-              </form>
-              <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">Esci</button>
-              <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
-            </div>
-          </section>
+          <section class="panel top-nav-bar campaign-nav" data-shared-top-nav></section>
 
           <section class="battlefield-layout game-battlefield-layout" data-testid="battlefield-layout">
             <section class="game-main-column" data-testid="game-main-column">
@@ -188,9 +167,10 @@
 
         </section>
       </main>
+      <footer class="panel shared-bottom-shell game-bottom-shell" data-shared-footer></footer>
     </div>
 
-    <script type="module" src="/layout.mjs"></script>
+    <script type="module" src="/shell.mjs"></script>
     <script type="module" src="/app.mjs"></script>
   </body>
 </html>
