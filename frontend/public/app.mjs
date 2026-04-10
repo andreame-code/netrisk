@@ -185,8 +185,7 @@ function fitMapBoardToViewport() {
     Number.parseFloat(stageStyles.paddingTop || "0") + Number.parseFloat(stageStyles.paddingBottom || "0");
   const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
   const stageRect = mapStage.getBoundingClientRect();
-  const visibleViewportHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
-  const availableHeight = Math.max(0, Math.min(mapStage.clientHeight - stagePaddingY, visibleViewportHeight));
+  const availableHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
   if (!availableWidth || !availableHeight) {
     return;
   }
@@ -196,13 +195,13 @@ function fitMapBoardToViewport() {
   const aspectRatio = aspectRatioMatch
     ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
     : 760 / 500;
-  const widthFromHeight = availableHeight * aspectRatio;
+  const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
   const width = Math.min(availableWidth, widthFromHeight);
   const height = width / aspectRatio;
 
   mapBoard.style.width = `${Math.floor(width)}px`;
   mapBoard.style.height = `${Math.floor(height)}px`;
-  mapContainer.style.height = `${Math.floor(availableHeight)}px`;
+  mapContainer.style.height = `${Math.ceil(height)}px`;
 }
 
 function queueMapBoardFit() {
