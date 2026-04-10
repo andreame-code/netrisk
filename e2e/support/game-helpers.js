@@ -6,8 +6,24 @@ function uniqueUser(prefix) {
 }
 
 async function resetGame(page) {
-  const response = await page.request.post("/api/test/reset");
-  await expect(response.ok()).toBeTruthy();
+  const attempts = 3;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await page.request.post("/api/test/reset");
+      await expect(response.ok()).toBeTruthy();
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts - 1) {
+        break;
+      }
+      await page.waitForTimeout(250 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
 }
 
 async function queueNextAttackRolls(page, attackRoll, defendRoll) {
