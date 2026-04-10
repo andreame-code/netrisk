@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="lobby.title">Frontline Dominion - Lobby</title>
     <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/lobby-theme.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
   <body data-app-section="lobby">
@@ -43,6 +44,8 @@
             </div>
           </div>
 
+          <div class="aoe-hr" aria-hidden="true"><div class="aoe-hr-gem"></div></div>
+
           <div class="content-meta-line lobby-meta-line">
             <span id="auth-status" data-i18n="lobby.authStatus">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</span>
             <span class="status-divider" aria-hidden="true"></span>
@@ -62,22 +65,24 @@
           </div>
 
           <div class="lobby-command-strip" aria-label="Panoramica lobby" data-i18n-aria-label="lobby.overviewAria">
-            <article class="lobby-command-card lobby-command-card-accent">
+            <article class="lobby-command-card lobby-command-card-accent" data-aoe-icon="swords">
               <span class="lobby-command-label" data-i18n="lobby.visibleSessions.label">Sessioni visibili</span>
               <strong id="lobby-total-games">0</strong>
               <p data-i18n="lobby.visibleSessions.copy">Tutte le partite persistite disponibili nel backend.</p>
             </article>
-            <article class="lobby-command-card">
+            <article class="lobby-command-card" data-aoe-icon="shield">
               <span class="lobby-command-label" data-i18n="lobby.readySessions.label">Pronte al via</span>
               <strong id="lobby-ready-games">0</strong>
               <p data-i18n="lobby.readySessions.copy">Lobby che possono essere avviate senza configurazioni extra.</p>
             </article>
-            <article class="lobby-command-card">
+            <article class="lobby-command-card" data-aoe-icon="compass">
               <span class="lobby-command-label" data-i18n="lobby.readiness.label">Prontezza operativa</span>
               <strong data-i18n="lobby.readiness.value">Seleziona</strong>
               <p data-i18n="lobby.readiness.copy">Usa lista e pannello dettagli per confrontare rapidamente composizione, stato e ultimo aggiornamento.</p>
             </article>
           </div>
+
+          <div class="aoe-hr" aria-hidden="true"><div class="aoe-hr-gem"></div></div>
 
           <div class="session-browser-grid">
             <div class="session-list-panel">
