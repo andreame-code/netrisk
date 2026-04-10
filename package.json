@@ -16,7 +16,7 @@
     "test:all:e2e": "npm run test && npm run test:gameplay && npm run test:e2e"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.59.1"
   },
   "dependencies": {
     "@vercel/speed-insights": "^2.0.0"
