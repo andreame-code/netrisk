@@ -10,8 +10,8 @@
   <body data-app-section="profile">
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell">
-        <section class="panel top-nav-bar">
+      <main class="page-shell top-nav-page-shell campaign-page-shell">
+        <section class="panel top-nav-bar campaign-nav">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
             <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
             <h1 data-i18n="app.title">Frontline Dominion</h1>
@@ -34,9 +34,9 @@
               <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
             </div>
         </section>
-        <section class="profile-shell panel" data-testid="player-profile-shell">
-          <div class="profile-hero">
-            <div class="profile-hero-copy">
+        <section class="profile-shell panel campaign-shell" data-testid="player-profile-shell">
+          <div class="profile-hero campaign-hero">
+            <div class="profile-hero-copy campaign-hero-copy">
               <p class="eyebrow profile-section-eyebrow" data-i18n="profile.eyebrow">Command Dossier</p>
               <h2 id="profile-heading" data-i18n="profile.heading">Comandante</h2>
               <p id="profile-subtitle" class="stage-copy" data-i18n="profile.subtitle">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
@@ -47,14 +47,14 @@
             </div>
           </div>
 
-          <div class="content-meta-line profile-meta-line">
+          <div class="content-meta-line profile-meta-line campaign-status-line">
             <span id="profile-name" data-i18n="profile.nameLoading">Caricamento profilo...</span>
             <span class="status-divider" aria-hidden="true"></span>
             <span id="auth-status" data-i18n="profile.authStatus">Verifica della sessione in corso...</span>
           </div>
           <div id="profile-feedback" class="profile-feedback" data-i18n="profile.feedback">Caricamento dati giocatore...</div>
           <section id="profile-content" class="profile-content" hidden>
-            <div class="profile-summary-card">
+            <div class="profile-summary-card campaign-summary-card">
               <p class="eyebrow profile-section-eyebrow" data-i18n="profile.summary.eyebrow">Panoramica</p>
               <h3 data-i18n="profile.summary.heading">Dossier operativo</h3>
               <p id="profile-copy" class="stage-copy" data-i18n="profile.summary.copy">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
