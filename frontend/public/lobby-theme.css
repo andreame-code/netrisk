@@ -1,0 +1,577 @@
+/* ================================================================
+   Frontline Dominion — Age of Empires II Lobby Theme
+   Scoped entirely to body[data-app-section="lobby"]
+   ================================================================ */
+
+/* ---------- Design tokens ---------- */
+body[data-app-section="lobby"] {
+  --aoe-bg:             #111009;
+  --aoe-stone:          #1e1c14;
+  --aoe-stone-mid:      #282519;
+  --aoe-stone-lit:      #38341f;
+  --aoe-gold:           #c8a427;
+  --aoe-gold-hi:        #e8c244;
+  --aoe-gold-dim:       rgba(200, 164, 39, 0.6);
+  --aoe-parchment:      #d4b888;
+  --aoe-parchment-dim:  rgba(212, 184, 136, 0.62);
+  --aoe-red:            #9b2020;
+  --aoe-green:          #3a5c1e;
+  --aoe-border:         rgba(200, 164, 39, 0.2);
+  --aoe-border-hi:      rgba(200, 164, 39, 0.52);
+  --aoe-shadow:         0 14px 44px rgba(0, 0, 0, 0.75);
+  /* Inner bevel — light top/left, dark bottom/right (carved stone) */
+  --aoe-bevel:
+    inset 0  2px 0 rgba(255, 230, 140, 0.14),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    inset  2px 0 0 rgba(255, 230, 140, 0.07),
+    inset -2px 0 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Body / global background ---------- */
+body[data-app-section="lobby"] {
+  background:
+    radial-gradient(ellipse at 50% -5%, rgba(200, 164, 39, 0.1) 0%, transparent 38%),
+    linear-gradient(180deg, #0d0b08 0%, #1a1810 45%, #131109 100%);
+}
+
+/* Stone-brick backdrop pattern */
+body[data-app-section="lobby"] .backdrop {
+  background-image:
+    repeating-linear-gradient(
+      transparent 0,   transparent 31px,
+      rgba(0,0,0,0.42) 31px, rgba(0,0,0,0.42) 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,   transparent 63px,
+      rgba(0,0,0,0.28) 63px, rgba(0,0,0,0.28) 64px
+    );
+  background-size: 64px 32px;
+  opacity: 0.65;
+}
+
+/* ================================================================
+   TOP NAV BAR — Fortress parapet
+   ================================================================ */
+body[data-app-section="lobby"] .top-nav-bar {
+  background:
+    linear-gradient(180deg, #2e2b1c 0%, #1c1a10 100%);
+  border: 1px solid var(--aoe-border);
+  border-bottom: 2px solid var(--aoe-gold);
+  border-radius: 4px 4px 0 0;
+  margin-bottom: 0;
+  box-shadow:
+    var(--aoe-bevel),
+    0 4px 18px rgba(0, 0, 0, 0.75);
+  color: var(--aoe-parchment);
+}
+
+body[data-app-section="lobby"] .brand-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+body[data-app-section="lobby"] .top-nav-brand .eyebrow {
+  color: var(--aoe-gold);
+  letter-spacing: 0.32em;
+  opacity: 1;
+}
+
+body[data-app-section="lobby"] .top-nav-brand h1 {
+  color: var(--aoe-gold-hi);
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.95),
+    0 0 28px rgba(200, 164, 39, 0.35);
+}
+
+body[data-app-section="lobby"] .top-nav-bar .nav-link {
+  color: var(--aoe-parchment-dim);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  transition: color 100ms ease, background 100ms ease;
+}
+
+body[data-app-section="lobby"] .top-nav-bar .nav-link:hover {
+  background: rgba(200, 164, 39, 0.12);
+  color: var(--aoe-gold-hi);
+  transform: none;
+}
+
+body[data-app-section="lobby"] .top-nav-bar .nav-link.is-active {
+  background: rgba(200, 164, 39, 0.17);
+  border: 1px solid var(--aoe-border);
+  color: var(--aoe-gold);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 140, 0.1);
+}
+
+/* Auth form inputs */
+body[data-app-section="lobby"] .top-nav-auth-form input {
+  background: rgba(10, 9, 6, 0.75);
+  border: 1px solid var(--aoe-border);
+  border-radius: 3px;
+  color: var(--aoe-parchment);
+}
+
+body[data-app-section="lobby"] .top-nav-auth-form input::placeholder {
+  color: rgba(212, 184, 136, 0.32);
+}
+
+body[data-app-section="lobby"] .top-nav-auth-form input:focus {
+  outline: none;
+  border-color: var(--aoe-gold-dim);
+  box-shadow: 0 0 0 2px rgba(200, 164, 39, 0.14);
+}
+
+/* Nav buttons */
+body[data-app-section="lobby"] .top-nav-login,
+body[data-app-section="lobby"] .top-nav-register,
+body[data-app-section="lobby"] .top-nav-logout {
+  background: linear-gradient(180deg, #2e2b1c 0%, #1e1c12 100%);
+  border: 1px solid var(--aoe-border);
+  border-radius: 3px;
+  color: var(--aoe-parchment-dim);
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  font-size: 0.86rem;
+  box-shadow: var(--aoe-bevel), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+body[data-app-section="lobby"] .top-nav-login:hover,
+body[data-app-section="lobby"] .top-nav-register:hover,
+body[data-app-section="lobby"] .top-nav-logout:hover {
+  background: linear-gradient(180deg, #3c3820 0%, #28241a 100%);
+  border-color: var(--aoe-gold-dim);
+  color: var(--aoe-parchment);
+  transform: none;
+}
+
+/* Avatar circle */
+body[data-app-section="lobby"] .nav-avatar {
+  background: linear-gradient(180deg, #5c4218 0%, #3c2c10 100%);
+  border: 1px solid rgba(200, 164, 39, 0.45);
+  color: var(--aoe-gold);
+  border-radius: 3px;
+  box-shadow: var(--aoe-bevel);
+}
+
+/* ================================================================
+   MAIN SESSION-BROWSER PANEL — The War Room
+   ================================================================ */
+body[data-app-section="lobby"] .session-browser {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(200, 164, 39, 0.065) 0%, transparent 50%),
+    repeating-linear-gradient(
+      transparent 0, transparent 47px,
+      rgba(0, 0, 0, 0.11) 47px, rgba(0, 0, 0, 0.11) 48px
+    ),
+    linear-gradient(180deg, #222018 0%, #191710 100%);
+  border: 1px solid var(--aoe-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: var(--aoe-bevel), var(--aoe-shadow);
+  padding: 28px 24px 26px;
+  position: relative;
+}
+
+/* Corner ornaments (bottom only to not conflict with top border) */
+body[data-app-section="lobby"] .session-browser::before,
+body[data-app-section="lobby"] .session-browser::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-style: solid;
+  border-color: rgba(200, 164, 39, 0.5);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body[data-app-section="lobby"] .session-browser::before {
+  bottom: 8px;
+  left: 8px;
+  border-width: 0 0 2px 2px;
+}
+
+body[data-app-section="lobby"] .session-browser::after {
+  bottom: 8px;
+  right: 8px;
+  border-width: 0 2px 2px 0;
+}
+
+/* ---------- Section heading ---------- */
+body[data-app-section="lobby"] .session-eyebrow {
+  color: var(--aoe-gold);
+  letter-spacing: 0.4em;
+  font-size: 0.68rem;
+  opacity: 1;
+}
+
+body[data-app-section="lobby"] .session-browser-head h2 {
+  color: var(--aoe-parchment);
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  font-size: clamp(1.8rem, 3.8vw, 3rem);
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.95),
+    0 0 40px rgba(200, 164, 39, 0.16);
+}
+
+body[data-app-section="lobby"] .session-browser-head .stage-copy {
+  color: var(--aoe-parchment-dim);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* ---------- Ornamental HR divider ---------- */
+body[data-app-section="lobby"] .aoe-hr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+body[data-app-section="lobby"] .aoe-hr::before,
+body[data-app-section="lobby"] .aoe-hr::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 164, 39, 0.35) 30%, rgba(200, 164, 39, 0.35) 70%, transparent);
+}
+
+body[data-app-section="lobby"] .aoe-hr-gem {
+  width: 7px;
+  height: 7px;
+  background: var(--aoe-gold-dim);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(200, 164, 39, 0.4);
+}
+
+/* ---------- Meta status line ---------- */
+body[data-app-section="lobby"] .lobby-meta-line {
+  color: var(--aoe-parchment-dim);
+  font-size: 0.86rem;
+  border-color: rgba(200, 164, 39, 0.12);
+  margin-bottom: 20px;
+}
+
+body[data-app-section="lobby"] .status-divider {
+  background: rgba(200, 164, 39, 0.28);
+}
+
+/* ================================================================
+   FOCUS BAND — Active session banner
+   ================================================================ */
+body[data-app-section="lobby"] .lobby-focus-card {
+  background:
+    radial-gradient(ellipse at 85% 20%, rgba(200, 164, 39, 0.1) 0%, transparent 55%),
+    linear-gradient(145deg, #2c2818 0%, #181510 100%);
+  border: 1px solid rgba(200, 164, 39, 0.42);
+  border-radius: 4px;
+  box-shadow: var(--aoe-bevel), 0 10px 32px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative watermark sword */
+body[data-app-section="lobby"] .lobby-focus-card::before {
+  content: "⚔";
+  position: absolute;
+  bottom: 8px;
+  right: 14px;
+  font-size: 3rem;
+  color: rgba(200, 164, 39, 0.07);
+  line-height: 1;
+  pointer-events: none;
+}
+
+body[data-app-section="lobby"] .lobby-focus-card .lobby-command-label {
+  color: rgba(200, 164, 39, 0.85);
+  letter-spacing: 0.28em;
+  font-size: 0.66rem;
+}
+
+body[data-app-section="lobby"] .lobby-focus-card strong {
+  color: var(--aoe-gold-hi);
+  text-shadow: 0 0 20px rgba(200, 164, 39, 0.28);
+  font-size: clamp(1.15rem, 2.4vw, 1.9rem);
+}
+
+body[data-app-section="lobby"] .lobby-focus-card p {
+  color: var(--aoe-parchment-dim);
+  font-size: 0.88rem;
+}
+
+/* ================================================================
+   COMMAND STRIP — Resource counters (AoE2 style)
+   ================================================================ */
+body[data-app-section="lobby"] .lobby-command-strip {
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+body[data-app-section="lobby"] .lobby-command-card {
+  background:
+    linear-gradient(180deg, #252218 0%, #1c1a12 100%);
+  border: 1px solid rgba(200, 164, 39, 0.18);
+  border-radius: 4px;
+  box-shadow: var(--aoe-bevel), 0 6px 20px rgba(0, 0, 0, 0.5);
+  min-height: 108px;
+  padding: 16px 18px;
+  position: relative;
+}
+
+body[data-app-section="lobby"] .lobby-command-card[data-aoe-icon]::after {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  font-size: 1.8rem;
+  color: rgba(200, 164, 39, 0.09);
+  line-height: 1;
+  pointer-events: none;
+}
+
+body[data-app-section="lobby"] .lobby-command-card[data-aoe-icon="swords"]::after  { content: "⚔"; }
+body[data-app-section="lobby"] .lobby-command-card[data-aoe-icon="shield"]::after  { content: "⛨"; }
+body[data-app-section="lobby"] .lobby-command-card[data-aoe-icon="compass"]::after { content: "✦"; }
+
+body[data-app-section="lobby"] .lobby-command-card-accent {
+  background:
+    radial-gradient(ellipse at 80% 15%, rgba(200, 164, 39, 0.13) 0%, transparent 58%),
+    linear-gradient(180deg, #2e2b1c 0%, #1e1c12 100%);
+  border-color: rgba(200, 164, 39, 0.45);
+}
+
+body[data-app-section="lobby"] .lobby-command-card strong {
+  color: var(--aoe-gold-hi);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  font-size: clamp(1.4rem, 3vw, 2.3rem);
+}
+
+body[data-app-section="lobby"] .lobby-command-card p {
+  color: var(--aoe-parchment-dim);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+body[data-app-section="lobby"] .lobby-command-label {
+  color: rgba(200, 164, 39, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.66rem;
+}
+
+/* ================================================================
+   SESSION BROWSER GRID — Scroll of battles
+   ================================================================ */
+body[data-app-section="lobby"] .session-list-panel,
+body[data-app-section="lobby"] .session-detail-panel {
+  background:
+    linear-gradient(180deg, #232118 0%, #1c1a12 100%);
+  border: 1px solid rgba(200, 164, 39, 0.17);
+  border-radius: 4px;
+  box-shadow: var(--aoe-bevel), 0 4px 16px rgba(0, 0, 0, 0.4);
+  color: var(--aoe-parchment);
+}
+
+body[data-app-section="lobby"] .session-list-panel h3,
+body[data-app-section="lobby"] .session-detail-panel h3 {
+  color: var(--aoe-parchment);
+  font-variant: small-caps;
+  letter-spacing: 0.09em;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+body[data-app-section="lobby"] .section-title-row {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(200, 164, 39, 0.14);
+  margin-bottom: 14px;
+}
+
+body[data-app-section="lobby"] .section-title-row .stage-copy {
+  color: var(--aoe-parchment-dim);
+  font-size: 0.84rem;
+}
+
+/* Table header row */
+body[data-app-section="lobby"] .session-row-head {
+  color: rgba(200, 164, 39, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.68rem;
+  border-bottom: 1px solid rgba(200, 164, 39, 0.18);
+  padding-bottom: 10px;
+}
+
+/* Session row items */
+body[data-app-section="lobby"] .session-row-button {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(200, 164, 39, 0.09);
+  border-radius: 3px;
+  color: var(--aoe-parchment);
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+body[data-app-section="lobby"] .session-row-button:hover {
+  background: rgba(200, 164, 39, 0.07);
+  border-color: rgba(200, 164, 39, 0.3);
+  transform: none;
+}
+
+body[data-app-section="lobby"] .session-row-button.is-selected {
+  background: rgba(200, 164, 39, 0.14);
+  border-color: rgba(200, 164, 39, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 140, 0.1), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body[data-app-section="lobby"] .session-name {
+  color: var(--aoe-parchment);
+  font-weight: 600;
+}
+
+body[data-app-section="lobby"] .session-sub,
+body[data-app-section="lobby"] .session-cell-muted {
+  color: rgba(212, 184, 136, 0.52);
+}
+
+/* Loading / feedback text */
+body[data-app-section="lobby"] .session-feedback {
+  background: rgba(200, 164, 39, 0.04);
+  border: 1px dashed rgba(200, 164, 39, 0.16);
+  border-radius: 3px;
+  color: var(--aoe-parchment-dim);
+}
+
+body[data-app-section="lobby"] .session-list-load-more {
+  color: var(--aoe-parchment-dim);
+}
+
+/* ---------- Detail panel ---------- */
+body[data-app-section="lobby"] .session-detail-hero {
+  background:
+    linear-gradient(180deg, rgba(44, 40, 26, 0.96) 0%, rgba(26, 24, 16, 0.96) 100%);
+  border: 1px solid rgba(200, 164, 39, 0.2);
+  border-radius: 3px;
+}
+
+body[data-app-section="lobby"] .session-detail-kicker {
+  color: rgba(200, 164, 39, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+body[data-app-section="lobby"] .session-detail-title {
+  color: var(--aoe-parchment);
+}
+
+body[data-app-section="lobby"] .session-detail-copy {
+  color: var(--aoe-parchment-dim);
+}
+
+body[data-app-section="lobby"] .session-detail-note {
+  background: rgba(104, 139, 69, 0.1);
+  border-color: rgba(104, 139, 69, 0.25);
+  color: var(--aoe-parchment);
+}
+
+body[data-app-section="lobby"] .session-details-card {
+  background: transparent;
+  border: none;
+}
+
+body[data-app-section="lobby"] .session-empty-copy {
+  color: rgba(212, 184, 136, 0.38);
+  font-style: italic;
+}
+
+/* Badge */
+body[data-app-section="lobby"] .badge {
+  background: rgba(200, 164, 39, 0.1);
+  border: 1px solid rgba(200, 164, 39, 0.32);
+  color: var(--aoe-gold);
+  border-radius: 3px;
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+}
+
+body[data-app-section="lobby"] .badge.accent {
+  background: rgba(155, 32, 32, 0.2);
+  border-color: rgba(200, 80, 60, 0.36);
+  color: #d4806a;
+}
+
+/* ================================================================
+   BUTTONS
+   ================================================================ */
+body[data-app-section="lobby"] .lobby-create-button {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 200, 60, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #604c18 0%, #3c2e0c 100%);
+  border: 1px solid rgba(200, 164, 39, 0.55);
+  border-radius: 3px;
+  color: var(--aoe-gold-hi);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  font-variant: small-caps;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  box-shadow: var(--aoe-bevel), 0 5px 16px rgba(0, 0, 0, 0.5);
+  transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+body[data-app-section="lobby"] .lobby-create-button:hover {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 210, 70, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #725a1e 0%, #4a3810 100%);
+  border-color: rgba(200, 164, 39, 0.75);
+  color: #f4d050;
+  transform: translateY(-2px);
+  box-shadow: var(--aoe-bevel), 0 10px 24px rgba(0, 0, 0, 0.55);
+}
+
+body[data-app-section="lobby"] .lobby-create-button:focus-visible {
+  outline: 2px solid rgba(200, 164, 39, 0.65);
+  outline-offset: 2px;
+}
+
+body[data-app-section="lobby"] .ghost-button {
+  background:
+    linear-gradient(180deg, #2c2a1c 0%, #1c1a12 100%);
+  border: 1px solid rgba(200, 164, 39, 0.24);
+  border-radius: 3px;
+  color: var(--aoe-parchment-dim);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  font-size: 0.87rem;
+  box-shadow: var(--aoe-bevel), 0 3px 10px rgba(0, 0, 0, 0.4);
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+body[data-app-section="lobby"] .ghost-button:hover {
+  background:
+    linear-gradient(180deg, #3a3620 0%, #26221a 100%);
+  border-color: rgba(200, 164, 39, 0.44);
+  color: var(--aoe-parchment);
+  transform: translateY(-1px);
+  box-shadow: var(--aoe-bevel), 0 7px 16px rgba(0, 0, 0, 0.5);
+}
+
+body[data-app-section="lobby"] .ghost-button:focus-visible {
+  outline: 2px solid rgba(200, 164, 39, 0.55);
+  outline-offset: 2px;
+}
+
+/* ================================================================
+   SELECT ELEMENTS
+   ================================================================ */
+body[data-app-section="lobby"] select {
+  background: rgba(10, 9, 6, 0.8);
+  border-color: var(--aoe-border);
+  color: var(--aoe-parchment);
+}
