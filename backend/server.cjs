@@ -897,11 +897,21 @@ function createApp(options = {}) {
         return;
       }
 
+      function isValidTerritoryId(id) {
+        return id && typeof gameContext.state.territories === "object" &&
+          Object.prototype.hasOwnProperty.call(gameContext.state.territories, id);
+      }
+
       if (type === "reinforce") {
+        const territoryId = String(body.territoryId || "");
+        if (!isValidTerritoryId(territoryId)) {
+          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
+          return;
+        }
         const result = applyReinforcement(
           gameContext.state,
           playerId,
-          String(body.territoryId || ""),
+          territoryId,
           body.amount
         );
         if (!result.ok) {
@@ -943,6 +953,10 @@ function createApp(options = {}) {
         const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
         const actionFromId = String(body.fromId || "");
         const actionToId = String(body.toId || "");
+        if (!isValidTerritoryId(actionFromId) || !isValidTerritoryId(actionToId)) {
+          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
+          return;
+        }
         const result = type === "attackBanzai"
           ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
           : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
@@ -989,7 +1003,13 @@ function createApp(options = {}) {
       }
 
       if (type === "fortify") {
-        const result = applyFortify(gameContext.state, playerId, String(body.fromId || ""), String(body.toId || ""), body.armies);
+        const fortifyFromId = String(body.fromId || "");
+        const fortifyToId = String(body.toId || "");
+        if (!isValidTerritoryId(fortifyFromId) || !isValidTerritoryId(fortifyToId)) {
+          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
+          return;
+        }
+        const result = applyFortify(gameContext.state, playerId, fortifyFromId, fortifyToId, body.armies);
         if (!result.ok) {
           sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
           return;

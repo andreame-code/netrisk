@@ -21,6 +21,12 @@ function canCreateGame(actor) {
   return Boolean(actor && actor.id && (actor.role === Roles.USER || actor.role === Roles.ADMIN));
 }
 
+function isActorPlayer(player, actor) {
+  if (!player) return false;
+  if (player.linkedUserId) return player.linkedUserId === actor.id;
+  return player.name === actor.username;
+}
+
 function canOpenGame(actor, game, state) {
   if (!actor || !actor.id || !game) {
     return false;
@@ -39,7 +45,7 @@ function canOpenGame(actor, game, state) {
   }
 
   const players = Array.isArray(state && state.players) ? state.players : [];
-  if (players.some((player) => player && player.name === actor.username)) {
+  if (players.some((player) => isActorPlayer(player, actor))) {
     return true;
   }
 
@@ -64,7 +70,7 @@ function canReadGame(actor, game, state) {
   }
 
   const players = Array.isArray(state && state.players) ? state.players : [];
-  if (players.some((player) => player && player.name === actor.username)) {
+  if (players.some((player) => isActorPlayer(player, actor))) {
     return true;
   }
 
