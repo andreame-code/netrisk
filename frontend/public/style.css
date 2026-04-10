@@ -1884,18 +1884,17 @@ body[data-app-section="game"] .board-shell {
 .game-battlefield-layout {
   grid-template-columns: minmax(0, 1fr) 260px;
   gap: 12px;
-  align-items: stretch;
-  min-height: calc(100vh - 92px);
-  height: calc(100vh - 92px);
+  align-items: start;
+  min-height: auto;
+  height: auto;
 }
 
 .game-main-column {
   display: grid;
   gap: 12px;
   min-width: 0;
-  height: 100%;
+  height: auto;
   grid-template-rows: minmax(0, 1fr) auto;
-  --game-map-max-height: calc(100vh - 340px);
 }
 
 .game-info-rail,
@@ -2001,7 +2000,7 @@ body[data-app-section="game"] .board-shell {
   min-height: 0;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: stretch;
 }
 
 .map-stage-command-strip {
@@ -2051,21 +2050,21 @@ body[data-app-section="game"] .board-shell {
 }
 
 .game-map-stage .map {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 0;
-  height: auto;
-  width: 100%;
-  overflow: hidden;
-}
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    overflow: hidden;
+  }
 
 .game-map-stage .map-board {
   aspect-ratio: auto;
-  width: auto;
+  width: 100%;
   height: auto;
   max-height: none;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .game-map-stage .map-board-stage {
@@ -2128,9 +2127,6 @@ body[data-app-section="game"] .main-nav-shell {
   .game-info-bottom {
   }
 
-  .game-main-column {
-    --game-map-max-height: calc(100vh - 332px);
-  }
 }
 
 @media (max-width: 980px) {
@@ -2859,4 +2855,542 @@ body[data-app-section="profile"] .main-nav-shell {
 
 .action-meta-list .action-help {
   margin: 0;
+}
+
+/* Landing theme extension across app pages */
+.campaign-page-shell {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.campaign-page-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: min(36rem, 58vh);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top center, rgba(200, 164, 39, 0.18), transparent 34%),
+    radial-gradient(circle at 12% 18%, rgba(255, 214, 115, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(18, 15, 10, 0.92), rgba(18, 15, 10, 0.08));
+  border: 1px solid rgba(200, 164, 39, 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.campaign-page-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.campaign-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(200, 164, 39, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(46, 36, 24, 0.88), rgba(28, 22, 15, 0.8));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.08),
+    0 22px 54px rgba(0, 0, 0, 0.34);
+}
+
+.campaign-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 36%),
+    linear-gradient(180deg, rgba(200, 164, 39, 0.04), transparent 24%);
+  pointer-events: none;
+}
+
+.campaign-hero {
+  position: relative;
+  padding: 22px 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(200, 164, 39, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(28, 23, 16, 0.94), rgba(18, 15, 10, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.campaign-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.campaign-hero .eyebrow,
+.campaign-hero .lobby-command-label,
+.campaign-hero .profile-command-label {
+  color: rgba(232, 194, 104, 0.8);
+  letter-spacing: 0.22em;
+}
+
+.campaign-hero h2,
+.campaign-hero h3,
+.campaign-hero .page-title {
+  color: #f2ddb0;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
+}
+
+.campaign-hero .stage-copy,
+.campaign-hero p:not(.eyebrow),
+.campaign-focus-card p {
+  color: rgba(224, 203, 165, 0.76);
+}
+
+.campaign-status-line {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(200, 164, 39, 0.12);
+  background: rgba(12, 10, 8, 0.34);
+  color: rgba(224, 203, 165, 0.78);
+}
+
+.campaign-status-line .status-divider {
+  background: rgba(200, 164, 39, 0.22);
+}
+
+.campaign-focus-grid {
+  gap: 14px;
+}
+
+.campaign-focus-card {
+  border-color: rgba(200, 164, 39, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.24), transparent 44%),
+    linear-gradient(180deg, rgba(53, 40, 26, 0.98), rgba(29, 23, 16, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.08),
+    0 16px 36px rgba(0, 0, 0, 0.22);
+}
+
+.campaign-summary-card,
+.campaign-form-card {
+  border: 1px solid rgba(200, 164, 39, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 248, 233, 0.94), rgba(245, 232, 205, 0.88)),
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.1), transparent 42%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 18px 34px rgba(0, 0, 0, 0.12);
+}
+
+.campaign-map-shell {
+  border-color: rgba(200, 164, 39, 0.14);
+  background:
+    radial-gradient(circle at top, rgba(200, 164, 39, 0.08), transparent 36%),
+    linear-gradient(180deg, rgba(244, 233, 206, 0.96), rgba(234, 219, 186, 0.94));
+}
+
+.campaign-nav {
+  min-height: 60px;
+  background:
+    linear-gradient(180deg, rgba(27, 24, 16, 0.96), rgba(16, 14, 10, 0.94)),
+    radial-gradient(circle at top, rgba(200, 164, 39, 0.08), transparent 52%);
+  border: 1px solid rgba(200, 164, 39, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.08),
+    0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.top-nav-brand .eyebrow {
+  color: rgba(232, 194, 104, 0.78);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.top-nav-brand h1 {
+  color: #f3ddaf;
+  font-size: 1.05rem;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 18px rgba(200, 164, 39, 0.2);
+}
+
+.top-nav-bar .nav-link {
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(224, 203, 165, 0.78);
+}
+
+.top-nav-bar .nav-link:hover {
+  background: rgba(200, 164, 39, 0.1);
+  color: #f3ddaf;
+}
+
+.top-nav-bar .nav-link.is-active {
+  background:
+    radial-gradient(circle at top, rgba(255, 215, 119, 0.14), transparent 58%),
+    linear-gradient(180deg, rgba(74, 58, 30, 0.92), rgba(45, 35, 19, 0.92));
+  border: 1px solid rgba(200, 164, 39, 0.34);
+  color: #f6e1b1;
+}
+
+.top-nav-locale-select,
+.top-nav-auth-form input {
+  border-color: rgba(200, 164, 39, 0.16);
+  background: rgba(10, 9, 7, 0.34);
+  color: #f0dcc0;
+}
+
+.top-nav-auth-form input::placeholder {
+  color: rgba(224, 203, 165, 0.48);
+}
+
+.nav-avatar {
+  border: 1px solid rgba(200, 164, 39, 0.16);
+  background: rgba(200, 164, 39, 0.08);
+  color: #f3ddaf;
+}
+
+.ghost-button {
+  border: 1px solid rgba(200, 164, 39, 0.22);
+  background:
+    linear-gradient(180deg, #2d291c, #17140f);
+  color: #e7d1a5;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+button,
+.lobby-create-button,
+.primary-nav-action {
+  border: 1px solid rgba(200, 164, 39, 0.24);
+  background:
+    radial-gradient(circle at top, rgba(255, 216, 118, 0.12), transparent 58%),
+    linear-gradient(180deg, #856529, #4c3914);
+  color: #fff0cf;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 166, 0.1),
+    0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+button:hover,
+.lobby-create-button:hover,
+.primary-nav-action:hover {
+  background:
+    radial-gradient(circle at top, rgba(255, 221, 136, 0.18), transparent 58%),
+    linear-gradient(180deg, #977434, #5a4318);
+}
+
+.danger-button {
+  background: linear-gradient(180deg, #8b3124, #5c1f17);
+  border-color: rgba(217, 108, 86, 0.22);
+}
+
+@media (max-width: 980px) {
+  .campaign-hero,
+  .campaign-status-line {
+    padding: 16px 18px;
+  }
+}
+
+/* Landing-style visual system applied across the playable app */
+:root {
+  --bg: #0e0c09;
+  --bg-soft: #1e1c14;
+  --panel: rgba(32, 28, 20, 0.9);
+  --panel-strong: rgba(24, 21, 15, 0.94);
+  --text: #e3cfab;
+  --muted: rgba(212, 184, 136, 0.66);
+  --accent: #c8a427;
+  --accent-2: #8e6f2a;
+  --gold: #e8c244;
+  --line: rgba(200, 164, 39, 0.16);
+  --shadow: 0 24px 56px rgba(0, 0, 0, 0.45);
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(200, 164, 39, 0.14), transparent 28%),
+    linear-gradient(180deg, #13100b 0%, #0e0c09 45%, #17140f 100%);
+  color: var(--text);
+}
+
+.backdrop {
+  background-image:
+    linear-gradient(rgba(200, 164, 39, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 164, 39, 0.035) 1px, transparent 1px);
+}
+
+.panel,
+.session-browser,
+.profile-shell,
+.register-shell,
+.new-game-shell,
+.game-info-bottom,
+.game-actions-rail {
+  border-color: rgba(200, 164, 39, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 140, 0.05),
+    var(--shadow);
+}
+
+.left-rail,
+.right-rail,
+.center-stage,
+.session-browser,
+.profile-shell,
+.register-shell,
+.new-game-shell {
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(36, 31, 22, 0.96), rgba(22, 19, 14, 0.94));
+}
+
+.stage-copy,
+.content-meta-line,
+.game-meta-line span:first-child,
+.content-meta-line > span:first-child,
+.session-cell-muted,
+.session-sub,
+.action-help,
+.combat-result-summary,
+.combat-result-line span,
+.auth-form-note,
+.register-guidelines,
+.map-setup-copy,
+.setup-slot-note,
+.field-stack span {
+  color: var(--muted);
+}
+
+.section-title-row h3,
+.tight-header h2,
+.session-browser-head h2,
+.profile-hero h2,
+.register-hero h2,
+.new-game-shell h2,
+.new-game-shell h3,
+.profile-shell h3,
+.register-shell h3 {
+  color: #f0d9a8;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+}
+
+.eyebrow,
+.lobby-command-label,
+.profile-command-label,
+.profile-section-eyebrow,
+.lobby-command-label,
+.lobby-command-card p + .lobby-command-label {
+  color: rgba(232, 194, 68, 0.76);
+}
+
+.badge {
+  border: 1px solid rgba(200, 164, 39, 0.18);
+  background: rgba(200, 164, 39, 0.08);
+  color: #f0d9a8;
+}
+
+.badge.accent {
+  background:
+    radial-gradient(circle at top, rgba(232, 194, 68, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(83, 64, 24, 0.92), rgba(46, 35, 15, 0.92));
+  color: #f7e5ba;
+}
+
+input,
+select {
+  border-color: rgba(200, 164, 39, 0.16);
+  background: rgba(10, 9, 7, 0.42);
+  color: #f0dcc0;
+}
+
+input::placeholder {
+  color: rgba(212, 184, 136, 0.46);
+}
+
+.session-list-panel,
+.session-detail-panel,
+.new-game-panel,
+.setup-ruleset-card,
+.map-setup-card,
+.setup-options-stack,
+.setup-slot,
+.register-card,
+.profile-note-card,
+.profile-metric-card,
+.profile-summary-card,
+.game-session-card,
+.game-roster-section,
+.map-stage-command-strip,
+.player-card,
+.territory-card,
+.log-list li,
+.session-detail-item,
+.session-detail-hero,
+.session-detail-note {
+  border-color: rgba(200, 164, 39, 0.14);
+  background:
+    linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 230, 140, 0.04);
+  color: var(--text);
+}
+
+.session-detail-note {
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.1), transparent 45%),
+    linear-gradient(180deg, rgba(46, 39, 27, 0.94), rgba(27, 23, 17, 0.94));
+}
+
+.session-row-button,
+.card-chip {
+  border-color: rgba(200, 164, 39, 0.14);
+  background:
+    linear-gradient(180deg, rgba(34, 30, 22, 0.96), rgba(20, 18, 13, 0.94));
+  color: var(--text);
+}
+
+.session-row-button:hover,
+.card-chip:hover {
+  border-color: rgba(200, 164, 39, 0.32);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
+}
+
+.session-row-button.is-selected,
+.card-chip.is-selected {
+  border-color: rgba(232, 194, 68, 0.42);
+  background:
+    radial-gradient(circle at top right, rgba(232, 194, 68, 0.12), transparent 44%),
+    linear-gradient(180deg, rgba(60, 48, 27, 0.98), rgba(33, 27, 17, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(232, 194, 68, 0.1);
+}
+
+.session-feedback,
+.profile-feedback,
+.auth-feedback {
+  border: 1px solid rgba(200, 164, 39, 0.12);
+  background: rgba(200, 164, 39, 0.07);
+  color: var(--muted);
+}
+
+.session-feedback.is-error,
+.profile-feedback.is-error,
+.auth-feedback.is-error {
+  background: rgba(139, 49, 36, 0.24);
+  border-color: rgba(217, 108, 86, 0.2);
+  color: #f1c0b7;
+}
+
+.auth-feedback.is-success {
+  background: rgba(80, 96, 44, 0.24);
+  border-color: rgba(164, 194, 91, 0.18);
+  color: #d8e0b0;
+}
+
+.game-battlefield-layout {
+  gap: 16px;
+}
+
+.game-map-stage,
+.campaign-map-shell {
+  background:
+    radial-gradient(circle at top, rgba(200, 164, 39, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(32, 28, 20, 0.98), rgba(18, 16, 12, 0.96));
+}
+
+.game-map-stage .map-board {
+  border: 1px solid rgba(200, 164, 39, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.55),
+    0 28px 70px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 230, 140, 0.1);
+}
+
+.game-map-stage .map-board::after {
+  background:
+    radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.5) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0%, transparent 20%, transparent 76%, rgba(0, 0, 0, 0.48) 100%);
+}
+
+.map-stage-command-strip,
+.game-session-card,
+.game-roster-section {
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(36, 31, 22, 0.94), rgba(22, 19, 14, 0.92));
+}
+
+.game-phase-banner,
+.game-reinforcement-banner,
+.status-chip,
+.game-context-copy {
+  color: rgba(232, 214, 180, 0.78);
+}
+
+.status-divider {
+  background: rgba(200, 164, 39, 0.2);
+}
+
+.territory-node {
+  border: 2px solid rgba(255, 234, 182, 0.76);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 10px 22px rgba(0, 0, 0, 0.34);
+}
+
+.profile-command-card,
+.lobby-command-card,
+.new-game-brief-card {
+  border-color: rgba(200, 164, 39, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(42, 36, 26, 0.96), rgba(24, 21, 15, 0.92));
+  color: var(--text);
+}
+
+.profile-command-card-accent,
+.lobby-command-card-accent,
+.new-game-brief-card-accent,
+.lobby-focus-card {
+  border-color: rgba(232, 194, 68, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(232, 194, 68, 0.18), transparent 46%),
+    linear-gradient(180deg, rgba(54, 43, 24, 0.98), rgba(28, 22, 15, 0.98));
+}
+
+.profile-metric-label,
+.profile-command-card p,
+.lobby-command-card p,
+.new-game-brief-card p,
+.profile-note-card p,
+.profile-game-sub,
+.profile-game-meta,
+.profile-mini-lobby-item span {
+  color: var(--muted);
+}
+
+.profile-metric-value,
+.profile-command-card strong,
+.lobby-command-card strong,
+.new-game-brief-card strong,
+.profile-note-card h3,
+.profile-game-name {
+  color: #f0d9a8;
+}
+
+.profile-game-row {
+  border: 1px solid rgba(200, 164, 39, 0.14);
+  background:
+    linear-gradient(180deg, rgba(34, 30, 22, 0.96), rgba(20, 18, 13, 0.94));
+  color: var(--text);
+}
+
+.profile-game-row:hover {
+  border-color: rgba(200, 164, 39, 0.32);
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
 }
