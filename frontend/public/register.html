@@ -9,8 +9,8 @@
   <body data-app-section="register">
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell">
-        <section class="panel top-nav-bar">
+      <main class="page-shell top-nav-page-shell campaign-page-shell">
+        <section class="panel top-nav-bar campaign-nav">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
             <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
             <h1 data-i18n="app.title">Frontline Dominion</h1>
@@ -34,19 +34,19 @@
           </div>
         </section>
 
-        <section class="panel register-shell" data-testid="register-shell">
-          <div class="register-hero">
-            <div>
+        <section class="panel register-shell campaign-shell" data-testid="register-shell">
+          <div class="register-hero campaign-hero">
+            <div class="campaign-hero-copy">
               <p class="eyebrow" data-i18n="register.eyebrow">Account Setup</p>
               <h2 data-i18n="register.heading">Crea il tuo profilo comandante</h2>
               <p class="stage-copy" data-i18n="register.copy">Registrazione standard, email facoltativa, password forte e dati sensibili protetti lato server.</p>
             </div>
-            <div class="content-meta-line register-meta-line">
+            <div class="content-meta-line register-meta-line campaign-status-line">
               <span id="register-auth-status" data-i18n="register.authStatus">Compila il modulo per creare l'account.</span>
             </div>
           </div>
 
-          <form id="register-form" class="register-card">
+          <form id="register-form" class="register-card campaign-form-card">
             <label class="field-stack">
               <span data-i18n="register.username.label">Username</span>
               <input id="register-username" name="register-username" maxlength="32" autocomplete="username" placeholder="Comandante_01" required data-i18n-placeholder="register.username.placeholder" />

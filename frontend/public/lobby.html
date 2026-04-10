@@ -10,8 +10,8 @@
   <body data-app-section="lobby">
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell">
-        <section class="panel top-nav-bar">
+      <main class="page-shell top-nav-page-shell campaign-page-shell">
+        <section class="panel top-nav-bar campaign-nav">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
             <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
             <h1 data-i18n="app.title">Frontline Dominion</h1>
@@ -34,23 +34,23 @@
               <div class="nav-avatar" id="nav-avatar" aria-label="Profilo utente" data-i18n-aria-label="auth.userProfile">C</div>
             </div>
         </section>
-        <section class="session-browser panel" data-testid="game-lobby-shell">
-          <div class="session-browser-head">
-            <div class="session-browser-heading">
+        <section class="session-browser panel campaign-shell" data-testid="game-lobby-shell">
+          <div class="session-browser-head campaign-hero">
+            <div class="session-browser-heading campaign-hero-copy">
               <p class="eyebrow session-eyebrow" data-i18n="lobby.eyebrow">War Room</p>
               <h2 data-i18n="lobby.heading">Lobby di Comando</h2>
               <p class="stage-copy" data-i18n="lobby.copy">Riapri la partita giusta in fretta, controlla quali lobby sono pronte e scegli subito il prossimo teatro da aprire.</p>
             </div>
           </div>
 
-          <div class="content-meta-line lobby-meta-line">
+          <div class="content-meta-line lobby-meta-line campaign-status-line">
             <span id="auth-status" data-i18n="lobby.authStatus">Accedi dalla pagina Game per collegarti e poi torna qui per gestire le sessioni.</span>
             <span class="status-divider" aria-hidden="true"></span>
             <span id="game-status" data-i18n="lobby.gameStatus">Nessuna partita attiva</span>
           </div>
 
-          <div class="lobby-focus-band">
-            <article class="lobby-focus-card">
+          <div class="lobby-focus-band campaign-focus-grid">
+            <article class="lobby-focus-card campaign-focus-card">
               <span class="lobby-command-label" data-i18n="lobby.focus.label">Sessione in primo piano</span>
               <strong id="lobby-active-focus" data-i18n="lobby.focus.value">Nessuna</strong>
               <p id="lobby-focus-note" data-i18n="lobby.focus.note">Apri una partita per continuare dal teatro corrente.</p>

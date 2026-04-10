@@ -10,8 +10,8 @@
   <body data-app-section="lobby">
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell">
-        <section class="panel top-nav-bar">
+      <main class="page-shell top-nav-page-shell campaign-page-shell">
+        <section class="panel top-nav-bar campaign-nav">
           <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
             <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
             <h1 data-i18n="app.title">Frontline Dominion</h1>
@@ -35,20 +35,20 @@
           </div>
         </section>
 
-        <section class="panel new-game-shell" data-testid="new-game-shell">
-          <div class="section-title-row">
-            <div>
+        <section class="panel new-game-shell campaign-shell" data-testid="new-game-shell">
+          <div class="section-title-row campaign-hero">
+            <div class="campaign-hero-copy">
               <p class="eyebrow" data-i18n="newGame.eyebrow">New Game Setup</p>
               <h2 data-i18n="newGame.heading">Configura una nuova partita</h2>
               <p class="stage-copy" data-i18n="newGame.copy">Definisci il teatro, controlla quanti slot vuoi aprire e verifica subito come entreranno umani e AI prima di creare la sessione.</p>
             </div>
-            <div class="content-meta-line new-game-meta-line">
+            <div class="content-meta-line new-game-meta-line campaign-status-line">
               <span id="setup-auth-status" data-i18n="newGame.authStatus">Configurazione locale pronta.</span>
             </div>
           </div>
 
-          <div class="new-game-brief">
-            <article class="new-game-brief-card new-game-brief-card-accent">
+          <div class="new-game-brief campaign-focus-grid">
+            <article class="new-game-brief-card new-game-brief-card-accent campaign-focus-card">
               <span class="lobby-command-label" data-i18n="newGame.goal.label">Obiettivo</span>
               <strong data-i18n="newGame.goal.title">Preparazione rapida</strong>
               <p data-i18n="newGame.goal.copy">Tieni visibili solo le decisioni che servono davvero: nome, mappa, posti al tavolo e natura di ogni slot.</p>
