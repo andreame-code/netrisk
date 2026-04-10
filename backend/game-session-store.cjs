@@ -23,6 +23,10 @@ function normalizeGameName(name, fallbackIndex) {
     throw new Error("Il nome della partita non puo essere vuoto.");
   }
 
+  if (!/^[\p{L}\p{N}\s\-_'.,!?()]+$/u.test(normalized)) {
+    throw new Error("Il nome della partita contiene caratteri non consentiti.");
+  }
+
   return normalized;
 }
 
