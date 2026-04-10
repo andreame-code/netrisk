@@ -10,9 +10,9 @@
   <body data-app-section="game">
     <div class="backdrop"></div>
     <div class="app-frame game-app-frame">
-      <main class="page-shell game-page-shell">
+      <main class="page-shell game-page-shell campaign-page-shell">
         <section class="app-shell board-shell" data-testid="app-shell">
-          <section class="panel top-nav-bar">
+          <section class="panel top-nav-bar campaign-nav">
             <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
               <p class="eyebrow" data-i18n="app.brand">NetRisk</p>
               <h1 data-i18n="app.title">Frontline Dominion</h1>
@@ -38,11 +38,11 @@
 
           <section class="battlefield-layout game-battlefield-layout" data-testid="battlefield-layout">
             <section class="game-main-column" data-testid="game-main-column">
-              <section class="center-stage panel map-stage-panel game-map-stage" data-testid="map-panel">
+              <section class="center-stage panel map-stage-panel game-map-stage campaign-map-shell" data-testid="map-panel">
                 <div id="map" class="map tactical-map" data-testid="map-region"></div>
               </section>
 
-              <section class="panel game-info-rail game-info-bottom" data-testid="info-panel">
+              <section class="panel game-info-rail game-info-bottom campaign-shell" data-testid="info-panel">
                 <div class="panel-header tight-header game-compact-heading">
                   <div>
                     <p class="eyebrow" data-i18n="game.command.eyebrow">Command</p>
@@ -67,7 +67,7 @@
               </section>
             </section>
 
-            <aside class="right-rail panel game-actions-rail" data-testid="actions-panel">
+            <aside class="right-rail panel game-actions-rail campaign-shell" data-testid="actions-panel">
               <div class="rail-section game-phase-banner" id="phase-banner">
                 <span><span data-i18n="game.phaseBanner">Fase:</span> <strong id="phase-banner-value" data-i18n="game.phaseValue">Lobby</strong></span>
               </div>

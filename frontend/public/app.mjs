@@ -168,6 +168,8 @@ function renderNavAvatar(username) {
   avatar.textContent = label || "C";
 }
 
+let pendingMapFitFrame = null;
+
 function fitMapBoardToViewport() {
   const mapStage = document.querySelector(".game-map-stage");
   const mapContainer = document.querySelector(".game-map-stage .map");
@@ -183,8 +185,7 @@ function fitMapBoardToViewport() {
     Number.parseFloat(stageStyles.paddingTop || "0") + Number.parseFloat(stageStyles.paddingBottom || "0");
   const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
   const stageRect = mapStage.getBoundingClientRect();
-  const visibleViewportHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
-  const availableHeight = Math.max(0, Math.min(mapStage.clientHeight - stagePaddingY, visibleViewportHeight));
+  const availableHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
   if (!availableWidth || !availableHeight) {
     return;
   }
@@ -194,13 +195,26 @@ function fitMapBoardToViewport() {
   const aspectRatio = aspectRatioMatch
     ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
     : 760 / 500;
-  const widthFromHeight = availableHeight * aspectRatio;
+  const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
   const width = Math.min(availableWidth, widthFromHeight);
   const height = width / aspectRatio;
 
   mapBoard.style.width = `${Math.floor(width)}px`;
   mapBoard.style.height = `${Math.floor(height)}px`;
-  mapContainer.style.height = `${Math.floor(availableHeight)}px`;
+  mapContainer.style.height = `${Math.ceil(height)}px`;
+}
+
+function queueMapBoardFit() {
+  if (pendingMapFitFrame != null) {
+    window.cancelAnimationFrame(pendingMapFitFrame);
+  }
+
+  pendingMapFitFrame = window.requestAnimationFrame(() => {
+    pendingMapFitFrame = window.requestAnimationFrame(() => {
+      pendingMapFitFrame = null;
+      fitMapBoardToViewport();
+    });
+  });
 }
 
 function territoryPosition(territory) {
@@ -890,7 +904,6 @@ function render() {
   }
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
-  fitMapBoardToViewport();
   const logEntries = translateGameLogEntries(snapshot);
   elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
@@ -1040,6 +1053,8 @@ function render() {
         ? t("game.runtime.hint.observation")
         : t("game.runtime.hint.login");
   }
+
+  queueMapBoardFit();
 }
 
 async function fetchLatestStateSnapshot(options = {}) {
@@ -1670,4 +1685,4 @@ await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
 
-window.addEventListener("resize", fitMapBoardToViewport);
+window.addEventListener("resize", queueMapBoardFit);

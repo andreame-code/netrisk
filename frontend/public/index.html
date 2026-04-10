@@ -3,25 +3,274 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-i18n="index.title">Frontline Dominion</title>
-    <meta http-equiv="refresh" content="0; url=/game.html" />
-    <script>
-      const target = "/game.html" + window.location.search + window.location.hash;
-      window.location.replace(target);
-    </script>
-    <link rel="stylesheet" href="/style.css" />
+    <title>Frontline Dominion — Conquista il Mondo</title>
+    <meta
+      name="description"
+      content="Gioco di strategia a turni multiplayer. Conquista territori, comanda le armate, domina il teatro di guerra. Gratuito, niente da installare."
+    />
+    <link rel="stylesheet" href="/landing.css" />
     <script defer src="/speed-insights.js"></script>
   </head>
   <body>
-    <div class="backdrop"></div>
-    <main class="app-shell board-shell">
-      <section class="page-header-panel panel">
-        <div>
-          <p class="eyebrow" data-i18n="index.eyebrow">Redirect</p>
-          <h1 class="page-title" data-i18n="index.heading">Apertura partita</h1>
-          <p class="stage-copy" data-i18n="index.copy">Reindirizzamento verso la pagina di gioco dedicata.</p>
+    <header class="ld-header" id="top">
+      <div class="ld-container ld-header-inner">
+        <a href="/" class="ld-brand">
+          <span class="ld-brand-eyebrow">NetRisk</span>
+          <span class="ld-brand-name">Frontline Dominion</span>
+        </a>
+        <nav class="ld-nav-links" aria-label="Navigazione principale">
+          <a href="#features">Caratteristiche</a>
+          <a href="#maps">Mappe</a>
+          <a href="#howtoplay">Come si gioca</a>
+        </nav>
+        <div class="ld-nav-actions">
+          <a href="/lobby.html" class="ld-btn-ghost">Accedi</a>
+          <a href="/register.html" class="ld-btn-primary">Registrati</a>
         </div>
-      </section>
-    </main>
+      </div>
+    </header>
+
+    <section class="ld-hero">
+      <div class="ld-hero-bg"></div>
+      <div class="ld-hero-overlay"></div>
+      <div class="ld-container ld-hero-content">
+        <p class="ld-hero-eyebrow">
+          <span class="ld-eyebrow-line" aria-hidden="true"></span>
+          Il Gioco di Strategia a Turni
+          <span class="ld-eyebrow-line" aria-hidden="true"></span>
+        </p>
+        <h1 class="ld-hero-title">Conquista il Mondo.<br /><em>Comanda le Armate.</em></h1>
+        <p class="ld-hero-desc">
+          Pianifica come un generale. Attacca nei momenti decisivi. Difendi cio che hai conquistato.
+          Frontline Dominion e il teatro di guerra strategico che mette alla prova mente e nervi.
+        </p>
+        <div class="ld-hero-cta">
+          <a href="/register.html" class="ld-btn-primary ld-btn-lg">
+            <span>Inizia Gratis</span>
+          </a>
+          <a href="#maps" class="ld-btn-ghost ld-btn-lg">Scopri le Mappe</a>
+        </div>
+        <div class="ld-hero-stats" aria-label="Statistiche di gioco">
+          <div class="ld-hero-stat">
+            <strong>6</strong>
+            <span>Condottieri</span>
+          </div>
+          <div class="ld-hero-stat-divider" aria-hidden="true"></div>
+          <div class="ld-hero-stat">
+            <strong>2</strong>
+            <span>Teatri di Guerra</span>
+          </div>
+          <div class="ld-hero-stat-divider" aria-hidden="true"></div>
+          <div class="ld-hero-stat">
+            <strong>&infin;</strong>
+            <span>Strategie</span>
+          </div>
+        </div>
+      </div>
+      <div class="ld-hero-scroll-hint" aria-hidden="true">
+        <div class="ld-scroll-gem"></div>
+        <div class="ld-scroll-line"></div>
+      </div>
+    </section>
+
+    <section class="ld-section ld-features" id="features">
+      <div class="ld-container">
+        <header class="ld-section-header">
+          <p class="ld-eyebrow">Caratteristiche</p>
+          <h2>Un gioco di mente e coraggio</h2>
+          <p class="ld-section-desc">
+            Ogni partita e una campagna militare. Pianifica l'espansione, difendi i confini
+            e scegli il momento giusto per colpire.
+          </p>
+        </header>
+        <div class="ld-features-grid">
+          <article class="ld-feature-card">
+            <div class="ld-feature-icon" aria-hidden="true">🗺</div>
+            <h3>Due Teatri di Guerra</h3>
+            <p>
+              Combatti su mappe epiche: il <strong>Mondo Classico</strong> con 42 territori
+              e la leggendaria <strong>Terra di Mezzo</strong>. Ogni mappa porta nuove sfide tattiche
+              e rotte strategiche da dominare.
+            </p>
+          </article>
+          <article class="ld-feature-card ld-feature-card-accent">
+            <div class="ld-feature-icon" aria-hidden="true">⚔</div>
+            <h3>Strategia Pura</h3>
+            <p>
+              Rinforza i confini vulnerabili, pianifica catene d'attacco in profondita,
+              fortifica le regioni chiave. Ogni mossa ha conseguenze:
+              non esistono turni sprecati.
+            </p>
+          </article>
+          <article class="ld-feature-card">
+            <div class="ld-feature-icon" aria-hidden="true">⚜</div>
+            <h3>Multiplayer Persistente</h3>
+            <p>
+              Fino a <strong>6 condottieri</strong> in campo. Le partite si salvano in automatico:
+              riprendi quando vuoi e decidi tu quando attaccare. Nessuna fretta, solo tattica.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-section ld-maps" id="maps">
+      <div class="ld-container">
+        <header class="ld-section-header">
+          <p class="ld-eyebrow">I Teatri di Guerra</p>
+          <h2>Scegli il tuo campo di battaglia</h2>
+          <p class="ld-section-desc">
+            Due mappe, due epoche, infinite campagne. Lo stesso obiettivo: dominare ogni angolo del mondo.
+          </p>
+        </header>
+
+        <div class="ld-maps-grid">
+          <div class="ld-map-card">
+            <div class="ld-map-frame">
+              <img
+                src="/assets/maps/world-classic.png"
+                alt="Screenshot del gioco - Mappa Mondo Classico con 4 giocatori attivi al turno 14"
+                loading="lazy"
+              />
+              <div class="ld-map-hud-top" aria-hidden="true">
+                <span class="ld-map-hud-label">Campagna in corso · Turno 14</span>
+                <div class="ld-map-players">
+                  <span class="ld-mp" style="--mp-color:#c0392b" title="Condottiero Rosso - 14 territori"></span>
+                  <span class="ld-mp" style="--mp-color:#2980b9" title="Condottiero Blu - 11 territori"></span>
+                  <span class="ld-mp" style="--mp-color:#27ae60" title="Condottiero Verde - 9 territori"></span>
+                  <span class="ld-mp" style="--mp-color:#d4a017" title="Condottiero Oro - 8 territori"></span>
+                </div>
+              </div>
+              <div class="ld-map-hud-bottom" aria-hidden="true">
+                <span>42 territori</span>
+                <span>4 / 6 giocatori</span>
+                <span>Fase di attacco</span>
+              </div>
+            </div>
+            <div class="ld-map-info">
+              <h3>Mondo Classico</h3>
+              <p>
+                Il teatro originale. Sei continenti, 42 territori, infinite possibilita.
+                Domina l'Europa, consolida l'Asia, taglia le rotte avversarie dal Sudamerica.
+                La mappa che ha definito il genere.
+              </p>
+              <ul class="ld-map-tags" aria-label="Dettagli mappa">
+                <li>42 Territori</li>
+                <li>6 Continenti</li>
+                <li>Fino a 6 giocatori</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="ld-map-card">
+            <div class="ld-map-frame">
+              <img
+                src="/assets/maps/middle-earth.jpg"
+                alt="Screenshot del gioco - Mappa Terra di Mezzo con 3 giocatori al turno 7"
+                loading="lazy"
+              />
+              <div class="ld-map-hud-top" aria-hidden="true">
+                <span class="ld-map-hud-label">Campagna in corso · Turno 7</span>
+                <div class="ld-map-players">
+                  <span class="ld-mp" style="--mp-color:#8e44ad" title="Condottiero Viola - 12 territori"></span>
+                  <span class="ld-mp" style="--mp-color:#c0392b" title="Condottiero Rosso - 10 territori"></span>
+                  <span class="ld-mp" style="--mp-color:#16a085" title="Condottiero Teal - 8 territori"></span>
+                </div>
+              </div>
+              <div class="ld-map-hud-bottom" aria-hidden="true">
+                <span>Terra di Mezzo</span>
+                <span>3 / 6 giocatori</span>
+                <span>Fase rinforzo</span>
+              </div>
+            </div>
+            <div class="ld-map-info">
+              <h3>Terra di Mezzo</h3>
+              <p>
+                Un teatro di guerra leggendario. Dalla Contea alle Terre di Mordor, ogni regione
+                porta il peso della storia. Chi dominera i Regni degli Uomini e le pianure di Rohan?
+              </p>
+              <ul class="ld-map-tags" aria-label="Dettagli mappa">
+                <li>Mappa Fantasy</li>
+                <li>Regioni iconiche</li>
+                <li>Ambientazione epica</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-section ld-howto" id="howtoplay">
+      <div class="ld-container">
+        <header class="ld-section-header">
+          <p class="ld-eyebrow">Come si gioca</p>
+          <h2>In campo in tre mosse</h2>
+          <p class="ld-section-desc">Niente tutorial infiniti. Sei pronto a combattere in pochi minuti.</p>
+        </header>
+        <div class="ld-steps">
+          <div class="ld-step">
+            <div class="ld-step-num" aria-hidden="true">I</div>
+            <div class="ld-step-body">
+              <h3>Crea il tuo account</h3>
+              <p>Registrati in pochi secondi. Gratis, senza niente da installare. Scegli il nome del tuo condottiero e sei pronto.</p>
+            </div>
+          </div>
+          <div class="ld-step-connector" aria-hidden="true">
+            <div class="ld-step-connector-line"></div>
+            <div class="ld-step-connector-gem"></div>
+          </div>
+          <div class="ld-step">
+            <div class="ld-step-num" aria-hidden="true">II</div>
+            <div class="ld-step-body">
+              <h3>Scegli la battaglia</h3>
+              <p>Dalla Lobby di Comando, crea una nuova partita o unisciti a una sessione esistente. Scegli la mappa e sfida i tuoi avversari.</p>
+            </div>
+          </div>
+          <div class="ld-step-connector" aria-hidden="true">
+            <div class="ld-step-connector-line"></div>
+            <div class="ld-step-connector-gem"></div>
+          </div>
+          <div class="ld-step">
+            <div class="ld-step-num" aria-hidden="true">III</div>
+            <div class="ld-step-body">
+              <h3>Conquista il mondo</h3>
+              <p>Rinforza i tuoi eserciti, pianifica gli attacchi, espandi il dominio. Il territorio e tuo, finche qualcuno non ti sfida.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ld-section ld-final-cta">
+      <div class="ld-final-cta-bg" aria-hidden="true"></div>
+      <div class="ld-container ld-final-cta-inner">
+        <div class="ld-final-cta-ornament" aria-hidden="true">⚔</div>
+        <p class="ld-eyebrow">Unisciti alla guerra</p>
+        <h2>Il tuo esercito ti aspetta.</h2>
+        <p class="ld-final-cta-desc">
+          Il tuo territorio di partenza e ancora libero. Ogni giorno nuove campagne iniziano:
+          non restare a guardare.
+        </p>
+        <div class="ld-final-cta-btns">
+          <a href="/register.html" class="ld-btn-primary ld-btn-lg">Registrati Gratis</a>
+          <a href="/lobby.html" class="ld-btn-ghost ld-btn-lg">Entra in Lobby</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="ld-footer">
+      <div class="ld-container ld-footer-inner">
+        <a href="/" class="ld-brand">
+          <span class="ld-brand-eyebrow">NetRisk</span>
+          <span class="ld-brand-name">Frontline Dominion</span>
+        </a>
+        <nav class="ld-footer-links" aria-label="Link pie di pagina">
+          <a href="/lobby.html">Lobby</a>
+          <a href="/game.html">Partita</a>
+          <a href="/register.html">Registrati</a>
+          <a href="#top">Torna su</a>
+        </nav>
+      </div>
+    </footer>
   </body>
 </html>
