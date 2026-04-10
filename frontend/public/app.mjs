@@ -168,6 +168,8 @@ function renderNavAvatar(username) {
   avatar.textContent = label || "C";
 }
 
+let pendingMapFitFrame = null;
+
 function fitMapBoardToViewport() {
   const mapStage = document.querySelector(".game-map-stage");
   const mapContainer = document.querySelector(".game-map-stage .map");
@@ -201,6 +203,19 @@ function fitMapBoardToViewport() {
   mapBoard.style.width = `${Math.floor(width)}px`;
   mapBoard.style.height = `${Math.floor(height)}px`;
   mapContainer.style.height = `${Math.floor(availableHeight)}px`;
+}
+
+function queueMapBoardFit() {
+  if (pendingMapFitFrame != null) {
+    window.cancelAnimationFrame(pendingMapFitFrame);
+  }
+
+  pendingMapFitFrame = window.requestAnimationFrame(() => {
+    pendingMapFitFrame = window.requestAnimationFrame(() => {
+      pendingMapFitFrame = null;
+      fitMapBoardToViewport();
+    });
+  });
 }
 
 function territoryPosition(territory) {
@@ -890,7 +905,6 @@ function render() {
   }
 
   elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
-  fitMapBoardToViewport();
   const logEntries = translateGameLogEntries(snapshot);
   elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
@@ -1040,6 +1054,8 @@ function render() {
         ? t("game.runtime.hint.observation")
         : t("game.runtime.hint.login");
   }
+
+  queueMapBoardFit();
 }
 
 async function fetchLatestStateSnapshot(options = {}) {
@@ -1670,4 +1686,4 @@ await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
 
-window.addEventListener("resize", fitMapBoardToViewport);
+window.addEventListener("resize", queueMapBoardFit);
