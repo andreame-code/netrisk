@@ -389,6 +389,7 @@ function formatCombatComparisons(comparisons) {
 
 function setSession(user) {
   state.user = user;
+  window.netriskTheme?.applyUserTheme?.(state.user);
 }
 
 function clearPlayerIdentity() {

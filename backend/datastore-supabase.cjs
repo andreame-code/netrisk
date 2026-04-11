@@ -354,6 +354,13 @@ function createSupabaseDatastore(options = {}) {
       });
       return this.findUserById(userId);
     },
+    async updateUserProfile(userId, profile) {
+      await ensureInitialized();
+      await patchRows("users", { id: `eq.${userId}` }, {
+        profile_json: JSON.stringify(profile || {})
+      });
+      return this.findUserById(userId);
+    },
     async updateUserRoleByUsername(username, role) {
       await ensureInitialized();
       await patchRows("users", { username: `eq.${username}` }, {

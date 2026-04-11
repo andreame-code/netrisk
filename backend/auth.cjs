@@ -32,12 +32,18 @@ function publicUser(user) {
     return null;
   }
 
+  const preferences = {};
+  if (typeof user.profile?.preferences?.theme === "string" && user.profile.preferences.theme) {
+    preferences.theme = user.profile.preferences.theme;
+  }
+
   return {
     id: user.id,
     username: user.username,
     role: userRole(user),
     authMethods: Object.keys(user.credentials || {}),
-    hasEmail: Boolean(user.profile?.contact?.emailEncrypted)
+    hasEmail: Boolean(user.profile?.contact?.emailEncrypted),
+    preferences
   };
 }
 
@@ -290,6 +296,30 @@ function createAuthStore(options = {}) {
     return null;
   }
 
+  async function updateUserProfile(userId, profile) {
+    const updatedUser = await datastore.updateUserProfile(userId, profile || {});
+    return updatedUser ? publicUser(updatedUser) : null;
+  }
+
+  async function updateUserThemePreference(userId, theme) {
+    let updatedUser = null;
+
+    if (typeof datastore.updateUserThemePreference === "function") {
+      updatedUser = await datastore.updateUserThemePreference(userId, theme);
+    } else {
+      const currentUser = await datastore.findUserById(userId);
+      updatedUser = await datastore.updateUserProfile(userId, {
+        ...(currentUser?.profile || {}),
+        preferences: {
+          ...(currentUser?.profile?.preferences || {}),
+          theme: String(theme || "")
+        }
+      });
+    }
+
+    return updatedUser ? publicUser(updatedUser) : null;
+  }
+
   return {
     datastore,
     findByUsername,
@@ -298,7 +328,9 @@ function createAuthStore(options = {}) {
     loginWithPassword,
     logout,
     publicUser,
-    registerPasswordUser
+    registerPasswordUser,
+    updateUserProfile,
+    updateUserThemePreference
   };
 }
 
