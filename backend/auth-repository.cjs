@@ -69,6 +69,12 @@ function createLocalAuthRepository(options = {}) {
     async updateUserCredentials(userId, credentials) {
       return datastore.updateUserCredentials(userId, credentials);
     },
+    async updateUserProfile(userId, profile) {
+      return datastore.updateUserProfile(userId, profile);
+    },
+    async updateUserThemePreference(userId, theme) {
+      return datastore.updateUserThemePreference(userId, theme);
+    },
     async createSession(token, userId, createdAt) {
       datastore.createSession(token, userId, createdAt);
     },
@@ -174,6 +180,33 @@ function createSupabaseAuthRepository(options = {}) {
         id: `eq.${String(userId || "").trim()}`
       }, {
         credentials_json: JSON.stringify(credentials || {})
+      }, true);
+      return Array.isArray(rows) && rows.length ? normalizeUser(rows[0]) : null;
+    },
+    async updateUserProfile(userId, profile) {
+      const rows = await request("users", "PATCH", {
+        id: `eq.${String(userId || "").trim()}`
+      }, {
+        profile_json: JSON.stringify(profile || {})
+      }, true);
+      return Array.isArray(rows) && rows.length ? normalizeUser(rows[0]) : null;
+    },
+    async updateUserThemePreference(userId, theme) {
+      const latestUser = await this.findUserById(userId);
+      if (!latestUser) {
+        return null;
+      }
+
+      const rows = await request("users", "PATCH", {
+        id: `eq.${String(userId || "").trim()}`
+      }, {
+        profile_json: JSON.stringify({
+          ...(latestUser.profile || {}),
+          preferences: {
+            ...(latestUser.profile?.preferences || {}),
+            theme: String(theme || "")
+          }
+        })
       }, true);
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0]) : null;
     },

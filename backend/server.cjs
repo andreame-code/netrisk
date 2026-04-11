@@ -35,6 +35,17 @@ loadLocalEnv();
 const publicDir = path.join(__dirname, "..", "frontend", "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
+const supportedSiteThemes = new Set(["command", "midnight", "ember"]);
+
+function resolveStoredTheme(theme) {
+  return supportedSiteThemes.has(theme) ? theme : "command";
+}
+
+function extractUserPreferences(user) {
+  return {
+    theme: resolveStoredTheme(user?.profile?.preferences?.theme)
+  };
+}
 
 function defaultDbFile() {
   if (process.env.VERCEL) {
@@ -626,10 +637,37 @@ function createApp(options = {}) {
       }
 
       try {
-        sendJson(res, 200, { profile: await playerProfiles.getPlayerProfile(authContext.user.username) });
+        sendJson(res, 200, {
+          profile: {
+            ...(await playerProfiles.getPlayerProfile(authContext.user.username)),
+            preferences: extractUserPreferences(authContext.user)
+          }
+        });
       } catch (error) {
         sendLocalizedError(res, 400, error, "Profilo non disponibile.", "server.profile.unavailable");
       }
+      return;
+    }
+
+    if (req.method === "PUT" && url.pathname === "/api/profile/preferences/theme") {
+      const body = await parseBody(req);
+      const authContext = await requireAuth(req, res, body);
+      if (!authContext) {
+        return;
+      }
+
+      if (!supportedSiteThemes.has(body.theme)) {
+        sendLocalizedError(res, 400, null, "Tema non supportato.", "server.profile.invalidTheme");
+        return;
+      }
+
+      const user = await auth.updateUserThemePreference(authContext.user.id, body.theme);
+
+      sendJson(res, 200, {
+        ok: true,
+        user,
+        preferences: user?.preferences || { theme: resolveStoredTheme(body.theme) }
+      });
       return;
     }
 

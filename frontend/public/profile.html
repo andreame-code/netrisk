@@ -32,6 +32,22 @@
             <span id="auth-status" data-i18n="profile.authStatus">Verifica della sessione in corso...</span>
           </div>
           <div id="profile-feedback" class="profile-feedback" data-i18n="profile.feedback">Caricamento dati giocatore...</div>
+          <section id="profile-preferences" class="profile-preferences profile-note-card" hidden>
+            <div class="profile-preferences-head">
+              <div>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.preferences.eyebrow">Preferenze</p>
+                <h3 data-i18n="profile.preferences.heading">Tema del sito</h3>
+              </div>
+            </div>
+            <p class="stage-copy" data-i18n="profile.preferences.copy">Scegli il tema visivo che preferisci: la modifica viene applicata subito su tutto il sito in questo browser.</p>
+            <div class="profile-theme-row">
+              <label class="profile-theme-field" for="profile-theme-select">
+                <span class="profile-theme-label" data-i18n="profile.preferences.label">Tema</span>
+                <select id="profile-theme-select" class="top-nav-locale-select profile-theme-select" aria-describedby="profile-theme-status"></select>
+              </label>
+              <p id="profile-theme-status" class="profile-theme-status" aria-live="polite" data-i18n="profile.preferences.status.loading">Caricamento tema attuale...</p>
+            </div>
+          </section>
           <section id="profile-content" class="profile-content" hidden>
             <div class="profile-summary-card campaign-summary-card">
               <p class="eyebrow profile-section-eyebrow" data-i18n="profile.summary.eyebrow">Panoramica</p>
