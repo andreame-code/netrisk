@@ -1146,6 +1146,47 @@ select {
   padding: 16px;
 }
 
+.profile-preferences {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-preferences-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-theme-row {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.profile-theme-field {
+  display: grid;
+  gap: 8px;
+  min-width: min(280px, 100%);
+}
+
+.profile-theme-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-theme-select {
+  min-width: 220px;
+}
+
+.profile-theme-status {
+  margin: 0;
+  color: var(--muted);
+}
+
 .profile-section-eyebrow {
   color: var(--muted);
   margin-bottom: 8px;
@@ -1362,6 +1403,16 @@ select {
   .profile-games-head {
     flex-direction: column;
     align-items: start;
+  }
+
+  .profile-theme-row {
+    align-items: stretch;
+  }
+
+  .profile-theme-field,
+  .profile-theme-select {
+    width: 100%;
+    min-width: 0;
   }
 
   .profile-game-row {
