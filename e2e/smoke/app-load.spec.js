@@ -6,6 +6,6 @@ test("main page loads", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle(/Frontline Dominion/i);
-  await expect(page.getByTestId("app-shell")).toBeVisible();
-  await expect(page.getByTestId("map-region")).toBeVisible();
+  await expect(page.locator(".ld-hero")).toBeVisible();
+  await expect(page.locator("#top").getByRole("link", { name: "Registrati" })).toBeVisible();
 });
