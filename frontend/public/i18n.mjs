@@ -206,11 +206,27 @@ export function applyTranslations(root = document, locale = getLocale()) {
     element.textContent = t(element.dataset.i18n, {}, { locale });
   });
 
+  root.querySelectorAll("[data-i18n-html]").forEach((element) => {
+    element.innerHTML = t(element.dataset.i18nHtml, {}, { locale });
+  });
+
+  root.querySelectorAll("[data-i18n-content]").forEach((element) => {
+    element.setAttribute("content", t(element.dataset.i18nContent, {}, { locale }));
+  });
+
   root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
     element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder, {}, { locale }));
   });
 
   root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
     element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel, {}, { locale }));
+  });
+
+  root.querySelectorAll("[data-i18n-title]").forEach((element) => {
+    element.setAttribute("title", t(element.dataset.i18nTitle, {}, { locale }));
+  });
+
+  root.querySelectorAll("[data-i18n-alt]").forEach((element) => {
+    element.setAttribute("alt", t(element.dataset.i18nAlt, {}, { locale }));
   });
 }

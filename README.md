@@ -129,6 +129,7 @@ L'architettura segue un principio semplice: il frontend presenta e invia azioni,
 
 - `frontend/public`
   Interfaccia web statica: schermate principali, lobby, nuova partita, profilo, pagina di gioco, stile e logica client-side.
+  E la sola sorgente frontend servita dal server; la root `public/` non fa parte del runtime.
 - `backend`
   Server HTTP, autenticazione, autorizzazione, salvataggio sessioni di gioco, configurazione nuove partite.
 - `backend/engine`
