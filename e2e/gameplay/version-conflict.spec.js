@@ -13,8 +13,8 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   const secondUser = uniqueUser("vc2");
 
   await resetGame(currentPage);
-  await currentPage.goto("/");
-  await secondPage.goto("/");
+  await currentPage.goto("/game.html");
+  await secondPage.goto("/game.html");
 
   await registerLoginAndJoin(currentPage, firstUser);
   await registerLoginAndJoin(secondPage, secondUser);
@@ -24,7 +24,7 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
 
   const stalePage = await firstContext.newPage();
   await stalePage.route("**/api/events", (route) => route.abort());
-  await stalePage.goto("/");
+  await stalePage.goto("/game.html");
 
   await expect(stalePage.locator("#auth-status")).toContainText(firstUser, { timeout: 10000 });
   await expect(stalePage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);

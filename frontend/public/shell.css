@@ -47,9 +47,34 @@ html[data-theme="command"] {
   --campaign-soft-radius: 6px;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   font-family: Georgia, "Trebuchet MS", serif;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 body[data-shell-kind="marketing"] {
@@ -63,6 +88,13 @@ body[data-shell-kind="app"] {
     radial-gradient(circle at top, rgba(200, 164, 39, 0.14), transparent 28%),
     linear-gradient(180deg, #13100b 0%, #0e0c09 45%, #17140f 100%);
   color: var(--text);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-size: 36px 36px;
+  pointer-events: none;
 }
 
 body[data-shell-kind="app"] .backdrop {
@@ -167,11 +199,13 @@ body[data-shell-kind="app"] .backdrop {
 .new-game-shell,
 .game-info-bottom,
 .game-actions-rail {
+  background: var(--panel);
+  border: 1px solid rgba(200, 164, 39, 0.14);
   border-radius: var(--campaign-shell-radius);
-  border-color: rgba(200, 164, 39, 0.14);
   box-shadow:
     inset 0 1px 0 rgba(255, 230, 140, 0.05),
     var(--shadow);
+  backdrop-filter: blur(10px);
 }
 
 .left-rail,
@@ -412,12 +446,43 @@ input::placeholder {
 .session-detail-item,
 .session-detail-hero,
 .session-detail-note {
+  border: 1px solid rgba(200, 164, 39, 0.14);
   border-radius: var(--campaign-card-radius);
-  border-color: rgba(200, 164, 39, 0.14);
   background:
     linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
   box-shadow: inset 0 1px 0 rgba(255, 230, 140, 0.04);
   color: var(--text);
+}
+
+.profile-intel-card,
+.profile-games-card {
+  background:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
+}
+
+.profile-metric-card.accent-win {
+  background:
+    radial-gradient(circle at top right, rgba(114, 171, 82, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(39, 51, 29, 0.96), rgba(21, 30, 17, 0.94));
+}
+
+.profile-metric-card.accent-loss {
+  background:
+    radial-gradient(circle at top right, rgba(186, 90, 73, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(57, 34, 28, 0.96), rgba(31, 20, 17, 0.94));
+}
+
+.profile-metric-card.accent-neutral {
+  background:
+    radial-gradient(circle at top right, rgba(128, 143, 171, 0.12), transparent 44%),
+    linear-gradient(180deg, rgba(35, 37, 43, 0.96), rgba(20, 22, 27, 0.94));
+}
+
+.profile-metric-card.accent-gold {
+  background:
+    radial-gradient(circle at top right, rgba(232, 194, 68, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(66, 51, 24, 0.98), rgba(34, 27, 15, 0.96));
 }
 
 .session-detail-note {
@@ -426,21 +491,28 @@ input::placeholder {
     linear-gradient(180deg, rgba(46, 39, 27, 0.94), rgba(27, 23, 17, 0.94));
 }
 
+.profile-game-row,
 .session-row-button,
 .card-chip {
+  border: 1px solid rgba(200, 164, 39, 0.14);
   border-radius: var(--campaign-card-radius);
-  border-color: rgba(200, 164, 39, 0.14);
   background:
     linear-gradient(180deg, rgba(34, 30, 22, 0.96), rgba(20, 18, 13, 0.94));
   color: var(--text);
 }
 
+.profile-game-row:hover,
 .session-row-button:hover,
 .card-chip:hover {
   border-color: rgba(200, 164, 39, 0.32);
   background:
     radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
     linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
+}
+
+.profile-game-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
 }
 
 .session-row-button.is-selected,
