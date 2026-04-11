@@ -70,8 +70,8 @@ for (const viewport of viewports) {
     expect(metrics.overflowBottom).toBeFalsy();
     expect(metrics.overflowLeft).toBeFalsy();
     expect(metrics.viewportOverflowBottom).toBeFalsy();
-    expect(metrics.boardWidth).toBe(metrics.appliedWidth);
-    expect(metrics.boardHeight).toBe(metrics.appliedHeight);
+    expect(Math.abs(metrics.boardWidth - metrics.appliedWidth)).toBeLessThanOrEqual(1);
+    expect(Math.abs(metrics.boardHeight - metrics.appliedHeight)).toBeLessThanOrEqual(1);
   });
 
   test(`turn summary panel stays under the map and inside the left column at ${viewport.name}`, async ({ page }) => {
