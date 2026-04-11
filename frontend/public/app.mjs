@@ -29,6 +29,7 @@ let eventsMode = null;
 let snapshotPollTimer = null;
 let snapshotPollInFlight = false;
 let privateStateRefreshInFlight = false;
+let renderedMapSignature = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -718,6 +719,42 @@ function buildGraphMarkup(snapshot) {
   `;
 }
 
+function currentRenderedMapSignature(snapshot) {
+  if (!snapshot) {
+    return "empty";
+  }
+
+  return [
+    snapshot.gameId || "",
+    Number.isInteger(snapshot.version) ? snapshot.version : "",
+    state.playerId || "",
+    snapshot.mapId || "",
+    snapshot.mapVisual?.imageUrl || "",
+    snapshot.mapVisual?.aspectRatio?.width || "",
+    snapshot.mapVisual?.aspectRatio?.height || "",
+    snapshot.map.map((territory) => `${territory.id}:${territory.ownerId || ""}:${territory.armies}`).join(",")
+  ].join("|");
+}
+
+function updateMapTerritoryHighlights() {
+  if (!elements.map) {
+    return;
+  }
+
+  const selectedAttackFromId = state.selectedAttackFromId;
+  const selectedAttackToId = state.selectedAttackToId;
+  const selectedReinforceTerritoryId = state.selectedReinforceTerritoryId;
+
+  elements.map.querySelectorAll("[data-territory-id]").forEach((node) => {
+    const territoryId = node.getAttribute("data-territory-id");
+    const territory = territoryById(territoryId);
+    node.classList.toggle("is-mine", territory?.ownerId === state.playerId);
+    node.classList.toggle("is-source", territoryId === selectedAttackFromId);
+    node.classList.toggle("is-target", territoryId === selectedAttackToId);
+    node.classList.toggle("is-reinforce", territoryId === selectedReinforceTerritoryId);
+  });
+}
+
 function handleTerritoryClick(territoryId) {
   const territory = territoryById(territoryId);
   if (!territory) {
@@ -903,7 +940,14 @@ function render() {
     elements.fortifyArmies.value = "1";
   }
 
-  elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
+  const nextMapSignature = currentRenderedMapSignature(snapshot);
+  if (nextMapSignature !== renderedMapSignature) {
+    elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
+    renderedMapSignature = nextMapSignature;
+    queueMapBoardFit();
+  } else {
+    updateMapTerritoryHighlights();
+  }
   const logEntries = translateGameLogEntries(snapshot);
   elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
@@ -1053,8 +1097,6 @@ function render() {
         ? t("game.runtime.hint.observation")
         : t("game.runtime.hint.login");
   }
-
-  queueMapBoardFit();
 }
 
 async function fetchLatestStateSnapshot(options = {}) {
