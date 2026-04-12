@@ -1,27 +1,143 @@
-// @ts-nocheck
 const fs = require("fs");
 const path = require("path");
 const { DatabaseSync, backup } = require("node:sqlite");
-const { readJsonFile } = require("./json-file-store.cjs");
+const { readJsonFile } = require("./json-file-store.cjs") as {
+  readJsonFile: <T>(filePath: string, fallbackValue: T, isValid?: (value: unknown) => boolean) => T;
+};
 const { createSupabaseDatastore } = require("./datastore-supabase.cjs");
 
-function ensureDirectory(filePath) {
+type JsonRecord = Record<string, unknown>;
+
+type UserRecord = {
+  id: string;
+  username: string;
+  credentials: JsonRecord;
+  role: string;
+  profile: JsonRecord;
+  createdAt: string;
+};
+
+type GameRecord = {
+  id: string;
+  name: string;
+  version: number;
+  creatorUserId: string | null;
+  state: JsonRecord;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type SessionRecord = {
+  token: string;
+  user_id: string;
+  created_at: number;
+};
+
+type UserRow = {
+  id: string;
+  username: string;
+  credentials_json?: string | null;
+  role?: string | null;
+  profile_json?: string | null;
+  created_at?: string | null;
+};
+
+type GameRow = {
+  id: string;
+  name: string;
+  version?: number | null;
+  creator_user_id?: string | null;
+  state_json?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type SessionRow = {
+  token: string;
+  user_id?: string | null;
+  created_at?: number | null;
+};
+
+type AppStateRow = {
+  value_json?: string | null;
+};
+
+type CountRow = {
+  count?: number | bigint | string | null;
+};
+
+type ProbeRow = {
+  ok?: number | null;
+};
+
+type Statement<Row> = {
+  get(...args: unknown[]): Row;
+  all(...args: unknown[]): Row[];
+  run(...args: unknown[]): unknown;
+};
+
+type DatastoreOptions = {
+  driver?: string;
+  dbFile?: string;
+  dataFile?: string;
+  gamesFile?: string;
+  sessionsFile?: string;
+  legacyUsersFile?: string;
+  legacyGamesFile?: string;
+  legacySessionsFile?: string;
+};
+
+type LegacyUser = {
+  id: string;
+  username: string;
+  role?: string;
+  profile?: JsonRecord;
+  credentials?: JsonRecord;
+  createdAt?: string;
+};
+
+type LegacySession = {
+  token?: string;
+  userId?: string;
+  createdAt?: number | string;
+};
+
+type LegacyGame = {
+  id: string;
+  name: string;
+  version?: number;
+  creatorUserId?: string | null;
+  state?: JsonRecord;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type LegacyGamesDatabase = {
+  games?: LegacyGame[];
+  activeGameId?: string | null;
+};
+
+function ensureDirectory(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
-function parseJson(value, fallbackValue) {
+function parseJson<T>(value: unknown, fallbackValue: T): T {
   if (value == null || value === "") {
     return fallbackValue;
   }
 
+  if (typeof value !== "string") {
+    return value as T;
+  }
+
   try {
-    return JSON.parse(value);
+    return JSON.parse(value) as T;
   } catch (error) {
     return fallbackValue;
   }
 }
 
-function normalizeUser(row) {
+function normalizeUser(row: UserRow | null): UserRecord | null {
   if (!row) {
     return null;
   }
@@ -29,14 +145,14 @@ function normalizeUser(row) {
   return {
     id: row.id,
     username: row.username,
-    credentials: parseJson(row.credentials_json, {}),
+    credentials: parseJson<JsonRecord>(row.credentials_json, {}),
     role: row.role || "user",
-    profile: parseJson(row.profile_json, {}),
-    createdAt: row.created_at
+    profile: parseJson<JsonRecord>(row.profile_json, {}),
+    createdAt: row.created_at || new Date().toISOString()
   };
 }
 
-function normalizeGame(row) {
+function normalizeGame(row: GameRow | null): GameRecord | null {
   if (!row) {
     return null;
   }
@@ -44,15 +160,15 @@ function normalizeGame(row) {
   return {
     id: row.id,
     name: row.name,
-    version: Number.isInteger(row.version) ? row.version : 1,
+    version: Number.isInteger(row.version) ? Number(row.version) : 1,
     creatorUserId: row.creator_user_id || null,
-    state: parseJson(row.state_json, {}),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
+    state: parseJson<JsonRecord>(row.state_json, {}),
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || row.created_at || new Date().toISOString()
   };
 }
 
-function createDatastore(options = {}) {
+function createDatastore(options: DatastoreOptions = {}) {
   const requestedDriver = String(options.driver || process.env.DATASTORE_DRIVER || "").trim().toLowerCase();
   const shouldUseSupabase = requestedDriver === "supabase" || (requestedDriver !== "sqlite" && Boolean(process.env.SUPABASE_URL));
   if (shouldUseSupabase) {
@@ -98,30 +214,30 @@ function createDatastore(options = {}) {
   `);
 
   const statements = {
-    countUsers: db.prepare("SELECT COUNT(*) AS count FROM users"),
-    countGames: db.prepare("SELECT COUNT(*) AS count FROM games"),
-    countSessions: db.prepare("SELECT COUNT(*) AS count FROM sessions"),
-    probe: db.prepare("SELECT 1 AS ok"),
-    insertUser: db.prepare("INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)"),
-    updateUserCredentials: db.prepare("UPDATE users SET credentials_json = ? WHERE id = ?"),
-    updateUserProfile: db.prepare("UPDATE users SET profile_json = ? WHERE id = ?"),
-    updateUserThemePreference: db.prepare("UPDATE users SET profile_json = json_patch(COALESCE(NULLIF(profile_json, ''), '{}'), json_object('preferences', json_object('theme', ?))) WHERE id = ?"),
-    updateUserRoleByUsername: db.prepare("UPDATE users SET role = ? WHERE lower(username) = lower(?)"),
-    findUserByUsername: db.prepare("SELECT * FROM users WHERE lower(username) = lower(?)"),
-    findUserById: db.prepare("SELECT * FROM users WHERE id = ?"),
-    listUsers: db.prepare("SELECT * FROM users ORDER BY created_at ASC"),
-    insertSession: db.prepare("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)"),
-    findSession: db.prepare("SELECT * FROM sessions WHERE token = ?"),
-    deleteSession: db.prepare("DELETE FROM sessions WHERE token = ?"),
-    listGames: db.prepare("SELECT * FROM games ORDER BY updated_at DESC"),
-    findGameById: db.prepare("SELECT * FROM games WHERE id = ?"),
-    insertGame: db.prepare("INSERT INTO games (id, name, version, creator_user_id, state_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"),
-    updateGame: db.prepare("UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?"),
-    getAppState: db.prepare("SELECT value_json FROM app_state WHERE key = ?"),
-    setAppState: db.prepare("INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json")
+    countUsers: db.prepare("SELECT COUNT(*) AS count FROM users") as Statement<CountRow>,
+    countGames: db.prepare("SELECT COUNT(*) AS count FROM games") as Statement<CountRow>,
+    countSessions: db.prepare("SELECT COUNT(*) AS count FROM sessions") as Statement<CountRow>,
+    probe: db.prepare("SELECT 1 AS ok") as Statement<ProbeRow>,
+    insertUser: db.prepare("INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)") as Statement<unknown>,
+    updateUserCredentials: db.prepare("UPDATE users SET credentials_json = ? WHERE id = ?") as Statement<unknown>,
+    updateUserProfile: db.prepare("UPDATE users SET profile_json = ? WHERE id = ?") as Statement<unknown>,
+    updateUserThemePreference: db.prepare("UPDATE users SET profile_json = json_patch(COALESCE(NULLIF(profile_json, ''), '{}'), json_object('preferences', json_object('theme', ?))) WHERE id = ?") as Statement<unknown>,
+    updateUserRoleByUsername: db.prepare("UPDATE users SET role = ? WHERE lower(username) = lower(?)") as Statement<unknown>,
+    findUserByUsername: db.prepare("SELECT * FROM users WHERE lower(username) = lower(?)") as Statement<UserRow | null>,
+    findUserById: db.prepare("SELECT * FROM users WHERE id = ?") as Statement<UserRow | null>,
+    listUsers: db.prepare("SELECT * FROM users ORDER BY created_at ASC") as Statement<UserRow>,
+    insertSession: db.prepare("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)") as Statement<unknown>,
+    findSession: db.prepare("SELECT * FROM sessions WHERE token = ?") as Statement<SessionRow | null>,
+    deleteSession: db.prepare("DELETE FROM sessions WHERE token = ?") as Statement<unknown>,
+    listGames: db.prepare("SELECT * FROM games ORDER BY updated_at DESC") as Statement<GameRow>,
+    findGameById: db.prepare("SELECT * FROM games WHERE id = ?") as Statement<GameRow | null>,
+    insertGame: db.prepare("INSERT INTO games (id, name, version, creator_user_id, state_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)") as Statement<unknown>,
+    updateGame: db.prepare("UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?") as Statement<unknown>,
+    getAppState: db.prepare("SELECT value_json FROM app_state WHERE key = ?") as Statement<AppStateRow | null>,
+    setAppState: db.prepare("INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json") as Statement<unknown>
   };
 
-  function transaction(run) {
+  function transaction<T>(run: () => T): T {
     db.exec("BEGIN IMMEDIATE");
     try {
       const result = run();
@@ -138,7 +254,7 @@ function createDatastore(options = {}) {
       return;
     }
 
-    const users = readJsonFile(legacyUsersFile, [], Array.isArray);
+    const users = readJsonFile<LegacyUser[]>(legacyUsersFile, [], Array.isArray);
     if (!users.length) {
       return;
     }
@@ -162,7 +278,7 @@ function createDatastore(options = {}) {
       return;
     }
 
-    const sessions = readJsonFile(legacySessionsFile, [], Array.isArray);
+    const sessions = readJsonFile<LegacySession[]>(legacySessionsFile, [], Array.isArray);
     if (!sessions.length) {
       return;
     }
@@ -183,7 +299,11 @@ function createDatastore(options = {}) {
       return;
     }
 
-    const database = readJsonFile(legacyGamesFile, { games: [], activeGameId: null }, (value) => Boolean(value) && typeof value === "object");
+    const database = readJsonFile<LegacyGamesDatabase>(
+      legacyGamesFile,
+      { games: [], activeGameId: null },
+      (value) => Boolean(value) && typeof value === "object"
+    );
     const games = Array.isArray(database.games) ? database.games : [];
     if (!games.length) {
       return;
@@ -194,7 +314,7 @@ function createDatastore(options = {}) {
         statements.insertGame.run(
           game.id,
           game.name,
-          Number.isInteger(game.version) && game.version > 0 ? game.version : 1,
+          typeof game.version === "number" && Number.isInteger(game.version) && game.version > 0 ? game.version : 1,
           game.creatorUserId || null,
           JSON.stringify(game.state || {}),
           game.createdAt || new Date().toISOString(),
@@ -212,7 +332,7 @@ function createDatastore(options = {}) {
   migrateLegacyGames();
   migrateLegacySessions();
 
-  return {
+  const datastore = {
     dbFile,
     resetForTests() {
       transaction(() => {
@@ -224,7 +344,7 @@ function createDatastore(options = {}) {
         `);
       });
     },
-    async backupTo(targetFile) {
+    async backupTo(targetFile: string) {
       if (!targetFile) {
         throw new Error("Il backup richiede un percorso destinazione valido.");
       }
@@ -254,16 +374,16 @@ function createDatastore(options = {}) {
     close() {
       db.close();
     },
-    findUserByUsername(username) {
+    findUserByUsername(username: string) {
       return normalizeUser(statements.findUserByUsername.get(String(username || "")));
     },
-    findUserById(userId) {
+    findUserById(userId: string) {
       return normalizeUser(statements.findUserById.get(userId));
     },
     listUsers() {
-      return statements.listUsers.all().map(normalizeUser);
+      return statements.listUsers.all().map((row) => normalizeUser(row));
     },
-    createUser(user) {
+    createUser(user: UserRecord) {
       transaction(() => {
         statements.insertUser.run(
           user.id,
@@ -274,51 +394,51 @@ function createDatastore(options = {}) {
           user.createdAt || new Date().toISOString()
         );
       });
-      return this.findUserById(user.id);
+      return datastore.findUserById(user.id);
     },
-    updateUserCredentials(userId, credentials) {
+    updateUserCredentials(userId: string, credentials: JsonRecord) {
       transaction(() => {
         statements.updateUserCredentials.run(JSON.stringify(credentials || {}), userId);
       });
-      return this.findUserById(userId);
+      return datastore.findUserById(userId);
     },
-    updateUserProfile(userId, profile) {
+    updateUserProfile(userId: string, profile: JsonRecord) {
       transaction(() => {
         statements.updateUserProfile.run(JSON.stringify(profile || {}), userId);
       });
-      return this.findUserById(userId);
+      return datastore.findUserById(userId);
     },
-    updateUserThemePreference(userId, theme) {
+    updateUserThemePreference(userId: string, theme: string) {
       transaction(() => {
         statements.updateUserThemePreference.run(String(theme || ""), userId);
       });
-      return this.findUserById(userId);
+      return datastore.findUserById(userId);
     },
-    updateUserRoleByUsername(username, role) {
+    updateUserRoleByUsername(username: string, role: string) {
       transaction(() => {
         statements.updateUserRoleByUsername.run(role === "admin" ? "admin" : "user", username);
       });
     },
-    createSession(token, userId, createdAt) {
+    createSession(token: string, userId: string, createdAt: number) {
       transaction(() => {
         statements.insertSession.run(token, userId, createdAt || Date.now());
       });
     },
-    findSession(token) {
+    findSession(token: string) {
       return statements.findSession.get(token) || null;
     },
-    deleteSession(token) {
+    deleteSession(token: string) {
       transaction(() => {
         statements.deleteSession.run(token);
       });
     },
     listGames() {
-      return statements.listGames.all().map(normalizeGame);
+      return statements.listGames.all().map((row) => normalizeGame(row));
     },
-    findGameById(gameId) {
+    findGameById(gameId: string) {
       return normalizeGame(statements.findGameById.get(gameId));
     },
-    createGame(entry) {
+    createGame(entry: GameRecord) {
       transaction(() => {
         statements.insertGame.run(
           entry.id,
@@ -330,9 +450,9 @@ function createDatastore(options = {}) {
           entry.updatedAt
         );
       });
-      return this.findGameById(entry.id);
+      return datastore.findGameById(entry.id);
     },
-    updateGame(entry) {
+    updateGame(entry: GameRecord) {
       transaction(() => {
         statements.updateGame.run(
           entry.name,
@@ -343,18 +463,20 @@ function createDatastore(options = {}) {
           entry.id
         );
       });
-      return this.findGameById(entry.id);
+      return datastore.findGameById(entry.id);
     },
     getActiveGameId() {
       const row = statements.getAppState.get("activeGameId");
-      return row ? parseJson(row.value_json, null) : null;
+      return row ? parseJson<string | null>(row.value_json, null) : null;
     },
-    setActiveGameId(gameId) {
+    setActiveGameId(gameId: string | null) {
       transaction(() => {
         statements.setAppState.run("activeGameId", JSON.stringify(gameId || null));
       });
     }
-  };
+  } as const;
+
+  return datastore;
 }
 
 module.exports = {
