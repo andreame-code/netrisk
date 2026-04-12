@@ -34,6 +34,7 @@ const { sendJson, sendLocalizedError, localizedPayload } = require("./http-respo
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
+const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
@@ -532,15 +533,19 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/state") {
-      const gameId = getTargetGameId({}, url);
-      const access = await authorizeGameRead(gameId, req, res, url);
-      if (access === null) {
-        return;
-      }
-      const gameContext = await loadGameContext(gameId);
-      await resumeAiTurnsForRead(gameContext);
-      const sessionUser = access && access.user ? access.user : await auth.getUserFromSession(extractSessionToken(req, {}, url));
-      sendJson(res, 200, snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, sessionUser));
+      await handleStateRoute(
+        req,
+        res,
+        url,
+        authorizeGameRead,
+        getTargetGameId,
+        loadGameContext,
+        resumeAiTurnsForRead,
+        auth.getUserFromSession,
+        extractSessionToken,
+        snapshotForUser,
+        sendJson
+      );
       return;
     }
 
@@ -663,36 +668,17 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/events") {
-      const gameId = getTargetGameId({}, url);
-      const access = await authorizeGameRead(gameId, req, res, url);
-      if (access === null) {
-        return;
-      }
-      const gameContext = await loadGameContext(gameId);
-      await resumeAiTurnsForRead(gameContext);
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "*"
-      });
-      res.write("data: " + JSON.stringify(snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, access.user || null)) + "\n\n");
-      const key = gameContext.gameId || "__default__";
-      if (!clientsByGameId.has(key)) {
-        clientsByGameId.set(key, new Set());
-      }
-      const client = { res, user: access.user || null };
-      clientsByGameId.get(key).add(client);
-      req.on("close", () => {
-        const group = clientsByGameId.get(key);
-        if (!group) {
-          return;
-        }
-        group.delete(client);
-        if (!group.size) {
-          clientsByGameId.delete(key);
-        }
-      });
+      await handleEventsRoute(
+        req,
+        res,
+        url,
+        authorizeGameRead,
+        getTargetGameId,
+        loadGameContext,
+        resumeAiTurnsForRead,
+        snapshotForUser,
+        clientsByGameId
+      );
       return;
     }
 
