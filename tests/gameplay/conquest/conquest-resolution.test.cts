@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { resolveConquest } = require("../../../backend/engine/conquest-resolution.cjs");
 const { makePlayers, makeState, territoryStates } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function makeCombatResult() {
   return {
@@ -58,4 +59,3 @@ register("resolveConquest rejects moves that leave the source empty", () => {
   assert.equal(result.ok, false);
   assert.equal(result.code, "MOVE_EXCEEDS_AVAILABLE");
 });
-
