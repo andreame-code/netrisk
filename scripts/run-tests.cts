@@ -60,6 +60,7 @@ const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute }
 const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
+const { handleCreateGameRoute, handleOpenGameRoute } = require("../backend/routes/game-management.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -1234,6 +1235,104 @@ register("turn game action route gestisce surrender con version conflict", async
   assert.deepEqual(JSON.parse(res.body), {
     ok: false,
     code: "VERSION_CONFLICT"
+  });
+});
+
+register("game management route crea una partita e collega il creatore", async () => {
+  const res = makeMockResponse();
+  const broadcasts = [];
+  let replacedState = null;
+
+  await handleCreateGameRoute(
+    { method: "POST", headers: {} },
+    res,
+    { name: "Nuova partita" },
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    () => ({ actor: { id: "user-1" } }),
+    () => ({
+      state: { phase: "lobby", players: [] },
+      gameInput: { name: "Nuova partita" },
+      config: { mapId: "classic-mini" }
+    }),
+    (state, username, options) => {
+      assert.equal(username, "Alice");
+      assert.equal(options.linkedUserId, "user-1");
+      state.players.push({ id: "player-1", name: username });
+      return { ok: true, player: { id: "player-1" } };
+    },
+    async (state, options) => ({
+      game: { id: "game-1", name: options.name, version: 1 },
+      state
+    }),
+    async () => [{ id: "game-1", name: "Nuova partita" }],
+    (state) => {
+      replacedState = state;
+    },
+    (context) => {
+      broadcasts.push(context.gameId);
+    },
+    () => ({ snapshot: true }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(replacedState.phase, "lobby");
+  assert.deepEqual(broadcasts, ["game-1"]);
+  assert.equal(res.statusCode, 201);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    game: { id: "game-1", name: "Nuova partita", version: 1 },
+    games: [{ id: "game-1", name: "Nuova partita" }],
+    activeGameId: "game-1",
+    state: { snapshot: true },
+    config: { mapId: "classic-mini" },
+    playerId: "player-1"
+  });
+});
+
+register("game management route apre una partita e risolve il player autenticato", async () => {
+  const res = makeMockResponse();
+
+  await handleOpenGameRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1" },
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    () => undefined,
+    async (gameId) => ({
+      game: { id: gameId, name: "Nuova partita", version: 3 },
+      state: { players: [] }
+    }),
+    async (gameId) => ({
+      game: { id: gameId, name: "Nuova partita", version: 3 },
+      state: { players: [{ id: "player-1", linkedUserId: "user-1" }] }
+    }),
+    async () => [{ id: "game-1", name: "Nuova partita" }],
+    async () => [],
+    (state, user) => state.players.find((player) => player.linkedUserId === user.id) || null,
+    (state, gameId, version, gameName) => ({
+      gameId,
+      version,
+      gameName,
+      players: state.players.length
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    game: { id: "game-1", name: "Nuova partita", version: 3 },
+    games: [{ id: "game-1", name: "Nuova partita" }],
+    activeGameId: "game-1",
+    state: {
+      gameId: "game-1",
+      version: 3,
+      gameName: "Nuova partita",
+      players: 1
+    },
+    playerId: "player-1"
   });
 });
 
