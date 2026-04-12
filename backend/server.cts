@@ -32,6 +32,7 @@ const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 
 loadLocalEnv();
@@ -541,17 +542,12 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/games") {
-      sendJson(res, 200, { games: await gameSessions.listGames(), activeGameId: getTargetGameId({}, url) });
+      await handleGamesListRoute(res, () => gameSessions.listGames(), getTargetGameId, sendJson, url);
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      sendJson(res, 200, {
-        ruleSets: listNewGameRuleSets(),
-        maps: listSupportedMaps(),
-        diceRuleSets: listDiceRuleSets(),
-        playerRange: { min: 2, max: 4 }
-      });
+      handleGameOptionsRoute(res, listNewGameRuleSets, listSupportedMaps, listDiceRuleSets, sendJson);
       return;
     }
 
