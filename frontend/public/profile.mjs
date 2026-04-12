@@ -10,6 +10,9 @@ const elements = {
   authStatus: document.querySelector("#auth-status"),
   logoutButton: document.querySelector("#logout-button"),
   profileFeedback: document.querySelector("#profile-feedback"),
+  profilePreferences: document.querySelector("#profile-preferences"),
+  themeSelect: document.querySelector("#profile-theme-select"),
+  themeStatus: document.querySelector("#profile-theme-status"),
   profileContent: document.querySelector("#profile-content"),
   profileHeading: document.querySelector("#profile-heading"),
   profileCopy: document.querySelector("#profile-copy"),
@@ -35,7 +38,89 @@ const elements = {
   profileCommandDirectiveNote: document.querySelector("#profile-command-directive-note")
 };
 
+const themeManager = window.netriskTheme || {
+  defaultTheme: "command",
+  getThemes() {
+    return ["command"];
+  },
+  getCurrentTheme() {
+    return document.documentElement.dataset.theme || "command";
+  },
+  getThemeFromUser() {
+    return null;
+  },
+  applyUserTheme() {
+    return this.getCurrentTheme();
+  },
+  applyTheme(theme) {
+    document.documentElement.dataset.theme = theme || "command";
+    document.body.dataset.theme = theme || "command";
+    return theme || "command";
+  }
+};
+
 let profileRequestId = 0;
+
+function themeLabel(theme) {
+  return t(`profile.preferences.theme.${theme}`, {}, { fallback: theme });
+}
+
+function setThemeStatus(message) {
+  if (elements.themeStatus) {
+    elements.themeStatus.textContent = message;
+  }
+}
+
+function renderThemeOptions() {
+  if (!elements.themeSelect || elements.themeSelect.options.length) {
+    return;
+  }
+
+  themeManager.getThemes().forEach((theme) => {
+    const option = document.createElement("option");
+    option.value = theme;
+    option.textContent = themeLabel(theme);
+    elements.themeSelect.appendChild(option);
+  });
+}
+
+function showThemePreferences(isVisible) {
+  if (!elements.profilePreferences) {
+    return;
+  }
+
+  elements.profilePreferences.hidden = !isVisible;
+}
+
+function syncThemePreference({ announce = false, preferredTheme = null } = {}) {
+  renderThemeOptions();
+
+  if (!elements.themeSelect) {
+    return;
+  }
+
+  const currentTheme = preferredTheme || themeManager.getCurrentTheme();
+  elements.themeSelect.value = currentTheme;
+  setThemeStatus(
+    announce
+      ? t("profile.preferences.status.saved", { theme: themeLabel(currentTheme) })
+      : t("profile.preferences.status.current", { theme: themeLabel(currentTheme) })
+  );
+}
+
+async function persistThemePreference(theme) {
+  const response = await fetch("/api/profile/preferences/theme", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ theme })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
+  }
+
+  return data;
+}
 
 function renderAuthArea(user) {
   const isAuthenticated = Boolean(user);
@@ -236,9 +321,12 @@ async function loadProfile() {
       return;
     }
     sessionUser = session.user;
+    themeManager.applyUserTheme(session.user);
     elements.authStatus.textContent = t("profile.auth.loggedIn", { username: session.user.username });
     renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
+    showThemePreferences(true);
+    syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(session.user) });
     const profileResponse = await fetch("/api/profile");
 
     if (!profileResponse.ok) {
@@ -261,6 +349,9 @@ async function loadProfile() {
       elements.authStatus.textContent = t("profile.auth.loggedIn", { username: sessionUser.username });
       renderAuthArea(sessionUser);
       renderNavAvatar(sessionUser.username);
+      themeManager.applyUserTheme(sessionUser);
+      showThemePreferences(true);
+      syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(sessionUser) });
       elements.profileName.textContent = sessionUser.username;
       if (elements.profileSubtitle) {
         elements.profileSubtitle.textContent = t("profile.runtime.temporarilyUnavailable");
@@ -271,6 +362,7 @@ async function loadProfile() {
     elements.authStatus.textContent = t("profile.auth.unavailable");
     renderAuthArea(null);
     renderNavAvatar();
+    showThemePreferences(false);
     elements.profileName.textContent = t("profile.runtime.unavailableTitle");
     if (elements.profileSubtitle) {
       elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
@@ -316,6 +408,7 @@ elements.logoutButton.addEventListener("click", async () => {
   profileRequestId += 1;
   localStorage.removeItem("frontline-player-id");
   renderAuthArea(null);
+  showThemePreferences(false);
   elements.authStatus.textContent = t("profile.auth.loggedOut");
   renderNavAvatar();
   showFeedback(t("profile.runtime.loggedOutFeedback"), "error");
@@ -333,6 +426,32 @@ elements.logoutButton.addEventListener("click", async () => {
   } catch (error) {
   }
 });
+
+if (elements.themeSelect) {
+  renderThemeOptions();
+  syncThemePreference();
+  elements.themeSelect.addEventListener("change", async () => {
+    const previousTheme = themeManager.getCurrentTheme();
+    const selectedTheme = elements.themeSelect.value;
+    const nextTheme = themeManager.applyTheme(selectedTheme);
+    elements.themeSelect.value = nextTheme;
+    elements.themeSelect.disabled = true;
+    setThemeStatus(t("profile.preferences.status.saving", { theme: themeLabel(nextTheme) }));
+
+    try {
+      const data = await persistThemePreference(nextTheme);
+      const storedTheme = themeManager.getThemeFromUser(data.user) || nextTheme;
+      themeManager.applyUserTheme(data.user);
+      syncThemePreference({ announce: true, preferredTheme: storedTheme });
+    } catch (error) {
+      themeManager.applyTheme(previousTheme);
+      elements.themeSelect.value = previousTheme;
+      setThemeStatus(t("profile.preferences.status.saveFailed", { theme: themeLabel(previousTheme) }));
+    } finally {
+      elements.themeSelect.disabled = false;
+    }
+  });
+}
 
 if (elements.gamesList) {
   elements.gamesList.addEventListener("click", async (event) => {

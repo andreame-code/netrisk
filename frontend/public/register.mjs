@@ -80,6 +80,7 @@ async function loginWithCredentials(username, password) {
   }
 
   state.user = data.user;
+  window.netriskTheme?.applyUserTheme?.(state.user);
   render();
   window.location.href = "/profile.html";
 }
@@ -93,6 +94,7 @@ async function restoreSession() {
 
     const data = await response.json();
     state.user = data.user;
+    window.netriskTheme?.applyUserTheme?.(state.user);
   } catch (error) {
     state.user = null;
   }

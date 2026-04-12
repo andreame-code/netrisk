@@ -226,6 +226,18 @@ export const it = Object.freeze({
   "profile.nameLoading": "Caricamento profilo...",
   "profile.authStatus": "Verifica della sessione in corso...",
   "profile.feedback": "Caricamento dati giocatore...",
+  "profile.preferences.eyebrow": "Preferenze",
+  "profile.preferences.heading": "Tema del sito",
+  "profile.preferences.copy": "Scegli il tema visivo che preferisci: la modifica viene applicata subito su tutto il sito in questo browser.",
+  "profile.preferences.label": "Tema",
+  "profile.preferences.status.loading": "Caricamento tema attuale...",
+  "profile.preferences.status.saving": "Salvataggio tema in corso...",
+  "profile.preferences.status.current": "Tema attuale: {theme}.",
+  "profile.preferences.status.saved": "Tema applicato: {theme}.",
+  "profile.preferences.status.saveFailed": "Salvataggio non riuscito. Tema ripristinato: {theme}.",
+  "profile.preferences.theme.command": "Comando",
+  "profile.preferences.theme.midnight": "Mezzanotte",
+  "profile.preferences.theme.ember": "Brace",
   "profile.summary.eyebrow": "Panoramica",
   "profile.summary.heading": "Dossier operativo",
   "profile.summary.copy": "Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.",
@@ -512,6 +524,7 @@ export const it = Object.freeze({
   ,"server.game.createFailed": "Creazione partita non riuscita."
   ,"server.game.openFailed": "Apertura partita non riuscita."
   ,"server.profile.unavailable": "Profilo non disponibile."
+  ,"server.profile.invalidTheme": "Tema non supportato."
   ,"server.aiJoin.failed": "Impossibile aggiungere il giocatore AI."
   ,"server.aiTurn.failed": "Turno AI non riuscito."
   ,"server.join.failed": "Impossibile entrare nella partita."

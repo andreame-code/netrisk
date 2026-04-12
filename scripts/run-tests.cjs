@@ -52,6 +52,7 @@ const { createApp } = require("../backend/server.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
+const { checkThemeTokenization } = require("./check-theme-tokenization.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
@@ -163,6 +164,10 @@ function authHeaders(sessionToken) {
 function readPublicHtml(fileName) {
   return fs.readFileSync(path.join(__dirname, "..", "frontend", "public", fileName), "utf8");
 }
+
+register("frontend CSS usa solo token tema fuori dalla sezione definizioni", () => {
+  checkThemeTokenization();
+});
 
 register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
   const { setLocale, translateGameLogEntries } = await frontendI18nModulePromise;

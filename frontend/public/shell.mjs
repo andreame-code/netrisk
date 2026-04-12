@@ -1,6 +1,7 @@
 import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
 
 const DEFAULT_THEME = "command";
+const SUPPORTED_THEMES = Object.freeze(["command", "midnight", "ember"]);
 const THEME_STORAGE_KEY = "netrisk.theme";
 const query = new URLSearchParams(window.location.search);
 const shellKind = document.body.dataset.shellKind || (document.body.dataset.appSection ? "app" : "marketing");
@@ -9,21 +10,30 @@ const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
 const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : query.get("gameId");
 const activeLocale = setLocale(resolveLocale());
 
+function normalizeTheme(theme) {
+  return SUPPORTED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
+}
+
+function resolveThemeFromUser(user) {
+  const requestedTheme = user?.preferences?.theme;
+  return SUPPORTED_THEMES.includes(requestedTheme) ? requestedTheme : null;
+}
+
 function resolveTheme() {
   const requested = query.get("theme");
   if (requested) {
-    return requested;
+    return normalizeTheme(requested);
   }
 
   try {
-    return window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
+    return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME);
   } catch {
     return DEFAULT_THEME;
   }
 }
 
 function applyTheme(theme) {
-  const nextTheme = theme || DEFAULT_THEME;
+  const nextTheme = normalizeTheme(theme);
   document.documentElement.dataset.theme = nextTheme;
   document.body.dataset.theme = nextTheme;
 
@@ -35,6 +45,30 @@ function applyTheme(theme) {
 
   return nextTheme;
 }
+
+window.netriskTheme = Object.freeze({
+  defaultTheme: DEFAULT_THEME,
+  storageKey: THEME_STORAGE_KEY,
+  getThemes() {
+    return [...SUPPORTED_THEMES];
+  },
+  getCurrentTheme() {
+    return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
+  },
+  getThemeFromUser(user) {
+    return resolveThemeFromUser(user);
+  },
+  applyUserTheme(user) {
+    const theme = resolveThemeFromUser(user);
+    if (!theme) {
+      return this.getCurrentTheme();
+    }
+
+    return applyTheme(theme);
+  },
+  applyTheme,
+  normalizeTheme
+});
 
 function gameHref() {
   return currentGameId ? "/game/" + encodeURIComponent(currentGameId) : "/game.html";
