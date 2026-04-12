@@ -4,20 +4,24 @@
   "description": "NetRisk base architecture with separated frontend, backend and shared logic",
   "private": true,
   "scripts": {
-    "start": "node backend/server.cjs",
+    "start": "npm run build:ts && node backend/server.cjs",
     "backup:data": "node scripts/backup-datastore.cjs",
     "backup:check": "node scripts/check-backup.cjs",
+    "build:ts": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:theme-tokens": "node scripts/check-theme-tokenization.cjs",
     "vercel:env:check": "node scripts/check-vercel-env-parity.cjs",
-    "test": "node scripts/run-tests.cjs",
+    "test": "npm run build:ts && node scripts/run-tests.cjs",
     "test:e2e": "node scripts/run-e2e.cjs",
     "test:e2e:update": "node scripts/run-e2e.cjs --update-snapshots",
-    "test:gameplay": "node scripts/run-gameplay-tests.cjs",
-    "test:all": "npm run test && npm run test:gameplay",
-    "test:all:e2e": "npm run test && npm run test:gameplay && npm run test:e2e"
+    "test:gameplay": "npm run build:ts && node scripts/run-gameplay-tests.cjs",
+    "test:all": "npm run build:ts && node scripts/run-tests.cjs && node scripts/run-gameplay-tests.cjs",
+    "test:all:e2e": "npm run build:ts && node scripts/run-tests.cjs && node scripts/run-gameplay-tests.cjs && node scripts/run-e2e.cjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "@vercel/speed-insights": "^2.0.0"

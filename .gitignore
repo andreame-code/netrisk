@@ -19,6 +19,8 @@ playwright-report/
 test-results/
 /public/
 .tmp-server-*.log
+.tsbuild/
+*.tsbuildinfo
 
 data/backups/
 data/*.sqlite-shm
