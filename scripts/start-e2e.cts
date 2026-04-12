@@ -1,4 +1,3 @@
-// @ts-nocheck
 process.env.E2E = "true";
 const path = require("path");
 const { createApp } = require("../backend/server.cjs");
