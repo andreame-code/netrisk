@@ -32,6 +32,7 @@ const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const { handleBasicGameActionRoute } = require("./routes/game-actions-basic.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
@@ -837,36 +838,25 @@ function createApp(options = {}) {
           Object.prototype.hasOwnProperty.call(gameContext.state.territories, id);
       }
 
-      if (type === "reinforce") {
-        const territoryId = String(body.territoryId || "");
-        if (!isValidTerritoryId(territoryId)) {
-          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
-          return;
-        }
-        const result = applyReinforcement(
-          gameContext.state,
-          playerId,
-          territoryId,
-          body.amount
-        );
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistGameContext(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
-          }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, {
-          ok: true,
-          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
-        });
+      if (await handleBasicGameActionRoute(
+        type,
+        res,
+        body,
+        gameContext,
+        playerId,
+        expectedVersion,
+        authContext.user,
+        applyReinforcement,
+        moveAfterConquest,
+        applyFortify,
+        persistGameContext,
+        broadcastGame,
+        snapshotForUser,
+        handleVersionConflict,
+        isValidTerritoryId,
+        sendJson,
+        sendLocalizedError
+      )) {
         return;
       }
 
@@ -914,52 +904,6 @@ function createApp(options = {}) {
           state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user),
           rounds: Array.isArray(result.rounds) ? result.rounds : undefined
         });
-        return;
-      }
-
-      if (type === "moveAfterConquest") {
-        const result = moveAfterConquest(gameContext.state, playerId, body.armies);
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistGameContext(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
-          }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
-        return;
-      }
-
-      if (type === "fortify") {
-        const fortifyFromId = String(body.fromId || "");
-        const fortifyToId = String(body.toId || "");
-        if (!isValidTerritoryId(fortifyFromId) || !isValidTerritoryId(fortifyToId)) {
-          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
-          return;
-        }
-        const result = applyFortify(gameContext.state, playerId, fortifyFromId, fortifyToId, body.armies);
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistGameContext(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
-          }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
         return;
       }
 
