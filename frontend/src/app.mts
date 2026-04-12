@@ -1,4 +1,5 @@
-import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mts";
+import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   playerId: localStorage.getItem("frontline-player-id") || null,
@@ -82,7 +83,7 @@ const classicMapLayout = {
   ion: { x: 86.2, y: 50 }
 };
 
-const elements = {
+const elements: Record<string, any> = {
   authForm: document.querySelector("#auth-form"),
   authUsername: document.querySelector("#auth-username"),
   authPassword: document.querySelector("#auth-password"),
@@ -161,7 +162,7 @@ const elements = {
 };
 
 function renderNavAvatar(username) {
-  const avatar = document.querySelector("#nav-avatar");
+  const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
     return;
   }
@@ -173,9 +174,9 @@ function renderNavAvatar(username) {
 let pendingMapFitFrame = null;
 
 function fitMapBoardToViewport() {
-  const mapStage = document.querySelector(".game-map-stage");
-  const mapContainer = document.querySelector(".game-map-stage .map");
-  const mapBoard = document.querySelector(".game-map-stage .map-board");
+  const mapStage = document.querySelector(".game-map-stage") as HTMLElement | null;
+  const mapContainer = document.querySelector(".game-map-stage .map") as HTMLElement | null;
+  const mapBoard = document.querySelector(".game-map-stage .map-board") as HTMLElement | null;
   if (!mapStage || !mapContainer || !mapBoard) {
     return;
   }
@@ -563,9 +564,9 @@ function renderGameSessionBrowser() {
     return;
   }
 
-  elements.gameList.innerHTML = state.gameList
+  setMarkup(elements.gameList, state.gameList
     .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name)}</option>`)
-    .join("") || '<option value="">' + t("game.runtime.noGamesOption") + '</option>';
+    .join("") || '<option value="">' + t("game.runtime.noGamesOption") + '</option>');
 
   if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
     elements.gameList.value = selectedId;
@@ -585,7 +586,7 @@ function renderGameSessionBrowser() {
     elements.gameListState.textContent = t("lobby.empty");
   }
 
-  elements.gameSessionList.innerHTML = state.gameList
+  setMarkup(elements.gameSessionList, state.gameList
     .map((game) => `
       <button type="button" class="session-row session-row-button${game.id === selectedId ? " is-selected" : ""}" data-game-id="${game.id}">
         <span class="session-primary">
@@ -598,10 +599,10 @@ function renderGameSessionBrowser() {
         <span class="session-cell-muted">${formatUpdatedTime(game.updatedAt)}</span>
       </button>
     `)
-    .join("");
+    .join(""));
 
   elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : t("lobby.details.emptyBadge");
-  elements.gameSessionDetails.innerHTML = selected
+  setMarkup(elements.gameSessionDetails, selected
     ? `
       <div class="session-detail-grid">
         <div class="session-detail-item"><span>${t("lobby.details.name")}</span><strong>${escapeHtml(selected.name)}</strong></div>
@@ -615,7 +616,7 @@ function renderGameSessionBrowser() {
         <button type="button" id="open-selected-inline">${t("game.runtime.openGame")}</button>
       </div>
     `
-    : '<div class="session-empty-copy">' + t("game.runtime.selectGameFromList") + '</div>';
+    : '<div class="session-empty-copy">' + t("game.runtime.selectGameFromList") + '</div>');
 
   const hasSelection = Boolean(selected);
   if (elements.openGameButton) {
@@ -877,15 +878,15 @@ function render() {
             ? t("game.runtime.turnOf", { name: currentPlayer.name })
             : t("game.runtime.waiting");
 
-  elements.statusSummary.innerHTML = snapshot
+  setMarkup(elements.statusSummary, snapshot
     ? `
       <div>Fase: <strong>${escapeHtml(snapshot.phase)}</strong></div>
       <div>${t("game.reinforcementBanner")} <strong>${snapshot.reinforcementPool}</strong></div>
       <div>${t("game.runtime.winner")}: <strong>${escapeHtml(winner ? winner.name : t("game.runtime.noneLower"))}</strong></div>
     `
-    : "<div>" + t("game.runtime.loadingState") + "</div>";
+    : "<div>" + t("game.runtime.loadingState") + "</div>");
 
-  elements.players.innerHTML = (snapshot?.players || [])
+  setMarkup(elements.players, (snapshot?.players || [])
     .map(
       (player) => `
         <article class="player-card">
@@ -896,7 +897,7 @@ function render() {
         </article>
       `
     )
-    .join("");
+    .join(""));
 
   const territories = myTerritories();
   const reinforceOptions = territories
@@ -904,7 +905,7 @@ function render() {
     .join("");
   const selectedReinforceId = selectOrFallback(state.selectedReinforceTerritoryId, territories);
   state.selectedReinforceTerritoryId = selectedReinforceId || null;
-  elements.reinforceSelect.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
+  setMarkup(elements.reinforceSelect, reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
   if (selectedReinforceId) {
     elements.reinforceSelect.value = selectedReinforceId;
   }
@@ -917,7 +918,7 @@ function render() {
 
   const selectedFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
   state.selectedAttackFromId = selectedFromId || null;
-  elements.attackFrom.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
+  setMarkup(elements.attackFrom, reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
   if (selectedFromId) {
     elements.attackFrom.value = selectedFromId;
   }
@@ -932,13 +933,13 @@ function render() {
   const selectedAttackToId = selectOrFallback(state.selectedAttackToId, attackTargets);
   state.selectedAttackToId = selectedAttackToId || null;
 
-  elements.attackTo.innerHTML =
+  setMarkup(elements.attackTo,
     attackTargets
       .map((territory) => {
         const owner = ownerById(territory.ownerId);
         return `<option value="${territory.id}">${escapeHtml(territory.name)} vs ${escapeHtml(owner?.name || "?")} (${territory.armies})</option>`;
       })
-      .join("") || '<option value="">' + t("game.runtime.noTarget") + '</option>';
+      .join("") || '<option value="">' + t("game.runtime.noTarget") + '</option>');
 
   if (selectedAttackToId) {
     elements.attackTo.value = selectedAttackToId;
@@ -947,7 +948,7 @@ function render() {
   const maxAttackDice = source
     ? Math.max(0, Math.min(currentDiceRuleSet().attackerMaxDice || 3, source.armies - 1))
     : 0;
-  elements.attackDice.innerHTML = attackDiceOptions(maxAttackDice);
+  setMarkup(elements.attackDice, attackDiceOptions(maxAttackDice));
   if (maxAttackDice > 0) {
     const selectedAttackDiceCount = String(Math.min(Number(state.selectedAttackDiceCount || maxAttackDice), maxAttackDice));
     state.selectedAttackDiceCount = selectedAttackDiceCount;
@@ -959,7 +960,7 @@ function render() {
 
   const selectedFortifyFromId = selectOrFallback(state.selectedFortifyFromId, territories, selectedReinforceId);
   state.selectedFortifyFromId = selectedFortifyFromId || null;
-  elements.fortifyFrom.innerHTML = reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>';
+  setMarkup(elements.fortifyFrom, reinforceOptions || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
   if (selectedFortifyFromId) {
     elements.fortifyFrom.value = selectedFortifyFromId;
   }
@@ -971,10 +972,10 @@ function render() {
   const selectedFortifyToId = selectOrFallback(state.selectedFortifyToId, fortifyTargets);
   state.selectedFortifyToId = selectedFortifyToId || null;
 
-  elements.fortifyTo.innerHTML =
+  setMarkup(elements.fortifyTo,
     fortifyTargets
       .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
-      .join("") || '<option value="">' + t("game.runtime.noAdjacentTerritory") + '</option>';
+      .join("") || '<option value="">' + t("game.runtime.noAdjacentTerritory") + '</option>');
 
   if (selectedFortifyToId) {
     elements.fortifyTo.value = selectedFortifyToId;
@@ -986,14 +987,14 @@ function render() {
 
   const nextMapSignature = currentRenderedMapSignature(snapshot);
   if (nextMapSignature !== renderedMapSignature) {
-    elements.map.innerHTML = snapshot ? buildGraphMarkup(snapshot) : "";
+    setMarkup(elements.map, snapshot ? buildGraphMarkup(snapshot) : "");
     renderedMapSignature = nextMapSignature;
     queueMapBoardFit();
   } else {
     updateMapTerritoryHighlights();
   }
   const logEntries = translateGameLogEntries(snapshot);
-  elements.log.innerHTML = logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("");
+  setMarkup(elements.log, logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join(""));
   const inReinforcement = snapshot?.turnPhase === "reinforcement";
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
@@ -1092,9 +1093,9 @@ function render() {
     }
     elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", { count: playerHand.length });
     elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", { bonus: snapshot?.cardState?.nextTradeBonus || 4 });
-    elements.cardTradeList.innerHTML = playerHand.length
+    setMarkup(elements.cardTradeList, playerHand.length
       ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
-      : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>';
+      : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>');
     elements.cardTradeHelp.textContent = mustTradeCards
       ? t("game.runtime.tradeHelp.mustTrade", { limit: snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
       : playerHand.length
@@ -1143,7 +1144,7 @@ function render() {
   }
 }
 
-async function fetchLatestStateSnapshot(options = {}) {
+async function fetchLatestStateSnapshot(options: Record<string, any> = {}) {
   const includeGameId = options.includeGameId !== false;
   const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
   const response = await fetch("/api/state" + query);
@@ -1154,7 +1155,7 @@ async function fetchLatestStateSnapshot(options = {}) {
   return data;
 }
 
-function shouldAcceptSnapshot(nextSnapshot, options = {}) {
+function shouldAcceptSnapshot(nextSnapshot, options: Record<string, any> = {}) {
   if (!nextSnapshot || typeof nextSnapshot !== "object") {
     return false;
   }
@@ -1179,7 +1180,7 @@ function shouldAcceptSnapshot(nextSnapshot, options = {}) {
   return true;
 }
 
-function applySnapshot(nextSnapshot, options = {}) {
+function applySnapshot(nextSnapshot, options: Record<string, any> = {}) {
   if (!shouldAcceptSnapshot(nextSnapshot, options)) {
     return false;
   }
@@ -1197,7 +1198,7 @@ function applySnapshot(nextSnapshot, options = {}) {
   return true;
 }
 
-async function send(path, payload = {}, options = {}) {
+async function send(path, payload = {}, options: Record<string, any> = {}) {
   const response = await fetch(path, {
     method: options.method || "POST",
     headers: { "Content-Type": "application/json" },
@@ -1469,7 +1470,7 @@ elements.authForm.addEventListener("submit", async (event) => {
 });
 
 if (elements.headerLoginForm) {
-  elements.headerLoginForm.dataset.headerLoginManaged = "true";
+  (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();
@@ -1593,7 +1594,7 @@ if (elements.gameList) {
 }
 if (elements.gameSessionList) {
   elements.gameSessionList.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-game-id]");
+    const trigger = closestElement<HTMLElement>(event.target, "[data-game-id]");
     if (!trigger) {
       return;
     }
@@ -1604,7 +1605,7 @@ if (elements.gameSessionList) {
 }
 if (elements.gameSessionDetails) {
   elements.gameSessionDetails.addEventListener("click", (event) => {
-    const trigger = event.target.closest("#open-selected-inline");
+    const trigger = closestElement<HTMLElement>(event.target, "#open-selected-inline");
     if (!trigger) {
       return;
     }
@@ -1614,7 +1615,7 @@ if (elements.gameSessionDetails) {
 }
 if (elements.cardTradeList) {
   elements.cardTradeList.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-card-id]");
+    const trigger = closestElement<HTMLElement>(event.target, "[data-card-id]");
     if (!trigger) {
       return;
     }
@@ -1632,7 +1633,7 @@ if (elements.cardTradeList) {
   });
 }
 elements.map.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-territory-id]");
+  const button = closestElement<HTMLElement>(event.target, "[data-territory-id]");
   if (!button) {
     return;
   }
