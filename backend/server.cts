@@ -32,6 +32,7 @@ const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
@@ -754,54 +755,23 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/cards/trade") {
       const body = await parseBody(req);
-      const authContext = await requireAuth(req, res, body);
-      if (!authContext) {
-        return;
-      }
-
-      const gameContext = await loadGameContext(getTargetGameId(body, url));
-      const player = getPlayer(gameContext.state, body.playerId);
-      if (!player || !playerBelongsToUser(player, authContext.user)) {
-        sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
-        return;
-      }
-
-      const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
-      if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
-        sendLocalizedError(res, 400, null, "expectedVersion non valida.", "server.invalidExpectedVersion");
-        return;
-      }
-
-      if (expectedVersion != null && expectedVersion !== gameContext.version) {
-        sendLocalizedError(res, 409, null, "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.", "server.versionConflict", {}, "VERSION_CONFLICT", {
-          currentVersion: gameContext.version,
-          state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
-        });
-        return;
-      }
-
-      const result = tradeCardSet(gameContext.state, body.playerId, body.cardIds);
-      if (!result.ok) {
-        sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-        return;
-      }
-
-      try {
-        await persistGameContext(gameContext, expectedVersion);
-      } catch (error) {
-        if (error && error.code === "VERSION_CONFLICT") {
-          sendLocalizedError(res, 409, error, error.message, error.messageKey || "server.versionConflict", {}, error.code, {
-            currentVersion: error.currentVersion,
-            state: snapshotForState(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName)
-          });
-          return;
-        }
-
-        throw error;
-      }
-
-      broadcastGame(gameContext);
-      sendJson(res, 200, { ok: true, bonus: result.bonus, validation: result.validation, state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName) });
+      await handleCardsTradeRoute(
+        req,
+        res,
+        body,
+        url,
+        requireAuth,
+        loadGameContext,
+        getTargetGameId,
+        getPlayer,
+        playerBelongsToUser,
+        tradeCardSet,
+        persistGameContext,
+        broadcastGame,
+        snapshotForState,
+        sendJson,
+        sendLocalizedError
+      );
       return;
     }
 
