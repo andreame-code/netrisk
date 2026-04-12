@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { moveFortifyArmies } = require("../../../backend/engine/fortify-movement.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupFortifyState() {
   const territories = [
@@ -74,4 +75,3 @@ register("moveFortifyArmies blocks a repeated fortify in the same turn", () => {
   assert.equal(result.ok, false);
   assert.equal(result.code, "FORTIFY_ALREADY_USED");
 });
-
