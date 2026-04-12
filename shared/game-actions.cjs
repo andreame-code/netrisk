@@ -1,12 +1,1 @@
-const GameAction = Object.freeze({
-  JOIN: "join",
-  START: "start",
-  REINFORCE: "reinforce",
-  ATTACK: "attack",
-  END_TURN: "endTurn",
-  SURRENDER: "surrender"
-});
-
-module.exports = {
-  GameAction
-};
+module.exports = require("../.tsbuild/shared/game-actions.cjs");

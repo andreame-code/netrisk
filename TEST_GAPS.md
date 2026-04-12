@@ -29,6 +29,7 @@
 - Player profile E2E: error without session
 - Main battlefield visual baseline
 - Attack UI: selected dice count is sent to the backend
+- Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
 
 ## Missing
 - None currently tracked
