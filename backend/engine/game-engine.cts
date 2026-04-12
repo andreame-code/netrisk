@@ -24,7 +24,7 @@ import { detectVictory } from "./victory-detection.cjs";
 import { compareCombatDice, rollCombatDice } from "./combat-dice.cjs";
 import { calculateReinforcements } from "./reinforcement-calculator.cjs";
 import { findSupportedMap } from "../../shared/maps/index.cjs";
-import { secureRandom } from "../random.cjs";
+const { secureRandom } = require("../random.cjs");
 
 export { GameAction, TurnPhase };
 

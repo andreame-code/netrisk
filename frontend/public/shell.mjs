@@ -1,5 +1,4 @@
 import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
-
 const DEFAULT_THEME = "command";
 const SUPPORTED_THEMES = Object.freeze(["command", "midnight", "ember"]);
 const THEME_STORAGE_KEY = "netrisk.theme";
@@ -9,146 +8,117 @@ const section = document.body.dataset.appSection || "";
 const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
 const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : query.get("gameId");
 const activeLocale = setLocale(resolveLocale());
-
 function normalizeTheme(theme) {
-  return SUPPORTED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
+    return SUPPORTED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
 }
-
 function resolveThemeFromUser(user) {
-  const requestedTheme = user?.preferences?.theme;
-  return SUPPORTED_THEMES.includes(requestedTheme) ? requestedTheme : null;
+    const requestedTheme = user?.preferences?.theme;
+    return SUPPORTED_THEMES.includes(requestedTheme) ? requestedTheme : null;
 }
-
 function resolveTheme() {
-  const requested = query.get("theme");
-  if (requested) {
-    return normalizeTheme(requested);
-  }
-
-  try {
-    return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME);
-  } catch {
-    return DEFAULT_THEME;
-  }
-}
-
-function applyTheme(theme) {
-  const nextTheme = normalizeTheme(theme);
-  document.documentElement.dataset.theme = nextTheme;
-  document.body.dataset.theme = nextTheme;
-
-  try {
-    window.localStorage?.setItem(THEME_STORAGE_KEY, nextTheme);
-  } catch {
-    // Keep the resolved theme applied even when storage is unavailable.
-  }
-
-  return nextTheme;
-}
-
-window.netriskTheme = Object.freeze({
-  defaultTheme: DEFAULT_THEME,
-  storageKey: THEME_STORAGE_KEY,
-  getThemes() {
-    return [...SUPPORTED_THEMES];
-  },
-  getCurrentTheme() {
-    return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
-  },
-  getThemeFromUser(user) {
-    return resolveThemeFromUser(user);
-  },
-  applyUserTheme(user) {
-    const theme = resolveThemeFromUser(user);
-    if (!theme) {
-      return this.getCurrentTheme();
+    const requested = query.get("theme");
+    if (requested) {
+        return normalizeTheme(requested);
     }
-
-    return applyTheme(theme);
-  },
-  applyTheme,
-  normalizeTheme
+    try {
+        return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME);
+    }
+    catch {
+        return DEFAULT_THEME;
+    }
+}
+function applyTheme(theme) {
+    const nextTheme = normalizeTheme(theme);
+    document.documentElement.dataset.theme = nextTheme;
+    document.body.dataset.theme = nextTheme;
+    try {
+        window.localStorage?.setItem(THEME_STORAGE_KEY, nextTheme);
+    }
+    catch {
+        // Keep the resolved theme applied even when storage is unavailable.
+    }
+    return nextTheme;
+}
+window.netriskTheme = Object.freeze({
+    defaultTheme: DEFAULT_THEME,
+    storageKey: THEME_STORAGE_KEY,
+    getThemes() {
+        return [...SUPPORTED_THEMES];
+    },
+    getCurrentTheme() {
+        return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
+    },
+    getThemeFromUser(user) {
+        return resolveThemeFromUser(user);
+    },
+    applyUserTheme(user) {
+        const theme = resolveThemeFromUser(user);
+        if (!theme) {
+            return this.getCurrentTheme();
+        }
+        return applyTheme(theme);
+    },
+    applyTheme,
+    normalizeTheme
 });
-
 function gameHref() {
-  return currentGameId ? "/game/" + encodeURIComponent(currentGameId) : "/game.html";
+    return currentGameId ? "/game/" + encodeURIComponent(currentGameId) : "/game.html";
 }
-
-function buildLocaleControl({
-  container,
-  marker,
-  wrapperClass,
-  labelClass,
-  selectClass,
-  labelMode = "visible",
-  position = "prepend"
-}) {
-  if (!container || container.querySelector(`[${marker}]`)) {
-    return;
-  }
-
-  const wrapper = document.createElement("label");
-  wrapper.className = wrapperClass;
-  wrapper.setAttribute(marker, "true");
-
-  const label = document.createElement("span");
-  label.className = labelClass;
-  label.textContent = t("nav.localeLabel");
-  wrapper.appendChild(label);
-
-  const select = document.createElement("select");
-  select.className = selectClass;
-  select.setAttribute("aria-label", t("nav.localeLabel"));
-
-  listSupportedLocales().forEach((locale) => {
-    const option = document.createElement("option");
-    option.value = locale;
-    option.textContent = t(`locale.label.${locale}`, {}, { fallback: locale.toUpperCase() });
-    option.selected = locale === activeLocale;
-    select.appendChild(option);
-  });
-
-  select.addEventListener("change", () => {
-    const nextLocale = setLocale(select.value);
-    const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set("lang", nextLocale);
-    window.location.href = nextUrl.toString();
-  });
-
-  wrapper.appendChild(select);
-
-  if (labelMode === "hidden") {
-    label.classList.add("visually-hidden");
-  }
-
-  if (position === "append") {
-    container.append(wrapper);
-    return;
-  }
-
-  container.prepend(wrapper);
+function buildLocaleControl({ container, marker, wrapperClass, labelClass, selectClass, labelMode = "visible", position = "prepend" }) {
+    if (!container || container.querySelector(`[${marker}]`)) {
+        return;
+    }
+    const wrapper = document.createElement("label");
+    wrapper.className = wrapperClass;
+    wrapper.setAttribute(marker, "true");
+    const label = document.createElement("span");
+    label.className = labelClass;
+    label.textContent = t("nav.localeLabel");
+    wrapper.appendChild(label);
+    const select = document.createElement("select");
+    select.className = selectClass;
+    select.setAttribute("aria-label", t("nav.localeLabel"));
+    listSupportedLocales().forEach((locale) => {
+        const option = document.createElement("option");
+        option.value = locale;
+        option.textContent = t(`locale.label.${locale}`, {}, { fallback: locale.toUpperCase() });
+        option.selected = locale === activeLocale;
+        select.appendChild(option);
+    });
+    select.addEventListener("change", () => {
+        const nextLocale = setLocale(select.value);
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set("lang", nextLocale);
+        window.location.href = nextUrl.toString();
+    });
+    wrapper.appendChild(select);
+    if (labelMode === "hidden") {
+        label.classList.add("visually-hidden");
+    }
+    if (position === "append") {
+        container.append(wrapper);
+        return;
+    }
+    container.prepend(wrapper);
 }
-
 function initMarketingShell() {
-  buildLocaleControl({
-    container: document.querySelector("[data-landing-locale]"),
-    marker: "data-shell-locale-switcher",
-    wrapperClass: "ld-locale-control",
-    labelClass: "ld-locale-label",
-    selectClass: "ld-locale-select",
-    position: "prepend"
-  });
+    buildLocaleControl({
+        container: document.querySelector("[data-landing-locale]"),
+        marker: "data-shell-locale-switcher",
+        wrapperClass: "ld-locale-control",
+        labelClass: "ld-locale-label",
+        selectClass: "ld-locale-select",
+        position: "prepend"
+    });
 }
-
 function sharedNavMarkup() {
-  const navAriaLabel = t("nav.aria.primary");
-  const navLabels = {
-    lobby: t("nav.lobby"),
-    game: t("nav.game"),
-    profile: t("nav.profile")
-  };
-
-  return `
+    const navAriaLabel = t("nav.aria.primary");
+    const navLabels = {
+        lobby: t("nav.lobby"),
+        game: t("nav.game"),
+        profile: t("nav.profile")
+    };
+    return `
     <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
       <p class="eyebrow" data-i18n="app.brand">${t("app.brand")}</p>
       <h1 data-i18n="app.title">${t("app.title")}</h1>
@@ -172,17 +142,15 @@ function sharedNavMarkup() {
     </div>
   `;
 }
-
 function sharedFooterMarkup() {
-  const navAriaLabel = t("nav.aria.primary");
-  const navLabels = {
-    lobby: t("nav.lobby"),
-    game: t("nav.game"),
-    profile: t("nav.profile")
-  };
-  const activeLabel = navLabels[section] || t("app.title");
-
-  return `
+    const navAriaLabel = t("nav.aria.primary");
+    const navLabels = {
+        lobby: t("nav.lobby"),
+        game: t("nav.game"),
+        profile: t("nav.profile")
+    };
+    const activeLabel = navLabels[section] || t("app.title");
+    return `
     <div class="shared-footer-copy">
       <div>
         <p class="eyebrow" data-i18n="app.brand">${t("app.brand")}</p>
@@ -197,129 +165,111 @@ function sharedFooterMarkup() {
     </nav>
   `;
 }
-
 function mountAppChrome() {
-  document.querySelectorAll("[data-shared-top-nav]").forEach((container) => {
-    if (!container.dataset.sharedChromeMounted) {
-      container.innerHTML = sharedNavMarkup();
-      container.dataset.sharedChromeMounted = "true";
-    }
-  });
-
-  document.querySelectorAll("[data-shared-footer]").forEach((container) => {
-    if (!container.dataset.sharedChromeMounted) {
-      container.innerHTML = sharedFooterMarkup();
-      container.dataset.sharedChromeMounted = "true";
-    }
-  });
-}
-
-function syncAppNav() {
-  const navLabels = {
-    lobby: t("nav.lobby"),
-    game: t("nav.game"),
-    profile: t("nav.profile")
-  };
-
-  document.querySelectorAll("[data-nav-section]").forEach((link) => {
-    const isActive = link.dataset.navSection === section;
-    link.classList.toggle("is-active", isActive);
-    link.setAttribute("aria-current", isActive ? "page" : "false");
-
-    if (navLabels[link.dataset.navSection]) {
-      link.textContent = navLabels[link.dataset.navSection];
-    }
-
-    if (link.dataset.navSection === "game" && currentGameId) {
-      link.href = gameHref();
-    }
-  });
-
-  document.querySelectorAll(".top-nav-links").forEach((nav) => {
-    nav.setAttribute("aria-label", t("nav.aria.primary"));
-  });
-}
-
-async function fallbackHeaderLogin(username, password) {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-  }
-
-  return data;
-}
-
-function sanitizedCurrentUrl() {
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.delete("header-username");
-  nextUrl.searchParams.delete("header-password");
-  return nextUrl;
-}
-
-function initAppShell() {
-  mountAppChrome();
-  applyTranslations(document, activeLocale);
-  syncAppNav();
-
-  document.querySelectorAll(".top-nav-actions").forEach((container) => {
-    buildLocaleControl({
-      container,
-      marker: "data-shell-locale-switcher",
-      wrapperClass: "top-nav-locale",
-      labelClass: "shell-locale-label",
-      selectClass: "top-nav-locale-select",
-      labelMode: "hidden",
-      position: "prepend"
+    document.querySelectorAll("[data-shared-top-nav]").forEach((container) => {
+        if (!container.dataset.sharedChromeMounted) {
+            container.innerHTML = sharedNavMarkup();
+            container.dataset.sharedChromeMounted = "true";
+        }
     });
-  });
-
-  document.addEventListener("submit", async (event) => {
-    const form = event.target instanceof HTMLFormElement ? event.target : null;
-    if (!form || form.id !== "header-login-form") {
-      return;
-    }
-
-    if (form.dataset.headerLoginManaged === "true") {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    const usernameInput = form.querySelector("#header-auth-username");
-    const passwordInput = form.querySelector("#header-auth-password");
-    const username = usernameInput?.value?.trim() || "";
-    const password = passwordInput?.value || "";
-    if (!username || !password) {
-      return;
-    }
-
-    try {
-      await fallbackHeaderLogin(username, password);
-      const nextUrl = sanitizedCurrentUrl();
-      if (nextUrl.pathname === "/register.html") {
-        window.location.href = "/profile.html";
-        return;
-      }
-
-      window.location.href = nextUrl.toString();
-    } catch (error) {
-      window.alert(error.message || t("errors.loginFailed"));
-    }
-  }, true);
+    document.querySelectorAll("[data-shared-footer]").forEach((container) => {
+        if (!container.dataset.sharedChromeMounted) {
+            container.innerHTML = sharedFooterMarkup();
+            container.dataset.sharedChromeMounted = "true";
+        }
+    });
 }
-
+function syncAppNav() {
+    const navLabels = {
+        lobby: t("nav.lobby"),
+        game: t("nav.game"),
+        profile: t("nav.profile")
+    };
+    document.querySelectorAll("[data-nav-section]").forEach((link) => {
+        const isActive = link.dataset.navSection === section;
+        link.classList.toggle("is-active", isActive);
+        link.setAttribute("aria-current", isActive ? "page" : "false");
+        if (navLabels[link.dataset.navSection]) {
+            link.textContent = navLabels[link.dataset.navSection];
+        }
+        if (link.dataset.navSection === "game" && currentGameId) {
+            link.href = gameHref();
+        }
+    });
+    document.querySelectorAll(".top-nav-links").forEach((nav) => {
+        nav.setAttribute("aria-label", t("nav.aria.primary"));
+    });
+}
+async function fallbackHeaderLogin(username, password) {
+    const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(translateServerMessage(data, t("errors.loginFailed")));
+    }
+    return data;
+}
+function sanitizedCurrentUrl() {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("header-username");
+    nextUrl.searchParams.delete("header-password");
+    return nextUrl;
+}
+function initAppShell() {
+    mountAppChrome();
+    applyTranslations(document, activeLocale);
+    syncAppNav();
+    document.querySelectorAll(".top-nav-actions").forEach((container) => {
+        buildLocaleControl({
+            container,
+            marker: "data-shell-locale-switcher",
+            wrapperClass: "top-nav-locale",
+            labelClass: "shell-locale-label",
+            selectClass: "top-nav-locale-select",
+            labelMode: "hidden",
+            position: "prepend"
+        });
+    });
+    document.addEventListener("submit", async (event) => {
+        const form = event.target instanceof HTMLFormElement ? event.target : null;
+        if (!form || form.id !== "header-login-form") {
+            return;
+        }
+        if (form.dataset.headerLoginManaged === "true") {
+            return;
+        }
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const usernameInput = form.querySelector("#header-auth-username");
+        const passwordInput = form.querySelector("#header-auth-password");
+        const username = usernameInput?.value?.trim() || "";
+        const password = passwordInput?.value || "";
+        if (!username || !password) {
+            return;
+        }
+        try {
+            await fallbackHeaderLogin(username, password);
+            const nextUrl = sanitizedCurrentUrl();
+            if (nextUrl.pathname === "/register.html") {
+                window.location.href = "/profile.html";
+                return;
+            }
+            window.location.href = nextUrl.toString();
+        }
+        catch (error) {
+            window.alert(error.message || t("errors.loginFailed"));
+        }
+    }, true);
+}
 document.documentElement.lang = activeLocale;
 applyTheme(resolveTheme());
 applyTranslations(document, activeLocale);
-
 if (shellKind === "app") {
-  initAppShell();
-} else {
-  initMarketingShell();
+    initAppShell();
+}
+else {
+    initMarketingShell();
 }
