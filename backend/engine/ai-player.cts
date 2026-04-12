@@ -1,4 +1,4 @@
-import { secureRandom } from "../random.cjs";
+const { secureRandom } = require("../random.cjs");
 import { TurnPhase, validateStandardCardSet, type Card, type GameState, type Territory } from "../../shared/models.cjs";
 
 interface PendingConquest {

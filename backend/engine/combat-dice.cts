@@ -1,4 +1,4 @@
-import { secureRandom } from "../random.cjs";
+const { secureRandom } = require("../random.cjs");
 
 export interface CombatComparison {
   pair: number;
