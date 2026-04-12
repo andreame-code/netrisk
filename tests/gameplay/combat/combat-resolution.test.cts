@@ -1,4 +1,3 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-resolution.cjs");
 const { compareCombatDice, rollCombatDice } = require("../../../backend/engine/combat-dice.cjs");
@@ -10,6 +9,16 @@ const {
 } = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+type CombatComparison = {
+  winner: string;
+};
+
+type DiceRuleSummary = {
+  id: string;
+};
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupCombatState(attackerArmies = 4, defenderArmies = 2) {
   const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])];
@@ -108,7 +117,7 @@ register("defense 3 dice rule set espone l'opzione difensiva estesa", () => {
   assert.equal(ruleSet.attackerMaxDice, 3);
   assert.equal(ruleSet.defenderMaxDice, 3);
 
-  const listedIds = listDiceRuleSets().map((entry) => entry.id);
+  const listedIds = listDiceRuleSets().map((entry: DiceRuleSummary) => entry.id);
   assert.equal(listedIds.includes(DEFENSE_THREE_DICE_RULE_SET_ID), true);
 });
 
@@ -136,6 +145,5 @@ register("combat dice helpers tirano ordinato e confrontano in modo puro", () =>
   const compared = compareCombatDice([2, 6, 4], [5, 1], { defenderWinsTies: true });
   assert.deepEqual(compared.attackerRolls, [6, 4, 2]);
   assert.deepEqual(compared.defenderRolls, [5, 1]);
-  assert.deepEqual(compared.comparisons.map((entry) => entry.winner), ["attacker", "attacker"]);
+  assert.deepEqual(compared.comparisons.map((entry: CombatComparison) => entry.winner), ["attacker", "attacker"]);
 });
-
