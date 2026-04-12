@@ -1,13 +1,18 @@
-// @ts-nocheck
 const fs = require("fs");
 const path = require("path");
 const { createDatastore } = require("../backend/datastore.cjs");
 
-function pad(value) {
+interface BackupArgs {
+  dbFile?: string;
+  outputFile?: string;
+  keep?: number;
+}
+
+function pad(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-function timestampLabel(date = new Date()) {
+function timestampLabel(date: Date = new Date()): string {
   return [
     date.getFullYear(),
     pad(date.getMonth() + 1),
@@ -19,8 +24,8 @@ function timestampLabel(date = new Date()) {
   ].join("");
 }
 
-function parseArgs(argv) {
-  const args = {};
+function parseArgs(argv: string[]): BackupArgs {
+  const args: BackupArgs = {};
 
   for (let index = 0; index < argv.length; index += 1) {
     const current = argv[index];
@@ -48,18 +53,19 @@ function parseArgs(argv) {
   return args;
 }
 
-function backupDirectoryFor(outputFile) {
+function backupDirectoryFor(outputFile: string): string {
   return path.dirname(outputFile);
 }
 
-function baseNameFor(outputFile) {
+function baseNameFor(outputFile: string): string {
   return path.basename(outputFile).replace(/-\d{8}-\d{6}\.sqlite$/, "");
 }
 
-function pruneBackups(outputFile, keepCount) {
-  if (!Number.isInteger(keepCount) || keepCount < 1) {
+function pruneBackups(outputFile: string, keepCount?: number): string[] {
+  if (typeof keepCount !== "number" || !Number.isInteger(keepCount) || keepCount < 1) {
     return [];
   }
+  const normalizedKeepCount = keepCount;
 
   const directory = backupDirectoryFor(outputFile);
   const baseName = baseNameFor(outputFile);
@@ -68,12 +74,12 @@ function pruneBackups(outputFile, keepCount) {
   }
 
   const backups = fs.readdirSync(directory)
-    .filter((name) => name.startsWith(baseName + "-") && name.endsWith(".sqlite"))
+    .filter((name: string) => name.startsWith(baseName + "-") && name.endsWith(".sqlite"))
     .sort()
     .reverse();
 
-  const removed = backups.slice(keepCount).map((name) => path.join(directory, name));
-  removed.forEach((filePath) => {
+  const removed = backups.slice(normalizedKeepCount).map((name: string) => path.join(directory, name));
+  removed.forEach((filePath: string) => {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -81,7 +87,7 @@ function pruneBackups(outputFile, keepCount) {
   return removed;
 }
 
-async function main() {
+async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const dbFile = args.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite");
   const outputFile = args.outputFile || path.join(__dirname, "..", "data", "backups", `netrisk-${timestampLabel()}.sqlite`);
@@ -107,9 +113,9 @@ module.exports = {
   timestampLabel
 };
 
-if (require.main === module) {
+  if (require.main === module) {
   main().catch((error) => {
-    console.error(error && error.message ? error.message : error);
+    console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
   });
 }
