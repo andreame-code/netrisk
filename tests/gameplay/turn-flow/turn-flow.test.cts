@@ -1,4 +1,3 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const {
   TurnPhase,
@@ -11,6 +10,18 @@ const {
 } = require("../../../backend/engine/game-engine.cjs");
 const { findSupportedMap } = require("../../../shared/maps/index.cjs");
 const { createFixedRandom } = require("../helpers/random.cjs");
+
+type TerritoryOwnerState = {
+  ownerId: string | null;
+  armies: number;
+};
+
+type PlayerRef = {
+  id: string;
+  surrendered?: boolean;
+};
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupLiveGame() {
   const state = createInitialState();
@@ -25,7 +36,10 @@ function setupLiveGame() {
 register("applyReinforcement transitions from reinforcement to attack when pool reaches zero", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
-  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
 
   while (state.reinforcementPool > 0) {
     const result = applyReinforcement(state, currentPlayer.id, ownedTerritoryId);
@@ -39,7 +53,10 @@ register("applyReinforcement transitions from reinforcement to attack when pool 
 register("applyReinforcement supports batched placement in a single action", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
-  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
   const startingArmies = state.territories[ownedTerritoryId].armies;
   const totalReinforcements = state.reinforcementPool;
 
@@ -54,7 +71,10 @@ register("applyReinforcement supports batched placement in a single action", () 
 register("endTurn transitions from attack to fortify before advancing the turn", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
-  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
 
   while (state.reinforcementPool > 0) {
     applyReinforcement(state, currentPlayer.id, ownedTerritoryId);
@@ -69,7 +89,10 @@ register("endTurn transitions from attack to fortify before advancing the turn",
 register("endTurn from fortify advances to the next active player reinforcement phase", () => {
   const state = setupLiveGame();
   const firstPlayer = state.players[state.currentTurnIndex];
-  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === firstPlayer.id);
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === firstPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
 
   while (state.reinforcementPool > 0) {
     applyReinforcement(state, firstPlayer.id, ownedTerritoryId);
@@ -96,7 +119,7 @@ register("advanceTurn awards continent bonuses through the game engine reinforce
   state.turnPhase = TurnPhase.FORTIFY;
   state.reinforcementPool = 0;
 
-  Object.keys(state.territories).forEach((territoryId) => {
+  Object.keys(state.territories).forEach((territoryId: string) => {
     state.territories[territoryId] = { ownerId: "p2", armies: 1 };
   });
 
@@ -123,7 +146,7 @@ register("endTurn fails clearly when reinforcements are still available", () => 
 register("advanceTurn skips players with zero territories and can finish the game", () => {
   const state = setupLiveGame();
   state.currentTurnIndex = 0;
-  Object.keys(state.territories).forEach((territoryId) => {
+  Object.keys(state.territories).forEach((territoryId: string) => {
     state.territories[territoryId].ownerId = "p1";
   });
   state.turnPhase = TurnPhase.FORTIFY;
@@ -138,18 +161,25 @@ register("advanceTurn skips players with zero territories and can finish the gam
 register("surrenderPlayer during the active turn hands off play to the next surviving player", () => {
   const state = setupLiveGame();
   state.players.push({ id: "p3", name: "Carol", color: "#333333", connected: true });
-  const reassignedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === "p2");
+  const reassignedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === "p2");
+  if (!reassignedTerritoryId) {
+    throw new Error("Expected at least one territory owned by p2.");
+  }
   state.territories[reassignedTerritoryId].ownerId = "p3";
   state.territories[reassignedTerritoryId].armies = 1;
   const currentPlayer = state.players[state.currentTurnIndex];
 
   const result = surrenderPlayer(state, currentPlayer.id);
 
+  const surrenderedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  if (!surrenderedTerritoryId) {
+    throw new Error("Expected surrendered player to keep at least one owned territory.");
+  }
   assert.equal(result.ok, true);
   assert.equal(state.phase, "active");
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
-  assert.equal(state.players.find((player) => player.id === currentPlayer.id).surrendered, true);
-  assert.equal(state.territories[Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id)].ownerId, currentPlayer.id);
+  assert.equal(state.players.find((player: PlayerRef) => player.id === currentPlayer.id).surrendered, true);
+  assert.equal(state.territories[surrenderedTerritoryId].ownerId, currentPlayer.id);
   assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
   assert.equal(state.reinforcementPool >= 3, true);
 });
