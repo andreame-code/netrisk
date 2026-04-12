@@ -1,10 +1,15 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const classicMiniMap = require("../../../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../../../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../../../shared/maps/world-classic.cjs");
 
-function bonusMapFor(map) {
+type ContinentBonusMap = {
+  continents: Array<{ id: string; bonus: number }>;
+};
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
+
+function bonusMapFor(map: ContinentBonusMap): Record<string, number> {
   return Object.fromEntries(map.continents.map((continent) => [continent.id, continent.bonus]));
 }
 
