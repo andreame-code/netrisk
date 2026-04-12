@@ -16,6 +16,7 @@
   },
   "include": [
     "backend/**/*",
+    "api/**/*",
     "shared/**/*",
     "scripts/**/*",
     "tests/gameplay/**/*"
@@ -29,6 +30,8 @@
     "playwright-report",
     "test-results",
     "data",
+    "**/*.d.cts",
+    "**/*.d.ts",
     "shared/core-domain.cjs",
     "shared/game-actions.cjs",
     "shared/messages.cjs",

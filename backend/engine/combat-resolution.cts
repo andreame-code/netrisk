@@ -1,6 +1,6 @@
 import { getDiceRuleSet, type DiceRuleSet } from "../../shared/dice.cjs";
 import type { GameState } from "../../shared/models.cjs";
-import { secureRandom } from "../random.cjs";
+const { secureRandom } = require("../random.cjs");
 import type { MapGraph } from "../../shared/map-graph.cjs";
 import { compareCombatDice, rollCombatDice, type CombatComparison } from "./combat-dice.cjs";
 import { validateAttackAttempt, type AttackValidationResult } from "./attack-validation.cjs";
