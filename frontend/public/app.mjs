@@ -18,6 +18,7 @@ const state = {
   attackBanzaiInFlight: false,
   selectedFortifyFromId: null,
   selectedFortifyToId: null,
+  fortifySelectionMode: "from",
   tradeError: "",
   tradeSuccess: ""
 };
@@ -649,6 +650,7 @@ function buildGraphMarkup(snapshot) {
     });
   });
 
+  const activeSelection = currentMapSelections();
   const nodes = snapshot.map
     .map((territory) => {
       const owner = ownerById(territory.ownerId);
@@ -659,8 +661,8 @@ function buildGraphMarkup(snapshot) {
       const classes = [
         "territory-node",
         territory.ownerId === state.playerId ? "is-mine" : "",
-        state.selectedAttackFromId === territory.id ? "is-source" : "",
-        state.selectedAttackToId === territory.id ? "is-target" : "",
+        activeSelection.sourceId === territory.id ? "is-source" : "",
+        activeSelection.targetId === territory.id ? "is-target" : "",
         state.selectedReinforceTerritoryId === territory.id ? "is-reinforce" : ""
       ]
         .filter(Boolean)
@@ -737,21 +739,34 @@ function currentRenderedMapSignature(snapshot) {
   ].join("|");
 }
 
+function currentMapSelections() {
+  if (state.snapshot?.turnPhase === "fortify") {
+    return {
+      sourceId: state.selectedFortifyFromId,
+      targetId: state.selectedFortifyToId
+    };
+  }
+
+  return {
+    sourceId: state.selectedAttackFromId,
+    targetId: state.selectedAttackToId
+  };
+}
+
 function updateMapTerritoryHighlights() {
   if (!elements.map) {
     return;
   }
 
-  const selectedAttackFromId = state.selectedAttackFromId;
-  const selectedAttackToId = state.selectedAttackToId;
+  const activeSelection = currentMapSelections();
   const selectedReinforceTerritoryId = state.selectedReinforceTerritoryId;
 
   elements.map.querySelectorAll("[data-territory-id]").forEach((node) => {
     const territoryId = node.getAttribute("data-territory-id");
     const territory = territoryById(territoryId);
     node.classList.toggle("is-mine", territory?.ownerId === state.playerId);
-    node.classList.toggle("is-source", territoryId === selectedAttackFromId);
-    node.classList.toggle("is-target", territoryId === selectedAttackToId);
+    node.classList.toggle("is-source", territoryId === activeSelection.sourceId);
+    node.classList.toggle("is-target", territoryId === activeSelection.targetId);
     node.classList.toggle("is-reinforce", territoryId === selectedReinforceTerritoryId);
   });
 }
@@ -759,6 +774,31 @@ function updateMapTerritoryHighlights() {
 function handleTerritoryClick(territoryId) {
   const territory = territoryById(territoryId);
   if (!territory) {
+    return;
+  }
+
+  if (state.snapshot?.turnPhase === "fortify") {
+    if (territory.ownerId !== state.playerId) {
+      return;
+    }
+
+    const fortifySource = territoryById(state.selectedFortifyFromId);
+    const canSelectFortifyTarget =
+      state.fortifySelectionMode === "to" &&
+      fortifySource &&
+      territory.id !== fortifySource.id &&
+      fortifySource.neighbors.includes(territory.id);
+
+    if (canSelectFortifyTarget) {
+      state.selectedFortifyToId = territory.id;
+      state.fortifySelectionMode = "from";
+    } else {
+      state.selectedFortifyFromId = territory.id;
+      state.selectedFortifyToId = null;
+      state.fortifySelectionMode = "to";
+    }
+
+    render();
     return;
   }
 
@@ -779,6 +819,9 @@ function handleTerritoryClick(territoryId) {
 
 function render() {
   const snapshot = state.snapshot;
+  if (snapshot?.turnPhase !== "fortify") {
+    state.fortifySelectionMode = "from";
+  }
   if (snapshot?.gameId) {
     state.currentGameId = snapshot.gameId;
   }
@@ -1534,10 +1577,12 @@ elements.attackDice.addEventListener("change", () => {
 elements.fortifyFrom.addEventListener("change", () => {
   state.selectedFortifyFromId = elements.fortifyFrom.value || null;
   state.selectedFortifyToId = null;
+  state.fortifySelectionMode = "to";
   render();
 });
 elements.fortifyTo.addEventListener("change", () => {
   state.selectedFortifyToId = elements.fortifyTo.value || null;
+  state.fortifySelectionMode = "from";
   render();
 });
 if (elements.gameList) {
