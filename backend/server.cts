@@ -35,6 +35,7 @@ const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute }
 const { handleAttackGameActionRoute } = require("./routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./routes/game-actions-basic.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
+const { handleCreateGameRoute, handleOpenGameRoute } = require("./routes/game-management.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
@@ -564,60 +565,48 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
-      const authContext = await requireAuth(req, res, body);
-      if (!authContext) {
-        return;
-      }
-
-      try {
-        const policy = authorize("game:create", { user: authContext.user });
-        const configured = createConfiguredInitialState(body);
-        const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
-        if (!creatorJoin.ok) {
-          throw createLocalizedError(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita.", creatorJoin.errorKey || "server.game.create.creatorJoinFailed", creatorJoin.errorParams);
-        }
-        const created = await gameSessions.createGame(configured.state, {
-          ...configured.gameInput,
-          creatorUserId: policy.actor.id
-        });
-        activeGameId = created.game.id;
-        activeGameVersion = created.game.version;
-        activeGameName = created.game.name;
-        replaceState(created.state);
-        broadcastGame({ gameId: created.game.id, gameName: created.game.name, version: created.game.version, state: created.state });
-        sendJson(res, 201, { ok: true, game: created.game, games: await gameSessions.listGames(), activeGameId, state: snapshot(), config: configured.config, playerId: creatorJoin.player.id });
-      } catch (error) {
-        const statusCode = error.statusCode || 400;
-        sendLocalizedError(res, statusCode, error, "Creazione partita non riuscita.", "server.game.createFailed");
-      }
+      await handleCreateGameRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        createConfiguredInitialState,
+        addPlayer,
+        async (state, options) => {
+          const created = await gameSessions.createGame(state, options);
+          activeGameId = created.game.id;
+          activeGameVersion = created.game.version;
+          activeGameName = created.game.name;
+          return created;
+        },
+        () => gameSessions.listGames(),
+        replaceState,
+        broadcastGame,
+        snapshot,
+        sendJson,
+        sendLocalizedError
+      );
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/games/open") {
       const body = await parseBody(req);
-      const authContext = await requireAuth(req, res, body);
-      if (!authContext) {
-        return;
-      }
-
-      try {
-        const gameRecord = await gameSessions.getGame(body.gameId);
-        authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
-        const opened = await gameSessions.openGame(body.gameId);
-        await resumeAiTurnsForRead(opened);
-        const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
-        sendJson(res, 200, {
-          ok: true,
-          game: opened.game,
-          games: await gameSessions.listGames(),
-          activeGameId: opened.game.id,
-          state: snapshotForState(opened.state, opened.game.id, opened.game.version, opened.game.name),
-          playerId: resolvedPlayer ? resolvedPlayer.id : null
-        });
-      } catch (error) {
-        const statusCode = error.statusCode || 400;
-        sendLocalizedError(res, statusCode, error, "Apertura partita non riuscita.", "server.game.openFailed");
-      }
+      await handleOpenGameRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        (gameId) => gameSessions.getGame(gameId),
+        (gameId) => gameSessions.openGame(gameId),
+        () => gameSessions.listGames(),
+        resumeAiTurnsForRead,
+        resolvePlayerForUser,
+        snapshotForState,
+        sendJson,
+        sendLocalizedError
+      );
       return;
     }
 
