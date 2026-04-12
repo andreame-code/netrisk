@@ -57,6 +57,7 @@ const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backen
 const { createApp } = require("../backend/server.cjs");
 const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
+const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -888,6 +889,125 @@ register("account routes rispondono con sessione, profilo e validazione tema", a
   assert.equal(invalidThemeHandled, true);
   assert.equal(invalidThemeRes.statusCode, 400);
   assert.equal(JSON.parse(invalidThemeRes.body).messageKey, "server.profile.invalidTheme");
+});
+
+register("basic game action route gestisce reinforce e persiste lo snapshot per-user", async () => {
+  const res = makeMockResponse();
+  const gameContext = {
+    state: { territories: { alpha: { ownerId: "p1", armies: 3 } } },
+    gameId: "game-basic",
+    version: 2,
+    gameName: "Basic Route"
+  };
+  const user = { id: "user-1", username: "Alice" };
+  const persisted = [];
+  const broadcasts = [];
+
+  const handled = await handleBasicGameActionRoute(
+    "reinforce",
+    res,
+    { territoryId: "alpha", amount: 2 },
+    gameContext,
+    "p1",
+    2,
+    user,
+    (state, playerId, territoryId, amount) => {
+      assert.equal(playerId, "p1");
+      assert.equal(territoryId, "alpha");
+      assert.equal(amount, 2);
+      state.territories.alpha.armies += amount;
+      return { ok: true };
+    },
+    () => {
+      throw new Error("moveAfterConquest should not be called");
+    },
+    () => {
+      throw new Error("applyFortify should not be called");
+    },
+    async (context, expectedVersion) => {
+      persisted.push({ context, expectedVersion });
+      context.version = 3;
+    },
+    (context) => {
+      broadcasts.push(context.version);
+    },
+    (state, gameId, version, gameName, currentUser) => ({
+      gameId,
+      version,
+      gameName,
+      armies: state.territories.alpha.armies,
+      playerId: currentUser.id
+    }),
+    () => false,
+    (territoryId) => territoryId === "alpha",
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].expectedVersion, 2);
+  assert.deepEqual(broadcasts, [3]);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    state: {
+      gameId: "game-basic",
+      version: 3,
+      gameName: "Basic Route",
+      armies: 5,
+      playerId: "user-1"
+    }
+  });
+});
+
+register("basic game action route valida i territori nel fortify", async () => {
+  const res = makeMockResponse();
+  const handled = await handleBasicGameActionRoute(
+    "fortify",
+    res,
+    { fromId: "invalid", toId: "beta", armies: 1 },
+    {
+      state: { territories: { alpha: {}, beta: {} } },
+      gameId: "game-basic",
+      version: 1,
+      gameName: "Basic Route"
+    },
+    "p1",
+    1,
+    { id: "user-1" },
+    () => {
+      throw new Error("applyReinforcement should not be called");
+    },
+    () => {
+      throw new Error("moveAfterConquest should not be called");
+    },
+    () => {
+      throw new Error("applyFortify should not be called");
+    },
+    async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    () => {
+      throw new Error("snapshotForUser should not be called");
+    },
+    () => false,
+    (territoryId) => territoryId === "alpha" || territoryId === "beta",
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Territorio non valido.",
+    messageKey: "game.invalidTerritory",
+    messageParams: {},
+    code: null
+  });
 });
 
 async function createAuthenticatedAppSession(app, username) {
