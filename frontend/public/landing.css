@@ -25,11 +25,10 @@ ul { margin: 0; padding: 0; list-style: none; }
   top: 0;
   inset-inline: 0;
   z-index: 100;
-  background:
-    linear-gradient(180deg, rgba(28, 25, 16, 0.96) 0%, rgba(20, 18, 11, 0.94) 100%);
+  background: var(--landing-header-bg);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-soft);
 }
 
 .ld-header-inner {
@@ -60,7 +59,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   letter-spacing: 0.07em;
   font-size: 1.05rem;
   color: var(--gold-hi);
-  text-shadow: 0 0 22px rgba(200, 164, 39, 0.3);
+  text-shadow: var(--hero-text-shadow);
   line-height: 1;
 }
 
@@ -83,7 +82,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 .ld-nav-links a:hover {
   color: var(--gold-hi);
-  background: rgba(200, 164, 39, 0.1);
+  background: var(--nav-hover-bg);
 }
 
 .ld-nav-actions {
@@ -118,9 +117,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .ld-hero-overlay {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 40%, rgba(200, 164, 39, 0.08) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(14, 12, 9, 0.45) 0%, rgba(14, 12, 9, 0.1) 40%, rgba(14, 12, 9, 0.1) 60%, rgba(14, 12, 9, 0.85) 100%);
+  background: var(--landing-hero-overlay);
   pointer-events: none;
 }
 
@@ -164,8 +161,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   letter-spacing: 0.06em;
   color: var(--parchment);
   text-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.95),
-    0 0 60px rgba(200, 164, 39, 0.18);
+    var(--hero-text-shadow),
+    0 0 60px var(--hero-overlay);
   max-width: 14ch;
   animation: fade-up 0.9s 0.12s ease both;
 }
@@ -174,8 +171,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-style: normal;
   color: var(--gold-hi);
   text-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.95),
-    0 0 50px rgba(200, 164, 39, 0.35);
+    var(--hero-text-shadow),
+    0 0 50px var(--hero-overlay);
 }
 
 .ld-hero-desc {
@@ -199,10 +196,10 @@ ul { margin: 0; padding: 0; list-style: none; }
   align-items: center;
   gap: 24px;
   padding: 18px 32px;
-  background: linear-gradient(180deg, rgba(30, 28, 20, 0.88) 0%, rgba(20, 18, 12, 0.88) 100%);
+  background: var(--landing-panel-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--bevel), 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--bevel), var(--shadow-soft);
   animation: fade-up 0.9s 0.46s ease both;
 }
 
@@ -217,7 +214,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-size: clamp(1.6rem, 3vw, 2.4rem);
   color: var(--gold-hi);
   line-height: 1;
-  text-shadow: 0 0 20px rgba(200, 164, 39, 0.3);
+  text-shadow: 0 0 20px var(--hero-overlay);
 }
 
 .ld-hero-stat span {
@@ -290,7 +287,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   font-variant: small-caps;
   letter-spacing: 0.08em;
   color: var(--parchment);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  text-shadow: var(--hero-text-shadow);
 }
 
 .ld-section-desc {
@@ -300,9 +297,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .ld-features {
-  background:
-    radial-gradient(ellipse at 50% 0%, rgba(200, 164, 39, 0.07) 0%, transparent 50%),
-    linear-gradient(180deg, #141210 0%, #0e0c09 100%);
+  background: var(--landing-section-bg);
 }
 
 .ld-features-grid {
@@ -317,8 +312,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .ld-maps {
-  background:
-    linear-gradient(180deg, #0e0c09 0%, #141210 50%, #0e0c09 100%);
+  background: var(--landing-map-section-bg);
 }
 
 .ld-maps-grid {
@@ -337,20 +331,20 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: relative;
   border-radius: var(--radius);
   overflow: hidden;
-  border: 2px solid rgba(200, 164, 39, 0.38);
+  border: 2px solid var(--border-hi);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 28px 70px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(255, 230, 140, 0.12);
+    0 0 0 1px var(--overlay),
+    var(--shadow),
+    inset 0 1px 0 var(--border-hi);
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
 .ld-map-frame:hover {
   transform: translateY(-4px) scale(1.01);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 40px 90px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(255, 230, 140, 0.14);
+    0 0 0 1px var(--overlay),
+    var(--shadow),
+    inset 0 1px 0 var(--border-hi);
 }
 
 .ld-map-frame img {
@@ -366,8 +360,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 18%, transparent 78%, rgba(0, 0, 0, 0.55) 100%);
+    radial-gradient(ellipse at center, transparent 35%, var(--overlay) 100%),
+    linear-gradient(180deg, var(--overlay) 0%, transparent 18%, transparent 78%, var(--overlay) 100%);
   pointer-events: none;
   z-index: 1;
 }
@@ -382,14 +376,14 @@ ul { margin: 0; padding: 0; list-style: none; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--overlay) 0%, transparent 100%);
 }
 
 .ld-map-hud-label {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(212, 184, 136, 0.88);
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -404,9 +398,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: var(--mp-color, #888);
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 6px var(--mp-color, #888);
+  background: var(--player-color, var(--accent));
+  border: 1.5px solid var(--text-inverse);
+  box-shadow: 0 0 6px var(--player-color, var(--accent));
 }
 
 .ld-map-hud-bottom {
@@ -418,9 +412,9 @@ ul { margin: 0; padding: 0; list-style: none; }
   display: flex;
   align-items: center;
   gap: 18px;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.72) 0%, transparent 100%);
+  background: linear-gradient(0deg, var(--overlay) 0%, transparent 100%);
   font-size: 0.72rem;
-  color: rgba(212, 184, 136, 0.82);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -454,7 +448,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   padding: 4px 12px;
   border-radius: 2px;
   border: 1px solid var(--border);
-  background: rgba(200, 164, 39, 0.07);
+  background: var(--badge-bg);
   color: var(--gold);
   font-size: 0.74rem;
   text-transform: uppercase;
@@ -462,9 +456,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .ld-howto {
-  background:
-    radial-gradient(ellipse at 50% 100%, rgba(200, 164, 39, 0.06) 0%, transparent 50%),
-    linear-gradient(180deg, #0e0c09 0%, #141210 100%);
+  background: var(--landing-howto-bg);
 }
 
 .ld-steps {
@@ -493,10 +485,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   justify-content: center;
   border-radius: 3px;
   border: 1px solid var(--border-hi);
-  background:
-    radial-gradient(ellipse at top, rgba(200, 164, 39, 0.15) 0%, transparent 60%),
-    linear-gradient(180deg, #2e2b1c 0%, #1e1c12 100%);
-  box-shadow: var(--bevel), 0 6px 20px rgba(0, 0, 0, 0.5);
+  background: var(--button-primary-bg);
+  box-shadow: var(--button-primary-shadow);
   font-size: 1.15rem;
   font-variant: small-caps;
   letter-spacing: 0.1em;
@@ -535,7 +525,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .ld-step-connector-line {
   width: 48px;
   height: 1px;
-  background: linear-gradient(90deg, var(--border-hi), rgba(200, 164, 39, 0.3));
+  background: linear-gradient(90deg, var(--border-hi), var(--gold-dim));
 }
 
 .ld-step-connector-gem {
@@ -555,7 +545,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 50%, rgba(200, 164, 39, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, var(--hero-overlay) 0%, transparent 60%),
     url("/assets/maps/middle-earth.jpg") center/cover no-repeat;
   filter: brightness(0.15) contrast(1.1);
 }
@@ -564,7 +554,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(14, 12, 9, 0.85) 0%, transparent 30%, transparent 70%, rgba(14, 12, 9, 0.85) 100%);
+  background: var(--landing-final-overlay);
 }
 
 .ld-final-cta-inner {
@@ -580,15 +570,15 @@ ul { margin: 0; padding: 0; list-style: none; }
 .ld-final-cta-ornament {
   font-size: 2.8rem;
   color: var(--gold-dim);
-  text-shadow: 0 0 30px rgba(200, 164, 39, 0.4);
+  text-shadow: 0 0 30px var(--hero-overlay);
   line-height: 1;
   margin-bottom: 4px;
   animation: ornament-pulse 4s ease-in-out infinite;
 }
 
 @keyframes ornament-pulse {
-  0%, 100% { opacity: 0.6; text-shadow: 0 0 30px rgba(200, 164, 39, 0.25); }
-  50% { opacity: 1; text-shadow: 0 0 50px rgba(200, 164, 39, 0.55); }
+  0%, 100% { opacity: 0.6; text-shadow: 0 0 30px var(--gold-dim); }
+  50% { opacity: 1; text-shadow: 0 0 50px var(--hero-overlay); }
 }
 
 .ld-final-cta-inner .ld-eyebrow {
@@ -601,8 +591,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   letter-spacing: 0.1em;
   color: var(--parchment);
   text-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.95),
-    0 0 60px rgba(200, 164, 39, 0.18);
+    var(--hero-text-shadow),
+    0 0 60px var(--hero-overlay);
 }
 
 .ld-final-cta-desc {
@@ -621,7 +611,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 }
 
 .ld-footer {
-  background: linear-gradient(180deg, #0e0c09 0%, #080705 100%);
+  background: var(--landing-footer-bg);
   border-top: 1px solid var(--border);
   padding: 24px 0;
 }
@@ -652,7 +642,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 
 .ld-footer-links a:hover {
   color: var(--gold-hi);
-  background: rgba(200, 164, 39, 0.08);
+  background: var(--badge-bg);
 }
 
 @keyframes fade-up {
@@ -697,7 +687,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   .ld-step-connector-line {
     width: 1px;
     height: 32px;
-    background: linear-gradient(180deg, var(--border-hi), rgba(200, 164, 39, 0.3));
+    background: linear-gradient(180deg, var(--border-hi), var(--gold-dim));
   }
 
   .ld-step-connector-gem {

@@ -142,6 +142,7 @@ function updateGameSelection(gameId) {
 
 function setSession(user) {
   state.user = user || null;
+  window.netriskTheme?.applyUserTheme?.(state.user);
 }
 
 async function loginWithCredentials(username, password) {
