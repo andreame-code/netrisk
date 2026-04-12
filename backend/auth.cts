@@ -1,10 +1,102 @@
-// @ts-nocheck
 const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
-function passwordRecord(secret) {
+interface ThemePreferences {
+  theme?: string;
+}
+
+interface UserProfile {
+  displayName?: string;
+  preferences?: ThemePreferences;
+  contact?: {
+    emailEncrypted?: string;
+    emailHint?: string;
+  };
+  [key: string]: unknown;
+}
+
+interface PasswordHashRecord {
+  algorithm?: string;
+  salt?: string;
+  keylen?: number;
+  hash?: string;
+  digest?: string;
+  iterations?: number;
+  secret?: string;
+}
+
+interface UserCredentials {
+  password?: PasswordHashRecord;
+  [key: string]: unknown;
+}
+
+interface StoredUser {
+  id: string;
+  username: string;
+  role?: string;
+  credentials?: UserCredentials;
+  profile?: UserProfile;
+  createdAt?: string;
+}
+
+interface PublicUser {
+  id: string;
+  username: string;
+  role: string;
+  authMethods: string[];
+  hasEmail: boolean;
+  preferences: ThemePreferences;
+}
+
+interface AuthSession {
+  user_id?: string;
+  userId?: string;
+  created_at?: number;
+  createdAt?: number;
+}
+
+interface AuthRepository {
+  listUsers(): Promise<StoredUser[]> | StoredUser[];
+  findUserByUsername(username: string): Promise<StoredUser | null> | StoredUser | null;
+  findUserById(userId: string): Promise<StoredUser | null> | StoredUser | null;
+  createUser(user: StoredUser): Promise<StoredUser | null> | StoredUser | null;
+  updateUserCredentials(userId: string, credentials: UserCredentials): Promise<StoredUser | null> | StoredUser | null;
+  updateUserProfile(userId: string, profile: UserProfile): Promise<StoredUser | null> | StoredUser | null;
+  updateUserThemePreference?(userId: string, theme: string): Promise<StoredUser | null> | StoredUser | null;
+  createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
+  findSession(token: string): Promise<AuthSession | null> | AuthSession | null;
+  deleteSession(token: string): Promise<void> | void;
+}
+
+interface AuthStoreOptions {
+  datastore?: AuthRepository;
+  driver?: string;
+  dbFile?: string;
+  dataFile?: string;
+  sessionsFile?: string;
+  gamesFile?: string;
+  supabaseUrl?: string;
+  supabaseServiceRoleKey?: string;
+  supabaseSchema?: string;
+  encryptionKey?: string;
+}
+
+interface RegistrationInput {
+  username: string;
+  password: string;
+  email: string;
+}
+
+interface AuthFailure {
+  ok: false;
+  error: string;
+  errorKey: string;
+  errorParams: Record<string, unknown>;
+}
+
+function passwordRecord(secret: unknown): Required<Pick<PasswordHashRecord, "algorithm" | "salt" | "keylen" | "hash">> {
   const salt = crypto.randomBytes(16).toString("hex");
   const keylen = 64;
   const hash = crypto.scryptSync(String(secret || ""), salt, keylen).toString("hex");
@@ -16,24 +108,24 @@ function passwordRecord(secret) {
   };
 }
 
-function normalizeUsername(username) {
+function normalizeUsername(username: unknown): string {
   return String(username || "").trim().toLowerCase();
 }
 
-function normalizeEmail(email) {
+function normalizeEmail(email: unknown): string {
   return String(email || "").trim().toLowerCase();
 }
 
-function userRole(user) {
+function userRole(user: StoredUser | null | undefined): string {
   return user && user.role === "admin" ? "admin" : "user";
 }
 
-function publicUser(user) {
+function publicUser(user: StoredUser | null | undefined): PublicUser | null {
   if (!user) {
     return null;
   }
 
-  const preferences = {};
+  const preferences: ThemePreferences = {};
   if (typeof user.profile?.preferences?.theme === "string" && user.profile.preferences.theme) {
     preferences.theme = user.profile.preferences.theme;
   }
@@ -48,7 +140,7 @@ function publicUser(user) {
   };
 }
 
-function verifyPassword(credentials, password) {
+function verifyPassword(credentials: UserCredentials | undefined, password: unknown): boolean {
   const record = credentials && credentials.password ? credentials.password : null;
   if (!record) {
     return false;
@@ -77,7 +169,7 @@ function verifyPassword(credentials, password) {
   return crypto.timingSafeEqual(expected, received);
 }
 
-function dataProtectionKey(options = {}) {
+function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
   const raw = String(
     options.encryptionKey
     || process.env.AUTH_ENCRYPTION_KEY
@@ -87,14 +179,14 @@ function dataProtectionKey(options = {}) {
   return raw ? crypto.createHash("sha256").update(raw).digest() : null;
 }
 
-function createFieldProtector(options = {}) {
+function createFieldProtector(options: AuthStoreOptions = {}) {
   const key = dataProtectionKey(options);
 
   return {
-    isConfigured() {
+    isConfigured(): boolean {
       return Boolean(key);
     },
-    encrypt(value) {
+    encrypt(value: unknown): string {
       if (!key) {
         throw createLocalizedError("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
       }
@@ -113,12 +205,13 @@ function createFieldProtector(options = {}) {
   };
 }
 
-function registrationInput(inputOrUsername, password) {
+function registrationInput(inputOrUsername: unknown, password?: unknown): RegistrationInput {
   if (inputOrUsername && typeof inputOrUsername === "object" && !Array.isArray(inputOrUsername)) {
+    const input = inputOrUsername as Record<string, unknown>;
     return {
-      username: String(inputOrUsername.username || "").trim().slice(0, 32),
-      password: String(inputOrUsername.password || ""),
-      email: normalizeEmail(inputOrUsername.email)
+      username: String(input.username || "").trim().slice(0, 32),
+      password: String(input.password || ""),
+      email: normalizeEmail(input.email)
     };
   }
 
@@ -129,11 +222,11 @@ function registrationInput(inputOrUsername, password) {
   };
 }
 
-function authFailure(error, errorKey, errorParams = {}) {
+function authFailure(error: string, errorKey: string, errorParams: Record<string, unknown> = {}): AuthFailure {
   return { ok: false, error, errorKey, errorParams };
 }
 
-function registrationValidationError(input, protector) {
+function registrationValidationError(input: RegistrationInput, protector: ReturnType<typeof createFieldProtector>): AuthFailure | null {
   if (!input.username || !input.password) {
     return authFailure("Inserisci utente e password.", "auth.register.requiredFields");
   }
@@ -160,7 +253,7 @@ function registrationValidationError(input, protector) {
   return null;
 }
 
-function maskEmail(email) {
+function maskEmail(email: string): string {
   const normalized = normalizeEmail(email);
   const parts = normalized.split("@");
   if (parts.length !== 2) {
@@ -173,8 +266,8 @@ function maskEmail(email) {
   return `${visible}@${domain}`;
 }
 
-function buildProfile(username, email, protector) {
-  const profile = {
+function buildProfile(username: string, email: string, protector: ReturnType<typeof createFieldProtector>): UserProfile {
+  const profile: UserProfile = {
     displayName: username
   };
 
@@ -188,8 +281,8 @@ function buildProfile(username, email, protector) {
   return profile;
 }
 
-function createAuthStore(options = {}) {
-  const datastore = options.datastore || createAuthRepository({
+function createAuthStore(options: AuthStoreOptions = {}) {
+  const datastore = (options.datastore || createAuthRepository({
     driver: options.driver || process.env.DATASTORE_DRIVER || "local",
     dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
     dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
@@ -198,19 +291,19 @@ function createAuthStore(options = {}) {
     supabaseUrl: options.supabaseUrl,
     supabaseServiceRoleKey: options.supabaseServiceRoleKey,
     supabaseSchema: options.supabaseSchema
-  });
+  })) as AuthRepository;
   const protector = createFieldProtector(options);
 
   async function listUsers() {
     return datastore.listUsers();
   }
 
-  async function findByUsername(username) {
+  async function findByUsername(username: string) {
     const normalized = normalizeUsername(username);
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
-  async function registerPasswordUser(inputOrUsername, password) {
+  async function registerPasswordUser(inputOrUsername: unknown, password?: unknown) {
     const input = registrationInput(inputOrUsername, password);
     const validationError = registrationValidationError(input, protector);
     if (validationError) {
@@ -235,7 +328,7 @@ function createAuthStore(options = {}) {
     return { ok: true, user: publicUser(await datastore.createUser(user)) };
   }
 
-  async function loginWithPassword(username, password) {
+  async function loginWithPassword(username: string, password: unknown) {
     const user = await findByUsername(username);
 
     if (typeof user?.credentials?.password?.secret === "string") {
@@ -269,7 +362,7 @@ function createAuthStore(options = {}) {
     };
   }
 
-  async function getUserFromSession(sessionToken) {
+  async function getUserFromSession(sessionToken: string | null | undefined) {
     if (!sessionToken) {
       return null;
     }
@@ -286,10 +379,11 @@ function createAuthStore(options = {}) {
       return null;
     }
 
-    return await datastore.findUserById(session.user_id || session.userId) || null;
+    const sessionUserId = session.user_id || session.userId || "";
+    return sessionUserId ? (await datastore.findUserById(sessionUserId)) || null : null;
   }
 
-  async function logout(sessionToken) {
+  async function logout(sessionToken: string | null | undefined) {
     if (sessionToken) {
       await datastore.deleteSession(sessionToken);
     }
@@ -297,13 +391,13 @@ function createAuthStore(options = {}) {
     return null;
   }
 
-  async function updateUserProfile(userId, profile) {
+  async function updateUserProfile(userId: string, profile: UserProfile) {
     const updatedUser = await datastore.updateUserProfile(userId, profile || {});
     return updatedUser ? publicUser(updatedUser) : null;
   }
 
-  async function updateUserThemePreference(userId, theme) {
-    let updatedUser = null;
+  async function updateUserThemePreference(userId: string, theme: string) {
+    let updatedUser: StoredUser | null = null;
 
     if (typeof datastore.updateUserThemePreference === "function") {
       updatedUser = await datastore.updateUserThemePreference(userId, theme);
@@ -312,7 +406,7 @@ function createAuthStore(options = {}) {
       updatedUser = await datastore.updateUserProfile(userId, {
         ...(currentUser?.profile || {}),
         preferences: {
-          ...(currentUser?.profile?.preferences || {}),
+          ...((currentUser?.profile?.preferences as ThemePreferences | undefined) || {}),
           theme: String(theme || "")
         }
       });
