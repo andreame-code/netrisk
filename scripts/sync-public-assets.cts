@@ -2,7 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const rootDir = path.join(__dirname, "..");
+const rootDir = process.cwd();
 const sourceDir = path.join(rootDir, "frontend", "public");
 const targetDir = path.join(rootDir, "public");
 
