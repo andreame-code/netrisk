@@ -55,6 +55,9 @@ const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs"
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backend/required-runtime-env.cjs");
 const { createApp } = require("../backend/server.cjs");
+const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
+const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
+const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
@@ -696,6 +699,195 @@ register("player profile store riassume vittorie, sconfitte e partite in corso",
   assert.equal(profile.participatingGames[0].myLobby.cardCount, 2);
   assert.equal(profile.participatingGames[1].myLobby.focusLabel, "Lobby");
   assert.equal(profile.participatingGames[1].mapName, "Custom Lobby");
+});
+
+register("http response helpers normalizzano payload localizzati e codici extra", () => {
+  assert.deepEqual(
+    localizedPayload(
+      {
+        message: "Messaggio dal server",
+        messageKey: "server.message",
+        messageParams: { scope: "test" }
+      },
+      "Fallback",
+      "server.fallback"
+    ),
+    {
+      error: "Messaggio dal server",
+      messageKey: "server.message",
+      messageParams: { scope: "test" }
+    }
+  );
+
+  const res = makeMockResponse();
+  sendLocalizedError(
+    res,
+    409,
+    null,
+    "Conflict",
+    "server.versionConflict",
+    { currentVersion: 3 },
+    "VERSION_CONFLICT",
+    { retryable: true }
+  );
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.headers["Content-Type"], "application/json; charset=utf-8");
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Conflict",
+    messageKey: "server.versionConflict",
+    messageParams: { currentVersion: 3 },
+    code: "VERSION_CONFLICT",
+    retryable: true
+  });
+});
+
+register("health route usa 503 quando lo snapshot segnala errore", async () => {
+  const res = makeMockResponse();
+  const handled = await handleHealthRoute(
+    res,
+    async () => ({ ok: false, storage: { storage: "sqlite" } }),
+    sendJson
+  );
+
+  assert.equal(handled, true);
+  assert.equal(res.statusCode, 503);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: false,
+    storage: { storage: "sqlite" }
+  });
+});
+
+register("account routes rispondono con sessione, profilo e validazione tema", async () => {
+  const authContext = {
+    user: {
+      id: "user-1",
+      username: "Alice",
+      preferences: { theme: "ember" }
+    }
+  };
+
+  const sessionRes = makeMockResponse();
+  const sessionHandled = await handleAuthSessionRoute({
+    req: { method: "GET", headers: {} },
+    res: sessionRes,
+    requireAuth: async () => authContext,
+    auth: {
+      publicUser(user) {
+        return {
+          id: user.id,
+          username: user.username,
+          preferences: user.preferences
+        };
+      },
+      async updateUserThemePreference() {
+        return null;
+      }
+    },
+    playerProfiles: {
+      async getPlayerProfile() {
+        return {};
+      }
+    },
+    sendJson,
+    sendLocalizedError,
+    extractUserPreferences(user) {
+      return { theme: user?.preferences?.theme || "command" };
+    },
+    supportedSiteThemes: new Set(["command", "midnight", "ember"]),
+    resolveStoredTheme(theme) {
+      return theme;
+    }
+  });
+
+  assert.equal(sessionHandled, true);
+  assert.equal(sessionRes.statusCode, 200);
+  assert.deepEqual(JSON.parse(sessionRes.body), {
+    user: {
+      id: "user-1",
+      username: "Alice",
+      preferences: { theme: "ember" }
+    }
+  });
+
+  const profileRes = makeMockResponse();
+  const profileHandled = await handleProfileRoute({
+    req: { method: "GET", headers: {} },
+    res: profileRes,
+    requireAuth: async () => authContext,
+    auth: {
+      publicUser() {
+        return null;
+      },
+      async updateUserThemePreference() {
+        return null;
+      }
+    },
+    playerProfiles: {
+      async getPlayerProfile() {
+        return {
+          playerName: "Alice",
+          gamesPlayed: 3,
+          wins: 2,
+          losses: 1,
+          gamesInProgress: 1,
+          participatingGames: [],
+          winRate: 67,
+          hasHistory: true,
+          placeholders: {
+            recentGames: false,
+            ranking: false
+          }
+        };
+      }
+    },
+    sendJson,
+    sendLocalizedError,
+    extractUserPreferences(user) {
+      return { theme: user?.preferences?.theme || "command" };
+    },
+    supportedSiteThemes: new Set(["command", "midnight", "ember"]),
+    resolveStoredTheme(theme) {
+      return theme;
+    }
+  });
+
+  assert.equal(profileHandled, true);
+  assert.equal(profileRes.statusCode, 200);
+  assert.equal(JSON.parse(profileRes.body).profile.preferences.theme, "ember");
+
+  const invalidThemeRes = makeMockResponse();
+  const invalidThemeHandled = await handleThemePreferenceRoute({
+    req: { method: "PUT", headers: {} },
+    res: invalidThemeRes,
+    requireAuth: async () => authContext,
+    auth: {
+      publicUser() {
+        return null;
+      },
+      async updateUserThemePreference() {
+        return null;
+      }
+    },
+    playerProfiles: {
+      async getPlayerProfile() {
+        return {};
+      }
+    },
+    sendJson,
+    sendLocalizedError,
+    extractUserPreferences() {
+      return { theme: "command" };
+    },
+    supportedSiteThemes: new Set(["command", "midnight", "ember"]),
+    resolveStoredTheme(theme) {
+      return theme;
+    }
+  }, { theme: "ultraviolet" });
+
+  assert.equal(invalidThemeHandled, true);
+  assert.equal(invalidThemeRes.statusCode, 400);
+  assert.equal(JSON.parse(invalidThemeRes.body).messageKey, "server.profile.invalidTheme");
 });
 
 async function createAuthenticatedAppSession(app, username) {
@@ -3498,4 +3690,3 @@ async function run() {
 }
 
 run();
-
