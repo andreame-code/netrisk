@@ -6,7 +6,7 @@ import {
   type DiceRuleSet
 } from "../shared/dice.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
-import { secureRandom } from "./random.cjs";
+const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
 

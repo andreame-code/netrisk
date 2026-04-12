@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": false,
+    "allowJs": false,
+    "checkJs": false,
+    "noCheck": true,
+    "noEmitOnError": false,
+    "incremental": true,
+    "outDir": "./frontend/public",
+    "rootDir": "./frontend/src",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": ["frontend/src/**/*.mts"],
+  "exclude": ["node_modules", "frontend/public", "frontend/.tsbuild"]
+}
