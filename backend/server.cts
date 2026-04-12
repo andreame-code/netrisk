@@ -34,6 +34,7 @@ const { sendJson, sendLocalizedError, localizedPayload } = require("./http-respo
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
+const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
 
 loadLocalEnv();
 
@@ -695,48 +696,19 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
       const body = await parseBody(req);
-      const result = await auth.registerPasswordUser({
-        username: body.username,
-        password: body.password,
-        email: body.email
-      });
-      if (!result.ok) {
-        sendLocalizedError(res, 400, result, result.error, result.errorKey || "register.errors.submitFailed", result.errorParams);
-        return;
-      }
-
-      sendJson(res, 201, {
-        ok: true,
-        user: result.user,
-        nextAuthProviders: ["password", "email", "google", "discord"]
-      });
+      await handleRegisterRoute(req, res, body, auth, sendJson, sendLocalizedError);
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseBody(req);
-      const result = await auth.loginWithPassword(body.username, body.password);
-      if (!result.ok) {
-        sendLocalizedError(res, 401, result, result.error, result.errorKey || "errors.loginFailed", result.errorParams);
-        return;
-      }
-
-      sendJson(res, 200, {
-        ok: true,
-        user: result.user,
-        availableAuthProviders: ["password", "email", "google", "discord"]
-      }, {
-        "Set-Cookie": buildSessionCookie(req, result.sessionToken)
-      });
+      await handleLoginRoute(req, res, body, auth, sendJson, sendLocalizedError, buildSessionCookie);
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
       const body = await parseBody(req);
-      await auth.logout(extractSessionToken(req, body));
-      sendJson(res, 200, { ok: true }, {
-        "Set-Cookie": clearSessionCookie(req)
-      });
+      await handleLogoutRoute(req, res, body, auth, sendJson, extractSessionToken, clearSessionCookie);
       return;
     }
 
