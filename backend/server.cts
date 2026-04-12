@@ -14,32 +14,23 @@ const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
 const {
   addPlayer,
-  applyFortify,
-  applyReinforcement,
   createInitialState,
-  endTurn,
   getCurrentPlayer,
   getPlayer,
-  moveAfterConquest,
   publicState,
-  resolveAttack,
   startGame,
-  surrenderPlayer,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
-const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
-const { handleAttackGameActionRoute } = require("./routes/game-actions-attack.cjs");
-const { handleBasicGameActionRoute } = require("./routes/game-actions-basic.cjs");
+const { handleGameActionRoute } = require("./routes/game-actions.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleCreateGameRoute, handleOpenGameRoute } = require("./routes/game-management.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
-const { handleTurnGameActionRoute } = require("./routes/game-actions-turn.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
 
@@ -779,78 +770,6 @@ function createApp(options = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/action") {
       const body = await parseBody(req);
-      const authContext = await requireAuth(req, res, body);
-      if (!authContext) {
-        return;
-      }
-
-      const playerId = body.playerId;
-      const type = body.type;
-      const expectedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
-      if (body.expectedVersion != null && (!Number.isInteger(expectedVersion) || expectedVersion < 1)) {
-        sendLocalizedError(res, 400, null, "expectedVersion non valida.", "server.invalidExpectedVersion");
-        return;
-      }
-
-      const gameContext = await loadGameContext(getTargetGameId(body, url));
-      const player = getPlayer(gameContext.state, playerId);
-
-      if (!player || !playerBelongsToUser(player, authContext.user)) {
-        sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
-        return;
-      }
-
-      function handleVersionConflict(error) {
-        if (!error || error.code !== "VERSION_CONFLICT") {
-          return false;
-        }
-
-        sendJson(res, 409, {
-          ...localizedPayload(error, error.message, error.messageKey || "server.versionConflict"),
-          code: error.code,
-          currentVersion: error.currentVersion,
-          state: snapshotForUser(error.currentState, gameContext.gameId, error.currentVersion, error.game?.name || gameContext.gameName, authContext.user)
-        });
-        return true;
-      }
-
-      if (expectedVersion != null && expectedVersion !== gameContext.version) {
-        sendJson(res, 409, {
-          ...localizedPayload(null, "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.", "server.versionConflict"),
-          code: "VERSION_CONFLICT",
-          currentVersion: gameContext.version,
-          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
-        });
-        return;
-      }
-
-      function isValidTerritoryId(id) {
-        return id && typeof gameContext.state.territories === "object" &&
-          Object.prototype.hasOwnProperty.call(gameContext.state.territories, id);
-      }
-
-      if (await handleBasicGameActionRoute(
-        type,
-        res,
-        body,
-        gameContext,
-        playerId,
-        expectedVersion,
-        authContext.user,
-        applyReinforcement,
-        moveAfterConquest,
-        applyFortify,
-        persistGameContext,
-        broadcastGame,
-        snapshotForUser,
-        handleVersionConflict,
-        isValidTerritoryId,
-        sendJson,
-        sendLocalizedError
-      )) {
-        return;
-      }
-
       function consumeQueuedAttackRandom() {
         if (process.env.E2E !== "true" || !Array.isArray(nextAttackRolls) || nextAttackRolls.length !== 2) {
           return null;
@@ -868,48 +787,24 @@ function createApp(options = {}) {
         };
       }
 
-      if (await handleAttackGameActionRoute(
-        type,
+      await handleGameActionRoute({
+        req,
         res,
         body,
-        gameContext,
-        playerId,
-        expectedVersion,
-        authContext.user,
-        resolveAttack,
-        resolveBanzaiAttack,
-        consumeQueuedAttackRandom,
+        url,
+        requireAuth,
+        loadGameContext,
+        getTargetGameId,
+        playerBelongsToUser,
         persistGameContext,
-        broadcastGame,
-        snapshotForUser,
-        handleVersionConflict,
-        isValidTerritoryId,
-        sendJson,
-        sendLocalizedError
-      )) {
-        return;
-      }
-
-      if (await handleTurnGameActionRoute(
-        type,
-        res,
-        gameContext,
-        playerId,
-        expectedVersion,
-        authContext.user,
-        endTurn,
-        surrenderPlayer,
         persistWithAiTurns,
         broadcastGame,
         snapshotForUser,
-        handleVersionConflict,
+        consumeQueuedAttackRandom,
+        localizedPayload,
         sendJson,
         sendLocalizedError
-      )) {
-        return;
-      }
-
-      sendLocalizedError(res, 400, null, "Azione non supportata.", "server.action.unsupported");
+      });
       return;
     }
 

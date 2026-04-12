@@ -57,6 +57,7 @@ const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backen
 const { createApp } = require("../backend/server.cjs");
 const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
+const { handleGameActionRoute } = require("../backend/routes/game-actions.cjs");
 const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
@@ -1333,6 +1334,106 @@ register("game management route apre una partita e risolve il player autenticato
       players: 1
     },
     playerId: "player-1"
+  });
+});
+
+register("game action route segnala il version conflict prima di eseguire mutazioni", async () => {
+  const res = makeMockResponse();
+
+  await handleGameActionRoute({
+    req: { method: "POST", headers: {} },
+    res,
+    body: { playerId: "player-1", type: "reinforce", expectedVersion: 2 },
+    url: new URL("http://127.0.0.1/api/action"),
+    requireAuth: async () => ({ user: { id: "user-1", username: "Alice" } }),
+    loadGameContext: async () => ({
+      state: { territories: { alpha: {} }, players: [{ id: "player-1", linkedUserId: "user-1" }] },
+      gameId: "game-1",
+      version: 3,
+      gameName: "Nuova partita"
+    }),
+    getTargetGameId: () => "game-1",
+    playerBelongsToUser: () => true,
+    persistGameContext: async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    persistWithAiTurns: async () => {
+      throw new Error("persistWithAiTurns should not be called");
+    },
+    broadcastGame: () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    snapshotForUser: (state, gameId, version, gameName, user) => ({
+      gameId,
+      version,
+      gameName,
+      playerId: user.id,
+      territories: Object.keys(state.territories).length
+    }),
+    consumeQueuedAttackRandom: () => null,
+    localizedPayload,
+    sendJson,
+    sendLocalizedError
+  });
+
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+    messageKey: "server.versionConflict",
+    messageParams: {},
+    code: "VERSION_CONFLICT",
+    currentVersion: 3,
+    state: {
+      gameId: "game-1",
+      version: 3,
+      gameName: "Nuova partita",
+      playerId: "user-1",
+      territories: 1
+    }
+  });
+});
+
+register("game action route rifiuta player non associato all'utente", async () => {
+  const res = makeMockResponse();
+
+  await handleGameActionRoute({
+    req: { method: "POST", headers: {} },
+    res,
+    body: { playerId: "player-2", type: "endTurn" },
+    url: new URL("http://127.0.0.1/api/action"),
+    requireAuth: async () => ({ user: { id: "user-1", username: "Alice" } }),
+    loadGameContext: async () => ({
+      state: { territories: {}, players: [{ id: "player-2", linkedUserId: "other-user" }] },
+      gameId: "game-1",
+      version: 3,
+      gameName: "Nuova partita"
+    }),
+    getTargetGameId: () => "game-1",
+    playerBelongsToUser: () => false,
+    persistGameContext: async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    persistWithAiTurns: async () => {
+      throw new Error("persistWithAiTurns should not be called");
+    },
+    broadcastGame: () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    snapshotForUser: () => {
+      throw new Error("snapshotForUser should not be called");
+    },
+    consumeQueuedAttackRandom: () => null,
+    localizedPayload,
+    sendJson,
+    sendLocalizedError
+  });
+
+  assert.equal(res.statusCode, 403);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Giocatore non valido.",
+    messageKey: "game.invalidPlayer",
+    messageParams: {},
+    code: null
   });
 });
 
