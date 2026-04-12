@@ -390,6 +390,7 @@ function formatCombatComparisons(comparisons) {
 
 function setSession(user) {
   state.user = user;
+  window.netriskTheme?.applyUserTheme?.(state.user);
 }
 
 function clearPlayerIdentity() {
@@ -848,7 +849,7 @@ function render() {
           <strong>${escapeHtml(player.name)}</strong>
           <div>${t("game.runtime.territories")}: ${player.territoryCount}</div>
           <div>${t("lobby.table.status")}: ${player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}</div>
-          <div style="margin-top: 8px; height: 10px; border-radius: 99px; background: ${player.color};"></div>
+          <div style="margin-top: 8px; height: 10px; border-radius: 99px; --player-color:${player.color}; background: var(--player-color);"></div>
         </article>
       `
     )

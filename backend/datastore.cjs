@@ -103,6 +103,8 @@ function createDatastore(options = {}) {
     probe: db.prepare("SELECT 1 AS ok"),
     insertUser: db.prepare("INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)"),
     updateUserCredentials: db.prepare("UPDATE users SET credentials_json = ? WHERE id = ?"),
+    updateUserProfile: db.prepare("UPDATE users SET profile_json = ? WHERE id = ?"),
+    updateUserThemePreference: db.prepare("UPDATE users SET profile_json = json_patch(COALESCE(NULLIF(profile_json, ''), '{}'), json_object('preferences', json_object('theme', ?))) WHERE id = ?"),
     updateUserRoleByUsername: db.prepare("UPDATE users SET role = ? WHERE lower(username) = lower(?)"),
     findUserByUsername: db.prepare("SELECT * FROM users WHERE lower(username) = lower(?)"),
     findUserById: db.prepare("SELECT * FROM users WHERE id = ?"),
@@ -276,6 +278,18 @@ function createDatastore(options = {}) {
     updateUserCredentials(userId, credentials) {
       transaction(() => {
         statements.updateUserCredentials.run(JSON.stringify(credentials || {}), userId);
+      });
+      return this.findUserById(userId);
+    },
+    updateUserProfile(userId, profile) {
+      transaction(() => {
+        statements.updateUserProfile.run(JSON.stringify(profile || {}), userId);
+      });
+      return this.findUserById(userId);
+    },
+    updateUserThemePreference(userId, theme) {
+      transaction(() => {
+        statements.updateUserThemePreference.run(String(theme || ""), userId);
       });
       return this.findUserById(userId);
     },
