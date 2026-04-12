@@ -3224,7 +3224,8 @@ register("API game session persists mutations across reopen", async () => {
 register("API game session restores active game across app recreation", async () => {
   const tempUsers = path.join(__dirname, `tmp-users-${Date.now()}-restore.json`);
   const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-restore.json`);
-  let app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
+  const tempSessions = path.join(__dirname, `tmp-sessions-${Date.now()}-restore.json`);
+  let app = createApp({ dataFile: tempUsers, gamesFile: tempGames, sessionsFile: tempSessions });
 
   try {
   const firstSession = await createAuthenticatedAppSession(app, uniqueName("restore"));
@@ -3237,7 +3238,7 @@ register("API game session restores active game across app recreation", async ()
     await fetchGame(app, "/api/games/open", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { gameId: createdGameId } });
 
     app.server.close();
-    app = createApp({ dataFile: tempUsers, gamesFile: tempGames });
+    app = createApp({ dataFile: tempUsers, gamesFile: tempGames, sessionsFile: tempSessions });
 
     const relogin = await app.auth.loginWithPassword(firstSession.user.username, TEST_PASSWORD);
     assert.equal(relogin.ok, true);
@@ -3256,6 +3257,7 @@ register("API game session restores active game across app recreation", async ()
     }
     if (fs.existsSync(tempUsers)) fs.unlinkSync(tempUsers);
     if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
+    if (fs.existsSync(tempSessions)) fs.unlinkSync(tempSessions);
   }
 });
 
