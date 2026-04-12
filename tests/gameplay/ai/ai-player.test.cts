@@ -1,4 +1,3 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const {
   chooseAttack,
@@ -11,7 +10,37 @@ const { createCard, CardType } = require("../../../shared/models.cjs");
 const { makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 
-function createAiState(options = {}) {
+type ExtendedAiState = ReturnType<typeof makeState> & {
+  mapTerritories: ReturnType<typeof makeTerritory>[];
+  hands: Record<string, ReturnType<typeof createCard>[]>;
+  discardPile: ReturnType<typeof createCard>[];
+  deck: ReturnType<typeof createCard>[];
+  tradeCount: number;
+  pendingConquest: {
+    fromId: string;
+    toId: string;
+    minArmies: number;
+    maxArmies: number;
+  } | null;
+};
+
+type AiStateOptions = {
+  mapTerritories?: ReturnType<typeof makeTerritory>[];
+  players?: ReturnType<typeof makePlayers>;
+  territories?: ReturnType<typeof territoryStates>;
+  turnPhase?: string;
+  currentTurnIndex?: number;
+  reinforcementPool?: number;
+  hands?: Record<string, ReturnType<typeof createCard>[]>;
+  discardPile?: ReturnType<typeof createCard>[];
+  deck?: ReturnType<typeof createCard>[];
+  tradeCount?: number;
+  pendingConquest?: ExtendedAiState["pendingConquest"];
+};
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
+
+function createAiState(options: AiStateOptions = {}): ExtendedAiState {
   const territories = options.mapTerritories || [
     makeTerritory("a", ["b"]),
     makeTerritory("b", ["a", "c"]),
@@ -33,7 +62,7 @@ function createAiState(options = {}) {
     turnPhase: options.turnPhase || TurnPhase.REINFORCEMENT,
     currentTurnIndex: options.currentTurnIndex || 0,
     reinforcementPool: options.reinforcementPool || 0
-  });
+  }) as ExtendedAiState;
 
   state.mapTerritories = territories;
   state.hands = options.hands || {};
@@ -176,4 +205,3 @@ register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn"
   assert.equal(state.hands.p1.length, 4);
   assert.equal(state.discardPile.length, 3);
 });
-
