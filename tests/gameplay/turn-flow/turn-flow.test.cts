@@ -1,0 +1,155 @@
+// @ts-nocheck
+const assert = require("node:assert/strict");
+const {
+  TurnPhase,
+  advanceTurn,
+  applyReinforcement,
+  createInitialState,
+  endTurn,
+  surrenderPlayer,
+  startGame
+} = require("../../../backend/engine/game-engine.cjs");
+const { findSupportedMap } = require("../../../shared/maps/index.cjs");
+const { createFixedRandom } = require("../helpers/random.cjs");
+
+function setupLiveGame() {
+  const state = createInitialState();
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  startGame(state, createFixedRandom(new Array(20).fill(0)));
+  return state;
+}
+
+register("applyReinforcement transitions from reinforcement to attack when pool reaches zero", () => {
+  const state = setupLiveGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+
+  while (state.reinforcementPool > 0) {
+    const result = applyReinforcement(state, currentPlayer.id, ownedTerritoryId);
+    assert.equal(result.ok, true);
+  }
+
+  assert.equal(state.turnPhase, TurnPhase.ATTACK);
+  assert.equal(state.reinforcementPool, 0);
+});
+
+register("applyReinforcement supports batched placement in a single action", () => {
+  const state = setupLiveGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const startingArmies = state.territories[ownedTerritoryId].armies;
+  const totalReinforcements = state.reinforcementPool;
+
+  const result = applyReinforcement(state, currentPlayer.id, ownedTerritoryId, totalReinforcements);
+
+  assert.equal(result.ok, true);
+  assert.equal(state.territories[ownedTerritoryId].armies, startingArmies + totalReinforcements);
+  assert.equal(state.reinforcementPool, 0);
+  assert.equal(state.turnPhase, TurnPhase.ATTACK);
+});
+
+register("endTurn transitions from attack to fortify before advancing the turn", () => {
+  const state = setupLiveGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+
+  while (state.reinforcementPool > 0) {
+    applyReinforcement(state, currentPlayer.id, ownedTerritoryId);
+  }
+
+  const result = endTurn(state, currentPlayer.id);
+  assert.equal(result.ok, true);
+  assert.equal(result.requiresFortifyDecision, true);
+  assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn from fortify advances to the next active player reinforcement phase", () => {
+  const state = setupLiveGame();
+  const firstPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === firstPlayer.id);
+
+  while (state.reinforcementPool > 0) {
+    applyReinforcement(state, firstPlayer.id, ownedTerritoryId);
+  }
+
+  endTurn(state, firstPlayer.id);
+  const result = endTurn(state, firstPlayer.id);
+
+  assert.equal(result.ok, true);
+  assert.equal(state.currentTurnIndex, 1);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.reinforcementPool >= 3, true);
+});
+
+register("advanceTurn awards continent bonuses through the game engine reinforcement pool", () => {
+  const state = createInitialState(findSupportedMap("world-classic"));
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  state.currentTurnIndex = 1;
+  state.turnPhase = TurnPhase.FORTIFY;
+  state.reinforcementPool = 0;
+
+  Object.keys(state.territories).forEach((territoryId) => {
+    state.territories[territoryId] = { ownerId: "p2", armies: 1 };
+  });
+
+  ["indonesia", "new_guinea", "western_australia", "eastern_australia"].forEach((territoryId) => {
+    state.territories[territoryId] = { ownerId: "p1", armies: 1 };
+  });
+
+  advanceTurn(state);
+
+  assert.equal(state.players[state.currentTurnIndex].id, "p1");
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.reinforcementPool, 5);
+});
+
+register("endTurn fails clearly when reinforcements are still available", () => {
+  const state = setupLiveGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+
+  const result = endTurn(state, currentPlayer.id);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /spendi prima tutti i rinforzi/i);
+});
+
+register("advanceTurn skips players with zero territories and can finish the game", () => {
+  const state = setupLiveGame();
+  state.currentTurnIndex = 0;
+  Object.keys(state.territories).forEach((territoryId) => {
+    state.territories[territoryId].ownerId = "p1";
+  });
+  state.turnPhase = TurnPhase.FORTIFY;
+  state.reinforcementPool = 0;
+
+  advanceTurn(state);
+
+  assert.equal(state.winnerId, "p1");
+  assert.equal(state.phase, "finished");
+});
+
+register("surrenderPlayer during the active turn hands off play to the next surviving player", () => {
+  const state = setupLiveGame();
+  state.players.push({ id: "p3", name: "Carol", color: "#333333", connected: true });
+  const reassignedTerritoryId = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === "p2");
+  state.territories[reassignedTerritoryId].ownerId = "p3";
+  state.territories[reassignedTerritoryId].armies = 1;
+  const currentPlayer = state.players[state.currentTurnIndex];
+
+  const result = surrenderPlayer(state, currentPlayer.id);
+
+  assert.equal(result.ok, true);
+  assert.equal(state.phase, "active");
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.players.find((player) => player.id === currentPlayer.id).surrendered, true);
+  assert.equal(state.territories[Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id)].ownerId, currentPlayer.id);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.reinforcementPool >= 3, true);
+});
