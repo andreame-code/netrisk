@@ -1,10 +1,18 @@
-// @ts-nocheck
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 const { REQUIRED_DEPLOY_ENV_KEYS } = require("../backend/required-runtime-env.cjs");
 
-function run(command, args, options = {}) {
+interface RunOptions {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+}
+
+type SpawnError = Error & {
+  status?: number | null;
+};
+
+function run(command: string, args: string[], options: RunOptions = {}): string {
   const result = spawnSync(command, args, {
     encoding: "utf8",
     stdio: "pipe",
@@ -14,7 +22,7 @@ function run(command, args, options = {}) {
   });
 
   if (result.status !== 0) {
-    const error = new Error((result.stderr || result.stdout || "").trim() || `${command} ${args.join(" ")} failed`);
+    const error = new Error((result.stderr || result.stdout || "").trim() || `${command} ${args.join(" ")} failed`) as SpawnError;
     error.status = result.status;
     throw error;
   }
@@ -22,11 +30,11 @@ function run(command, args, options = {}) {
   return result.stdout || "";
 }
 
-function parseEnvFile(filePath) {
-  const parsed = {};
+function parseEnvFile(filePath: string): Record<string, string> {
+  const parsed: Record<string, string> = {};
   const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 
-  lines.forEach((line) => {
+  lines.forEach((line: string) => {
     const match = line.match(/^([A-Z0-9_]+)=\"([\s\S]*)\"$/);
     if (!match) {
       return;
@@ -38,15 +46,15 @@ function parseEnvFile(filePath) {
   return parsed;
 }
 
-function tempFile(name) {
+function tempFile(name: string): string {
   return path.join(process.cwd(), name);
 }
 
-function currentBranch() {
+function currentBranch(): string {
   return run("git", ["branch", "--show-current"]).trim();
 }
 
-function pullEnv(outputFile, environment, branch = null) {
+function pullEnv(outputFile: string, environment: string, branch: string | null = null): Record<string, string> {
   const args = ["env", "pull", outputFile, `--environment=${environment}`, "--yes"];
   if (branch) {
     args.push(`--git-branch=${branch}`);
@@ -55,11 +63,11 @@ function pullEnv(outputFile, environment, branch = null) {
   return parseEnvFile(outputFile);
 }
 
-function summarizeMissing(keys, source, target) {
+function summarizeMissing(keys: string[], source: Record<string, string>, target: Record<string, string>): string[] {
   return keys.filter((key) => source[key] && !target[key]);
 }
 
-function main() {
+function main(): void {
   const branch = process.env.VERCEL_ENV_CHECK_BRANCH || currentBranch();
   const productionFile = tempFile(`.vercel.env-check-production-${process.pid}.env`);
   const previewFile = tempFile(`.vercel.env-check-preview-${process.pid}.env`);
@@ -68,8 +76,8 @@ function main() {
     const production = pullEnv(productionFile, "production");
     const preview = pullEnv(previewFile, "preview", branch);
 
-    const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !production[key]);
-    const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !preview[key]);
+    const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !production[key]);
+    const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !preview[key]);
     const missingFromPreviewComparedToProduction = summarizeMissing(REQUIRED_DEPLOY_ENV_KEYS, production, preview);
 
     if (!missingInProduction.length && !missingInPreview.length && !missingFromPreviewComparedToProduction.length) {
@@ -89,7 +97,7 @@ function main() {
 
     process.exitCode = 1;
   } finally {
-    [productionFile, previewFile].forEach((filePath) => {
+    [productionFile, previewFile].forEach((filePath: string) => {
       try {
         fs.rmSync(filePath, { force: true });
       } catch (error) {
