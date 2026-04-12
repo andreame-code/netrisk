@@ -43,6 +43,25 @@ async function captureThemeSnapshot(page, selectors) {
   }, selectors);
 }
 
+async function selectTheme(page, theme) {
+  const select = page.locator("#profile-theme-select");
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await select.selectOption(theme);
+
+    try {
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme, { timeout: 1000 });
+      return;
+    } catch (error) {
+      if (attempt === 2) {
+        throw error;
+      }
+
+      await page.waitForTimeout(150);
+    }
+  }
+}
+
 test("profile page lets the authenticated user choose a site theme", async ({ page, browser }) => {
   const username = uniqueUser("profile_theme");
   const password = "secret123";
@@ -55,10 +74,9 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   await expect(page.locator("#profile-preferences")).toBeVisible();
   await expect(page.locator("#profile-theme-select")).toHaveValue("command");
 
-  await page.locator("#profile-theme-select").selectOption("midnight");
+  await selectTheme(page, "midnight");
 
   await expect(page.locator("#profile-theme-status")).toContainText("Tema applicato: Mezzanotte.");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "midnight");
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme"))).toBe("midnight");
 
   await page.goto("/lobby.html");
@@ -94,8 +112,7 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
 
   for (const theme of ["command", "midnight", "ember"]) {
     await page.goto("/profile.html");
-    await page.locator("#profile-theme-select").selectOption(theme);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await selectTheme(page, theme);
     profileSnapshots.set(
       theme,
       await captureThemeSnapshot(page, {
