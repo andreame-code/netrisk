@@ -17,6 +17,7 @@ scripts/tmp-debug-*.json
 
 playwright-report/
 test-results/
+coverage/
 /public/
 .tmp-server-*.log
 .tsbuild/
