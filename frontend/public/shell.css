@@ -7,7 +7,7 @@ html[data-theme="command"] {
   --panel-strong: rgba(22, 19, 14, 0.96);
   --overlay: rgba(10, 8, 6, 0.48);
   --grid: rgba(200, 164, 39, 0.035);
-  --hero-overlay: rgba(200, 164, 39, 0.14);
+  --hero-overlay: rgba(194, 170, 92, 0.18);
   --text: #e3cfab;
   --text-muted: rgba(212, 184, 136, 0.68);
   --text-inverse: #f0d9a8;
@@ -44,16 +44,16 @@ html[data-theme="command"] {
   --card-bg-hover: linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
   --badge-bg: rgba(200, 164, 39, 0.08);
   --app-shell-bg:
-    radial-gradient(circle at top, var(--hero-overlay), transparent 28%),
-    linear-gradient(180deg, #13100b 0%, #0e0c09 45%, #17140f 100%);
+    radial-gradient(circle at top, var(--hero-overlay), transparent 30%),
+    linear-gradient(180deg, #18140d 0%, #0e0c09 44%, #1d190f 100%);
   --marketing-shell-bg: var(--bg);
   --backdrop-grid:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   --shell-surface-bg:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 32%),
-    linear-gradient(180deg, rgba(36, 31, 22, 0.96), rgba(22, 19, 14, 0.94));
-  --shell-top-wash: linear-gradient(180deg, rgba(97, 67, 39, 0.12), transparent);
+    radial-gradient(circle at top right, rgba(194, 170, 92, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(40, 34, 22, 0.97), rgba(22, 19, 14, 0.95));
+  --shell-top-wash: linear-gradient(180deg, rgba(108, 84, 44, 0.18), transparent);
   --page-aura-bg:
     radial-gradient(circle at top center, rgba(200, 164, 39, 0.18), transparent 34%),
     radial-gradient(circle at 12% 18%, rgba(255, 214, 115, 0.08), transparent 22%),
@@ -75,14 +75,14 @@ html[data-theme="command"] {
   --nav-surface:
     linear-gradient(180deg, rgba(27, 24, 16, 0.96), rgba(16, 14, 10, 0.94)),
     radial-gradient(circle at top, rgba(200, 164, 39, 0.08), transparent 52%);
-  --nav-hover-bg: rgba(200, 164, 39, 0.1);
-  --nav-active-bg: rgba(200, 164, 39, 0.14);
+  --nav-hover-bg: rgba(200, 164, 39, 0.14);
+  --nav-active-bg: rgba(200, 164, 39, 0.2);
   --button-primary-bg:
-    radial-gradient(ellipse at top, rgba(255, 200, 60, 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, #6a5220 0%, #3e300e 100%);
+    radial-gradient(ellipse at top, rgba(255, 212, 92, 0.22) 0%, transparent 56%),
+    linear-gradient(180deg, #756125 0%, #473811 100%);
   --button-primary-bg-hover:
-    radial-gradient(ellipse at top, rgba(255, 210, 70, 0.26) 0%, transparent 55%),
-    linear-gradient(180deg, #7e6228 0%, #4c3c10 100%);
+    radial-gradient(ellipse at top, rgba(255, 223, 112, 0.3) 0%, transparent 56%),
+    linear-gradient(180deg, #8b722d 0%, #564414 100%);
   --button-primary-border: rgba(200, 164, 39, 0.6);
   --button-primary-border-hover: rgba(200, 164, 39, 0.82);
   --button-primary-text: var(--gold);
@@ -123,18 +123,18 @@ html[data-theme="command"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(232, 194, 68, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(30, 26, 19, 0.98), rgba(16, 14, 10, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(28, 25, 16, 0.96) 0%, rgba(20, 18, 11, 0.94) 100%);
+  --landing-header-bg: linear-gradient(180deg, rgba(31, 28, 17, 0.97) 0%, rgba(19, 17, 11, 0.95) 100%);
   --landing-hero-overlay:
-    radial-gradient(ellipse at 50% 40%, rgba(200, 164, 39, 0.08) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(14, 12, 9, 0.45) 0%, rgba(14, 12, 9, 0.1) 40%, rgba(14, 12, 9, 0.1) 60%, rgba(14, 12, 9, 0.85) 100%);
-  --landing-panel-bg: linear-gradient(180deg, rgba(30, 28, 20, 0.88) 0%, rgba(20, 18, 12, 0.88) 100%);
+    radial-gradient(ellipse at 50% 40%, rgba(194, 170, 92, 0.12) 0%, transparent 56%),
+    linear-gradient(180deg, rgba(14, 12, 9, 0.42) 0%, rgba(14, 12, 9, 0.08) 42%, rgba(14, 12, 9, 0.14) 60%, rgba(14, 12, 9, 0.88) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(34, 31, 21, 0.9) 0%, rgba(20, 18, 12, 0.9) 100%);
   --landing-section-bg:
-    radial-gradient(ellipse at 50% 0%, rgba(200, 164, 39, 0.07) 0%, transparent 50%),
-    linear-gradient(180deg, #141210 0%, #0e0c09 100%);
-  --landing-map-section-bg: linear-gradient(180deg, #0e0c09 0%, #141210 50%, #0e0c09 100%);
+    radial-gradient(ellipse at 50% 0%, rgba(194, 170, 92, 0.11) 0%, transparent 52%),
+    linear-gradient(180deg, #17140f 0%, #0e0c09 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #0e0c09 0%, #18150f 50%, #0e0c09 100%);
   --landing-howto-bg:
-    radial-gradient(ellipse at 50% 100%, rgba(200, 164, 39, 0.06) 0%, transparent 50%),
-    linear-gradient(180deg, #0e0c09 0%, #141210 100%);
+    radial-gradient(ellipse at 50% 100%, rgba(194, 170, 92, 0.1) 0%, transparent 52%),
+    linear-gradient(180deg, #0e0c09 0%, #17140f 100%);
   --landing-final-overlay: linear-gradient(180deg, rgba(14, 12, 9, 0.85) 0%, transparent 30%, transparent 70%, rgba(14, 12, 9, 0.85) 100%);
   --landing-footer-bg: linear-gradient(180deg, #0e0c09 0%, #080705 100%);
   --radius: 6px;
@@ -154,12 +154,12 @@ html[data-theme="midnight"] {
   --panel-strong: rgba(10, 18, 29, 0.96);
   --overlay: rgba(4, 8, 14, 0.52);
   --grid: rgba(93, 164, 245, 0.04);
-  --hero-overlay: rgba(93, 164, 245, 0.16);
+  --hero-overlay: rgba(93, 164, 245, 0.22);
   --text: #d7e7f7;
   --text-muted: rgba(184, 206, 230, 0.7);
   --text-inverse: #eff7ff;
   --heading: #eff7ff;
-  --caption: rgba(133, 193, 255, 0.84);
+  --caption: rgba(162, 214, 255, 0.9);
   --accent: #5da4f5;
   --accent-2: #2d6395;
   --gold: #85c1ff;
@@ -191,16 +191,16 @@ html[data-theme="midnight"] {
   --card-bg-hover: linear-gradient(180deg, rgba(28, 43, 63, 0.96), rgba(15, 24, 36, 0.96));
   --badge-bg: rgba(93, 164, 245, 0.1);
   --app-shell-bg:
-    radial-gradient(circle at top, var(--hero-overlay), transparent 30%),
-    linear-gradient(180deg, #09131f 0%, #07111d 42%, #102033 100%);
+    radial-gradient(circle at top, var(--hero-overlay), transparent 34%),
+    linear-gradient(180deg, #050d18 0%, #07111d 40%, #0d2740 100%);
   --marketing-shell-bg: linear-gradient(180deg, #07111d 0%, #091624 100%);
   --backdrop-grid:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   --shell-surface-bg:
-    radial-gradient(circle at top right, rgba(93, 164, 245, 0.1), transparent 34%),
-    linear-gradient(180deg, rgba(22, 34, 50, 0.96), rgba(12, 21, 32, 0.94));
-  --shell-top-wash: linear-gradient(180deg, rgba(67, 107, 161, 0.14), transparent);
+    radial-gradient(circle at top right, rgba(93, 164, 245, 0.16), transparent 36%),
+    linear-gradient(180deg, rgba(19, 34, 56, 0.97), rgba(10, 20, 33, 0.95));
+  --shell-top-wash: linear-gradient(180deg, rgba(78, 130, 189, 0.2), transparent);
   --page-aura-bg:
     radial-gradient(circle at top center, rgba(93, 164, 245, 0.22), transparent 36%),
     radial-gradient(circle at 14% 20%, rgba(173, 217, 255, 0.08), transparent 24%),
@@ -222,14 +222,14 @@ html[data-theme="midnight"] {
   --nav-surface:
     linear-gradient(180deg, rgba(14, 25, 37, 0.98), rgba(8, 15, 24, 0.96)),
     radial-gradient(circle at top, rgba(93, 164, 245, 0.1), transparent 54%);
-  --nav-hover-bg: rgba(93, 164, 245, 0.12);
-  --nav-active-bg: rgba(93, 164, 245, 0.18);
+  --nav-hover-bg: rgba(93, 164, 245, 0.18);
+  --nav-active-bg: rgba(93, 164, 245, 0.26);
   --button-primary-bg:
-    radial-gradient(ellipse at top, rgba(133, 193, 255, 0.24) 0%, transparent 58%),
-    linear-gradient(180deg, #184a73 0%, #0f2d46 100%);
+    radial-gradient(ellipse at top, rgba(162, 214, 255, 0.3) 0%, transparent 60%),
+    linear-gradient(180deg, #1c5f94 0%, #11324f 100%);
   --button-primary-bg-hover:
-    radial-gradient(ellipse at top, rgba(173, 217, 255, 0.28) 0%, transparent 58%),
-    linear-gradient(180deg, #20608f 0%, #123654 100%);
+    radial-gradient(ellipse at top, rgba(194, 230, 255, 0.34) 0%, transparent 60%),
+    linear-gradient(180deg, #2574af 0%, #153d60 100%);
   --button-primary-border: rgba(133, 193, 255, 0.58);
   --button-primary-border-hover: rgba(173, 217, 255, 0.82);
   --button-primary-text: #dff0ff;
@@ -268,18 +268,18 @@ html[data-theme="midnight"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(133, 193, 255, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(17, 28, 43, 0.98), rgba(8, 14, 22, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(14, 24, 38, 0.96) 0%, rgba(9, 16, 26, 0.94) 100%);
+  --landing-header-bg: linear-gradient(180deg, rgba(12, 25, 42, 0.97) 0%, rgba(8, 16, 28, 0.95) 100%);
   --landing-hero-overlay:
-    radial-gradient(ellipse at 50% 40%, rgba(93, 164, 245, 0.09) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(7, 17, 29, 0.5) 0%, rgba(7, 17, 29, 0.12) 40%, rgba(7, 17, 29, 0.12) 60%, rgba(7, 17, 29, 0.88) 100%);
-  --landing-panel-bg: linear-gradient(180deg, rgba(17, 27, 40, 0.88) 0%, rgba(10, 17, 27, 0.9) 100%);
+    radial-gradient(ellipse at 50% 40%, rgba(93, 164, 245, 0.16) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(7, 17, 29, 0.46) 0%, rgba(7, 17, 29, 0.08) 42%, rgba(7, 17, 29, 0.14) 60%, rgba(7, 17, 29, 0.9) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(15, 29, 47, 0.9) 0%, rgba(8, 17, 29, 0.92) 100%);
   --landing-section-bg:
-    radial-gradient(ellipse at 50% 0%, rgba(93, 164, 245, 0.08) 0%, transparent 50%),
-    linear-gradient(180deg, #101a29 0%, #07111d 100%);
-  --landing-map-section-bg: linear-gradient(180deg, #07111d 0%, #0d1826 50%, #07111d 100%);
+    radial-gradient(ellipse at 50% 0%, rgba(93, 164, 245, 0.14) 0%, transparent 54%),
+    linear-gradient(180deg, #0f1d30 0%, #07111d 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #07111d 0%, #102336 50%, #07111d 100%);
   --landing-howto-bg:
-    radial-gradient(ellipse at 50% 100%, rgba(93, 164, 245, 0.07) 0%, transparent 50%),
-    linear-gradient(180deg, #07111d 0%, #0d1826 100%);
+    radial-gradient(ellipse at 50% 100%, rgba(93, 164, 245, 0.12) 0%, transparent 54%),
+    linear-gradient(180deg, #07111d 0%, #102336 100%);
   --landing-final-overlay: linear-gradient(180deg, rgba(7, 17, 29, 0.88) 0%, transparent 30%, transparent 70%, rgba(7, 17, 29, 0.88) 100%);
   --landing-footer-bg: linear-gradient(180deg, #07111d 0%, #040b13 100%);
   --muted: var(--text-muted);
@@ -294,12 +294,12 @@ html[data-theme="ember"] {
   --panel-strong: rgba(26, 14, 12, 0.96);
   --overlay: rgba(14, 7, 6, 0.5);
   --grid: rgba(208, 106, 68, 0.038);
-  --hero-overlay: rgba(208, 106, 68, 0.16);
+  --hero-overlay: rgba(226, 104, 55, 0.22);
   --text: #f0d4c6;
   --text-muted: rgba(229, 186, 165, 0.7);
   --text-inverse: #fff0e7;
   --heading: #fff0e7;
-  --caption: rgba(255, 154, 102, 0.82);
+  --caption: rgba(255, 170, 112, 0.9);
   --accent: #d06a44;
   --accent-2: #924327;
   --gold: #ff9a66;
@@ -331,16 +331,16 @@ html[data-theme="ember"] {
   --card-bg-hover: linear-gradient(180deg, rgba(51, 30, 24, 0.96), rgba(30, 17, 15, 0.96));
   --badge-bg: rgba(208, 106, 68, 0.1);
   --app-shell-bg:
-    radial-gradient(circle at top, var(--hero-overlay), transparent 30%),
-    linear-gradient(180deg, #1c0f0d 0%, #140b09 44%, #29140f 100%);
+    radial-gradient(circle at top, var(--hero-overlay), transparent 34%),
+    linear-gradient(180deg, #1f0c08 0%, #140b09 42%, #34150d 100%);
   --marketing-shell-bg: linear-gradient(180deg, #140b09 0%, #1a0f0d 100%);
   --backdrop-grid:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   --shell-surface-bg:
-    radial-gradient(circle at top right, rgba(208, 106, 68, 0.1), transparent 34%),
-    linear-gradient(180deg, rgba(43, 24, 19, 0.96), rgba(24, 14, 12, 0.94));
-  --shell-top-wash: linear-gradient(180deg, rgba(146, 67, 39, 0.14), transparent);
+    radial-gradient(circle at top right, rgba(226, 104, 55, 0.16), transparent 36%),
+    linear-gradient(180deg, rgba(48, 24, 18, 0.97), rgba(24, 14, 12, 0.95));
+  --shell-top-wash: linear-gradient(180deg, rgba(173, 71, 33, 0.2), transparent);
   --page-aura-bg:
     radial-gradient(circle at top center, rgba(208, 106, 68, 0.2), transparent 35%),
     radial-gradient(circle at 14% 20%, rgba(255, 176, 136, 0.08), transparent 24%),
@@ -362,14 +362,14 @@ html[data-theme="ember"] {
   --nav-surface:
     linear-gradient(180deg, rgba(32, 19, 16, 0.98), rgba(18, 10, 9, 0.96)),
     radial-gradient(circle at top, rgba(208, 106, 68, 0.1), transparent 54%);
-  --nav-hover-bg: rgba(208, 106, 68, 0.14);
-  --nav-active-bg: rgba(208, 106, 68, 0.2);
+  --nav-hover-bg: rgba(226, 104, 55, 0.2);
+  --nav-active-bg: rgba(226, 104, 55, 0.28);
   --button-primary-bg:
-    radial-gradient(ellipse at top, rgba(255, 154, 102, 0.22) 0%, transparent 58%),
-    linear-gradient(180deg, #8a3e21 0%, #5a220f 100%);
+    radial-gradient(ellipse at top, rgba(255, 170, 112, 0.3) 0%, transparent 60%),
+    linear-gradient(180deg, #9d421e 0%, #68220c 100%);
   --button-primary-bg-hover:
-    radial-gradient(ellipse at top, rgba(255, 188, 143, 0.28) 0%, transparent 58%),
-    linear-gradient(180deg, #a64a27 0%, #6b2912 100%);
+    radial-gradient(ellipse at top, rgba(255, 206, 165, 0.34) 0%, transparent 60%),
+    linear-gradient(180deg, #ba5122 0%, #7c2810 100%);
   --button-primary-border: rgba(255, 154, 102, 0.56);
   --button-primary-border-hover: rgba(255, 188, 143, 0.8);
   --button-primary-text: #ffe5d6;
@@ -408,18 +408,18 @@ html[data-theme="ember"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(255, 154, 102, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(34, 20, 17, 0.98), rgba(16, 10, 9, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(33, 19, 16, 0.96) 0%, rgba(21, 12, 10, 0.94) 100%);
+  --landing-header-bg: linear-gradient(180deg, rgba(38, 19, 14, 0.97) 0%, rgba(22, 11, 9, 0.95) 100%);
   --landing-hero-overlay:
-    radial-gradient(ellipse at 50% 40%, rgba(208, 106, 68, 0.1) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(20, 11, 9, 0.5) 0%, rgba(20, 11, 9, 0.12) 40%, rgba(20, 11, 9, 0.12) 60%, rgba(20, 11, 9, 0.88) 100%);
-  --landing-panel-bg: linear-gradient(180deg, rgba(38, 22, 18, 0.88) 0%, rgba(22, 13, 11, 0.9) 100%);
+    radial-gradient(ellipse at 50% 40%, rgba(226, 104, 55, 0.17) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(20, 11, 9, 0.46) 0%, rgba(20, 11, 9, 0.08) 42%, rgba(20, 11, 9, 0.16) 60%, rgba(20, 11, 9, 0.9) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(44, 22, 16, 0.9) 0%, rgba(23, 12, 10, 0.92) 100%);
   --landing-section-bg:
-    radial-gradient(ellipse at 50% 0%, rgba(208, 106, 68, 0.08) 0%, transparent 50%),
-    linear-gradient(180deg, #1d100d 0%, #140b09 100%);
-  --landing-map-section-bg: linear-gradient(180deg, #140b09 0%, #1f110d 50%, #140b09 100%);
+    radial-gradient(ellipse at 50% 0%, rgba(226, 104, 55, 0.14) 0%, transparent 54%),
+    linear-gradient(180deg, #21100b 0%, #140b09 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #140b09 0%, #29120b 50%, #140b09 100%);
   --landing-howto-bg:
-    radial-gradient(ellipse at 50% 100%, rgba(208, 106, 68, 0.07) 0%, transparent 50%),
-    linear-gradient(180deg, #140b09 0%, #1f110d 100%);
+    radial-gradient(ellipse at 50% 100%, rgba(226, 104, 55, 0.12) 0%, transparent 54%),
+    linear-gradient(180deg, #140b09 0%, #29120b 100%);
   --landing-final-overlay: linear-gradient(180deg, rgba(20, 11, 9, 0.88) 0%, transparent 30%, transparent 70%, rgba(20, 11, 9, 0.88) 100%);
   --landing-footer-bg: linear-gradient(180deg, #140b09 0%, #090505 100%);
   --muted: var(--text-muted);
