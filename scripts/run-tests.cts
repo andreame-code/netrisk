@@ -48,8 +48,12 @@ const {
   validateNewGameConfig
 } = require("../backend/new-game-config.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
+const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
+const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
+const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
+const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backend/required-runtime-env.cjs");
 const { createApp } = require("../backend/server.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -424,6 +428,275 @@ async function withMockSupabase(run, initialData = {}) {
     });
   }
 }
+
+register("auth repository supabase normalizza utenti, preferenze e sessioni", async () => {
+  await withMockSupabase(async (mock) => {
+    mock.tables.users.push({
+      id: "legacy-user",
+      username: "legacy_user",
+      role: "admin",
+      credentials_json: "{\"password\":{\"hash\":\"abc\"}}",
+      profile_json: "{\"preferences\":{\"theme\":\"ember\"}}",
+      created_at: "2024-01-02T03:04:05.000Z"
+    });
+
+    const repository = createAuthRepository({ driver: "supabase" });
+    const listedUsers = await repository.listUsers();
+    assert.equal(listedUsers.length, 1);
+    assert.equal(listedUsers[0].role, "admin");
+    assert.equal(listedUsers[0].profile.preferences.theme, "ember");
+    assert.equal(listedUsers[0].credentials.password.hash, "abc");
+
+    const foundByUsername = await repository.findUserByUsername("LEGACY_USER");
+    assert.equal(foundByUsername.id, "legacy-user");
+
+    const createdUser = await repository.createUser({
+      id: "user-2",
+      username: "supa_created",
+      role: "user",
+      profile: { displayName: "Supa" },
+      credentials: { password: { hash: "hash-1" } },
+      createdAt: "2024-05-06T07:08:09.000Z"
+    });
+    assert.equal(createdUser.username, "supa_created");
+    assert.equal(createdUser.profile.displayName, "Supa");
+
+    const updatedCredentials = await repository.updateUserCredentials("user-2", { password: { hash: "hash-2" } });
+    assert.equal(updatedCredentials.credentials.password.hash, "hash-2");
+
+    const updatedProfile = await repository.updateUserProfile("user-2", {
+      displayName: "Updated Supa",
+      preferences: { theme: "command" }
+    });
+    assert.equal(updatedProfile.profile.displayName, "Updated Supa");
+    assert.equal(updatedProfile.profile.preferences.theme, "command");
+
+    const updatedTheme = await repository.updateUserThemePreference("user-2", "midnight");
+    assert.equal(updatedTheme.profile.preferences.theme, "midnight");
+    assert.equal(updatedTheme.profile.displayName, "Updated Supa");
+
+    await repository.createSession("token-1", "user-2", 987654321);
+    const storedSession = await repository.findSession("token-1");
+    assert.deepEqual(storedSession, {
+      token: "token-1",
+      user_id: "user-2",
+      created_at: 987654321
+    });
+
+    await repository.deleteSession("token-1");
+    assert.equal(await repository.findSession("token-1"), null);
+
+    repository.close();
+  });
+});
+
+register("auth repository locale delega aggiornamenti profilo, tema e sessioni", async () => {
+  const calls = [];
+  const localRepository = createAuthRepository({
+    driver: "local",
+    datastore: {
+      async listUsers() {
+        calls.push("listUsers");
+        return [{ id: "u1" }];
+      },
+      async findUserByUsername(username) {
+        calls.push(["findUserByUsername", username]);
+        return { id: "u1", username };
+      },
+      async findUserById(userId) {
+        calls.push(["findUserById", userId]);
+        return { id: userId };
+      },
+      async createUser(user) {
+        calls.push(["createUser", user.id]);
+        return user;
+      },
+      async updateUserCredentials(userId, credentials) {
+        calls.push(["updateUserCredentials", userId, credentials.password.hash]);
+        return { id: userId, credentials };
+      },
+      async updateUserProfile(userId, profile) {
+        calls.push(["updateUserProfile", userId, profile.displayName]);
+        return { id: userId, profile };
+      },
+      async updateUserThemePreference(userId, theme) {
+        calls.push(["updateUserThemePreference", userId, theme]);
+        return { id: userId, profile: { preferences: { theme } } };
+      },
+      createSession(token, userId, createdAt) {
+        calls.push(["createSession", token, userId, createdAt]);
+      },
+      findSession(token) {
+        calls.push(["findSession", token]);
+        return { token, userId: "u1", createdAt: 1234 };
+      },
+      deleteSession(token) {
+        calls.push(["deleteSession", token]);
+      },
+      close() {
+        calls.push("close");
+      }
+    }
+  });
+
+  assert.deepEqual(await localRepository.listUsers(), [{ id: "u1" }]);
+  assert.deepEqual(await localRepository.findUserByUsername("alice"), { id: "u1", username: "alice" });
+  assert.deepEqual(await localRepository.findUserById("u1"), { id: "u1" });
+  assert.equal((await localRepository.createUser({ id: "u2", username: "bob" })).username, "bob");
+  assert.equal((await localRepository.updateUserCredentials("u2", { password: { hash: "abc" } })).credentials.password.hash, "abc");
+  assert.equal((await localRepository.updateUserProfile("u2", { displayName: "Bobby" })).profile.displayName, "Bobby");
+  assert.equal((await localRepository.updateUserThemePreference("u2", "ember")).profile.preferences.theme, "ember");
+  await localRepository.createSession("token-local", "u2", 55);
+  assert.deepEqual(await localRepository.findSession("token-local"), {
+    token: "token-local",
+    user_id: "u1",
+    created_at: 1234
+  });
+  await localRepository.deleteSession("token-local");
+  localRepository.close();
+
+  assert.equal(calls.some((entry) => Array.isArray(entry) && entry[0] === "updateUserProfile"), true);
+  assert.equal(calls.some((entry) => Array.isArray(entry) && entry[0] === "updateUserThemePreference"), true);
+  assert.equal(calls.includes("close"), true);
+});
+
+register("json file store usa backup e valida il payload letto", () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDir = path.join(__dirname, "tmp-json-store", unique);
+  const filePath = path.join(tempDir, "store.json");
+  const backupPath = `${filePath}.bak`;
+
+  fs.mkdirSync(tempDir, { recursive: true });
+  fs.writeFileSync(filePath, "{ invalid json", "utf8");
+  fs.writeFileSync(backupPath, JSON.stringify({ ok: true, source: "backup" }), "utf8");
+
+  const recovered = readJsonFile(filePath, { ok: false }, (value) => value && value.ok === true);
+  assert.deepEqual(recovered, { ok: true, source: "backup" });
+
+  fs.writeFileSync(filePath, JSON.stringify({ ok: false }), "utf8");
+  const fallback = readJsonFile(filePath, { ok: "fallback" }, (value) => value && value.ok === true);
+  assert.deepEqual(fallback, { ok: "fallback" });
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+register("json file store scrive backup del contenuto precedente", () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDir = path.join(__dirname, "tmp-json-write", unique);
+  const filePath = path.join(tempDir, "store.json");
+
+  fs.mkdirSync(tempDir, { recursive: true });
+  writeJsonFile(filePath, { version: 1, value: "before" });
+  writeJsonFile(filePath, { version: 2, value: "after" });
+
+  assert.deepEqual(JSON.parse(fs.readFileSync(filePath, "utf8")), { version: 2, value: "after" });
+  assert.deepEqual(JSON.parse(fs.readFileSync(`${filePath}.bak`, "utf8")), { version: 1, value: "before" });
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+register("required runtime env valida solo preview e production su Vercel", () => {
+  assert.equal(shouldValidateDeployEnv({}), false);
+  assert.equal(shouldValidateDeployEnv({ VERCEL: "1", VERCEL_ENV: "development" }), false);
+  assert.equal(shouldValidateDeployEnv({ VERCEL: "1", VERCEL_ENV: "preview" }), true);
+  assert.equal(shouldValidateDeployEnv({ VERCEL: "1", VERCEL_ENV: "production" }), true);
+
+  assert.deepEqual(
+    missingRequiredDeployEnv({
+      AUTH_ENCRYPTION_KEY: "enc",
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "",
+      DATASTORE_DRIVER: "supabase"
+    }),
+    ["SUPABASE_SERVICE_ROLE_KEY"]
+  );
+});
+
+register("player profile store riassume vittorie, sconfitte e partite in corso", async () => {
+  const playerProfiles = createPlayerProfileStore({
+    datastore: {
+      listGames() {
+        return [
+          {
+            id: "active-2",
+            name: "Più recente",
+            updatedAt: "2026-04-10T10:00:00.000Z",
+            state: {
+              phase: "active",
+              currentTurnIndex: 0,
+              turnPhase: "attack",
+              players: [
+                { id: "p1", name: "Alice", surrendered: false },
+                { id: "p2", name: "Bob", surrendered: false }
+              ],
+              territories: {
+                alpha: { ownerId: "p1" },
+                beta: { ownerId: "p1" },
+                gamma: { ownerId: "p2" }
+              },
+              hands: { p1: [{ id: "c1" }, { id: "c2" }] },
+              gameConfig: { totalPlayers: 2, mapId: "world-classic" }
+            }
+          },
+          {
+            id: "active-1",
+            name: "Lobby recente",
+            updatedAt: "2026-04-09T09:00:00.000Z",
+            state: {
+              phase: "lobby",
+              players: [{ id: "p1", name: "Alice", surrendered: false }],
+              territories: {},
+              hands: {},
+              gameConfig: { totalPlayers: 3, mapName: "Custom Lobby" }
+            }
+          },
+          {
+            id: "finished-win",
+            name: "Win",
+            updatedAt: "2026-04-01T09:00:00.000Z",
+            state: {
+              phase: "finished",
+              winnerId: "p1",
+              players: [
+                { id: "p1", name: "Alice", surrendered: false },
+                { id: "p2", name: "Bob", surrendered: false }
+              ],
+              territories: { alpha: { ownerId: "p1" } }
+            }
+          },
+          {
+            id: "finished-loss",
+            name: "Loss",
+            updatedAt: "2026-03-01T09:00:00.000Z",
+            state: {
+              phase: "finished",
+              winnerId: "p2",
+              players: [
+                { id: "p1", name: "Alice", surrendered: true },
+                { id: "p2", name: "Bob", surrendered: false }
+              ],
+              territories: { alpha: { ownerId: "p2" } }
+            }
+          }
+        ];
+      }
+    }
+  });
+
+  const profile = await playerProfiles.getPlayerProfile("Alice");
+  assert.equal(profile.playerName, "Alice");
+  assert.equal(profile.gamesPlayed, 2);
+  assert.equal(profile.wins, 1);
+  assert.equal(profile.losses, 1);
+  assert.equal(profile.gamesInProgress, 2);
+  assert.equal(profile.winRate, 50);
+  assert.deepEqual(profile.participatingGames.map((game) => game.id), ["active-2", "active-1"]);
+  assert.equal(profile.participatingGames[0].myLobby.focusLabel, "Tocca a te");
+  assert.equal(profile.participatingGames[0].myLobby.statusLabel, "Operativo");
+  assert.equal(profile.participatingGames[0].myLobby.cardCount, 2);
+  assert.equal(profile.participatingGames[1].myLobby.focusLabel, "Lobby");
+  assert.equal(profile.participatingGames[1].mapName, "Custom Lobby");
+});
 
 async function createAuthenticatedAppSession(app, username) {
   const registered = await app.auth.registerPasswordUser(username, TEST_PASSWORD);
@@ -2917,6 +3190,36 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     assert.equal(profilePayload.profile.gamesInProgress, 1);
     assert.equal(profilePayload.profile.gamesPlayed, 0);
     assert.equal(profilePayload.profile.winRate, null);
+  });
+});
+
+register("API profile preferences theme persiste il tema utente validato", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("profile_theme_api"));
+
+    const themeResponse = await fetch(baseUrl + "/api/profile/preferences/theme", {
+      method: "PUT",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({ theme: "midnight" })
+    });
+    assert.equal(themeResponse.status, 200);
+    const themePayload = await themeResponse.json();
+    assert.equal(themePayload.preferences.theme, "midnight");
+    assert.equal(themePayload.user.preferences.theme, "midnight");
+
+    const profileResponse = await fetch(baseUrl + "/api/profile", {
+      headers: authHeaders(session.sessionToken)
+    });
+    assert.equal(profileResponse.status, 200);
+    const profilePayload = await profileResponse.json();
+    assert.equal(profilePayload.profile.preferences.theme, "midnight");
+
+    const invalidThemeResponse = await fetch(baseUrl + "/api/profile/preferences/theme", {
+      method: "PUT",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({ theme: "unknown-theme" })
+    });
+    assert.equal(invalidThemeResponse.status, 400);
   });
 });
 
