@@ -58,6 +58,7 @@ const { createApp } = require("../backend/server.cjs");
 const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
+const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -1007,6 +1008,110 @@ register("basic game action route valida i territori nel fortify", async () => {
     messageKey: "game.invalidTerritory",
     messageParams: {},
     code: null
+  });
+});
+
+register("turn game action route gestisce endTurn con persistenza AI-aware", async () => {
+  const res = makeMockResponse();
+  const gameContext = {
+    state: { phase: "active", turnPhase: "attack" },
+    gameId: "game-turn",
+    version: 7,
+    gameName: "Turn Route"
+  };
+  const persisted = [];
+  const broadcasts = [];
+
+  const handled = await handleTurnGameActionRoute(
+    "endTurn",
+    res,
+    gameContext,
+    "p1",
+    7,
+    { id: "user-1" },
+    (state, playerId) => {
+      assert.equal(playerId, "p1");
+      state.turnPhase = "reinforcement";
+      return { ok: true };
+    },
+    () => {
+      throw new Error("surrenderPlayer should not be called");
+    },
+    async (context, expectedVersion) => {
+      persisted.push({ context, expectedVersion });
+      context.version = 8;
+    },
+    (context) => {
+      broadcasts.push(context.version);
+    },
+    (state, gameId, version, gameName, user) => ({
+      gameId,
+      version,
+      gameName,
+      phase: state.turnPhase,
+      playerId: user.id
+    }),
+    () => false,
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].expectedVersion, 7);
+  assert.deepEqual(broadcasts, [8]);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    state: {
+      gameId: "game-turn",
+      version: 8,
+      gameName: "Turn Route",
+      phase: "reinforcement",
+      playerId: "user-1"
+    }
+  });
+});
+
+register("turn game action route gestisce surrender con version conflict", async () => {
+  const res = makeMockResponse();
+  const handled = await handleTurnGameActionRoute(
+    "surrender",
+    res,
+    {
+      state: { players: [] },
+      gameId: "game-turn",
+      version: 4,
+      gameName: "Turn Route"
+    },
+    "p1",
+    4,
+    { id: "user-1" },
+    () => {
+      throw new Error("endTurn should not be called");
+    },
+    () => ({ ok: true }),
+    async () => {
+      throw { code: "VERSION_CONFLICT" };
+    },
+    () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    () => {
+      throw new Error("snapshotForUser should not be called");
+    },
+    (error) => {
+      sendJson(res, 409, { ok: false, code: error.code });
+      return true;
+    },
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: false,
+    code: "VERSION_CONFLICT"
   });
 });
 

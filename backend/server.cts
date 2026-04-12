@@ -37,6 +37,7 @@ const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
+const { handleTurnGameActionRoute } = require("./routes/game-actions-turn.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
 
@@ -907,46 +908,22 @@ function createApp(options = {}) {
         return;
       }
 
-      if (type === "endTurn") {
-        const result = endTurn(gameContext.state, playerId);
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistWithAiTurns(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
-          }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, { ok: true, state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user) });
-        return;
-      }
-
-      if (type === "surrender") {
-        const result = surrenderPlayer(gameContext.state, playerId);
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistWithAiTurns(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
-          }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, {
-          ok: true,
-          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user)
-        });
+      if (await handleTurnGameActionRoute(
+        type,
+        res,
+        gameContext,
+        playerId,
+        expectedVersion,
+        authContext.user,
+        endTurn,
+        surrenderPlayer,
+        persistWithAiTurns,
+        broadcastGame,
+        snapshotForUser,
+        handleVersionConflict,
+        sendJson,
+        sendLocalizedError
+      )) {
         return;
       }
 
