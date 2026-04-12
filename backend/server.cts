@@ -32,6 +32,7 @@ const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const { handleAttackGameActionRoute } = require("./routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./routes/game-actions-basic.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-overview.cjs");
@@ -861,50 +862,42 @@ function createApp(options = {}) {
         return;
       }
 
-      if (type === "attack" || type === "attackBanzai") {
-        let random;
-        if (process.env.E2E === "true" && Array.isArray(nextAttackRolls) && nextAttackRolls.length === 2) {
-          const queuedRolls = nextAttackRolls.slice();
-          nextAttackRolls = null;
-          random = () => {
-            const roll = queuedRolls.shift();
-            if (!roll) {
-              return secureRandom();
-            }
-
-            return (roll - 0.01) / 6;
-          };
+      function consumeQueuedAttackRandom() {
+        if (process.env.E2E !== "true" || !Array.isArray(nextAttackRolls) || nextAttackRolls.length !== 2) {
+          return null;
         }
 
-        const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
-        const actionFromId = String(body.fromId || "");
-        const actionToId = String(body.toId || "");
-        if (!isValidTerritoryId(actionFromId) || !isValidTerritoryId(actionToId)) {
-          sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
-          return;
-        }
-        const result = type === "attackBanzai"
-          ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
-          : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
-        if (!result.ok) {
-          sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
-          return;
-        }
-
-        try {
-          await persistGameContext(gameContext, expectedVersion);
-        } catch (error) {
-          if (handleVersionConflict(error)) {
-            return;
+        const queuedRolls = nextAttackRolls.slice();
+        nextAttackRolls = null;
+        return () => {
+          const roll = queuedRolls.shift();
+          if (!roll) {
+            return secureRandom();
           }
-          throw error;
-        }
-        broadcastGame(gameContext);
-        sendJson(res, 200, {
-          ok: true,
-          state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, authContext.user),
-          rounds: Array.isArray(result.rounds) ? result.rounds : undefined
-        });
+
+          return (roll - 0.01) / 6;
+        };
+      }
+
+      if (await handleAttackGameActionRoute(
+        type,
+        res,
+        body,
+        gameContext,
+        playerId,
+        expectedVersion,
+        authContext.user,
+        resolveAttack,
+        resolveBanzaiAttack,
+        consumeQueuedAttackRandom,
+        persistGameContext,
+        broadcastGame,
+        snapshotForUser,
+        handleVersionConflict,
+        isValidTerritoryId,
+        sendJson,
+        sendLocalizedError
+      )) {
         return;
       }
 

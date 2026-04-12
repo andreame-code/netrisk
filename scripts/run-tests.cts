@@ -57,6 +57,7 @@ const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backen
 const { createApp } = require("../backend/server.cjs");
 const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
+const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
@@ -986,6 +987,127 @@ register("basic game action route valida i territori nel fortify", async () => {
     () => {
       throw new Error("applyFortify should not be called");
     },
+    async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    () => {
+      throw new Error("snapshotForUser should not be called");
+    },
+    () => false,
+    (territoryId) => territoryId === "alpha" || territoryId === "beta",
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Territorio non valido.",
+    messageKey: "game.invalidTerritory",
+    messageParams: {},
+    code: null
+  });
+});
+
+register("attack game action route gestisce un attacco con random consumato dalla queue", async () => {
+  const res = makeMockResponse();
+  const gameContext = {
+    state: { territories: { alpha: {}, beta: {} } },
+    gameId: "game-attack",
+    version: 5,
+    gameName: "Attack Route"
+  };
+  const persisted = [];
+  const broadcasts = [];
+  let consumeCount = 0;
+
+  const handled = await handleAttackGameActionRoute(
+    "attack",
+    res,
+    { fromId: "alpha", toId: "beta", attackDice: "3" },
+    gameContext,
+    "p1",
+    5,
+    { id: "user-1" },
+    (state, playerId, fromId, toId, random, attackDice) => {
+      assert.equal(playerId, "p1");
+      assert.equal(fromId, "alpha");
+      assert.equal(toId, "beta");
+      assert.equal(attackDice, 3);
+      assert.equal(typeof random, "function");
+      assert.equal(random(), 0.25);
+      state.lastAttack = { fromId, toId };
+      return { ok: true, rounds: [{ attack: 6, defend: 2 }] };
+    },
+    () => {
+      throw new Error("resolveBanzaiAttack should not be called");
+    },
+    () => {
+      consumeCount += 1;
+      return () => 0.25;
+    },
+    async (context, expectedVersion) => {
+      persisted.push(expectedVersion);
+      context.version = 6;
+    },
+    (context) => {
+      broadcasts.push(context.version);
+    },
+    (state, gameId, version, gameName, user) => ({
+      gameId,
+      version,
+      gameName,
+      lastAttack: state.lastAttack,
+      playerId: user.id
+    }),
+    () => false,
+    (territoryId) => territoryId === "alpha" || territoryId === "beta",
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.equal(consumeCount, 1);
+  assert.deepEqual(persisted, [5]);
+  assert.deepEqual(broadcasts, [6]);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    state: {
+      gameId: "game-attack",
+      version: 6,
+      gameName: "Attack Route",
+      lastAttack: { fromId: "alpha", toId: "beta" },
+      playerId: "user-1"
+    },
+    rounds: [{ attack: 6, defend: 2 }]
+  });
+});
+
+register("attack game action route valida i territori prima del banzai", async () => {
+  const res = makeMockResponse();
+  const handled = await handleAttackGameActionRoute(
+    "attackBanzai",
+    res,
+    { fromId: "alpha", toId: "missing" },
+    {
+      state: { territories: { alpha: {}, beta: {} } },
+      gameId: "game-attack",
+      version: 5,
+      gameName: "Attack Route"
+    },
+    "p1",
+    5,
+    { id: "user-1" },
+    () => {
+      throw new Error("resolveAttack should not be called");
+    },
+    () => {
+      throw new Error("resolveBanzaiAttack should not be called");
+    },
+    () => null,
     async () => {
       throw new Error("persistGameContext should not be called");
     },
