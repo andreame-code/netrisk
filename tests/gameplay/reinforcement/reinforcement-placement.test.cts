@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { placeReinforcement } = require("../../../backend/engine/reinforcement-placement.cjs");
 const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("placeReinforcement adds one army and decreases the pool on owned territory", () => {
   const state = makeState({
@@ -44,4 +45,3 @@ register("placeReinforcement fails on territories not owned by the current playe
 
   assert.throws(() => placeReinforcement(state, "p1", "a"), /owned territories/i);
 });
-
