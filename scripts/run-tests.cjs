@@ -165,8 +165,19 @@ function readPublicHtml(fileName) {
   return fs.readFileSync(path.join(__dirname, "..", "frontend", "public", fileName), "utf8");
 }
 
+function readProjectJson(fileName) {
+  return JSON.parse(fs.readFileSync(path.join(__dirname, "..", fileName), "utf8"));
+}
+
 register("frontend CSS usa solo token tema fuori dalla sezione definizioni", () => {
   checkThemeTokenization();
+});
+
+register("vercel build command compila TypeScript prima della sync degli asset", () => {
+  const config = readProjectJson("vercel.json");
+  assert.equal(typeof config.buildCommand, "string");
+  assert.match(config.buildCommand, /\bnpm run build:ts\b/);
+  assert.equal(config.buildCommand.indexOf("build:ts") < config.buildCommand.indexOf("sync-public-assets.cjs"), true);
 });
 
 register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
