@@ -1,16 +1,15 @@
-// @ts-nocheck
 const fs = require("fs");
 const path = require("path");
 
-function ensureDirectory(filePath) {
+function ensureDirectory(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
-function backupPathFor(filePath) {
+function backupPathFor(filePath: string): string {
   return filePath + ".bak";
 }
 
-function safeReadJson(filePath, fallbackValue) {
+function safeReadJson<T>(filePath: string, fallbackValue: T): T {
   if (!fs.existsSync(filePath)) {
     return fallbackValue;
   }
@@ -23,7 +22,7 @@ function safeReadJson(filePath, fallbackValue) {
   return JSON.parse(raw);
 }
 
-function readJsonFile(filePath, fallbackValue, isValid) {
+function readJsonFile<T>(filePath: string, fallbackValue: T, isValid?: (value: unknown) => boolean): T {
   const validate = typeof isValid === "function"
     ? isValid
     : () => true;
@@ -41,7 +40,7 @@ function readJsonFile(filePath, fallbackValue, isValid) {
   }
 }
 
-function writeJsonFile(filePath, value) {
+function writeJsonFile(filePath: string, value: unknown): void {
   ensureDirectory(filePath);
 
   const tempPath = filePath + `.tmp-${process.pid}-${Date.now()}`;

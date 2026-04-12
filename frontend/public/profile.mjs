@@ -1,40 +1,42 @@
+import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
+import { messageFromError } from "./core/errors.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 const elements = {
-    profileName: document.querySelector("#profile-name"),
-    profileSubtitle: document.querySelector("#profile-subtitle"),
-    headerLoginForm: document.querySelector("#header-login-form"),
-    headerAuthUsername: document.querySelector("#header-auth-username"),
-    headerAuthPassword: document.querySelector("#header-auth-password"),
-    headerLoginButton: document.querySelector("#header-login-button"),
-    authStatus: document.querySelector("#auth-status"),
-    logoutButton: document.querySelector("#logout-button"),
-    profileFeedback: document.querySelector("#profile-feedback"),
-    profilePreferences: document.querySelector("#profile-preferences"),
-    themeSelect: document.querySelector("#profile-theme-select"),
-    themeStatus: document.querySelector("#profile-theme-status"),
-    profileContent: document.querySelector("#profile-content"),
-    profileHeading: document.querySelector("#profile-heading"),
-    profileCopy: document.querySelector("#profile-copy"),
-    gamesPlayed: document.querySelector("#metric-games-played"),
-    wins: document.querySelector("#metric-wins"),
-    losses: document.querySelector("#metric-losses"),
-    inProgress: document.querySelector("#metric-in-progress"),
-    winRate: document.querySelector("#metric-win-rate"),
-    gamesCount: document.querySelector("#profile-games-count"),
-    gamesEmpty: document.querySelector("#profile-games-empty"),
-    gamesList: document.querySelector("#profile-games-list"),
-    profileRankingTitle: document.querySelector("#profile-ranking-title"),
-    profileRankingCopy: document.querySelector("#profile-ranking-copy"),
-    profileMapTitle: document.querySelector("#profile-map-title"),
-    profileMapCopy: document.querySelector("#profile-map-copy"),
-    profileAdvancedTitle: document.querySelector("#profile-advanced-title"),
-    profileAdvancedCopy: document.querySelector("#profile-advanced-copy"),
-    profileCommandName: document.querySelector("#profile-command-name"),
-    profileCommandStatus: document.querySelector("#profile-command-status"),
-    profileCommandFocus: document.querySelector("#profile-command-focus"),
-    profileCommandFocusNote: document.querySelector("#profile-command-focus-note"),
-    profileCommandDirective: document.querySelector("#profile-command-directive"),
-    profileCommandDirectiveNote: document.querySelector("#profile-command-directive-note")
+    profileName: byId("profile-name"),
+    profileSubtitle: maybeQuery("#profile-subtitle"),
+    headerLoginForm: maybeQuery("#header-login-form"),
+    headerAuthUsername: maybeQuery("#header-auth-username"),
+    headerAuthPassword: maybeQuery("#header-auth-password"),
+    headerLoginButton: maybeQuery("#header-login-button"),
+    authStatus: byId("auth-status"),
+    logoutButton: byId("logout-button"),
+    profileFeedback: byId("profile-feedback"),
+    profilePreferences: byId("profile-preferences"),
+    themeSelect: byId("profile-theme-select"),
+    themeStatus: byId("profile-theme-status"),
+    profileContent: byId("profile-content"),
+    profileHeading: byId("profile-heading"),
+    profileCopy: byId("profile-copy"),
+    gamesPlayed: byId("metric-games-played"),
+    wins: byId("metric-wins"),
+    losses: byId("metric-losses"),
+    inProgress: byId("metric-in-progress"),
+    winRate: byId("metric-win-rate"),
+    gamesCount: byId("profile-games-count"),
+    gamesEmpty: byId("profile-games-empty"),
+    gamesList: byId("profile-games-list"),
+    profileRankingTitle: byId("profile-ranking-title"),
+    profileRankingCopy: byId("profile-ranking-copy"),
+    profileMapTitle: byId("profile-map-title"),
+    profileMapCopy: byId("profile-map-copy"),
+    profileAdvancedTitle: byId("profile-advanced-title"),
+    profileAdvancedCopy: byId("profile-advanced-copy"),
+    profileCommandName: byId("profile-command-name"),
+    profileCommandStatus: byId("profile-command-status"),
+    profileCommandFocus: byId("profile-command-focus"),
+    profileCommandFocusNote: byId("profile-command-focus-note"),
+    profileCommandDirective: byId("profile-command-directive"),
+    profileCommandDirectiveNote: byId("profile-command-directive-note")
 };
 const themeManager = window.netriskTheme || {
     defaultTheme: "command",
@@ -61,12 +63,10 @@ function themeLabel(theme) {
     return t(`profile.preferences.theme.${theme}`, {}, { fallback: theme });
 }
 function setThemeStatus(message) {
-    if (elements.themeStatus) {
-        elements.themeStatus.textContent = message;
-    }
+    elements.themeStatus.textContent = message;
 }
 function renderThemeOptions() {
-    if (!elements.themeSelect || elements.themeSelect.options.length) {
+    if (elements.themeSelect.options.length) {
         return;
     }
     themeManager.getThemes().forEach((theme) => {
@@ -77,16 +77,10 @@ function renderThemeOptions() {
     });
 }
 function showThemePreferences(isVisible) {
-    if (!elements.profilePreferences) {
-        return;
-    }
-    elements.profilePreferences.hidden = !isVisible;
+    setHidden(elements.profilePreferences, !isVisible);
 }
 function syncThemePreference({ announce = false, preferredTheme = null } = {}) {
     renderThemeOptions();
-    if (!elements.themeSelect) {
-        return;
-    }
     const currentTheme = preferredTheme || themeManager.getCurrentTheme();
     elements.themeSelect.value = currentTheme;
     setThemeStatus(announce
@@ -119,16 +113,22 @@ async function persistThemePreference(theme) {
 function renderAuthArea(user) {
     const isAuthenticated = Boolean(user);
     if (elements.headerLoginForm) {
-        elements.headerLoginForm.hidden = isAuthenticated;
-        elements.headerAuthUsername.disabled = isAuthenticated;
-        elements.headerAuthPassword.disabled = isAuthenticated;
-        elements.headerLoginButton.disabled = isAuthenticated;
+        setHidden(elements.headerLoginForm, isAuthenticated);
+        if (elements.headerAuthUsername) {
+            setDisabled(elements.headerAuthUsername, isAuthenticated);
+        }
+        if (elements.headerAuthPassword) {
+            setDisabled(elements.headerAuthPassword, isAuthenticated);
+        }
+        if (elements.headerLoginButton) {
+            setDisabled(elements.headerLoginButton, isAuthenticated);
+        }
     }
-    elements.logoutButton.hidden = !isAuthenticated;
-    elements.logoutButton.disabled = !isAuthenticated;
+    setHidden(elements.logoutButton, !isAuthenticated);
+    setDisabled(elements.logoutButton, !isAuthenticated);
 }
-function renderNavAvatar(username) {
-    const avatar = document.querySelector("#nav-avatar");
+function renderNavAvatar(username = "") {
+    const avatar = maybeQuery("#nav-avatar");
     if (!avatar) {
         return;
     }
@@ -136,10 +136,10 @@ function renderNavAvatar(username) {
     avatar.textContent = label || "C";
 }
 function showFeedback(message, tone = "neutral") {
-    elements.profileFeedback.hidden = false;
+    setHidden(elements.profileFeedback, false);
     elements.profileFeedback.textContent = message;
     elements.profileFeedback.className = `profile-feedback${tone === "error" ? " is-error" : ""}`;
-    elements.profileContent.hidden = true;
+    setHidden(elements.profileContent, true);
 }
 function escapeHtml(value) {
     return String(value ?? "")
@@ -179,14 +179,14 @@ function renderParticipatingGames(profile) {
     const label = t(count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other", { count });
     elements.gamesCount.textContent = label;
     if (!participatingGames.length) {
-        elements.gamesEmpty.hidden = false;
-        elements.gamesList.hidden = true;
-        elements.gamesList.innerHTML = "";
+        setHidden(elements.gamesEmpty, false);
+        setHidden(elements.gamesList, true);
+        setMarkup(elements.gamesList, "");
         return;
     }
-    elements.gamesEmpty.hidden = true;
-    elements.gamesList.hidden = false;
-    elements.gamesList.innerHTML = participatingGames
+    setHidden(elements.gamesEmpty, true);
+    setHidden(elements.gamesList, false);
+    setMarkup(elements.gamesList, participatingGames
         .map((game) => {
         const lobby = game.myLobby || {};
         return (`<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
@@ -213,7 +213,7 @@ function renderParticipatingGames(profile) {
             `</span>` +
             `</button>`);
     })
-        .join("");
+        .join(""));
 }
 function showProfile(profile) {
     const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
@@ -277,8 +277,8 @@ function showProfile(profile) {
         showFeedback(t("profile.runtime.noStats"));
         return;
     }
-    elements.profileFeedback.hidden = true;
-    elements.profileContent.hidden = false;
+    setHidden(elements.profileFeedback, true);
+    setHidden(elements.profileContent, false);
 }
 async function loadProfile() {
     const requestId = ++profileRequestId;
@@ -316,7 +316,7 @@ async function loadProfile() {
         if (requestId !== profileRequestId) {
             return;
         }
-        showFeedback(error.message || t("profile.errors.loadFailed"), "error");
+        showFeedback(messageFromError(error, t("profile.errors.loadFailed")), "error");
         if (sessionUser) {
             elements.authStatus.textContent = t("profile.auth.loggedIn", { username: sessionUser.username });
             renderAuthArea(sessionUser);
@@ -345,8 +345,8 @@ if (elements.headerLoginForm) {
     elements.headerLoginForm.dataset.headerLoginManaged = "true";
     elements.headerLoginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = elements.headerAuthUsername.value.trim();
-        const password = elements.headerAuthPassword.value;
+        const username = elements.headerAuthUsername?.value.trim() || "";
+        const password = elements.headerAuthPassword?.value || "";
         if (!username || !password) {
             return;
         }
@@ -360,11 +360,13 @@ if (elements.headerLoginForm) {
             if (!response.ok) {
                 throw new Error(translateServerMessage(data, t("errors.loginFailed")));
             }
-            elements.headerAuthPassword.value = "";
+            if (elements.headerAuthPassword) {
+                elements.headerAuthPassword.value = "";
+            }
             await loadProfile();
         }
         catch (error) {
-            showFeedback(error.message || t("errors.loginFailed"), "error");
+            showFeedback(messageFromError(error, t("errors.loginFailed")), "error");
             renderAuthArea(null);
             renderNavAvatar();
         }
@@ -392,46 +394,42 @@ elements.logoutButton.addEventListener("click", async () => {
     catch (error) {
     }
 });
-if (elements.themeSelect) {
-    renderThemeOptions();
-    syncThemePreference();
-    elements.themeSelect.addEventListener("change", async () => {
-        const previousTheme = themeManager.getCurrentTheme();
-        const selectedTheme = elements.themeSelect.value;
-        const nextTheme = themeManager.applyTheme(selectedTheme);
-        elements.themeSelect.value = nextTheme;
-        elements.themeSelect.disabled = true;
-        setThemeStatus(t("profile.preferences.status.saving", { theme: themeLabel(nextTheme) }));
-        try {
-            const data = await persistThemePreference(nextTheme);
-            const storedTheme = themeManager.getThemeFromUser(data.user) || nextTheme;
-            themeManager.applyUserTheme(data.user);
-            syncThemePreference({ announce: true, preferredTheme: storedTheme });
-        }
-        catch (error) {
-            if (isNavigationAbort(error) || document.visibilityState === "hidden") {
-                setThemeStatus(t("profile.preferences.status.current", { theme: themeLabel(nextTheme) }));
-                return;
-            }
-            themeManager.applyTheme(previousTheme);
-            elements.themeSelect.value = previousTheme;
-            setThemeStatus(t("profile.preferences.status.saveFailed", { theme: themeLabel(previousTheme) }));
-        }
-        finally {
-            elements.themeSelect.disabled = false;
-        }
-    });
-}
-if (elements.gamesList) {
-    elements.gamesList.addEventListener("click", async (event) => {
-        const trigger = event.target.closest("[data-open-game-id]");
-        if (!trigger) {
+renderThemeOptions();
+syncThemePreference();
+elements.themeSelect.addEventListener("change", async () => {
+    const previousTheme = themeManager.getCurrentTheme();
+    const selectedTheme = elements.themeSelect.value;
+    const nextTheme = themeManager.applyTheme(selectedTheme);
+    elements.themeSelect.value = nextTheme;
+    setDisabled(elements.themeSelect, true);
+    setThemeStatus(t("profile.preferences.status.saving", { theme: themeLabel(nextTheme) }));
+    try {
+        const data = await persistThemePreference(nextTheme);
+        const storedTheme = themeManager.getThemeFromUser(data.user) || nextTheme;
+        themeManager.applyUserTheme(data.user);
+        syncThemePreference({ announce: true, preferredTheme: storedTheme });
+    }
+    catch (error) {
+        if (isNavigationAbort(error) || document.visibilityState === "hidden") {
+            setThemeStatus(t("profile.preferences.status.current", { theme: themeLabel(nextTheme) }));
             return;
         }
-        const gameId = trigger.dataset.openGameId;
-        if (!gameId) {
-            return;
-        }
-        window.location.href = "/game/" + encodeURIComponent(gameId);
-    });
-}
+        themeManager.applyTheme(previousTheme);
+        elements.themeSelect.value = previousTheme;
+        setThemeStatus(t("profile.preferences.status.saveFailed", { theme: themeLabel(previousTheme) }));
+    }
+    finally {
+        setDisabled(elements.themeSelect, false);
+    }
+});
+elements.gamesList.addEventListener("click", async (event) => {
+    const trigger = closest(event.target, "[data-open-game-id]");
+    if (!trigger) {
+        return;
+    }
+    const gameId = trigger.dataset.openGameId;
+    if (!gameId) {
+        return;
+    }
+    window.location.href = "/game/" + encodeURIComponent(gameId);
+});

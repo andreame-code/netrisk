@@ -30,6 +30,9 @@ const {
 const { resolveBanzaiAttack } = require("./engine/banzai-attack.cjs");
 const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
+const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
+const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const { handleHealthRoute } = require("./routes/health.cjs");
 
 loadLocalEnv();
 
@@ -87,18 +90,6 @@ function defaultDbFile() {
   return path.join(projectRoot, "data", "netrisk.sqlite");
 }
 
-function sendJson(res, statusCode, payload, headers = {}) {
-  if (res.headersSent || res.writableEnded) {
-    return;
-  }
-
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    ...headers
-  });
-  res.end(JSON.stringify(payload));
-}
-
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let raw = "";
@@ -121,34 +112,6 @@ function parseBody(req) {
         reject(createLocalizedError("JSON non valido", "server.invalidJson"));
       }
     });
-  });
-}
-
-function localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams = {}, code = null) {
-  const isObject = input && typeof input === "object";
-  const message = isObject
-    ? (input.message || input.error || input.reason || input.defaultMessage || fallbackMessage)
-    : fallbackMessage;
-  const messageKey = isObject
-    ? (input.messageKey || input.errorKey || input.reasonKey || null)
-    : null;
-  const messageParams = isObject
-    ? (input.messageParams || input.errorParams || input.reasonParams || {})
-    : {};
-
-  return {
-    error: message || fallbackMessage,
-    messageKey: messageKey || fallbackKey || null,
-    messageParams: messageKey ? messageParams : (fallbackKey ? fallbackParams : {})
-  };
-}
-
-function sendLocalizedError(res, statusCode, input, fallbackMessage, fallbackKey, fallbackParams = {}, code = null, extra = {}) {
-  const payload = localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams, code);
-  sendJson(res, statusCode, {
-    ...payload,
-    code: code || (input && input.code) || null,
-    ...extra
   });
 }
 
@@ -530,8 +493,7 @@ function createApp(options = {}) {
     await initializeActiveGame();
 
     if (req.method === "GET" && url.pathname === "/api/health") {
-      const health = await healthSnapshot();
-      sendJson(res, health.ok ? 200 : 503, health);
+      await handleHealthRoute(res, healthSnapshot, sendJson);
       return;
     }
 
@@ -653,53 +615,51 @@ function createApp(options = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/auth/session") {
-      const authContext = await requireAuth(req, res, {});
-      if (!authContext) {
-        return;
-      }
-
-      sendJson(res, 200, { user: auth.publicUser(authContext.user) });
+      await handleAuthSessionRoute({
+        req,
+        res,
+        requireAuth,
+        auth,
+        playerProfiles,
+        sendJson,
+        sendLocalizedError,
+        extractUserPreferences,
+        supportedSiteThemes,
+        resolveStoredTheme
+      });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/profile") {
-      const authContext = await requireAuth(req, res, {});
-      if (!authContext) {
-        return;
-      }
-
-      try {
-        sendJson(res, 200, {
-          profile: {
-            ...(await playerProfiles.getPlayerProfile(authContext.user.username)),
-            preferences: extractUserPreferences(authContext.user)
-          }
-        });
-      } catch (error) {
-        sendLocalizedError(res, 400, error, "Profilo non disponibile.", "server.profile.unavailable");
-      }
+      await handleProfileRoute({
+        req,
+        res,
+        requireAuth,
+        auth,
+        playerProfiles,
+        sendJson,
+        sendLocalizedError,
+        extractUserPreferences,
+        supportedSiteThemes,
+        resolveStoredTheme
+      });
       return;
     }
 
     if (req.method === "PUT" && url.pathname === "/api/profile/preferences/theme") {
       const body = await parseBody(req);
-      const authContext = await requireAuth(req, res, body);
-      if (!authContext) {
-        return;
-      }
-
-      if (!supportedSiteThemes.has(body.theme)) {
-        sendLocalizedError(res, 400, null, "Tema non supportato.", "server.profile.invalidTheme");
-        return;
-      }
-
-      const user = await auth.updateUserThemePreference(authContext.user.id, body.theme);
-
-      sendJson(res, 200, {
-        ok: true,
-        user,
-        preferences: user?.preferences || { theme: resolveStoredTheme(body.theme) }
-      });
+      await handleThemePreferenceRoute({
+        req,
+        res,
+        requireAuth,
+        auth,
+        playerProfiles,
+        sendJson,
+        sendLocalizedError,
+        extractUserPreferences,
+        supportedSiteThemes,
+        resolveStoredTheme
+      }, body);
       return;
     }
 

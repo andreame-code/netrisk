@@ -1,3 +1,5 @@
+import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
+import { messageFromError } from "./core/errors.mjs";
 import { t, translateServerMessage } from "./i18n.mjs";
 const state = {
     ruleSets: [],
@@ -8,28 +10,28 @@ const state = {
     sessionReady: false
 };
 const elements = {
-    authStatus: document.querySelector("#setup-auth-status"),
-    feedback: document.querySelector("#new-game-feedback"),
-    form: document.querySelector("#new-game-form"),
-    gameName: document.querySelector("#setup-game-name"),
-    headerLoginForm: document.querySelector("#header-login-form"),
-    headerAuthUsername: document.querySelector("#header-auth-username"),
-    headerAuthPassword: document.querySelector("#header-auth-password"),
-    headerLoginButton: document.querySelector("#header-login-button"),
-    logoutButton: document.querySelector("#logout-button"),
-    ruleSet: document.querySelector("#setup-ruleset"),
-    ruleSetSummary: document.querySelector("#setup-ruleset-summary"),
-    map: document.querySelector("#setup-map"),
-    mapDetails: document.querySelector("#setup-map-details"),
-    customizeOptions: document.querySelector("#setup-customize-options"),
-    advancedOptions: document.querySelector("#setup-advanced-options"),
-    diceRuleSet: document.querySelector("#setup-dice-ruleset"),
-    playerSlots: document.querySelector("#setup-player-slots"),
-    submit: document.querySelector("#submit-new-game"),
-    totalPlayers: document.querySelector("#setup-total-players")
+    authStatus: byId("setup-auth-status"),
+    feedback: byId("new-game-feedback"),
+    form: byId("new-game-form"),
+    gameName: byId("setup-game-name"),
+    headerLoginForm: maybeQuery("#header-login-form"),
+    headerAuthUsername: maybeQuery("#header-auth-username"),
+    headerAuthPassword: maybeQuery("#header-auth-password"),
+    headerLoginButton: maybeQuery("#header-login-button"),
+    logoutButton: byId("logout-button"),
+    ruleSet: byId("setup-ruleset"),
+    ruleSetSummary: byId("setup-ruleset-summary"),
+    map: byId("setup-map"),
+    mapDetails: byId("setup-map-details"),
+    customizeOptions: byId("setup-customize-options"),
+    advancedOptions: byId("setup-advanced-options"),
+    diceRuleSet: byId("setup-dice-ruleset"),
+    playerSlots: byId("setup-player-slots"),
+    submit: byId("submit-new-game"),
+    totalPlayers: byId("setup-total-players")
 };
-function renderNavAvatar(username) {
-    const avatar = document.querySelector("#nav-avatar");
+function renderNavAvatar(username = "") {
+    const avatar = maybeQuery("#nav-avatar");
     if (!avatar) {
         return;
     }
@@ -62,12 +64,15 @@ function updateSlotNotes() {
     Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]")).forEach((slot, index) => {
         const typeControl = slot.querySelector('[data-role="type"]');
         const type = typeControl ? typeControl.value : "human";
-        slot.querySelector('[data-role="note"]').textContent = slotDescription(type, index);
+        const note = slot.querySelector('[data-role="note"]');
+        if (note) {
+            note.textContent = slotDescription(type, index);
+        }
     });
 }
 function renderSlots() {
     const total = Number(elements.totalPlayers.value || 2);
-    elements.playerSlots.innerHTML = Array.from({ length: total }, (_, index) => slotMarkup(index)).join("");
+    setMarkup(elements.playerSlots, Array.from({ length: total }, (_, index) => slotMarkup(index)).join(""));
     updateSlotNotes();
 }
 function setFeedback(message, type = "") {
@@ -75,7 +80,7 @@ function setFeedback(message, type = "") {
     elements.feedback.textContent = message || "";
 }
 function updateSubmitState() {
-    elements.submit.disabled = state.creating || !state.sessionReady || !state.user;
+    setDisabled(elements.submit, state.creating || !state.sessionReady || !state.user);
 }
 function selectedMapSummary() {
     return state.maps.find((map) => map.id === elements.map.value) || null;
@@ -102,47 +107,45 @@ function syncRuleSetDefaults() {
 function renderRuleSetSummary() {
     const ruleSet = selectedRuleSet();
     if (!ruleSet) {
-        elements.ruleSetSummary.innerHTML = "";
+        setMarkup(elements.ruleSetSummary, "");
         return;
     }
     const activeDiceRuleSet = elements.customizeOptions.checked
         ? selectedDiceRuleSet()
         : state.diceRuleSets.find((entry) => entry.id === ruleSet.defaultDiceRuleSetId) || null;
-    elements.ruleSetSummary.innerHTML =
-        '<div class="map-setup-card-head">' +
-            '<strong>' + ruleSet.name + '</strong>' +
-            '<span class="badge">' + diceRuleSetLabel(activeDiceRuleSet) + '</span>' +
-            '</div>' +
-            '<p class="map-setup-copy">' +
-            t(elements.customizeOptions.checked
-                ? "newGame.ruleset.summary.custom"
-                : "newGame.ruleset.summary.default", {
-                ruleset: ruleSet.name,
-                dice: diceRuleSetLabel(activeDiceRuleSet)
-            }) +
-            '</p>';
+    setMarkup(elements.ruleSetSummary, '<div class="map-setup-card-head">' +
+        '<strong>' + ruleSet.name + '</strong>' +
+        '<span class="badge">' + diceRuleSetLabel(activeDiceRuleSet) + '</span>' +
+        '</div>' +
+        '<p class="map-setup-copy">' +
+        t(elements.customizeOptions.checked
+            ? "newGame.ruleset.summary.custom"
+            : "newGame.ruleset.summary.default", {
+            ruleset: ruleSet.name,
+            dice: diceRuleSetLabel(activeDiceRuleSet)
+        }) +
+        '</p>');
 }
 function renderAdvancedOptions() {
-    elements.advancedOptions.hidden = !elements.customizeOptions.checked;
+    setHidden(elements.advancedOptions, !elements.customizeOptions.checked);
     renderRuleSetSummary();
 }
 function renderMapDetails() {
     const map = selectedMapSummary();
     if (!map) {
-        elements.mapDetails.innerHTML = "";
+        setMarkup(elements.mapDetails, "");
         return;
     }
     const bonuses = Array.isArray(map.continentBonuses) ? map.continentBonuses : [];
     const bonusMarkup = bonuses.map((continent) => '<li><span>' + continent.name + '</span><strong>' + t("newGame.map.bonusLine", { bonus: continent.bonus, territoryCount: continent.territoryCount }) + '</strong></li>').join("");
-    elements.mapDetails.innerHTML =
-        '<div class="map-setup-card-head">' +
-            '<strong>' + map.name + '</strong>' +
-            '<span class="badge">'
-            + t("newGame.map.summary", { territoryCount: map.territoryCount, continentCount: map.continentCount }) +
-            '</span>' +
-            '</div>' +
-            '<p class="map-setup-copy">' + t("newGame.map.copy") + '</p>' +
-            '<ul class="map-setup-bonus-list">' + bonusMarkup + '</ul>';
+    setMarkup(elements.mapDetails, '<div class="map-setup-card-head">' +
+        '<strong>' + map.name + '</strong>' +
+        '<span class="badge">'
+        + t("newGame.map.summary", { territoryCount: map.territoryCount, continentCount: map.continentCount }) +
+        '</span>' +
+        '</div>' +
+        '<p class="map-setup-copy">' + t("newGame.map.copy") + '</p>' +
+        '<ul class="map-setup-bonus-list">' + bonusMarkup + '</ul>');
 }
 function readConfig() {
     const totalPlayers = Number(elements.totalPlayers.value || 2);
@@ -181,9 +184,9 @@ async function loadOptions() {
     state.maps = data.maps || [];
     state.ruleSets = data.ruleSets || [];
     state.diceRuleSets = data.diceRuleSets || [];
-    elements.ruleSet.innerHTML = state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join("");
-    elements.map.innerHTML = state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join("");
-    elements.diceRuleSet.innerHTML = state.diceRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + diceRuleSetLabel(ruleSet) + '</option>').join("");
+    setMarkup(elements.ruleSet, state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join(""));
+    setMarkup(elements.map, state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join(""));
+    setMarkup(elements.diceRuleSet, state.diceRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + diceRuleSetLabel(ruleSet) + '</option>').join(""));
     syncRuleSetDefaults();
     renderRuleSetSummary();
     renderMapDetails();
@@ -201,13 +204,19 @@ async function restoreSession() {
     catch (error) {
         state.user = null;
     }
-    elements.logoutButton.hidden = !state.user;
+    setHidden(elements.logoutButton, !state.user);
     if (elements.headerLoginForm) {
         const isAuthenticated = Boolean(state.user);
-        elements.headerLoginForm.hidden = isAuthenticated;
-        elements.headerAuthUsername.disabled = isAuthenticated;
-        elements.headerAuthPassword.disabled = isAuthenticated;
-        elements.headerLoginButton.disabled = isAuthenticated;
+        setHidden(elements.headerLoginForm, isAuthenticated);
+        if (elements.headerAuthUsername) {
+            setDisabled(elements.headerAuthUsername, isAuthenticated);
+        }
+        if (elements.headerAuthPassword) {
+            setDisabled(elements.headerAuthPassword, isAuthenticated);
+        }
+        if (elements.headerLoginButton) {
+            setDisabled(elements.headerLoginButton, isAuthenticated);
+        }
     }
     elements.authStatus.textContent = state.user
         ? t("newGame.auth.commander", { username: state.user.username })
@@ -240,7 +249,8 @@ elements.map.addEventListener("change", renderMapDetails);
 elements.customizeOptions.addEventListener("change", renderAdvancedOptions);
 elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
 elements.playerSlots.addEventListener("change", (event) => {
-    if (!event.target.matches('[data-role="type"]')) {
+    const trigger = closest(event.target, '[data-role="type"]');
+    if (!trigger) {
         return;
     }
     updateSlotNotes();
@@ -268,7 +278,7 @@ elements.form.addEventListener("submit", async (event) => {
         window.location.href = "/game.html?gameId=" + encodeURIComponent(data.game.id);
     }
     catch (error) {
-        setFeedback(error.message, "error");
+        setFeedback(messageFromError(error, t("newGame.errors.submitFailed")), "error");
     }
     finally {
         state.creating = false;
@@ -283,7 +293,7 @@ elements.logoutButton.addEventListener("click", async () => {
     }
     state.user = null;
     state.sessionReady = true;
-    elements.logoutButton.hidden = true;
+    setHidden(elements.logoutButton, true);
     elements.authStatus.textContent = t("newGame.authStatus");
     renderNavAvatar();
     updateSubmitState();
@@ -301,7 +311,7 @@ if (elements.headerLoginForm) {
             await loginWithCredentials(username, password);
         }
         catch (error) {
-            setFeedback(error.message, "error");
+            setFeedback(messageFromError(error, t("errors.loginFailed")), "error");
         }
     });
 }

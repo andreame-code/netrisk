@@ -1,15 +1,38 @@
-// @ts-nocheck
 const path = require("path");
 const { createDatastore } = require("./datastore.cjs");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { mapMaybe } = require("./maybe-async.cjs");
+import type { ParticipatingGameContract, ProfileContract } from "../shared/api-contracts.cjs";
+import type { GameState, Player, TurnPhaseValue } from "../shared/models.cjs";
 
-function readableMapName(mapId) {
+type GameEntry = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  state: GameState & {
+    gameConfig?: {
+      players?: unknown[];
+      totalPlayers?: number;
+      mapId?: string | null;
+      mapName?: string | null;
+    } | null;
+    hands?: Record<string, unknown[]>;
+  };
+};
+
+type PlayerProfileStore = {
+  datastore: {
+    listGames(): GameEntry[] | Promise<GameEntry[]>;
+  };
+  getPlayerProfile(username: string): ProfileContract | Promise<ProfileContract>;
+};
+
+function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId);
   return map ? map.name : (mapId || null);
 }
 
-function territoriesOwnedBy(entry, playerId) {
+function territoriesOwnedBy(entry: GameEntry, playerId: string | null | undefined): number {
   if (!playerId || !entry?.state?.territories) {
     return 0;
   }
@@ -17,7 +40,7 @@ function territoriesOwnedBy(entry, playerId) {
   return Object.values(entry.state.territories).filter((territory) => territory?.ownerId === playerId).length;
 }
 
-function statusLabelForPlayer(entry, player, territoryCount) {
+function statusLabelForPlayer(entry: GameEntry, player: Player | null, territoryCount: number): string {
   if (!player) {
     return "Profilo non collegato";
   }
@@ -33,7 +56,7 @@ function statusLabelForPlayer(entry, player, territoryCount) {
   return territoryCount > 0 && !player.surrendered ? "Operativo" : "Eliminato";
 }
 
-function focusLabelForPlayer(entry, player) {
+function focusLabelForPlayer(entry: GameEntry, player: Player | null): string {
   if (!player) {
     return "Non assegnato";
   }
@@ -45,7 +68,7 @@ function focusLabelForPlayer(entry, player) {
   return entry.state.players[entry.state.currentTurnIndex]?.id === player.id ? "Tocca a te" : "In attesa";
 }
 
-function turnPhaseLabel(turnPhase) {
+function turnPhaseLabel(turnPhase: TurnPhaseValue | string | null | undefined): string {
   if (turnPhase === "reinforcement") {
     return "Rinforzi";
   }
@@ -58,10 +81,11 @@ function turnPhaseLabel(turnPhase) {
   return "Lobby";
 }
 
-function summarizeParticipatingGame(entry, username) {
+function summarizeParticipatingGame(entry: GameEntry, username: string): ParticipatingGameContract {
   const config = entry?.state?.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
-  const totalPlayers = Number.isInteger(config?.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
+  const configuredTotalPlayers = config?.totalPlayers;
+  const totalPlayers = Number.isInteger(configuredTotalPlayers) ? configuredTotalPlayers : configuredPlayers.length;
   const player = Array.isArray(entry?.state?.players)
     ? entry.state.players.find((candidate) => candidate?.name === username)
     : null;
@@ -74,12 +98,12 @@ function summarizeParticipatingGame(entry, username) {
     phase: entry?.state?.phase || "lobby",
     playerCount: Array.isArray(entry?.state?.players) ? entry.state.players.length : 0,
     totalPlayers: totalPlayers || null,
-    mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
+    mapName: config ? (config.mapName || readableMapName(config?.mapId)) : null,
     updatedAt: entry.updatedAt,
     myLobby: {
       playerName: player?.name || username,
-      statusLabel: statusLabelForPlayer(entry, player, territoryCount),
-      focusLabel: focusLabelForPlayer(entry, player),
+      statusLabel: statusLabelForPlayer(entry, player || null, territoryCount),
+      focusLabel: focusLabelForPlayer(entry, player || null),
       turnPhaseLabel: turnPhaseLabel(entry?.state?.turnPhase),
       territoryCount,
       cardCount
@@ -87,7 +111,7 @@ function summarizeParticipatingGame(entry, username) {
   };
 }
 
-function createPlayerProfileStore(options = {}) {
+function createPlayerProfileStore(options: Record<string, unknown> = {}): PlayerProfileStore {
   const datastore = options.datastore || createDatastore({
     dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
     legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
@@ -95,13 +119,13 @@ function createPlayerProfileStore(options = {}) {
     legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
   });
 
-  function getPlayerProfile(username) {
+  function getPlayerProfile(username: string): ProfileContract | Promise<ProfileContract> {
     const normalizedUsername = String(username || "").trim();
     if (!normalizedUsername) {
       throw new Error("Il profilo richiede un nome giocatore valido.");
     }
 
-    return mapMaybe(datastore.listGames(), (games) => {
+    return mapMaybe(datastore.listGames(), (games: GameEntry[]) => {
       const relevantGames = games.filter((entry) =>
         Array.isArray(entry?.state?.players) &&
         entry.state.players.some((player) => player.name === normalizedUsername)

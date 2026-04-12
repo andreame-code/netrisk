@@ -1,11 +1,10 @@
-// @ts-nocheck
 const crypto = require("crypto");
 
-function secureRandom() {
+function secureRandom(): number {
   return crypto.randomInt(0x100000000) / 0x100000000;
 }
 
-function randomHex(bytes = 4) {
+function randomHex(bytes: number = 4): string {
   return crypto.randomBytes(bytes).toString("hex");
 }
 
