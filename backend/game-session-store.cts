@@ -1,20 +1,86 @@
-// @ts-nocheck
 const path = require("path");
 const crypto = require("crypto");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
 
-function safeClone(value) {
-  return JSON.parse(JSON.stringify(value));
+interface GamePlayerConfig {
+  type?: string;
 }
 
-function readableMapName(mapId) {
+interface GameConfig {
+  players?: GamePlayerConfig[];
+  totalPlayers?: number;
+  mapId?: string | null;
+  mapName?: string | null;
+  diceRuleSetId?: string | null;
+}
+
+interface GameStateRecord {
+  phase?: string;
+  players?: Array<Record<string, unknown>>;
+  gameConfig?: GameConfig | null;
+  [key: string]: unknown;
+}
+
+interface GameEntry {
+  id: string;
+  name: string;
+  version?: number;
+  creatorUserId?: string | null;
+  state: GameStateRecord;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface GameSummary {
+  id: string;
+  name: string;
+  version: number;
+  creatorUserId: string | null;
+  phase: string;
+  playerCount: number;
+  mapId: string | null;
+  mapName: string | null;
+  diceRuleSetId: string | null;
+  totalPlayers: number | null;
+  aiCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface GameSessionStoreOptions {
+  datastore?: {
+    listGames(): GameEntry[] | Promise<GameEntry[]>;
+    createGame(entry: GameEntry): GameEntry | Promise<GameEntry>;
+    setActiveGameId(gameId: string): void | Promise<void>;
+    findGameById(gameId: string): GameEntry | null | Promise<GameEntry | null>;
+    getActiveGameId(): string | null | Promise<string | null>;
+    updateGame(entry: GameEntry): GameEntry | Promise<GameEntry>;
+  };
+  dbFile?: string;
+  dataFile?: string;
+  usersFile?: string;
+  sessionsFile?: string;
+}
+
+type VersionConflictError = Error & {
+  code: string;
+  currentVersion: number;
+  currentState: GameStateRecord;
+  game: GameSummary;
+};
+
+function safeClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId);
   return map ? map.name : (mapId || null);
 }
 
-function normalizeGameName(name, fallbackIndex) {
+function normalizeGameName(name: unknown, fallbackIndex: number): string {
   if (name == null) {
     return `Partita ${fallbackIndex}`;
   }
@@ -31,21 +97,22 @@ function normalizeGameName(name, fallbackIndex) {
   return normalized;
 }
 
-function summarizeGame(entry) {
-  const config = entry.state && entry.state.gameConfig ? entry.state.gameConfig : null;
-  const configuredPlayers = Array.isArray(config && config.players) ? config.players : [];
-  const totalPlayers = Number.isInteger(config && config.totalPlayers) ? config.totalPlayers : configuredPlayers.length;
+function summarizeGame(entry: GameEntry): GameSummary {
+  const config = entry.state?.gameConfig || null;
+  const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players) ? config.players : [];
+  const totalPlayers = Number.isInteger(config?.totalPlayers) ? Number(config?.totalPlayers) : configuredPlayers.length;
+  const version = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
 
   return {
     id: entry.id,
     name: entry.name,
-    version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
+    version,
     creatorUserId: entry.creatorUserId || null,
-    phase: entry.state && entry.state.phase ? entry.state.phase : "lobby",
-    playerCount: Array.isArray(entry.state && entry.state.players) ? entry.state.players.length : 0,
-    mapId: config && config.mapId ? config.mapId : null,
+    phase: entry.state?.phase || "lobby",
+    playerCount: Array.isArray(entry.state?.players) ? entry.state.players.length : 0,
+    mapId: config?.mapId || null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
-    diceRuleSetId: config && config.diceRuleSetId ? config.diceRuleSetId : null,
+    diceRuleSetId: config?.diceRuleSetId || null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
     createdAt: entry.createdAt,
@@ -53,29 +120,29 @@ function summarizeGame(entry) {
   };
 }
 
-function createGameSessionStore(options = {}) {
-  const datastore = options.datastore || createDatastore({
+function createGameSessionStore(options: GameSessionStoreOptions = {}) {
+  const datastore = (options.datastore || createDatastore({
     dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
     legacyGamesFile: options.dataFile || path.join(__dirname, "..", "data", "games.json"),
     legacyUsersFile: options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
     legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
-  });
+  })) as NonNullable<GameSessionStoreOptions["datastore"]>;
 
   function listGames() {
-    return mapMaybe(datastore.listGames(), (games) => games
+    return mapMaybe(datastore.listGames(), (games: GameEntry[]) => games
       .slice()
-      .sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)))
+      .sort((left: GameEntry, right: GameEntry) => String(right.updatedAt).localeCompare(String(left.updatedAt)))
       .map(summarizeGame));
   }
 
-  function createGame(initialState, input = {}) {
+  function createGame(initialState: GameStateRecord, input: { name?: unknown; creatorUserId?: string | null } = {}) {
     if (!initialState || typeof initialState !== "object") {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
 
-    return chainMaybe(datastore.listGames(), (games) => {
+    return chainMaybe(datastore.listGames(), (games: GameEntry[]) => {
       const timestamp = new Date().toISOString();
-      const entry = {
+      const entry: GameEntry = {
         id: crypto.randomBytes(8).toString("hex"),
         name: normalizeGameName(input.name, games.length + 1),
         version: 1,
@@ -85,7 +152,7 @@ function createGameSessionStore(options = {}) {
         updatedAt: timestamp
       };
 
-      return chainMaybe(datastore.createGame(entry), (created) =>
+      return chainMaybe(datastore.createGame(entry), (created: GameEntry) =>
         mapMaybe(datastore.setActiveGameId(created.id), () => ({
           game: summarizeGame(created),
           state: safeClone(created.state)
@@ -93,12 +160,12 @@ function createGameSessionStore(options = {}) {
     });
   }
 
-  function setActiveGame(gameId) {
+  function setActiveGame(gameId: string) {
     if (!gameId) {
       throw new Error("Impostare la partita attiva richiede un game id valido.");
     }
 
-    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+    return chainMaybe(datastore.findGameById(gameId), (entry: GameEntry | null) => {
       if (!entry) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
@@ -107,12 +174,12 @@ function createGameSessionStore(options = {}) {
     });
   }
 
-  function getGame(gameId) {
+  function getGame(gameId: string) {
     if (!gameId) {
       throw new Error("Leggere una partita richiede un game id valido.");
     }
 
-    return mapMaybe(datastore.findGameById(gameId), (entry) => {
+    return mapMaybe(datastore.findGameById(gameId), (entry: GameEntry | null) => {
       if (!entry) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
@@ -127,12 +194,12 @@ function createGameSessionStore(options = {}) {
     });
   }
 
-  function openGame(gameId) {
+  function openGame(gameId: string) {
     if (!gameId) {
       throw new Error("Aprire una partita richiede un game id valido.");
     }
 
-    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+    return chainMaybe(datastore.findGameById(gameId), (entry: GameEntry | null) => {
       if (!entry) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
@@ -144,7 +211,7 @@ function createGameSessionStore(options = {}) {
     });
   }
 
-  function saveGame(gameId, state, expectedVersion) {
+  function saveGame(gameId: string, state: GameStateRecord, expectedVersion?: number | null) {
     if (!gameId) {
       throw new Error("Il salvataggio richiede un game id valido.");
     }
@@ -157,16 +224,16 @@ function createGameSessionStore(options = {}) {
       throw new Error("Il salvataggio richiede una expectedVersion valida.");
     }
 
-    return chainMaybe(datastore.findGameById(gameId), (entry) => {
+    return chainMaybe(datastore.findGameById(gameId), (entry: GameEntry | null) => {
       if (!entry) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
 
-      const currentVersion = Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1;
+      const currentVersion = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
       entry.version = currentVersion;
 
       if (expectedVersion != null && expectedVersion !== currentVersion) {
-        const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.");
+        const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.") as VersionConflictError;
         conflict.code = "VERSION_CONFLICT";
         conflict.currentVersion = currentVersion;
         conflict.currentState = safeClone(entry.state);
@@ -181,9 +248,9 @@ function createGameSessionStore(options = {}) {
     });
   }
 
-  function ensureActiveGame(createInitialState) {
-    return chainMaybe(datastore.listGames(), (games) =>
-      chainMaybe(datastore.getActiveGameId(), (activeGameId) => {
+  function ensureActiveGame(createInitialState: () => GameStateRecord) {
+    return chainMaybe(datastore.listGames(), (games: GameEntry[]) =>
+      chainMaybe(datastore.getActiveGameId(), (activeGameId: string | null) => {
         const preferredId = activeGameId && games.some((game) => game.id === activeGameId)
           ? activeGameId
           : null;
@@ -215,4 +282,3 @@ function createGameSessionStore(options = {}) {
 module.exports = {
   createGameSessionStore
 };
-
