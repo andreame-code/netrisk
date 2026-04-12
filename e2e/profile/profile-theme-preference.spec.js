@@ -1,10 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { uniqueUser } = require("../support/game-helpers");
 
-test("profile page lets the authenticated user choose a site theme", async ({ page, browser }) => {
-  const username = uniqueUser("profile_theme");
-  const password = "secret123";
-
+async function createAuthenticatedSession(page, username, password = "secret123") {
   const registerResponse = await page.request.post("/api/auth/register", {
     data: { username, password }
   });
@@ -18,6 +15,10 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
   expect(sessionToken).toBeTruthy();
 
+  return sessionToken;
+}
+
+async function attachSessionCookie(page, sessionToken) {
   await page.context().addCookies([{
     name: "netrisk_session",
     value: sessionToken,
@@ -25,6 +26,29 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
     httpOnly: true,
     sameSite: "Lax"
   }]);
+}
+
+async function captureThemeSnapshot(page, selectors) {
+  return page.evaluate(({ shellSelector, navSelector, primarySelector }) => {
+    const root = getComputedStyle(document.documentElement);
+    const shell = shellSelector ? document.querySelector(shellSelector) : null;
+    const nav = navSelector ? document.querySelector(navSelector) : null;
+    const primary = primarySelector ? document.querySelector(primarySelector) : null;
+    return {
+      accent: root.getPropertyValue("--accent").trim(),
+      shellBg: shell ? getComputedStyle(shell).backgroundImage : "",
+      navBg: nav ? getComputedStyle(nav).backgroundImage : "",
+      primaryBg: primary ? getComputedStyle(primary).backgroundImage : ""
+    };
+  }, selectors);
+}
+
+test("profile page lets the authenticated user choose a site theme", async ({ page, browser }) => {
+  const username = uniqueUser("profile_theme");
+  const password = "secret123";
+
+  const sessionToken = await createAuthenticatedSession(page, username, password);
+  await attachSessionCookie(page, sessionToken);
 
   await page.goto("/profile.html");
 
@@ -58,4 +82,44 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   } finally {
     await secondContext.close();
   }
+});
+
+test("themes produce distinct visuals on shell, app page and landing", async ({ page }) => {
+  const username = uniqueUser("profile_theme_visuals");
+  const sessionToken = await createAuthenticatedSession(page, username);
+  await attachSessionCookie(page, sessionToken);
+
+  const profileSnapshots = new Map();
+  const landingSnapshots = new Map();
+
+  for (const theme of ["command", "midnight", "ember"]) {
+    await page.goto("/profile.html");
+    await page.locator("#profile-theme-select").selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    profileSnapshots.set(
+      theme,
+      await captureThemeSnapshot(page, {
+        shellSelector: ".profile-shell",
+        navSelector: ".top-nav-bar",
+        primarySelector: ".top-nav-register"
+      })
+    );
+
+    await page.goto("/index.html");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    landingSnapshots.set(
+      theme,
+      await captureThemeSnapshot(page, {
+        shellSelector: ".ld-header",
+        navSelector: ".ld-header",
+        primarySelector: ".ld-btn-primary"
+      })
+    );
+  }
+
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.accent)).size).toBe(3);
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.shellBg)).size).toBe(3);
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(3);
+  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.navBg)).size).toBe(3);
+  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(3);
 });

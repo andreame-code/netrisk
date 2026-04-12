@@ -11,10 +11,8 @@
   padding: 12px 16px;
   margin-bottom: 12px;
   align-items: center;
-  background:
-    linear-gradient(180deg, rgba(72, 48, 31, 0.94), rgba(53, 35, 22, 0.94)),
-    linear-gradient(135deg, rgba(212, 169, 79, 0.2), transparent 65%);
-  color: #f8eed5;
+  background: var(--campaign-shell-bg);
+  color: var(--heading);
 }
 
 .compact-brand {
@@ -88,8 +86,8 @@ h1 {
 }
 
 .mini-card {
-  background: rgba(255, 247, 229, 0.1);
-  border: 1px solid rgba(255, 231, 186, 0.16);
+  background: var(--badge-bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 8px 12px;
 }
@@ -102,7 +100,7 @@ h1 {
 
 .mini-card p {
   margin: 4px 0 0;
-  color: rgba(248, 238, 213, 0.9);
+  color: var(--text);
   font-size: 0.9rem;
 }
 
@@ -111,7 +109,7 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.66rem;
-  color: rgba(248, 238, 213, 0.72);
+  color: var(--text-muted);
 }
 
 .battlefield-layout {
@@ -129,11 +127,11 @@ h1 {
 
 .left-rail,
 .right-rail {
-  background: linear-gradient(180deg, var(--panel-strong), rgba(246, 236, 214, 0.94));
+  background: linear-gradient(180deg, var(--panel), var(--panel-strong));
 }
 
 .center-stage {
-  background: linear-gradient(180deg, rgba(243, 231, 204, 0.98), rgba(237, 223, 194, 0.97));
+  background: linear-gradient(180deg, var(--panel), var(--bg-soft));
 }
 
 .panel-header,
@@ -169,14 +167,14 @@ h1 {
   align-items: center;
   border-radius: 999px;
   padding: 7px 12px;
-  background: rgba(44, 31, 20, 0.08);
+  background: var(--badge-bg);
   color: var(--text);
   font-size: 0.8rem;
   white-space: nowrap;
 }
 
 .badge.accent {
-  background: rgba(184, 92, 56, 0.16);
+  background: var(--warning-bg);
   color: var(--accent);
 }
 
@@ -194,7 +192,7 @@ h1 {
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid transparent;
-  box-shadow: 0 10px 24px rgba(56, 19, 10, 0.14);
+  box-shadow: var(--shadow-soft);
 }
 
 .turn-alert strong {
@@ -209,11 +207,9 @@ h1 {
 }
 
 .turn-alert-danger {
-  background:
-    linear-gradient(180deg, rgba(131, 28, 18, 0.96), rgba(105, 19, 13, 0.98)),
-    linear-gradient(135deg, rgba(255, 211, 154, 0.18), transparent 58%);
-  border-color: rgba(255, 197, 128, 0.38);
-  color: #fff2e8;
+  background: var(--button-danger-bg);
+  border-color: var(--danger-border);
+  color: var(--button-danger-text);
 }
 
 .rail-section + .rail-section {
@@ -230,7 +226,7 @@ h1 {
   border-radius: 16px;
   border: 1px solid var(--line);
   padding: 12px;
-  background: rgba(255, 252, 246, 0.92);
+  background: var(--panel);
 }
 
 .player-card strong,
@@ -250,14 +246,12 @@ h1 {
   position: relative;
   aspect-ratio: 760 / 500;
   border-radius: 26px;
-  background-image:
-    radial-gradient(circle at top, rgba(212, 169, 79, 0.2), transparent 38%),
-    linear-gradient(180deg, rgba(178, 138, 74, 0.92) 0%, rgba(141, 103, 54, 0.82) 10%, rgba(210, 178, 120, 0.5) 34%, rgba(217, 191, 143, 0.32) 100%);
+  background-image: var(--feature-card-accent-bg);
   background-position: center, center;
   background-size: cover, cover;
   overflow: hidden;
-  border: 2px solid rgba(112, 72, 35, 0.26);
-  box-shadow: inset 0 0 0 2px rgba(255, 240, 206, 0.22);
+  border: 2px solid var(--border);
+  box-shadow: inset 0 0 0 2px var(--border-hi);
 }
 
 .map-board-stage {
@@ -293,7 +287,7 @@ h1 {
   content: "";
   position: absolute;
   border-radius: 999px;
-  background: rgba(255, 245, 217, 0.1);
+  background: var(--badge-bg);
 }
 
 .map-board::before {
@@ -319,7 +313,7 @@ h1 {
 }
 
 .map-link {
-  stroke: rgba(71, 45, 24, 0.28);
+  stroke: var(--line);
   stroke-width: 6;
   stroke-linecap: round;
 }
@@ -332,12 +326,12 @@ h1 {
   transform: translate(-50%, -50%);
   padding: 0;
   border-radius: 999px;
-  background: var(--owner-color, #9aa6b2);
-  color: var(--owner-text-color, #2c1f14);
-  border: 2px solid rgba(255, 250, 240, 0.82);
+  background: var(--owner-color, var(--owner-color-default));
+  color: var(--owner-text-color, var(--owner-text-default));
+  border: 2px solid var(--text-inverse);
   box-shadow:
-    0 0 0 1px rgba(44, 31, 20, 0.24),
-    0 8px 18px rgba(41, 24, 11, 0.2);
+    0 0 0 1px var(--overlay),
+    var(--shadow-soft);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -350,17 +344,17 @@ h1 {
 
 .territory-node.is-source,
 .territory-node.is-reinforce {
-  outline: 3px solid rgba(255, 248, 220, 0.98);
+  outline: 3px solid var(--text-inverse);
   box-shadow:
-    0 0 0 5px rgba(104, 139, 69, 0.88),
-    0 10px 22px rgba(41, 24, 11, 0.26);
+    0 0 0 5px var(--success),
+    var(--shadow-soft);
 }
 
 .territory-node.is-target {
-  outline: 3px solid rgba(255, 248, 220, 0.98);
+  outline: 3px solid var(--text-inverse);
   box-shadow:
-    0 0 0 5px rgba(184, 92, 56, 0.9),
-    0 10px 22px rgba(41, 24, 11, 0.26);
+    0 0 0 5px var(--danger),
+    var(--shadow-soft);
 }
 
 .territory-armies {
@@ -368,7 +362,7 @@ h1 {
   font-weight: 700;
   font-size: 0.92rem;
   line-height: 1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.16);
+  text-shadow: 0 1px 1px var(--overlay);
 }
 
 .map-legend {
@@ -461,7 +455,7 @@ h1 {
 }
 
 .reinforce-actions-row button {
-  background: linear-gradient(180deg, #c97346, #b85c38);
+  background: var(--button-primary-bg);
 }
 
 .card-trade-list {
@@ -474,17 +468,17 @@ h1 {
   width: 100%;
   align-items: center;
   justify-content: flex-start;
-  border: 1px solid rgba(72, 47, 29, 0.2);
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 248, 238, 0.92);
+  background: var(--control-bg);
   color: var(--text);
   padding: 10px 12px;
   text-align: left;
 }
 
 .card-chip.is-selected {
-  border-color: rgba(184, 92, 56, 0.72);
-  background: rgba(244, 224, 207, 0.96);
+  border-color: var(--border-hi);
+  background: var(--feature-card-accent-bg);
 }
 
 .action-help {
@@ -497,23 +491,23 @@ h1 {
   margin: 0 0 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(184, 92, 56, 0.32);
-  background: linear-gradient(180deg, rgba(255, 233, 214, 0.98), rgba(252, 220, 197, 0.94));
-  color: #7d2415;
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--accent);
   font-weight: 700;
   line-height: 1.45;
-  box-shadow: inset 0 0 0 1px rgba(255, 246, 235, 0.52);
+  box-shadow: var(--bevel);
 }
 
 .action-success {
   margin: -2px 0 10px;
-  color: #2f6b31;
+  color: var(--success);
   font-size: 0.9rem;
 }
 
 .action-error {
   margin: -2px 0 10px;
-  color: #8c2f21;
+  color: var(--danger);
   font-size: 0.9rem;
 }
 
@@ -552,7 +546,7 @@ select {
 .log-list li {
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(255, 252, 246, 0.92);
+  background: var(--panel);
   border: 1px solid var(--line);
   font-size: 0.9rem;
 }
@@ -639,7 +633,7 @@ select {
 .session-browser {
   margin-bottom: 12px;
   padding: 16px;
-  background: linear-gradient(180deg, rgba(245, 236, 214, 0.98), rgba(240, 228, 201, 0.96));
+  background: linear-gradient(180deg, var(--panel), var(--panel-strong));
 }
 
 .session-browser-head {
@@ -657,7 +651,7 @@ select {
 }
 
 .session-eyebrow {
-  color: rgba(114, 87, 67, 0.86);
+  color: var(--muted);
   margin-bottom: 8px;
 }
 
@@ -684,17 +678,15 @@ select {
   gap: 8px;
   padding: 16px 18px;
   border-radius: 18px;
-  border: 1px solid rgba(74, 48, 28, 0.12);
-  background:
-    linear-gradient(180deg, rgba(91, 57, 34, 0.97), rgba(59, 38, 24, 0.97)),
-    radial-gradient(circle at top right, rgba(212, 169, 79, 0.28), transparent 46%);
-  color: #f8eed5;
-  box-shadow: 0 12px 28px rgba(41, 24, 13, 0.18);
+  border: 1px solid var(--border);
+  background: var(--focus-card-bg);
+  color: var(--heading);
+  box-shadow: var(--shadow-soft);
 }
 
 .lobby-focus-card .lobby-command-label,
 .lobby-focus-card p {
-  color: rgba(248, 238, 213, 0.78);
+  color: var(--text-muted);
 }
 
 .lobby-focus-card strong {
@@ -725,7 +717,7 @@ select {
 }
 
 .lobby-create-button:focus-visible {
-  outline: 2px solid rgba(255, 232, 190, 0.9);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -999,7 +991,7 @@ select {
   .session-primary {
     grid-column: 1 / -1;
     padding-bottom: 6px;
-    border-bottom: 1px solid rgba(74, 48, 28, 0.1);
+    border-bottom: 1px solid var(--line);
   }
 
   .session-row-button > [data-cell-label] {
@@ -1039,7 +1031,7 @@ select {
 
 .profile-shell {
   padding: 18px;
-  background: linear-gradient(180deg, rgba(245, 236, 214, 0.98), rgba(239, 226, 198, 0.97));
+  background: linear-gradient(180deg, var(--panel), var(--panel-strong));
 }
 
 .profile-hero {
@@ -1073,35 +1065,35 @@ select {
   min-height: 40px;
   padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(106, 74, 48, 0.18);
-  background: linear-gradient(180deg, rgba(255, 251, 243, 0.96), rgba(243, 231, 204, 0.94));
+  border: 1px solid var(--border);
+  background: var(--button-ghost-bg);
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: var(--bevel);
 }
 
 .profile-back-button:hover {
   transform: translateY(-1px);
-  background: linear-gradient(180deg, rgba(255, 255, 250, 0.98), rgba(247, 236, 213, 0.96));
+  background: var(--button-ghost-bg-hover);
   color: var(--text);
 }
 
 .profile-back-button:focus-visible {
-  outline: 2px solid rgba(132, 92, 52, 0.45);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .profile-feedback {
   padding: 18px 16px;
   border-radius: 16px;
-  background: rgba(89, 67, 48, 0.08);
+  background: var(--warning-bg);
   color: var(--muted);
 }
 
 .profile-feedback.is-error {
-  background: rgba(184, 92, 56, 0.12);
-  color: var(--accent);
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .profile-content {
@@ -1312,7 +1304,7 @@ select {
   grid-column: 1 / -1;
   display: grid;
   gap: 8px;
-  border-top: 1px solid rgba(132, 92, 52, 0.16);
+  border-top: 1px solid var(--line);
   padding-top: 10px;
 }
 
@@ -1333,7 +1325,7 @@ select {
   gap: 4px;
   padding: 10px;
   border-radius: 12px;
-  background: rgba(132, 92, 52, 0.06);
+  background: var(--badge-bg);
 }
 
 .profile-mini-lobby-item span {
@@ -1448,15 +1440,13 @@ select {
   position: sticky;
   top: 8px;
   padding: 20px 18px;
-  background:
-    linear-gradient(180deg, rgba(72, 48, 31, 0.95), rgba(53, 35, 22, 0.95)),
-    linear-gradient(180deg, rgba(212, 169, 79, 0.16), transparent 70%);
-  color: #f8eed5;
+  background: var(--campaign-shell-bg);
+  color: var(--heading);
 }
 
 .nav-brand-block {
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 231, 186, 0.16);
+  border-bottom: 1px solid var(--border);
   margin-bottom: 16px;
 }
 
@@ -1468,7 +1458,7 @@ select {
 
 .nav-brand-copy {
   margin: 10px 0 0;
-  color: rgba(248, 238, 213, 0.78);
+  color: var(--text-muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -1484,22 +1474,22 @@ select {
   min-height: 48px;
   padding: 0 14px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 231, 186, 0.12);
-  color: rgba(248, 238, 213, 0.9);
+  border: 1px solid var(--border);
+  color: var(--text);
   text-decoration: none;
-  background: rgba(255, 247, 229, 0.06);
+  background: var(--badge-bg);
   transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
 }
 
 .nav-link:hover {
-  background: rgba(255, 247, 229, 0.12);
+  background: var(--nav-hover-bg);
   transform: translateX(2px);
 }
 
 .nav-link.is-active {
-  background: rgba(184, 92, 56, 0.22);
-  border-color: rgba(229, 144, 95, 0.45);
-  color: #fff3dc;
+  background: var(--nav-active-bg);
+  border-color: var(--border-hi);
+  color: var(--heading);
 }
 
 .page-header-panel {
@@ -1509,7 +1499,7 @@ select {
   gap: 18px;
   padding: 18px 20px;
   margin-bottom: 12px;
-  background: linear-gradient(180deg, rgba(243, 231, 204, 0.98), rgba(237, 223, 194, 0.97));
+  background: var(--hero-panel-bg);
 }
 
 .page-title {
@@ -1564,9 +1554,9 @@ body[data-app-section="game"] .board-shell {
   padding: 0 14px;
   margin-bottom: 8px;
   border-radius: 16px;
-  background: rgba(244, 236, 220, 0.34);
-  border-color: rgba(255, 248, 233, 0.18);
-  box-shadow: 0 10px 26px rgba(18, 11, 6, 0.14);
+  background: var(--status-surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-soft);
 }
 
 .game-status-line,
@@ -1596,14 +1586,14 @@ body[data-app-section="game"] .board-shell {
   display: inline-flex;
   align-items: baseline;
   gap: 7px;
-  color: rgba(248, 238, 213, 0.88);
+  color: var(--text);
   font-size: 0.82rem;
   white-space: nowrap;
 }
 
 .status-chip-label {
   display: none;
-  color: rgba(248, 238, 213, 0.4);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.58rem;
@@ -1619,7 +1609,7 @@ body[data-app-section="game"] .board-shell {
 .status-divider {
   width: 1px;
   height: 12px;
-  background: rgba(248, 238, 213, 0.14);
+  background: var(--line);
   flex: 0 0 auto;
 }
 
@@ -1630,12 +1620,12 @@ body[data-app-section="game"] .board-shell {
   justify-content: space-between;
   gap: 16px;
   padding: 10px 0 12px;
-  border-top: 1px solid rgba(255, 248, 233, 0.08);
+  border-top: 1px solid var(--line);
 }
 
 .game-context-copy {
   margin: 0;
-  color: rgba(248, 238, 213, 0.54);
+  color: var(--text-muted);
   font-size: 0.78rem;
 }
 
@@ -1711,7 +1701,7 @@ body[data-app-section="game"] .board-shell {
   justify-content: flex-end;
   padding-top: 6px;
   padding-bottom: 6px;
-  color: rgba(44, 31, 20, 0.82);
+  color: var(--text-muted);
   font-size: 0.95rem;
   font-weight: 700;
 }
@@ -1999,7 +1989,7 @@ body[data-app-section="profile"] .main-nav-shell {
 
 .shared-top-shell .stage-copy {
   font-size: 0.82rem;
-  color: rgba(44, 31, 20, 0.66);
+  color: var(--text-muted);
 }
 
 .shared-context-row {
@@ -2078,19 +2068,19 @@ body[data-app-section="profile"] .main-nav-shell {
   margin: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  background: rgba(57, 110, 73, 0.1);
-  color: #295f36;
+  background: var(--success-bg);
+  color: var(--success);
   font-size: 0.82rem;
 }
 
 .auth-feedback.is-error {
-  background: rgba(151, 54, 41, 0.12);
-  color: #8a2d22;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .auth-feedback.is-success {
-  background: rgba(57, 110, 73, 0.1);
-  color: #295f36;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .register-shell {
@@ -2117,7 +2107,7 @@ body[data-app-section="profile"] .main-nav-shell {
   max-width: 34rem;
   padding: 1.1rem;
   border-radius: 1rem;
-  background: rgba(255, 248, 237, 0.62);
+  background: var(--panel);
 }
 
 .register-guidelines {
@@ -2252,7 +2242,7 @@ body[data-app-section="profile"] .main-nav-shell {
   gap: 0.75rem;
   padding: 0.55rem 0.65rem;
   border-radius: 0.75rem;
-  background: rgba(132, 92, 52, 0.06);
+  background: var(--badge-bg);
   color: var(--text);
   font-size: 0.88rem;
 }
@@ -2272,7 +2262,7 @@ body[data-app-section="profile"] .main-nav-shell {
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #775d46;
+  color: var(--muted);
 }
 
 .setup-options-stack {
@@ -2285,7 +2275,7 @@ body[data-app-section="profile"] .main-nav-shell {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  color: #4d3a28;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -2320,7 +2310,7 @@ body[data-app-section="profile"] .main-nav-shell {
 }
 
 .setup-slot-head strong {
-  color: #f0d9a8;
+  color: var(--heading);
   font-variant: small-caps;
   letter-spacing: 0.05em;
 }
@@ -2354,9 +2344,7 @@ body[data-app-section="profile"] .main-nav-shell {
 
 
 .setup-slot.is-fixed {
-  background:
-    radial-gradient(circle at top right, rgba(232, 194, 68, 0.12), transparent 46%),
-    linear-gradient(180deg, rgba(54, 46, 31, 0.98), rgba(31, 27, 18, 0.96));
+  background: var(--feature-card-accent-bg);
 }
 
 .setup-fixed-value {
@@ -2365,9 +2353,9 @@ body[data-app-section="profile"] .main-nav-shell {
   align-items: center;
   padding: 0.7rem 0.9rem;
   border-radius: 0.8rem;
-  border: 1px solid rgba(200, 164, 39, 0.12);
-  background: linear-gradient(180deg, rgba(36, 31, 22, 0.96), rgba(20, 18, 13, 0.94));
-  color: #f0d9a8;
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--heading);
   font-weight: 600;
 }
 
@@ -2390,43 +2378,41 @@ body[data-app-section="profile"] .main-nav-shell {
 .game-map-stage,
 .campaign-map-shell {
   border-radius: var(--campaign-shell-radius);
-  background:
-    radial-gradient(circle at top, rgba(200, 164, 39, 0.12), transparent 36%),
-    linear-gradient(180deg, rgba(32, 28, 20, 0.98), rgba(18, 16, 12, 0.96));
+  background: var(--campaign-shell-bg);
 }
 
 .game-map-stage .map-board {
   border-radius: var(--campaign-shell-radius);
-  outline: 1px solid rgba(200, 164, 39, 0.28);
+  outline: 1px solid var(--border-hi);
   outline-offset: -1px;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.55),
-    0 28px 70px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 230, 140, 0.1);
+    0 0 0 1px var(--overlay),
+    var(--shadow),
+    var(--bevel);
 }
 
 .game-map-stage .map-board::after {
   background:
-    radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.5) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0%, transparent 20%, transparent 76%, rgba(0, 0, 0, 0.48) 100%);
+    radial-gradient(ellipse at center, transparent 35%, var(--overlay) 100%),
+    linear-gradient(180deg, var(--overlay) 0%, transparent 20%, transparent 76%, var(--overlay) 100%);
 }
 
 .game-phase-banner,
 .game-reinforcement-banner,
 .status-chip,
 .game-context-copy {
-  color: rgba(232, 214, 180, 0.78);
+  color: var(--text-muted);
 }
 
 .status-divider {
-  background: rgba(200, 164, 39, 0.2);
+  background: var(--line);
 }
 
 .territory-node {
-  border: 2px solid rgba(255, 234, 182, 0.76);
+  border: 2px solid var(--text-inverse);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    0 10px 22px rgba(0, 0, 0, 0.34);
+    0 0 0 1px var(--overlay),
+    var(--shadow-soft);
 }
 
 .game-bottom-shell {

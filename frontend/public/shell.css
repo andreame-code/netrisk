@@ -1,147 +1,432 @@
+/* Theme token definitions start */
 :root,
 html[data-theme="command"] {
-  --color-bg-canvas: #0e0c09;
-  --color-bg-canvas-soft: #1e1c14;
-  --color-surface-panel: rgba(32, 28, 20, 0.9);
-  --color-surface-panel-strong: rgba(24, 21, 15, 0.94);
-  --color-text-primary: #e3cfab;
-  --color-text-muted: rgba(212, 184, 136, 0.66);
-  --color-text-inverse: #f0d9a8;
-  --color-accent-primary: #c8a427;
-  --color-accent-secondary: #8e6f2a;
-  --color-accent-gold: #e8c244;
-  --color-line-soft: rgba(200, 164, 39, 0.16);
-  --shadow-shell: 0 24px 56px rgba(0, 0, 0, 0.45);
-  --campaign-border: rgba(200, 164, 39, 0.2);
-  --campaign-border-hi: rgba(200, 164, 39, 0.5);
-  --campaign-bevel:
+  --bg: #0e0c09;
+  --bg-soft: #1b1711;
+  --panel: rgba(32, 28, 20, 0.9);
+  --panel-strong: rgba(22, 19, 14, 0.96);
+  --overlay: rgba(10, 8, 6, 0.48);
+  --grid: rgba(200, 164, 39, 0.035);
+  --hero-overlay: rgba(200, 164, 39, 0.14);
+  --text: #e3cfab;
+  --text-muted: rgba(212, 184, 136, 0.68);
+  --text-inverse: #f0d9a8;
+  --heading: #f3ddaf;
+  --caption: rgba(232, 194, 104, 0.8);
+  --accent: #c8a427;
+  --accent-2: #8e6f2a;
+  --gold: #e8c244;
+  --gold-hi: #f4d050;
+  --gold-dim: rgba(200, 164, 39, 0.55);
+  --border: rgba(200, 164, 39, 0.2);
+  --border-hi: rgba(232, 194, 68, 0.5);
+  --line: rgba(200, 164, 39, 0.16);
+  --shadow: 0 24px 56px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.28);
+  --bevel:
     inset 0 2px 0 rgba(255, 230, 140, 0.13),
     inset 0 -2px 0 rgba(0, 0, 0, 0.55),
     inset 2px 0 0 rgba(255, 230, 140, 0.06),
     inset -2px 0 0 rgba(0, 0, 0, 0.35);
-  --bg: var(--color-bg-canvas);
-  --bg-soft: var(--color-bg-canvas-soft);
-  --panel: var(--color-surface-panel);
-  --panel-strong: var(--color-surface-panel-strong);
-  --text: var(--color-text-primary);
-  --muted: var(--color-text-muted);
-  --accent: var(--color-accent-primary);
-  --accent-2: var(--color-accent-secondary);
-  --gold: var(--color-accent-gold);
-  --gold-hi: var(--color-accent-gold);
-  --gold-dim: rgba(200, 164, 39, 0.55);
-  --parchment: #d4b888;
-  --parchment-dim: rgba(212, 184, 136, 0.62);
-  --stone: #1e1c14;
-  --stone-mid: #26231a;
-  --stone-lit: #34301f;
-  --line: var(--color-line-soft);
-  --shadow: var(--shadow-shell);
-  --bevel: var(--campaign-bevel);
-  --border: var(--campaign-border);
-  --border-hi: var(--campaign-border-hi);
+  --success: #d8e0b0;
+  --success-bg: rgba(80, 96, 44, 0.24);
+  --success-border: rgba(164, 194, 91, 0.18);
+  --warning: #f7e5ba;
+  --warning-bg: rgba(200, 164, 39, 0.12);
+  --warning-border: rgba(232, 194, 68, 0.26);
+  --danger: #f1c0b7;
+  --danger-bg: rgba(139, 49, 36, 0.24);
+  --danger-border: rgba(217, 108, 86, 0.2);
+  --focus-ring: rgba(232, 194, 68, 0.82);
+  --control-bg: linear-gradient(180deg, rgba(44, 40, 28, 0.96), rgba(28, 24, 18, 0.94));
+  --control-bg-hover: linear-gradient(180deg, rgba(56, 50, 34, 0.98), rgba(36, 31, 22, 0.96));
+  --card-bg: linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
+  --card-bg-hover: linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
+  --badge-bg: rgba(200, 164, 39, 0.08);
+  --app-shell-bg:
+    radial-gradient(circle at top, var(--hero-overlay), transparent 28%),
+    linear-gradient(180deg, #13100b 0%, #0e0c09 45%, #17140f 100%);
+  --marketing-shell-bg: var(--bg);
+  --backdrop-grid:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  --shell-surface-bg:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(36, 31, 22, 0.96), rgba(22, 19, 14, 0.94));
+  --shell-top-wash: linear-gradient(180deg, rgba(97, 67, 39, 0.12), transparent);
+  --page-aura-bg:
+    radial-gradient(circle at top center, rgba(200, 164, 39, 0.18), transparent 34%),
+    radial-gradient(circle at 12% 18%, rgba(255, 214, 115, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(18, 15, 10, 0.92), rgba(18, 15, 10, 0.08));
+  --campaign-shell-bg:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(46, 36, 24, 0.88), rgba(28, 22, 15, 0.8));
+  --campaign-shell-overlay:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 36%),
+    linear-gradient(180deg, rgba(200, 164, 39, 0.04), transparent 24%);
+  --hero-panel-bg:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.14), transparent 36%),
+    linear-gradient(180deg, rgba(28, 23, 16, 0.94), rgba(18, 15, 10, 0.9));
+  --hero-text-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
+  --status-surface: rgba(12, 10, 8, 0.34);
+  --focus-card-bg:
+    radial-gradient(circle at top right, rgba(200, 164, 39, 0.24), transparent 44%),
+    linear-gradient(180deg, rgba(53, 40, 26, 0.98), rgba(29, 23, 16, 0.98));
+  --nav-surface:
+    linear-gradient(180deg, rgba(27, 24, 16, 0.96), rgba(16, 14, 10, 0.94)),
+    radial-gradient(circle at top, rgba(200, 164, 39, 0.08), transparent 52%);
+  --nav-hover-bg: rgba(200, 164, 39, 0.1);
+  --nav-active-bg: rgba(200, 164, 39, 0.14);
+  --button-primary-bg:
+    radial-gradient(ellipse at top, rgba(255, 200, 60, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #6a5220 0%, #3e300e 100%);
+  --button-primary-bg-hover:
+    radial-gradient(ellipse at top, rgba(255, 210, 70, 0.26) 0%, transparent 55%),
+    linear-gradient(180deg, #7e6228 0%, #4c3c10 100%);
+  --button-primary-border: rgba(200, 164, 39, 0.6);
+  --button-primary-border-hover: rgba(200, 164, 39, 0.82);
+  --button-primary-text: var(--gold);
+  --button-primary-text-hover: var(--gold-hi);
+  --button-primary-shadow: var(--bevel), 0 6px 20px rgba(0, 0, 0, 0.5);
+  --button-primary-shadow-hover: var(--bevel), 0 12px 28px rgba(0, 0, 0, 0.55);
+  --button-ghost-bg: linear-gradient(180deg, rgba(44, 42, 28, 0.98), rgba(28, 26, 18, 0.96));
+  --button-ghost-bg-hover: linear-gradient(180deg, rgba(58, 54, 32, 1), rgba(38, 34, 24, 0.98));
+  --button-danger-bg:
+    radial-gradient(ellipse at top, rgba(255, 144, 120, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #7f2e20 0%, #54170f 100%);
+  --button-danger-border: rgba(217, 118, 86, 0.52);
+  --button-danger-text: #ffe5da;
+  --field-bg: linear-gradient(180deg, rgba(44, 42, 28, 0.98), rgba(28, 26, 18, 0.96));
+  --field-text: #f0dcc0;
+  --field-placeholder: rgba(212, 184, 136, 0.46);
+  --feature-card-bg: linear-gradient(180deg, rgba(37, 34, 24, 1), rgba(28, 26, 18, 0.98));
+  --feature-card-accent-bg:
+    radial-gradient(ellipse at top right, rgba(200, 164, 39, 0.12) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(46, 43, 28, 1), rgba(30, 28, 18, 0.98));
+  --metric-win-bg:
+    radial-gradient(circle at top right, rgba(114, 171, 82, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(39, 51, 29, 0.96), rgba(21, 30, 17, 0.94));
+  --metric-loss-bg:
+    radial-gradient(circle at top right, rgba(186, 90, 73, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(57, 34, 28, 0.96), rgba(31, 20, 17, 0.94));
+  --metric-neutral-bg:
+    radial-gradient(circle at top right, rgba(128, 143, 171, 0.12), transparent 44%),
+    linear-gradient(180deg, rgba(35, 37, 43, 0.96), rgba(20, 22, 27, 0.94));
+  --metric-gold-bg:
+    radial-gradient(circle at top right, rgba(232, 194, 68, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(66, 51, 24, 0.98), rgba(34, 27, 15, 0.96));
+  --owner-color-default: #9aa6b2;
+  --owner-text-default: #2c1f14;
+  --avatar-bg:
+    radial-gradient(circle at top, rgba(232, 194, 68, 0.14), transparent 58%),
+    linear-gradient(180deg, rgba(42, 37, 27, 0.96), rgba(24, 21, 15, 0.94));
+  --footer-shell-bg:
+    radial-gradient(circle at top right, rgba(232, 194, 68, 0.14), transparent 48%),
+    linear-gradient(180deg, rgba(30, 26, 19, 0.98), rgba(16, 14, 10, 0.96));
+  --landing-header-bg: linear-gradient(180deg, rgba(28, 25, 16, 0.96) 0%, rgba(20, 18, 11, 0.94) 100%);
+  --landing-hero-overlay:
+    radial-gradient(ellipse at 50% 40%, rgba(200, 164, 39, 0.08) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(14, 12, 9, 0.45) 0%, rgba(14, 12, 9, 0.1) 40%, rgba(14, 12, 9, 0.1) 60%, rgba(14, 12, 9, 0.85) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(30, 28, 20, 0.88) 0%, rgba(20, 18, 12, 0.88) 100%);
+  --landing-section-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(200, 164, 39, 0.07) 0%, transparent 50%),
+    linear-gradient(180deg, #141210 0%, #0e0c09 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #0e0c09 0%, #141210 50%, #0e0c09 100%);
+  --landing-howto-bg:
+    radial-gradient(ellipse at 50% 100%, rgba(200, 164, 39, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #0e0c09 0%, #141210 100%);
+  --landing-final-overlay: linear-gradient(180deg, rgba(14, 12, 9, 0.85) 0%, transparent 30%, transparent 70%, rgba(14, 12, 9, 0.85) 100%);
+  --landing-footer-bg: linear-gradient(180deg, #0e0c09 0%, #080705 100%);
   --radius: 6px;
   --campaign-shell-radius: 6px;
   --campaign-card-radius: 6px;
   --campaign-control-radius: 3px;
   --campaign-soft-radius: 6px;
+  --muted: var(--text-muted);
+  --parchment: var(--text);
+  --parchment-dim: var(--text-muted);
 }
 
 html[data-theme="midnight"] {
-  --color-bg-canvas: #0b1018;
-  --color-bg-canvas-soft: #151c28;
-  --color-surface-panel: rgba(21, 30, 42, 0.9);
-  --color-surface-panel-strong: rgba(13, 20, 31, 0.94);
-  --color-text-primary: #d7e7f7;
-  --color-text-muted: rgba(184, 206, 230, 0.68);
-  --color-text-inverse: #eff7ff;
-  --color-accent-primary: #5da4f5;
-  --color-accent-secondary: #2d6395;
-  --color-accent-gold: #85c1ff;
-  --color-line-soft: rgba(93, 164, 245, 0.18);
-  --shadow-shell: 0 24px 56px rgba(0, 0, 0, 0.5);
-  --campaign-border: rgba(93, 164, 245, 0.2);
-  --campaign-border-hi: rgba(133, 193, 255, 0.5);
-  --campaign-bevel:
+  --bg: #07111d;
+  --bg-soft: #0f1b2b;
+  --panel: rgba(16, 26, 39, 0.9);
+  --panel-strong: rgba(10, 18, 29, 0.96);
+  --overlay: rgba(4, 8, 14, 0.52);
+  --grid: rgba(93, 164, 245, 0.04);
+  --hero-overlay: rgba(93, 164, 245, 0.16);
+  --text: #d7e7f7;
+  --text-muted: rgba(184, 206, 230, 0.7);
+  --text-inverse: #eff7ff;
+  --heading: #eff7ff;
+  --caption: rgba(133, 193, 255, 0.84);
+  --accent: #5da4f5;
+  --accent-2: #2d6395;
+  --gold: #85c1ff;
+  --gold-hi: #b2dbff;
+  --gold-dim: rgba(93, 164, 245, 0.52);
+  --border: rgba(93, 164, 245, 0.22);
+  --border-hi: rgba(133, 193, 255, 0.56);
+  --line: rgba(93, 164, 245, 0.18);
+  --shadow: 0 24px 56px rgba(0, 0, 0, 0.54);
+  --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.34);
+  --bevel:
     inset 0 2px 0 rgba(173, 217, 255, 0.12),
     inset 0 -2px 0 rgba(0, 0, 0, 0.58),
     inset 2px 0 0 rgba(173, 217, 255, 0.06),
     inset -2px 0 0 rgba(0, 0, 0, 0.38);
-  --bg: var(--color-bg-canvas);
-  --bg-soft: var(--color-bg-canvas-soft);
-  --panel: var(--color-surface-panel);
-  --panel-strong: var(--color-surface-panel-strong);
-  --text: var(--color-text-primary);
-  --muted: var(--color-text-muted);
-  --accent: var(--color-accent-primary);
-  --accent-2: var(--color-accent-secondary);
-  --gold: var(--color-accent-gold);
-  --gold-hi: var(--color-accent-gold);
-  --gold-dim: rgba(93, 164, 245, 0.55);
-  --parchment: #d7e7f7;
-  --parchment-dim: rgba(184, 206, 230, 0.62);
-  --stone: #151c28;
-  --stone-mid: #1d2532;
-  --stone-lit: #29364a;
-  --line: var(--color-line-soft);
-  --shadow: var(--shadow-shell);
-  --bevel: var(--campaign-bevel);
-  --border: var(--campaign-border);
-  --border-hi: var(--campaign-border-hi);
-  --radius: 6px;
-  --campaign-shell-radius: 6px;
-  --campaign-card-radius: 6px;
-  --campaign-control-radius: 3px;
-  --campaign-soft-radius: 6px;
+  --success: #c7e5d5;
+  --success-bg: rgba(36, 93, 79, 0.32);
+  --success-border: rgba(105, 190, 161, 0.22);
+  --warning: #cfe8ff;
+  --warning-bg: rgba(67, 112, 161, 0.22);
+  --warning-border: rgba(133, 193, 255, 0.3);
+  --danger: #ffd4cf;
+  --danger-bg: rgba(122, 57, 78, 0.26);
+  --danger-border: rgba(226, 132, 155, 0.24);
+  --focus-ring: rgba(133, 193, 255, 0.84);
+  --control-bg: linear-gradient(180deg, rgba(25, 38, 56, 0.98), rgba(13, 21, 33, 0.96));
+  --control-bg-hover: linear-gradient(180deg, rgba(32, 49, 71, 1), rgba(18, 29, 44, 0.98));
+  --card-bg: linear-gradient(180deg, rgba(24, 37, 54, 0.94), rgba(12, 20, 31, 0.92));
+  --card-bg-hover: linear-gradient(180deg, rgba(28, 43, 63, 0.96), rgba(15, 24, 36, 0.96));
+  --badge-bg: rgba(93, 164, 245, 0.1);
+  --app-shell-bg:
+    radial-gradient(circle at top, var(--hero-overlay), transparent 30%),
+    linear-gradient(180deg, #09131f 0%, #07111d 42%, #102033 100%);
+  --marketing-shell-bg: linear-gradient(180deg, #07111d 0%, #091624 100%);
+  --backdrop-grid:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  --shell-surface-bg:
+    radial-gradient(circle at top right, rgba(93, 164, 245, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(22, 34, 50, 0.96), rgba(12, 21, 32, 0.94));
+  --shell-top-wash: linear-gradient(180deg, rgba(67, 107, 161, 0.14), transparent);
+  --page-aura-bg:
+    radial-gradient(circle at top center, rgba(93, 164, 245, 0.22), transparent 36%),
+    radial-gradient(circle at 14% 20%, rgba(173, 217, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(9, 15, 24, 0.94), rgba(9, 15, 24, 0.08));
+  --campaign-shell-bg:
+    radial-gradient(circle at top right, rgba(93, 164, 245, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(18, 29, 44, 0.9), rgba(10, 17, 26, 0.84));
+  --campaign-shell-overlay:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.035), transparent 36%),
+    linear-gradient(180deg, rgba(93, 164, 245, 0.05), transparent 24%);
+  --hero-panel-bg:
+    radial-gradient(circle at top right, rgba(93, 164, 245, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(15, 26, 39, 0.96), rgba(9, 17, 26, 0.92));
+  --hero-text-shadow: 0 3px 18px rgba(1, 5, 9, 0.72);
+  --status-surface: rgba(8, 13, 20, 0.42);
+  --focus-card-bg:
+    radial-gradient(circle at top right, rgba(93, 164, 245, 0.26), transparent 44%),
+    linear-gradient(180deg, rgba(24, 41, 62, 0.98), rgba(11, 20, 31, 0.98));
+  --nav-surface:
+    linear-gradient(180deg, rgba(14, 25, 37, 0.98), rgba(8, 15, 24, 0.96)),
+    radial-gradient(circle at top, rgba(93, 164, 245, 0.1), transparent 54%);
+  --nav-hover-bg: rgba(93, 164, 245, 0.12);
+  --nav-active-bg: rgba(93, 164, 245, 0.18);
+  --button-primary-bg:
+    radial-gradient(ellipse at top, rgba(133, 193, 255, 0.24) 0%, transparent 58%),
+    linear-gradient(180deg, #184a73 0%, #0f2d46 100%);
+  --button-primary-bg-hover:
+    radial-gradient(ellipse at top, rgba(173, 217, 255, 0.28) 0%, transparent 58%),
+    linear-gradient(180deg, #20608f 0%, #123654 100%);
+  --button-primary-border: rgba(133, 193, 255, 0.58);
+  --button-primary-border-hover: rgba(173, 217, 255, 0.82);
+  --button-primary-text: #dff0ff;
+  --button-primary-text-hover: #f2f9ff;
+  --button-primary-shadow: var(--bevel), 0 6px 20px rgba(0, 0, 0, 0.58);
+  --button-primary-shadow-hover: var(--bevel), 0 12px 28px rgba(0, 0, 0, 0.62);
+  --button-ghost-bg: linear-gradient(180deg, rgba(21, 34, 49, 0.98), rgba(11, 19, 29, 0.96));
+  --button-ghost-bg-hover: linear-gradient(180deg, rgba(29, 45, 65, 1), rgba(14, 24, 37, 0.98));
+  --button-danger-bg:
+    radial-gradient(ellipse at top, rgba(255, 142, 170, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #6d2f4a 0%, #431a2d 100%);
+  --button-danger-border: rgba(226, 132, 155, 0.48);
+  --button-danger-text: #ffe3eb;
+  --field-bg: linear-gradient(180deg, rgba(21, 34, 49, 0.98), rgba(11, 19, 29, 0.96));
+  --field-text: #e7f2ff;
+  --field-placeholder: rgba(184, 206, 230, 0.48);
+  --feature-card-bg: linear-gradient(180deg, rgba(19, 31, 46, 1), rgba(11, 19, 29, 0.98));
+  --feature-card-accent-bg:
+    radial-gradient(ellipse at top right, rgba(93, 164, 245, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(23, 39, 58, 1), rgba(14, 24, 36, 0.98));
+  --metric-win-bg:
+    radial-gradient(circle at top right, rgba(73, 208, 174, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(17, 57, 55, 0.96), rgba(11, 31, 33, 0.94));
+  --metric-loss-bg:
+    radial-gradient(circle at top right, rgba(240, 114, 159, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(72, 28, 49, 0.96), rgba(36, 14, 24, 0.94));
+  --metric-neutral-bg:
+    radial-gradient(circle at top right, rgba(128, 157, 198, 0.14), transparent 44%),
+    linear-gradient(180deg, rgba(30, 41, 58, 0.96), rgba(18, 24, 35, 0.94));
+  --metric-gold-bg:
+    radial-gradient(circle at top right, rgba(133, 193, 255, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(26, 52, 80, 0.98), rgba(13, 27, 43, 0.96));
+  --avatar-bg:
+    radial-gradient(circle at top, rgba(133, 193, 255, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(25, 39, 58, 0.96), rgba(12, 20, 31, 0.94));
+  --footer-shell-bg:
+    radial-gradient(circle at top right, rgba(133, 193, 255, 0.14), transparent 48%),
+    linear-gradient(180deg, rgba(17, 28, 43, 0.98), rgba(8, 14, 22, 0.96));
+  --landing-header-bg: linear-gradient(180deg, rgba(14, 24, 38, 0.96) 0%, rgba(9, 16, 26, 0.94) 100%);
+  --landing-hero-overlay:
+    radial-gradient(ellipse at 50% 40%, rgba(93, 164, 245, 0.09) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(7, 17, 29, 0.5) 0%, rgba(7, 17, 29, 0.12) 40%, rgba(7, 17, 29, 0.12) 60%, rgba(7, 17, 29, 0.88) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(17, 27, 40, 0.88) 0%, rgba(10, 17, 27, 0.9) 100%);
+  --landing-section-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(93, 164, 245, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #101a29 0%, #07111d 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #07111d 0%, #0d1826 50%, #07111d 100%);
+  --landing-howto-bg:
+    radial-gradient(ellipse at 50% 100%, rgba(93, 164, 245, 0.07) 0%, transparent 50%),
+    linear-gradient(180deg, #07111d 0%, #0d1826 100%);
+  --landing-final-overlay: linear-gradient(180deg, rgba(7, 17, 29, 0.88) 0%, transparent 30%, transparent 70%, rgba(7, 17, 29, 0.88) 100%);
+  --landing-footer-bg: linear-gradient(180deg, #07111d 0%, #040b13 100%);
+  --muted: var(--text-muted);
+  --parchment: var(--text);
+  --parchment-dim: var(--text-muted);
 }
 
 html[data-theme="ember"] {
-  --color-bg-canvas: #140d0a;
-  --color-bg-canvas-soft: #241511;
-  --color-surface-panel: rgba(40, 23, 19, 0.9);
-  --color-surface-panel-strong: rgba(28, 16, 14, 0.94);
-  --color-text-primary: #f0d4c6;
-  --color-text-muted: rgba(229, 186, 165, 0.66);
-  --color-text-inverse: #fff0e7;
-  --color-accent-primary: #d06a44;
-  --color-accent-secondary: #924327;
-  --color-accent-gold: #ff9a66;
-  --color-line-soft: rgba(208, 106, 68, 0.18);
-  --shadow-shell: 0 24px 56px rgba(0, 0, 0, 0.48);
-  --campaign-border: rgba(208, 106, 68, 0.2);
-  --campaign-border-hi: rgba(255, 154, 102, 0.48);
-  --campaign-bevel:
+  --bg: #140b09;
+  --bg-soft: #24120e;
+  --panel: rgba(39, 21, 16, 0.9);
+  --panel-strong: rgba(26, 14, 12, 0.96);
+  --overlay: rgba(14, 7, 6, 0.5);
+  --grid: rgba(208, 106, 68, 0.038);
+  --hero-overlay: rgba(208, 106, 68, 0.16);
+  --text: #f0d4c6;
+  --text-muted: rgba(229, 186, 165, 0.7);
+  --text-inverse: #fff0e7;
+  --heading: #fff0e7;
+  --caption: rgba(255, 154, 102, 0.82);
+  --accent: #d06a44;
+  --accent-2: #924327;
+  --gold: #ff9a66;
+  --gold-hi: #ffbc8f;
+  --gold-dim: rgba(208, 106, 68, 0.56);
+  --border: rgba(208, 106, 68, 0.22);
+  --border-hi: rgba(255, 154, 102, 0.54);
+  --line: rgba(208, 106, 68, 0.18);
+  --shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.3);
+  --bevel:
     inset 0 2px 0 rgba(255, 176, 136, 0.12),
     inset 0 -2px 0 rgba(0, 0, 0, 0.56),
     inset 2px 0 0 rgba(255, 176, 136, 0.06),
     inset -2px 0 0 rgba(0, 0, 0, 0.36);
-  --bg: var(--color-bg-canvas);
-  --bg-soft: var(--color-bg-canvas-soft);
-  --panel: var(--color-surface-panel);
-  --panel-strong: var(--color-surface-panel-strong);
-  --text: var(--color-text-primary);
-  --muted: var(--color-text-muted);
-  --accent: var(--color-accent-primary);
-  --accent-2: var(--color-accent-secondary);
-  --gold: var(--color-accent-gold);
-  --gold-hi: var(--color-accent-gold);
-  --gold-dim: rgba(208, 106, 68, 0.55);
-  --parchment: #f0d4c6;
-  --parchment-dim: rgba(229, 186, 165, 0.6);
-  --stone: #241511;
-  --stone-mid: #33201a;
-  --stone-lit: #472c24;
-  --line: var(--color-line-soft);
-  --shadow: var(--shadow-shell);
-  --bevel: var(--campaign-bevel);
-  --border: var(--campaign-border);
-  --border-hi: var(--campaign-border-hi);
-  --radius: 6px;
-  --campaign-shell-radius: 6px;
-  --campaign-card-radius: 6px;
-  --campaign-control-radius: 3px;
-  --campaign-soft-radius: 6px;
+  --success: #d4e1bc;
+  --success-bg: rgba(71, 96, 37, 0.28);
+  --success-border: rgba(171, 203, 93, 0.2);
+  --warning: #ffd8c2;
+  --warning-bg: rgba(146, 67, 39, 0.24);
+  --warning-border: rgba(255, 154, 102, 0.28);
+  --danger: #ffe5da;
+  --danger-bg: rgba(127, 46, 32, 0.3);
+  --danger-border: rgba(217, 118, 86, 0.24);
+  --focus-ring: rgba(255, 154, 102, 0.84);
+  --control-bg: linear-gradient(180deg, rgba(52, 27, 22, 0.98), rgba(29, 16, 14, 0.96));
+  --control-bg-hover: linear-gradient(180deg, rgba(65, 34, 27, 1), rgba(36, 20, 17, 0.98));
+  --card-bg: linear-gradient(180deg, rgba(44, 25, 20, 0.94), rgba(24, 14, 12, 0.92));
+  --card-bg-hover: linear-gradient(180deg, rgba(51, 30, 24, 0.96), rgba(30, 17, 15, 0.96));
+  --badge-bg: rgba(208, 106, 68, 0.1);
+  --app-shell-bg:
+    radial-gradient(circle at top, var(--hero-overlay), transparent 30%),
+    linear-gradient(180deg, #1c0f0d 0%, #140b09 44%, #29140f 100%);
+  --marketing-shell-bg: linear-gradient(180deg, #140b09 0%, #1a0f0d 100%);
+  --backdrop-grid:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  --shell-surface-bg:
+    radial-gradient(circle at top right, rgba(208, 106, 68, 0.1), transparent 34%),
+    linear-gradient(180deg, rgba(43, 24, 19, 0.96), rgba(24, 14, 12, 0.94));
+  --shell-top-wash: linear-gradient(180deg, rgba(146, 67, 39, 0.14), transparent);
+  --page-aura-bg:
+    radial-gradient(circle at top center, rgba(208, 106, 68, 0.2), transparent 35%),
+    radial-gradient(circle at 14% 20%, rgba(255, 176, 136, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(20, 11, 9, 0.94), rgba(20, 11, 9, 0.08));
+  --campaign-shell-bg:
+    radial-gradient(circle at top right, rgba(208, 106, 68, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(54, 31, 24, 0.9), rgba(30, 17, 14, 0.84));
+  --campaign-shell-overlay:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 36%),
+    linear-gradient(180deg, rgba(208, 106, 68, 0.05), transparent 24%);
+  --hero-panel-bg:
+    radial-gradient(circle at top right, rgba(208, 106, 68, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(36, 21, 18, 0.96), rgba(21, 12, 10, 0.92));
+  --hero-text-shadow: 0 3px 18px rgba(8, 3, 2, 0.72);
+  --status-surface: rgba(18, 9, 8, 0.38);
+  --focus-card-bg:
+    radial-gradient(circle at top right, rgba(208, 106, 68, 0.26), transparent 44%),
+    linear-gradient(180deg, rgba(58, 33, 27, 0.98), rgba(31, 18, 16, 0.98));
+  --nav-surface:
+    linear-gradient(180deg, rgba(32, 19, 16, 0.98), rgba(18, 10, 9, 0.96)),
+    radial-gradient(circle at top, rgba(208, 106, 68, 0.1), transparent 54%);
+  --nav-hover-bg: rgba(208, 106, 68, 0.14);
+  --nav-active-bg: rgba(208, 106, 68, 0.2);
+  --button-primary-bg:
+    radial-gradient(ellipse at top, rgba(255, 154, 102, 0.22) 0%, transparent 58%),
+    linear-gradient(180deg, #8a3e21 0%, #5a220f 100%);
+  --button-primary-bg-hover:
+    radial-gradient(ellipse at top, rgba(255, 188, 143, 0.28) 0%, transparent 58%),
+    linear-gradient(180deg, #a64a27 0%, #6b2912 100%);
+  --button-primary-border: rgba(255, 154, 102, 0.56);
+  --button-primary-border-hover: rgba(255, 188, 143, 0.8);
+  --button-primary-text: #ffe5d6;
+  --button-primary-text-hover: #fff0e7;
+  --button-primary-shadow: var(--bevel), 0 6px 20px rgba(0, 0, 0, 0.54);
+  --button-primary-shadow-hover: var(--bevel), 0 12px 28px rgba(0, 0, 0, 0.6);
+  --button-ghost-bg: linear-gradient(180deg, rgba(46, 28, 24, 0.98), rgba(27, 16, 14, 0.96));
+  --button-ghost-bg-hover: linear-gradient(180deg, rgba(59, 35, 28, 1), rgba(35, 20, 17, 0.98));
+  --button-danger-bg:
+    radial-gradient(ellipse at top, rgba(255, 196, 164, 0.2) 0%, transparent 55%),
+    linear-gradient(180deg, #a32c1d 0%, #6a140f 100%);
+  --button-danger-border: rgba(255, 176, 136, 0.5);
+  --button-danger-text: #fff0e7;
+  --field-bg: linear-gradient(180deg, rgba(46, 28, 24, 0.98), rgba(27, 16, 14, 0.96));
+  --field-text: #f6ddd1;
+  --field-placeholder: rgba(229, 186, 165, 0.48);
+  --feature-card-bg: linear-gradient(180deg, rgba(41, 25, 21, 1), rgba(27, 16, 14, 0.98));
+  --feature-card-accent-bg:
+    radial-gradient(ellipse at top right, rgba(208, 106, 68, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(48, 29, 24, 1), rgba(30, 18, 15, 0.98));
+  --metric-win-bg:
+    radial-gradient(circle at top right, rgba(171, 203, 93, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(55, 50, 24, 0.96), rgba(28, 27, 13, 0.94));
+  --metric-loss-bg:
+    radial-gradient(circle at top right, rgba(255, 132, 102, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(76, 28, 22, 0.96), rgba(38, 13, 12, 0.94));
+  --metric-neutral-bg:
+    radial-gradient(circle at top right, rgba(152, 142, 132, 0.14), transparent 44%),
+    linear-gradient(180deg, rgba(49, 35, 31, 0.96), rgba(28, 19, 17, 0.94));
+  --metric-gold-bg:
+    radial-gradient(circle at top right, rgba(255, 154, 102, 0.2), transparent 44%),
+    linear-gradient(180deg, rgba(74, 39, 22, 0.98), rgba(39, 20, 15, 0.96));
+  --avatar-bg:
+    radial-gradient(circle at top, rgba(255, 154, 102, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(44, 25, 21, 0.96), rgba(24, 14, 12, 0.94));
+  --footer-shell-bg:
+    radial-gradient(circle at top right, rgba(255, 154, 102, 0.14), transparent 48%),
+    linear-gradient(180deg, rgba(34, 20, 17, 0.98), rgba(16, 10, 9, 0.96));
+  --landing-header-bg: linear-gradient(180deg, rgba(33, 19, 16, 0.96) 0%, rgba(21, 12, 10, 0.94) 100%);
+  --landing-hero-overlay:
+    radial-gradient(ellipse at 50% 40%, rgba(208, 106, 68, 0.1) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(20, 11, 9, 0.5) 0%, rgba(20, 11, 9, 0.12) 40%, rgba(20, 11, 9, 0.12) 60%, rgba(20, 11, 9, 0.88) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(38, 22, 18, 0.88) 0%, rgba(22, 13, 11, 0.9) 100%);
+  --landing-section-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(208, 106, 68, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #1d100d 0%, #140b09 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #140b09 0%, #1f110d 50%, #140b09 100%);
+  --landing-howto-bg:
+    radial-gradient(ellipse at 50% 100%, rgba(208, 106, 68, 0.07) 0%, transparent 50%),
+    linear-gradient(180deg, #140b09 0%, #1f110d 100%);
+  --landing-final-overlay: linear-gradient(180deg, rgba(20, 11, 9, 0.88) 0%, transparent 30%, transparent 70%, rgba(20, 11, 9, 0.88) 100%);
+  --landing-footer-bg: linear-gradient(180deg, #140b09 0%, #090505 100%);
+  --muted: var(--text-muted);
+  --parchment: var(--text);
+  --parchment-dim: var(--text-muted);
 }
+/* Theme token definitions end */
 
 * {
   box-sizing: border-box;
@@ -174,15 +459,13 @@ body {
 }
 
 body[data-shell-kind="marketing"] {
-  background: #0e0c09;
-  color: var(--parchment);
+  background: var(--marketing-shell-bg);
+  color: var(--text);
   line-height: 1.65;
 }
 
 body[data-shell-kind="app"] {
-  background:
-    radial-gradient(circle at top, rgba(200, 164, 39, 0.14), transparent 28%),
-    linear-gradient(180deg, #13100b 0%, #0e0c09 45%, #17140f 100%);
+  background: var(--app-shell-bg);
   color: var(--text);
 }
 
@@ -194,9 +477,7 @@ body[data-shell-kind="app"] {
 }
 
 body[data-shell-kind="app"] .backdrop {
-  background-image:
-    linear-gradient(rgba(200, 164, 39, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(200, 164, 39, 0.035) 1px, transparent 1px);
+  background-image: var(--backdrop-grid);
 }
 
 .top-nav-page-frame,
@@ -217,7 +498,7 @@ body[data-shell-kind="app"] .backdrop {
 
 .top-nav-brand .eyebrow {
   margin: 0;
-  color: rgba(232, 194, 104, 0.78);
+  color: var(--caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-size: 0.58rem;
@@ -225,12 +506,12 @@ body[data-shell-kind="app"] .backdrop {
 
 .top-nav-brand h1 {
   margin: 0;
-  color: #f3ddaf;
+  color: var(--heading);
   font-size: 1.05rem;
   font-variant: small-caps;
   letter-spacing: 0.08em;
   line-height: 1;
-  text-shadow: 0 0 18px rgba(200, 164, 39, 0.2);
+  text-shadow: var(--hero-text-shadow);
 }
 
 .top-nav-links {
@@ -271,8 +552,8 @@ body[data-shell-kind="app"] .backdrop {
   min-width: 102px;
   height: 34px;
   padding: 0 34px 0 10px;
-  color: var(--text);
-  background: rgba(255, 250, 241, 0.9);
+  color: var(--field-text);
+  background: var(--field-bg);
 }
 
 .top-nav-auth-form input {
@@ -285,7 +566,7 @@ body[data-shell-kind="app"] .backdrop {
 }
 
 .top-nav-auth-form input::placeholder {
-  color: rgba(224, 203, 165, 0.48);
+  color: var(--field-placeholder);
 }
 
 .panel,
@@ -296,11 +577,9 @@ body[data-shell-kind="app"] .backdrop {
 .game-info-bottom,
 .game-actions-rail {
   background: var(--panel);
-  border: 1px solid rgba(200, 164, 39, 0.14);
+  border: 1px solid var(--border);
   border-radius: var(--campaign-shell-radius);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 140, 0.05),
-    var(--shadow);
+  box-shadow: var(--bevel), var(--shadow);
   backdrop-filter: blur(10px);
 }
 
@@ -311,9 +590,7 @@ body[data-shell-kind="app"] .backdrop {
 .profile-shell,
 .register-shell,
 .new-game-shell {
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 32%),
-    linear-gradient(180deg, rgba(36, 31, 22, 0.96), rgba(22, 19, 14, 0.94));
+  background: var(--shell-surface-bg);
 }
 
 .session-browser,
@@ -333,7 +610,7 @@ body[data-shell-kind="app"] .backdrop {
   position: absolute;
   inset: 0 0 auto;
   height: 72px;
-  background: linear-gradient(180deg, rgba(97, 67, 39, 0.12), transparent);
+  background: var(--shell-top-wash);
   pointer-events: none;
 }
 
@@ -348,11 +625,8 @@ body[data-shell-kind="app"] .backdrop {
   inset: 0 0 auto;
   height: min(36rem, 58vh);
   border-radius: 28px;
-  background:
-    radial-gradient(circle at top center, rgba(200, 164, 39, 0.18), transparent 34%),
-    radial-gradient(circle at 12% 18%, rgba(255, 214, 115, 0.08), transparent 22%),
-    linear-gradient(180deg, rgba(18, 15, 10, 0.92), rgba(18, 15, 10, 0.08));
-  border: 1px solid rgba(200, 164, 39, 0.08);
+  background: var(--page-aura-bg);
+  border: 1px solid var(--line);
   pointer-events: none;
   z-index: 0;
 }
@@ -366,22 +640,16 @@ body[data-shell-kind="app"] .backdrop {
   position: relative;
   overflow: hidden;
   border-radius: var(--campaign-shell-radius);
-  border: 1px solid rgba(200, 164, 39, 0.14);
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 30%),
-    linear-gradient(180deg, rgba(46, 36, 24, 0.88), rgba(28, 22, 15, 0.8));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 166, 0.08),
-    0 22px 54px rgba(0, 0, 0, 0.34);
+  border: 1px solid var(--border);
+  background: var(--campaign-shell-bg);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .campaign-shell::before {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 36%),
-    linear-gradient(180deg, rgba(200, 164, 39, 0.04), transparent 24%);
+  background: var(--campaign-shell-overlay);
   pointer-events: none;
 }
 
@@ -389,13 +657,9 @@ body[data-shell-kind="app"] .backdrop {
   position: relative;
   padding: 22px 24px;
   border-radius: 20px;
-  border: 1px solid rgba(200, 164, 39, 0.14);
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.14), transparent 36%),
-    linear-gradient(180deg, rgba(28, 23, 16, 0.94), rgba(18, 15, 10, 0.9));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 166, 0.08),
-    0 16px 40px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border);
+  background: var(--hero-panel-bg);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .campaign-hero-copy {
@@ -406,32 +670,32 @@ body[data-shell-kind="app"] .backdrop {
 .campaign-hero .eyebrow,
 .campaign-hero .lobby-command-label,
 .campaign-hero .profile-command-label {
-  color: rgba(232, 194, 104, 0.8);
+  color: var(--caption);
   letter-spacing: 0.22em;
 }
 
 .campaign-hero h2,
 .campaign-hero h3,
 .campaign-hero .page-title {
-  color: #f2ddb0;
+  color: var(--heading);
   font-variant: small-caps;
   letter-spacing: 0.05em;
-  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.6);
+  text-shadow: var(--hero-text-shadow);
 }
 
 .campaign-hero .stage-copy,
 .campaign-hero p:not(.eyebrow),
 .campaign-focus-card p {
-  color: rgba(224, 203, 165, 0.76);
+  color: var(--text-muted);
 }
 
 .campaign-status-line {
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(200, 164, 39, 0.12);
-  background: rgba(12, 10, 8, 0.34);
-  color: rgba(224, 203, 165, 0.78);
+  border: 1px solid var(--border);
+  background: var(--status-surface);
+  color: var(--text-muted);
 }
 
 .campaign-focus-grid {
@@ -439,24 +703,16 @@ body[data-shell-kind="app"] .backdrop {
 }
 
 .campaign-focus-card {
-  border-color: rgba(200, 164, 39, 0.16);
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.24), transparent 44%),
-    linear-gradient(180deg, rgba(53, 40, 26, 0.98), rgba(29, 23, 16, 0.98));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 166, 0.08),
-    0 16px 36px rgba(0, 0, 0, 0.22);
+  border-color: var(--border-hi);
+  background: var(--focus-card-bg);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .campaign-nav {
   min-height: 60px;
-  background:
-    linear-gradient(180deg, rgba(27, 24, 16, 0.96), rgba(16, 14, 10, 0.94)),
-    radial-gradient(circle at top, rgba(200, 164, 39, 0.08), transparent 52%);
-  border: 1px solid rgba(200, 164, 39, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 230, 166, 0.08),
-    0 16px 34px rgba(0, 0, 0, 0.28);
+  background: var(--nav-surface);
+  border: 1px solid var(--border-hi);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .stage-copy,
@@ -485,7 +741,7 @@ body[data-shell-kind="app"] .backdrop {
 .new-game-shell h3,
 .profile-shell h3,
 .register-shell h3 {
-  color: #f0d9a8;
+  color: var(--heading);
   font-variant: small-caps;
   letter-spacing: 0.05em;
 }
@@ -495,31 +751,29 @@ body[data-shell-kind="app"] .backdrop {
 .profile-command-label,
 .profile-section-eyebrow,
 .lobby-command-card p + .lobby-command-label {
-  color: rgba(232, 194, 68, 0.76);
+  color: var(--gold);
 }
 
 .badge {
-  border: 1px solid rgba(200, 164, 39, 0.18);
-  background: rgba(200, 164, 39, 0.08);
-  color: #f0d9a8;
+  border: 1px solid var(--border-hi);
+  background: var(--badge-bg);
+  color: var(--heading);
 }
 
 .badge.accent {
-  background:
-    radial-gradient(circle at top, rgba(232, 194, 68, 0.18), transparent 60%),
-    linear-gradient(180deg, rgba(83, 64, 24, 0.92), rgba(46, 35, 15, 0.92));
-  color: #f7e5ba;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
 }
 
 input,
 select {
-  border-color: rgba(200, 164, 39, 0.16);
-  background: rgba(10, 9, 7, 0.42);
-  color: #f0dcc0;
+  border-color: var(--border);
+  background: var(--field-bg);
+  color: var(--field-text);
 }
 
 input::placeholder {
-  color: rgba(212, 184, 136, 0.46);
+  color: var(--field-placeholder);
 }
 
 .session-list-panel,
@@ -542,104 +796,86 @@ input::placeholder {
 .session-detail-item,
 .session-detail-hero,
 .session-detail-note {
-  border: 1px solid rgba(200, 164, 39, 0.14);
+  border: 1px solid var(--border);
   border-radius: var(--campaign-card-radius);
-  background:
-    linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 230, 140, 0.04);
+  background: var(--card-bg);
+  box-shadow: var(--bevel);
   color: var(--text);
 }
 
 .profile-intel-card,
 .profile-games-card {
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
-    linear-gradient(180deg, rgba(42, 36, 26, 0.94), rgba(24, 21, 15, 0.92));
+  background: var(--feature-card-accent-bg);
 }
 
 .profile-metric-card.accent-win {
-  background:
-    radial-gradient(circle at top right, rgba(114, 171, 82, 0.16), transparent 44%),
-    linear-gradient(180deg, rgba(39, 51, 29, 0.96), rgba(21, 30, 17, 0.94));
+  background: var(--metric-win-bg);
 }
 
 .profile-metric-card.accent-loss {
-  background:
-    radial-gradient(circle at top right, rgba(186, 90, 73, 0.16), transparent 44%),
-    linear-gradient(180deg, rgba(57, 34, 28, 0.96), rgba(31, 20, 17, 0.94));
+  background: var(--metric-loss-bg);
 }
 
 .profile-metric-card.accent-neutral {
-  background:
-    radial-gradient(circle at top right, rgba(128, 143, 171, 0.12), transparent 44%),
-    linear-gradient(180deg, rgba(35, 37, 43, 0.96), rgba(20, 22, 27, 0.94));
+  background: var(--metric-neutral-bg);
 }
 
 .profile-metric-card.accent-gold {
-  background:
-    radial-gradient(circle at top right, rgba(232, 194, 68, 0.18), transparent 44%),
-    linear-gradient(180deg, rgba(66, 51, 24, 0.98), rgba(34, 27, 15, 0.96));
+  background: var(--metric-gold-bg);
 }
 
 .session-detail-note {
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.1), transparent 45%),
-    linear-gradient(180deg, rgba(46, 39, 27, 0.94), rgba(27, 23, 17, 0.94));
+  background: var(--feature-card-accent-bg);
 }
 
 .profile-game-row,
 .session-row-button,
 .card-chip {
-  border: 1px solid rgba(200, 164, 39, 0.14);
+  border: 1px solid var(--border);
   border-radius: var(--campaign-card-radius);
-  background:
-    linear-gradient(180deg, rgba(34, 30, 22, 0.96), rgba(20, 18, 13, 0.94));
+  background: var(--control-bg);
   color: var(--text);
 }
 
 .profile-game-row:hover,
 .session-row-button:hover,
 .card-chip:hover {
-  border-color: rgba(200, 164, 39, 0.32);
-  background:
-    radial-gradient(circle at top right, rgba(200, 164, 39, 0.08), transparent 42%),
-    linear-gradient(180deg, rgba(46, 39, 27, 0.96), rgba(25, 22, 16, 0.96));
+  border-color: var(--border-hi);
+  background: var(--card-bg-hover);
 }
 
 .profile-game-row:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.22);
+  box-shadow: var(--shadow-soft);
 }
 
 .session-row-button.is-selected,
 .card-chip.is-selected {
-  border-color: rgba(232, 194, 68, 0.42);
-  background:
-    radial-gradient(circle at top right, rgba(232, 194, 68, 0.12), transparent 44%),
-    linear-gradient(180deg, rgba(60, 48, 27, 0.98), rgba(33, 27, 17, 0.96));
-  box-shadow: inset 0 0 0 1px rgba(232, 194, 68, 0.1);
+  border-color: var(--border-hi);
+  background: var(--feature-card-accent-bg);
+  box-shadow: var(--bevel);
 }
 
 .session-feedback,
 .profile-feedback,
 .auth-feedback {
-  border: 1px solid rgba(200, 164, 39, 0.12);
-  background: rgba(200, 164, 39, 0.07);
+  border: 1px solid var(--warning-border);
+  background: var(--warning-bg);
   color: var(--muted);
 }
 
 .session-feedback.is-error,
 .profile-feedback.is-error,
 .auth-feedback.is-error {
-  background: rgba(139, 49, 36, 0.24);
-  border-color: rgba(217, 108, 86, 0.2);
-  color: #f1c0b7;
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .auth-feedback.is-success {
-  background: rgba(80, 96, 44, 0.24);
-  border-color: rgba(164, 194, 91, 0.18);
-  color: #d8e0b0;
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
 }
 
 .ld-locale-control {
@@ -684,26 +920,22 @@ button,
 button,
 .lobby-create-button,
 .primary-nav-action {
-  border: 1px solid rgba(200, 164, 39, 0.6);
-  background:
-    radial-gradient(ellipse at top, rgba(255, 200, 60, 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, #6a5220 0%, #3e300e 100%);
-  color: var(--gold);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  box-shadow: var(--campaign-bevel), 0 6px 20px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--button-primary-border);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  text-shadow: 0 1px 3px var(--overlay);
+  box-shadow: var(--button-primary-shadow);
 }
 
 .ld-btn-primary:hover,
 button:hover,
 .lobby-create-button:hover,
 .primary-nav-action:hover {
-  background:
-    radial-gradient(ellipse at top, rgba(255, 210, 70, 0.26) 0%, transparent 55%),
-    linear-gradient(180deg, #7e6228 0%, #4c3c10 100%);
-  border-color: rgba(200, 164, 39, 0.82);
-  color: #f4d050;
+  background: var(--button-primary-bg-hover);
+  border-color: var(--button-primary-border-hover);
+  color: var(--button-primary-text-hover);
   transform: translateY(-2px);
-  box-shadow: var(--campaign-bevel), 0 12px 28px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--button-primary-shadow-hover);
 }
 
 button:disabled,
@@ -719,10 +951,10 @@ button:disabled,
 .top-nav-register,
 .top-nav-logout,
 .ghost-button {
-  border: 1px solid var(--campaign-border);
-  background: linear-gradient(180deg, #2c2a1c 0%, #1c1a12 100%);
+  border: 1px solid var(--border);
+  background: var(--button-ghost-bg);
   color: var(--muted);
-  box-shadow: var(--campaign-bevel), 0 3px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .ld-btn-ghost:hover,
@@ -730,19 +962,17 @@ button:disabled,
 .top-nav-register:hover,
 .top-nav-logout:hover,
 .ghost-button:hover {
-  background: linear-gradient(180deg, #3a3620 0%, #26221a 100%);
-  border-color: rgba(200, 164, 39, 0.42);
+  background: var(--button-ghost-bg-hover);
+  border-color: var(--border-hi);
   color: var(--text);
   transform: translateY(-1px);
-  box-shadow: var(--campaign-bevel), 0 8px 18px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--bevel), var(--shadow);
 }
 
 .danger-button {
-  background:
-    radial-gradient(ellipse at top, rgba(255, 144, 120, 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, #7f2e20 0%, #54170f 100%);
-  border-color: rgba(217, 118, 86, 0.52);
-  color: #ffe5da;
+  background: var(--button-danger-bg);
+  border-color: var(--button-danger-border);
+  color: var(--button-danger-text);
 }
 
 .ld-btn-lg {
@@ -757,18 +987,18 @@ button:disabled,
   min-height: 38px;
   padding: 0 12px;
   border-radius: var(--campaign-control-radius);
-  border: 1px solid var(--campaign-border);
-  background: linear-gradient(180deg, #2c2a1c 0%, #1c1a12 100%);
-  color: var(--parchment);
+  border: 1px solid var(--border);
+  background: var(--field-bg);
+  color: var(--field-text);
   font-family: inherit;
   letter-spacing: 0.07em;
-  box-shadow: var(--campaign-bevel), 0 3px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .ld-locale-select:focus-visible,
 .top-nav-locale-select:focus-visible,
 .top-nav-auth-form input:focus-visible {
-  outline: 2px solid rgba(232, 194, 68, 0.82);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -780,9 +1010,9 @@ button:disabled,
   flex-direction: column;
   gap: 14px;
   border-radius: var(--campaign-card-radius);
-  border: 1px solid var(--campaign-border);
-  background: linear-gradient(180deg, #252218 0%, #1c1a12 100%);
-  box-shadow: var(--campaign-bevel), 0 8px 28px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
+  background: var(--feature-card-bg);
+  box-shadow: var(--bevel), var(--shadow);
   position: relative;
   overflow: hidden;
   transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
@@ -800,7 +1030,7 @@ button:disabled,
 .session-list-panel:hover,
 .session-detail-panel:hover {
   transform: translateY(-4px);
-  box-shadow: var(--campaign-bevel), 0 18px 44px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--bevel), var(--shadow);
 }
 
 .ld-feature-card::before,
@@ -815,7 +1045,7 @@ button:disabled,
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at top right, rgba(200, 164, 39, 0.06) 0%, transparent 55%);
+  background: radial-gradient(ellipse at top right, var(--hero-overlay) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -824,10 +1054,8 @@ button:disabled,
 .lobby-command-card-accent,
 .new-game-brief-card-accent,
 .lobby-focus-card {
-  border-color: rgba(200, 164, 39, 0.4);
-  background:
-    radial-gradient(ellipse at top right, rgba(200, 164, 39, 0.12) 0%, transparent 55%),
-    linear-gradient(180deg, #2e2b1c 0%, #1e1c12 100%);
+  border-color: var(--border-hi);
+  background: var(--feature-card-accent-bg);
 }
 
 .profile-command-card-accent p,
@@ -838,7 +1066,7 @@ button:disabled,
 .lobby-command-card-accent .lobby-command-label,
 .new-game-brief-card-accent .lobby-command-label,
 .lobby-focus-card .lobby-command-label {
-  color: rgba(248, 238, 213, 0.78);
+  color: var(--text-muted);
 }
 
 .ld-feature-card p,
@@ -866,7 +1094,7 @@ button:disabled,
 .lobby-command-card strong,
 .new-game-brief-card strong,
 .profile-note-card h3 {
-  color: var(--color-text-inverse);
+  color: var(--text-inverse);
 }
 
 .brand-link {
@@ -904,12 +1132,12 @@ button:disabled,
 }
 
 .top-nav-bar .nav-link:hover {
-  background: rgba(200, 164, 39, 0.1);
+  background: var(--nav-hover-bg);
   color: var(--text);
 }
 
 .top-nav-bar .nav-link.is-active {
-  background: rgba(200, 164, 39, 0.14);
+  background: var(--nav-active-bg);
   color: var(--text);
 }
 
@@ -928,12 +1156,10 @@ button:disabled,
   justify-content: center;
   font-weight: 700;
   letter-spacing: 0.04em;
-  border: 1px solid var(--campaign-border);
-  background:
-    radial-gradient(circle at top, rgba(232, 194, 68, 0.14), transparent 58%),
-    linear-gradient(180deg, rgba(42, 37, 27, 0.96), rgba(24, 21, 15, 0.94));
+  border: 1px solid var(--border);
+  background: var(--avatar-bg);
   color: var(--text);
-  box-shadow: var(--campaign-bevel), 0 6px 16px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .shared-bottom-shell {
@@ -943,11 +1169,9 @@ button:disabled,
   align-items: center;
   padding: 14px 18px;
   border-radius: var(--campaign-shell-radius);
-  border: 1px solid rgba(200, 164, 39, 0.18);
-  background:
-    radial-gradient(circle at top right, rgba(232, 194, 68, 0.14), transparent 48%),
-    linear-gradient(180deg, rgba(30, 26, 19, 0.98), rgba(16, 14, 10, 0.96));
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-hi);
+  background: var(--footer-shell-bg);
+  box-shadow: var(--shadow-soft);
 }
 
 .shared-footer-copy {
@@ -961,7 +1185,7 @@ button:disabled,
 .shared-footer-title {
   margin: 0;
   font-size: 1.12rem;
-  color: var(--color-text-inverse);
+  color: var(--text-inverse);
 }
 
 .shared-footer-note {
