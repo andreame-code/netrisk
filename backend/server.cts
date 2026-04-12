@@ -1,4 +1,3 @@
-// @ts-nocheck
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -33,6 +32,38 @@ const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs"
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
+
+type Request = import("http").IncomingMessage;
+type Response = import("http").ServerResponse;
+type CookieMap = Record<string, string>;
+type AppUser = {
+  id: string;
+  username: string;
+  profile?: {
+    preferences?: {
+      theme?: string;
+    };
+  };
+  preferences?: {
+    theme?: string;
+  };
+};
+type CreateAppOptions = {
+  dbFile?: string;
+  dataFile?: string;
+  gamesFile?: string;
+  sessionsFile?: string;
+};
+type GameContext = {
+  gameId: string | null;
+  gameName: string | null;
+  version: number | null;
+  state: any;
+};
+type EventClient = {
+  res: Response;
+  user: unknown;
+};
 
 loadLocalEnv();
 
@@ -72,11 +103,11 @@ const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(["command", "midnight", "ember"]);
 
-function resolveStoredTheme(theme) {
-  return supportedSiteThemes.has(theme) ? theme : "command";
+function resolveStoredTheme(theme: unknown): string {
+  return typeof theme === "string" && supportedSiteThemes.has(theme) ? theme : "command";
 }
 
-function extractUserPreferences(user) {
+function extractUserPreferences(user: AppUser | null | undefined) {
   return {
     theme: resolveStoredTheme(user?.profile?.preferences?.theme)
   };
@@ -90,10 +121,10 @@ function defaultDbFile() {
   return path.join(projectRoot, "data", "netrisk.sqlite");
 }
 
-function parseBody(req) {
+function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     let raw = "";
-    req.on("data", (chunk) => {
+    req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
         reject(createLocalizedError("Payload troppo grande", "server.payloadTooLarge"));
@@ -107,7 +138,7 @@ function parseBody(req) {
       }
 
       try {
-        resolve(JSON.parse(raw));
+        resolve(JSON.parse(raw) as Record<string, any>);
       } catch (error) {
         reject(createLocalizedError("JSON non valido", "server.invalidJson"));
       }
@@ -115,7 +146,7 @@ function parseBody(req) {
   });
 }
 
-function parseCookies(req) {
+function parseCookies(req: Request): CookieMap {
   const rawCookies = String(req.headers.cookie || "");
   if (!rawCookies) {
     return {};
@@ -135,14 +166,14 @@ function parseCookies(req) {
 
     cookies[key] = decodeURIComponent(value);
     return cookies;
-  }, {});
+  }, {} as CookieMap);
 }
 
-function secureCookieFlag(req) {
-  return req.socket?.encrypted || req.headers["x-forwarded-proto"] === "https";
+function secureCookieFlag(req: Request): boolean {
+  return Boolean((req.socket as any)?.encrypted) || req.headers["x-forwarded-proto"] === "https";
 }
 
-function buildSessionCookie(req, sessionToken) {
+function buildSessionCookie(req: Request, sessionToken: string): string {
   const parts = [
     `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
     "HttpOnly",
@@ -155,7 +186,7 @@ function buildSessionCookie(req, sessionToken) {
   return parts.join("; ");
 }
 
-function clearSessionCookie(req) {
+function clearSessionCookie(req: Request): string {
   const parts = [
     `${sessionCookieName}=`,
     "HttpOnly",
@@ -169,7 +200,7 @@ function clearSessionCookie(req) {
   return parts.join("; ");
 }
 
-function createApp(options = {}) {
+function createApp(options: CreateAppOptions = {}) {
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
     if (missingEnvKeys.length) {
@@ -183,10 +214,10 @@ function createApp(options = {}) {
   }
 
   const state = createInitialState();
-  let activeGameId = null;
-  let activeGameVersion = null;
-  let activeGameName = null;
-  let nextAttackRolls = null;
+  let activeGameId: string | null = null;
+  let activeGameVersion: number | null = null;
+  let activeGameName: string | null = null;
+  let nextAttackRolls: number[] | null = null;
   const datastore = createDatastore({
     dbFile: options.dbFile || defaultDbFile(),
     legacyUsersFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
@@ -207,13 +238,13 @@ function createApp(options = {}) {
     dataFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(projectRoot, "data", "sessions.json")
   });
-  const clientsByGameId = new Map();
-  let initPromise = null;
+  const clientsByGameId = new Map<string, Set<EventClient>>();
+  let initPromise: Promise<void> | null = null;
 
   const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
   if (isPromiseLike(eagerInitialGame)) {
     initPromise = eagerInitialGame
-      .then((initialGame) => {
+      .then((initialGame: any) => {
         activeGameId = initialGame.game.id;
         activeGameVersion = initialGame.game.version;
         activeGameName = initialGame.game.name;
@@ -229,7 +260,7 @@ function createApp(options = {}) {
     replaceState(eagerInitialGame.state);
   }
 
-  function replaceState(nextState) {
+  function replaceState(nextState: Record<string, any>) {
     Object.keys(state).forEach((key) => delete state[key]);
     Object.assign(state, nextState);
   }
@@ -241,7 +272,7 @@ function createApp(options = {}) {
 
     if (!initPromise) {
       initPromise = Promise.resolve(gameSessions.ensureActiveGame(createInitialState))
-        .then((initialGame) => {
+        .then((initialGame: any) => {
           activeGameId = initialGame.game.id;
           activeGameVersion = initialGame.game.version;
           activeGameName = initialGame.game.name;
@@ -255,7 +286,7 @@ function createApp(options = {}) {
     await initPromise;
   }
 
-  async function persistActiveGame(expectedVersion) {
+  async function persistActiveGame(expectedVersion?: number | null) {
     if (!activeGameId) {
       return null;
     }
@@ -266,7 +297,7 @@ function createApp(options = {}) {
     return savedGame;
   }
 
-  function snapshotForState(nextState, gameId, version, gameName) {
+  function snapshotForState(nextState: any, gameId: string | null, version: number | null, gameName: string | null) {
     return { ...publicState(nextState), gameId, version, gameName };
   }
 
@@ -274,11 +305,11 @@ function createApp(options = {}) {
     return snapshotForState(state, activeGameId, activeGameVersion, activeGameName);
   }
 
-  function getTargetGameId(body = {}, url = null) {
+  function getTargetGameId(body: Record<string, any> = {}, url: URL | null = null): string | null {
     return body.gameId || (url ? url.searchParams.get("gameId") : null) || activeGameId || null;
   }
 
-  async function loadGameContext(gameId) {
+  async function loadGameContext(gameId: string | null): Promise<GameContext> {
     await initializeActiveGame();
 
     if (!gameId || gameId === activeGameId) {
@@ -299,7 +330,7 @@ function createApp(options = {}) {
     };
   }
 
-  async function persistGameContext(gameContext, expectedVersion) {
+  async function persistGameContext(gameContext: GameContext, expectedVersion?: number | null) {
     if (!gameContext?.gameId) {
       return null;
     }
@@ -319,7 +350,7 @@ function createApp(options = {}) {
     return savedGame;
   }
 
-  function broadcastGame(gameContext) {
+  function broadcastGame(gameContext: GameContext) {
     if (!gameContext?.gameId) {
       return;
     }
@@ -329,7 +360,7 @@ function createApp(options = {}) {
       return;
     }
 
-    clients.forEach((client) => {
+    clients.forEach((client: EventClient) => {
       const payload = "data: " + JSON.stringify(
         snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, client.user)
       ) + "\n\n";
@@ -337,7 +368,7 @@ function createApp(options = {}) {
     });
   }
 
-  function runAiTurnsIfNeeded(targetState) {
+  function runAiTurnsIfNeeded(targetState: any): any[] {
     const reports = [];
     const maxTurns = Math.max(4, targetState.players.length * 4);
 
@@ -358,7 +389,7 @@ function createApp(options = {}) {
     return reports;
   }
 
-  async function persistWithAiTurns(gameContext, expectedVersion) {
+  async function persistWithAiTurns(gameContext: GameContext, expectedVersion?: number | null) {
     await persistGameContext(gameContext, expectedVersion);
     const aiReports = runAiTurnsIfNeeded(gameContext.state);
     if (aiReports.length > 0) {
@@ -367,7 +398,7 @@ function createApp(options = {}) {
     return aiReports;
   }
 
-  async function resumeAiTurnsForRead(gameContext) {
+  async function resumeAiTurnsForRead(gameContext: GameContext) {
     if (!gameContext?.state || gameContext.state.phase !== "active" || gameContext.state.winnerId) {
       return [];
     }
@@ -380,12 +411,12 @@ function createApp(options = {}) {
     return persistWithAiTurns(gameContext, gameContext.version);
   }
 
-  function extractSessionToken(req, body = {}, url = null) {
+  function extractSessionToken(req: Request, body: Record<string, any> = {}, url: URL | null = null): string | null {
     const cookies = parseCookies(req);
     return cookies[sessionCookieName] || null;
   }
 
-  async function requireAuth(req, res, body, url = null) {
+  async function requireAuth(req: Request, res: Response, body: Record<string, any>, url: URL | null = null) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
@@ -396,7 +427,7 @@ function createApp(options = {}) {
     return { sessionToken, user };
   }
 
-  async function authorizeGameRead(gameId, req, res, url) {
+  async function authorizeGameRead(gameId: string | null, req: Request, res: Response, url: URL) {
     if (!gameId) {
       return { ok: true, user: null, gameRecord: null };
     }
@@ -419,7 +450,7 @@ function createApp(options = {}) {
 
     try {
       authorize("game:read", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
-    } catch (error) {
+    } catch (error: any) {
       const statusCode = error.statusCode || 400;
       sendLocalizedError(res, statusCode, error, "Accesso partita non autorizzato.", "server.game.readUnauthorized");
       return null;
@@ -428,12 +459,12 @@ function createApp(options = {}) {
     return { ...authContext, gameRecord };
   }
 
-  function resolvePlayerForUser(nextState, user) {
+  function resolvePlayerForUser(nextState: any, user: any) {
     if (!user || !nextState || !Array.isArray(nextState.players)) {
       return null;
     }
 
-    return nextState.players.find((player) => {
+    return nextState.players.find((player: any) => {
       if (player.isAi) {
         return false;
       }
@@ -446,7 +477,7 @@ function createApp(options = {}) {
     }) || null;
   }
 
-  function playerBelongsToUser(player, user) {
+  function playerBelongsToUser(player: any, user: any): boolean {
     if (!player || !user || player.isAi) {
       return false;
     }
@@ -458,15 +489,15 @@ function createApp(options = {}) {
     return player.linkedUserId === user.id;
   }
 
-  function visibleHandForPlayer(nextState, player) {
+  function visibleHandForPlayer(nextState: any, player: any): any[] {
     if (!player || !Array.isArray(nextState?.hands?.[player.id])) {
       return [];
     }
 
-    return nextState.hands[player.id].map((card) => ({ ...card }));
+    return nextState.hands[player.id].map((card: any) => ({ ...card }));
   }
 
-  function snapshotForUser(nextState, gameId, version, gameName, user) {
+  function snapshotForUser(nextState: any, gameId: string | null, version: number | null, gameName: string | null, user: any) {
     const baseSnapshot = snapshotForState(nextState, gameId, version, gameName);
     const resolvedPlayer = resolvePlayerForUser(nextState, user);
 
@@ -489,7 +520,7 @@ function createApp(options = {}) {
     };
   }
 
-  async function handleApi(req, res, url) {
+  async function handleApi(req: Request, res: Response, url: URL) {
     await initializeActiveGame();
 
     if (req.method === "GET" && url.pathname === "/api/health") {
@@ -564,7 +595,7 @@ function createApp(options = {}) {
         authorize,
         createConfiguredInitialState,
         addPlayer,
-        async (state, options) => {
+        async (state: any, options: Record<string, any>) => {
           const created = await gameSessions.createGame(state, options);
           activeGameId = created.game.id;
           activeGameVersion = created.game.version;
@@ -589,8 +620,8 @@ function createApp(options = {}) {
         body,
         requireAuth,
         authorize,
-        (gameId) => gameSessions.getGame(gameId),
-        (gameId) => gameSessions.openGame(gameId),
+        (gameId: string) => gameSessions.getGame(gameId),
+        (gameId: string) => gameSessions.openGame(gameId),
         () => gameSessions.listGames(),
         resumeAiTurnsForRead,
         resolvePlayerForUser,
@@ -811,7 +842,7 @@ function createApp(options = {}) {
     sendLocalizedError(res, 404, null, "Endpoint non trovato.", "server.endpoint.notFound");
   }
 
-  function serveStatic(res, url) {
+  function serveStatic(res: Response, url: URL) {
     const relativePath = url.pathname === "/"
       ? "/index.html"
       : url.pathname.indexOf("/game/") === 0
@@ -824,7 +855,7 @@ function createApp(options = {}) {
       return;
     }
 
-    fs.readFile(filePath, (error, data) => {
+    fs.readFile(filePath, (error: NodeJS.ErrnoException | null, data: Buffer) => {
       if (error) {
         sendLocalizedError(res, 404, null, "File non trovato.", "server.static.fileNotFound");
         return;
@@ -843,14 +874,15 @@ function createApp(options = {}) {
         ".webp": "image/webp"
       };
 
+      const contentType = contentTypes[extension as keyof typeof contentTypes] || "text/plain; charset=utf-8";
       res.writeHead(200, {
-        "Content-Type": contentTypes[extension] || "text/plain; charset=utf-8"
+        "Content-Type": contentType
       });
       res.end(data);
     });
   }
 
-  function addSecurityHeaders(res) {
+  function addSecurityHeaders(res: Response) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
@@ -858,8 +890,8 @@ function createApp(options = {}) {
       "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
   }
 
-  function handleRequest(req, res) {
-    const url = new URL(req.url, "http://" + req.headers.host);
+  function handleRequest(req: Request, res: Response) {
+    const url = new URL(req.url || "/", "http://" + req.headers.host);
 
     addSecurityHeaders(res);
 
@@ -872,7 +904,7 @@ function createApp(options = {}) {
         serveStatic(res, url);
         return null;
       })
-      .catch((error) => {
+      .catch((error: any) => {
         sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
       });
   }
