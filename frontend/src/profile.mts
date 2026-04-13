@@ -1,5 +1,6 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import type { ProfileResponse, ProfileSummary, PublicUser, SessionResponse } from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const elements = {
@@ -63,11 +64,11 @@ const themeManager = window.netriskTheme || {
 
 let profileRequestId = 0;
 
-function themeLabel(theme) {
+function themeLabel(theme: string): string {
   return t(`profile.preferences.theme.${theme}`, {}, { fallback: theme });
 }
 
-function setThemeStatus(message) {
+function setThemeStatus(message: string): void {
   elements.themeStatus.textContent = message;
 }
 
@@ -84,11 +85,11 @@ function renderThemeOptions() {
   });
 }
 
-function showThemePreferences(isVisible) {
+function showThemePreferences(isVisible: boolean): void {
   setHidden(elements.profilePreferences, !isVisible);
 }
 
-function syncThemePreference({ announce = false, preferredTheme = null } = {}) {
+function syncThemePreference({ announce = false, preferredTheme = null }: { announce?: boolean; preferredTheme?: string | null } = {}): void {
   renderThemeOptions();
 
   const currentTheme = preferredTheme || themeManager.getCurrentTheme();
@@ -100,7 +101,7 @@ function syncThemePreference({ announce = false, preferredTheme = null } = {}) {
   );
 }
 
-function isNavigationAbort(error) {
+function isNavigationAbort(error: unknown): boolean {
   if (!error) {
     return false;
   }
@@ -114,13 +115,13 @@ function isNavigationAbort(error) {
     && error.name === "AbortError";
 }
 
-async function persistThemePreference(theme) {
+async function persistThemePreference(theme: string): Promise<SessionResponse> {
   const response = await fetch("/api/profile/preferences/theme", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ theme })
   });
-  const data = await response.json();
+  const data = await response.json() as SessionResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.requestFailed")));
   }
@@ -128,7 +129,7 @@ async function persistThemePreference(theme) {
   return data;
 }
 
-function renderAuthArea(user) {
+function renderAuthArea(user: PublicUser | null): void {
   const isAuthenticated = Boolean(user);
   if (elements.headerLoginForm) {
     setHidden(elements.headerLoginForm as HTMLElement, isAuthenticated);
@@ -156,14 +157,14 @@ function renderNavAvatar(username = "") {
   avatar.textContent = label || "C";
 }
 
-function showFeedback(message, tone = "neutral") {
+function showFeedback(message: string, tone = "neutral"): void {
   setHidden(elements.profileFeedback, false);
   elements.profileFeedback.textContent = message;
   elements.profileFeedback.className = `profile-feedback${tone === "error" ? " is-error" : ""}`;
   setHidden(elements.profileContent, true);
 }
 
-function escapeHtml(value) {
+function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -172,7 +173,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function phaseLabel(phase) {
+function phaseLabel(phase: string): string {
   if (phase === "active") {
     return t("common.phase.active");
   }
@@ -182,7 +183,7 @@ function phaseLabel(phase) {
   return t("common.phase.lobby");
 }
 
-function formatUpdatedTime(value) {
+function formatUpdatedTime(value: string | null | undefined): string {
   if (!value) {
     return t("common.notAvailable");
   }
@@ -200,7 +201,7 @@ function formatUpdatedTime(value) {
   });
 }
 
-function renderParticipatingGames(profile) {
+function renderParticipatingGames(profile: ProfileSummary): void {
   const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
   const count = participatingGames.length;
   const label = t(count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other", { count });
@@ -247,12 +248,12 @@ function renderParticipatingGames(profile) {
     .join(""));
 }
 
-function showProfile(profile) {
+function showProfile(profile: ProfileSummary): void {
   const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
   const focusGame = participatingGames[0] || null;
   const knownMaps = participatingGames
     .map((game) => game.mapName || game.mapId)
-    .filter(Boolean);
+    .filter((value): value is string => Boolean(value));
   const rankingTitle = profile.winRate == null
     ? t("profile.ranks.recruit")
     : profile.winRate >= 70
@@ -319,7 +320,7 @@ async function loadProfile() {
   const requestId = ++profileRequestId;
   showFeedback(t("profile.feedback"));
 
-  let sessionUser = null;
+  let sessionUser: PublicUser | null = null;
 
   try {
     const sessionResponse = await fetch("/api/auth/session");
@@ -328,7 +329,7 @@ async function loadProfile() {
       throw new Error(t("profile.errors.loginRequired"));
     }
 
-    const session = await sessionResponse.json();
+    const session = await sessionResponse.json() as SessionResponse;
     if (requestId !== profileRequestId) {
       return;
     }
@@ -346,13 +347,13 @@ async function loadProfile() {
       throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
     }
 
-    const payload = await profileResponse.json();
+    const payload = await profileResponse.json() as ProfileResponse;
     if (requestId !== profileRequestId) {
       return;
     }
     elements.profileName.textContent = session.user.username;
     showProfile(payload.profile);
-  } catch (error) {
+  } catch (error: unknown) {
     if (requestId !== profileRequestId) {
       return;
     }
@@ -401,7 +402,7 @@ if (elements.headerLoginForm) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
-      const data = await response.json();
+      const data = await response.json() as SessionResponse;
       if (!response.ok) {
         throw new Error(translateServerMessage(data, t("errors.loginFailed")));
       }
@@ -410,7 +411,7 @@ if (elements.headerLoginForm) {
         elements.headerAuthPassword.value = "";
       }
       await loadProfile();
-    } catch (error) {
+    } catch (error: unknown) {
       showFeedback(messageFromError(error, t("errors.loginFailed")), "error");
       renderAuthArea(null);
       renderNavAvatar();
@@ -427,7 +428,9 @@ elements.logoutButton.addEventListener("click", async () => {
   renderNavAvatar();
   showFeedback(t("profile.runtime.loggedOutFeedback"), "error");
   elements.profileName.textContent = t("profile.runtime.unavailableTitle");
-  elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
+  if (elements.profileSubtitle) {
+    elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
+  }
 
   try {
     await fetch("/api/auth/logout", {
@@ -437,7 +440,7 @@ elements.logoutButton.addEventListener("click", async () => {
       },
       body: JSON.stringify({})
     });
-  } catch (error) {
+  } catch (_error: unknown) {
   }
 });
 
@@ -456,7 +459,7 @@ elements.themeSelect.addEventListener("change", async () => {
     const storedTheme = themeManager.getThemeFromUser(data.user) || nextTheme;
     themeManager.applyUserTheme(data.user);
     syncThemePreference({ announce: true, preferredTheme: storedTheme });
-  } catch (error) {
+  } catch (error: unknown) {
     if (isNavigationAbort(error) || document.visibilityState === "hidden") {
       setThemeStatus(t("profile.preferences.status.current", { theme: themeLabel(nextTheme) }));
       return;

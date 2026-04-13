@@ -199,7 +199,9 @@ function queueMapBoardFit() {
 }
 function territoryPosition(territory) {
     if (territory && Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
-        return { x: territory.x * 100, y: territory.y * 100 };
+        const x = Number(territory.x);
+        const y = Number(territory.y);
+        return { x: x * 100, y: y * 100 };
     }
     return territory ? classicMapLayout[territory.id] || null : null;
 }
@@ -231,7 +233,8 @@ function resolveCurrentPlayer() {
         }
     }
     if (state.user?.username) {
-        return state.snapshot.players.find((player) => player.name === state.user.username) || null;
+        const username = state.user.username;
+        return state.snapshot.players.find((player) => player.name === username) || null;
     }
     return null;
 }
@@ -243,7 +246,8 @@ function myTerritories() {
     return (state.snapshot?.map || []).filter((territory) => territory.ownerId === currentPlayer?.id);
 }
 function currentExpectedVersion() {
-    return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
+    const snapshot = state.snapshot;
+    return snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
 }
 function currentGamePayload() {
     return state.currentGameId ? { gameId: state.currentGameId } : {};
@@ -278,7 +282,8 @@ async function refreshPrivateStateIfNeeded(nextState) {
     const currentPlayerId = state.playerId || resolveCurrentPlayer()?.id || null;
     const currentPlayer = nextState.players.find((player) => player.id === currentPlayerId) || null;
     const hand = Array.isArray(nextState.playerHand) ? nextState.playerHand : [];
-    if (!currentPlayer || !Number.isInteger(currentPlayer.cardCount) || hand.length >= currentPlayer.cardCount) {
+    const currentPlayerCardCount = Number.isInteger(currentPlayer?.cardCount) ? Number(currentPlayer?.cardCount) : null;
+    if (!currentPlayer || currentPlayerCardCount == null || hand.length >= currentPlayerCardCount) {
         return nextState;
     }
     let latestState = nextState;
@@ -286,7 +291,7 @@ async function refreshPrivateStateIfNeeded(nextState) {
         try {
             latestState = await fetchLatestStateSnapshot({ includeGameId: false });
             const latestHand = Array.isArray(latestState.playerHand) ? latestState.playerHand : [];
-            if (latestHand.length >= currentPlayer.cardCount) {
+            if (latestHand.length >= currentPlayerCardCount) {
                 return latestState;
             }
         }
@@ -322,7 +327,7 @@ function cardTypeLabel(type) {
         artillery: t("game.runtime.cardType.artillery"),
         wild: t("game.runtime.cardType.wild")
     };
-    return labels[type] || String(type || t("game.runtime.cardType.default"));
+    return type ? (labels[type] || String(type)) : t("game.runtime.cardType.default");
 }
 function cardDisplayLabel(card) {
     const territoryName = card.territoryId ? (territoryById(card.territoryId)?.name || card.territoryId) : null;
@@ -338,7 +343,7 @@ function formatCombatComparisons(comparisons) {
     return comparisons.map((comparison) => comparison.winner === "attacker" ? "A" : "D").join(" · ");
 }
 function setSession(user) {
-    state.user = user;
+    state.user = user || null;
     window.netriskTheme?.applyUserTheme?.(state.user);
 }
 function clearPlayerIdentity() {
@@ -391,7 +396,7 @@ async function applyReinforcements(times) {
         amount: total,
         expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = data.state;
+    state.snapshot = data.state || state.snapshot;
     render();
 }
 async function executeAttack(fromId, toId, attackDice) {
@@ -404,12 +409,13 @@ async function executeAttack(fromId, toId, attackDice) {
         attackDice,
         expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = data.state;
-    if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+    const nextState = data.state;
+    state.snapshot = nextState || state.snapshot;
+    if (!nextState?.pendingConquest && elements.conquestArmies) {
         elements.conquestArmies.value = "";
     }
     render();
-    return data.state;
+    return nextState;
 }
 async function runBanzaiAttack() {
     const initialContext = selectedAttackContext();
@@ -432,8 +438,9 @@ async function runBanzaiAttack() {
             attackDice,
             expectedVersion: currentExpectedVersion()
         });
-        state.snapshot = data.state;
-        if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+        const nextState = data.state;
+        state.snapshot = nextState || state.snapshot;
+        if (!nextState?.pendingConquest && elements.conquestArmies) {
             elements.conquestArmies.value = "";
         }
         render();
@@ -869,7 +876,7 @@ function render() {
     const inAttack = snapshot?.turnPhase === "attack";
     const inFortify = snapshot?.turnPhase === "fortify";
     const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
-    const canSurrender = Boolean(me) && snapshot?.phase === "active" && !me.eliminated;
+    const canSurrender = Boolean(me && !me.eliminated) && snapshot?.phase === "active";
     const pendingConquest = snapshot?.pendingConquest || null;
     const isAuthenticated = Boolean(state.user);
     elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
@@ -883,9 +890,15 @@ function render() {
     }
     if (elements.headerLoginForm) {
         elements.headerLoginForm.hidden = isAuthenticated;
-        elements.headerAuthUsername.disabled = isAuthenticated;
-        elements.headerAuthPassword.disabled = isAuthenticated;
-        elements.headerLoginButton.disabled = isAuthenticated;
+        if (elements.headerAuthUsername) {
+            elements.headerAuthUsername.disabled = isAuthenticated;
+        }
+        if (elements.headerAuthPassword) {
+            elements.headerAuthPassword.disabled = isAuthenticated;
+        }
+        if (elements.headerLoginButton) {
+            elements.headerLoginButton.disabled = isAuthenticated;
+        }
     }
     elements.logoutButton.hidden = !isAuthenticated;
     elements.logoutButton.disabled = !isAuthenticated;
@@ -962,9 +975,11 @@ function render() {
         }
         elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", { count: playerHand.length });
         elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", { bonus: snapshot?.cardState?.nextTradeBonus || 4 });
-        setMarkup(elements.cardTradeList, playerHand.length
-            ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
-            : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>');
+        if (elements.cardTradeList) {
+            setMarkup(elements.cardTradeList, playerHand.length
+                ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
+                : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>');
+        }
         elements.cardTradeHelp.textContent = mustTradeCards
             ? t("game.runtime.tradeHelp.mustTrade", { limit: snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
             : playerHand.length
@@ -974,7 +989,9 @@ function render() {
         elements.cardTradeSuccess.textContent = state.tradeSuccess;
         elements.cardTradeError.hidden = !state.tradeError;
         elements.cardTradeError.textContent = state.tradeError;
-        elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
+        if (elements.cardTradeButton) {
+            elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
+        }
     }
     if (elements.reinforceAmount) {
         elements.reinforceAmount.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
@@ -987,7 +1004,7 @@ function render() {
         elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
         elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
     }
-    elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
+    elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies?.value;
     elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
     elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
     elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
@@ -1126,7 +1143,7 @@ async function loadGameList() {
     catch (error) {
         state.gameList = [];
         state.gameListState = "error";
-        state.gameListError = error.message || t("lobby.errors.loadGames");
+        state.gameListError = error instanceof Error ? error.message : t("lobby.errors.loadGames");
     }
     render();
 }
@@ -1139,7 +1156,7 @@ async function restoreSession() {
         const data = await response.json();
         setSession(data.user);
     }
-    catch (error) {
+    catch (_error) {
         setSession(null);
         clearPlayerIdentity();
     }
@@ -1208,7 +1225,7 @@ function ensureEventConnection() {
 async function handleCreateGame() {
     try {
         const data = await send("/api/games", { name: elements.gameName?.value.trim() || undefined });
-        state.snapshot = data.state;
+        state.snapshot = data.state || null;
         state.gameList = data.games || [];
         state.currentGameId = data.activeGameId || null;
         state.currentGameName = data.game?.name || null;
@@ -1222,14 +1239,14 @@ async function handleCreateGame() {
     }
     catch (error) {
         state.gameListState = "error";
-        state.gameListError = error.message;
+        state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
         render();
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 }
 async function openGameById(gameId) {
     const data = await send("/api/games/open", { gameId });
-    state.snapshot = data.state;
+    state.snapshot = data.state || null;
     state.gameList = data.games || [];
     state.currentGameId = data.activeGameId || null;
     state.currentGameName = data.game?.name || null;
@@ -1257,9 +1274,9 @@ async function handleOpenSelectedGame() {
     }
     catch (error) {
         state.gameListState = "error";
-        state.gameListError = error.message;
+        state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
         render();
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 }
 async function loginWithCredentials(username, password) {
@@ -1306,24 +1323,26 @@ elements.authForm.addEventListener("submit", async (event) => {
         await loginWithCredentials(username, password);
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.loginFailed"));
     }
 });
 if (elements.headerLoginForm) {
     elements.headerLoginForm.dataset.headerLoginManaged = "true";
     elements.headerLoginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = elements.headerAuthUsername.value.trim();
-        const password = elements.headerAuthPassword.value;
+        const username = elements.headerAuthUsername?.value.trim() || "";
+        const password = elements.headerAuthPassword?.value || "";
         if (!username || !password) {
             return;
         }
         try {
             await loginWithCredentials(username, password);
-            elements.headerAuthPassword.value = "";
+            if (elements.headerAuthPassword) {
+                elements.headerAuthPassword.value = "";
+            }
         }
         catch (error) {
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.loginFailed"));
         }
     });
 }
@@ -1343,7 +1362,7 @@ elements.logoutButton.addEventListener("click", async () => {
     try {
         await send("/api/auth/logout", {});
     }
-    catch (error) {
+    catch (_error) {
     }
     setSession(null);
     disconnectLiveUpdates();
@@ -1356,13 +1375,15 @@ elements.logoutButton.addEventListener("click", async () => {
 elements.joinButton.addEventListener("click", async () => {
     try {
         const data = await send("/api/join", { ...currentGamePayload() });
-        setPlayerIdentity(data.playerId);
-        state.user = data.user;
-        state.snapshot = data.state;
+        if (data.playerId) {
+            setPlayerIdentity(data.playerId);
+        }
+        state.user = data.user || state.user;
+        state.snapshot = data.state || state.snapshot;
         render();
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 elements.startButton.addEventListener("click", async () => {
@@ -1371,11 +1392,11 @@ elements.startButton.addEventListener("click", async () => {
             ...currentGamePayload(),
             playerId: state.playerId
         });
-        state.snapshot = data.state;
+        state.snapshot = data.state || state.snapshot;
         render();
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 if (elements.reinforceMultiButton) {
@@ -1384,7 +1405,7 @@ if (elements.reinforceMultiButton) {
             await applyReinforcements(normalizedReinforcementAmount());
         }
         catch (error) {
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.requestFailed"));
         }
     });
 }
@@ -1394,7 +1415,9 @@ elements.reinforceSelect.addEventListener("change", () => {
 });
 if (elements.reinforceAmount) {
     elements.reinforceAmount.addEventListener("change", () => {
-        elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+        if (elements.reinforceAmount) {
+            elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+        }
     });
 }
 elements.attackFrom.addEventListener("change", () => {
@@ -1424,7 +1447,7 @@ elements.fortifyTo.addEventListener("change", () => {
 });
 if (elements.gameList) {
     elements.gameList.addEventListener("change", () => {
-        updateGameSelection(elements.gameList.value || null);
+        updateGameSelection(elements.gameList?.value || null);
         render();
     });
 }
@@ -1454,6 +1477,9 @@ if (elements.cardTradeList) {
             return;
         }
         const cardId = trigger.dataset.cardId;
+        if (!cardId) {
+            return;
+        }
         if (state.selectedTradeCardIds.includes(cardId)) {
             state.selectedTradeCardIds = state.selectedTradeCardIds.filter((id) => id !== cardId);
         }
@@ -1481,7 +1507,7 @@ elements.attackButton.addEventListener("click", async () => {
         await executeAttack(elements.attackFrom.value, elements.attackTo.value, attackDice);
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 if (elements.attackBanzaiButton) {
@@ -1493,7 +1519,7 @@ if (elements.attackBanzaiButton) {
             await runBanzaiAttack();
         }
         catch (error) {
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.requestFailed"));
         }
     });
 }
@@ -1503,15 +1529,17 @@ elements.conquestButton.addEventListener("click", async () => {
             ...currentGamePayload(),
             playerId: state.playerId,
             type: "moveAfterConquest",
-            armies: Number(elements.conquestArmies.value),
+            armies: Number(elements.conquestArmies?.value || 0),
             expectedVersion: currentExpectedVersion()
         });
-        state.snapshot = data.state;
-        elements.conquestArmies.value = "";
+        state.snapshot = data.state || state.snapshot;
+        if (elements.conquestArmies) {
+            elements.conquestArmies.value = "";
+        }
         render();
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 elements.fortifyButton.addEventListener("click", async () => {
@@ -1525,11 +1553,11 @@ elements.fortifyButton.addEventListener("click", async () => {
             armies: Number(elements.fortifyArmies.value),
             expectedVersion: currentExpectedVersion()
         });
-        state.snapshot = data.state;
+        state.snapshot = data.state || state.snapshot;
         render();
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 elements.endTurnButton.addEventListener("click", async () => {
@@ -1540,14 +1568,14 @@ elements.endTurnButton.addEventListener("click", async () => {
             type: "endTurn",
             expectedVersion: currentExpectedVersion()
         });
-        state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+        state.snapshot = data.state ? await refreshPrivateStateIfNeeded(data.state) : state.snapshot;
         if (state.snapshot?.playerId) {
             setPlayerIdentity(state.snapshot.playerId);
         }
         render();
     }
     catch (error) {
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 });
 if (elements.surrenderButton) {
@@ -1563,11 +1591,11 @@ if (elements.surrenderButton) {
                 type: "surrender",
                 expectedVersion: currentExpectedVersion()
             });
-            state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+            state.snapshot = data.state ? await refreshPrivateStateIfNeeded(data.state) : state.snapshot;
             render();
         }
         catch (error) {
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.requestFailed"));
         }
     });
 }
@@ -1591,7 +1619,7 @@ if (elements.cardTradeButton) {
         }
         catch (error) {
             state.tradeSuccess = "";
-            state.tradeError = error.message;
+            state.tradeError = error instanceof Error ? error.message : t("errors.requestFailed");
             render();
         }
     });

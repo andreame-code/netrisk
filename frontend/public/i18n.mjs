@@ -45,7 +45,7 @@ export function isSupportedLocale(locale) {
 }
 export function getLocaleDictionary(locale = DEFAULT_LOCALE) {
     const normalized = normalizeLocale(locale) || DEFAULT_LOCALE;
-    return dictionaries[normalized] || dictionaries[DEFAULT_LOCALE];
+    return dictionaries[normalized];
 }
 export function getLocale() {
     if (typeof window === "undefined") {
@@ -161,30 +161,30 @@ export function applyTranslations(root = document, locale = getLocale()) {
     }
     root.querySelectorAll("[data-i18n]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.textContent = t(translatedElement.dataset.i18n, {}, { locale });
+        translatedElement.textContent = t(translatedElement.dataset.i18n || "", {}, { locale });
     });
     root.querySelectorAll("[data-i18n-html]").forEach((element) => {
         const translatedElement = element;
-        setMarkup(translatedElement, t(translatedElement.dataset.i18nHtml, {}, { locale }));
+        setMarkup(translatedElement, t(translatedElement.dataset.i18nHtml || "", {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-content]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.setAttribute("content", t(translatedElement.dataset.i18nContent, {}, { locale }));
+        translatedElement.setAttribute("content", t(translatedElement.dataset.i18nContent || "", {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.setAttribute("placeholder", t(translatedElement.dataset.i18nPlaceholder, {}, { locale }));
+        translatedElement.setAttribute("placeholder", t(translatedElement.dataset.i18nPlaceholder || "", {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.setAttribute("aria-label", t(translatedElement.dataset.i18nAriaLabel, {}, { locale }));
+        translatedElement.setAttribute("aria-label", t(translatedElement.dataset.i18nAriaLabel || "", {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-title]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.setAttribute("title", t(translatedElement.dataset.i18nTitle, {}, { locale }));
+        translatedElement.setAttribute("title", t(translatedElement.dataset.i18nTitle || "", {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-alt]").forEach((element) => {
         const translatedElement = element;
-        translatedElement.setAttribute("alt", t(translatedElement.dataset.i18nAlt, {}, { locale }));
+        translatedElement.setAttribute("alt", t(translatedElement.dataset.i18nAlt || "", {}, { locale }));
     });
 }
