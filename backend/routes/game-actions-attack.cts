@@ -32,6 +32,35 @@ type ResolveAttack = (
 type ResolveBanzaiAttack = ResolveAttack;
 type ConsumeQueuedAttackRandom = () => (() => number) | null;
 
+function mappedAttackResolverError(error: unknown): { message: string; messageKey: string } | null {
+  const runtimeMessage = error && typeof error === "object" && "message" in error
+    ? String((error as { message?: unknown }).message || "")
+    : "";
+
+  if (!runtimeMessage) {
+    return null;
+  }
+
+  if (runtimeMessage.indexOf("Attacker dice must be between 1 and") === 0) {
+    return {
+      message: "Numero di dadi di attacco non valido.",
+      messageKey: "game.attack.invalidDiceCount"
+    };
+  }
+
+  if (
+    runtimeMessage.indexOf("Defender dice must be between 1 and") === 0 ||
+    runtimeMessage === "Combat resolution requires attacker and defender territory state."
+  ) {
+    return {
+      message: "Territori non validi.",
+      messageKey: "game.attack.invalidTerritories"
+    };
+  }
+
+  return null;
+}
+
 async function handleAttackGameActionRoute(
   type: string,
   res: unknown,
@@ -55,7 +84,7 @@ async function handleAttackGameActionRoute(
     return false;
   }
 
-  const random = consumeQueuedAttackRandom();
+  const random = consumeQueuedAttackRandom() || undefined;
   const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
   const actionFromId = String(body.fromId || "");
   const actionToId = String(body.toId || "");
@@ -64,9 +93,21 @@ async function handleAttackGameActionRoute(
     return true;
   }
 
-  const result = type === "attackBanzai"
-    ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
-    : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
+  let result;
+  try {
+    result = type === "attackBanzai"
+      ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
+      : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
+  } catch (error) {
+    const mappedError = mappedAttackResolverError(error);
+    if (!mappedError) {
+      throw error;
+    }
+
+    sendLocalizedError(res, 400, error, mappedError.message, mappedError.messageKey);
+    return true;
+  }
+
   if (!result.ok) {
     sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
     return true;

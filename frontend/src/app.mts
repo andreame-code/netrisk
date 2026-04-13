@@ -1643,10 +1643,15 @@ elements.map.addEventListener("click", (event) => {
 
 elements.attackButton.addEventListener("click", async () => {
   try {
+    const attackDice = normalizedAttackDiceValue();
+    if (!attackDice) {
+      return;
+    }
+
     await executeAttack(
       elements.attackFrom.value,
       elements.attackTo.value,
-      Number(elements.attackDice.value)
+      attackDice
     );
   } catch (error) {
     alert(error.message);

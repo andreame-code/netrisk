@@ -107,3 +107,54 @@ test("attack UI sends the selected dice count to the backend", async ({ page }) 
   await expect(page.locator("#combat-attacker-rolls")).toContainText("6 · 5");
 });
 
+test("attack UI normalizes stale dice values before submit", async ({ page }) => {
+  const currentState = mockState();
+  let capturedAttackDice = null;
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem("frontline-player-id", "p1");
+  });
+
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
+  });
+
+  await page.route("**/api/games**", async (route) => {
+    await route.fulfill({ json: { games: [{ id: "g-1", name: "Attack Dice Match", updatedAt: "2026-04-02T10:00:00.000Z", phase: "active", playerCount: 2 }], activeGameId: "g-1" } });
+  });
+
+  await page.route("**/api/state**", async (route) => {
+    await route.fulfill({ json: currentState });
+  });
+
+  await page.route("**/api/action", async (route) => {
+    const body = route.request().postDataJSON();
+    capturedAttackDice = body.attackDice;
+    await route.fulfill({ json: { ok: true, state: currentState } });
+  });
+
+  await page.route("**/api/events**", async (route) => {
+    await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
+  });
+
+  await page.goto("/game.html");
+
+  await expect(page.locator("#attack-group")).toBeVisible();
+  await page.locator("#attack-from").selectOption("cinder");
+  await page.locator("#attack-to").selectOption("bastion");
+  await page.evaluate(() => {
+    const attackDice = document.querySelector("#attack-dice");
+    if (!attackDice) {
+      return;
+    }
+
+    const staleOption = document.createElement("option");
+    staleOption.value = "3";
+    staleOption.textContent = "3";
+    attackDice.appendChild(staleOption);
+    attackDice.value = "3";
+  });
+  await page.locator("#attack-button").click();
+
+  expect(capturedAttackDice).toBe(1);
+});
