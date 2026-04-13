@@ -56,7 +56,7 @@ async function handleEventsRoute(
   }
 
   const gameContext = await loadGameContext(gameId);
-  await resumeAiTurnsForRead(gameContext);
+  // Keep the event stream read-only. AI advancement already happens on open/state routes.
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
