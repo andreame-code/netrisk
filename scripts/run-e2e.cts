@@ -111,10 +111,13 @@ async function waitForServer(baseURL: string, timeoutMs: number = 120000): Promi
   throw new Error(`Timeout avvio server E2E su ${baseURL}.`);
 }
 
+function getNoWebserverPlaywrightConfigPath(repoRoot: string): string {
+  return path.join(repoRoot, ".playwright.tmp.no-webserver.ts");
+}
+
 function createNoWebserverPlaywrightConfig(repoRoot: string, tempConfigPath: string | null = null): Promise<string> {
-  const sourceConfig = path.join(repoRoot, "playwright.config");
-  const tempConfig = tempConfigPath || path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts");
-  const configImportPath = JSON.stringify("../playwright.config.ts");
+  const tempConfig = tempConfigPath || getNoWebserverPlaywrightConfigPath(repoRoot);
+  const configImportPath = JSON.stringify("./playwright.config.ts");
   const sourceRoot = JSON.stringify(repoRoot);
   const content = `import path from "node:path";
 import baseConfig from ${configImportPath};
@@ -137,7 +140,7 @@ export default baseConfig;
 }
 
 function removeNoWebserverPlaywrightConfig(repoRoot: string): Promise<void> {
-  return removeIfExists(path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts"), 3, { strict: false });
+  return removeIfExists(getNoWebserverPlaywrightConfigPath(repoRoot), 3, { strict: false });
 }
 
 async function main(): Promise<void> {
@@ -164,7 +167,7 @@ async function main(): Promise<void> {
     stdio: "inherit",
     env: runnerEnv
   });
-  const tempConfigPath = path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts");
+  const tempConfigPath = getNoWebserverPlaywrightConfigPath(repoRoot);
   await createNoWebserverPlaywrightConfig(repoRoot, tempConfigPath);
 
   try {
