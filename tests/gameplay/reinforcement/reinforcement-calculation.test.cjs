@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/reinforcement/reinforcement-calculation.test.cjs');

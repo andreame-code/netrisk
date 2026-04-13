@@ -153,7 +153,7 @@ async function main(): Promise<void> {
   };
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
-  const serverChild = spawn(process.execPath, [path.join(repoRoot, "scripts", "start-e2e.cjs")], {
+  const serverChild = spawn(process.execPath, [path.join(repoRoot, ".tsbuild", "scripts", "start-e2e.cjs")], {
     cwd: repoRoot,
     stdio: "inherit",
     env: runnerEnv

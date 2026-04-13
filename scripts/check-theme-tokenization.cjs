@@ -1,1 +1,0 @@
-module.exports = require('../.tsbuild/scripts/check-theme-tokenization.cjs');

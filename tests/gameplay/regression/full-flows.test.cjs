@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/regression/full-flows.test.cjs');
