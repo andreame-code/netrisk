@@ -1,10 +1,10 @@
-export function byId(id: string, scope: Document | DocumentFragment = document): HTMLElement {
+export function byId<T extends HTMLElement = HTMLElement>(id: string, scope: Document | DocumentFragment = document): T {
   const element = scope.getElementById(id);
   if (!element) {
     throw new Error(`Missing required element: #${id}`);
   }
 
-  return element;
+  return element as T;
 }
 
 export function query<T extends Element>(selector: string, scope: ParentNode = document): T {

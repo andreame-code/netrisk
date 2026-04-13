@@ -1,6 +1,8 @@
 import { setMarkup } from "./core/dom.mjs";
 import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
+import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import type { PublicUser } from "./core/types.mjs";
 import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
 
 const THEME_STORAGE_KEY = "netrisk.theme";
@@ -11,12 +13,24 @@ const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
 const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
 
-function resolveThemeFromUser(user) {
+type ShellKind = "app" | "marketing";
+type NavSection = "lobby" | "game" | "profile";
+type LocaleControlOptions = {
+  container: Element | null;
+  marker: string;
+  wrapperClass: string;
+  labelClass: string;
+  selectClass: string;
+  labelMode?: "visible" | "hidden";
+  position?: "prepend" | "append";
+};
+
+function resolveThemeFromUser(user: PublicUser | null | undefined): ThemeName | null {
   const requestedTheme = user?.preferences?.theme;
-  return SUPPORTED_THEMES.includes(requestedTheme) ? requestedTheme : null;
+  return SUPPORTED_THEMES.includes(requestedTheme as ThemeName) ? (requestedTheme as ThemeName) : null;
 }
 
-function resolveTheme() {
+function resolveTheme(): ThemeName {
   const requested = routeQuery.get("theme");
   if (requested) {
     return normalizeTheme(requested);
@@ -29,7 +43,7 @@ function resolveTheme() {
   }
 }
 
-function applyTheme(theme) {
+function applyTheme(theme: string | null | undefined): ThemeName {
   const nextTheme = normalizeTheme(theme);
   document.documentElement.dataset.theme = nextTheme;
   document.body.dataset.theme = nextTheme;
@@ -52,10 +66,10 @@ window.netriskTheme = Object.freeze({
   getCurrentTheme() {
     return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
   },
-  getThemeFromUser(user) {
+  getThemeFromUser(user?: PublicUser | null) {
     return resolveThemeFromUser(user);
   },
-  applyUserTheme(user) {
+  applyUserTheme(user?: PublicUser | null) {
     const theme = resolveThemeFromUser(user);
     if (!theme) {
       return this.getCurrentTheme();
@@ -79,7 +93,7 @@ function buildLocaleControl({
   selectClass,
   labelMode = "visible",
   position = "prepend"
-}) {
+}: LocaleControlOptions): void {
   if (!container || container.querySelector(`[${marker}]`)) {
     return;
   }
@@ -139,7 +153,7 @@ function initMarketingShell() {
 
 function sharedNavMarkup() {
   const navAriaLabel = t("nav.aria.primary");
-  const navLabels = {
+  const navLabels: Record<NavSection, string> = {
     lobby: t("nav.lobby"),
     game: t("nav.game"),
     profile: t("nav.profile")
@@ -172,12 +186,14 @@ function sharedNavMarkup() {
 
 function sharedFooterMarkup() {
   const navAriaLabel = t("nav.aria.primary");
-  const navLabels = {
+  const navLabels: Record<NavSection, string> = {
     lobby: t("nav.lobby"),
     game: t("nav.game"),
     profile: t("nav.profile")
   };
-  const activeLabel = navLabels[section] || t("app.title");
+  const activeLabel = (section && section in navLabels)
+    ? navLabels[section as NavSection]
+    : t("app.title");
 
   return `
     <div class="shared-footer-copy">
@@ -214,7 +230,7 @@ function mountAppChrome() {
 }
 
 function syncAppNav() {
-  const navLabels = {
+  const navLabels: Record<NavSection, string> = {
     lobby: t("nav.lobby"),
     game: t("nav.game"),
     profile: t("nav.profile")
@@ -226,8 +242,9 @@ function syncAppNav() {
     navLink.classList.toggle("is-active", isActive);
     navLink.setAttribute("aria-current", isActive ? "page" : "false");
 
-    if (navLabels[navLink.dataset.navSection]) {
-      navLink.textContent = navLabels[navLink.dataset.navSection];
+    const navSection = navLink.dataset.navSection;
+    if (navSection && navSection in navLabels) {
+      navLink.textContent = navLabels[navSection as NavSection];
     }
 
     if (navLink.dataset.navSection === "game" && currentGameId) {
@@ -240,7 +257,7 @@ function syncAppNav() {
   });
 }
 
-async function fallbackHeaderLogin(username, password) {
+async function fallbackHeaderLogin(username: string, password: string): Promise<{ user?: PublicUser }> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -318,7 +335,7 @@ document.documentElement.lang = activeLocale;
 applyTheme(resolveTheme());
 applyTranslations(document, activeLocale);
 
-if (shellKind === "app") {
+if ((shellKind as ShellKind) === "app") {
   initAppShell();
 } else {
   initMarketingShell();

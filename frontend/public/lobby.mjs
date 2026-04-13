@@ -104,16 +104,18 @@ function canJoinGame(game) {
     if (game.phase !== "lobby") {
         return false;
     }
-    const maxPlayers = Number.isInteger(game.totalPlayers) && game.totalPlayers > 0
-        ? game.totalPlayers
+    const configuredPlayers = Number(game.totalPlayers ?? 0);
+    const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
+        ? configuredPlayers
         : 4;
     return game.playerCount < maxPlayers;
 }
 function gameCapacityLabel(game) {
-    const maxPlayers = Number.isInteger(game?.totalPlayers) && game.totalPlayers > 0
-        ? game.totalPlayers
+    const configuredPlayers = Number(game?.totalPlayers ?? 0);
+    const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
+        ? configuredPlayers
         : 4;
-    return game.playerCount + "/" + maxPlayers;
+    return String(game?.playerCount ?? 0) + "/" + maxPlayers;
 }
 function updateGameSelection(gameId) {
     state.selectedGameId = gameId || null;
@@ -137,6 +139,9 @@ async function loginWithCredentials(username, password) {
     render();
 }
 function render() {
+    if (!elements.gameListState || !elements.gameSessionList || !elements.gameSessionDetails || !elements.authStatus || !elements.logoutButton || !elements.selectedGameStatus || !elements.gameStatus || !elements.gameListLoadMoreState || !elements.lobbyTotalGames || !elements.lobbyReadyGames || !elements.lobbyActiveFocus || !elements.lobbyFocusNote || !elements.openGameButton) {
+        return;
+    }
     const renderedGames = visibleGames();
     const selected = selectedGame();
     const selectedId = state.selectedGameId || state.currentGameId;
@@ -170,9 +175,15 @@ function render() {
     if (elements.headerLoginForm) {
         const isAuthenticated = Boolean(state.user);
         elements.headerLoginForm.hidden = isAuthenticated;
-        elements.headerAuthUsername.disabled = isAuthenticated;
-        elements.headerAuthPassword.disabled = isAuthenticated;
-        elements.headerLoginButton.disabled = isAuthenticated;
+        if (elements.headerAuthUsername) {
+            elements.headerAuthUsername.disabled = isAuthenticated;
+        }
+        if (elements.headerAuthPassword) {
+            elements.headerAuthPassword.disabled = isAuthenticated;
+        }
+        if (elements.headerLoginButton) {
+            elements.headerLoginButton.disabled = isAuthenticated;
+        }
     }
     elements.logoutButton.hidden = !state.user;
     elements.logoutButton.disabled = !state.user;
@@ -301,7 +312,7 @@ async function loadGameList(options = {}) {
         state.gameList = [];
         resetVisibleGameCount();
         state.gameListState = "error";
-        state.gameListError = error.message || t("lobby.errors.loadGames");
+        state.gameListError = error instanceof Error ? error.message : t("lobby.errors.loadGames");
     }
     if (renderOnChange) {
         render();
@@ -333,9 +344,9 @@ async function handleOpenSelectedGame() {
     }
     catch (error) {
         state.gameListState = "error";
-        state.gameListError = error.message;
+        state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
         render();
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 }
 async function handleJoinSelectedGame() {
@@ -349,24 +360,28 @@ async function handleJoinSelectedGame() {
     }
     catch (error) {
         state.gameListState = "error";
-        state.gameListError = error.message;
+        state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
         render();
-        alert(error.message);
+        alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
 }
-elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
-elements.gameSessionList.addEventListener("click", async (event) => {
+elements.openGameButton?.addEventListener("click", handleOpenSelectedGame);
+elements.gameSessionList?.addEventListener("click", async (event) => {
     const gameNameTrigger = closestElement(event.target, "[data-open-game-id]");
     if (gameNameTrigger) {
         event.stopPropagation();
         try {
-            await openGameById(gameNameTrigger.dataset.openGameId);
+            const gameId = gameNameTrigger.dataset.openGameId;
+            if (!gameId) {
+                return;
+            }
+            await openGameById(gameId);
         }
         catch (error) {
             state.gameListState = "error";
-            state.gameListError = error.message;
+            state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
             render();
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.requestFailed"));
         }
         return;
     }
@@ -377,7 +392,7 @@ elements.gameSessionList.addEventListener("click", async (event) => {
     updateGameSelection(trigger.dataset.gameId);
     render();
 });
-elements.gameSessionDetails.addEventListener("click", (event) => {
+elements.gameSessionDetails?.addEventListener("click", (event) => {
     const joinTrigger = closestElement(event.target, "#join-selected-inline");
     if (joinTrigger) {
         handleJoinSelectedGame();
@@ -399,7 +414,7 @@ async function restoreSession(options = {}) {
         const data = await response.json();
         setSession(data.user);
     }
-    catch (error) {
+    catch (_error) {
         setSession(null);
     }
     if (renderOnChange) {
@@ -416,30 +431,32 @@ if (elements.headerLoginForm) {
     elements.headerLoginForm.dataset.headerLoginManaged = "true";
     elements.headerLoginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = elements.headerAuthUsername.value.trim();
-        const password = elements.headerAuthPassword.value;
+        const username = elements.headerAuthUsername?.value.trim() || "";
+        const password = elements.headerAuthPassword?.value || "";
         if (!username || !password) {
             return;
         }
         try {
             await loginWithCredentials(username, password);
-            elements.headerAuthPassword.value = "";
+            if (elements.headerAuthPassword) {
+                elements.headerAuthPassword.value = "";
+            }
         }
         catch (error) {
-            alert(error.message);
+            alert(error instanceof Error ? error.message : t("errors.loginFailed"));
         }
     });
 }
-elements.logoutButton.addEventListener("click", async () => {
+elements.logoutButton?.addEventListener("click", async () => {
     try {
         await send("/api/auth/logout", {});
     }
-    catch (error) {
+    catch (_error) {
     }
     setSession(null);
     render();
 });
-elements.gameSessionList.addEventListener("keydown", (event) => {
+elements.gameSessionList?.addEventListener("keydown", (event) => {
     const gameNameTrigger = closestElement(event.target, "[data-open-game-id]");
     if (!gameNameTrigger) {
         return;
@@ -450,5 +467,9 @@ elements.gameSessionList.addEventListener("keydown", (event) => {
     }
     keyboardEvent.preventDefault();
     event.stopPropagation();
-    window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
+    const gameId = gameNameTrigger.dataset.openGameId;
+    if (!gameId) {
+        return;
+    }
+    window.location.href = "/game/" + encodeURIComponent(gameId);
 });
