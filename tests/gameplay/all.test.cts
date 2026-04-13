@@ -11,7 +11,8 @@ const gameplayTestModules = [
   "./fortify/fortify-movement.test.cjs",
   "./victory/victory-detection.test.cjs",
   "./victory/elimination-and-victory.test.cjs",
-  "./regression/full-flows.test.cjs"
+  "./regression/full-flows.test.cjs",
+  "./regression/attack-route-guard.test.cjs"
 ];
 
 gameplayTestModules.forEach((modulePath) => {

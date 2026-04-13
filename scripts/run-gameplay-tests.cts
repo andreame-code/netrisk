@@ -29,7 +29,8 @@ const gameplayTestModules = [
   "../tests/gameplay/fortify/fortify-movement.test.cjs",
   "../tests/gameplay/victory/victory-detection.test.cjs",
   "../tests/gameplay/victory/elimination-and-victory.test.cjs",
-  "../tests/gameplay/regression/full-flows.test.cjs"
+  "../tests/gameplay/regression/full-flows.test.cjs",
+  "../tests/gameplay/regression/attack-route-guard.test.cjs"
 ];
 
 gameplayTestModules.forEach((relativePath) => {
