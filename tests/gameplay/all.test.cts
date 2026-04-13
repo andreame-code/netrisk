@@ -1,4 +1,7 @@
 const gameplayTestModules = [
+  "./shared/map-graph.test.cjs",
+  "./shared/map-loader.test.cjs",
+  "./shared/continent-loader.test.cjs",
   "./setup/game-setup.test.cjs",
   "./turn-flow/turn-flow.test.cjs",
   "./reinforcement/reinforcement-calculation.test.cjs",
