@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/victory/elimination-and-victory.test.cjs');
