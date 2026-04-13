@@ -34,6 +34,7 @@ const gameplayTestModules = [
   "../tests/gameplay/victory/elimination-and-victory.test.cjs",
   "../tests/gameplay/regression/full-flows.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
+  "../tests/gameplay/regression/game-read-routes.test.cjs",
   "../tests/gameplay/regression/event-broadcast.test.cjs"
 ];
 
