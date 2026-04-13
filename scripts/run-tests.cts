@@ -112,7 +112,7 @@ interface Body {
 
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
-const frontendI18nModulePromise = import(pathToFileURL(path.join(projectRoot, "frontend", "public", "i18n.mjs")).href);
+const frontendI18nModulePromise = import(pathToFileURL(path.join(projectRoot, "public", "i18n.mjs")).href);
 
 function register(name: string, fn: TestFn) {
   tests.push({ name, fn });
@@ -218,7 +218,7 @@ function authHeaders(sessionToken: string): HeaderMap {
 }
 
 function readPublicHtml(fileName: string): string {
-  return fs.readFileSync(path.join(projectRoot, "frontend", "public", fileName), "utf8");
+  return fs.readFileSync(path.join(projectRoot, "public", fileName), "utf8");
 }
 
 function readProjectJson(fileName: string): any {
@@ -232,8 +232,7 @@ register("frontend CSS usa solo token tema fuori dalla sezione definizioni", () 
 register("vercel build command compila TypeScript prima della sync degli asset", () => {
   const config = readProjectJson("vercel.json");
   assert.equal(typeof config.buildCommand, "string");
-  assert.match(config.buildCommand, /\bnpm run build:ts\b/);
-  assert.equal(config.buildCommand.indexOf("build:ts") < config.buildCommand.indexOf("sync-public-assets.cjs"), true);
+  assert.equal(config.buildCommand, "npm run build:ts");
 });
 
 register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
@@ -4285,4 +4284,3 @@ async function run() {
 }
 
 run();
-

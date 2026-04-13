@@ -11,7 +11,7 @@ type ThemeTokenizationError = Error & {
 };
 
 function checkThemeTokenization(): void {
-  const publicDir = path.join(projectRoot, "frontend", "public");
+  const publicDir = path.join(projectRoot, "public");
   const cssFiles = fs.readdirSync(publicDir).filter((fileName: string) => fileName.endsWith(".css"));
   const violations: string[] = [];
 
