@@ -87,7 +87,7 @@ function resolveProjectRoot() {
     }
     seen.add(absolute);
 
-    const frontendPath = path.join(absolute, "frontend", "public");
+    const frontendPath = path.join(absolute, "frontend", "src");
     const dataPath = path.join(absolute, "data");
 
     if (fs.existsSync(frontendPath) && fs.existsSync(dataPath)) {
@@ -99,7 +99,7 @@ function resolveProjectRoot() {
 }
 
 const projectRoot = resolveProjectRoot();
-const publicDir = path.join(projectRoot, "frontend", "public");
+const publicDir = path.join(projectRoot, "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(["command", "midnight", "ember"]);

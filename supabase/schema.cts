@@ -1,3 +1,4 @@
+export const supabaseSchemaSql = `
 create table if not exists public.users (
   id text primary key,
   username text not null unique,
@@ -33,3 +34,8 @@ create table if not exists public.app_state (
   key text primary key,
   value_json jsonb not null
 );
+`.trim() + "\n";
+
+export function getSupabaseSchemaSql(): string {
+  return supabaseSchemaSql;
+}

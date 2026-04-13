@@ -1,11 +1,8 @@
-import path from "node:path";
-import { loadMapDefinitionFromCsv } from "../map-loader.cjs";
-import { loadContinentsFromCsv } from "../continent-loader.cjs";
+import { buildContinentDefinition, buildMapDefinition } from "../typed-map-data.cjs";
+import { classicMiniContinentRecords, classicMiniTerritoryRecords } from "./data/classic-mini-data.cjs";
 
-const sourceMapsDir = path.resolve(__dirname, "..", "..", "..", "shared", "maps");
-
-const mapDefinition = loadMapDefinitionFromCsv(path.join(sourceMapsDir, "classic-mini-map.csv"));
-const continentDefinition = loadContinentsFromCsv(path.join(sourceMapsDir, "classic-mini-continents.csv"), {
+const mapDefinition = buildMapDefinition("shared/maps/classic-mini", classicMiniTerritoryRecords);
+const continentDefinition = buildContinentDefinition("shared/maps/classic-mini", classicMiniContinentRecords, {
   validTerritoryIds: mapDefinition.territories.map((entry) => entry.territory.id).filter((id): id is string => Boolean(id))
 });
 

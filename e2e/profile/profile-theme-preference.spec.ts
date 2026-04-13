@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { uniqueUser } = require("../support/game-helpers");
+const { attachSessionCookie, getE2EBaseURL, uniqueUser } = require("../support/game-helpers");
 
 async function createAuthenticatedSession(page, username, password = "secret123") {
   const registerResponse = await page.request.post("/api/auth/register", {
@@ -16,16 +16,6 @@ async function createAuthenticatedSession(page, username, password = "secret123"
   expect(sessionToken).toBeTruthy();
 
   return sessionToken;
-}
-
-async function attachSessionCookie(page, sessionToken) {
-  await page.context().addCookies([{
-    name: "netrisk_session",
-    value: sessionToken,
-    url: "http://127.0.0.1:3100",
-    httpOnly: true,
-    sameSite: "Lax"
-  }]);
 }
 
 async function captureThemeSnapshot(page, selectors) {
@@ -88,7 +78,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
     await secondContext.addCookies([{
       name: "netrisk_session",
       value: sessionToken,
-      url: "http://127.0.0.1:3100",
+      url: getE2EBaseURL(),
       httpOnly: true,
       sameSite: "Lax"
     }]);
@@ -140,4 +130,3 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
   expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.navBg)).size).toBe(3);
   expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(3);
 });
-

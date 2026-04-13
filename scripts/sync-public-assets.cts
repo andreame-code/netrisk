@@ -1,15 +1,17 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
 
 const rootDir = process.cwd();
-const sourceDir = path.join(rootDir, "frontend", "public");
-const targetDir = path.join(rootDir, "public");
+const sourceDir = path.join(rootDir, "frontend", "assets");
+const targetDir = path.join(rootDir, "public", "assets");
 
-function copyDirectory(source: string, target: string): void {
-  fs.rmSync(target, { recursive: true, force: true });
-  fs.mkdirSync(target, { recursive: true });
-  fs.cpSync(source, target, { recursive: true });
+if (!fs.existsSync(sourceDir)) {
+  console.log(`No frontend assets to sync from ${sourceDir}`);
+  process.exit(0);
 }
 
-copyDirectory(sourceDir, targetDir);
-console.log(`Synced public assets from ${sourceDir} to ${targetDir}`);
+fs.rmSync(targetDir, { recursive: true, force: true });
+fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+fs.cpSync(sourceDir, targetDir, { recursive: true });
+
+console.log(`Synced frontend assets from ${sourceDir} to ${targetDir}`);

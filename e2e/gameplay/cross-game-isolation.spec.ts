@@ -1,7 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
-
-const e2eBaseURL = process.env.E2E_BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || "http://127.0.0.1:3100";
+const { getE2EBaseURL, registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
 async function createAndOpenGame(page, gameName) {
   await page.goto("/lobby.html");
@@ -27,7 +25,7 @@ test("opening another game does not switch already connected clients to a differ
   await registerAndLogin(page, userA);
   const gameAId = await createAndOpenGame(page, gameA);
 
-  const contextB = await browser.newContext({ baseURL: e2eBaseURL });
+  const contextB = await browser.newContext({ baseURL: getE2EBaseURL() });
   const pageB = await contextB.newPage();
 
   try {
@@ -47,4 +45,3 @@ test("opening another game does not switch already connected clients to a differ
     await contextB.close();
   }
 });
-
