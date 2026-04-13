@@ -8,12 +8,12 @@
     "checkJs": false,
     "noEmitOnError": true,
     "incremental": true,
-    "outDir": "./frontend/public",
+    "outDir": "./public",
     "rootDir": "./frontend/src",
     "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "skipLibCheck": true
   },
   "include": ["frontend/src/**/*"],
-  "exclude": ["node_modules", "frontend/public", "frontend/.tsbuild"]
+  "exclude": ["node_modules", "frontend/.tsbuild", "public"]
 }

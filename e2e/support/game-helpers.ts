@@ -1,6 +1,10 @@
 const { expect } = require("@playwright/test");
 const { randomHex } = require("../../.tsbuild/backend/random.cjs");
 
+function getE2EBaseURL() {
+  return process.env.E2E_BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || "http://127.0.0.1:3100";
+}
+
 function uniqueUser(prefix) {
   return prefix + "_" + Date.now().toString(36).slice(-6) + randomHex(2);
 }
@@ -54,6 +58,16 @@ async function registerLoginAndJoin(page, username, password = "secret123") {
   await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
 }
 
+async function attachSessionCookie(page, sessionToken) {
+  await page.context().addCookies([{
+    name: "netrisk_session",
+    value: sessionToken,
+    url: getE2EBaseURL(),
+    httpOnly: true,
+    sameSite: "Lax"
+  }]);
+}
+
 async function getReinforcementCount(page) {
   const summaryText = await page.getByTestId("status-summary").innerText();
   const match = summaryText.match(/Rinforzi disponibili:\s*(\d+)/i);
@@ -85,8 +99,10 @@ async function findAttackPair(page, ownerName) {
 }
 
 module.exports = {
+  attachSessionCookie,
   findAttackPair,
   getReinforcementCount,
+  getE2EBaseURL,
   queueNextAttackRolls,
   registerAndLogin,
   registerLoginAndJoin,

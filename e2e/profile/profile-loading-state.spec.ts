@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { uniqueUser } = require("../support/game-helpers");
+const { attachSessionCookie, uniqueUser } = require("../support/game-helpers");
 
 test("profile page shows a loading state while the profile payload is still pending", async ({ page }) => {
   const username = uniqueUser("profile_loading");
@@ -17,13 +17,7 @@ test("profile page shows a loading state while the profile payload is still pend
   const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
   expect(sessionToken).toBeTruthy();
 
-  await page.context().addCookies([{
-    name: "netrisk_session",
-    value: sessionToken,
-    url: "http://127.0.0.1:3100",
-    httpOnly: true,
-    sameSite: "Lax"
-  }]);
+  await attachSessionCookie(page, sessionToken);
 
   let releaseProfileResponse;
   const profileResponseReleased = new Promise((resolve) => {
@@ -48,4 +42,3 @@ test("profile page shows a loading state while the profile payload is still pend
   await expect(page.locator("#auth-status")).toContainText(`Autenticato come ${username}.`);
   await expect(page.locator("#profile-name")).toContainText(username);
 });
-

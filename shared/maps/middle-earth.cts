@@ -1,11 +1,8 @@
-import path from "node:path";
-import { loadMapDefinitionFromCsv } from "../map-loader.cjs";
-import { loadContinentsFromCsv } from "../continent-loader.cjs";
+import { buildContinentDefinition, buildMapDefinition } from "../typed-map-data.cjs";
+import { middleEarthContinentRecords, middleEarthTerritoryRecords } from "./data/middle-earth-data.cjs";
 
-const sourceMapsDir = path.resolve(__dirname, "..", "..", "..", "shared", "maps");
-
-const mapDefinition = loadMapDefinitionFromCsv(path.join(sourceMapsDir, "middle-earth-map.csv"));
-const continentDefinition = loadContinentsFromCsv(path.join(sourceMapsDir, "middle-earth-continents.csv"), {
+const mapDefinition = buildMapDefinition("shared/maps/middle-earth", middleEarthTerritoryRecords);
+const continentDefinition = buildContinentDefinition("shared/maps/middle-earth", middleEarthContinentRecords, {
   validTerritoryIds: mapDefinition.territories.map((entry) => entry.territory.id).filter((id): id is string => Boolean(id))
 });
 

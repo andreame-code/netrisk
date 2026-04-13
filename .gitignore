@@ -19,6 +19,7 @@ playwright-report/
 test-results/
 coverage/
 /public/
+supabase/schema.sql
 .tmp-server-*.log
 .tsbuild/
 *.tsbuildinfo
@@ -26,3 +27,10 @@ coverage/
 data/backups/
 data/*.sqlite-shm
 data/*.sqlite-wal
+e2e-run.log
+scripts/*.log
+tmp-e2e-server.err.log
+tmp-e2e-server.out.log
+scripts/tmp-auth-*.sqlite
+scripts/tmp-auth-*.sqlite-shm
+scripts/tmp-auth-*.sqlite-wal

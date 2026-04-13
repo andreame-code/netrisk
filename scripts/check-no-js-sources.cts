@@ -1,53 +1,43 @@
-const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
-const { join, relative, extname } = require("node:path") as typeof import("node:path");
+import { execFileSync } from "node:child_process";
 
 const rootDir = process.cwd();
-const guardedDirectories = [
-  "api",
-  "backend",
-  "shared",
-  "scripts",
-  "tests",
-  join("frontend", "src")
+const sourceExtensions = [".d.ts", ".cts", ".mts", ".ts"];
+const allowedPathPatterns = [
+  /^\.codex\/.+\.toml$/,
+  /^\.env\.example$/,
+  /^\.gitignore$/,
+  /^\.githooks\/.+$/,
+  /^\.github\/.+\.yml$/,
+  /^package(?:-lock)?\.json$/,
+  /^tsconfig(?:\.[^/]+)?\.json$/,
+  /^vercel\.json$/,
+  /^frontend\/assets\/.+\.(png|jpg|jpeg|svg|webp)$/i,
+  /^e2e\/.+-snapshots\/.+\.png$/i,
+  /(^|\/)[^/]+\.md$/i
 ];
-const disallowedExtensions = new Set([".js", ".cjs"]);
-const violations: string[] = [];
 
-function walkDirectory(absoluteDir: string): void {
-  const entries = readdirSync(absoluteDir, { withFileTypes: true });
-
-  entries.forEach((entry) => {
-    const absolutePath = join(absoluteDir, entry.name);
-    if (entry.isDirectory()) {
-      walkDirectory(absolutePath);
-      return;
-    }
-
-    if (!entry.isFile()) {
-      return;
-    }
-
-    if (!disallowedExtensions.has(extname(entry.name))) {
-      return;
-    }
-
-    violations.push(relative(rootDir, absolutePath));
-  });
+function isTypeScriptSource(filePath: string): boolean {
+  return sourceExtensions.some((extension) => filePath.endsWith(extension));
 }
 
-guardedDirectories.forEach((directory) => {
-  const absoluteDirectory = join(rootDir, directory);
-  if (!statSync(absoluteDirectory, { throwIfNoEntry: false })?.isDirectory()) {
-    return;
-  }
+function isAllowlisted(filePath: string): boolean {
+  return allowedPathPatterns.some((pattern) => pattern.test(filePath));
+}
 
-  walkDirectory(absoluteDirectory);
-});
+const trackedFiles = execFileSync("git", ["ls-files"], {
+  cwd: rootDir,
+  encoding: "utf8"
+})
+  .split(/\r?\n/)
+  .map((filePath) => filePath.trim())
+  .filter(Boolean);
+
+const violations = trackedFiles.filter((filePath) => !isTypeScriptSource(filePath) && !isAllowlisted(filePath));
 
 if (violations.length > 0) {
-  console.error("Found disallowed JS/CJS source files:");
+  console.error("Found tracked files outside the TS-complete allowlist:");
   violations.sort().forEach((filePath) => console.error(` - ${filePath}`));
   process.exitCode = 1;
 } else {
-  console.log("No JS/CJS source files found in guarded directories.");
+  console.log("Tracked repository sources satisfy the TS-complete allowlist.");
 }

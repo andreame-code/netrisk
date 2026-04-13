@@ -19,6 +19,7 @@
     "api/**/*",
     "shared/**/*",
     "scripts/**/*",
+    "supabase/**/*.cts",
     "tests/gameplay/**/*"
   ],
   "exclude": [
@@ -27,6 +28,7 @@
     "e2e",
     ".git",
     ".tsbuild",
+    "public",
     "playwright-report",
     "test-results",
     "data"
