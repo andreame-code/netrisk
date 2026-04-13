@@ -1,4 +1,6 @@
-import { t, translateServerMessage } from "./i18n.mts";
+import { byId, maybeQuery, setDisabled, setHidden } from "./core/dom.mjs";
+import { messageFromError } from "./core/errors.mjs";
+import { t, translateServerMessage } from "./i18n.mjs";
 
 const state = {
   user: null,
@@ -6,23 +8,23 @@ const state = {
 };
 
 const elements = {
-  headerLoginForm: document.querySelector("#header-login-form"),
-  headerAuthUsername: document.querySelector("#header-auth-username"),
-  headerAuthPassword: document.querySelector("#header-auth-password"),
-  headerLoginButton: document.querySelector("#header-login-button"),
-  authStatus: document.querySelector("#register-auth-status"),
-  logoutButton: document.querySelector("#logout-button"),
-  form: document.querySelector("#register-form"),
-  username: document.querySelector("#register-username"),
-  email: document.querySelector("#register-email"),
-  password: document.querySelector("#register-password"),
-  passwordConfirm: document.querySelector("#register-password-confirm"),
-  feedback: document.querySelector("#register-feedback"),
-  submit: document.querySelector("#register-submit-button")
+  headerLoginForm: maybeQuery("#header-login-form"),
+  headerAuthUsername: maybeQuery<HTMLInputElement>("#header-auth-username"),
+  headerAuthPassword: maybeQuery<HTMLInputElement>("#header-auth-password"),
+  headerLoginButton: maybeQuery<HTMLButtonElement>("#header-login-button"),
+  authStatus: byId("register-auth-status"),
+  logoutButton: byId("logout-button") as HTMLButtonElement,
+  form: byId("register-form") as HTMLFormElement,
+  username: byId("register-username") as HTMLInputElement,
+  email: byId("register-email") as HTMLInputElement,
+  password: byId("register-password") as HTMLInputElement,
+  passwordConfirm: byId("register-password-confirm") as HTMLInputElement,
+  feedback: byId("register-feedback"),
+  submit: byId("register-submit-button") as HTMLButtonElement
 };
 
-function renderNavAvatar(username) {
-  const avatar = document.querySelector("#nav-avatar");
+function renderNavAvatar(username = "") {
+  const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
     return;
   }
@@ -33,13 +35,13 @@ function renderNavAvatar(username) {
 
 function setFeedback(message = "", tone = "") {
   if (!message) {
-    elements.feedback.hidden = true;
+    setHidden(elements.feedback, true);
     elements.feedback.textContent = "";
     elements.feedback.className = "auth-feedback";
     return;
   }
 
-  elements.feedback.hidden = false;
+  setHidden(elements.feedback, false);
   elements.feedback.textContent = message;
   elements.feedback.className = `auth-feedback${tone === "error" ? " is-error" : " is-success"}`;
 }
@@ -103,15 +105,21 @@ async function restoreSession() {
 function render() {
   const isAuthenticated = Boolean(state.user);
   if (elements.headerLoginForm) {
-    elements.headerLoginForm.hidden = isAuthenticated;
-    elements.headerAuthUsername.disabled = isAuthenticated;
-    elements.headerAuthPassword.disabled = isAuthenticated;
-    elements.headerLoginButton.disabled = isAuthenticated;
+    setHidden(elements.headerLoginForm as HTMLElement, isAuthenticated);
+    if (elements.headerAuthUsername) {
+      setDisabled(elements.headerAuthUsername, isAuthenticated);
+    }
+    if (elements.headerAuthPassword) {
+      setDisabled(elements.headerAuthPassword, isAuthenticated);
+    }
+    if (elements.headerLoginButton) {
+      setDisabled(elements.headerLoginButton, isAuthenticated);
+    }
   }
 
-  elements.logoutButton.hidden = !isAuthenticated;
-  elements.logoutButton.disabled = !isAuthenticated;
-  elements.submit.disabled = state.submitting || isAuthenticated;
+  setHidden(elements.logoutButton, !isAuthenticated);
+  setDisabled(elements.logoutButton, !isAuthenticated);
+  setDisabled(elements.submit, state.submitting || isAuthenticated);
   elements.authStatus.textContent = isAuthenticated
     ? t("register.auth.loggedIn", { username: state.user.username })
     : t("register.authStatus");
@@ -119,7 +127,7 @@ function render() {
 }
 
 if (elements.headerLoginForm) {
-  elements.headerLoginForm.dataset.headerLoginManaged = "true";
+  (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();
@@ -131,7 +139,7 @@ if (elements.headerLoginForm) {
     try {
       await loginWithCredentials(username, password);
     } catch (error) {
-      setFeedback(error.message, "error");
+      setFeedback(messageFromError(error, t("errors.loginFailed")), "error");
       render();
     }
   });
@@ -184,7 +192,7 @@ elements.form.addEventListener("submit", async (event) => {
 
     await loginWithCredentials(username, password);
   } catch (error) {
-    setFeedback(error.message, "error");
+      setFeedback(messageFromError(error, t("register.errors.submitFailed")), "error");
   } finally {
     state.submitting = false;
     render();

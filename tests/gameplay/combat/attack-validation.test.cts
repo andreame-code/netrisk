@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { validateAttackAttempt } = require("../../../backend/engine/attack-validation.cjs");
 const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupValidationState() {
   const territories = [
@@ -76,4 +77,3 @@ register("validateAttackAttempt rejects attacker territories with fewer than two
   assert.equal(result.ok, false);
   assert.equal(result.code, "INSUFFICIENT_ARMIES");
 });
-

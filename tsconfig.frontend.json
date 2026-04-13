@@ -6,8 +6,7 @@
     "strict": false,
     "allowJs": false,
     "checkJs": false,
-    "noCheck": true,
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "incremental": true,
     "outDir": "./frontend/public",
     "rootDir": "./frontend/src",
@@ -15,6 +14,6 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["frontend/src/**/*.mts"],
+  "include": ["frontend/src/**/*"],
   "exclude": ["node_modules", "frontend/public", "frontend/.tsbuild"]
 }

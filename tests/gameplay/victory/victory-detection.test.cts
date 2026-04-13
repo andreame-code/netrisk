@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { detectVictory } = require("../../../backend/engine/victory-detection.cjs");
 const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("detectVictory declares victory when only one active player remains", () => {
   const state = makeState({

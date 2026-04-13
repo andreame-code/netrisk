@@ -9,6 +9,7 @@
     "backup:check": "node scripts/check-backup.cjs",
     "build:ts": "tsc -p tsconfig.json && npm run build:frontend",
     "build:frontend": "tsc -p tsconfig.frontend.json && node scripts/sync-frontend-imports.cjs",
+    "typecheck:frontend": "tsc -p tsconfig.frontend.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:theme-tokens": "node scripts/check-theme-tokenization.cjs",
     "vercel:env:check": "node scripts/check-vercel-env-parity.cjs",

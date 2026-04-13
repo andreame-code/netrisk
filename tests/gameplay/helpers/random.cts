@@ -1,5 +1,4 @@
-// @ts-nocheck
-function createFixedRandom(sequence) {
+function createFixedRandom(sequence: number[]): () => number {
   const values = Array.isArray(sequence) ? sequence.slice() : [];
   let index = 0;
 
@@ -14,7 +13,7 @@ function createFixedRandom(sequence) {
   };
 }
 
-function rollsToRandomValues(rolls) {
+function rollsToRandomValues(rolls: number[]): number[] {
   return rolls.map((roll) => {
     if (!Number.isInteger(roll) || roll < 1 || roll > 6) {
       throw new Error("Dice rolls must be integers between 1 and 6.");
