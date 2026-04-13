@@ -22,10 +22,14 @@ Today the project includes:
 - territory card assignment at end of turn if at least one conquest occurred during that turn
 - card trade during reinforcement with progressive bonus
 - mandatory trade above hand-size threshold from the standard ruleset
+- optional `defense-three-dice` ruleset in game setup
 - player elimination and victory detection
+- surrender flow for active games
 - UI panel for the latest combat dice result
 - profile page with games played, wins, losses, ongoing games, and win rate
 - events and state synchronization from server to frontend
+- route-level authorization checks for game pages and actions
+- optimistic concurrency handling for game version conflicts
 
 Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`.
 
@@ -46,6 +50,10 @@ Optional local environment setup:
 
 ```powershell
 Copy-Item .env.example .env.local
+```
+
+```bash
+cp .env.example .env.local
 ```
 
 For local development without Supabase, you can also omit `.env.local`: in that case the backend uses the local SQLite datastore by default.
@@ -122,6 +130,8 @@ The `e2e` suite currently covers:
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
 - visual baselines for main screen and secondary pages
+
+The E2E runner starts an isolated local server, chooses a free port if the default one is unavailable, and uses a temporary SQLite database per run.
 
 ## Architecture
 
@@ -203,6 +213,7 @@ Game state notably contains:
 Main frontend screens currently available:
 
 - `index.html`: application entry
+- `landing.html`: public landing page
 - `lobby.html`: player join and lobby management
 - `new-game.html`: new game setup
 - `game.html`: active game
