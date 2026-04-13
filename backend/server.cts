@@ -23,6 +23,7 @@ const {
 const { runAiTurn } = require("./engine/ai-player.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
+const { broadcastEventPayload } = require("./event-broadcast.cjs");
 const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
 const { handleGameActionRoute } = require("./routes/game-actions.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
@@ -360,12 +361,14 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    clients.forEach((client: EventClient) => {
-      const payload = "data: " + JSON.stringify(
+    broadcastEventPayload(clients, (client: EventClient) =>
+      "data: " + JSON.stringify(
         snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, client.user)
-      ) + "\n\n";
-      client.res.write(payload);
-    });
+      ) + "\n\n");
+
+    if (!clients.size) {
+      clientsByGameId.delete(gameContext.gameId);
+    }
   }
 
   function runAiTurnsIfNeeded(targetState: any): any[] {
