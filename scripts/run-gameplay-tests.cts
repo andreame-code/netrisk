@@ -16,6 +16,9 @@ const tests: GameplayTest[] = [];
 };
 
 const gameplayTestModules = [
+  "../tests/gameplay/shared/map-graph.test.cjs",
+  "../tests/gameplay/shared/map-loader.test.cjs",
+  "../tests/gameplay/shared/continent-loader.test.cjs",
   "../tests/gameplay/ai/ai-player.test.cjs",
   "../tests/gameplay/setup/game-setup.test.cjs",
   "../tests/gameplay/turn-flow/turn-flow.test.cjs",
@@ -31,6 +34,7 @@ const gameplayTestModules = [
   "../tests/gameplay/victory/elimination-and-victory.test.cjs",
   "../tests/gameplay/regression/full-flows.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
+  "../tests/gameplay/regression/game-read-routes.test.cjs",
   "../tests/gameplay/regression/event-broadcast.test.cjs"
 ];
 
