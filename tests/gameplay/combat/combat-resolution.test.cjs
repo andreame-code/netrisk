@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/combat/combat-resolution.test.cjs');

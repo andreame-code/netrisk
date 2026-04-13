@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:ts && node scripts/sync-public-assets.cjs",
+  "buildCommand": "npm run build:ts && node .tsbuild/scripts/sync-public-assets.cjs",
   "rewrites": [
     {
       "source": "/api/(.*)",

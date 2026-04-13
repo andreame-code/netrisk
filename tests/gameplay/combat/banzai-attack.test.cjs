@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/combat/banzai-attack.test.cjs');
