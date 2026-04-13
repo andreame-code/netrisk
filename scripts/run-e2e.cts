@@ -112,26 +112,32 @@ async function waitForServer(baseURL: string, timeoutMs: number = 120000): Promi
 }
 
 function createNoWebserverPlaywrightConfig(repoRoot: string, tempConfigPath: string | null = null): Promise<string> {
-  const sourceConfig = path.join(repoRoot, "playwright.config.cjs");
-  const tempConfig = tempConfigPath || path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.cjs");
-  const configPath = JSON.stringify(sourceConfig);
+  const sourceConfig = path.join(repoRoot, "playwright.config");
+  const tempConfig = tempConfigPath || path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts");
+  const configImportPath = JSON.stringify("../playwright.config.ts");
   const sourceRoot = JSON.stringify(repoRoot);
-  const content = `const baseConfig = require(${configPath});
+  const content = `import path from "node:path";
+import baseConfig from ${configImportPath};
+
 const sourceRoot = ${sourceRoot};
+
 if (baseConfig.testDir) {
-  baseConfig.testDir = require("path").resolve(sourceRoot, baseConfig.testDir);
+  baseConfig.testDir = path.resolve(sourceRoot, baseConfig.testDir);
 }
+
 if (baseConfig.outputDir) {
-  baseConfig.outputDir = require("path").resolve(sourceRoot, baseConfig.outputDir);
+  baseConfig.outputDir = path.resolve(sourceRoot, baseConfig.outputDir);
 }
+
 delete baseConfig.webServer;
-module.exports = baseConfig;
+
+export default baseConfig;
 `;
   return fs.promises.writeFile(tempConfig, content, "utf8").then(() => tempConfig);
 }
 
 function removeNoWebserverPlaywrightConfig(repoRoot: string): Promise<void> {
-  return removeIfExists(path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.cjs"), 3, { strict: false });
+  return removeIfExists(path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts"), 3, { strict: false });
 }
 
 async function main(): Promise<void> {
@@ -158,7 +164,7 @@ async function main(): Promise<void> {
     stdio: "inherit",
     env: runnerEnv
   });
-  const tempConfigPath = path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.cjs");
+  const tempConfigPath = path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.ts");
   await createNoWebserverPlaywrightConfig(repoRoot, tempConfigPath);
 
   try {
