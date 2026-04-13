@@ -1,8 +1,23 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import type {
+  DiceRuleSet,
+  GameOptionsResponse,
+  LoginResponse,
+  MapSummary,
+  PublicUser,
+  RuleSetSummary
+} from "./core/types.mjs";
 import { t, translateServerMessage } from "./i18n.mjs";
 
-const state = {
+const state: {
+  ruleSets: RuleSetSummary[];
+  maps: MapSummary[];
+  diceRuleSets: DiceRuleSet[];
+  user: PublicUser | null;
+  creating: boolean;
+  sessionReady: boolean;
+} = {
   ruleSets: [],
   maps: [],
   diceRuleSets: [],
@@ -43,7 +58,7 @@ function renderNavAvatar(username = "") {
   avatar.textContent = label || "C";
 }
 
-function slotDescription(type, index) {
+function slotDescription(type: string, index: number): string {
   if (index === 0) {
     return t("newGame.slot.locked");
   }
@@ -53,7 +68,7 @@ function slotDescription(type, index) {
     : t("newGame.slot.humanDescription");
 }
 
-function slotMarkup(index) {
+function slotMarkup(index: number): string {
   if (index === 0) {
     return '<div class="setup-slot is-fixed" data-slot-index="0">' +
       '<div class="setup-slot-head"><strong>' + t("newGame.slot.playerLabel", { number: index + 1 }) + '</strong><span class="badge accent">' + t("newGame.slot.creatorBadge") + '</span></div>' +
@@ -86,7 +101,7 @@ function renderSlots() {
   updateSlotNotes();
 }
 
-function setFeedback(message, type = "") {
+function setFeedback(message: string, type = ""): void {
   elements.feedback.className = "session-feedback" + (type === "error" ? " is-error" : "") + (message ? "" : " is-hidden");
   elements.feedback.textContent = message || "";
 }
@@ -95,19 +110,19 @@ function updateSubmitState() {
   setDisabled(elements.submit, state.creating || !state.sessionReady || !state.user);
 }
 
-function selectedMapSummary() {
+function selectedMapSummary(): MapSummary | null {
   return state.maps.find((map) => map.id === elements.map.value) || null;
 }
 
-function selectedRuleSet() {
+function selectedRuleSet(): RuleSetSummary | null {
   return state.ruleSets.find((ruleSet) => ruleSet.id === elements.ruleSet.value) || null;
 }
 
-function selectedDiceRuleSet() {
+function selectedDiceRuleSet(): DiceRuleSet | null {
   return state.diceRuleSets.find((ruleSet) => ruleSet.id === elements.diceRuleSet.value) || null;
 }
 
-function diceRuleSetLabel(ruleSet) {
+function diceRuleSetLabel(ruleSet: DiceRuleSet | null): string {
   if (!ruleSet) {
     return t("common.notAvailable");
   }
@@ -185,7 +200,7 @@ function readConfig() {
   const totalPlayers = Number(elements.totalPlayers.value || 2);
   const players = Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]"))
     .map((slot, index) => ({
-      type: index === 0 ? "human" : (slot.querySelector('[data-role="type"]') as HTMLSelectElement).value,
+      type: index === 0 ? "human" : ((slot.querySelector('[data-role="type"]') as HTMLSelectElement | null)?.value || "human"),
       slot: index + 1
     }));
 
@@ -199,13 +214,13 @@ function readConfig() {
   };
 }
 
-async function send(path, body) {
+async function send(path: string, body: unknown): Promise<LoginResponse & { game?: { id: string }; playerId?: string | null }> {
   const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-  const data = await response.json();
+  const data = await response.json() as LoginResponse & { game?: { id: string }; playerId?: string | null };
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.requestFailed")));
   }
@@ -214,7 +229,7 @@ async function send(path, body) {
 
 async function loadOptions() {
   const response = await fetch("/api/game-options");
-  const data = await response.json();
+  const data = await response.json() as GameOptionsResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("newGame.errors.loadOptions")));
   }
@@ -238,10 +253,10 @@ async function restoreSession() {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json();
+    const data = await response.json() as LoginResponse;
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
-  } catch (error) {
+  } catch (_error: unknown) {
     state.user = null;
   }
 
@@ -262,25 +277,27 @@ async function restoreSession() {
   elements.authStatus.textContent = state.user
     ? t("newGame.auth.commander", { username: state.user.username })
     : t("newGame.authStatus");
-  renderNavAvatar(state.user && state.user.username);
+  renderNavAvatar(state.user?.username);
   state.sessionReady = true;
   updateSubmitState();
 }
 
-async function loginWithCredentials(username, password) {
+async function loginWithCredentials(username: string, password: string): Promise<void> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const data = await response.json();
+    const data = await response.json() as LoginResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
 
   state.user = data.user;
   window.netriskTheme?.applyUserTheme?.(state.user);
-  elements.headerAuthPassword.value = "";
+  if (elements.headerAuthPassword) {
+    elements.headerAuthPassword.value = "";
+  }
   await restoreSession();
 }
 
@@ -292,7 +309,7 @@ elements.ruleSet.addEventListener("change", () => {
 elements.map.addEventListener("change", renderMapDetails);
 elements.customizeOptions.addEventListener("change", renderAdvancedOptions);
 elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
-elements.playerSlots.addEventListener("change", (event) => {
+elements.playerSlots.addEventListener("change", (event: Event) => {
   const trigger = closest(event.target, '[data-role="type"]');
   if (!trigger) {
     return;
@@ -321,8 +338,12 @@ elements.form.addEventListener("submit", async (event) => {
     } else {
       localStorage.removeItem("frontline-player-id");
     }
+    if (!data.game?.id) {
+      throw new Error(t("newGame.errors.submitFailed"));
+    }
+
     window.location.href = "/game.html?gameId=" + encodeURIComponent(data.game.id);
-  } catch (error) {
+  } catch (error: unknown) {
     setFeedback(messageFromError(error, t("newGame.errors.submitFailed")), "error");
   } finally {
     state.creating = false;
@@ -333,7 +354,7 @@ elements.form.addEventListener("submit", async (event) => {
 elements.logoutButton.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", {});
-  } catch (error) {
+  } catch (_error: unknown) {
   }
 
   state.user = null;
@@ -348,8 +369,8 @@ if (elements.headerLoginForm) {
   (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const username = elements.headerAuthUsername.value.trim();
-    const password = elements.headerAuthPassword.value;
+    const username = elements.headerAuthUsername?.value.trim() || "";
+    const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
       return;
     }

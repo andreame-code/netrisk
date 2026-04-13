@@ -1,7 +1,43 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import type {
+  GameListResponse,
+  MessagePayload,
+  GameSnapshot,
+  GameSummary,
+  MutationResponse,
+  PublicUser,
+  SnapshotCard,
+  SnapshotCombatComparison,
+  SnapshotPlayer,
+  SnapshotTerritory
+} from "./core/types.mjs";
 import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
 
-const state = {
+type GameListState = "loading" | "ready" | "empty" | "error";
+type FortifySelectionMode = "from" | "to";
+
+const state: {
+  playerId: string | null;
+  snapshot: GameSnapshot | null;
+  user: PublicUser | null;
+  currentGameId: string | null;
+  currentGameName: string | null;
+  selectedGameId: string | null;
+  gameList: GameSummary[];
+  gameListState: GameListState;
+  gameListError: string;
+  selectedTradeCardIds: string[];
+  selectedReinforceTerritoryId: string | null;
+  selectedAttackFromId: string | null;
+  selectedAttackToId: string | null;
+  selectedAttackDiceCount: string;
+  attackBanzaiInFlight: boolean;
+  selectedFortifyFromId: string | null;
+  selectedFortifyToId: string | null;
+  fortifySelectionMode: FortifySelectionMode;
+  tradeError: string;
+  tradeSuccess: string;
+} = {
   playerId: localStorage.getItem("frontline-player-id") || null,
   snapshot: null,
   user: null,
@@ -24,16 +60,16 @@ const state = {
   tradeSuccess: ""
 };
 
-let pendingRequestedGameId = null;
-let eventsConnection = null;
-let eventsGameId = null;
-let eventsMode = null;
-let snapshotPollTimer = null;
+let pendingRequestedGameId: string | null = null;
+let eventsConnection: EventSource | null = null;
+let eventsGameId: string | null = null;
+let eventsMode: "sse" | null = null;
+let snapshotPollTimer: ReturnType<typeof setInterval> | null = null;
 let snapshotPollInFlight = false;
 let privateStateRefreshInFlight = false;
-let renderedMapSignature = null;
+let renderedMapSignature: string | null = null;
 
-function escapeHtml(value) {
+function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -51,7 +87,7 @@ function requestedGameIdFromRoute() {
   return new URLSearchParams(window.location.search).get("gameId");
 }
 
-function syncGameRoute(gameId) {
+function syncGameRoute(gameId: string | null | undefined): void {
   if (pendingRequestedGameId && gameId !== pendingRequestedGameId) {
     return;
   }
@@ -83,85 +119,85 @@ const classicMapLayout = {
   ion: { x: 86.2, y: 50 }
 };
 
-const elements: Record<string, any> = {
-  authForm: document.querySelector("#auth-form"),
-  authUsername: document.querySelector("#auth-username"),
-  authPassword: document.querySelector("#auth-password"),
-  headerLoginForm: document.querySelector("#header-login-form"),
-  headerAuthUsername: document.querySelector("#header-auth-username"),
-  headerAuthPassword: document.querySelector("#header-auth-password"),
-  headerLoginButton: document.querySelector("#header-login-button"),
-  authStatus: document.querySelector("#auth-status"),
-  registerLink: document.querySelector("#register-link"),
-  loginButton: document.querySelector("#login-button"),
-  logoutButton: document.querySelector("#logout-button"),
-  identityStatus: document.querySelector("#identity-status"),
-  joinButton: document.querySelector("#join-button"),
-  startButton: document.querySelector("#start-button"),
-  lobbyControlsSection: document.querySelector("#lobby-controls-section"),
-  lobbyActionButtons: document.querySelector("#lobby-action-buttons"),
-  gameName: document.querySelector("#game-name"),
-  createGameButton: document.querySelector("#create-game-button"),
-  gameList: document.querySelector("#game-list"),
-  openGameButton: document.querySelector("#open-game-button"),
-  createGameButtonSecondary: document.querySelector("#create-game-button-secondary"),
-  openGameButtonSecondary: document.querySelector("#open-game-button-secondary"),
-  gameStatus: document.querySelector("#game-status"),
-  gameMapMeta: document.querySelector("#game-map-meta"),
-  gameSetupMeta: document.querySelector("#game-setup-meta"),
-  phaseBannerValue: document.querySelector("#phase-banner-value"),
-  reinforcementBanner: document.querySelector("#reinforcement-banner"),
-  reinforcementBannerValue: document.querySelector("#reinforcement-banner-value"),
-  gameListState: document.querySelector("#game-list-state"),
-  gameSessionList: document.querySelector("#game-session-list"),
-  gameSessionDetails: document.querySelector("#game-session-details"),
-  selectedGameStatus: document.querySelector("#selected-game-status"),
-  turnBadge: document.querySelector("#turn-badge"),
-  statusSummary: document.querySelector("#status-summary"),
-  tradeAlert: document.querySelector("#trade-alert"),
-  tradeAlertText: document.querySelector("#trade-alert-text"),
-  players: document.querySelector("#players"),
-  map: document.querySelector("#map"),
-  reinforceGroup: document.querySelector("#reinforce-group"),
-  reinforceSelect: document.querySelector("#reinforce-select"),
-  reinforceAmount: document.querySelector("#reinforce-amount"),
-  reinforceMultiButton: document.querySelector("#reinforce-multi-button"),
-  attackGroup: document.querySelector("#attack-group"),
-  attackFrom: document.querySelector("#attack-from"),
-  attackTo: document.querySelector("#attack-to"),
-  attackDice: document.querySelector("#attack-dice"),
-  attackButton: document.querySelector("#attack-button"),
-  attackBanzaiButton: document.querySelector("#attack-banzai-button"),
-  conquestGroup: document.querySelector("#conquest-group"),
-  conquestArmies: document.querySelector("#conquest-armies"),
-  conquestButton: document.querySelector("#conquest-button"),
-  fortifyGroup: document.querySelector("#fortify-group"),
-  fortifyFrom: document.querySelector("#fortify-from"),
-  fortifyTo: document.querySelector("#fortify-to"),
-  fortifyArmies: document.querySelector("#fortify-armies"),
-  fortifyButton: document.querySelector("#fortify-button"),
-  cardTradeGroup: document.querySelector("#card-trade-group"),
-  cardTradeAlert: document.querySelector("#card-trade-alert"),
-  cardTradeList: document.querySelector("#card-trade-list"),
-  cardTradeSummary: document.querySelector("#card-trade-summary"),
-  cardTradeBonus: document.querySelector("#card-trade-bonus"),
-  cardTradeHelp: document.querySelector("#card-trade-help"),
-  cardTradeSuccess: document.querySelector("#card-trade-success"),
-  cardTradeError: document.querySelector("#card-trade-error"),
-  cardTradeButton: document.querySelector("#card-trade-button"),
-  combatResultGroup: document.querySelector("#combat-result-group"),
-  combatResultBadge: document.querySelector("#combat-result-badge"),
-  combatResultSummary: document.querySelector("#combat-result-summary"),
-  combatAttackerRolls: document.querySelector("#combat-attacker-rolls"),
-  combatDefenderRolls: document.querySelector("#combat-defender-rolls"),
-  combatComparisons: document.querySelector("#combat-comparisons"),
-  actionHint: document.querySelector("#action-hint"),
-  endTurnButton: document.querySelector("#end-turn-button"),
-  surrenderButton: document.querySelector("#surrender-button"),
-  log: document.querySelector("#log")
+const elements = {
+  authForm: document.querySelector("#auth-form") as HTMLFormElement,
+  authUsername: document.querySelector("#auth-username") as HTMLInputElement,
+  authPassword: document.querySelector("#auth-password") as HTMLInputElement,
+  headerLoginForm: document.querySelector("#header-login-form") as HTMLFormElement | null,
+  headerAuthUsername: document.querySelector("#header-auth-username") as HTMLInputElement | null,
+  headerAuthPassword: document.querySelector("#header-auth-password") as HTMLInputElement | null,
+  headerLoginButton: document.querySelector("#header-login-button") as HTMLButtonElement | null,
+  authStatus: document.querySelector("#auth-status") as HTMLElement,
+  registerLink: document.querySelector("#register-link") as HTMLAnchorElement | null,
+  loginButton: document.querySelector("#login-button") as HTMLButtonElement,
+  logoutButton: document.querySelector("#logout-button") as HTMLButtonElement,
+  identityStatus: document.querySelector("#identity-status") as HTMLElement,
+  joinButton: document.querySelector("#join-button") as HTMLButtonElement,
+  startButton: document.querySelector("#start-button") as HTMLButtonElement,
+  lobbyControlsSection: document.querySelector("#lobby-controls-section") as HTMLElement | null,
+  lobbyActionButtons: document.querySelector("#lobby-action-buttons") as HTMLElement | null,
+  gameName: document.querySelector("#game-name") as HTMLInputElement | null,
+  createGameButton: document.querySelector("#create-game-button") as HTMLButtonElement | null,
+  gameList: document.querySelector("#game-list") as HTMLSelectElement | null,
+  openGameButton: document.querySelector("#open-game-button") as HTMLButtonElement,
+  createGameButtonSecondary: document.querySelector("#create-game-button-secondary") as HTMLButtonElement | null,
+  openGameButtonSecondary: document.querySelector("#open-game-button-secondary") as HTMLButtonElement | null,
+  gameStatus: document.querySelector("#game-status") as HTMLElement,
+  gameMapMeta: document.querySelector("#game-map-meta") as HTMLElement,
+  gameSetupMeta: document.querySelector("#game-setup-meta") as HTMLElement,
+  phaseBannerValue: document.querySelector("#phase-banner-value") as HTMLElement | null,
+  reinforcementBanner: document.querySelector("#reinforcement-banner") as HTMLElement | null,
+  reinforcementBannerValue: document.querySelector("#reinforcement-banner-value") as HTMLElement | null,
+  gameListState: document.querySelector("#game-list-state") as HTMLElement | null,
+  gameSessionList: document.querySelector("#game-session-list") as HTMLElement | null,
+  gameSessionDetails: document.querySelector("#game-session-details") as HTMLElement | null,
+  selectedGameStatus: document.querySelector("#selected-game-status") as HTMLElement | null,
+  turnBadge: document.querySelector("#turn-badge") as HTMLElement,
+  statusSummary: document.querySelector("#status-summary") as HTMLElement,
+  tradeAlert: document.querySelector("#trade-alert") as HTMLElement | null,
+  tradeAlertText: document.querySelector("#trade-alert-text") as HTMLElement | null,
+  players: document.querySelector("#players") as HTMLElement,
+  map: document.querySelector("#map") as HTMLElement,
+  reinforceGroup: document.querySelector("#reinforce-group") as HTMLElement | null,
+  reinforceSelect: document.querySelector("#reinforce-select") as HTMLSelectElement,
+  reinforceAmount: document.querySelector("#reinforce-amount") as HTMLInputElement | null,
+  reinforceMultiButton: document.querySelector("#reinforce-multi-button") as HTMLButtonElement | null,
+  attackGroup: document.querySelector("#attack-group") as HTMLElement | null,
+  attackFrom: document.querySelector("#attack-from") as HTMLSelectElement,
+  attackTo: document.querySelector("#attack-to") as HTMLSelectElement,
+  attackDice: document.querySelector("#attack-dice") as HTMLSelectElement,
+  attackButton: document.querySelector("#attack-button") as HTMLButtonElement,
+  attackBanzaiButton: document.querySelector("#attack-banzai-button") as HTMLButtonElement | null,
+  conquestGroup: document.querySelector("#conquest-group") as HTMLElement | null,
+  conquestArmies: document.querySelector("#conquest-armies") as HTMLInputElement | null,
+  conquestButton: document.querySelector("#conquest-button") as HTMLButtonElement,
+  fortifyGroup: document.querySelector("#fortify-group") as HTMLElement | null,
+  fortifyFrom: document.querySelector("#fortify-from") as HTMLSelectElement,
+  fortifyTo: document.querySelector("#fortify-to") as HTMLSelectElement,
+  fortifyArmies: document.querySelector("#fortify-armies") as HTMLInputElement,
+  fortifyButton: document.querySelector("#fortify-button") as HTMLButtonElement,
+  cardTradeGroup: document.querySelector("#card-trade-group") as HTMLElement | null,
+  cardTradeAlert: document.querySelector("#card-trade-alert") as HTMLElement | null,
+  cardTradeList: document.querySelector("#card-trade-list") as HTMLElement | null,
+  cardTradeSummary: document.querySelector("#card-trade-summary") as HTMLElement,
+  cardTradeBonus: document.querySelector("#card-trade-bonus") as HTMLElement,
+  cardTradeHelp: document.querySelector("#card-trade-help") as HTMLElement,
+  cardTradeSuccess: document.querySelector("#card-trade-success") as HTMLElement,
+  cardTradeError: document.querySelector("#card-trade-error") as HTMLElement,
+  cardTradeButton: document.querySelector("#card-trade-button") as HTMLButtonElement | null,
+  combatResultGroup: document.querySelector("#combat-result-group") as HTMLElement | null,
+  combatResultBadge: document.querySelector("#combat-result-badge") as HTMLElement,
+  combatResultSummary: document.querySelector("#combat-result-summary") as HTMLElement,
+  combatAttackerRolls: document.querySelector("#combat-attacker-rolls") as HTMLElement,
+  combatDefenderRolls: document.querySelector("#combat-defender-rolls") as HTMLElement,
+  combatComparisons: document.querySelector("#combat-comparisons") as HTMLElement,
+  actionHint: document.querySelector("#action-hint") as HTMLElement | null,
+  endTurnButton: document.querySelector("#end-turn-button") as HTMLButtonElement,
+  surrenderButton: document.querySelector("#surrender-button") as HTMLButtonElement | null,
+  log: document.querySelector("#log") as HTMLElement
 };
 
-function renderNavAvatar(username) {
+function renderNavAvatar(username: string | null | undefined): void {
   const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
     return;
@@ -171,7 +207,7 @@ function renderNavAvatar(username) {
   avatar.textContent = label || "C";
 }
 
-let pendingMapFitFrame = null;
+let pendingMapFitFrame: number | null = null;
 
 function fitMapBoardToViewport() {
   const mapStage = document.querySelector(".game-map-stage") as HTMLElement | null;
@@ -220,19 +256,21 @@ function queueMapBoardFit() {
   });
 }
 
-function territoryPosition(territory) {
+function territoryPosition(territory: SnapshotTerritory | { id: string; x?: number | null; y?: number | null } | null): { x: number; y: number } | null {
   if (territory && Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
-    return { x: territory.x * 100, y: territory.y * 100 };
+    const x = Number(territory.x);
+    const y = Number(territory.y);
+    return { x: x * 100, y: y * 100 };
   }
 
-  return territory ? classicMapLayout[territory.id] || null : null;
+  return territory ? classicMapLayout[territory.id as keyof typeof classicMapLayout] || null : null;
 }
 
-function ownerById(ownerId) {
+function ownerById(ownerId: string | null | undefined): SnapshotPlayer | null {
   return state.snapshot?.players.find((player) => player.id === ownerId) || null;
 }
 
-function textColorForBackground(color) {
+function textColorForBackground(color: string | null | undefined): string {
   if (!color || !/^#?[0-9a-f]{6}$/i.test(color)) {
     return "#2c1f14";
   }
@@ -245,7 +283,7 @@ function textColorForBackground(color) {
   return luminance >= 150 ? "#2c1f14" : "#fffaf0";
 }
 
-function territoryById(territoryId) {
+function territoryById(territoryId: string | null | undefined): SnapshotTerritory | null {
   return state.snapshot?.map.find((territory) => territory.id === territoryId) || null;
 }
 
@@ -262,7 +300,8 @@ function resolveCurrentPlayer() {
   }
 
   if (state.user?.username) {
-    return state.snapshot.players.find((player) => player.name === state.user.username) || null;
+    const username = state.user.username;
+    return state.snapshot.players.find((player) => player.name === username) || null;
   }
 
   return null;
@@ -278,7 +317,8 @@ function myTerritories() {
 }
 
 function currentExpectedVersion() {
-  return Number.isInteger(state.snapshot?.version) ? state.snapshot.version : undefined;
+  const snapshot = state.snapshot;
+  return snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
 }
 
 function currentGamePayload() {
@@ -289,7 +329,7 @@ function currentPlayerHand() {
   return Array.isArray(state.snapshot?.playerHand) ? state.snapshot.playerHand : [];
 }
 
-function ensurePrivateStateFresh(currentPlayer) {
+function ensurePrivateStateFresh(currentPlayer: SnapshotPlayer | null): void {
   if (!state.user || !currentPlayer || privateStateRefreshInFlight) {
     return;
   }
@@ -310,7 +350,7 @@ function ensurePrivateStateFresh(currentPlayer) {
   }, 0);
 }
 
-async function refreshPrivateStateIfNeeded(nextState) {
+async function refreshPrivateStateIfNeeded(nextState: GameSnapshot): Promise<GameSnapshot> {
   if (!state.user || !nextState?.players?.length) {
     return nextState;
   }
@@ -318,7 +358,8 @@ async function refreshPrivateStateIfNeeded(nextState) {
   const currentPlayerId = state.playerId || resolveCurrentPlayer()?.id || null;
   const currentPlayer = nextState.players.find((player) => player.id === currentPlayerId) || null;
   const hand = Array.isArray(nextState.playerHand) ? nextState.playerHand : [];
-  if (!currentPlayer || !Number.isInteger(currentPlayer.cardCount) || hand.length >= currentPlayer.cardCount) {
+  const currentPlayerCardCount = Number.isInteger(currentPlayer?.cardCount) ? Number(currentPlayer?.cardCount) : null;
+  if (!currentPlayer || currentPlayerCardCount == null || hand.length >= currentPlayerCardCount) {
     return nextState;
   }
 
@@ -327,7 +368,7 @@ async function refreshPrivateStateIfNeeded(nextState) {
     try {
       latestState = await fetchLatestStateSnapshot({ includeGameId: false });
       const latestHand = Array.isArray(latestState.playerHand) ? latestState.playerHand : [];
-      if (latestHand.length >= currentPlayer.cardCount) {
+      if (latestHand.length >= currentPlayerCardCount) {
         return latestState;
       }
     } catch (error) {
@@ -344,7 +385,7 @@ function currentDiceRuleSet() {
   return state.snapshot?.diceRuleSet || { attackerMaxDice: 3, defenderMaxDice: 2 };
 }
 
-function selectOrFallback(selectedId, options, fallbackId = "") {
+function selectOrFallback<T extends { id: string }>(selectedId: string | null | undefined, options: T[], fallbackId = ""): string {
   if (selectedId && options.some((option) => option.id === selectedId)) {
     return selectedId;
   }
@@ -352,7 +393,7 @@ function selectOrFallback(selectedId, options, fallbackId = "") {
   return fallbackId || options[0]?.id || "";
 }
 
-function attackDiceOptions(maxDice) {
+function attackDiceOptions(maxDice: number): string {
   if (maxDice < 1) {
     return '<option value="">' + t("game.runtime.noDiceAvailable") + '</option>';
   }
@@ -363,26 +404,26 @@ function attackDiceOptions(maxDice) {
   }).join("");
 }
 
-function cardTypeLabel(type) {
-  const labels = {
+function cardTypeLabel(type: string | null | undefined): string {
+  const labels: Record<string, string> = {
     infantry: t("game.runtime.cardType.infantry"),
     cavalry: t("game.runtime.cardType.cavalry"),
     artillery: t("game.runtime.cardType.artillery"),
     wild: t("game.runtime.cardType.wild")
   };
-  return labels[type] || String(type || t("game.runtime.cardType.default"));
+  return type ? (labels[type] || String(type)) : t("game.runtime.cardType.default");
 }
 
-function cardDisplayLabel(card) {
+function cardDisplayLabel(card: SnapshotCard): string {
   const territoryName = card.territoryId ? (territoryById(card.territoryId)?.name || card.territoryId) : null;
   return territoryName ? `${cardTypeLabel(card.type)} · ${territoryName}` : cardTypeLabel(card.type);
 }
 
-function formatDiceList(rolls) {
+function formatDiceList(rolls: number[] | null | undefined): string {
   return Array.isArray(rolls) && rolls.length ? rolls.join(" · ") : "-";
 }
 
-function formatCombatComparisons(comparisons) {
+function formatCombatComparisons(comparisons: SnapshotCombatComparison[] | null | undefined): string {
   if (!Array.isArray(comparisons) || !comparisons.length) {
     return "-";
   }
@@ -390,8 +431,8 @@ function formatCombatComparisons(comparisons) {
   return comparisons.map((comparison) => comparison.winner === "attacker" ? "A" : "D").join(" · ");
 }
 
-function setSession(user) {
-  state.user = user;
+function setSession(user: PublicUser | null | undefined): void {
+  state.user = user || null;
   window.netriskTheme?.applyUserTheme?.(state.user);
 }
 
@@ -400,12 +441,12 @@ function clearPlayerIdentity() {
   localStorage.removeItem("frontline-player-id");
 }
 
-function setPlayerIdentity(playerId) {
+function setPlayerIdentity(playerId: string): void {
   state.playerId = playerId;
   localStorage.setItem("frontline-player-id", playerId);
 }
 
-function territoryOptionLabel(territory) {
+function territoryOptionLabel(territory: SnapshotTerritory): string {
   return `${territory.name} (${territory.armies})`;
 }
 
@@ -444,7 +485,7 @@ function normalizedReinforcementAmount() {
   return Math.max(1, Math.min(normalized, maxAllowed));
 }
 
-async function applyReinforcements(times) {
+async function applyReinforcements(times: number): Promise<void> {
   const total = Math.max(1, Math.floor(Number(times) || 1));
   const data = await send("/api/action", {
     ...currentGamePayload(),
@@ -454,11 +495,11 @@ async function applyReinforcements(times) {
     amount: total,
     expectedVersion: currentExpectedVersion()
   });
-  state.snapshot = data.state;
+  state.snapshot = data.state || state.snapshot;
   render();
 }
 
-async function executeAttack(fromId, toId, attackDice) {
+async function executeAttack(fromId: string, toId: string, attackDice: number): Promise<GameSnapshot | undefined> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
     playerId: state.playerId,
@@ -468,12 +509,13 @@ async function executeAttack(fromId, toId, attackDice) {
     attackDice,
     expectedVersion: currentExpectedVersion()
   });
-  state.snapshot = data.state;
-  if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+  const nextState = data.state;
+  state.snapshot = nextState || state.snapshot;
+  if (!nextState?.pendingConquest && elements.conquestArmies) {
     elements.conquestArmies.value = "";
   }
   render();
-  return data.state;
+  return nextState;
 }
 
 async function runBanzaiAttack() {
@@ -500,8 +542,9 @@ async function runBanzaiAttack() {
       attackDice,
       expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = data.state;
-    if (!state.snapshot.pendingConquest && elements.conquestArmies) {
+    const nextState = data.state;
+    state.snapshot = nextState || state.snapshot;
+    if (!nextState?.pendingConquest && elements.conquestArmies) {
       elements.conquestArmies.value = "";
     }
     render();
@@ -511,7 +554,7 @@ async function runBanzaiAttack() {
   }
 }
 
-function formatUpdatedTime(value) {
+function formatUpdatedTime(value: string | null | undefined): string {
   if (!value) {
     return t("common.notAvailable");
   }
@@ -529,7 +572,7 @@ function formatUpdatedTime(value) {
   });
 }
 
-function phaseLabel(phase) {
+function phaseLabel(phase: string | null | undefined): string {
   if (phase === "active") {
     return t("common.phase.active");
   }
@@ -544,7 +587,7 @@ function selectedGame() {
   return state.gameList.find((game) => game.id === selectedId) || null;
 }
 
-function updateGameSelection(gameId) {
+function updateGameSelection(gameId: string | null | undefined): void {
   state.selectedGameId = gameId || null;
   if (elements.gameList) {
     elements.gameList.value = state.selectedGameId || "";
@@ -627,9 +670,9 @@ function renderGameSessionBrowser() {
   }
 }
 
-function buildGraphMarkup(snapshot) {
+function buildGraphMarkup(snapshot: GameSnapshot): string {
   const renderedLinks = new Set();
-  const links = [];
+  const links: string[] = [];
 
   snapshot.map.forEach((territory) => {
     territory.neighbors.forEach((neighborId) => {
@@ -723,7 +766,7 @@ function buildGraphMarkup(snapshot) {
   `;
 }
 
-function currentRenderedMapSignature(snapshot) {
+function currentRenderedMapSignature(snapshot: GameSnapshot | null): string {
   if (!snapshot) {
     return "empty";
   }
@@ -772,7 +815,7 @@ function updateMapTerritoryHighlights() {
   });
 }
 
-function handleTerritoryClick(territoryId) {
+function handleTerritoryClick(territoryId: string | null | undefined): void {
   const territory = territoryById(territoryId);
   if (!territory) {
     return;
@@ -999,7 +1042,7 @@ function render() {
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
   const canInteract = Boolean(me) && snapshot?.phase === "active" && isCurrentPlayer();
-  const canSurrender = Boolean(me) && snapshot?.phase === "active" && !me.eliminated;
+  const canSurrender = Boolean(me && !me.eliminated) && snapshot?.phase === "active";
   const pendingConquest = snapshot?.pendingConquest || null;
   const isAuthenticated = Boolean(state.user);
   elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
@@ -1013,9 +1056,15 @@ function render() {
   }
   if (elements.headerLoginForm) {
     elements.headerLoginForm.hidden = isAuthenticated;
-    elements.headerAuthUsername.disabled = isAuthenticated;
-    elements.headerAuthPassword.disabled = isAuthenticated;
-    elements.headerLoginButton.disabled = isAuthenticated;
+    if (elements.headerAuthUsername) {
+      elements.headerAuthUsername.disabled = isAuthenticated;
+    }
+    if (elements.headerAuthPassword) {
+      elements.headerAuthPassword.disabled = isAuthenticated;
+    }
+    if (elements.headerLoginButton) {
+      elements.headerLoginButton.disabled = isAuthenticated;
+    }
   }
   elements.logoutButton.hidden = !isAuthenticated;
   elements.logoutButton.disabled = !isAuthenticated;
@@ -1093,9 +1142,11 @@ function render() {
     }
     elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", { count: playerHand.length });
     elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", { bonus: snapshot?.cardState?.nextTradeBonus || 4 });
-    setMarkup(elements.cardTradeList, playerHand.length
-      ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
-      : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>');
+    if (elements.cardTradeList) {
+      setMarkup(elements.cardTradeList, playerHand.length
+        ? playerHand.map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`).join("")
+        : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>');
+    }
     elements.cardTradeHelp.textContent = mustTradeCards
       ? t("game.runtime.tradeHelp.mustTrade", { limit: snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
       : playerHand.length
@@ -1105,7 +1156,9 @@ function render() {
     elements.cardTradeSuccess.textContent = state.tradeSuccess;
     elements.cardTradeError.hidden = !state.tradeError;
     elements.cardTradeError.textContent = state.tradeError;
-    elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
+    if (elements.cardTradeButton) {
+      elements.cardTradeButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || state.selectedTradeCardIds.length !== 3;
+    }
   }
   if (elements.reinforceAmount) {
     elements.reinforceAmount.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
@@ -1118,7 +1171,7 @@ function render() {
     elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
     elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
   }
-  elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies.value;
+  elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies?.value;
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
   elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
@@ -1144,18 +1197,18 @@ function render() {
   }
 }
 
-async function fetchLatestStateSnapshot(options: Record<string, any> = {}) {
+async function fetchLatestStateSnapshot(options: { includeGameId?: boolean } = {}): Promise<GameSnapshot> {
   const includeGameId = options.includeGameId !== false;
   const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
   const response = await fetch("/api/state" + query);
-  const data = await response.json();
+  const data = await response.json() as GameSnapshot;
   if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("game.errors.loadActiveGame")));
+    throw new Error(translateServerMessage(data as unknown as MessagePayload, t("game.errors.loadActiveGame")));
   }
   return data;
 }
 
-function shouldAcceptSnapshot(nextSnapshot, options: Record<string, any> = {}) {
+function shouldAcceptSnapshot(nextSnapshot: GameSnapshot | null | undefined, options: { allowGameSwitch?: boolean } = {}): boolean {
   if (!nextSnapshot || typeof nextSnapshot !== "object") {
     return false;
   }
@@ -1180,7 +1233,7 @@ function shouldAcceptSnapshot(nextSnapshot, options: Record<string, any> = {}) {
   return true;
 }
 
-function applySnapshot(nextSnapshot, options: Record<string, any> = {}) {
+function applySnapshot(nextSnapshot: GameSnapshot, options: { clearPlayerIdentity?: boolean; allowGameSwitch?: boolean } = {}): boolean {
   if (!shouldAcceptSnapshot(nextSnapshot, options)) {
     return false;
   }
@@ -1198,14 +1251,14 @@ function applySnapshot(nextSnapshot, options: Record<string, any> = {}) {
   return true;
 }
 
-async function send(path, payload = {}, options: Record<string, any> = {}) {
+async function send(path: string, payload: Record<string, unknown> = {}, options: { method?: string } = {}): Promise<MutationResponse> {
   const response = await fetch(path, {
     method: options.method || "POST",
     headers: { "Content-Type": "application/json" },
     body: options.method === "GET" ? undefined : JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const data = await response.json() as MutationResponse;
   if (!response.ok) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
       applySnapshot(data.state, { clearPlayerIdentity: false });
@@ -1268,10 +1321,10 @@ async function loadGameList() {
       updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
     }
     state.gameListState = state.gameList.length ? "ready" : "empty";
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameList = [];
     state.gameListState = "error";
-    state.gameListError = error.message || t("lobby.errors.loadGames");
+    state.gameListError = error instanceof Error ? error.message : t("lobby.errors.loadGames");
   }
 
   render();
@@ -1284,9 +1337,9 @@ async function restoreSession() {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json();
+    const data = await response.json() as MutationResponse;
     setSession(data.user);
-  } catch (error) {
+  } catch (_error: unknown) {
     setSession(null);
     clearPlayerIdentity();
   }
@@ -1360,7 +1413,7 @@ function ensureEventConnection() {
 async function handleCreateGame() {
   try {
     const data = await send("/api/games", { name: elements.gameName?.value.trim() || undefined });
-    state.snapshot = data.state;
+    state.snapshot = data.state || null;
     state.gameList = data.games || [];
     state.currentGameId = data.activeGameId || null;
     state.currentGameName = data.game?.name || null;
@@ -1371,17 +1424,17 @@ async function handleCreateGame() {
       elements.gameName.value = "";
     }
     render();
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameListState = "error";
-    state.gameListError = error.message;
+    state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
     render();
-    alert(error.message);
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 }
 
-async function openGameById(gameId) {
+async function openGameById(gameId: string): Promise<void> {
   const data = await send("/api/games/open", { gameId });
-  state.snapshot = data.state;
+  state.snapshot = data.state || null;
   state.gameList = data.games || [];
   state.currentGameId = data.activeGameId || null;
   state.currentGameName = data.game?.name || null;
@@ -1407,15 +1460,15 @@ async function handleOpenSelectedGame() {
 
   try {
     await openGameById(selectedId);
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameListState = "error";
-    state.gameListError = error.message;
+    state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
     render();
-    alert(error.message);
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 }
 
-async function loginWithCredentials(username, password) {
+async function loginWithCredentials(username: string, password: string): Promise<void> {
   const data = await send("/api/auth/login", { username, password });
   setSession(data.user);
   clearPlayerIdentity();
@@ -1464,8 +1517,8 @@ elements.authForm.addEventListener("submit", async (event) => {
 
   try {
     await loginWithCredentials(username, password);
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.loginFailed"));
   }
 });
 
@@ -1473,17 +1526,19 @@ if (elements.headerLoginForm) {
   (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const username = elements.headerAuthUsername.value.trim();
-    const password = elements.headerAuthPassword.value;
+    const username = elements.headerAuthUsername?.value.trim() || "";
+    const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
       return;
     }
 
     try {
       await loginWithCredentials(username, password);
-      elements.headerAuthPassword.value = "";
-    } catch (error) {
-      alert(error.message);
+      if (elements.headerAuthPassword) {
+        elements.headerAuthPassword.value = "";
+      }
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.loginFailed"));
     }
   });
 }
@@ -1505,7 +1560,7 @@ if (elements.openGameButtonSecondary) {
 elements.logoutButton.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", {});
-  } catch (error) {
+  } catch (_error: unknown) {
   }
 
   setSession(null);
@@ -1520,12 +1575,14 @@ elements.logoutButton.addEventListener("click", async () => {
 elements.joinButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/join", { ...currentGamePayload() });
-    setPlayerIdentity(data.playerId);
-    state.user = data.user;
-    state.snapshot = data.state;
+    if (data.playerId) {
+      setPlayerIdentity(data.playerId);
+    }
+    state.user = data.user || state.user;
+    state.snapshot = data.state || state.snapshot;
     render();
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1535,10 +1592,10 @@ elements.startButton.addEventListener("click", async () => {
       ...currentGamePayload(),
       playerId: state.playerId
     });
-    state.snapshot = data.state;
+    state.snapshot = data.state || state.snapshot;
     render();
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1546,8 +1603,8 @@ if (elements.reinforceMultiButton) {
   elements.reinforceMultiButton.addEventListener("click", async () => {
     try {
       await applyReinforcements(normalizedReinforcementAmount());
-    } catch (error) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
   });
 }
@@ -1558,7 +1615,9 @@ elements.reinforceSelect.addEventListener("change", () => {
 });
 if (elements.reinforceAmount) {
   elements.reinforceAmount.addEventListener("change", () => {
-    elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+    if (elements.reinforceAmount) {
+      elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+    }
   });
 }
 elements.attackFrom.addEventListener("change", () => {
@@ -1588,12 +1647,12 @@ elements.fortifyTo.addEventListener("change", () => {
 });
 if (elements.gameList) {
   elements.gameList.addEventListener("change", () => {
-    updateGameSelection(elements.gameList.value || null);
+    updateGameSelection(elements.gameList?.value || null);
     render();
   });
 }
 if (elements.gameSessionList) {
-  elements.gameSessionList.addEventListener("click", (event) => {
+  elements.gameSessionList.addEventListener("click", (event: Event) => {
     const trigger = closestElement<HTMLElement>(event.target, "[data-game-id]");
     if (!trigger) {
       return;
@@ -1604,7 +1663,7 @@ if (elements.gameSessionList) {
   });
 }
 if (elements.gameSessionDetails) {
-  elements.gameSessionDetails.addEventListener("click", (event) => {
+  elements.gameSessionDetails.addEventListener("click", (event: Event) => {
     const trigger = closestElement<HTMLElement>(event.target, "#open-selected-inline");
     if (!trigger) {
       return;
@@ -1614,13 +1673,17 @@ if (elements.gameSessionDetails) {
   });
 }
 if (elements.cardTradeList) {
-  elements.cardTradeList.addEventListener("click", (event) => {
+  elements.cardTradeList.addEventListener("click", (event: Event) => {
     const trigger = closestElement<HTMLElement>(event.target, "[data-card-id]");
     if (!trigger) {
       return;
     }
 
     const cardId = trigger.dataset.cardId;
+    if (!cardId) {
+      return;
+    }
+
     if (state.selectedTradeCardIds.includes(cardId)) {
       state.selectedTradeCardIds = state.selectedTradeCardIds.filter((id) => id !== cardId);
     } else if (state.selectedTradeCardIds.length < 3) {
@@ -1632,7 +1695,7 @@ if (elements.cardTradeList) {
     render();
   });
 }
-elements.map.addEventListener("click", (event) => {
+elements.map.addEventListener("click", (event: Event) => {
   const button = closestElement<HTMLElement>(event.target, "[data-territory-id]");
   if (!button) {
     return;
@@ -1653,8 +1716,8 @@ elements.attackButton.addEventListener("click", async () => {
       elements.attackTo.value,
       attackDice
     );
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1666,8 +1729,8 @@ if (elements.attackBanzaiButton) {
 
     try {
       await runBanzaiAttack();
-    } catch (error) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
   });
 }
@@ -1678,14 +1741,16 @@ elements.conquestButton.addEventListener("click", async () => {
       ...currentGamePayload(),
       playerId: state.playerId,
       type: "moveAfterConquest",
-      armies: Number(elements.conquestArmies.value),
-      expectedVersion: currentExpectedVersion()
-    });
-    state.snapshot = data.state;
-    elements.conquestArmies.value = "";
+       armies: Number(elements.conquestArmies?.value || 0),
+       expectedVersion: currentExpectedVersion()
+     });
+    state.snapshot = data.state || state.snapshot;
+    if (elements.conquestArmies) {
+      elements.conquestArmies.value = "";
+    }
     render();
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1700,10 +1765,10 @@ elements.fortifyButton.addEventListener("click", async () => {
       armies: Number(elements.fortifyArmies.value),
       expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = data.state;
+    state.snapshot = data.state || state.snapshot;
     render();
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1715,13 +1780,13 @@ elements.endTurnButton.addEventListener("click", async () => {
       type: "endTurn",
       expectedVersion: currentExpectedVersion()
     });
-    state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+    state.snapshot = data.state ? await refreshPrivateStateIfNeeded(data.state) : state.snapshot;
     if (state.snapshot?.playerId) {
       setPlayerIdentity(state.snapshot.playerId);
     }
     render();
-  } catch (error) {
-    alert(error.message);
+  } catch (error: unknown) {
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
 
@@ -1739,10 +1804,10 @@ if (elements.surrenderButton) {
         type: "surrender",
         expectedVersion: currentExpectedVersion()
       });
-      state.snapshot = await refreshPrivateStateIfNeeded(data.state);
+      state.snapshot = data.state ? await refreshPrivateStateIfNeeded(data.state) : state.snapshot;
       render();
-    } catch (error) {
-      alert(error.message);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
   });
 }
@@ -1764,9 +1829,9 @@ if (elements.cardTradeButton) {
       if (state.user) {
         await loadState().catch(() => {});
       }
-    } catch (error) {
+    } catch (error: unknown) {
       state.tradeSuccess = "";
-      state.tradeError = error.message;
+      state.tradeError = error instanceof Error ? error.message : t("errors.requestFailed");
       render();
     }
   });
