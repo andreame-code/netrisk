@@ -12,7 +12,8 @@ const gameplayTestModules = [
   "./victory/victory-detection.test.cjs",
   "./victory/elimination-and-victory.test.cjs",
   "./regression/full-flows.test.cjs",
-  "./regression/attack-route-guard.test.cjs"
+  "./regression/attack-route-guard.test.cjs",
+  "./regression/event-broadcast.test.cjs"
 ];
 
 gameplayTestModules.forEach((modulePath) => {
