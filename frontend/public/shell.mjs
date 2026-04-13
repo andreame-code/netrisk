@@ -1,22 +1,20 @@
+import { setMarkup } from "./core/dom.mjs";
+import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
+import { messageFromError } from "./core/errors.mjs";
 import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
-const DEFAULT_THEME = "command";
-const SUPPORTED_THEMES = Object.freeze(["command", "midnight", "ember"]);
 const THEME_STORAGE_KEY = "netrisk.theme";
-const query = new URLSearchParams(window.location.search);
+const routeQuery = new URLSearchParams(window.location.search);
 const shellKind = document.body.dataset.shellKind || (document.body.dataset.appSection ? "app" : "marketing");
 const section = document.body.dataset.appSection || "";
 const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
-const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : query.get("gameId");
+const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
-function normalizeTheme(theme) {
-    return SUPPORTED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
-}
 function resolveThemeFromUser(user) {
     const requestedTheme = user?.preferences?.theme;
     return SUPPORTED_THEMES.includes(requestedTheme) ? requestedTheme : null;
 }
 function resolveTheme() {
-    const requested = query.get("theme");
+    const requested = routeQuery.get("theme");
     if (requested) {
         return normalizeTheme(requested);
     }
@@ -167,15 +165,17 @@ function sharedFooterMarkup() {
 }
 function mountAppChrome() {
     document.querySelectorAll("[data-shared-top-nav]").forEach((container) => {
-        if (!container.dataset.sharedChromeMounted) {
-            container.innerHTML = sharedNavMarkup();
-            container.dataset.sharedChromeMounted = "true";
+        const topNavContainer = container;
+        if (!topNavContainer.dataset.sharedChromeMounted) {
+            setMarkup(topNavContainer, sharedNavMarkup());
+            topNavContainer.dataset.sharedChromeMounted = "true";
         }
     });
     document.querySelectorAll("[data-shared-footer]").forEach((container) => {
-        if (!container.dataset.sharedChromeMounted) {
-            container.innerHTML = sharedFooterMarkup();
-            container.dataset.sharedChromeMounted = "true";
+        const footerContainer = container;
+        if (!footerContainer.dataset.sharedChromeMounted) {
+            setMarkup(footerContainer, sharedFooterMarkup());
+            footerContainer.dataset.sharedChromeMounted = "true";
         }
     });
 }
@@ -186,14 +186,15 @@ function syncAppNav() {
         profile: t("nav.profile")
     };
     document.querySelectorAll("[data-nav-section]").forEach((link) => {
-        const isActive = link.dataset.navSection === section;
-        link.classList.toggle("is-active", isActive);
-        link.setAttribute("aria-current", isActive ? "page" : "false");
-        if (navLabels[link.dataset.navSection]) {
-            link.textContent = navLabels[link.dataset.navSection];
+        const navLink = link;
+        const isActive = navLink.dataset.navSection === section;
+        navLink.classList.toggle("is-active", isActive);
+        navLink.setAttribute("aria-current", isActive ? "page" : "false");
+        if (navLabels[navLink.dataset.navSection]) {
+            navLink.textContent = navLabels[navLink.dataset.navSection];
         }
-        if (link.dataset.navSection === "game" && currentGameId) {
-            link.href = gameHref();
+        if (navLink.dataset.navSection === "game" && currentGameId) {
+            navLink.href = gameHref();
         }
     });
     document.querySelectorAll(".top-nav-links").forEach((nav) => {
@@ -260,7 +261,7 @@ function initAppShell() {
             window.location.href = nextUrl.toString();
         }
         catch (error) {
-            window.alert(error.message || t("errors.loginFailed"));
+            window.alert(messageFromError(error, t("errors.loginFailed")));
         }
     }, true);
 }

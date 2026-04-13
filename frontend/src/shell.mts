@@ -1,18 +1,15 @@
-import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mts";
+import { setMarkup } from "./core/dom.mjs";
+import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
+import { messageFromError } from "./core/errors.mjs";
+import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
 
-const DEFAULT_THEME = "command";
-const SUPPORTED_THEMES = Object.freeze(["command", "midnight", "ember"]);
 const THEME_STORAGE_KEY = "netrisk.theme";
-const query = new URLSearchParams(window.location.search);
+const routeQuery = new URLSearchParams(window.location.search);
 const shellKind = document.body.dataset.shellKind || (document.body.dataset.appSection ? "app" : "marketing");
 const section = document.body.dataset.appSection || "";
 const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
-const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : query.get("gameId");
+const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
-
-function normalizeTheme(theme) {
-  return SUPPORTED_THEMES.includes(theme) ? theme : DEFAULT_THEME;
-}
 
 function resolveThemeFromUser(user) {
   const requestedTheme = user?.preferences?.theme;
@@ -20,7 +17,7 @@ function resolveThemeFromUser(user) {
 }
 
 function resolveTheme() {
-  const requested = query.get("theme");
+  const requested = routeQuery.get("theme");
   if (requested) {
     return normalizeTheme(requested);
   }
@@ -200,16 +197,18 @@ function sharedFooterMarkup() {
 
 function mountAppChrome() {
   document.querySelectorAll("[data-shared-top-nav]").forEach((container) => {
-    if (!container.dataset.sharedChromeMounted) {
-      container.innerHTML = sharedNavMarkup();
-      container.dataset.sharedChromeMounted = "true";
+    const topNavContainer = container as HTMLElement;
+    if (!topNavContainer.dataset.sharedChromeMounted) {
+      setMarkup(topNavContainer, sharedNavMarkup());
+      topNavContainer.dataset.sharedChromeMounted = "true";
     }
   });
 
   document.querySelectorAll("[data-shared-footer]").forEach((container) => {
-    if (!container.dataset.sharedChromeMounted) {
-      container.innerHTML = sharedFooterMarkup();
-      container.dataset.sharedChromeMounted = "true";
+    const footerContainer = container as HTMLElement;
+    if (!footerContainer.dataset.sharedChromeMounted) {
+      setMarkup(footerContainer, sharedFooterMarkup());
+      footerContainer.dataset.sharedChromeMounted = "true";
     }
   });
 }
@@ -222,16 +221,17 @@ function syncAppNav() {
   };
 
   document.querySelectorAll("[data-nav-section]").forEach((link) => {
-    const isActive = link.dataset.navSection === section;
-    link.classList.toggle("is-active", isActive);
-    link.setAttribute("aria-current", isActive ? "page" : "false");
+    const navLink = link as HTMLAnchorElement;
+    const isActive = navLink.dataset.navSection === section;
+    navLink.classList.toggle("is-active", isActive);
+    navLink.setAttribute("aria-current", isActive ? "page" : "false");
 
-    if (navLabels[link.dataset.navSection]) {
-      link.textContent = navLabels[link.dataset.navSection];
+    if (navLabels[navLink.dataset.navSection]) {
+      navLink.textContent = navLabels[navLink.dataset.navSection];
     }
 
-    if (link.dataset.navSection === "game" && currentGameId) {
-      link.href = gameHref();
+    if (navLink.dataset.navSection === "game" && currentGameId) {
+      navLink.href = gameHref();
     }
   });
 
@@ -291,8 +291,8 @@ function initAppShell() {
     event.preventDefault();
     event.stopImmediatePropagation();
 
-    const usernameInput = form.querySelector("#header-auth-username");
-    const passwordInput = form.querySelector("#header-auth-password");
+    const usernameInput = form.querySelector("#header-auth-username") as HTMLInputElement | null;
+    const passwordInput = form.querySelector("#header-auth-password") as HTMLInputElement | null;
     const username = usernameInput?.value?.trim() || "";
     const password = passwordInput?.value || "";
     if (!username || !password) {
@@ -309,7 +309,7 @@ function initAppShell() {
 
       window.location.href = nextUrl.toString();
     } catch (error) {
-      window.alert(error.message || t("errors.loginFailed"));
+      window.alert(messageFromError(error, t("errors.loginFailed")));
     }
   }, true);
 }

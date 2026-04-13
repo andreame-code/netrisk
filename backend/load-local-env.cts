@@ -1,8 +1,7 @@
-// @ts-nocheck
 const fs = require("fs");
 const path = require("path");
 
-function stripWrappingQuotes(value) {
+function stripWrappingQuotes(value: string): string {
   if (!value || value.length < 2) {
     return value;
   }
@@ -16,8 +15,8 @@ function stripWrappingQuotes(value) {
   return value;
 }
 
-function parseEnvFile(content) {
-  const parsed = {};
+function parseEnvFile(content: string): Record<string, string> {
+  const parsed: Record<string, string> = {};
   const lines = String(content || "").split(/\r?\n/);
 
   lines.forEach((rawLine) => {
@@ -43,7 +42,7 @@ function parseEnvFile(content) {
   return parsed;
 }
 
-function loadEnvFile(filePath) {
+function loadEnvFile(filePath: string): boolean {
   if (!fs.existsSync(filePath)) {
     return false;
   }
@@ -58,14 +57,14 @@ function loadEnvFile(filePath) {
   return true;
 }
 
-function loadLocalEnv() {
+function loadLocalEnv(): void {
   if (String(process.env.E2E || "").toLowerCase() === "true" || String(process.env.TEST || "").toLowerCase() === "true" || String(process.env.NODE_ENV || "").toLowerCase() === "test") {
     return;
   }
 
   const candidates = [process.cwd(), process.env.NETRISK_PROJECT_ROOT, path.join(__dirname, ".."), path.join(__dirname, "../..")];
-  const seen = new Set();
-  const rootDir = candidates.find((candidate) => {
+  const seen = new Set<string>();
+  const rootDir = candidates.find((candidate): boolean => {
     if (!candidate) {
       return false;
     }

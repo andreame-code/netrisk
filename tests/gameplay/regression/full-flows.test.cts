@@ -1,4 +1,3 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { createInitialGameState } = require("../../../backend/engine/game-setup.cjs");
 const { calculateReinforcements } = require("../../../backend/engine/reinforcement-calculator.cjs");
@@ -9,6 +8,8 @@ const { moveFortifyArmies } = require("../../../backend/engine/fortify-movement.
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makeGraph, makeMapDefinition, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 
+declare function register(name: string, fn: () => void | Promise<void>): void;
+
 register("regression: setup to reinforcement placement keeps state coherent", () => {
   const players = makePlayers(["Alice", "Bob"]);
   const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"]), makeTerritory("c", []), makeTerritory("d", [])];
@@ -17,7 +18,10 @@ register("regression: setup to reinforcement placement keeps state coherent", ()
   const reinforcements = calculateReinforcements(state, currentPlayer.id);
   state.reinforcementPool = reinforcements.totalReinforcements;
 
-  const owned = Object.keys(state.territories).find((territoryId) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const owned = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  if (!owned) {
+    throw new Error("Expected the current player to own at least one territory.");
+  }
   const placed = placeReinforcement(state, currentPlayer.id, owned);
 
   assert.equal(placed.remainingReinforcements, reinforcements.totalReinforcements - 1);
@@ -75,4 +79,3 @@ register("regression: fortify move updates end-of-turn board slice coherently", 
   assert.equal(state.territories.a.armies, 3);
   assert.equal(state.territories.c.armies, 2);
 });
-

@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { createInitialGameState } = require("../../../backend/engine/game-setup.cjs");
 const { makeMapDefinition, makePlayers, makeTerritory } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("createInitialGameState assigns all territories with owners and one army", () => {
   const players = makePlayers(["Alice", "Bob", "Cara"]);
@@ -46,4 +47,3 @@ register("createInitialGameState rejects duplicate player ids", () => {
 
   assert.throws(() => createInitialGameState(makeMapDefinition(territories), players), /duplicate player id/i);
 });
-

@@ -1,9 +1,8 @@
-// @ts-nocheck
-function isPromiseLike(value) {
-  return Boolean(value) && typeof value.then === "function";
+function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
+  return Boolean(value) && typeof (value as Promise<T>).then === "function";
 }
 
-function mapMaybe(value, mapper) {
+function mapMaybe<T, U>(value: T | Promise<T>, mapper: (value: T) => U): U | Promise<U> {
   if (isPromiseLike(value)) {
     return value.then(mapper);
   }
@@ -11,7 +10,7 @@ function mapMaybe(value, mapper) {
   return mapper(value);
 }
 
-function chainMaybe(value, mapper) {
+function chainMaybe<T, U>(value: T | Promise<T>, mapper: (value: T) => U | Promise<U>): U | Promise<U> {
   if (isPromiseLike(value)) {
     return value.then((resolved) => mapper(resolved));
   }

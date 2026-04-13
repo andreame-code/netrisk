@@ -1,9 +1,11 @@
-import { formatDate, t, translateServerMessage } from "./i18n.mts";
+import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
 const state = {
   currentGameId: null,
+  currentGameName: null,
   selectedGameId: null,
   gameList: [],
   visibleGameCount: VISIBLE_GAMES_BATCH_SIZE,
@@ -12,7 +14,7 @@ const state = {
   user: null
 };
 
-const elements = {
+const elements: Record<string, any> = {
   createGameButton: document.querySelector("#create-game-button"),
   openGameButton: document.querySelector("#open-game-button"),
   gameStatus: document.querySelector("#game-status"),
@@ -45,7 +47,7 @@ function escapeHtml(value) {
 }
 
 function renderNavAvatar(username) {
-  const avatar = document.querySelector("#nav-avatar");
+  const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
     return;
   }
@@ -178,7 +180,7 @@ function render() {
     elements.gameListState.textContent = t("lobby.empty");
   }
 
-  elements.gameSessionList.innerHTML = renderedGames
+  setMarkup(elements.gameSessionList, renderedGames
     .map((game) => 
       '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
         '<span class="session-primary" data-cell-label="' + t("lobby.table.game") + '">' +
@@ -190,7 +192,7 @@ function render() {
         '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.updated") + '">' + formatUpdatedTime(game.updatedAt) + '</span>' +
       '</button>'
     )
-    .join("");
+    .join(""));
 
   elements.authStatus.textContent = state.user
     ? t("lobby.auth.loggedIn", { username: state.user.username })
@@ -228,7 +230,7 @@ function render() {
     elements.gameListLoadMoreState.textContent = t("lobby.loadMore.complete", { total: state.gameList.length });
   }
 
-  elements.gameSessionDetails.innerHTML = selected
+  setMarkup(elements.gameSessionDetails, selected
     ? '<div class="session-detail-hero">' +
         '<p class="session-detail-kicker">' + t("lobby.details.selectedKicker") + '</p>' +
         '<h4 class="session-detail-title">' + escapeHtml(selected.name) + '</h4>' +
@@ -250,7 +252,7 @@ function render() {
         '<button type="button" id="open-selected-inline">' + t("lobby.details.open") + '</button>' +
         (canJoinGame(selected) ? '<button type="button" id="join-selected-inline" class="ghost-button">' + t("lobby.details.joinOpen") + '</button>' : '') +
       '</div>'
-    : '<div class="session-empty-copy">' + t("lobby.details.emptyExtended") + '</div>';
+    : '<div class="session-empty-copy">' + t("lobby.details.emptyExtended") + '</div>');
 
   elements.openGameButton.disabled = !selected;
 }
@@ -311,7 +313,7 @@ async function send(path, body) {
 
   const data = await response.json();
   if (!response.ok) {
-    const error = new Error(translateServerMessage(data, t("errors.requestFailed")));
+    const error = new Error(translateServerMessage(data, t("errors.requestFailed"))) as Error & { code?: string | null };
     error.code = data.code || null;
     throw error;
   }
@@ -319,7 +321,7 @@ async function send(path, body) {
   return data;
 }
 
-async function loadGameList(options = {}) {
+async function loadGameList(options: Record<string, any> = {}) {
   const renderOnChange = options.renderOnChange !== false;
   state.gameListState = "loading";
   state.gameListError = "";
@@ -406,7 +408,7 @@ async function handleJoinSelectedGame() {
 
 elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
 elements.gameSessionList.addEventListener("click", async (event) => {
-  const gameNameTrigger = event.target.closest("[data-open-game-id]");
+  const gameNameTrigger = closestElement<HTMLElement>(event.target, "[data-open-game-id]");
   if (gameNameTrigger) {
     event.stopPropagation();
     try {
@@ -420,7 +422,7 @@ elements.gameSessionList.addEventListener("click", async (event) => {
     return;
   }
 
-  const trigger = event.target.closest("[data-game-id]");
+  const trigger = closestElement<HTMLElement>(event.target, "[data-game-id]");
   if (!trigger) {
     return;
   }
@@ -429,13 +431,13 @@ elements.gameSessionList.addEventListener("click", async (event) => {
   render();
 });
 elements.gameSessionDetails.addEventListener("click", (event) => {
-  const joinTrigger = event.target.closest("#join-selected-inline");
+  const joinTrigger = closestElement<HTMLElement>(event.target, "#join-selected-inline");
   if (joinTrigger) {
     handleJoinSelectedGame();
     return;
   }
 
-  const trigger = event.target.closest("#open-selected-inline");
+  const trigger = closestElement<HTMLElement>(event.target, "#open-selected-inline");
   if (!trigger) {
     return;
   }
@@ -443,7 +445,7 @@ elements.gameSessionDetails.addEventListener("click", (event) => {
   handleOpenSelectedGame();
 });
 
-async function restoreSession(options = {}) {
+async function restoreSession(options: Record<string, any> = {}) {
   const renderOnChange = options.renderOnChange !== false;
   try {
     const response = await fetch("/api/auth/session");
@@ -471,7 +473,7 @@ render();
 setupInfiniteScroll();
 
 if (elements.headerLoginForm) {
-  elements.headerLoginForm.dataset.headerLoginManaged = "true";
+  (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = elements.headerAuthUsername.value.trim();
@@ -501,16 +503,17 @@ elements.logoutButton.addEventListener("click", async () => {
 
 
 elements.gameSessionList.addEventListener("keydown", (event) => {
-  const gameNameTrigger = event.target.closest("[data-open-game-id]");
+  const gameNameTrigger = closestElement<HTMLElement>(event.target, "[data-open-game-id]");
   if (!gameNameTrigger) {
     return;
   }
 
-  if (event.key !== "Enter" && event.key !== " ") {
+  const keyboardEvent = event as KeyboardEvent;
+  if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
     return;
   }
 
-  event.preventDefault();
+  keyboardEvent.preventDefault();
   event.stopPropagation();
   window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
 });
