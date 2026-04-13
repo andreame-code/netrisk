@@ -1,4 +1,7 @@
 const gameplayTestModules = [
+  "./shared/map-graph.test.cjs",
+  "./shared/map-loader.test.cjs",
+  "./shared/continent-loader.test.cjs",
   "./setup/game-setup.test.cjs",
   "./turn-flow/turn-flow.test.cjs",
   "./reinforcement/reinforcement-calculation.test.cjs",
@@ -13,6 +16,7 @@ const gameplayTestModules = [
   "./victory/elimination-and-victory.test.cjs",
   "./regression/full-flows.test.cjs",
   "./regression/attack-route-guard.test.cjs",
+  "./regression/game-read-routes.test.cjs",
   "./regression/event-broadcast.test.cjs"
 ];
 
