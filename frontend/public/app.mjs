@@ -1474,7 +1474,11 @@ elements.map.addEventListener("click", (event) => {
 });
 elements.attackButton.addEventListener("click", async () => {
     try {
-        await executeAttack(elements.attackFrom.value, elements.attackTo.value, Number(elements.attackDice.value));
+        const attackDice = normalizedAttackDiceValue();
+        if (!attackDice) {
+            return;
+        }
+        await executeAttack(elements.attackFrom.value, elements.attackTo.value, attackDice);
     }
     catch (error) {
         alert(error.message);
