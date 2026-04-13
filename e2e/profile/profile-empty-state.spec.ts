@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { uniqueUser } = require("../support/game-helpers");
+const { attachSessionCookie, uniqueUser } = require("../support/game-helpers");
 
 test("profile page shows a clear empty state for an authenticated user with no history", async ({ page }) => {
   const username = uniqueUser("profile_empty");
@@ -17,13 +17,7 @@ test("profile page shows a clear empty state for an authenticated user with no h
   const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
   expect(sessionToken).toBeTruthy();
 
-  await page.context().addCookies([{
-    name: "netrisk_session",
-    value: sessionToken,
-    url: "http://127.0.0.1:3100",
-    httpOnly: true,
-    sameSite: "Lax"
-  }]);
+  await attachSessionCookie(page, sessionToken);
 
   await page.goto("/profile.html");
 
@@ -36,4 +30,3 @@ test("profile page shows a clear empty state for an authenticated user with no h
   await expect(page.locator("#profile-content")).toHaveAttribute("hidden", "");
   await expect(page.locator("#logout-button")).toBeVisible();
 });
-

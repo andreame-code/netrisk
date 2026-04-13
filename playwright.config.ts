@@ -2,27 +2,33 @@ import { defineConfig, devices } from "@playwright/test";
 
 const e2ePort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
 const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${e2ePort}`;
+const skipWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER === "true";
+const includeHtmlReport = process.env.CI || process.env.PLAYWRIGHT_HTML_REPORT === "true";
 
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   workers: 1,
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: includeHtmlReport ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  reportSlowTests: {
+    max: 10,
+    threshold: 30000
+  },
   use: {
     baseURL,
     locale: "it-IT",
     timezoneId: "Europe/Rome",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    video: process.env.CI ? "retain-on-failure" : "off",
     viewport: { width: 1440, height: 960 }
   },
-  webServer: {
+  webServer: skipWebServer ? undefined : {
     command: "node .tsbuild/scripts/start-e2e.cjs",
     url: baseURL,
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
       ...process.env,
