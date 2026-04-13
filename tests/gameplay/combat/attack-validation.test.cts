@@ -40,6 +40,23 @@ register("validateAttackAttempt rejects attacks outside attack phase", () => {
   assert.equal(result.code, "INVALID_PHASE");
 });
 
+register("validateAttackAttempt rejects attacks while the game is not active", () => {
+  const { graph, state } = setupValidationState();
+  state.phase = "lobby";
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "GAME_NOT_ACTIVE");
+});
+
+register("validateAttackAttempt rejects attackers that are not the current player", () => {
+  const { graph, state } = setupValidationState();
+  state.currentTurnIndex = 1;
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "NOT_CURRENT_PLAYER");
+  assert.deepEqual(result.details, { currentPlayerId: "p2" });
+});
+
 register("validateAttackAttempt rejects non-enemy defender territories", () => {
   const { graph, state } = setupValidationState();
   const result = validateAttackAttempt(state, graph, "p1", "a", "c");
@@ -70,10 +87,58 @@ register("validateAttackAttempt rejects non-adjacent territories", () => {
   assert.equal(result.code, "NOT_ADJACENT");
 });
 
+register("validateAttackAttempt rejects unknown attacker territories from the graph", () => {
+  const { graph, state } = setupValidationState();
+  const result = validateAttackAttempt(state, graph, "p1", "missing", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "UNKNOWN_ATTACKER_TERRITORY");
+});
+
+register("validateAttackAttempt rejects unknown defender territories from the graph", () => {
+  const { graph, state } = setupValidationState();
+  const result = validateAttackAttempt(state, graph, "p1", "a", "missing");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "UNKNOWN_DEFENDER_TERRITORY");
+});
+
+register("validateAttackAttempt rejects missing attacker territory state", () => {
+  const { graph, state } = setupValidationState();
+  delete state.territories.a;
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "MISSING_ATTACKER_STATE");
+});
+
+register("validateAttackAttempt rejects missing defender territory state", () => {
+  const { graph, state } = setupValidationState();
+  delete state.territories.b;
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "MISSING_DEFENDER_STATE");
+});
+
+register("validateAttackAttempt rejects attacker territories not owned by the current player", () => {
+  const { graph, state } = setupValidationState();
+  state.territories.a.ownerId = "p2";
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "ATTACKER_NOT_OWNED");
+  assert.deepEqual(result.details, { ownerId: "p2" });
+});
+
 register("validateAttackAttempt rejects attacker territories with fewer than two armies", () => {
   const { graph, state } = setupValidationState();
   state.territories.a.armies = 1;
   const result = validateAttackAttempt(state, graph, "p1", "a", "b");
   assert.equal(result.ok, false);
   assert.equal(result.code, "INSUFFICIENT_ARMIES");
+});
+
+register("validateAttackAttempt rejects defenders without an enemy owner", () => {
+  const { graph, state } = setupValidationState();
+  state.territories.b.ownerId = null;
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "DEFENDER_NOT_ENEMY");
+  assert.deepEqual(result.details, { ownerId: null });
 });
