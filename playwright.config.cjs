@@ -20,7 +20,7 @@ module.exports = defineConfig({
     viewport: { width: 1440, height: 960 }
   },
   webServer: {
-    command: "node scripts/start-e2e.cjs",
+    command: "node .tsbuild/scripts/start-e2e.cjs",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120000,
@@ -38,5 +38,4 @@ module.exports = defineConfig({
     }
   ]
 });
-
 

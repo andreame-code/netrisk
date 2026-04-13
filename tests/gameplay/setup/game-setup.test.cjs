@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/setup/game-setup.test.cjs');
