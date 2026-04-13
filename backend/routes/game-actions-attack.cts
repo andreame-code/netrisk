@@ -84,7 +84,7 @@ async function handleAttackGameActionRoute(
     return false;
   }
 
-  const random = consumeQueuedAttackRandom();
+  const random = consumeQueuedAttackRandom() || undefined;
   const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
   const actionFromId = String(body.fromId || "");
   const actionToId = String(body.toId || "");
