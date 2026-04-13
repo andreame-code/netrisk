@@ -23,6 +23,12 @@ The project must be safe to extend over time without rewriting existing work.
 4. Game rules must not be duplicated between frontend and backend.
 5. Game logic must be organized in dedicated engine modules.
 
+## Language policy
+1. The project must evolve toward pure TypeScript.
+2. All new code must be written in pure TypeScript.
+3. Legacy non-TypeScript code may be kept only where needed for backward compatibility.
+4. Do not introduce new non-TypeScript code unless it is strictly required to integrate with legacy parts.
+
 ## Preferred structure
 - frontend: UI, map rendering, panels, local presentation state
 - backend: API, game orchestration, persistence, multiplayer support
