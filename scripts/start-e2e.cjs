@@ -1,1 +1,0 @@
-module.exports = require('../.tsbuild/scripts/start-e2e.cjs');

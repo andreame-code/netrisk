@@ -1,5 +1,5 @@
 const { expect } = require("@playwright/test");
-const { randomHex } = require("../../backend/random.cjs");
+const { randomHex } = require("../../.tsbuild/backend/random.cjs");
 
 function uniqueUser(prefix) {
   return prefix + "_" + Date.now().toString(36).slice(-6) + randomHex(2);
@@ -93,4 +93,3 @@ module.exports = {
   resetGame,
   uniqueUser
 };
-

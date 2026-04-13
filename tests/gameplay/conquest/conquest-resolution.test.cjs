@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/conquest/conquest-resolution.test.cjs');
