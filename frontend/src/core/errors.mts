@@ -1,4 +1,4 @@
-export function messageFromError(error, fallback = "") {
+export function messageFromError(error: unknown, fallback = ""): string {
   if (error instanceof Error && error.message) {
     return error.message;
   }

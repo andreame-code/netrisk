@@ -220,7 +220,7 @@ function showProfile(profile) {
     const focusGame = participatingGames[0] || null;
     const knownMaps = participatingGames
         .map((game) => game.mapName || game.mapId)
-        .filter(Boolean);
+        .filter((value) => Boolean(value));
     const rankingTitle = profile.winRate == null
         ? t("profile.ranks.recruit")
         : profile.winRate >= 70
@@ -381,7 +381,9 @@ elements.logoutButton.addEventListener("click", async () => {
     renderNavAvatar();
     showFeedback(t("profile.runtime.loggedOutFeedback"), "error");
     elements.profileName.textContent = t("profile.runtime.unavailableTitle");
-    elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
+    if (elements.profileSubtitle) {
+        elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
+    }
     try {
         await fetch("/api/auth/logout", {
             method: "POST",
@@ -391,7 +393,7 @@ elements.logoutButton.addEventListener("click", async () => {
             body: JSON.stringify({})
         });
     }
-    catch (error) {
+    catch (_error) {
     }
 });
 renderThemeOptions();
