@@ -82,7 +82,7 @@ async function restoreSession() {
         state.user = data.user;
         window.netriskTheme?.applyUserTheme?.(state.user);
     }
-    catch (error) {
+    catch (_error) {
         state.user = null;
     }
 }
@@ -104,7 +104,7 @@ function render() {
     setDisabled(elements.logoutButton, !isAuthenticated);
     setDisabled(elements.submit, state.submitting || isAuthenticated);
     elements.authStatus.textContent = isAuthenticated
-        ? t("register.auth.loggedIn", { username: state.user.username })
+        ? t("register.auth.loggedIn", { username: state.user?.username || "" })
         : t("register.authStatus");
     renderNavAvatar(state.user?.username);
 }
@@ -112,8 +112,8 @@ if (elements.headerLoginForm) {
     elements.headerLoginForm.dataset.headerLoginManaged = "true";
     elements.headerLoginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = elements.headerAuthUsername.value.trim();
-        const password = elements.headerAuthPassword.value;
+        const username = elements.headerAuthUsername?.value.trim() || "";
+        const password = elements.headerAuthPassword?.value || "";
         if (!username || !password) {
             return;
         }
@@ -134,7 +134,7 @@ elements.logoutButton.addEventListener("click", async () => {
             body: JSON.stringify({})
         });
     }
-    catch (error) {
+    catch (_error) {
     }
     state.user = null;
     render();

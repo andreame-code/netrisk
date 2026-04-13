@@ -151,7 +151,7 @@ function readConfig() {
     const totalPlayers = Number(elements.totalPlayers.value || 2);
     const players = Array.from(elements.playerSlots.querySelectorAll("[data-slot-index]"))
         .map((slot, index) => ({
-        type: index === 0 ? "human" : slot.querySelector('[data-role="type"]').value,
+        type: index === 0 ? "human" : (slot.querySelector('[data-role="type"]')?.value || "human"),
         slot: index + 1
     }));
     return {
@@ -201,7 +201,7 @@ async function restoreSession() {
         state.user = data.user;
         window.netriskTheme?.applyUserTheme?.(state.user);
     }
-    catch (error) {
+    catch (_error) {
         state.user = null;
     }
     setHidden(elements.logoutButton, !state.user);
@@ -221,7 +221,7 @@ async function restoreSession() {
     elements.authStatus.textContent = state.user
         ? t("newGame.auth.commander", { username: state.user.username })
         : t("newGame.authStatus");
-    renderNavAvatar(state.user && state.user.username);
+    renderNavAvatar(state.user?.username);
     state.sessionReady = true;
     updateSubmitState();
 }
@@ -237,7 +237,9 @@ async function loginWithCredentials(username, password) {
     }
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
-    elements.headerAuthPassword.value = "";
+    if (elements.headerAuthPassword) {
+        elements.headerAuthPassword.value = "";
+    }
     await restoreSession();
 }
 elements.totalPlayers.addEventListener("change", renderSlots);
@@ -275,6 +277,9 @@ elements.form.addEventListener("submit", async (event) => {
         else {
             localStorage.removeItem("frontline-player-id");
         }
+        if (!data.game?.id) {
+            throw new Error(t("newGame.errors.submitFailed"));
+        }
         window.location.href = "/game.html?gameId=" + encodeURIComponent(data.game.id);
     }
     catch (error) {
@@ -289,7 +294,7 @@ elements.logoutButton.addEventListener("click", async () => {
     try {
         await send("/api/auth/logout", {});
     }
-    catch (error) {
+    catch (_error) {
     }
     state.user = null;
     state.sessionReady = true;
@@ -302,8 +307,8 @@ if (elements.headerLoginForm) {
     elements.headerLoginForm.dataset.headerLoginManaged = "true";
     elements.headerLoginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const username = elements.headerAuthUsername.value.trim();
-        const password = elements.headerAuthPassword.value;
+        const username = elements.headerAuthUsername?.value.trim() || "";
+        const password = elements.headerAuthPassword?.value || "";
         if (!username || !password) {
             return;
         }

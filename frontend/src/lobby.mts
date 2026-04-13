@@ -1,9 +1,19 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import type { GameListResponse, GameSummary, LoginResponse, MutationResponse, PublicUser, SessionResponse } from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
-const state = {
+const state: {
+  currentGameId: string | null;
+  currentGameName: string | null;
+  selectedGameId: string | null;
+  gameList: GameSummary[];
+  visibleGameCount: number;
+  gameListState: "loading" | "ready" | "empty" | "error";
+  gameListError: string;
+  user: PublicUser | null;
+} = {
   currentGameId: null,
   currentGameName: null,
   selectedGameId: null,
@@ -14,30 +24,30 @@ const state = {
   user: null
 };
 
-const elements: Record<string, any> = {
-  createGameButton: document.querySelector("#create-game-button"),
-  openGameButton: document.querySelector("#open-game-button"),
-  gameStatus: document.querySelector("#game-status"),
-  headerLoginForm: document.querySelector("#header-login-form"),
-  headerAuthUsername: document.querySelector("#header-auth-username"),
-  headerAuthPassword: document.querySelector("#header-auth-password"),
-  headerLoginButton: document.querySelector("#header-login-button"),
-  authStatus: document.querySelector("#auth-status"),
-  logoutButton: document.querySelector("#logout-button"),
-  gameListState: document.querySelector("#game-list-state"),
-  gameSessionList: document.querySelector("#game-session-list"),
-  gameListLoadMoreState: document.querySelector("#game-list-load-more-state"),
-  gameSessionDetails: document.querySelector("#game-session-details"),
-  selectedGameStatus: document.querySelector("#selected-game-status"),
-  lobbyTotalGames: document.querySelector("#lobby-total-games"),
-  lobbyReadyGames: document.querySelector("#lobby-ready-games"),
-  lobbyActiveFocus: document.querySelector("#lobby-active-focus"),
-  lobbyFocusNote: document.querySelector("#lobby-focus-note")
+const elements = {
+  createGameButton: document.querySelector("#create-game-button") as HTMLButtonElement | null,
+  openGameButton: document.querySelector("#open-game-button") as HTMLButtonElement | null,
+  gameStatus: document.querySelector("#game-status") as HTMLElement | null,
+  headerLoginForm: document.querySelector("#header-login-form") as HTMLFormElement | null,
+  headerAuthUsername: document.querySelector("#header-auth-username") as HTMLInputElement | null,
+  headerAuthPassword: document.querySelector("#header-auth-password") as HTMLInputElement | null,
+  headerLoginButton: document.querySelector("#header-login-button") as HTMLButtonElement | null,
+  authStatus: document.querySelector("#auth-status") as HTMLElement | null,
+  logoutButton: document.querySelector("#logout-button") as HTMLButtonElement | null,
+  gameListState: document.querySelector("#game-list-state") as HTMLElement | null,
+  gameSessionList: document.querySelector("#game-session-list") as HTMLElement | null,
+  gameListLoadMoreState: document.querySelector("#game-list-load-more-state") as HTMLElement | null,
+  gameSessionDetails: document.querySelector("#game-session-details") as HTMLElement | null,
+  selectedGameStatus: document.querySelector("#selected-game-status") as HTMLElement | null,
+  lobbyTotalGames: document.querySelector("#lobby-total-games") as HTMLElement | null,
+  lobbyReadyGames: document.querySelector("#lobby-ready-games") as HTMLElement | null,
+  lobbyActiveFocus: document.querySelector("#lobby-active-focus") as HTMLElement | null,
+  lobbyFocusNote: document.querySelector("#lobby-focus-note") as HTMLElement | null
 };
 
-let gameListObserver = null;
+let gameListObserver: IntersectionObserver | null = null;
 
-function escapeHtml(value) {
+function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -46,7 +56,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function renderNavAvatar(username) {
+function renderNavAvatar(username: string | null | undefined): void {
   const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
     return;
@@ -56,7 +66,7 @@ function renderNavAvatar(username) {
   avatar.textContent = label || "C";
 }
 
-function formatUpdatedTime(value) {
+function formatUpdatedTime(value: string | null | undefined): string {
   if (!value) {
     return t("common.notAvailable");
   }
@@ -74,7 +84,7 @@ function formatUpdatedTime(value) {
   });
 }
 
-function phaseLabel(phase) {
+function phaseLabel(phase: string): string {
   if (phase === "active") {
     return t("common.phase.active");
   }
@@ -84,7 +94,7 @@ function phaseLabel(phase) {
   return t("common.phase.lobby");
 }
 
-function readinessLabel(game) {
+function readinessLabel(game: GameSummary): string {
   if (game.phase === "finished") {
     return t("lobby.readiness.archive");
   }
@@ -97,11 +107,11 @@ function readinessLabel(game) {
   return t("lobby.readiness.waiting");
 }
 
-function sessionFocusLabel(game) {
+function sessionFocusLabel(game: GameSummary): string {
   return game.id === state.currentGameId ? t("lobby.focus.openSession") : t("lobby.focus.available");
 }
 
-function selectedGame() {
+function selectedGame(): GameSummary | null {
   const selectedId = state.selectedGameId || state.currentGameId;
   return state.gameList.find((game) => game.id === selectedId) || null;
 }
@@ -114,7 +124,7 @@ function canLoadMoreGames() {
   return state.visibleGameCount < state.gameList.length;
 }
 
-function canJoinGame(game) {
+function canJoinGame(game: GameSummary | null): boolean {
   if (!game || !state.user) {
     return false;
   }
@@ -123,37 +133,39 @@ function canJoinGame(game) {
     return false;
   }
 
-  const maxPlayers = Number.isInteger(game.totalPlayers) && game.totalPlayers > 0
-    ? game.totalPlayers
+  const configuredPlayers = Number(game.totalPlayers ?? 0);
+  const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
+    ? configuredPlayers
     : 4;
 
   return game.playerCount < maxPlayers;
 }
 
-function gameCapacityLabel(game) {
-  const maxPlayers = Number.isInteger(game?.totalPlayers) && game.totalPlayers > 0
-    ? game.totalPlayers
+function gameCapacityLabel(game: GameSummary | null | undefined): string {
+  const configuredPlayers = Number(game?.totalPlayers ?? 0);
+  const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
+    ? configuredPlayers
     : 4;
 
-  return game.playerCount + "/" + maxPlayers;
+  return String(game?.playerCount ?? 0) + "/" + maxPlayers;
 }
 
-function updateGameSelection(gameId) {
+function updateGameSelection(gameId: string | null | undefined): void {
   state.selectedGameId = gameId || null;
 }
 
-function setSession(user) {
+function setSession(user: PublicUser | null | undefined): void {
   state.user = user || null;
   window.netriskTheme?.applyUserTheme?.(state.user);
 }
 
-async function loginWithCredentials(username, password) {
+async function loginWithCredentials(username: string, password: string): Promise<void> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const data = await response.json();
+  const data = await response.json() as LoginResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
@@ -164,6 +176,10 @@ async function loginWithCredentials(username, password) {
 }
 
 function render() {
+  if (!elements.gameListState || !elements.gameSessionList || !elements.gameSessionDetails || !elements.authStatus || !elements.logoutButton || !elements.selectedGameStatus || !elements.gameStatus || !elements.gameListLoadMoreState || !elements.lobbyTotalGames || !elements.lobbyReadyGames || !elements.lobbyActiveFocus || !elements.lobbyFocusNote || !elements.openGameButton) {
+    return;
+  }
+
   const renderedGames = visibleGames();
   const selected = selectedGame();
   const selectedId = state.selectedGameId || state.currentGameId;
@@ -200,9 +216,15 @@ function render() {
   if (elements.headerLoginForm) {
     const isAuthenticated = Boolean(state.user);
     elements.headerLoginForm.hidden = isAuthenticated;
-    elements.headerAuthUsername.disabled = isAuthenticated;
-    elements.headerAuthPassword.disabled = isAuthenticated;
-    elements.headerLoginButton.disabled = isAuthenticated;
+    if (elements.headerAuthUsername) {
+      elements.headerAuthUsername.disabled = isAuthenticated;
+    }
+    if (elements.headerAuthPassword) {
+      elements.headerAuthPassword.disabled = isAuthenticated;
+    }
+    if (elements.headerLoginButton) {
+      elements.headerLoginButton.disabled = isAuthenticated;
+    }
   }
   elements.logoutButton.hidden = !state.user;
   elements.logoutButton.disabled = !state.user;
@@ -302,7 +324,7 @@ function setupInfiniteScroll() {
   gameListObserver.observe(elements.gameListLoadMoreState);
 }
 
-async function send(path, body) {
+async function send(path: string, body: unknown): Promise<MutationResponse> {
   const response = await fetch(path, {
     method: "POST",
     headers: {
@@ -311,7 +333,7 @@ async function send(path, body) {
     body: JSON.stringify(body)
   });
 
-  const data = await response.json();
+  const data = await response.json() as MutationResponse;
   if (!response.ok) {
     const error = new Error(translateServerMessage(data, t("errors.requestFailed"))) as Error & { code?: string | null };
     error.code = data.code || null;
@@ -321,7 +343,7 @@ async function send(path, body) {
   return data;
 }
 
-async function loadGameList(options: Record<string, any> = {}) {
+async function loadGameList(options: { renderOnChange?: boolean } = {}): Promise<void> {
   const renderOnChange = options.renderOnChange !== false;
   state.gameListState = "loading";
   state.gameListError = "";
@@ -331,7 +353,7 @@ async function loadGameList(options: Record<string, any> = {}) {
 
   try {
     const response = await fetch("/api/games");
-    const data = await response.json();
+    const data = await response.json() as GameListResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(data, t("lobby.errors.loadGames")));
     }
@@ -343,11 +365,11 @@ async function loadGameList(options: Record<string, any> = {}) {
       updateGameSelection(state.currentGameId || state.gameList[0]?.id || null);
     }
     state.gameListState = state.gameList.length ? "ready" : "empty";
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameList = [];
     resetVisibleGameCount();
     state.gameListState = "error";
-    state.gameListError = error.message || t("lobby.errors.loadGames");
+    state.gameListError = error instanceof Error ? error.message : t("lobby.errors.loadGames");
   }
 
   if (renderOnChange) {
@@ -356,11 +378,11 @@ async function loadGameList(options: Record<string, any> = {}) {
   }
 }
 
-function navigateToGameRoute(gameId) {
+function navigateToGameRoute(gameId: string): void {
   window.location.href = "/game/" + encodeURIComponent(gameId);
 }
 
-async function openGameById(gameId) {
+async function openGameById(gameId: string): Promise<void> {
   const data = await send("/api/games/open", { gameId });
   state.gameList = data.games || [];
   resetVisibleGameCount();
@@ -381,11 +403,11 @@ async function handleOpenSelectedGame() {
 
   try {
     await openGameById(selected.id);
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameListState = "error";
-    state.gameListError = error.message;
+    state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
     render();
-    alert(error.message);
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 }
 
@@ -398,26 +420,31 @@ async function handleJoinSelectedGame() {
   try {
     await send("/api/join", { gameId: selected.id });
     await openGameById(selected.id);
-  } catch (error) {
+  } catch (error: unknown) {
     state.gameListState = "error";
-    state.gameListError = error.message;
+    state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
     render();
-    alert(error.message);
+    alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 }
 
-elements.openGameButton.addEventListener("click", handleOpenSelectedGame);
-elements.gameSessionList.addEventListener("click", async (event) => {
+elements.openGameButton?.addEventListener("click", handleOpenSelectedGame);
+elements.gameSessionList?.addEventListener("click", async (event: Event) => {
   const gameNameTrigger = closestElement<HTMLElement>(event.target, "[data-open-game-id]");
   if (gameNameTrigger) {
     event.stopPropagation();
     try {
-      await openGameById(gameNameTrigger.dataset.openGameId);
-    } catch (error) {
+      const gameId = gameNameTrigger.dataset.openGameId;
+      if (!gameId) {
+        return;
+      }
+
+      await openGameById(gameId);
+    } catch (error: unknown) {
       state.gameListState = "error";
-      state.gameListError = error.message;
+      state.gameListError = error instanceof Error ? error.message : t("errors.requestFailed");
       render();
-      alert(error.message);
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
     }
     return;
   }
@@ -430,7 +457,7 @@ elements.gameSessionList.addEventListener("click", async (event) => {
   updateGameSelection(trigger.dataset.gameId);
   render();
 });
-elements.gameSessionDetails.addEventListener("click", (event) => {
+elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
   const joinTrigger = closestElement<HTMLElement>(event.target, "#join-selected-inline");
   if (joinTrigger) {
     handleJoinSelectedGame();
@@ -445,7 +472,7 @@ elements.gameSessionDetails.addEventListener("click", (event) => {
   handleOpenSelectedGame();
 });
 
-async function restoreSession(options: Record<string, any> = {}) {
+async function restoreSession(options: { renderOnChange?: boolean } = {}): Promise<void> {
   const renderOnChange = options.renderOnChange !== false;
   try {
     const response = await fetch("/api/auth/session");
@@ -454,9 +481,9 @@ async function restoreSession(options: Record<string, any> = {}) {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json();
+    const data = await response.json() as SessionResponse;
     setSession(data.user);
-  } catch (error) {
+  } catch (_error: unknown) {
     setSession(null);
   }
 
@@ -473,28 +500,30 @@ render();
 setupInfiniteScroll();
 
 if (elements.headerLoginForm) {
-  (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
+  elements.headerLoginForm.dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const username = elements.headerAuthUsername.value.trim();
-    const password = elements.headerAuthPassword.value;
+    const username = elements.headerAuthUsername?.value.trim() || "";
+    const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
       return;
     }
 
     try {
       await loginWithCredentials(username, password);
-      elements.headerAuthPassword.value = "";
-    } catch (error) {
-      alert(error.message);
+      if (elements.headerAuthPassword) {
+        elements.headerAuthPassword.value = "";
+      }
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.loginFailed"));
     }
   });
 }
 
-elements.logoutButton.addEventListener("click", async () => {
+elements.logoutButton?.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", {});
-  } catch (error) {
+  } catch (_error: unknown) {
   }
 
   setSession(null);
@@ -502,7 +531,7 @@ elements.logoutButton.addEventListener("click", async () => {
 });
 
 
-elements.gameSessionList.addEventListener("keydown", (event) => {
+elements.gameSessionList?.addEventListener("keydown", (event: Event) => {
   const gameNameTrigger = closestElement<HTMLElement>(event.target, "[data-open-game-id]");
   if (!gameNameTrigger) {
     return;
@@ -515,5 +544,10 @@ elements.gameSessionList.addEventListener("keydown", (event) => {
 
   keyboardEvent.preventDefault();
   event.stopPropagation();
-  window.location.href = "/game/" + encodeURIComponent(gameNameTrigger.dataset.openGameId);
+  const gameId = gameNameTrigger.dataset.openGameId;
+  if (!gameId) {
+    return;
+  }
+
+  window.location.href = "/game/" + encodeURIComponent(gameId);
 });

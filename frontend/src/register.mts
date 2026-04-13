@@ -1,8 +1,12 @@
 import { byId, maybeQuery, setDisabled, setHidden } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import type { LoginResponse, PublicUser, SessionResponse } from "./core/types.mjs";
 import { t, translateServerMessage } from "./i18n.mjs";
 
-const state = {
+const state: {
+  user: PublicUser | null;
+  submitting: boolean;
+} = {
   user: null,
   submitting: false
 };
@@ -46,7 +50,7 @@ function setFeedback(message = "", tone = "") {
   elements.feedback.className = `auth-feedback${tone === "error" ? " is-error" : " is-success"}`;
 }
 
-function registrationClientError(username, email, password, confirmPassword) {
+function registrationClientError(username: string, email: string, password: string, confirmPassword: string): string {
   if (!username || !password || !confirmPassword) {
     return t("register.errors.requiredFields");
   }
@@ -70,13 +74,13 @@ function registrationClientError(username, email, password, confirmPassword) {
   return "";
 }
 
-async function loginWithCredentials(username, password) {
+async function loginWithCredentials(username: string, password: string): Promise<void> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const data = await response.json();
+  const data = await response.json() as LoginResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
@@ -94,10 +98,10 @@ async function restoreSession() {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json();
+    const data = await response.json() as SessionResponse;
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
-  } catch (error) {
+  } catch (_error) {
     state.user = null;
   }
 }
@@ -121,7 +125,7 @@ function render() {
   setDisabled(elements.logoutButton, !isAuthenticated);
   setDisabled(elements.submit, state.submitting || isAuthenticated);
   elements.authStatus.textContent = isAuthenticated
-    ? t("register.auth.loggedIn", { username: state.user.username })
+    ? t("register.auth.loggedIn", { username: state.user?.username || "" })
     : t("register.authStatus");
   renderNavAvatar(state.user?.username);
 }
@@ -130,8 +134,8 @@ if (elements.headerLoginForm) {
   (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const username = elements.headerAuthUsername.value.trim();
-    const password = elements.headerAuthPassword.value;
+    const username = elements.headerAuthUsername?.value.trim() || "";
+    const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
       return;
     }
@@ -152,7 +156,7 @@ elements.logoutButton.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
     });
-  } catch (error) {
+  } catch (_error) {
   }
 
   state.user = null;
@@ -185,7 +189,7 @@ elements.form.addEventListener("submit", async (event) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password })
     });
-    const data = await response.json();
+    const data = await response.json() as LoginResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(data, t("register.errors.submitFailed")));
     }

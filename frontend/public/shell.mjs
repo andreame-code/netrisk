@@ -147,7 +147,9 @@ function sharedFooterMarkup() {
         game: t("nav.game"),
         profile: t("nav.profile")
     };
-    const activeLabel = navLabels[section] || t("app.title");
+    const activeLabel = (section && section in navLabels)
+        ? navLabels[section]
+        : t("app.title");
     return `
     <div class="shared-footer-copy">
       <div>
@@ -190,8 +192,9 @@ function syncAppNav() {
         const isActive = navLink.dataset.navSection === section;
         navLink.classList.toggle("is-active", isActive);
         navLink.setAttribute("aria-current", isActive ? "page" : "false");
-        if (navLabels[navLink.dataset.navSection]) {
-            navLink.textContent = navLabels[navLink.dataset.navSection];
+        const navSection = navLink.dataset.navSection;
+        if (navSection && navSection in navLabels) {
+            navLink.textContent = navLabels[navSection];
         }
         if (navLink.dataset.navSection === "game" && currentGameId) {
             navLink.href = gameHref();
