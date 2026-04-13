@@ -1,8 +1,17 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { resolveBanzaiAttack } = require("../../../backend/engine/banzai-attack.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
 const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+
+type BanzaiRound = {
+  round: number;
+  defenderArmiesRemaining: number;
+  attackerArmiesRemaining: number;
+  attackDiceCount: number;
+  conqueredTerritory?: boolean;
+};
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupBanzaiState() {
   const state = makeState({
@@ -35,9 +44,9 @@ register("resolveBanzaiAttack loops server-side until conquest and returns synth
 
   assert.equal(result.ok, true);
   assert.equal(result.rounds.length, 3);
-  assert.deepEqual(result.rounds.map((round) => round.round), [1, 2, 3]);
-  assert.deepEqual(result.rounds.map((round) => round.defenderArmiesRemaining), [2, 1, 0]);
-  assert.deepEqual(result.rounds.map((round) => round.attackerArmiesRemaining), [4, 3, 3]);
+  assert.deepEqual(result.rounds.map((round: BanzaiRound) => round.round), [1, 2, 3]);
+  assert.deepEqual(result.rounds.map((round: BanzaiRound) => round.defenderArmiesRemaining), [2, 1, 0]);
+  assert.deepEqual(result.rounds.map((round: BanzaiRound) => round.attackerArmiesRemaining), [4, 3, 3]);
   assert.equal(result.rounds[2].conqueredTerritory, true);
   assert.equal(result.pendingConquest.fromId, "aurora");
   assert.equal(result.pendingConquest.toId, "bastion");
@@ -77,4 +86,3 @@ register("resolveBanzaiAttack normalizes attack dice as armies drop", () => {
   assert.equal(state.territories.bastion.armies, 0);
   assert.equal(state.pendingConquest.toId, "bastion");
 });
-

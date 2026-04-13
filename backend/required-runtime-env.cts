@@ -1,4 +1,3 @@
-// @ts-nocheck
 const REQUIRED_DEPLOY_ENV_KEYS = [
   "AUTH_ENCRYPTION_KEY",
   "SUPABASE_URL",
@@ -6,11 +5,11 @@ const REQUIRED_DEPLOY_ENV_KEYS = [
   "DATASTORE_DRIVER"
 ];
 
-function hasValue(value) {
+function hasValue(value: unknown): boolean {
   return typeof value === "string" ? value.trim() !== "" : Boolean(value);
 }
 
-function shouldValidateDeployEnv(env = process.env) {
+function shouldValidateDeployEnv(env: NodeJS.ProcessEnv = process.env): boolean {
   if (!env || !env.VERCEL) {
     return false;
   }
@@ -19,7 +18,7 @@ function shouldValidateDeployEnv(env = process.env) {
   return targetEnv === "preview" || targetEnv === "production";
 }
 
-function missingRequiredDeployEnv(env = process.env) {
+function missingRequiredDeployEnv(env: NodeJS.ProcessEnv = process.env): string[] {
   return REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !hasValue(env[key]));
 }
 

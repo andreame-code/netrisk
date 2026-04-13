@@ -1,4 +1,3 @@
-// @ts-nocheck
 const { userRole } = require("./auth.cjs");
 
 const Roles = {
@@ -6,7 +5,47 @@ const Roles = {
   ADMIN: "admin"
 };
 
-function actorForUser(user) {
+interface Actor {
+  id: string;
+  username: string;
+  role: string;
+}
+
+interface UserLike {
+  id: string;
+  username: string;
+  role?: string;
+}
+
+interface PlayerLike {
+  linkedUserId?: string | null;
+  name?: string | null;
+}
+
+interface GameLike {
+  phase?: string | null;
+  creatorUserId?: string | null;
+}
+
+interface AuthorizationContext {
+  user?: UserLike | null;
+  game?: GameLike | null;
+  state?: { players?: PlayerLike[] | null } | null;
+}
+
+type AuthorizationError = Error & {
+  statusCode: number;
+  code: string;
+};
+
+function createAuthorizationError(message: string, statusCode: number, code: string): AuthorizationError {
+  const error = new Error(message) as AuthorizationError;
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
+function actorForUser(user: UserLike | null | undefined): Actor | null {
   if (!user) {
     return null;
   }
@@ -18,42 +57,17 @@ function actorForUser(user) {
   };
 }
 
-function canCreateGame(actor) {
+function canCreateGame(actor: Actor | null): boolean {
   return Boolean(actor && actor.id && (actor.role === Roles.USER || actor.role === Roles.ADMIN));
 }
 
-function isActorPlayer(player, actor) {
+function isActorPlayer(player: PlayerLike | null | undefined, actor: Actor) {
   if (!player) return false;
   if (player.linkedUserId) return player.linkedUserId === actor.id;
   return player.name === actor.username;
 }
 
-function canOpenGame(actor, game, state) {
-  if (!actor || !actor.id || !game) {
-    return false;
-  }
-
-  if (actor.role === Roles.ADMIN) {
-    return true;
-  }
-
-   if (game.phase === "lobby") {
-    return true;
-  }
-
-  if (game.creatorUserId && game.creatorUserId === actor.id) {
-    return true;
-  }
-
-  const players = Array.isArray(state && state.players) ? state.players : [];
-  if (players.some((player) => isActorPlayer(player, actor))) {
-    return true;
-  }
-
-  return !game.creatorUserId;
-}
-
-function canReadGame(actor, game, state) {
+function canOpenGame(actor: Actor | null, game: GameLike | null | undefined, state: AuthorizationContext["state"]): boolean {
   if (!actor || !actor.id || !game) {
     return false;
   }
@@ -70,7 +84,7 @@ function canReadGame(actor, game, state) {
     return true;
   }
 
-  const players = Array.isArray(state && state.players) ? state.players : [];
+  const players = Array.isArray(state?.players) ? state.players : [];
   if (players.some((player) => isActorPlayer(player, actor))) {
     return true;
   }
@@ -78,7 +92,32 @@ function canReadGame(actor, game, state) {
   return !game.creatorUserId;
 }
 
-function canStartGame(actor, game) {
+function canReadGame(actor: Actor | null, game: GameLike | null | undefined, state: AuthorizationContext["state"]): boolean {
+  if (!actor || !actor.id || !game) {
+    return false;
+  }
+
+  if (actor.role === Roles.ADMIN) {
+    return true;
+  }
+
+  if (game.phase === "lobby") {
+    return true;
+  }
+
+  if (game.creatorUserId && game.creatorUserId === actor.id) {
+    return true;
+  }
+
+  const players = Array.isArray(state?.players) ? state.players : [];
+  if (players.some((player) => isActorPlayer(player, actor))) {
+    return true;
+  }
+
+  return !game.creatorUserId;
+}
+
+function canStartGame(actor: Actor | null, game: GameLike | null | undefined): boolean {
   if (!actor || !actor.id || !game) {
     return false;
   }
@@ -94,22 +133,16 @@ function canStartGame(actor, game) {
   return game.creatorUserId === actor.id;
 }
 
-function authorize(action, context = {}) {
+function authorize(action: string, context: AuthorizationContext = {}) {
   const actor = actorForUser(context.user);
 
   if (action === "game:create") {
     if (!actor) {
-      const error = new Error("Sessione non valida.");
-      error.statusCode = 401;
-      error.code = "AUTH_REQUIRED";
-      throw error;
+      throw createAuthorizationError("Sessione non valida.", 401, "AUTH_REQUIRED");
     }
 
     if (!canCreateGame(actor)) {
-      const error = new Error("Non hai i permessi per creare una partita.");
-      error.statusCode = 403;
-      error.code = "FORBIDDEN";
-      throw error;
+      throw createAuthorizationError("Non hai i permessi per creare una partita.", 403, "FORBIDDEN");
     }
 
     return { ok: true, actor };
@@ -117,10 +150,7 @@ function authorize(action, context = {}) {
 
   if (action === "game:open" || action === "game:read") {
     if (!actor) {
-      const error = new Error("Sessione non valida.");
-      error.statusCode = 401;
-      error.code = "AUTH_REQUIRED";
-      throw error;
+      throw createAuthorizationError("Sessione non valida.", 401, "AUTH_REQUIRED");
     }
 
     const allowed = action === "game:read"
@@ -128,10 +158,7 @@ function authorize(action, context = {}) {
       : canOpenGame(actor, context.game, context.state);
 
     if (!allowed) {
-      const error = new Error("Puoi aprire solo partite di cui fai parte.");
-      error.statusCode = 403;
-      error.code = "MEMBER_ONLY";
-      throw error;
+      throw createAuthorizationError("Puoi aprire solo partite di cui fai parte.", 403, "MEMBER_ONLY");
     }
 
     return { ok: true, actor };
@@ -139,26 +166,17 @@ function authorize(action, context = {}) {
 
   if (action === "game:start") {
     if (!actor) {
-      const error = new Error("Sessione non valida.");
-      error.statusCode = 401;
-      error.code = "AUTH_REQUIRED";
-      throw error;
+      throw createAuthorizationError("Sessione non valida.", 401, "AUTH_REQUIRED");
     }
 
     if (!canStartGame(actor, context.game)) {
-      const error = new Error("Solo il creatore della partita puo avviarla.");
-      error.statusCode = 403;
-      error.code = "HOST_ONLY";
-      throw error;
+      throw createAuthorizationError("Solo il creatore della partita puo avviarla.", 403, "HOST_ONLY");
     }
 
     return { ok: true, actor };
   }
 
-  const error = new Error("Policy non supportata: " + action);
-  error.statusCode = 500;
-  error.code = "POLICY_NOT_IMPLEMENTED";
-  throw error;
+  throw createAuthorizationError("Policy non supportata: " + action, 500, "POLICY_NOT_IMPLEMENTED");
 }
 
 module.exports = {

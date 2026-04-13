@@ -1,12 +1,20 @@
-// @ts-nocheck
 const fs = require("fs");
 const net = require("net");
 const { spawn } = require("child_process");
 const path = require("path");
 const http = require("http");
 
-function canBind(port) {
-  return new Promise((resolve) => {
+interface CleanupOptions {
+  strict?: boolean;
+}
+
+interface ExitResult {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+}
+
+function canBind(port: number): Promise<boolean> {
+  return new Promise((resolve: (value: boolean) => void) => {
     const server = net.createServer();
     server.unref();
     server.on("error", () => resolve(false));
@@ -16,7 +24,7 @@ function canBind(port) {
   });
 }
 
-async function findAvailablePort(startPort, attempts = 20) {
+async function findAvailablePort(startPort: number, attempts: number = 20): Promise<number> {
   for (let offset = 0; offset < attempts; offset += 1) {
     const candidate = startPort + offset;
     if (await canBind(candidate)) {
@@ -27,7 +35,7 @@ async function findAvailablePort(startPort, attempts = 20) {
   throw new Error(`Nessuna porta libera trovata a partire da ${startPort}.`);
 }
 
-async function removeIfExists(filePath, attempts = 10, options = {}) {
+async function removeIfExists(filePath: string, attempts: number = 10, options: CleanupOptions = {}): Promise<void> {
   const strict = options.strict !== false;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -35,16 +43,17 @@ async function removeIfExists(filePath, attempts = 10, options = {}) {
       await fs.promises.rm(filePath, { force: true });
       return;
     } catch (error) {
-      if (!error || error.code === "ENOENT") {
+      const fsError = error as NodeJS.ErrnoException | null;
+      if (!fsError || fsError.code === "ENOENT") {
         return;
       }
 
-      if (!strict && (error.code === "EBUSY" || error.code === "EPERM")) {
+      if (!strict && (fsError.code === "EBUSY" || fsError.code === "EPERM")) {
         return;
       }
 
       if (attempt === attempts - 1) {
-        throw error;
+        throw fsError;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 200));
@@ -52,30 +61,30 @@ async function removeIfExists(filePath, attempts = 10, options = {}) {
   }
 }
 
-async function cleanupSqliteFiles(dbFile) {
+async function cleanupSqliteFiles(dbFile: string): Promise<void> {
   await removeIfExists(`${dbFile}-shm`);
   await removeIfExists(`${dbFile}-wal`);
   await removeIfExists(dbFile);
 }
 
-async function cleanupStaleE2eDatabases(dataDir) {
+async function cleanupStaleE2eDatabases(dataDir: string): Promise<void> {
   const entries = await fs.promises.readdir(dataDir, { withFileTypes: true });
   const targets = entries
-    .filter((entry) => entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name))
-    .map((entry) => path.join(dataDir, entry.name));
+    .filter((entry: import("node:fs").Dirent) => entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name))
+    .map((entry: import("node:fs").Dirent) => path.join(dataDir, entry.name));
 
   for (const target of targets) {
     await removeIfExists(target, 3, { strict: false });
   }
 }
 
-function wait(ms) {
+function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function isServerHealthy(baseURL) {
-  return new Promise((resolve) => {
-    const request = http.get(`${baseURL}/api/health`, (response) => {
+function isServerHealthy(baseURL: string): Promise<boolean> {
+  return new Promise((resolve: (value: boolean) => void) => {
+    const request = http.get(`${baseURL}/api/health`, (response: import("node:http").IncomingMessage) => {
       response.resume();
       resolve(response.statusCode === 200);
     });
@@ -88,7 +97,7 @@ function isServerHealthy(baseURL) {
   });
 }
 
-async function waitForServer(baseURL, timeoutMs = 120000) {
+async function waitForServer(baseURL: string, timeoutMs: number = 120000): Promise<void> {
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeoutMs) {
@@ -102,7 +111,7 @@ async function waitForServer(baseURL, timeoutMs = 120000) {
   throw new Error(`Timeout avvio server E2E su ${baseURL}.`);
 }
 
-function createNoWebserverPlaywrightConfig(repoRoot, tempConfigPath = null) {
+function createNoWebserverPlaywrightConfig(repoRoot: string, tempConfigPath: string | null = null): Promise<string> {
   const sourceConfig = path.join(repoRoot, "playwright.config.cjs");
   const tempConfig = tempConfigPath || path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.cjs");
   const configPath = JSON.stringify(sourceConfig);
@@ -121,11 +130,11 @@ module.exports = baseConfig;
   return fs.promises.writeFile(tempConfig, content, "utf8").then(() => tempConfig);
 }
 
-function removeNoWebserverPlaywrightConfig(repoRoot) {
+function removeNoWebserverPlaywrightConfig(repoRoot: string): Promise<void> {
   return removeIfExists(path.join(repoRoot, ".tsbuild", "playwright.tmp.no-webserver.cjs"), 3, { strict: false });
 }
 
-async function main() {
+async function main(): Promise<void> {
   const requestedPort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
   const port = await findAvailablePort(requestedPort);
   const baseURL = `http://127.0.0.1:${port}`;
@@ -167,8 +176,8 @@ async function main() {
     env: runnerEnv
   });
 
-  const result = await new Promise((resolve) => {
-    child.on("exit", (code, signal) => {
+  const result = await new Promise<ExitResult>((resolve) => {
+    child.on("exit", (code: number | null, signal: NodeJS.Signals | null) => {
       resolve({ code, signal });
     });
   });
@@ -186,6 +195,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error.message || error);
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

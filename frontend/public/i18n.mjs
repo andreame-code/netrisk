@@ -1,3 +1,4 @@
+import { setMarkup } from "./core/dom.mjs";
 import { it } from "./locales/it.mjs";
 import { en } from "./locales/en.mjs";
 export const SUPPORTED_LOCALES = Object.freeze(["it", "en"]);
@@ -159,24 +160,31 @@ export function applyTranslations(root = document, locale = getLocale()) {
         return;
     }
     root.querySelectorAll("[data-i18n]").forEach((element) => {
-        element.textContent = t(element.dataset.i18n, {}, { locale });
+        const translatedElement = element;
+        translatedElement.textContent = t(translatedElement.dataset.i18n, {}, { locale });
     });
     root.querySelectorAll("[data-i18n-html]").forEach((element) => {
-        element.innerHTML = t(element.dataset.i18nHtml, {}, { locale });
+        const translatedElement = element;
+        setMarkup(translatedElement, t(translatedElement.dataset.i18nHtml, {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-content]").forEach((element) => {
-        element.setAttribute("content", t(element.dataset.i18nContent, {}, { locale }));
+        const translatedElement = element;
+        translatedElement.setAttribute("content", t(translatedElement.dataset.i18nContent, {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
-        element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder, {}, { locale }));
+        const translatedElement = element;
+        translatedElement.setAttribute("placeholder", t(translatedElement.dataset.i18nPlaceholder, {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
-        element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel, {}, { locale }));
+        const translatedElement = element;
+        translatedElement.setAttribute("aria-label", t(translatedElement.dataset.i18nAriaLabel, {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-title]").forEach((element) => {
-        element.setAttribute("title", t(element.dataset.i18nTitle, {}, { locale }));
+        const translatedElement = element;
+        translatedElement.setAttribute("title", t(translatedElement.dataset.i18nTitle, {}, { locale }));
     });
     root.querySelectorAll("[data-i18n-alt]").forEach((element) => {
-        element.setAttribute("alt", t(element.dataset.i18nAlt, {}, { locale }));
+        const translatedElement = element;
+        translatedElement.setAttribute("alt", t(translatedElement.dataset.i18nAlt, {}, { locale }));
     });
 }

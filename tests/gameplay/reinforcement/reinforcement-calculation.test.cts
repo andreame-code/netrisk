@@ -1,7 +1,8 @@
-// @ts-nocheck
 const assert = require("node:assert/strict");
 const { calculateReinforcements } = require("../../../backend/engine/reinforcement-calculator.cjs");
 const { makeContinent, makePlayers, makeState, territoryStates } = require("../helpers/state-builder.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("calculateReinforcements enforces a minimum of 3", () => {
   const players = makePlayers(["Alice", "Bob"]);
@@ -49,4 +50,3 @@ register("calculateReinforcements rejects unknown players", () => {
   const state = makeState({ players: makePlayers(["Alice"]) });
   assert.throws(() => calculateReinforcements(state, "missing"), /unknown player/i);
 });
-
