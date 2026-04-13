@@ -1,9 +1,9 @@
-const { defineConfig, devices } = require("@playwright/test");
+import { defineConfig, devices } from "@playwright/test";
 
 const e2ePort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
 const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${e2ePort}`;
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -38,4 +38,3 @@ module.exports = defineConfig({
     }
   ]
 });
-
