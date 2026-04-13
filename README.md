@@ -1,78 +1,78 @@
 # NetRisk
 
-NetRisk e un gioco strategico a turni ispirato a Risk/Risiko, costruito per crescere in modo incrementale senza confondere interfaccia, orchestrazione backend e regole pure di gioco.
+NetRisk is a turn-based strategy game inspired by Risk/Risiko, built to grow incrementally without mixing interface concerns, backend orchestration, and pure game rules.
 
-Il repository non e una semplice demo grafica: e una base applicativa completa per sviluppare una versione estendibile di NetRisk con lobby, profili, AI, turn flow, combattimento, carte e test automatici.
+This repository is not just a simple graphical demo: it is a full application foundation for building an extensible version of NetRisk with lobby, profiles, AI, turn flow, combat, cards, and automated tests.
 
-Nel codice e nella documentazione tecnica il progetto resta identificato come `NetRisk`. Nell'interfaccia utente web, il titolo visualizzato oggi e `Frontline Dominion`, con `NetRisk` mantenuto come brand label.
+In code and technical documentation, the project remains identified as `NetRisk`. In the current web UI, the visible title is `Frontline Dominion`, with `NetRisk` kept as the brand label.
 
-## Stato attuale
+## Current status
 
-Oggi il progetto include:
+Today the project includes:
 
-- registrazione, login, logout e profilo utente
-- lobby iniziale e riapertura di partite salvate
-- creazione di una nuova partita con mappa supportata e regola dadi selezionabile
-- ingresso di giocatori umani e aggiunta di bot AI
-- configurazione partite da 2 a 4 giocatori con primo slot umano obbligatorio
-- avvio partita e assegnazione iniziale dei territori
-- turno diviso in fasi: `reinforcement`, `attack`, `fortify`, `finished`
-- piazzamento rinforzi, attacco, conquista, movimento post-conquista e fortificazione
-- scelta del numero di dadi attacco entro i limiti consentiti
-- carta territorio assegnata a fine turno se durante il turno e stata effettuata almeno una conquista
-- scambio carte durante la fase rinforzi con bonus progressivo
-- scambio obbligatorio oltre la soglia mano prevista dal ruleset standard
-- rilevamento eliminazione giocatori e vittoria
-- pannello UI per ultimo risultato dadi del combattimento
-- pagina profilo con partite giocate, vittorie, sconfitte, partite in corso e win rate
-- eventi e sincronizzazione dello stato dal server al frontend
+- user registration, login, logout, and profile
+- initial lobby and reopening saved games
+- creation of a new game with supported map and selectable dice ruleset
+- joining with human players and adding AI bots
+- 2 to 4 player setup with mandatory first human slot
+- game start and initial territory assignment
+- turn split into phases: `reinforcement`, `attack`, `fortify`, `finished`
+- reinforcement placement, attack, conquest, post-conquest movement, and fortification
+- attack dice count selection within allowed limits
+- territory card assignment at end of turn if at least one conquest occurred during that turn
+- card trade during reinforcement with progressive bonus
+- mandatory trade above hand-size threshold from the standard ruleset
+- player elimination and victory detection
+- UI panel for the latest combat dice result
+- profile page with games played, wins, losses, ongoing games, and win rate
+- events and state synchronization from server to frontend
 
-Le mappe supportate al momento sono `classic-mini`, `middle-earth` e `world-classic`.
+Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`.
 
 ## Quick Start
 
-Prerequisiti:
+Prerequisites:
 
 - Node.js
 - npm
 
-Installazione dipendenze:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Configurazione ambiente locale opzionale:
+Optional local environment setup:
 
 ```powershell
 Copy-Item .env.example .env.local
 ```
 
-Per lo sviluppo locale senza Supabase puoi anche omettere `.env.local`: in quel caso il backend usa il datastore SQLite locale di default.
+For local development without Supabase, you can also omit `.env.local`: in that case the backend uses the local SQLite datastore by default.
 
-Avvio server:
+Start server:
 
 ```bash
 npm start
 ```
 
-Applicazione disponibile su `http://localhost:3000`.
+Application available at `http://localhost:3000`.
 
-## Configurazione datastore
+## Datastore configuration
 
-Il progetto supporta due modalita principali:
+The project supports two main modes:
 
-- `sqlite`: fallback locale predefinito per sviluppo rapido, con file in `data/netrisk.sqlite`
-- `supabase`: datastore remoto abilitato quando `DATASTORE_DRIVER=supabase` oppure quando sono presenti variabili `SUPABASE_*`
+- `sqlite`: default local fallback for fast development, with file at `data/netrisk.sqlite`
+- `supabase`: remote datastore enabled when `DATASTORE_DRIVER=supabase` or when `SUPABASE_*` variables are present
 
-La configurazione di esempio in `.env.example` e pensata per ambiente Supabase/Vercel. In locale, se non vuoi dipendere da servizi esterni, puoi lasciare assente il file `.env.local` oppure impostare esplicitamente:
+The example configuration in `.env.example` is intended for a Supabase/Vercel environment. Locally, if you do not want to depend on external services, you can leave `.env.local` absent or set explicitly:
 
 ```bash
 DATASTORE_DRIVER=sqlite
 PORT=3000
 ```
 
-## Comandi utili
+## Useful commands
 
 ```bash
 npm start
@@ -87,83 +87,83 @@ npm run test:all
 npm run test:all:e2e
 ```
 
-- `npm test`: suite standard del repository
-- `npm run backup:data`: crea uno snapshot SQLite consistente in `data/backups/`
-- `npm run backup:check -- --file ...`: verifica che un backup SQLite sia leggibile e completo
-- `npm run vercel:env:check`: controlla la parita tra variabili richieste per deploy e configurazione attesa
-- `npm run test:gameplay`: verifica del motore di gioco
-- `npm run test:e2e`: test Playwright sui flussi utente
-- `npm run test:e2e:update`: aggiorna intenzionalmente le baseline visuali Playwright
-- `npm run test:all`: test repository + gameplay
-- `npm run test:all:e2e`: test repository + gameplay + e2e
+- `npm test`: standard repository suite
+- `npm run backup:data`: creates a consistent SQLite snapshot in `data/backups/`
+- `npm run backup:check -- --file ...`: verifies that a SQLite backup is readable and complete
+- `npm run vercel:env:check`: checks parity between required deploy variables and expected configuration
+- `npm run test:gameplay`: game engine validation
+- `npm run test:e2e`: Playwright tests for user flows
+- `npm run test:e2e:update`: intentionally updates Playwright visual baselines
+- `npm run test:all`: repository + gameplay tests
+- `npm run test:all:e2e`: repository + gameplay + e2e tests
 
 ## Testing
 
-La suite `tests/gameplay` copre aree come:
+The `tests/gameplay` suite currently covers areas such as:
 
-- setup partita
+- game setup
 - turn flow
-- rinforzi
-- validazione attacco, dadi e risoluzione combattimento
-- conquista
-- fortifica
-- vittoria ed eliminazione
-- helper carte e trade bonus
-- flussi regressivi multi-modulo
+- reinforcements
+- attack validation, dice, and combat resolution
+- conquest
+- fortify
+- victory and elimination
+- card helpers and trade bonus
+- multi-module regression flows
 
-La suite `e2e` copre oggi:
+The `e2e` suite currently covers:
 
-- caricamento applicazione
-- layout principale
-- navigazione auth tra pagine
-- stati profilo: loading, errore, empty state
-- configurazione nuova partita
-- flussi gameplay principali
-- scelta dadi attacco e visualizzazione risultato combattimento
-- pannello carte, scambio riuscito, errori inline e sincronizzazione reward
-- baseline visuali della schermata principale e delle pagine secondarie
+- application load
+- main layout
+- auth navigation between pages
+- profile states: loading, error, empty state
+- new game setup
+- main gameplay flows
+- attack dice selection and combat result display
+- card panel, successful trade, inline errors, and reward synchronization
+- visual baselines for main screen and secondary pages
 
-## Architettura
+## Architecture
 
-L'architettura segue un principio semplice: il frontend presenta e invia azioni, il backend decide cosa e valido, i moduli condivisi definiscono il dominio comune.
+The architecture follows a simple principle: frontend renders and sends actions, backend decides what is valid, shared modules define the common domain.
 
 - `frontend/public`
-  Interfaccia web statica: schermate principali, lobby, nuova partita, profilo, pagina di gioco, stile e logica client-side.
-  E la sola sorgente frontend servita dal server; la root `public/` non fa parte del runtime.
+  Static web interface: main screens, lobby, new game, profile, game page, style, and client-side logic.
+  This is the only frontend source served by the server; root `public/` is not part of runtime.
 - `backend`
-  Server HTTP, autenticazione, autorizzazione, salvataggio sessioni di gioco, configurazione nuove partite.
+  HTTP server, authentication, authorization, game session persistence, new game configuration.
 - `backend/engine`
-  Regole pure del gioco: setup, rinforzi, validazione attacco, dadi di combattimento, conquista, carte, fortifica, vittoria, AI.
+  Pure game rules: setup, reinforcement, attack validation, combat dice, conquest, cards, fortify, victory, AI.
 - `shared`
-  Modelli, primitive e ruleset condivisi tra livelli applicativi.
+  Shared models, primitives, and rulesets across application layers.
 - `tests/gameplay`
-  Test focalizzati sulla logica del motore di gioco.
+  Tests focused on game engine logic.
 - `e2e`
-  Test Playwright sui flussi utente principali.
+  Playwright tests for main user flows.
 - `scripts`
-  Script di esecuzione locale e test.
+  Local execution and test scripts.
 
-Per una panoramica tecnica piu sintetica e orientata alla struttura del codice, vedi `ARCHITECTURE.md`.
+For a shorter technical overview focused on code structure, see `ARCHITECTURE.md`.
 
-## Flusso di gioco
+## Game flow
 
-Una partita tipica segue questo percorso:
+A typical game follows this path:
 
-1. L'utente crea o apre una partita.
-2. I giocatori umani entrano nella lobby e opzionalmente vengono aggiunti bot AI.
-3. Il backend avvia la partita, distribuisce i territori e inizializza il turno corrente.
-4. Il giocatore attivo entra nella fase rinforzi e puo anche scambiare 3 carte valide per ottenere rinforzi extra.
-5. Il giocatore piazza i rinforzi sui propri territori.
-6. Il giocatore puo eseguire attacchi validi contro territori adiacenti nemici, scegliendo i dadi attacco consentiti.
-7. Se conquista un territorio, deve spostare armate dal territorio attaccante a quello conquistato.
-8. Se durante il turno ha conquistato almeno un territorio, a fine turno riceve una carta dal mazzo, se disponibile.
-9. Il turno passa alla fase di fortifica.
-10. Il turno termina e il backend calcola il nuovo giocatore attivo.
-11. Quando resta un solo giocatore con territori, la partita viene chiusa con vincitore.
+1. User creates or opens a game.
+2. Human players join the lobby and AI bots can be added optionally.
+3. Backend starts the game, distributes territories, and initializes the current turn.
+4. Active player enters reinforcement phase and can also trade 3 valid cards for extra reinforcements.
+5. Player places reinforcements on owned territories.
+6. Player can launch valid attacks against adjacent enemy territories, choosing allowed attack dice.
+7. If a territory is conquered, armies must be moved from attacker territory to conquered territory.
+8. If at least one territory was conquered during the turn, one card is awarded at end of turn if available.
+9. Turn enters fortify phase.
+10. Turn ends and backend computes the next active player.
+11. When only one player with territories remains, game closes with winner.
 
-## Modelli condivisi
+## Shared models
 
-I costrutti condivisi esposti da `shared/models.cjs` sono:
+The shared constructs exposed by `shared/models.cjs` are:
 
 - `TurnPhase`
 - `GameAction`
@@ -181,151 +181,40 @@ I costrutti condivisi esposti da `shared/models.cjs` sono:
 - `getCardRuleSet`
 - `validateStandardCardSet`
 
-Lo stato di gioco contiene in particolare:
+Game state notably contains:
 
-- fase globale della partita
-- fase del turno corrente
-- elenco giocatori
-- stato dei territori
-- continenti e bonus
-- indice del giocatore attivo
-- pool di rinforzi
-- eventuale vincitore
-- log delle azioni
-- eventuale conquista in attesa di completamento
-- ruleset dadi attivo
-- mazzo carte, scarti e mani giocatore
-- numero scambi effettuati
-- flag di conquista nel turno per assegnazione carta
+- global game phase
+- current turn phase
+- player list
+- territory state
+- continents and bonuses
+- active player index
+- reinforcement pool
+- optional winner
+- action log
+- optional pending conquest
+- active dice ruleset
+- card deck, discard pile, and player hands
+- number of completed trades
+- conquest flag in turn for card assignment
 
-## Pagine e interfaccia
+## Pages and interface
 
-Le principali schermate disponibili nel frontend sono:
+Main frontend screens currently available:
 
-- `index.html`: ingresso applicazione
-- `lobby.html`: ingresso giocatori e gestione lobby
-- `new-game.html`: configurazione nuova partita
-- `game.html`: partita attiva
-- `profile.html`: profilo utente
-- `register.html`: creazione nuovo account
+- `index.html`: application entry
+- `lobby.html`: player join and lobby management
+- `new-game.html`: new game setup
+- `game.html`: active game
+- `profile.html`: user profile
+- `register.html`: new account creation
 
-La UI e pensata per restare sottile: mostra lo stato ricevuto dal server e invia azioni tramite API.
+The UI is designed to stay thin: it displays state received from the server and sends actions via API.
 
-Dal punto di vista del naming, le pagine frontend mostrano oggi il titolo `Frontline Dominion`, mentre il dominio tecnico del progetto continua a usare `NetRisk`.
+From a naming perspective, frontend pages currently display title `Frontline Dominion`, while the technical project domain continues to use `NetRisk`.
 
-Nella schermata di gioco sono presenti anche:
+The game screen also includes:
 
-- selettore dadi attacco con default coerente al territorio selezionato
-- pannello riepilogo ultimo combattimento con dadi e confronto
-- pannello carte del giocatore corrente con selezione set e invio scambio
-
-## API principali
-
-Il server espone endpoint per:
-
-- health check backend e stato datastore
-- sessione autenticata
-- profilo utente
-- elenco partite e apertura partita attiva
-- opzioni per la creazione partita
-- creazione nuova partita
-- join umano e join AI
-- scambio carte del giocatore corrente
-- avvio partita
-- invio azioni di gioco
-- lettura stato corrente ed eventi
-
-In ambiente E2E esistono anche endpoint di supporto ai test.
-
-## Persistenza e dati locali
-
-Il backend seleziona il datastore a runtime:
-
-- in locale, senza configurazione Supabase, usa SQLite come fallback operativo
-- con `DATASTORE_DRIVER=supabase` e relative variabili ambiente, usa Supabase come source of truth remota
-
-Quando il driver attivo e SQLite, il backend usa questo storage per:
-
-- utenti
-- sessioni autenticate
-- partite salvate
-- metadati runtime come la partita attiva
-
-Il file database SQLite di default e `data/netrisk.sqlite`.
-
-All'avvio, se il database e vuoto, il backend puo importare una sola volta i dati legacy presenti nei file JSON storici (`users.json`, `games.json`, `sessions.json`). Dopo la migrazione, il database SQLite resta la fonte autorevole e i JSON legacy vanno trattati solo come compatibilita temporanea.
-
-Per verificare rapidamente lo stato del backend e dello storage e disponibile `GET /api/health`, che restituisce:
-
-- esito generale `ok`
-- tipo storage attivo
-- dettagli della connessione attiva, ad esempio file SQLite oppure URL/schema Supabase
-- conteggi base di utenti, partite e sessioni
-- presenza della partita attiva in memoria server
-
-Questa e la sonda minima consigliata per rilevare problemi di avvio, mount errati del volume dati o datastore non disponibile.
-
-Per creare un backup locale consistente del datastore SQLite:
-
-```bash
-npm run backup:data
-```
-
-Il comando usa il meccanismo di backup di SQLite e salva per default uno snapshot timestampato in `data/backups/`. E pensato come base per job schedulati o checkpoint manuali prima di deploy e manutenzioni.
-
-Per limitare la crescita della cartella backup, il comando supporta anche una retention semplice:
-
-```bash
-node scripts/backup-datastore.cjs --keep 7
-```
-
-Con `--keep N`, dopo la creazione del nuovo snapshot vengono mantenuti solo gli ultimi `N` backup compatibili con lo stesso prefisso file.
-
-Per verificare un backup prima di usarlo in una procedura di restore:
-
-```bash
-npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
-```
-
-Il comando apre il file in sola lettura, verifica la presenza delle tabelle attese e stampa un riepilogo con conteggi e `activeGameId`.
-
-## Principi di sviluppo
-
-Il progetto segue queste regole:
-
-- frontend limitato a rendering, input e stato locale di presentazione
-- backend come source of truth della partita
-- logica di gioco centralizzata in `backend/engine`
-- modelli condivisi in `shared`
-- modifiche piccole, incrementali e facili da rivedere
-- preferire branch dedicati e pull request piccole per cambiamenti incrementali
-
-## Regole implementate oggi
-
-- Rinforzi minimi pari a 3 armate per turno, con bonus continenti dove applicabile.
-- Dadi standard di combattimento: attaccante fino a 3 dadi, difensore fino a 2, pareggio al difensore.
-- Carte standard: `infantry`, `cavalry`, `artillery`, `wild`.
-- Set validi per lo scambio: tris dello stesso tipo oppure uno per tipo, con jolly usabile come wildcard.
-- Progressione bonus scambio standard: `4, 6, 8, 10, 12, 15`, poi incremento di `+5`.
-- Scambio forzato quando una mano supera 5 carte nel ruleset standard.
-
-## Roadmap naturale del progetto
-
-L'evoluzione prevista del gioco e:
-
-- [x] architettura e modelli
-- [x] mappa e territori
-- [x] turn flow
-- [x] reinforcement rules
-- [x] combat rules
-- [x] movement rules
-- [x] victory conditions
-- [x] AI
-- [ ] multiplayer
-- [ ] map editor e regole custom
-
-## Documenti correlati
-
-- `ARCHITECTURE.md`: sintesi dell'organizzazione tecnica
-- `tests/gameplay/README.md`: panoramica dei test di gameplay
-- `e2e/README.md`: panoramica dei test end-to-end
+- attack dice selector with default coherent to selected territory
+- latest combat summary panel with dice and comparison
+- current player card panel with set selection and trade submission
