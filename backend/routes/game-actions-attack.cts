@@ -84,7 +84,7 @@ async function handleAttackGameActionRoute(
     return false;
   }
 
-  const random = consumeQueuedAttackRandom() || undefined;
+  const random = consumeQueuedAttackRandom();
   const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
   const actionFromId = String(body.fromId || "");
   const actionToId = String(body.toId || "");
@@ -95,9 +95,10 @@ async function handleAttackGameActionRoute(
 
   let result;
   try {
-    result = type === "attackBanzai"
-      ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
-      : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
+    const runAttackResolver = type === "attackBanzai" ? resolveBanzaiAttack : resolveAttack;
+    result = random
+      ? runAttackResolver(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
+      : runAttackResolver(gameContext.state, playerId, actionFromId, actionToId, undefined, requestedAttackDice);
   } catch (error) {
     const mappedError = mappedAttackResolverError(error);
     if (!mappedError) {
