@@ -67,13 +67,19 @@ async function cleanupSqliteFiles(dbFile: string): Promise<void> {
   await removeIfExists(dbFile);
 }
 
-async function cleanupStaleE2eDatabases(dataDir: string): Promise<void> {
+async function cleanupStaleE2eDatabases(dataDir: string, staleAgeMs: number = 10 * 60 * 1000): Promise<void> {
   const entries = await fs.promises.readdir(dataDir, { withFileTypes: true });
-  const targets = entries
+  const now = Date.now();
+  const candidates = entries
     .filter((entry: import("node:fs").Dirent) => entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name))
     .map((entry: import("node:fs").Dirent) => path.join(dataDir, entry.name));
 
-  for (const target of targets) {
+  for (const target of candidates) {
+    const stats = await fs.promises.stat(target).catch(() => null);
+    if (!stats || now - stats.mtimeMs < staleAgeMs) {
+      continue;
+    }
+
     await removeIfExists(target, 3, { strict: false });
   }
 }
@@ -111,38 +117,6 @@ async function waitForServer(baseURL: string, timeoutMs: number = 120000): Promi
   throw new Error(`Timeout avvio server E2E su ${baseURL}.`);
 }
 
-function getNoWebserverPlaywrightConfigPath(repoRoot: string): string {
-  return path.join(repoRoot, ".playwright.tmp.no-webserver.ts");
-}
-
-function createNoWebserverPlaywrightConfig(repoRoot: string, tempConfigPath: string | null = null): Promise<string> {
-  const tempConfig = tempConfigPath || getNoWebserverPlaywrightConfigPath(repoRoot);
-  const configImportPath = JSON.stringify("./playwright.config.ts");
-  const sourceRoot = JSON.stringify(repoRoot);
-  const content = `import path from "node:path";
-import baseConfig from ${configImportPath};
-
-const sourceRoot = ${sourceRoot};
-
-if (baseConfig.testDir) {
-  baseConfig.testDir = path.resolve(sourceRoot, baseConfig.testDir);
-}
-
-if (baseConfig.outputDir) {
-  baseConfig.outputDir = path.resolve(sourceRoot, baseConfig.outputDir);
-}
-
-delete baseConfig.webServer;
-
-export default baseConfig;
-`;
-  return fs.promises.writeFile(tempConfig, content, "utf8").then(() => tempConfig);
-}
-
-function removeNoWebserverPlaywrightConfig(repoRoot: string): Promise<void> {
-  return removeIfExists(getNoWebserverPlaywrightConfigPath(repoRoot), 3, { strict: false });
-}
-
 async function main(): Promise<void> {
   const requestedPort = Number(process.env.E2E_PORT || process.env.PORT || 3100);
   const port = await findAvailablePort(requestedPort);
@@ -150,6 +124,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const playwrightCli = require.resolve("@playwright/test/cli");
   const repoRoot = path.resolve(process.cwd());
+  const playwrightConfigPath = path.join(repoRoot, "playwright.config.ts");
   const dataDir = path.join(repoRoot, "data");
   const runId = `${Date.now()}-${process.pid}`;
   const dbFile = path.join(dataDir, `e2e-${runId}.sqlite`);
@@ -158,7 +133,8 @@ async function main(): Promise<void> {
     PORT: String(port),
     E2E_PORT: String(port),
     E2E_BASE_URL: baseURL,
-    E2E_DB_FILE: dbFile
+    E2E_DB_FILE: dbFile,
+    PLAYWRIGHT_SKIP_WEBSERVER: "true"
   };
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
@@ -167,19 +143,16 @@ async function main(): Promise<void> {
     stdio: "inherit",
     env: runnerEnv
   });
-  const tempConfigPath = getNoWebserverPlaywrightConfigPath(repoRoot);
-  await createNoWebserverPlaywrightConfig(repoRoot, tempConfigPath);
 
   try {
     await waitForServer(baseURL);
   } catch (error) {
     serverChild.kill();
-    await removeNoWebserverPlaywrightConfig(repoRoot);
     await cleanupSqliteFiles(dbFile);
     throw error;
   }
 
-  const child = spawn(process.execPath, [playwrightCli, "test", "--config", tempConfigPath, ...args], {
+  const child = spawn(process.execPath, [playwrightCli, "test", "--config", playwrightConfigPath, ...args], {
     cwd: repoRoot,
     stdio: "inherit",
     env: runnerEnv
@@ -191,7 +164,6 @@ async function main(): Promise<void> {
     });
   });
   serverChild.kill();
-  await removeNoWebserverPlaywrightConfig(repoRoot);
   await cleanupSqliteFiles(dbFile);
   await cleanupStaleE2eDatabases(dataDir);
 

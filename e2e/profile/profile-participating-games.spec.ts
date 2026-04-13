@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { uniqueUser } = require("../support/game-helpers");
+const { attachSessionCookie, uniqueUser } = require("../support/game-helpers");
 
 test("profile page lists participating games and opens the selected game route", async ({ page }) => {
   const username = uniqueUser("profile_games");
@@ -33,13 +33,7 @@ test("profile page lists participating games and opens the selected game route",
   await expect(createGameResponse.ok()).toBeTruthy();
   const createdGame = await createGameResponse.json();
 
-  await page.context().addCookies([{
-    name: "netrisk_session",
-    value: sessionToken,
-    url: "http://127.0.0.1:3100",
-    httpOnly: true,
-    sameSite: "Lax"
-  }]);
+  await attachSessionCookie(page, sessionToken);
 
   await page.goto("/profile.html");
 
@@ -67,4 +61,3 @@ test("profile page lists participating games and opens the selected game route",
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.locator("#game-map-meta")).toContainText("World Classic");
 });
-

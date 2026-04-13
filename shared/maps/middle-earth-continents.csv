@@ -1,9 +1,0 @@
-id,name,bonus,territoryIds
-eriador,Eriador,2,lindon|the_shire|eriador
-rohan,Rohan,3,dunland|rohan|fangorn|gap_of_rohan
-rhovanion,Rhovanion,4,forodwaith|rhovanion|brown_lands|emyn_muil
-mirkwood,Mirkwood,3,mirkwood|dale|dagorlad
-rhun,Rhun,2,dorwinion|rhun
-gondor,Gondor,2,gondor|ithilien
-mordor,Mordor,3,dead_marshes|mordor
-haradwaith,Haradwaith,2,harondor|near_harad
