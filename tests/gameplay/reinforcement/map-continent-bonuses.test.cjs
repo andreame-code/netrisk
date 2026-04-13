@@ -1,1 +1,0 @@
-module.exports = require('../../../.tsbuild/tests/gameplay/reinforcement/map-continent-bonuses.test.cjs');
