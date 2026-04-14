@@ -59,6 +59,10 @@ export interface ExtensionPackSummary extends ExtensionPackManifest {
   defaults: ExtensionSelection;
 }
 
+export interface ExtensionCatalogValidationResult {
+  packs: ExtensionPackManifest[];
+}
+
 export interface ExtensionAwareGameConfig extends ExtensionSelection {
   name?: string;
   ruleSetId?: string;
@@ -127,7 +131,7 @@ const pieceSkins = Object.freeze<Record<string, Readonly<PieceSkin>>>({
   })
 });
 
-const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManifest>>>({
+const rawExtensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManifest>>>({
   classic: Object.freeze({
     id: "classic",
     name: "Classic",
@@ -163,6 +167,74 @@ const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManife
     pieceSkinIds: Object.keys(pieceSkins)
   })
 });
+
+function ensureKnownIds(kind: string, packId: string, ids: string[], knownIds: Set<string>): void {
+  ids.forEach((id) => {
+    if (!knownIds.has(id)) {
+      throw new Error(`Extension pack "${packId}" references unknown ${kind} id "${id}".`);
+    }
+  });
+}
+
+function ensureDefaultIncluded(kind: string, packId: string, defaultId: string, ids: string[]): void {
+  if (!ids.includes(defaultId)) {
+    throw new Error(`Extension pack "${packId}" must include default ${kind} id "${defaultId}" in its capability list.`);
+  }
+}
+
+export function validateExtensionPackCatalog(packs: ExtensionPackManifest[]): ExtensionCatalogValidationResult {
+  const knownMapIds = new Set(listSupportedMaps().map((map) => map.id));
+  const knownDiceRuleSetIds = new Set(listDiceRuleSets().map((ruleSet) => ruleSet.id));
+  const knownVictoryRuleSetIds = new Set(Object.keys(victoryRuleSets));
+  const knownThemeIds = new Set(Object.keys(visualThemes));
+  const knownPieceSkinIds = new Set(Object.keys(pieceSkins));
+  const seenPackIds = new Set<string>();
+
+  packs.forEach((pack) => {
+    if (!pack || typeof pack !== "object") {
+      throw new Error("Extension pack catalog contains an invalid pack entry.");
+    }
+
+    if (!pack.id || typeof pack.id !== "string") {
+      throw new Error("Extension pack catalog contains a pack without a valid id.");
+    }
+
+    if (seenPackIds.has(pack.id)) {
+      throw new Error(`Duplicate extension pack id "${pack.id}" detected.`);
+    }
+    seenPackIds.add(pack.id);
+
+    ensureKnownIds("map", pack.id, pack.mapIds || [], knownMapIds);
+    ensureKnownIds("dice rule set", pack.id, pack.diceRuleSetIds || [], knownDiceRuleSetIds);
+    ensureKnownIds("victory rule set", pack.id, pack.victoryRuleSetIds || [], knownVictoryRuleSetIds);
+    ensureKnownIds("theme", pack.id, pack.themeIds || [], knownThemeIds);
+    ensureKnownIds("piece skin", pack.id, pack.pieceSkinIds || [], knownPieceSkinIds);
+
+    ensureDefaultIncluded("map", pack.id, pack.defaults.mapId, pack.mapIds || []);
+    ensureDefaultIncluded("dice rule set", pack.id, pack.defaults.diceRuleSetId, pack.diceRuleSetIds || []);
+    ensureDefaultIncluded("victory rule set", pack.id, pack.defaults.victoryRuleSetId, pack.victoryRuleSetIds || []);
+    ensureDefaultIncluded("theme", pack.id, pack.defaults.themeId, pack.themeIds || []);
+    ensureDefaultIncluded("piece skin", pack.id, pack.defaults.pieceSkinId, pack.pieceSkinIds || []);
+  });
+
+  return {
+    packs: packs.map((pack) => ({
+      ...pack,
+      defaults: { ...pack.defaults },
+      mapIds: [...pack.mapIds],
+      diceRuleSetIds: [...pack.diceRuleSetIds],
+      victoryRuleSetIds: [...pack.victoryRuleSetIds],
+      themeIds: [...pack.themeIds],
+      pieceSkinIds: [...pack.pieceSkinIds]
+    }))
+  };
+}
+
+const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManifest>>>(
+  Object.fromEntries(
+    validateExtensionPackCatalog(Object.values(rawExtensionPacks)).packs.map((pack) => [pack.id, Object.freeze(pack)])
+  ) as Record<string, Readonly<ExtensionPackManifest>>
+);
 
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId || "");

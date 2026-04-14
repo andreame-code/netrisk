@@ -51,9 +51,11 @@ export {
   migrateGameConfigExtensions,
   migrateGameStateExtensions,
   normalizeExtensionSelection,
-  resolveStoredThemeId
+  resolveStoredThemeId,
+  validateExtensionPackCatalog
 } from "./extensions.cjs";
 export type {
+  ExtensionCatalogValidationResult,
   ExtensionAwareGameConfig,
   ExtensionPackManifest,
   ExtensionPackSummary,

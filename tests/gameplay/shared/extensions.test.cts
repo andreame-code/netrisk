@@ -10,7 +10,9 @@ const {
   listVictoryRuleSets,
   listVisualThemes,
   migrateGameConfigExtensions,
-  migrateGameStateExtensions
+  migrateGameStateExtensions,
+  normalizeExtensionSelection,
+  validateExtensionPackCatalog
 } = require("../../../shared/models.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -61,4 +63,82 @@ register("migrateGameStateExtensions backfills gameConfig for legacy states", ()
   assert.equal(migrated.gameConfig.victoryRuleSetId, DEFAULT_VICTORY_RULE_SET_ID);
   assert.equal(migrated.gameConfig.themeId, DEFAULT_THEME_ID);
   assert.equal(migrated.gameConfig.pieceSkinId, DEFAULT_PIECE_SKIN_ID);
+});
+
+register("normalizeExtensionSelection falls back to pack defaults for unsupported capability ids", () => {
+  const normalized = normalizeExtensionSelection({
+    ruleSetId: "classic-defense-3",
+    mapId: "unknown-map",
+    diceRuleSetId: "missing-dice",
+    victoryRuleSetId: "missing-victory",
+    themeId: "missing-theme",
+    pieceSkinId: "missing-piece-skin"
+  });
+
+  assert.equal(normalized.mapId, "classic-mini");
+  assert.equal(normalized.diceRuleSetId, "defense-3");
+  assert.equal(normalized.victoryRuleSetId, DEFAULT_VICTORY_RULE_SET_ID);
+  assert.equal(normalized.themeId, DEFAULT_THEME_ID);
+  assert.equal(normalized.pieceSkinId, DEFAULT_PIECE_SKIN_ID);
+});
+
+register("validateExtensionPackCatalog rejects duplicate pack ids", () => {
+  assert.throws(() => validateExtensionPackCatalog([
+    {
+      id: "dup-pack",
+      name: "Duplicate A",
+      version: 1,
+      defaults: {
+        mapId: "classic-mini",
+        diceRuleSetId: "standard",
+        victoryRuleSetId: DEFAULT_VICTORY_RULE_SET_ID,
+        themeId: DEFAULT_THEME_ID,
+        pieceSkinId: DEFAULT_PIECE_SKIN_ID
+      },
+      mapIds: ["classic-mini"],
+      diceRuleSetIds: ["standard"],
+      victoryRuleSetIds: [DEFAULT_VICTORY_RULE_SET_ID],
+      themeIds: [DEFAULT_THEME_ID],
+      pieceSkinIds: [DEFAULT_PIECE_SKIN_ID]
+    },
+    {
+      id: "dup-pack",
+      name: "Duplicate B",
+      version: 1,
+      defaults: {
+        mapId: "classic-mini",
+        diceRuleSetId: "standard",
+        victoryRuleSetId: DEFAULT_VICTORY_RULE_SET_ID,
+        themeId: DEFAULT_THEME_ID,
+        pieceSkinId: DEFAULT_PIECE_SKIN_ID
+      },
+      mapIds: ["classic-mini"],
+      diceRuleSetIds: ["standard"],
+      victoryRuleSetIds: [DEFAULT_VICTORY_RULE_SET_ID],
+      themeIds: [DEFAULT_THEME_ID],
+      pieceSkinIds: [DEFAULT_PIECE_SKIN_ID]
+    }
+  ]), /Duplicate extension pack id/i);
+});
+
+register("validateExtensionPackCatalog rejects packs whose defaults are missing from declared capabilities", () => {
+  assert.throws(() => validateExtensionPackCatalog([
+    {
+      id: "broken-pack",
+      name: "Broken Pack",
+      version: 1,
+      defaults: {
+        mapId: "classic-mini",
+        diceRuleSetId: "standard",
+        victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+        themeId: DEFAULT_THEME_ID,
+        pieceSkinId: DEFAULT_PIECE_SKIN_ID
+      },
+      mapIds: ["classic-mini"],
+      diceRuleSetIds: ["standard"],
+      victoryRuleSetIds: [DEFAULT_VICTORY_RULE_SET_ID],
+      themeIds: [DEFAULT_THEME_ID],
+      pieceSkinIds: [DEFAULT_PIECE_SKIN_ID]
+    }
+  ]), /must include default victory rule set id/i);
 });
