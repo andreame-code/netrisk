@@ -6,6 +6,7 @@ const {
   chooseReinforcementTarget,
   runAiTurn
 } = require("../../../backend/engine/ai-player.cjs");
+const { runAiTurnsIfNeeded } = require("../../../backend/engine/ai-turn-resume.cjs");
 const { createCard, CardType } = require("../../../shared/models.cjs");
 const { makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
@@ -204,4 +205,30 @@ register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn"
   assert.equal(state.territories.b.armies, 1);
   assert.equal(state.hands.p1.length, 4);
   assert.equal(state.discardPile.length, 3);
+});
+
+register("runAiTurnsIfNeeded skips a stale AI turn that points to an eliminated CPU", () => {
+  const players = makePlayers(["CPU Alpha", "Bob", "CPU Beta"]);
+  players[0].isAi = true;
+  players[2].isAi = true;
+
+  const state = createAiState({
+    players,
+    territories: territoryStates([
+      { id: "a", ownerId: "p2", armies: 3 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p3", armies: 4 },
+      { id: "d", ownerId: "p3", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.REINFORCEMENT,
+    currentTurnIndex: 0,
+    reinforcementPool: 5
+  });
+
+  const reports = runAiTurnsIfNeeded(state);
+
+  assert.deepEqual(reports, []);
+  assert.equal(state.currentTurnIndex, 1);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+  assert.equal(state.reinforcementPool, 3);
 });
