@@ -24,12 +24,15 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(page.locator("#setup-piece-skin")).toBeVisible();
   await expect(page.locator("#setup-dice-ruleset")).toContainText("Defense 3 Dice");
   await expect(page.locator("#setup-victory-ruleset")).toContainText("Conquest");
+  await expect(page.locator("#setup-victory-ruleset")).toContainText("Majority Control");
   await expect(page.locator("#setup-theme")).toContainText("Midnight");
   await expect(page.locator("#setup-theme")).toContainText("Ember");
   await expect(page.locator("#setup-piece-skin")).toContainText("Command Ring");
   await expect(page.locator("#setup-map")).toBeEnabled();
+  await page.locator("#setup-victory-ruleset").selectOption("majority-control");
   await page.locator("#setup-theme").selectOption("ember");
   await page.locator("#setup-piece-skin").selectOption("command-ring");
+  await expect(page.locator("#setup-ruleset-summary")).toContainText("Majority Control");
   await expect(page.locator("#setup-ruleset-summary")).toContainText("Ember");
   await expect(page.locator("#setup-ruleset-summary")).toContainText("Command Ring");
 

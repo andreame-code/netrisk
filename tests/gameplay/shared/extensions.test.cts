@@ -4,6 +4,7 @@ const {
   DEFAULT_THEME_ID,
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
+  MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
   listExtensionPacks,
   listPieceSkins,
   listVictoryRuleSets,
@@ -20,6 +21,7 @@ register("extension registries expose default packs and selectable capabilities"
   assert.equal(packIds.includes("classic"), true);
   assert.equal(packIds.includes("classic-defense-3"), true);
   assert.equal(listVictoryRuleSets().some((ruleSet: { id: string }) => ruleSet.id === DEFAULT_VICTORY_RULE_SET_ID), true);
+  assert.equal(listVictoryRuleSets().some((ruleSet: { id: string }) => ruleSet.id === MAJORITY_CONTROL_VICTORY_RULE_SET_ID), true);
   assert.equal(listVisualThemes().some((theme: { id: string }) => theme.id === DEFAULT_THEME_ID), true);
   assert.equal(pieceSkins.some((skin: { id: string }) => skin.id === DEFAULT_PIECE_SKIN_ID), true);
   assert.equal(pieceSkins.some((skin: { id: string }) => skin.id === "command-ring"), true);

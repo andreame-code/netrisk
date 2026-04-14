@@ -1,5 +1,6 @@
 import {
   DEFAULT_VICTORY_RULE_SET_ID,
+  MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
   TurnPhase,
   createLocalizedError,
   getVictoryRuleSet,
@@ -29,6 +30,12 @@ export interface VictoryResult {
     summaryKey: string;
     summaryParams: Record<string, unknown>;
   } | null;
+}
+
+interface ActiveVictoryContext {
+  state: GameState;
+  victoryRuleSet: ReturnType<typeof getVictoryRuleSet>;
+  activePlayers: Player[];
 }
 
 function territoryCountByPlayer(state: GameState, playerId: string | null): number {
@@ -81,6 +88,125 @@ function validateState(state: GameState): void {
   });
 }
 
+function noVictoryResult(activePlayers: Player[]): VictoryResult {
+  return {
+    ok: true,
+    code: "NO_VICTORY",
+    message: "Victory has not been determined yet.",
+    messageKey: "game.victory.pending",
+    messageParams: {},
+    details: {
+      activePlayerIds: activePlayers.map((player) => player.id),
+      activePlayerCount: activePlayers.length
+    },
+    victory: null
+  };
+}
+
+function aiOnlyRemainResult(state: GameState, activePlayers: Player[]): VictoryResult {
+  state.winnerId = null;
+  state.phase = "finished";
+  state.turnPhase = TurnPhase.FINISHED;
+
+  return {
+    ok: true,
+    code: "AI_ONLY_REMAIN",
+    message: "Game closed because only AI players remain active.",
+    messageKey: "game.victory.aiOnlyRemain",
+    messageParams: {},
+    details: {
+      activePlayerIds: activePlayers.map((player) => player.id),
+      activePlayerCount: activePlayers.length,
+      activeHumanPlayerIds: [],
+      activeHumanPlayerCount: 0
+    },
+    victory: null
+  };
+}
+
+function declareVictory(
+  state: GameState,
+  winner: Player,
+  victoryRuleSet: ReturnType<typeof getVictoryRuleSet>,
+  options: {
+    summary: string;
+    summaryKey: string;
+    summaryParams: Record<string, unknown>;
+  }
+): VictoryResult {
+  state.winnerId = winner.id;
+  state.phase = "finished";
+  state.turnPhase = TurnPhase.FINISHED;
+
+  return {
+    ok: true,
+    code: "VICTORY_DECLARED",
+    message: "Victory declared.",
+    messageKey: "game.victory.declared",
+    messageParams: { playerName: winner.name },
+    details: {
+      activePlayerIds: [winner.id],
+      activePlayerCount: 1
+    },
+    victory: {
+      winnerId: winner.id,
+      winnerName: winner.name,
+      phase: state.phase,
+      turnPhase: state.turnPhase,
+      summary: options.summary,
+      summaryKey: options.summaryKey,
+      summaryParams: {
+        ...options.summaryParams,
+        playerName: winner.name,
+        victoryRuleSet: victoryRuleSet.name
+      }
+    }
+  };
+}
+
+function evaluateConquestVictory(context: ActiveVictoryContext): VictoryResult {
+  if (context.activePlayers.length > 1) {
+    return noVictoryResult(context.activePlayers);
+  }
+
+  const winner = context.activePlayers[0] as Player;
+  return declareVictory(context.state, winner, context.victoryRuleSet, {
+    summary: winner.name + " conquers the map and wins the game.",
+    summaryKey: "game.log.victoryDeclared",
+    summaryParams: {}
+  });
+}
+
+function evaluateMajorityControlVictory(context: ActiveVictoryContext): VictoryResult {
+  const totalTerritories = Object.keys(context.state.territories || {}).length;
+  const requiredTerritoryCount = Math.max(1, Math.ceil(totalTerritories * 0.7));
+  const leadingPlayer = context.activePlayers
+    .map((player) => ({
+      player,
+      territoryCount: territoryCountByPlayer(context.state, player.id)
+    }))
+    .sort((left, right) => right.territoryCount - left.territoryCount)[0] || null;
+
+  if (!leadingPlayer || leadingPlayer.territoryCount < requiredTerritoryCount) {
+    return noVictoryResult(context.activePlayers);
+  }
+
+  return declareVictory(context.state, leadingPlayer.player, context.victoryRuleSet, {
+    summary: leadingPlayer.player.name + " secures majority control and wins the game.",
+    summaryKey: "game.log.victoryMajorityControl",
+    summaryParams: {
+      territoryCount: leadingPlayer.territoryCount,
+      totalTerritories,
+      requiredTerritoryCount
+    }
+  });
+}
+
+const victoryEvaluators: Record<string, (context: ActiveVictoryContext) => VictoryResult> = {
+  [DEFAULT_VICTORY_RULE_SET_ID]: evaluateConquestVictory,
+  [MAJORITY_CONTROL_VICTORY_RULE_SET_ID]: evaluateMajorityControlVictory
+};
+
 export function detectVictory(state: GameState): VictoryResult {
   migrateGameStateExtensions(state);
   validateState(state);
@@ -97,68 +223,13 @@ export function detectVictory(state: GameState): VictoryResult {
 
   const activeHumanPlayers = activePlayers.filter((player) => isActiveHumanPlayer(player));
   if (activeHumanPlayers.length === 0) {
-    state.winnerId = null;
-    state.phase = "finished";
-    state.turnPhase = TurnPhase.FINISHED;
-
-    return {
-      ok: true,
-      code: "AI_ONLY_REMAIN",
-      message: "Game closed because only AI players remain active.",
-      messageKey: "game.victory.aiOnlyRemain",
-      messageParams: {},
-      details: {
-        activePlayerIds: activePlayers.map((player) => player.id),
-        activePlayerCount: activePlayers.length,
-        activeHumanPlayerIds: [],
-        activeHumanPlayerCount: 0
-      },
-      victory: null
-    };
+    return aiOnlyRemainResult(state, activePlayers);
   }
 
-  if (activePlayers.length > 1) {
-    return {
-      ok: true,
-      code: "NO_VICTORY",
-      message: "Victory has not been determined yet.",
-      messageKey: "game.victory.pending",
-      messageParams: {},
-      details: {
-        activePlayerIds: activePlayers.map((player) => player.id),
-        activePlayerCount: activePlayers.length
-      },
-      victory: null
-    };
-  }
-
-  const winner = activePlayers[0] as Player;
-  state.winnerId = winner.id;
-  state.phase = "finished";
-  state.turnPhase = TurnPhase.FINISHED;
-
-  const summary = winner.name + " conquers the map and wins the game.";
-  return {
-    ok: true,
-    code: "VICTORY_DECLARED",
-    message: "Victory declared.",
-    messageKey: "game.victory.declared",
-    messageParams: { playerName: winner.name },
-    details: {
-      activePlayerIds: [winner.id],
-      activePlayerCount: 1
-    },
-    victory: {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      phase: state.phase,
-      turnPhase: state.turnPhase,
-      summary,
-      summaryKey: "game.log.victoryDeclared",
-      summaryParams: {
-        playerName: winner.name,
-        victoryRuleSet: victoryRuleSet.name
-      }
-    }
-  };
+  const evaluateVictory = victoryEvaluators[victoryRuleSet.id] || evaluateConquestVictory;
+  return evaluateVictory({
+    state,
+    victoryRuleSet,
+    activePlayers
+  });
 }

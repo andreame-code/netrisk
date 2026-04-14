@@ -34,6 +34,7 @@ export {
   DEFAULT_THEME_ID,
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
+  MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
   findExtensionPack,
   findPieceSkin,
   findVictoryRuleSet,
