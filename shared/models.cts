@@ -9,6 +9,7 @@ export type {
   Continent,
   CreateContinentInput,
   CreateGameStateInput,
+  GameConfig,
   CreatePlayerInput,
   CreateTerritoryInput,
   GameState,
@@ -27,6 +28,43 @@ export {
   listDiceRuleSets,
   standardDiceRuleSet
 } from "./dice.cjs";
+export {
+  DEFAULT_EXTENSION_PACK_ID,
+  DEFAULT_PIECE_SKIN_ID,
+  DEFAULT_THEME_ID,
+  DEFAULT_VICTORY_RULE_SET_ID,
+  EXTENSION_SCHEMA_VERSION,
+  MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+  findExtensionPack,
+  findPieceSkin,
+  findVictoryRuleSet,
+  findVisualTheme,
+  getExtensionPack,
+  getPieceSkin,
+  getVictoryRuleSet,
+  getVisualTheme,
+  listExtensionPacks,
+  listPieceSkins,
+  listSupportedThemeIds,
+  listVictoryRuleSets,
+  listVisualThemes,
+  migrateGameConfigExtensions,
+  migrateGameStateExtensions,
+  normalizeExtensionSelection,
+  resolveStoredThemeId,
+  validateExtensionPackCatalog
+} from "./extensions.cjs";
+export type {
+  ExtensionCatalogValidationResult,
+  ExtensionAwareGameConfig,
+  ExtensionPackManifest,
+  ExtensionPackSummary,
+  ExtensionSelection,
+  MapDefinition,
+  PieceSkin,
+  VictoryRuleSet,
+  VisualTheme
+} from "./extensions.cjs";
 export {
   CardType,
   STANDARD_CARD_RULE_SET_ID,

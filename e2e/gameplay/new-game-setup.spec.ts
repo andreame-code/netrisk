@@ -19,8 +19,22 @@ test("new game setup keeps player 1 locked as creator and creates the configured
 
   await page.locator("#setup-customize-options").check();
   await expect(page.locator("#setup-dice-ruleset")).toBeVisible();
+  await expect(page.locator("#setup-victory-ruleset")).toBeVisible();
+  await expect(page.locator("#setup-theme")).toBeVisible();
+  await expect(page.locator("#setup-piece-skin")).toBeVisible();
   await expect(page.locator("#setup-dice-ruleset")).toContainText("Defense 3 Dice");
+  await expect(page.locator("#setup-victory-ruleset")).toContainText("Conquest");
+  await expect(page.locator("#setup-victory-ruleset")).toContainText("Majority Control");
+  await expect(page.locator("#setup-theme")).toContainText("Midnight");
+  await expect(page.locator("#setup-theme")).toContainText("Ember");
+  await expect(page.locator("#setup-piece-skin")).toContainText("Command Ring");
   await expect(page.locator("#setup-map")).toBeEnabled();
+  await page.locator("#setup-victory-ruleset").selectOption("majority-control");
+  await page.locator("#setup-theme").selectOption("ember");
+  await page.locator("#setup-piece-skin").selectOption("command-ring");
+  await expect(page.locator("#setup-ruleset-summary")).toContainText("Majority Control");
+  await expect(page.locator("#setup-ruleset-summary")).toContainText("Ember");
+  await expect(page.locator("#setup-ruleset-summary")).toContainText("Command Ring");
 
   const slotOne = page.locator('[data-slot-index="0"]');
   await expect(slotOne).toContainText("Player 1");
@@ -49,6 +63,7 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(page.locator('#game-setup-meta')).toContainText('2 AI');
   await expect(page.getByTestId('current-player-indicator')).toContainText(owner);
   await expect(page.locator('#join-button')).toBeDisabled();
+  await expect(page.locator('.territory-node').first()).toHaveClass(/piece-skin-style-ring-core/);
 });
 
 test("new game setup creates and renders the selected Middle-earth map", async ({ page }) => {
@@ -105,4 +120,3 @@ test("new game setup creates and renders the selected World Classic map", async 
   await expect(page.locator('[data-territory-id="ukraine"]')).toBeVisible();
   await expect(page.locator('[data-territory-id="eastern_australia"]')).toBeVisible();
 });
-
