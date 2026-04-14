@@ -3459,7 +3459,7 @@ h1 {
   background: var(--player-color);
 }
 
-.player-card.piece-skin-command-ring .player-card-token {
+.player-card.piece-skin-style-ring-core .player-card-token {
   width: 28px;
   height: 28px;
   border-radius: 999px;
@@ -3579,7 +3579,7 @@ h1 {
   transform: translate(-50%, -50%) translateY(-2px) scale(1.05);
 }
 
-.territory-node.piece-skin-command-ring {
+.territory-node.piece-skin-style-ring-core {
   color: #fffaf0;
   border-color: rgba(255, 250, 240, 0.92);
   background:
@@ -3587,7 +3587,7 @@ h1 {
     radial-gradient(circle at center, var(--owner-color, var(--owner-color-default)) 0 62%, rgba(255, 250, 240, 0.92) 64% 72%, var(--owner-color, var(--owner-color-default)) 74% 100%);
 }
 
-.territory-node.piece-skin-command-ring .territory-armies {
+.territory-node.piece-skin-style-ring-core .territory-armies {
   font-size: 0.8rem;
   letter-spacing: 0.02em;
 }

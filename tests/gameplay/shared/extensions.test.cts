@@ -16,12 +16,15 @@ declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("extension registries expose default packs and selectable capabilities", () => {
   const packIds = listExtensionPacks().map((pack: { id: string }) => pack.id);
+  const pieceSkins = listPieceSkins() as Array<{ id: string; renderStyleId?: string }>;
   assert.equal(packIds.includes("classic"), true);
   assert.equal(packIds.includes("classic-defense-3"), true);
   assert.equal(listVictoryRuleSets().some((ruleSet: { id: string }) => ruleSet.id === DEFAULT_VICTORY_RULE_SET_ID), true);
   assert.equal(listVisualThemes().some((theme: { id: string }) => theme.id === DEFAULT_THEME_ID), true);
-  assert.equal(listPieceSkins().some((skin: { id: string }) => skin.id === DEFAULT_PIECE_SKIN_ID), true);
-  assert.equal(listPieceSkins().some((skin: { id: string }) => skin.id === "command-ring"), true);
+  assert.equal(pieceSkins.some((skin: { id: string }) => skin.id === DEFAULT_PIECE_SKIN_ID), true);
+  assert.equal(pieceSkins.some((skin: { id: string }) => skin.id === "command-ring"), true);
+  assert.equal(pieceSkins.find((skin: { id: string }) => skin.id === DEFAULT_PIECE_SKIN_ID)?.renderStyleId, "solid-fill");
+  assert.equal(pieceSkins.find((skin: { id: string }) => skin.id === "command-ring")?.renderStyleId, "ring-core");
 });
 
 register("migrateGameConfigExtensions preserves legacy selections and fills new defaults", () => {

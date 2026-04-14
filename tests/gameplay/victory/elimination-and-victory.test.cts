@@ -35,6 +35,20 @@ register("publicState keeps players with territories active", () => {
   assert.equal(player.eliminated, false);
 });
 
+register("publicState exposes the resolved piece skin metadata for rendering", () => {
+  const state = setupLiveState();
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    pieceSkinId: "command-ring"
+  };
+
+  const snapshot = publicState(state);
+
+  assert.equal(snapshot.gameConfig?.pieceSkinId, "command-ring");
+  assert.equal(snapshot.gameConfig?.pieceSkin?.id, "command-ring");
+  assert.equal(snapshot.gameConfig?.pieceSkin?.renderStyleId, "ring-core");
+});
+
 register("declareWinnerIfNeeded assigns victory when one active player remains", () => {
   const state = setupLiveState();
   const won = declareWinnerIfNeeded(state);
