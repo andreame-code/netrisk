@@ -1067,7 +1067,6 @@ function prepareRenderContext(): RenderContext {
     ? snapshot.gameConfig.players.filter((player) => player.type === "ai").length
     : 0;
   const playerLabel = totalPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural");
-
   const territories = myTerritories();
   const reinforceOptionsMarkup = territories
     .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
