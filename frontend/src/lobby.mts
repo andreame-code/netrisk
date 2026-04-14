@@ -47,6 +47,15 @@ const elements = {
 
 let gameListObserver: IntersectionObserver | null = null;
 
+function setHeaderAuthFeedback(message = ""): void {
+  if (!message) {
+    window.netriskShell?.clearHeaderAuthFeedback?.();
+    return;
+  }
+
+  window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
+}
+
 function escapeHtml(value: unknown): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -213,6 +222,9 @@ function render() {
   elements.authStatus.textContent = state.user
     ? t("lobby.auth.loggedIn", { username: state.user.username })
     : t("lobby.auth.loggedOut");
+  if (state.user) {
+    setHeaderAuthFeedback("");
+  }
   if (elements.headerLoginForm) {
     const isAuthenticated = Boolean(state.user);
     elements.headerLoginForm.hidden = isAuthenticated;
@@ -506,16 +518,18 @@ if (elements.headerLoginForm) {
     const username = elements.headerAuthUsername?.value.trim() || "";
     const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
       await loginWithCredentials(username, password);
       if (elements.headerAuthPassword) {
         elements.headerAuthPassword.value = "";
       }
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : t("errors.loginFailed"));
+      setHeaderAuthFeedback(error instanceof Error ? error.message : t("errors.loginFailed"));
     }
   });
 }

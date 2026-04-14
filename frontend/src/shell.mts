@@ -25,6 +25,24 @@ type LocaleControlOptions = {
   position?: "prepend" | "append";
 };
 
+function setHeaderAuthFeedback(message = "", tone: "error" | "success" = "error"): void {
+  const feedback = document.querySelector("#top-nav-auth-feedback") as HTMLElement | null;
+  if (!feedback) {
+    return;
+  }
+
+  if (!message) {
+    feedback.hidden = true;
+    feedback.textContent = "";
+    feedback.className = "auth-feedback top-nav-auth-feedback";
+    return;
+  }
+
+  feedback.hidden = false;
+  feedback.textContent = message;
+  feedback.className = `auth-feedback top-nav-auth-feedback is-${tone}`;
+}
+
 function resolveThemeFromUser(user: PublicUser | null | undefined): ThemeName | null {
   const requestedTheme = user?.preferences?.theme;
   return SUPPORTED_THEMES.includes(requestedTheme as ThemeName) ? (requestedTheme as ThemeName) : null;
@@ -79,6 +97,15 @@ window.netriskTheme = Object.freeze({
   },
   applyTheme,
   normalizeTheme
+});
+
+window.netriskShell = Object.freeze({
+  clearHeaderAuthFeedback() {
+    setHeaderAuthFeedback("");
+  },
+  setHeaderAuthFeedback(message: string, tone: "error" | "success" = "error") {
+    setHeaderAuthFeedback(message, tone);
+  }
 });
 
 function gameHref() {
@@ -149,6 +176,46 @@ function initMarketingShell() {
     selectClass: "ld-locale-select",
     position: "prepend"
   });
+
+  const menuButton = document.querySelector("[data-landing-menu-toggle]") as HTMLButtonElement | null;
+  const menuLabel = document.querySelector("[data-landing-menu-label]") as HTMLElement | null;
+  const menuPanel = document.querySelector("[data-landing-mobile-panel]") as HTMLElement | null;
+  if (!menuButton || !menuLabel || !menuPanel) {
+    return;
+  }
+
+  const setMenuState = (expanded: boolean) => {
+    menuButton.setAttribute("aria-expanded", expanded ? "true" : "false");
+    menuButton.setAttribute("aria-label", t(expanded ? "landing.nav.menuClose" : "landing.nav.menuOpen"));
+    menuLabel.textContent = t(expanded ? "landing.nav.menuClose" : "landing.nav.menuOpen");
+    menuPanel.hidden = !expanded;
+    document.body.dataset.landingMenuOpen = expanded ? "true" : "false";
+  };
+
+  setMenuState(false);
+
+  menuButton.addEventListener("click", () => {
+    setMenuState(menuButton.getAttribute("aria-expanded") !== "true");
+  });
+
+  menuPanel.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    if (target?.closest("a")) {
+      setMenuState(false);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) {
+      setMenuState(false);
+    }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setMenuState(false);
+    }
+  });
 }
 
 function sharedNavMarkup() {
@@ -162,7 +229,7 @@ function sharedNavMarkup() {
   return `
     <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
       <p class="eyebrow" data-i18n="app.brand">${t("app.brand")}</p>
-      <h1 data-i18n="app.title">${t("app.title")}</h1>
+      <span class="top-nav-title" data-i18n="app.title">${t("app.title")}</span>
     </a>
 
     <nav class="top-nav-zone top-nav-links" aria-label="${navAriaLabel}" data-i18n-aria-label="nav.aria.primary">
@@ -173,11 +240,18 @@ function sharedNavMarkup() {
 
     <div class="top-nav-zone top-nav-actions">
       <form id="header-login-form" class="top-nav-auth-form" method="post">
-        <input id="header-auth-username" name="header-username" maxlength="32" placeholder="${t("auth.usernamePlaceholder")}" autocomplete="username" data-i18n-placeholder="auth.usernamePlaceholder" />
-        <input id="header-auth-password" name="header-password" type="password" placeholder="${t("auth.passwordPlaceholder")}" autocomplete="current-password" data-i18n-placeholder="auth.passwordPlaceholder" />
+        <label class="top-nav-field">
+          <span class="visually-hidden" data-i18n="auth.usernameLabel">${t("auth.usernameLabel")}</span>
+          <input id="header-auth-username" name="header-username" maxlength="32" placeholder="${t("auth.usernamePlaceholder")}" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" data-i18n-placeholder="auth.usernamePlaceholder" />
+        </label>
+        <label class="top-nav-field">
+          <span class="visually-hidden" data-i18n="auth.passwordLabel">${t("auth.passwordLabel")}</span>
+          <input id="header-auth-password" name="header-password" type="password" placeholder="${t("auth.passwordPlaceholder")}" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" data-i18n-placeholder="auth.passwordPlaceholder" />
+        </label>
         <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">${t("auth.login")}</button>
         <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">${t("auth.register")}</a>
       </form>
+      <p id="top-nav-auth-feedback" class="auth-feedback top-nav-auth-feedback" aria-live="polite" hidden></p>
       <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">${t("auth.logout")}</button>
       <div class="nav-avatar" id="nav-avatar" aria-label="${t("auth.userProfile")}" data-i18n-aria-label="auth.userProfile">C</div>
     </div>
@@ -313,10 +387,12 @@ function initAppShell() {
     const username = usernameInput?.value?.trim() || "";
     const password = passwordInput?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
       await fallbackHeaderLogin(username, password);
       const nextUrl = sanitizedCurrentUrl();
       if (nextUrl.pathname === "/register.html") {
@@ -326,7 +402,7 @@ function initAppShell() {
 
       window.location.href = nextUrl.toString();
     } catch (error) {
-      window.alert(messageFromError(error, t("errors.loginFailed")));
+      setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
     }
   }, true);
 }
