@@ -7,13 +7,13 @@ import {
   createLogEntry,
   createGameState,
   createPlayer,
-  createStandardDeck,
+  getCombatRuleSet,
   getCardRuleSet,
   getDiceRuleSet,
-  standardTradeBonusForIndex,
-  validateStandardCardSet,
+  getPlayerPieceSet,
   type ActionFailure,
   type Card,
+  type CardSetValidationResult,
   type DomainFailure,
   type GameState,
   type MessageParams,
@@ -44,6 +44,7 @@ export interface PendingConquest {
 
 export interface GameConfig {
   totalPlayers?: number;
+  contentPackId?: string;
   mapId?: string;
   mapName?: string;
   turnTimeoutHours?: number | null;
@@ -92,7 +93,6 @@ type BasicResult = ActionFailure | BasicOk;
 const defaultMap = findSupportedMap("classic-mini");
 export const territories: TerritoryDefinition[] = defaultMap ? (defaultMap.territories as TerritoryDefinition[]) : [];
 export const continents = defaultMap ? defaultMap.continents : [];
-export const palette = ["#e85d04", "#0f4c5c", "#6a994e", "#8338ec"];
 
 export function createInitialState(selectedMap: LoadedMap | null = defaultMap): EngineState {
   const sourceMap = selectedMap || defaultMap;
@@ -113,6 +113,9 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     ),
     continents: mapContinents,
     mapId: sourceMap && sourceMap.id ? sourceMap.id : "classic-mini",
+    contentPackId: "core",
+    combatRuleSetId: "standard",
+    reinforcementRuleSetId: "standard",
     mapName: sourceMap && sourceMap.name ? sourceMap.name : "Classic Mini",
     mapTerritories,
     mapPositions: sourceMap && sourceMap.positions ? sourceMap.positions : {},
@@ -127,7 +130,9 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     pendingConquest: null,
     fortifyUsed: false,
     cardRuleSetId: "standard",
-    deck: createStandardDeck(mapTerritories.map((territory) => territory.id)),
+    victoryRuleSetId: "conquest",
+    pieceSetId: "classic",
+    deck: getCardRuleSet("standard").createDeck(mapTerritories.map((territory) => territory.id)),
     discardPile: [],
     hands: {},
     tradeCount: 0,
@@ -258,7 +263,7 @@ export function awardTurnCardIfEligible(state: EngineState, playerId: string, ra
   return nextCard;
 }
 
-export function tradeCardSet(state: EngineState, playerId: string, cardIds: string[]): ActionFailure | { ok: true; bonus: number; validation: ReturnType<typeof validateStandardCardSet> } {
+export function tradeCardSet(state: EngineState, playerId: string, cardIds: string[]): ActionFailure | { ok: true; bonus: number; validation: CardSetValidationResult } {
   const player = getPlayer(state, playerId);
   if (!player) {
     return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
@@ -285,6 +290,7 @@ export function tradeCardSet(state: EngineState, playerId: string, cardIds: stri
     return createActionFailure("Non puoi usare la stessa carta due volte.", "game.tradeCards.noDuplicateCards");
   }
 
+  const cardRuleSet = getCardRuleSet(state.cardRuleSetId || "standard");
   const hand = ensurePlayerHand(state, playerId);
   const selectedCards = uniqueCardIds.map((cardId) => hand.find((card) => card.id === cardId));
   if (selectedCards.some((card) => !card)) {
@@ -292,12 +298,12 @@ export function tradeCardSet(state: EngineState, playerId: string, cardIds: stri
   }
 
   const resolvedCards = selectedCards as Card[];
-  const validation = validateStandardCardSet(resolvedCards);
+  const validation = cardRuleSet.validateSet(resolvedCards);
   if (!validation.ok) {
     return createActionFailure(validation.reason, validation.reasonKey, validation.reasonParams);
   }
 
-  const bonus = standardTradeBonusForIndex(state.tradeCount || 0);
+  const bonus = cardRuleSet.tradeBonusForIndex(state.tradeCount || 0);
   state.hands[playerId] = hand.filter((card) => !card.id || !uniqueCardIds.includes(card.id));
   if (!Array.isArray(state.discardPile)) {
     state.discardPile = [];
@@ -519,10 +525,11 @@ export function addPlayer(state: EngineState, name: string, options: AddPlayerOp
     return createDomainFailure("La lobby e piena.", "game.addPlayer.lobbyFull");
   }
 
+  const pieceSet = getPlayerPieceSet(state.pieceSetId || "classic");
   const player = createPlayer({
     id: randomId(),
     name: normalizedName,
-    color: palette[state.players.length % palette.length] as string,
+    color: pieceSet.palette[state.players.length % pieceSet.palette.length] as string,
     connected: true,
     isAi: Boolean(options.isAi),
     linkedUserId
@@ -668,17 +675,8 @@ export function resolveAttack(
   const attackRolls = rollCombatDice(attackDiceCount, random);
   const defendRolls = rollCombatDice(defendDiceCount, random);
   const { comparisons } = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies });
-  let attackerLosses = 0;
-  let defenderLosses = 0;
-
-  comparisons.forEach((comparison) => {
-    if (comparison.winner === "attacker") {
-      defenderLosses += 1;
-      return;
-    }
-
-    attackerLosses += 1;
-  });
+  const combatRuleSet = getCombatRuleSet(state.combatRuleSetId || "standard");
+  const { attackerLosses, defenderLosses } = combatRuleSet.resolveOutcome(comparisons);
 
   from.armies -= attackerLosses;
   to.armies -= defenderLosses;

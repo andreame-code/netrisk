@@ -77,12 +77,55 @@ Suite Playwright per flussi end-to-end UI + API.
 - `core-domain.cts`: entità core (game state, player, territory, continent)
 - `game-actions.cts`: tipi azioni inviate dal client
 - `api-contracts.cts`: payload/contratti API condivisi
+- `module-registry.cts`: primitive comune per registry/moduli estendibili
 - `cards.cts`: deck, set validi, progressione bonus trade
 - `dice.cts`: registry ruleset dadi (incluso `defense-three-dice`)
+- `combat-rule-sets.cts`: registry regole combattimento
+- `reinforcement-rule-sets.cts`: registry regole rinforzo
+- `victory-rule-sets.cts`: registry condizioni di vittoria
+- `site-themes.cts`: registry temi supportati
+- `player-piece-sets.cts`: registry palette/set pedine giocatore
+- `content-packs.cts`: manifest compositi che raggruppano moduli compatibili
+- `content-catalog.cts`: catalogo aggregato dei moduli contenuto registrati
 - `map-loader.cts` + `continent-loader.cts`: loader/validatori CSV mantenuti per import e verifiche
 - `typed-map-data.cts` + `shared/maps/*`: definizioni mappa tipizzate e registry delle mappe supportate
 - `map-graph.cts`: adiacenze/supporto topologico mappa
 - `messages.cts`: errori e payload localizzati condivisi tra engine, backend e frontend
+
+## Modello di estensibilita
+
+NetRisk deve evolvere tramite moduli registrati, non tramite condizioni sparse nel codice.
+
+Ogni elemento estendibile deve tendere a uno di questi pattern:
+
+- registry shared con `id` stabile e lookup tipizzato
+- configurazione partita che salva solo gli `id` dei moduli scelti
+- engine/backend che risolvono il modulo attivo dal registry
+- frontend che legge summary/manifests e rende selettori o presentazione senza duplicare regole
+
+Quando serve raggruppare un insieme coerente di moduli, si usa un `content pack`:
+
+- identifica un preset o mod pack con id stabile
+- definisce default compatibili per tema, mappa, dadi, vittoria, carte e pedine
+- permette di aggiungere varianti future senza riscrivere il flusso di setup
+
+Categorie modulo gia impostate:
+
+- temi sito
+- set pedine / palette giocatori
+- ruleset dadi
+- ruleset carte
+- ruleset vittoria
+- mappe
+
+Categorie future da trattare con lo stesso modello:
+
+- skin pedine e asset grafici
+- pacchetti UI/tema avanzati
+- modalità partita e setup presets
+- AI profiles
+- obiettivi personalizzati
+- regole opzionali di movimento/combattimento/rinforzo
 
 ## Regole architetturali
 

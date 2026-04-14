@@ -11,9 +11,12 @@ interface GamePlayerConfig {
 interface GameConfig {
   players?: GamePlayerConfig[];
   totalPlayers?: number;
+  contentPackId?: string | null;
   mapId?: string | null;
   mapName?: string | null;
   diceRuleSetId?: string | null;
+  victoryRuleSetId?: string | null;
+  pieceSetId?: string | null;
 }
 
 interface GameStateRecord {
@@ -40,6 +43,7 @@ interface GameSummary {
   creatorUserId: string | null;
   phase: string;
   playerCount: number;
+  contentPackId: string | null;
   mapId: string | null;
   mapName: string | null;
   diceRuleSetId: string | null;
@@ -110,6 +114,7 @@ function summarizeGame(entry: GameEntry): GameSummary {
     creatorUserId: entry.creatorUserId || null,
     phase: entry.state?.phase || "lobby",
     playerCount: Array.isArray(entry.state?.players) ? entry.state.players.length : 0,
+    contentPackId: config?.contentPackId || null,
     mapId: config?.mapId || null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
     diceRuleSetId: config?.diceRuleSetId || null,

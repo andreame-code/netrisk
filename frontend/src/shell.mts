@@ -1,5 +1,5 @@
 import { setMarkup } from "./core/dom.mjs";
-import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
+import { DEFAULT_THEME, findTheme, listThemeIds, normalizeTheme } from "./core/contracts.mjs";
 import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type { PublicUser } from "./core/types.mjs";
@@ -45,7 +45,7 @@ function setHeaderAuthFeedback(message = "", tone: "error" | "success" = "error"
 
 function resolveThemeFromUser(user: PublicUser | null | undefined): ThemeName | null {
   const requestedTheme = user?.preferences?.theme;
-  return SUPPORTED_THEMES.includes(requestedTheme as ThemeName) ? (requestedTheme as ThemeName) : null;
+  return findTheme(requestedTheme)?.id || null;
 }
 
 function resolveTheme(): ThemeName {
@@ -79,7 +79,7 @@ window.netriskTheme = Object.freeze({
   defaultTheme: DEFAULT_THEME,
   storageKey: THEME_STORAGE_KEY,
   getThemes() {
-    return [...SUPPORTED_THEMES];
+    return listThemeIds();
   },
   getCurrentTheme() {
     return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);

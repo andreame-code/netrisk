@@ -1,4 +1,11 @@
-import { TurnPhase, createLocalizedError, type GameState, type Player } from "../../shared/models.cjs";
+import {
+  TurnPhase,
+  createLocalizedError,
+  getVictoryRuleSet,
+  STANDARD_VICTORY_RULE_SET_ID,
+  type GameState,
+  type Player
+} from "../../shared/models.cjs";
 
 export interface VictoryResult {
   ok: true;
@@ -85,68 +92,40 @@ export function detectVictory(state: GameState): VictoryResult {
   }
 
   const activeHumanPlayers = activePlayers.filter((player) => isActiveHumanPlayer(player));
-  if (activeHumanPlayers.length === 0) {
-    state.winnerId = null;
+  const victoryRuleSet = getVictoryRuleSet(state.victoryRuleSetId || STANDARD_VICTORY_RULE_SET_ID);
+  const resolution = victoryRuleSet.resolve(state, {
+    activePlayers,
+    activeHumanPlayers
+  });
+
+  if (resolution.shouldFinishGame) {
+    state.winnerId = resolution.winnerId;
     state.phase = "finished";
     state.turnPhase = TurnPhase.FINISHED;
-
-    return {
-      ok: true,
-      code: "AI_ONLY_REMAIN",
-      message: "Game closed because only AI players remain active.",
-      messageKey: "game.victory.aiOnlyRemain",
-      messageParams: {},
-      details: {
-        activePlayerIds: activePlayers.map((player) => player.id),
-        activePlayerCount: activePlayers.length,
-        activeHumanPlayerIds: [],
-        activeHumanPlayerCount: 0
-      },
-      victory: null
-    };
   }
 
-  if (activePlayers.length > 1) {
-    return {
-      ok: true,
-      code: "NO_VICTORY",
-      message: "Victory has not been determined yet.",
-      messageKey: "game.victory.pending",
-      messageParams: {},
-      details: {
-        activePlayerIds: activePlayers.map((player) => player.id),
-        activePlayerCount: activePlayers.length
-      },
-      victory: null
-    };
-  }
-
-  const winner = activePlayers[0] as Player;
-  state.winnerId = winner.id;
-  state.phase = "finished";
-  state.turnPhase = TurnPhase.FINISHED;
-
-  const summary = winner.name + " conquers the map and wins the game.";
   return {
     ok: true,
-    code: "VICTORY_DECLARED",
-    message: "Victory declared.",
-    messageKey: "game.victory.declared",
-    messageParams: { playerName: winner.name },
+    code: resolution.code,
+    message: resolution.message,
+    messageKey: resolution.messageKey,
+    messageParams: resolution.messageParams,
     details: {
-      activePlayerIds: [winner.id],
-      activePlayerCount: 1
+      activePlayerIds: activePlayers.map((player) => player.id),
+      activePlayerCount: activePlayers.length,
+      activeHumanPlayerIds: activeHumanPlayers.map((player) => player.id),
+      activeHumanPlayerCount: activeHumanPlayers.length
     },
-    victory: {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      phase: state.phase,
-      turnPhase: state.turnPhase,
-      summary,
-      summaryKey: "game.log.victoryDeclared",
-      summaryParams: {
-        playerName: winner.name
-      }
-    }
+    victory: resolution.shouldFinishGame && resolution.winnerId && resolution.winnerName && resolution.summary
+      ? {
+          winnerId: resolution.winnerId,
+          winnerName: resolution.winnerName,
+          phase: state.phase,
+          turnPhase: state.turnPhase,
+          summary: resolution.summary,
+          summaryKey: resolution.summaryKey || "game.log.victoryDeclared",
+          summaryParams: resolution.summaryParams
+        }
+      : null
   };
 }
