@@ -3465,11 +3465,11 @@ h1 {
   border-radius: 999px;
   background:
     radial-gradient(circle at center, var(--panel) 0 28%, transparent 30%),
-    radial-gradient(circle at center, var(--player-color) 0 62%, rgba(255, 250, 240, 0.92) 64% 72%, var(--player-color) 74% 100%);
-  border: 1px solid rgba(255, 250, 240, 0.72);
+    radial-gradient(circle at center, var(--player-color) 0 62%, var(--text-inverse) 64% 72%, var(--player-color) 74% 100%);
+  border: 1px solid var(--text-inverse);
   box-shadow:
-    inset 0 0 0 1px rgba(12, 22, 32, 0.28),
-    0 8px 18px rgba(12, 22, 32, 0.18);
+    inset 0 0 0 1px var(--overlay),
+    var(--shadow-soft);
 }
 
 .tactical-map {
@@ -3580,11 +3580,11 @@ h1 {
 }
 
 .territory-node.piece-skin-style-ring-core {
-  color: #fffaf0;
-  border-color: rgba(255, 250, 240, 0.92);
+  color: var(--text-inverse);
+  border-color: var(--text-inverse);
   background:
-    radial-gradient(circle at center, rgba(16, 24, 34, 0.96) 0 28%, transparent 30%),
-    radial-gradient(circle at center, var(--owner-color, var(--owner-color-default)) 0 62%, rgba(255, 250, 240, 0.92) 64% 72%, var(--owner-color, var(--owner-color-default)) 74% 100%);
+    radial-gradient(circle at center, var(--panel-strong, var(--panel)) 0 28%, transparent 30%),
+    radial-gradient(circle at center, var(--owner-color, var(--owner-color-default)) 0 62%, var(--text-inverse) 64% 72%, var(--owner-color, var(--owner-color-default)) 74% 100%);
 }
 
 .territory-node.piece-skin-style-ring-core .territory-armies {
