@@ -88,6 +88,7 @@ Production deployments on Vercel execute scheduled checks through `vercel.json`:
 - schedule: daily (`0 0 * * *`)
 
 The endpoint is protected with `Authorization: Bearer ${CRON_SECRET}` and is intended for Vercel Cron invocations.
+Missing `CRON_SECRET` does not block the rest of the application from booting, but it does disable the cron endpoint until the secret is configured.
 The current scheduled job enforces configured turn time limits for active games and is structured so additional jobs can be added under the same scheduler entrypoint.
 
 ## Useful commands

@@ -1,9 +1,12 @@
 const REQUIRED_DEPLOY_ENV_KEYS = [
   "AUTH_ENCRYPTION_KEY",
-  "CRON_SECRET",
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
   "DATASTORE_DRIVER"
+];
+
+const REQUIRED_CRON_ENV_KEYS = [
+  "CRON_SECRET"
 ];
 
 function hasValue(value: unknown): boolean {
@@ -23,8 +26,14 @@ function missingRequiredDeployEnv(env: NodeJS.ProcessEnv = process.env): string[
   return REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !hasValue(env[key]));
 }
 
+function missingRequiredCronEnv(env: NodeJS.ProcessEnv = process.env): string[] {
+  return REQUIRED_CRON_ENV_KEYS.filter((key) => !hasValue(env[key]));
+}
+
 module.exports = {
   REQUIRED_DEPLOY_ENV_KEYS,
+  REQUIRED_CRON_ENV_KEYS,
+  missingRequiredCronEnv,
   missingRequiredDeployEnv,
   shouldValidateDeployEnv
 };
