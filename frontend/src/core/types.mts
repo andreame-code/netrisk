@@ -14,6 +14,27 @@ export type SessionResponse = MessagePayload & {
 
 export type LoginResponse = SessionResponse;
 
+export type VictoryRuleSet = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type VisualTheme = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type PieceSkin = {
+  id: string;
+  name: string;
+  description: string;
+  renderStyleId: string;
+  usesPlayerColor: boolean;
+  assetBaseUrl?: string | null;
+};
+
 export type GameSummary = {
   id: string;
   name: string;
@@ -35,7 +56,15 @@ export type GameListResponse = MessagePayload & {
 export type RuleSetSummary = {
   id: string;
   name: string;
-  defaultDiceRuleSetId: string;
+  defaults: {
+    extensionSchemaVersion: number;
+    mapId: string;
+    diceRuleSetId: string;
+    victoryRuleSetId: string;
+    themeId: string;
+    pieceSkinId: string;
+  };
+  defaultDiceRuleSetId?: string;
   defaultVictoryRuleSetId?: string;
 };
 
@@ -88,7 +117,9 @@ export type GameOptionsResponse = MessagePayload & {
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
   diceRuleSets: DiceRuleSet[];
-  victoryRuleSets?: VictoryRuleSetSummary[];
+  victoryRuleSets: VictoryRuleSet[];
+  themes: VisualTheme[];
+  pieceSkins: PieceSkin[];
   playerPieceSets?: PlayerPieceSetSummary[];
   contentPacks?: ContentPackSummary[];
   turnTimeoutHoursOptions: number[];
@@ -101,10 +132,17 @@ export type PlayerSlotConfig = {
 
 export type GameConfigSummary = {
   contentPackId?: string | null;
+  pieceSetId?: string | null;
+  extensionSchemaVersion?: number;
+  ruleSetId?: string;
+  ruleSetName?: string;
   mapName?: string | null;
   mapId?: string | null;
+  diceRuleSetId?: string | null;
   victoryRuleSetId?: string | null;
-  pieceSetId?: string | null;
+  themeId?: string | null;
+  pieceSkinId?: string | null;
+  pieceSkin?: PieceSkin | null;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<{ type: string }>;

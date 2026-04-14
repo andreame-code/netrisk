@@ -6,8 +6,11 @@ import type {
   GameOptionsResponse,
   LoginResponse,
   MapSummary,
+  PieceSkin,
   PublicUser,
-  RuleSetSummary
+  RuleSetSummary,
+  VictoryRuleSet,
+  VisualTheme
 } from "./core/types.mjs";
 import { t, translateServerMessage } from "./i18n.mjs";
 
@@ -16,6 +19,9 @@ const state: {
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
   diceRuleSets: DiceRuleSet[];
+  victoryRuleSets: VictoryRuleSet[];
+  themes: VisualTheme[];
+  pieceSkins: PieceSkin[];
   turnTimeoutHoursOptions: number[];
   user: PublicUser | null;
   creating: boolean;
@@ -25,6 +31,9 @@ const state: {
   ruleSets: [],
   maps: [],
   diceRuleSets: [],
+  victoryRuleSets: [],
+  themes: [],
+  pieceSkins: [],
   turnTimeoutHoursOptions: [],
   user: null,
   creating: false,
@@ -50,6 +59,9 @@ const elements = {
   customizeOptions: byId("setup-customize-options") as HTMLInputElement,
   advancedOptions: byId("setup-advanced-options"),
   diceRuleSet: byId("setup-dice-ruleset") as HTMLSelectElement,
+  victoryRuleSet: byId("setup-victory-ruleset") as HTMLSelectElement,
+  theme: byId("setup-theme") as HTMLSelectElement,
+  pieceSkin: byId("setup-piece-skin") as HTMLSelectElement,
   turnTimeoutHours: byId("setup-turn-timeout-hours") as HTMLSelectElement,
   playerSlots: byId("setup-player-slots"),
   submit: byId("submit-new-game") as HTMLButtonElement,
@@ -143,6 +155,18 @@ function selectedDiceRuleSet(): DiceRuleSet | null {
   return state.diceRuleSets.find((ruleSet) => ruleSet.id === elements.diceRuleSet.value) || null;
 }
 
+function selectedVictoryRuleSet(): VictoryRuleSet | null {
+  return state.victoryRuleSets.find((ruleSet) => ruleSet.id === elements.victoryRuleSet.value) || null;
+}
+
+function selectedTheme(): VisualTheme | null {
+  return state.themes.find((theme) => theme.id === elements.theme.value) || null;
+}
+
+function selectedPieceSkin(): PieceSkin | null {
+  return state.pieceSkins.find((pieceSkin) => pieceSkin.id === elements.pieceSkin.value) || null;
+}
+
 function diceRuleSetLabel(ruleSet: DiceRuleSet | null): string {
   if (!ruleSet) {
     return t("common.notAvailable");
@@ -185,13 +209,21 @@ function renderContentPackSummary() {
     '</p>');
 }
 
+function namedOptionLabel(option: { name: string } | null): string {
+  return option?.name || t("common.notAvailable");
+}
+
 function syncRuleSetDefaults() {
   const ruleSet = selectedRuleSet();
   if (!ruleSet) {
     return;
   }
 
-  elements.diceRuleSet.value = ruleSet.defaultDiceRuleSetId;
+  elements.map.value = ruleSet.defaults.mapId;
+  elements.diceRuleSet.value = ruleSet.defaults.diceRuleSetId;
+  elements.victoryRuleSet.value = ruleSet.defaults.victoryRuleSetId;
+  elements.theme.value = ruleSet.defaults.themeId;
+  elements.pieceSkin.value = ruleSet.defaults.pieceSkinId;
 }
 
 function renderRuleSetSummary() {
@@ -203,7 +235,16 @@ function renderRuleSetSummary() {
 
   const activeDiceRuleSet = elements.customizeOptions.checked
     ? selectedDiceRuleSet()
-    : state.diceRuleSets.find((entry) => entry.id === ruleSet.defaultDiceRuleSetId) || null;
+    : state.diceRuleSets.find((entry) => entry.id === ruleSet.defaults.diceRuleSetId) || null;
+  const activeVictoryRuleSet = elements.customizeOptions.checked
+    ? selectedVictoryRuleSet()
+    : state.victoryRuleSets.find((entry) => entry.id === ruleSet.defaults.victoryRuleSetId) || null;
+  const activeTheme = elements.customizeOptions.checked
+    ? selectedTheme()
+    : state.themes.find((entry) => entry.id === ruleSet.defaults.themeId) || null;
+  const activePieceSkin = elements.customizeOptions.checked
+    ? selectedPieceSkin()
+    : state.pieceSkins.find((entry) => entry.id === ruleSet.defaults.pieceSkinId) || null;
 
   setMarkup(elements.ruleSetSummary,
     '<div class="map-setup-card-head">' +
@@ -220,6 +261,15 @@ function renderRuleSetSummary() {
           dice: diceRuleSetLabel(activeDiceRuleSet)
         }
       ) +
+    '</p>' +
+    '<div class="session-detail-tags">' +
+      '<span class="badge">' + namedOptionLabel(activeVictoryRuleSet) + '</span>' +
+      '<span class="badge">' + namedOptionLabel(activeTheme) + '</span>' +
+      '<span class="badge">' + namedOptionLabel(activePieceSkin) + '</span>' +
+      '<span class="badge">' + (selectedMapSummary()?.name || t("common.notAvailable")) + '</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">' +
+      namedOptionLabel(activeVictoryRuleSet) + " · " + namedOptionLabel(activeTheme) + " · " + namedOptionLabel(activePieceSkin) +
     '</p>');
 }
 
@@ -264,7 +314,10 @@ function readConfig() {
     contentPackId: elements.contentPack.value,
     ruleSetId: elements.ruleSet.value,
     mapId: elements.map.value,
-    ...(elements.customizeOptions.checked ? { diceRuleSetId: elements.diceRuleSet.value } : {}),
+    diceRuleSetId: elements.diceRuleSet.value,
+    victoryRuleSetId: elements.victoryRuleSet.value,
+    themeId: elements.theme.value,
+    pieceSkinId: elements.pieceSkin.value,
     ...(elements.turnTimeoutHours.value ? { turnTimeoutHours: Number(elements.turnTimeoutHours.value) } : {}),
     totalPlayers,
     players
@@ -285,7 +338,7 @@ async function send(path: string, body: unknown): Promise<LoginResponse & { game
 }
 
 async function loadOptions() {
-  const response = await fetch("/api/game-options");
+  const response = await fetch("/api/game/options");
   const data = await response.json() as GameOptionsResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("newGame.errors.loadOptions")));
@@ -295,11 +348,18 @@ async function loadOptions() {
   state.maps = data.maps || [];
   state.ruleSets = data.ruleSets || [];
   state.diceRuleSets = data.diceRuleSets || [];
+  state.victoryRuleSets = data.victoryRuleSets || [];
+  state.themes = data.themes || [];
+  state.pieceSkins = data.pieceSkins || [];
   state.turnTimeoutHoursOptions = Array.isArray(data.turnTimeoutHoursOptions) ? data.turnTimeoutHoursOptions : [];
   setMarkup(elements.contentPack, state.contentPacks.map((pack) => '<option value="' + pack.id + '">' + pack.name + '</option>').join(""));
+  window.netriskTheme?.setThemes?.(state.themes.map((theme) => theme.id));
   setMarkup(elements.ruleSet, state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join(""));
   setMarkup(elements.map, state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join(""));
   setMarkup(elements.diceRuleSet, state.diceRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + diceRuleSetLabel(ruleSet) + '</option>').join(""));
+  setMarkup(elements.victoryRuleSet, state.victoryRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join(""));
+  setMarkup(elements.theme, state.themes.map((theme) => '<option value="' + theme.id + '">' + theme.name + '</option>').join(""));
+  setMarkup(elements.pieceSkin, state.pieceSkins.map((pieceSkin) => '<option value="' + pieceSkin.id + '">' + pieceSkin.name + '</option>').join(""));
   setMarkup(elements.turnTimeoutHours, state.turnTimeoutHoursOptions.map((hours) =>
     '<option value="' + hours + '">' + t("newGame.turnTimeout.option", { hours }) + '</option>'
   ).join(""));
@@ -379,11 +439,18 @@ elements.contentPack.addEventListener("change", () => {
 elements.totalPlayers.addEventListener("change", renderSlots);
 elements.ruleSet.addEventListener("change", () => {
   syncRuleSetDefaults();
+  renderMapDetails();
   renderRuleSetSummary();
 });
-elements.map.addEventListener("change", renderMapDetails);
+elements.map.addEventListener("change", () => {
+  renderMapDetails();
+  renderRuleSetSummary();
+});
 elements.customizeOptions.addEventListener("change", renderAdvancedOptions);
 elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
+elements.victoryRuleSet.addEventListener("change", renderRuleSetSummary);
+elements.theme.addEventListener("change", renderRuleSetSummary);
+elements.pieceSkin.addEventListener("change", renderRuleSetSummary);
 elements.playerSlots.addEventListener("change", (event: Event) => {
   const trigger = closest(event.target, '[data-role="type"]');
   if (!trigger) {

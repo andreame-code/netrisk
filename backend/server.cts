@@ -13,9 +13,11 @@ const {
   listDiceRuleSets,
   listNewGameRuleSets,
   listPlayerPieceSets,
+  listPieceSkins,
   listSupportedMaps,
   listTurnTimeoutHoursOptions,
-  listVictoryRuleSets
+  listVictoryRuleSets,
+  listVisualThemes
 } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
@@ -30,7 +32,7 @@ const {
   startGame,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
-const { listSiteThemes } = require("../shared/site-themes.cjs");
+const { listSupportedThemeIds, resolveStoredThemeId } = require("../shared/extensions.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
@@ -116,7 +118,7 @@ const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
-const supportedSiteThemes = new Set(listSiteThemes().map((theme: { id: string }) => theme.id));
+const supportedSiteThemes = new Set(listSupportedThemeIds());
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -135,7 +137,7 @@ function logAiRecovery(payload: {
 }
 
 function resolveStoredTheme(theme: unknown): string {
-  return typeof theme === "string" && supportedSiteThemes.has(theme) ? theme : "command";
+  return resolveStoredThemeId(theme);
 }
 
 function extractUserPreferences(user: AppUser | null | undefined) {
@@ -609,17 +611,19 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    if (req.method === "GET" && url.pathname === "/api/game-options") {
+    if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
       handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
         listSupportedMaps,
         listDiceRuleSets,
         listVictoryRuleSets,
-        listPlayerPieceSets,
-        listContentPacks,
+        listVisualThemes,
+        listPieceSkins,
         listTurnTimeoutHoursOptions,
-        sendJson
+        sendJson,
+        listPlayerPieceSets,
+        listContentPacks
       );
       return;
     }

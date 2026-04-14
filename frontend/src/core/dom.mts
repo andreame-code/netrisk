@@ -25,6 +25,10 @@ export function closest<T extends Element>(target: EventTarget | null, selector:
 }
 
 export function setMarkup(element: Element, markup: string): void {
+  if (element.innerHTML === markup) {
+    return;
+  }
+
   element.innerHTML = markup;
 }
 

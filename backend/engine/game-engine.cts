@@ -12,6 +12,11 @@ import {
   getDiceRuleSet,
   getFortifyRuleSet,
   getPlayerPieceSet,
+  getPieceSkin,
+  migrateGameConfigExtensions,
+  migrateGameStateExtensions,
+  standardTradeBonusForIndex,
+  validateStandardCardSet,
   type ActionFailure,
   type Card,
   type CardSetValidationResult,
@@ -138,7 +143,14 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     discardPile: [],
     hands: {},
     tradeCount: 0,
-    conqueredTerritoryThisTurn: false
+    conqueredTerritoryThisTurn: false,
+    gameConfig: migrateGameConfigExtensions({
+      ruleSetId: "classic",
+      ruleSetName: "Classic",
+      mapId: sourceMap && sourceMap.id ? sourceMap.id : "classic-mini",
+      mapName: sourceMap && sourceMap.name ? sourceMap.name : "Classic Mini",
+      diceRuleSetId: "standard"
+    })
   }) as EngineState;
 }
 
@@ -335,6 +347,7 @@ function readableMapName(mapId: string | null | undefined): string | null {
 }
 
 export function publicState(state: EngineState) {
+  migrateGameStateExtensions(state);
   const currentPlayer = getCurrentPlayer(state);
   const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
   const lastAction = state.lastAction as ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>) | null;
@@ -374,7 +387,8 @@ export function publicState(state: EngineState) {
     gameConfig: state.gameConfig
       ? {
           ...state.gameConfig,
-          mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null)
+          mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null),
+          pieceSkin: getPieceSkin(typeof state.gameConfig.pieceSkinId === "string" ? state.gameConfig.pieceSkinId : undefined)
         }
       : null,
     log: state.log,
@@ -450,11 +464,15 @@ export function declareWinnerIfNeeded(state: EngineState): boolean {
   if (result.code === "AI_ONLY_REMAIN") {
     appendLog(state, "La partita si chiude: restano attive solo AI.", "game.log.aiOnlyRemain", result.messageParams || {});
   } else if (result.code === "VICTORY_DECLARED" && result.victory) {
+    const summaryParams = result.victory.summaryParams || { playerName: result.victory.winnerName };
+    const localizedSummary = result.victory.summaryKey === "game.log.victoryMajorityControl"
+      ? String(summaryParams.playerName || result.victory.winnerName) + " controlla la maggioranza dei territori e vince la partita."
+      : String(summaryParams.playerName || result.victory.winnerName) + " conquista la mappa e vince la partita.";
     appendLog(
       state,
-      result.victory.summary.replace("conquers the map and wins the game.", "conquista la mappa e vince la partita."),
+      localizedSummary,
       result.victory.summaryKey || "game.log.victoryDeclared",
-      result.victory.summaryParams || { playerName: result.victory.winnerName }
+      summaryParams
     );
   }
 

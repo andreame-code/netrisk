@@ -705,6 +705,18 @@ export const staticHtmlAssets = {
                     <span data-i18n="newGame.dice.label">Dadi</span>
                     <select id="setup-dice-ruleset"></select>
                   </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.victory.label">Victory</span>
+                    <select id="setup-victory-ruleset"></select>
+                  </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.theme.label">Theme</span>
+                    <select id="setup-theme"></select>
+                  </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.pieceSkin.label">Piece skin</span>
+                    <select id="setup-piece-skin"></select>
+                  </label>
                 </div>
               </section>
               <label class="field-stack">
@@ -3444,6 +3456,27 @@ h1 {
   margin-bottom: 6px;
 }
 
+.player-card-token {
+  width: 100%;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: var(--player-color);
+}
+
+.player-card.piece-skin-style-ring-core .player-card-token {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at center, var(--panel) 0 28%, transparent 30%),
+    radial-gradient(circle at center, var(--player-color) 0 62%, var(--text-inverse) 64% 72%, var(--player-color) 74% 100%);
+  border: 1px solid var(--text-inverse);
+  box-shadow:
+    inset 0 0 0 1px var(--overlay),
+    var(--shadow-soft);
+}
+
 .tactical-map {
   display: grid;
   gap: 12px;
@@ -3549,6 +3582,19 @@ h1 {
 
 .territory-node:hover {
   transform: translate(-50%, -50%) translateY(-2px) scale(1.05);
+}
+
+.territory-node.piece-skin-style-ring-core {
+  color: var(--text-inverse);
+  border-color: var(--text-inverse);
+  background:
+    radial-gradient(circle at center, var(--panel-strong, var(--panel)) 0 28%, transparent 30%),
+    radial-gradient(circle at center, var(--owner-color, var(--owner-color-default)) 0 62%, var(--text-inverse) 64% 72%, var(--owner-color, var(--owner-color-default)) 74% 100%);
+}
+
+.territory-node.piece-skin-style-ring-core .territory-armies {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
 }
 
 .territory-node.is-source,
