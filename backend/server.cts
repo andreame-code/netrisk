@@ -7,7 +7,16 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listNewGameRuleSets, listSupportedMaps, listTurnTimeoutHoursOptions } = require("./new-game-config.cjs");
+const {
+  createConfiguredInitialState,
+  listContentPacks,
+  listDiceRuleSets,
+  listNewGameRuleSets,
+  listPlayerPieceSets,
+  listSupportedMaps,
+  listTurnTimeoutHoursOptions,
+  listVictoryRuleSets
+} = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
@@ -21,6 +30,7 @@ const {
   startGame,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
+const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
@@ -106,7 +116,7 @@ const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
-const supportedSiteThemes = new Set(["command", "midnight", "ember"]);
+const supportedSiteThemes = new Set(listSiteThemes().map((theme: { id: string }) => theme.id));
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -600,7 +610,17 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      handleGameOptionsRoute(res, listNewGameRuleSets, listSupportedMaps, listDiceRuleSets, listTurnTimeoutHoursOptions, sendJson);
+      handleGameOptionsRoute(
+        res,
+        listNewGameRuleSets,
+        listSupportedMaps,
+        listDiceRuleSets,
+        listVictoryRuleSets,
+        listPlayerPieceSets,
+        listContentPacks,
+        listTurnTimeoutHoursOptions,
+        sendJson
+      );
       return;
     }
 

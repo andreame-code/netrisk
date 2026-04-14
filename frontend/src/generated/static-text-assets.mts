@@ -675,6 +675,11 @@ export const staticHtmlAssets = {
                 <input id="setup-game-name" maxlength="80" placeholder="Campagna del Nord" data-i18n-placeholder="newGame.name.placeholder" />
               </label>
               <label class="field-stack">
+                <span data-i18n="newGame.contentPack.label">Content pack</span>
+                <select id="setup-content-pack"></select>
+              </label>
+              <div id="setup-content-pack-summary" class="setup-ruleset-card" aria-live="polite"></div>
+              <label class="field-stack">
                 <span data-i18n="newGame.ruleset.label">Ruleset</span>
                 <select id="setup-ruleset"></select>
               </label>
