@@ -1122,7 +1122,7 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(24, 16, 10, 0.96), rgba(36, 24, 15, 0.92));
+  background: var(--nav-surface);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1133,7 +1133,7 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
   font-size: 0.92rem;
   font-variant: small-caps;
   letter-spacing: 0.06em;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--status-surface);
 }
 
 .ld-hero {
