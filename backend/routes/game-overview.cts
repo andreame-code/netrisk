@@ -5,6 +5,9 @@ type GetTargetGameId = (body?: Record<string, unknown>, url?: URL | null) => str
 type ListRuleSets = () => unknown;
 type ListMaps = () => unknown;
 type ListDiceRuleSets = () => unknown;
+type ListVictoryRuleSets = () => unknown;
+type ListThemes = () => unknown;
+type ListPieceSkins = () => unknown;
 type ListTurnTimeoutHoursOptions = () => unknown;
 
 async function handleGamesListRoute(
@@ -25,6 +28,9 @@ function handleGameOptionsRoute(
   listRuleSets: ListRuleSets,
   listMaps: ListMaps,
   listDiceRuleSets: ListDiceRuleSets,
+  listVictoryRuleSets: ListVictoryRuleSets,
+  listThemes: ListThemes,
+  listPieceSkins: ListPieceSkins,
   listTurnTimeoutHoursOptions: ListTurnTimeoutHoursOptions,
   sendJson: SendJson
 ): void {
@@ -32,6 +38,9 @@ function handleGameOptionsRoute(
     ruleSets: listRuleSets(),
     maps: listMaps(),
     diceRuleSets: listDiceRuleSets(),
+    victoryRuleSets: listVictoryRuleSets(),
+    themes: listThemes(),
+    pieceSkins: listPieceSkins(),
     turnTimeoutHoursOptions: listTurnTimeoutHoursOptions(),
     playerRange: { min: 2, max: 4 }
   });

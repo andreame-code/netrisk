@@ -7,7 +7,16 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listNewGameRuleSets, listSupportedMaps, listTurnTimeoutHoursOptions } = require("./new-game-config.cjs");
+const {
+  createConfiguredInitialState,
+  listDiceRuleSets,
+  listNewGameRuleSets,
+  listPieceSkins,
+  listSupportedMaps,
+  listTurnTimeoutHoursOptions,
+  listVictoryRuleSets,
+  listVisualThemes
+} = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
@@ -106,7 +115,8 @@ const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
-const supportedSiteThemes = new Set(["command", "midnight", "ember"]);
+const { listSupportedThemeIds, resolveStoredThemeId } = require("../shared/extensions.cjs");
+const supportedSiteThemes = new Set(listSupportedThemeIds());
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -125,7 +135,7 @@ function logAiRecovery(payload: {
 }
 
 function resolveStoredTheme(theme: unknown): string {
-  return typeof theme === "string" && supportedSiteThemes.has(theme) ? theme : "command";
+  return resolveStoredThemeId(theme);
 }
 
 function extractUserPreferences(user: AppUser | null | undefined) {
@@ -599,8 +609,18 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    if (req.method === "GET" && url.pathname === "/api/game-options") {
-      handleGameOptionsRoute(res, listNewGameRuleSets, listSupportedMaps, listDiceRuleSets, listTurnTimeoutHoursOptions, sendJson);
+    if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
+      handleGameOptionsRoute(
+        res,
+        listNewGameRuleSets,
+        listSupportedMaps,
+        listDiceRuleSets,
+        listVictoryRuleSets,
+        listVisualThemes,
+        listPieceSkins,
+        listTurnTimeoutHoursOptions,
+        sendJson
+      );
       return;
     }
 

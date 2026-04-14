@@ -1,4 +1,12 @@
-import { TurnPhase, createLocalizedError, type GameState, type Player } from "../../shared/models.cjs";
+import {
+  DEFAULT_VICTORY_RULE_SET_ID,
+  TurnPhase,
+  createLocalizedError,
+  getVictoryRuleSet,
+  migrateGameStateExtensions,
+  type GameState,
+  type Player
+} from "../../shared/models.cjs";
 
 export interface VictoryResult {
   ok: true;
@@ -74,7 +82,10 @@ function validateState(state: GameState): void {
 }
 
 export function detectVictory(state: GameState): VictoryResult {
+  migrateGameStateExtensions(state);
   validateState(state);
+  const victoryRuleSetId = state.gameConfig?.victoryRuleSetId || DEFAULT_VICTORY_RULE_SET_ID;
+  const victoryRuleSet = getVictoryRuleSet(victoryRuleSetId);
 
   const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
   if (activePlayers.length === 0) {
@@ -145,7 +156,8 @@ export function detectVictory(state: GameState): VictoryResult {
       summary,
       summaryKey: "game.log.victoryDeclared",
       summaryParams: {
-        playerName: winner.name
+        playerName: winner.name,
+        victoryRuleSet: victoryRuleSet.name
       }
     }
   };

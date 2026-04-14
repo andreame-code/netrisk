@@ -5,6 +5,19 @@ import {
   STANDARD_DICE_RULE_SET_ID,
   type DiceRuleSet
 } from "../shared/dice.cjs";
+import {
+  EXTENSION_SCHEMA_VERSION,
+  findExtensionPack,
+  findPieceSkin,
+  findVictoryRuleSet,
+  findVisualTheme,
+  listExtensionPacks,
+  listPieceSkins,
+  listVictoryRuleSets,
+  listVisualThemes,
+  migrateGameConfigExtensions,
+  type ExtensionPackManifest
+} from "../shared/extensions.cjs";
 import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
@@ -36,27 +49,9 @@ export const AI_GENERAL_NAMES = [
 ] as const;
 
 export const STANDARD_NEW_GAME_RULE_SET_ID = "classic";
-
-export const standardNewGameRuleSet = Object.freeze({
-  id: STANDARD_NEW_GAME_RULE_SET_ID,
-  name: "Classic",
-  defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID
-});
-
 export const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
 
-export const defenseThreeNewGameRuleSet = Object.freeze({
-  id: DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
-  name: "Classic Defense 3",
-  defaultDiceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID
-});
-
-const newGameRuleSets = Object.freeze({
-  [STANDARD_NEW_GAME_RULE_SET_ID]: standardNewGameRuleSet,
-  [DEFENSE_THREE_NEW_GAME_RULE_SET_ID]: defenseThreeNewGameRuleSet
-});
-
-type NewGameRuleSet = (typeof newGameRuleSets)[keyof typeof newGameRuleSets];
+type NewGameRuleSet = Readonly<ExtensionPackManifest>;
 type PlayerType = "human" | "ai";
 
 interface RequestedPlayerSlot {
@@ -75,6 +70,9 @@ interface NewGameConfigInput {
   ruleSetId?: string;
   mapId?: string;
   diceRuleSetId?: string;
+  victoryRuleSetId?: string;
+  themeId?: string;
+  pieceSkinId?: string;
   turnTimeoutHours?: number;
   players?: RequestedPlayerSlot[];
 }
@@ -87,6 +85,10 @@ interface ValidatedNewGameConfig {
   mapName: string;
   selectedMap: NonNullable<ReturnType<typeof findSupportedMap>>;
   diceRuleSetId: string;
+  victoryRuleSetId: string;
+  themeId: string;
+  pieceSkinId: string;
+  extensionSchemaVersion: number;
   turnTimeoutHours: TurnTimeoutHoursValue | null;
   totalPlayers: number;
   players: ValidatedPlayerSlot[];
@@ -97,19 +99,11 @@ export function normalizePlayerType(value: string | undefined): PlayerType {
 }
 
 export function findNewGameRuleSet(ruleSetId: string | null | undefined): NewGameRuleSet | null {
-  if (!ruleSetId) {
-    return null;
-  }
-
-  return newGameRuleSets[ruleSetId as keyof typeof newGameRuleSets] || null;
+  return findExtensionPack(ruleSetId);
 }
 
-export function listNewGameRuleSets(): Array<{ id: string; name: string; defaultDiceRuleSetId: string }> {
-  return Object.values(newGameRuleSets).map((ruleSet) => ({
-    id: ruleSet.id,
-    name: ruleSet.name,
-    defaultDiceRuleSetId: ruleSet.defaultDiceRuleSetId
-  }));
+export function listNewGameRuleSets() {
+  return listExtensionPacks();
 }
 
 export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
@@ -152,16 +146,34 @@ export function validateNewGameConfig(
     throw createLocalizedError("Il ruleset selezionato non e supportato.", "newGame.invalidRuleSet");
   }
 
-  const mapId = String(input.mapId || "classic-mini");
+  const mapId = String(input.mapId || selectedRuleSet.defaults.mapId || "classic-mini");
   const selectedMap = findSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
 
-  const requestedDiceRuleSetId = String(input.diceRuleSetId || selectedRuleSet.defaultDiceRuleSetId || STANDARD_DICE_RULE_SET_ID);
+  const requestedDiceRuleSetId = String(input.diceRuleSetId || selectedRuleSet.defaults.diceRuleSetId || STANDARD_DICE_RULE_SET_ID);
   const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
+  }
+
+  const requestedVictoryRuleSetId = String(input.victoryRuleSetId || selectedRuleSet.defaults.victoryRuleSetId);
+  const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
+  if (!selectedVictoryRuleSet) {
+    throw createLocalizedError("La regola vittoria selezionata non e supportata.", "newGame.invalidVictoryRuleSet");
+  }
+
+  const requestedThemeId = String(input.themeId || selectedRuleSet.defaults.themeId);
+  const selectedTheme = findVisualTheme(requestedThemeId);
+  if (!selectedTheme) {
+    throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
+  }
+
+  const requestedPieceSkinId = String(input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId);
+  const selectedPieceSkin = findPieceSkin(requestedPieceSkinId);
+  if (!selectedPieceSkin) {
+    throw createLocalizedError("La skin pedina selezionata non e supportata.", "newGame.invalidPieceSkin");
   }
 
   const turnTimeoutHours = input.turnTimeoutHours == null
@@ -209,6 +221,10 @@ export function validateNewGameConfig(
     mapName: selectedMap.name,
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
+    victoryRuleSetId: selectedVictoryRuleSet.id,
+    themeId: selectedTheme.id,
+    pieceSkinId: selectedPieceSkin.id,
+    extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
     turnTimeoutHours,
     totalPlayers,
     players
@@ -222,16 +238,21 @@ export function createConfiguredInitialState(
   const config = validateNewGameConfig(configInput, options);
   const state = createInitialState(config.selectedMap);
   state.diceRuleSetId = config.diceRuleSetId;
-  state.gameConfig = {
+  state.gameConfig = migrateGameConfigExtensions({
+    name: config.name,
     ruleSetId: config.ruleSetId,
     ruleSetName: config.ruleSetName,
     mapId: config.mapId,
     mapName: config.mapName,
     diceRuleSetId: config.diceRuleSetId,
+    victoryRuleSetId: config.victoryRuleSetId,
+    themeId: config.themeId,
+    pieceSkinId: config.pieceSkinId,
+    extensionSchemaVersion: config.extensionSchemaVersion,
     turnTimeoutHours: config.turnTimeoutHours,
     totalPlayers: config.totalPlayers,
     players: config.players
-  };
+  });
 
   config.players.forEach((player) => {
     if (player.type !== "ai") {
@@ -257,6 +278,9 @@ export function createConfiguredInitialState(
 
 export {
   listDiceRuleSets,
+  listPieceSkins,
   listSupportedMaps,
+  listVictoryRuleSets,
+  listVisualThemes,
   findSupportedMap
 };

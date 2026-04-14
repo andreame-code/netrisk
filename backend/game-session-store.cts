@@ -1,5 +1,6 @@
 const path = require("path");
 const crypto = require("crypto");
+const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
@@ -80,6 +81,10 @@ function readableMapName(mapId: string | null | undefined): string | null {
   return map ? map.name : (mapId || null);
 }
 
+function normalizeStateRecord<T extends GameStateRecord>(state: T): T {
+  return migrateGameStateExtensions(state) as T;
+}
+
 function normalizeGameName(name: unknown, fallbackIndex: number): string {
   if (name == null) {
     return `Partita ${fallbackIndex}`;
@@ -98,7 +103,8 @@ function normalizeGameName(name: unknown, fallbackIndex: number): string {
 }
 
 function summarizeGame(entry: GameEntry): GameSummary {
-  const config = entry.state?.gameConfig || null;
+  const state = normalizeStateRecord(entry.state || {});
+  const config = state.gameConfig || null;
   const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players) ? config.players : [];
   const totalPlayers = Number.isInteger(config?.totalPlayers) ? Number(config?.totalPlayers) : configuredPlayers.length;
   const version = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
@@ -108,8 +114,8 @@ function summarizeGame(entry: GameEntry): GameSummary {
     name: entry.name,
     version,
     creatorUserId: entry.creatorUserId || null,
-    phase: entry.state?.phase || "lobby",
-    playerCount: Array.isArray(entry.state?.players) ? entry.state.players.length : 0,
+    phase: state?.phase || "lobby",
+    playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     mapId: config?.mapId || null,
     mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
     diceRuleSetId: config?.diceRuleSetId || null,
@@ -140,6 +146,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
 
+    const normalizedInitialState = normalizeStateRecord(safeClone(initialState));
     return chainMaybe(datastore.listGames(), (games: GameEntry[]) => {
       const timestamp = new Date().toISOString();
       const entry: GameEntry = {
@@ -147,7 +154,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         name: normalizeGameName(input.name, games.length + 1),
         version: 1,
         creatorUserId: input.creatorUserId || null,
-        state: safeClone(initialState),
+        state: normalizedInitialState,
         createdAt: timestamp,
         updatedAt: timestamp
       };
@@ -155,7 +162,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       return chainMaybe(datastore.createGame(entry), (created: GameEntry) =>
         mapMaybe(datastore.setActiveGameId(created.id), () => ({
           game: summarizeGame(created),
-          state: safeClone(created.state)
+          state: normalizeStateRecord(safeClone(created.state))
         })));
     });
   }
@@ -189,7 +196,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
           ...summarizeGame(entry),
           creatorUserId: entry.creatorUserId || null
         },
-        state: safeClone(entry.state)
+        state: normalizeStateRecord(safeClone(entry.state))
       };
     });
   }
@@ -206,7 +213,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
 
       return mapMaybe(datastore.setActiveGameId(gameId), () => ({
         game: summarizeGame(entry),
-        state: safeClone(entry.state)
+        state: normalizeStateRecord(safeClone(entry.state))
       }));
     });
   }
@@ -241,7 +248,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         throw conflict;
       }
 
-      entry.state = safeClone(state);
+      entry.state = normalizeStateRecord(safeClone(state));
       entry.version = currentVersion + 1;
       entry.updatedAt = new Date().toISOString();
       return mapMaybe(datastore.updateGame(entry), summarizeGame);
