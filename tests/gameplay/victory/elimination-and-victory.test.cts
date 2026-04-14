@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { createInitialState, declareWinnerIfNeeded, getMapTerritories, publicState, surrenderPlayer } = require("../../../backend/engine/game-engine.cjs");
+const { MAJORITY_CONTROL_VICTORY_RULE_SET_ID } = require("../../../shared/models.cjs");
 
 type TerritoryRef = { id: string };
 type PublicPlayer = { id: string; eliminated: boolean; territoryCount: number };
@@ -33,6 +34,20 @@ register("publicState keeps players with territories active", () => {
   const snapshot = publicState(state);
   const player = snapshot.players.find((entry: PublicPlayer) => entry.id === "p2");
   assert.equal(player.eliminated, false);
+});
+
+register("publicState exposes the resolved piece skin metadata for rendering", () => {
+  const state = setupLiveState();
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    pieceSkinId: "command-ring"
+  };
+
+  const snapshot = publicState(state);
+
+  assert.equal(snapshot.gameConfig?.pieceSkinId, "command-ring");
+  assert.equal(snapshot.gameConfig?.pieceSkin?.id, "command-ring");
+  assert.equal(snapshot.gameConfig?.pieceSkin?.renderStyleId, "ring-core");
 });
 
 register("declareWinnerIfNeeded assigns victory when one active player remains", () => {
@@ -82,4 +97,22 @@ register("declareWinnerIfNeeded chiude la partita quando restano solo AI attive"
   assert.equal(closed, true);
   assert.equal(state.phase, "finished");
   assert.equal(state.winnerId, null);
+});
+
+register("declareWinnerIfNeeded usa la regola majority control quando configurata", () => {
+  const state = setupLiveState();
+  const territoryIds = getMapTerritories(state).map((territory: TerritoryRef) => territory.id);
+  territoryIds.forEach((territoryId: string, index: number) => {
+    state.territories[territoryId].ownerId = index < Math.ceil(territoryIds.length * 0.7) ? "p1" : "p2";
+  });
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID
+  };
+
+  const won = declareWinnerIfNeeded(state);
+
+  assert.equal(won, true);
+  assert.equal(state.winnerId, "p1");
+  assert.equal(state.logEntries[0]?.messageKey, "game.log.victoryMajorityControl");
 });

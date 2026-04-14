@@ -10,6 +10,7 @@ export const registeredThemes = Object.freeze<readonly ThemeDefinition[]>([
 ]);
 
 export const DEFAULT_THEME = "command";
+export const SUPPORTED_THEMES = registeredThemes.map((theme) => theme.id);
 
 export type ThemeName = string;
 
@@ -25,6 +26,6 @@ export function listThemeIds(): string[] {
   return registeredThemes.map((theme) => theme.id);
 }
 
-export function normalizeTheme(theme: string | null | undefined): ThemeName {
-  return findTheme(theme)?.id || DEFAULT_THEME;
+export function normalizeTheme(theme: string | null | undefined, supportedThemes: readonly string[] = SUPPORTED_THEMES): ThemeName {
+  return supportedThemes.includes(String(theme || "")) ? String(theme) : DEFAULT_THEME;
 }

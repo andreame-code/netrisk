@@ -2,6 +2,27 @@ export interface ThemePreferences {
   theme?: string | null;
 }
 
+export interface VictoryRuleSetContract {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface VisualThemeContract {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface PieceSkinContract {
+  id: string;
+  name: string;
+  description: string;
+  renderStyleId: string;
+  usesPlayerColor: boolean;
+  assetBaseUrl?: string | null;
+}
+
 export interface PublicUserContract {
   id: string;
   username: string;
@@ -23,7 +44,9 @@ export interface GameOptionsResponseContract {
   ruleSets: Array<Record<string, unknown>>;
   maps: Array<Record<string, unknown>>;
   diceRuleSets: Array<Record<string, unknown>>;
-  victoryRuleSets?: Array<Record<string, unknown>>;
+  victoryRuleSets: VictoryRuleSetContract[];
+  themes: VisualThemeContract[];
+  pieceSkins: PieceSkinContract[];
   playerPieceSets?: Array<Record<string, unknown>>;
   contentPacks?: Array<Record<string, unknown>>;
   turnTimeoutHoursOptions: number[];

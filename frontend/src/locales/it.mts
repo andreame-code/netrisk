@@ -204,6 +204,9 @@ export const it = Object.freeze({
   "newGame.options.copy": "Lascia il preset cosi com'e oppure apri la personalizzazione delle opzioni disponibili.",
   "newGame.options.customizeLabel": "Personalizza opzioni",
   "newGame.dice.label": "Dadi",
+  "newGame.victory.label": "Vittoria",
+  "newGame.theme.label": "Tema",
+  "newGame.pieceSkin.label": "Skin pedina",
   "newGame.totalPlayers.label": "Giocatori totali",
   "newGame.turnTimeout.label": "Limite tempo turno",
   "newGame.turnTimeout.option": "{hours} ore",
@@ -230,6 +233,8 @@ export const it = Object.freeze({
   "newGame.invalidPieceSet": "Il set pedine selezionato non e supportato.",
   "newGame.invalidContentPack": "Il content pack selezionato non e supportato.",
   "newGame.invalidVictoryRuleSet": "La regola vittoria selezionata non e supportata.",
+  "newGame.invalidTheme": "Il tema selezionato non e supportato.",
+  "newGame.invalidPieceSkin": "La skin pedina selezionata non e supportata.",
   "newGame.invalidTurnTimeoutHours": "Il limite tempo turno selezionato non e supportato.",
   "profile.title": "Frontline Dominion - Profilo",
   "profile.eyebrow": "Command Dossier",
@@ -460,10 +465,11 @@ export const it = Object.freeze({
   ,"game.log.lobbyCreated": "Lobby creata. Unisciti e avvia la partita."
   ,"game.log.turnCardAwarded": "{playerName} riceve una carta territorio."
   ,"game.log.tradeCompleted": "{playerName} scambia un set di carte e riceve {bonus} rinforzi."
-  ,"game.log.gameStarted": "Partita iniziata. Turno di {playerName} con {reinforcementPool} rinforzi."
-  ,"game.log.aiOnlyRemain": "La partita si chiude: restano attive solo AI."
-  ,"game.log.victoryDeclared": "{playerName} conquista la mappa e vince la partita."
-  ,"game.log.turnStarted": "Nuovo turno: {playerName} riceve {reinforcementPool} rinforzi."
+    ,"game.log.gameStarted": "Partita iniziata. Turno di {playerName} con {reinforcementPool} rinforzi."
+    ,"game.log.aiOnlyRemain": "La partita si chiude: restano attive solo AI."
+    ,"game.log.victoryDeclared": "{playerName} conquista la mappa e vince la partita."
+    ,"game.log.victoryMajorityControl": "{playerName} controlla la maggioranza dei territori e vince la partita."
+    ,"game.log.turnStarted": "Nuovo turno: {playerName} riceve {reinforcementPool} rinforzi."
   ,"game.log.turnTimedOut": "{playerName} supera il limite tempo turno e il turno viene forzato automaticamente."
   ,"game.log.aiTurnRecovered": "Il sistema recupera un turno AI bloccato per {playerName} e forza la fine del turno."
   ,"game.log.playerRejoined": "{playerName} si ricollega alla lobby."
