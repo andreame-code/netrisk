@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { REQUIRED_DEPLOY_ENV_KEYS } = require("../backend/required-runtime-env.cjs");
+const { REQUIRED_CRON_ENV_KEYS, REQUIRED_DEPLOY_ENV_KEYS } = require("../backend/required-runtime-env.cjs");
 
 interface RunOptions {
   cwd?: string;
@@ -79,8 +79,18 @@ function main(): void {
     const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !production[key]);
     const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !preview[key]);
     const missingFromPreviewComparedToProduction = summarizeMissing(REQUIRED_DEPLOY_ENV_KEYS, production, preview);
+    const missingCronInProduction = REQUIRED_CRON_ENV_KEYS.filter((key: string) => !production[key]);
+    const missingCronInPreview = REQUIRED_CRON_ENV_KEYS.filter((key: string) => !preview[key]);
+    const missingCronFromPreviewComparedToProduction = summarizeMissing(REQUIRED_CRON_ENV_KEYS, production, preview);
 
-    if (!missingInProduction.length && !missingInPreview.length && !missingFromPreviewComparedToProduction.length) {
+    if (
+      !missingInProduction.length &&
+      !missingInPreview.length &&
+      !missingFromPreviewComparedToProduction.length &&
+      !missingCronInProduction.length &&
+      !missingCronInPreview.length &&
+      !missingCronFromPreviewComparedToProduction.length
+    ) {
       console.log(`Vercel env parity OK for branch ${branch}.`);
       return;
     }
@@ -93,6 +103,15 @@ function main(): void {
     }
     if (missingFromPreviewComparedToProduction.length) {
       console.error(`Preview branch ${branch} is missing vars present in production: ${missingFromPreviewComparedToProduction.join(", ")}`);
+    }
+    if (missingCronInProduction.length) {
+      console.error(`Missing cron env vars in production: ${missingCronInProduction.join(", ")}`);
+    }
+    if (missingCronInPreview.length) {
+      console.error(`Missing cron env vars in preview for branch ${branch}: ${missingCronInPreview.join(", ")}`);
+    }
+    if (missingCronFromPreviewComparedToProduction.length) {
+      console.error(`Preview branch ${branch} is missing cron vars present in production: ${missingCronFromPreviewComparedToProduction.join(", ")}`);
     }
 
     process.exitCode = 1;
