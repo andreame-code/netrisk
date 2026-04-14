@@ -128,6 +128,7 @@ const elements = {
   headerAuthPassword: document.querySelector("#header-auth-password") as HTMLInputElement | null,
   headerLoginButton: document.querySelector("#header-login-button") as HTMLButtonElement | null,
   authStatus: document.querySelector("#auth-status") as HTMLElement,
+  authFeedback: document.querySelector("#auth-feedback") as HTMLElement | null,
   registerLink: document.querySelector("#register-link") as HTMLAnchorElement | null,
   loginButton: document.querySelector("#login-button") as HTMLButtonElement,
   logoutButton: document.querySelector("#logout-button") as HTMLButtonElement,
@@ -198,6 +199,32 @@ const elements = {
   surrenderButton: document.querySelector("#surrender-button") as HTMLButtonElement | null,
   log: document.querySelector("#log") as HTMLElement
 };
+
+function setHeaderAuthFeedback(message = ""): void {
+  if (!message) {
+    window.netriskShell?.clearHeaderAuthFeedback?.();
+    return;
+  }
+
+  window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
+}
+
+function setInlineAuthFeedback(message = "", tone: "error" | "success" = "error"): void {
+  if (!elements.authFeedback) {
+    return;
+  }
+
+  if (!message) {
+    elements.authFeedback.hidden = true;
+    elements.authFeedback.textContent = "";
+    elements.authFeedback.className = "auth-feedback";
+    return;
+  }
+
+  elements.authFeedback.hidden = false;
+  elements.authFeedback.textContent = message;
+  elements.authFeedback.className = `auth-feedback is-${tone}`;
+}
 
 function renderNavAvatar(username: string | null | undefined): void {
   const avatar = maybeQuery("#nav-avatar");
@@ -1097,6 +1124,10 @@ function render() {
   const canSurrender = Boolean(me && !me.eliminated) && snapshot?.phase === "active";
   const pendingConquest = snapshot?.pendingConquest || null;
   const isAuthenticated = Boolean(state.user);
+  if (isAuthenticated) {
+    setInlineAuthFeedback("");
+    setHeaderAuthFeedback("");
+  }
   elements.authForm.classList.toggle("is-authenticated", isAuthenticated);
   elements.authUsername.hidden = isAuthenticated;
   elements.authPassword.hidden = isAuthenticated;
@@ -1574,13 +1605,16 @@ elements.authForm.addEventListener("submit", async (event) => {
   const username = elements.authUsername.value.trim();
   const password = elements.authPassword.value;
   if (!username || !password) {
+    setInlineAuthFeedback(t("auth.login.requiredFields"));
     return;
   }
 
   try {
+    setInlineAuthFeedback("");
+    setHeaderAuthFeedback("");
     await loginWithCredentials(username, password);
   } catch (error: unknown) {
-    alert(error instanceof Error ? error.message : t("errors.loginFailed"));
+    setInlineAuthFeedback(error instanceof Error ? error.message : t("errors.loginFailed"));
   }
 });
 
@@ -1591,16 +1625,19 @@ if (elements.headerLoginForm) {
     const username = elements.headerAuthUsername?.value.trim() || "";
     const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
+      setInlineAuthFeedback("");
       await loginWithCredentials(username, password);
       if (elements.headerAuthPassword) {
         elements.headerAuthPassword.value = "";
       }
     } catch (error: unknown) {
-      alert(error instanceof Error ? error.message : t("errors.loginFailed"));
+      setHeaderAuthFeedback(error instanceof Error ? error.message : t("errors.loginFailed"));
     }
   });
 }
