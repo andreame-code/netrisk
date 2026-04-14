@@ -1,6 +1,7 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type {
+  ContentPackSummary,
   DiceRuleSet,
   GameOptionsResponse,
   LoginResponse,
@@ -14,6 +15,7 @@ import type {
 import { t, translateServerMessage } from "./i18n.mjs";
 
 const state: {
+  contentPacks: ContentPackSummary[];
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
   diceRuleSets: DiceRuleSet[];
@@ -25,6 +27,7 @@ const state: {
   creating: boolean;
   sessionReady: boolean;
 } = {
+  contentPacks: [],
   ruleSets: [],
   maps: [],
   diceRuleSets: [],
@@ -47,6 +50,8 @@ const elements = {
   headerAuthPassword: maybeQuery<HTMLInputElement>("#header-auth-password"),
   headerLoginButton: maybeQuery<HTMLButtonElement>("#header-login-button"),
   logoutButton: byId("logout-button") as HTMLButtonElement,
+  contentPack: byId("setup-content-pack") as HTMLSelectElement,
+  contentPackSummary: byId("setup-content-pack-summary"),
   ruleSet: byId("setup-ruleset") as HTMLSelectElement,
   ruleSetSummary: byId("setup-ruleset-summary"),
   map: byId("setup-map") as HTMLSelectElement,
@@ -138,6 +143,10 @@ function selectedMapSummary(): MapSummary | null {
   return state.maps.find((map) => map.id === elements.map.value) || null;
 }
 
+function selectedContentPack(): ContentPackSummary | null {
+  return state.contentPacks.find((pack) => pack.id === elements.contentPack.value) || null;
+}
+
 function selectedRuleSet(): RuleSetSummary | null {
   return state.ruleSets.find((ruleSet) => ruleSet.id === elements.ruleSet.value) || null;
 }
@@ -164,6 +173,40 @@ function diceRuleSetLabel(ruleSet: DiceRuleSet | null): string {
   }
 
   return ruleSet.name + " (" + ruleSet.attackerMaxDice + "/" + ruleSet.defenderMaxDice + ")";
+}
+
+function syncContentPackDefaults() {
+  const contentPack = selectedContentPack();
+  if (!contentPack) {
+    return;
+  }
+
+  elements.map.value = contentPack.defaultMapId;
+  elements.diceRuleSet.value = contentPack.defaultDiceRuleSetId;
+}
+
+function renderContentPackSummary() {
+  const contentPack = selectedContentPack();
+  if (!contentPack) {
+    setMarkup(elements.contentPackSummary, "");
+    return;
+  }
+
+  const map = state.maps.find((entry) => entry.id === contentPack.defaultMapId) || null;
+  const diceRuleSet = state.diceRuleSets.find((entry) => entry.id === contentPack.defaultDiceRuleSetId) || null;
+
+  setMarkup(elements.contentPackSummary,
+    '<div class="map-setup-card-head">' +
+      '<strong>' + contentPack.name + '</strong>' +
+      '<span class="badge">' + (map ? map.name : contentPack.defaultMapId) + '</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">' +
+      t("newGame.contentPack.summary", {
+        description: contentPack.description,
+        mapName: map ? map.name : contentPack.defaultMapId,
+        dice: diceRuleSetLabel(diceRuleSet)
+      }) +
+    '</p>');
 }
 
 function namedOptionLabel(option: { name: string } | null): string {
@@ -268,6 +311,7 @@ function readConfig() {
 
   return {
     name: elements.gameName.value.trim() || undefined,
+    contentPackId: elements.contentPack.value,
     ruleSetId: elements.ruleSet.value,
     mapId: elements.map.value,
     diceRuleSetId: elements.diceRuleSet.value,
@@ -300,6 +344,7 @@ async function loadOptions() {
     throw new Error(translateServerMessage(data, t("newGame.errors.loadOptions")));
   }
 
+  state.contentPacks = data.contentPacks || [];
   state.maps = data.maps || [];
   state.ruleSets = data.ruleSets || [];
   state.diceRuleSets = data.diceRuleSets || [];
@@ -307,6 +352,7 @@ async function loadOptions() {
   state.themes = data.themes || [];
   state.pieceSkins = data.pieceSkins || [];
   state.turnTimeoutHoursOptions = Array.isArray(data.turnTimeoutHoursOptions) ? data.turnTimeoutHoursOptions : [];
+  setMarkup(elements.contentPack, state.contentPacks.map((pack) => '<option value="' + pack.id + '">' + pack.name + '</option>').join(""));
   window.netriskTheme?.setThemes?.(state.themes.map((theme) => theme.id));
   setMarkup(elements.ruleSet, state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join(""));
   setMarkup(elements.map, state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join(""));
@@ -317,7 +363,9 @@ async function loadOptions() {
   setMarkup(elements.turnTimeoutHours, state.turnTimeoutHoursOptions.map((hours) =>
     '<option value="' + hours + '">' + t("newGame.turnTimeout.option", { hours }) + '</option>'
   ).join(""));
+  syncContentPackDefaults();
   syncRuleSetDefaults();
+  renderContentPackSummary();
   renderRuleSetSummary();
   renderMapDetails();
 }
@@ -380,6 +428,13 @@ async function loginWithCredentials(username: string, password: string): Promise
   }
   await restoreSession();
 }
+
+elements.contentPack.addEventListener("change", () => {
+  syncContentPackDefaults();
+  renderContentPackSummary();
+  renderRuleSetSummary();
+  renderMapDetails();
+});
 
 elements.totalPlayers.addEventListener("change", renderSlots);
 elements.ruleSet.addEventListener("change", () => {

@@ -71,7 +71,11 @@ export interface GameState {
   territories: Record<string, TerritoryState>;
   continents: Continent[];
   diceRuleSetId: string;
+  combatRuleSetId: string;
+  reinforcementRuleSetId: string;
+  fortifyRuleSetId: string;
   mapId: string;
+  contentPackId: string;
   mapName: string | null;
   mapTerritories: Territory[];
   mapPositions: Record<string, MapPosition>;
@@ -80,6 +84,8 @@ export interface GameState {
   currentTurnIndex: number;
   reinforcementPool: number;
   winnerId: string | null;
+  victoryRuleSetId: string;
+  pieceSetId: string;
   log: string[];
   logEntries: LogEntry[];
   lastAction: Record<string, unknown> | null;
@@ -140,7 +146,11 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     territories: input.territories || {},
     continents: input.continents || [],
     diceRuleSetId: input.diceRuleSetId || "standard",
+    combatRuleSetId: input.combatRuleSetId || "standard",
+    reinforcementRuleSetId: input.reinforcementRuleSetId || "standard",
+    fortifyRuleSetId: input.fortifyRuleSetId || "standard",
     mapId: input.mapId || "classic-mini",
+    contentPackId: input.contentPackId || "core",
     mapName: input.mapName || null,
     mapTerritories: Array.isArray(input.mapTerritories) ? input.mapTerritories : [],
     mapPositions: input.mapPositions || {},
@@ -149,6 +159,8 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     currentTurnIndex: input.currentTurnIndex || 0,
     reinforcementPool: input.reinforcementPool || 0,
     winnerId: input.winnerId || null,
+    victoryRuleSetId: input.victoryRuleSetId || "conquest",
+    pieceSetId: input.pieceSetId || "classic",
     log: input.log || [],
     logEntries: Array.isArray(input.logEntries) ? input.logEntries : [],
     lastAction: input.lastAction || null,

@@ -1285,24 +1285,49 @@ function renderStatusSummarySection(context: RenderContext): void {
 
 function renderPlayersSection(context: RenderContext): void {
   const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(context.snapshot));
+  const players = context.snapshot?.players || [];
+  const existingCards = Array.from(elements.players.querySelectorAll<HTMLElement>(".player-card"));
   const signature = createSignature([
     pieceSkinClass,
-    (context.snapshot?.players || []).map((player) => [
-      player.id,
-      player.name,
-      player.territoryCount,
-      player.eliminated,
-      player.color
-    ])
+    players.map((player) => [player.id])
   ]);
+  if (existingCards.length === players.length && existingCards.length > 0) {
+    players.forEach((player, index) => {
+      const card = existingCards[index];
+      if (!card) {
+        return;
+      }
+
+      const strong = card.querySelector("strong");
+      const stats = card.querySelectorAll("div");
+      card.className = `player-card ${pieceSkinClass}`;
+      card.dataset.playerId = player.id || "";
+      if (strong) {
+        strong.textContent = player.name;
+      }
+      if (stats[0]) {
+        stats[0].textContent = `${t("game.runtime.territories")}: ${player.territoryCount}`;
+      }
+      if (stats[1]) {
+        stats[1].textContent = `${t("lobby.table.status")}: ${player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}`;
+      }
+      if (stats[2]) {
+        (stats[2] as HTMLElement).style.setProperty("--player-color", player.color);
+      }
+    });
+
+    renderSignatures.players = signature;
+    return;
+  }
+
   if (!shouldRenderSection("players", signature)) {
     return;
   }
 
-  setMarkup(elements.players, (context.snapshot?.players || [])
+  setMarkup(elements.players, players
     .map(
       (player) => `
-        <article class="player-card ${pieceSkinClass}">
+        <article class="player-card ${pieceSkinClass}" data-player-id="${escapeHtml(player.id)}">
           <strong>${escapeHtml(player.name)}</strong>
           <div>${t("game.runtime.territories")}: ${player.territoryCount}</div>
           <div>${t("lobby.table.status")}: ${player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}</div>

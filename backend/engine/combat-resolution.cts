@@ -1,5 +1,5 @@
 import { getDiceRuleSet, type DiceRuleSet } from "../../shared/dice.cjs";
-import type { GameState } from "../../shared/models.cjs";
+import { getCombatRuleSet, type GameState } from "../../shared/models.cjs";
 const { secureRandom } = require("../random.cjs");
 import type { MapGraph } from "../../shared/map-graph.cjs";
 import { compareCombatDice, rollCombatDice, type CombatComparison } from "./combat-dice.cjs";
@@ -97,14 +97,11 @@ export function resolveSingleAttackRoll(
     rollCombatDice(defendDiceCount, random),
     { defenderWinsTies: diceRuleSet.defenderWinsTies }
   );
+  const combatRuleSet = getCombatRuleSet(state.combatRuleSetId || "standard");
+  const outcome = combatRuleSet.resolveOutcome(comparisons);
 
-  for (const comparison of comparisons) {
-    if (comparison.winner === "attacker") {
-      defenderState.armies -= 1;
-    } else {
-      attackerState.armies -= 1;
-    }
-  }
+  attackerState.armies -= outcome.attackerLosses;
+  defenderState.armies -= outcome.defenderLosses;
 
   return {
     ok: true,

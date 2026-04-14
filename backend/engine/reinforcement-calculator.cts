@@ -1,11 +1,11 @@
-import type { Continent, GameState, Player } from "../../shared/models.cjs";
-
-export interface ReinforcementBonus {
-  continentId: string | null;
-  continentName: string;
-  bonus: number;
-  territoryIds: string[];
-}
+import {
+  getReinforcementRuleSet,
+  STANDARD_REINFORCEMENT_RULE_SET_ID,
+  type Continent,
+  type GameState,
+  type Player,
+  type ReinforcementBonus
+} from "../../shared/models.cjs";
 
 export interface ReinforcementCalculation {
   playerId: string;
@@ -78,29 +78,22 @@ export function calculateReinforcements(state: GameState, playerId: string): Rei
 
   const ownedTerritoryIds = getOwnedTerritoryIds(state, playerId);
   const territoryCount = ownedTerritoryIds.length;
-  const rawBaseReinforcements = Math.floor(territoryCount / 3);
-  const baseReinforcements = Math.max(3, rawBaseReinforcements);
-  const minimumApplied = baseReinforcements !== rawBaseReinforcements;
-
   const controlledContinents = getControlledContinents(state, ownedTerritoryIds);
-  const continentBonuses = controlledContinents.map((continent) => ({
-    continentId: continent.id,
-    continentName: continent.name,
-    bonus: Number(continent.bonus) || 0,
-    territoryIds: continent.territoryIds.slice()
-  }));
-
-  const continentBonusTotal = continentBonuses.reduce((total, entry) => total + entry.bonus, 0);
+  const reinforcementRuleSet = getReinforcementRuleSet(state.reinforcementRuleSetId || STANDARD_REINFORCEMENT_RULE_SET_ID);
+  const resolution = reinforcementRuleSet.resolve({
+    territoryCount,
+    controlledContinents
+  });
 
   return {
     playerId,
     playerName: player.name,
     territoryCount,
     ownedTerritoryIds,
-    baseReinforcements,
-    minimumApplied,
-    continentBonuses,
-    continentBonusTotal,
-    totalReinforcements: baseReinforcements + continentBonusTotal
+    baseReinforcements: resolution.baseReinforcements,
+    minimumApplied: resolution.minimumApplied,
+    continentBonuses: resolution.continentBonuses,
+    continentBonusTotal: resolution.continentBonusTotal,
+    totalReinforcements: resolution.totalReinforcements
   };
 }
