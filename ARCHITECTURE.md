@@ -82,6 +82,7 @@ Suite Playwright per flussi end-to-end UI + API.
 - `dice.cts`: registry ruleset dadi (incluso `defense-three-dice`)
 - `combat-rule-sets.cts`: registry regole combattimento
 - `reinforcement-rule-sets.cts`: registry regole rinforzo
+- `fortify-rule-sets.cts`: registry vincoli/regole fortifica
 - `victory-rule-sets.cts`: registry condizioni di vittoria
 - `site-themes.cts`: registry temi supportati
 - `player-piece-sets.cts`: registry palette/set pedine giocatore
@@ -126,6 +127,7 @@ Categorie future da trattare con lo stesso modello:
 - AI profiles
 - obiettivi personalizzati
 - regole opzionali di movimento/combattimento/rinforzo
+- regole opzionali di fortifica
 
 ## Regole architetturali
 
