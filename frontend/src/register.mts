@@ -27,6 +27,15 @@ const elements = {
   submit: byId("register-submit-button") as HTMLButtonElement
 };
 
+function setHeaderAuthFeedback(message = ""): void {
+  if (!message) {
+    window.netriskShell?.clearHeaderAuthFeedback?.();
+    return;
+  }
+
+  window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
+}
+
 function renderNavAvatar(username = "") {
   const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
@@ -127,6 +136,9 @@ function render() {
   elements.authStatus.textContent = isAuthenticated
     ? t("register.auth.loggedIn", { username: state.user?.username || "" })
     : t("register.authStatus");
+  if (isAuthenticated) {
+    setHeaderAuthFeedback("");
+  }
   renderNavAvatar(state.user?.username);
 }
 
@@ -137,13 +149,15 @@ if (elements.headerLoginForm) {
     const username = elements.headerAuthUsername?.value.trim() || "";
     const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
       await loginWithCredentials(username, password);
     } catch (error) {
-      setFeedback(messageFromError(error, t("errors.loginFailed")), "error");
+      setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
       render();
     }
   });

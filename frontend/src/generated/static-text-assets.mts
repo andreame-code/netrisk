@@ -16,12 +16,25 @@ export const staticHtmlAssets = {
     <script type="module" src="/speed-insights.mjs"></script>
   </head>
   <body data-shell-kind="marketing">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <header class="ld-header" id="top">
       <div class="ld-container ld-header-inner">
         <a href="/" class="ld-brand">
           <span class="ld-brand-eyebrow">NetRisk</span>
           <span class="ld-brand-name">Frontline Dominion</span>
         </a>
+        <button
+          type="button"
+          class="ld-menu-toggle"
+          data-landing-menu-toggle
+          aria-expanded="false"
+          aria-controls="landing-mobile-nav"
+          aria-label="Apri menu"
+          data-i18n-aria-label="landing.nav.menuOpen"
+        >
+          <span class="ld-menu-toggle-icon" aria-hidden="true"></span>
+          <span data-landing-menu-label data-i18n="landing.nav.menuOpen">Apri menu</span>
+        </button>
         <nav class="ld-nav-links" aria-label="Navigazione principale" data-i18n-aria-label="landing.nav.primaryAria">
           <a href="#features" data-i18n="landing.nav.features">Caratteristiche</a>
           <a href="#maps" data-i18n="landing.nav.maps">Mappe</a>
@@ -33,8 +46,16 @@ export const staticHtmlAssets = {
           <a href="/register.html" class="ld-btn-primary" data-i18n="auth.register">Registrati</a>
         </div>
       </div>
+      <div class="ld-container ld-mobile-panel" id="landing-mobile-nav" data-landing-mobile-panel hidden>
+        <nav class="ld-mobile-links" aria-label="Navigazione principale" data-i18n-aria-label="landing.nav.primaryAria">
+          <a href="#features" data-i18n="landing.nav.features">Caratteristiche</a>
+          <a href="#maps" data-i18n="landing.nav.maps">Mappe</a>
+          <a href="#howtoplay" data-i18n="landing.nav.howToPlay">Come si gioca</a>
+        </nav>
+      </div>
     </header>
 
+    <main id="main-content">
     <section class="ld-hero">
       <div class="ld-hero-bg"></div>
       <div class="ld-hero-overlay"></div>
@@ -136,6 +157,8 @@ export const staticHtmlAssets = {
                 src="/assets/maps/world-classic.png"
                 alt="Screenshot del gioco - Mappa Mondo Classico con 4 giocatori attivi al turno 14"
                 data-i18n-alt="landing.maps.classic.alt"
+                width="800"
+                height="533"
                 loading="lazy"
               />
               <div class="ld-map-hud-top" aria-hidden="true">
@@ -174,6 +197,8 @@ export const staticHtmlAssets = {
                 src="/assets/maps/middle-earth.jpg"
                 alt="Screenshot del gioco - Mappa Terra di Mezzo con 3 giocatori al turno 7"
                 data-i18n-alt="landing.maps.middleEarth.alt"
+                width="5606"
+                height="9214"
                 loading="lazy"
               />
               <div class="ld-map-hud-top" aria-hidden="true">
@@ -264,6 +289,7 @@ export const staticHtmlAssets = {
         </div>
       </div>
     </section>
+    </main>
 
     <footer class="ld-footer">
       <div class="ld-container ld-footer-inner">
@@ -289,11 +315,10 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta http-equiv="refresh" content="0; url=/" />
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <script>
-      window.location.replace("/");
-    </script>
   </head>
-  <body></body>
+  <body>
+    <p><a href="/">Continue to Frontline Dominion</a></p>
+  </body>
 </html>
 `,
   "game.html": String.raw`<!doctype html>
@@ -308,9 +333,10 @@ export const staticHtmlAssets = {
     <script type="module" src="/speed-insights.mjs"></script>
   </head>
   <body data-shell-kind="app" data-app-section="game">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <div class="backdrop"></div>
     <div class="app-frame game-app-frame">
-      <main class="page-shell game-page-shell campaign-page-shell">
+      <main id="main-content" class="page-shell game-page-shell campaign-page-shell">
         <section class="app-shell board-shell" data-testid="app-shell">
       <section class="panel top-nav-bar campaign-nav" data-shared-top-nav><form id="header-login-form" method="post" hidden></form></section>
 
@@ -324,7 +350,7 @@ export const staticHtmlAssets = {
                 <div class="panel-header tight-header game-compact-heading">
                   <div>
                     <p class="eyebrow" data-i18n="game.command.eyebrow">Command</p>
-                    <h2 data-i18n="game.command.heading">Quadro turno</h2>
+                    <h1 data-i18n="game.command.heading">Quadro turno</h1>
                   </div>
                   <span id="turn-badge" class="badge" data-testid="phase-indicator" data-i18n="game.phaseBadge">Lobby</span>
                 </div>
@@ -356,8 +382,15 @@ export const staticHtmlAssets = {
 
               <div class="rail-section game-lobby-controls" id="lobby-controls-section">
                 <form id="auth-form" class="auth-form compact-form rail-auth-form" method="post">
-                  <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" required data-i18n-placeholder="game.auth.username.placeholder" />
-                  <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" required data-i18n-placeholder="game.auth.password.placeholder" />
+                  <label class="field-stack auth-field">
+                    <span data-i18n="auth.usernameLabel">Nome utente</span>
+                    <input id="auth-username" name="username" maxlength="32" placeholder="Username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required data-i18n-placeholder="game.auth.username.placeholder" />
+                  </label>
+                  <label class="field-stack auth-field">
+                    <span data-i18n="auth.passwordLabel">Password</span>
+                    <input id="auth-password" name="password" type="password" placeholder="Password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required data-i18n-placeholder="game.auth.password.placeholder" />
+                  </label>
+                  <p id="auth-feedback" class="auth-feedback" aria-live="polite" hidden></p>
                   <button type="submit" id="login-button" class="ghost-button" data-i18n="auth.login">Accedi</button>
                   <a href="/register.html" id="register-link" class="ghost-button full-width" data-i18n="auth.register">Registrati</a>
                 </form>
@@ -490,15 +523,16 @@ export const staticHtmlAssets = {
     <script type="module" src="/speed-insights.mjs"></script>
   </head>
   <body data-shell-kind="app" data-app-section="lobby">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell campaign-page-shell">
+      <main id="main-content" class="page-shell top-nav-page-shell campaign-page-shell">
       <section class="panel top-nav-bar campaign-nav" data-shared-top-nav><form id="header-login-form" method="post" hidden></form></section>
         <section class="session-browser panel campaign-shell" data-testid="game-lobby-shell">
           <div class="session-browser-head campaign-hero">
             <div class="session-browser-heading campaign-hero-copy">
               <p class="eyebrow session-eyebrow" data-i18n="lobby.eyebrow">War Room</p>
-              <h2 data-i18n="lobby.heading">Lobby di Comando</h2>
+              <h1 data-i18n="lobby.heading">Lobby di Comando</h1>
               <p class="stage-copy" data-i18n="lobby.copy">Riapri la partita giusta in fretta, controlla quali lobby sono pronte e scegli subito il prossimo teatro da aprire.</p>
             </div>
           </div>
@@ -554,7 +588,7 @@ export const staticHtmlAssets = {
                 <span data-i18n="lobby.table.players">Giocatori</span>
                 <span data-i18n="lobby.table.updated">Aggiornata</span>
               </div>
-              <div id="game-list-state" class="session-feedback" data-i18n="lobby.loading">Caricamento sessioni...</div>
+              <div id="game-list-state" class="session-feedback" aria-live="polite" data-i18n="lobby.loading">Caricamento sessioni...</div>
               <div id="game-session-list" class="session-list" data-testid="game-session-list"></div>
               <div id="game-list-load-more-state" class="session-list-load-more" aria-live="polite"></div>
             </div>
@@ -594,16 +628,17 @@ export const staticHtmlAssets = {
     <script type="module" src="/speed-insights.mjs"></script>
   </head>
   <body data-shell-kind="app" data-app-section="lobby">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell campaign-page-shell">
+      <main id="main-content" class="page-shell top-nav-page-shell campaign-page-shell">
       <section class="panel top-nav-bar campaign-nav" data-shared-top-nav><form id="header-login-form" method="post" hidden></form></section>
 
         <section class="panel new-game-shell campaign-shell" data-testid="new-game-shell">
           <div class="section-title-row campaign-hero">
             <div class="campaign-hero-copy">
               <p class="eyebrow" data-i18n="newGame.eyebrow">New Game Setup</p>
-              <h2 data-i18n="newGame.heading">Configura una nuova partita</h2>
+              <h1 data-i18n="newGame.heading">Configura una nuova partita</h1>
               <p class="stage-copy" data-i18n="newGame.copy">Definisci il teatro, controlla quanti slot vuoi aprire e verifica subito come entreranno umani e AI prima di creare la sessione.</p>
             </div>
             <div class="content-meta-line new-game-meta-line campaign-status-line">
@@ -693,7 +728,7 @@ export const staticHtmlAssets = {
             </section>
           </form>
 
-          <div id="new-game-feedback" class="session-feedback is-hidden"></div>
+          <div id="new-game-feedback" class="session-feedback is-hidden" aria-live="polite"></div>
 
           <div class="new-game-actions">
             <a href="/lobby.html" class="ghost-button" data-i18n="common.cancel">Annulla</a>
@@ -721,15 +756,16 @@ export const staticHtmlAssets = {
     <script type="module" src="/speed-insights.mjs"></script>
   </head>
   <body data-shell-kind="app" data-app-section="profile">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell campaign-page-shell">
+      <main id="main-content" class="page-shell top-nav-page-shell campaign-page-shell">
       <section class="panel top-nav-bar campaign-nav" data-shared-top-nav><form id="header-login-form" method="post" hidden></form></section>
         <section class="profile-shell panel campaign-shell" data-testid="player-profile-shell">
           <div class="profile-hero campaign-hero">
             <div class="profile-hero-copy campaign-hero-copy">
               <p class="eyebrow profile-section-eyebrow" data-i18n="profile.eyebrow">Command Dossier</p>
-              <h2 id="profile-heading" data-i18n="profile.heading">Comandante</h2>
+              <h1 id="profile-heading" data-i18n="profile.heading">Comandante</h1>
               <p id="profile-subtitle" class="stage-copy" data-i18n="profile.subtitle">Statistiche aggregate delle sessioni concluse e di quelle ancora aperte.</p>
             </div>
             <div class="page-header-actions compact-actions profile-hero-actions">
@@ -743,7 +779,7 @@ export const staticHtmlAssets = {
             <span class="status-divider" aria-hidden="true"></span>
             <span id="auth-status" data-i18n="profile.authStatus">Verifica della sessione in corso...</span>
           </div>
-          <div id="profile-feedback" class="profile-feedback" data-i18n="profile.feedback">Caricamento dati giocatore...</div>
+          <div id="profile-feedback" class="profile-feedback" aria-live="polite" data-i18n="profile.feedback">Caricamento dati giocatore...</div>
           <section id="profile-preferences" class="profile-preferences profile-note-card" hidden>
             <div class="profile-preferences-head">
               <div>
@@ -865,16 +901,17 @@ export const staticHtmlAssets = {
     <link rel="stylesheet" href="/shell.css" />
   </head>
   <body data-shell-kind="app" data-app-section="register">
+    <a class="skip-link" href="#main-content" data-i18n="common.skipToContent">Salta al contenuto principale</a>
     <div class="backdrop"></div>
     <div class="app-frame top-nav-page-frame">
-      <main class="page-shell top-nav-page-shell campaign-page-shell">
+      <main id="main-content" class="page-shell top-nav-page-shell campaign-page-shell">
       <section class="panel top-nav-bar campaign-nav" data-shared-top-nav><form id="header-login-form" method="post" hidden></form></section>
 
         <section class="panel register-shell campaign-shell" data-testid="register-shell">
           <div class="register-hero campaign-hero">
             <div class="campaign-hero-copy">
               <p class="eyebrow" data-i18n="register.eyebrow">Account Setup</p>
-              <h2 data-i18n="register.heading">Crea il tuo profilo comandante</h2>
+              <h1 data-i18n="register.heading">Crea il tuo profilo comandante</h1>
               <p class="stage-copy" data-i18n="register.copy">Registrazione standard, email facoltativa, password forte e dati sensibili protetti lato server.</p>
             </div>
             <div class="content-meta-line register-meta-line campaign-status-line">
@@ -939,7 +976,7 @@ html {
 
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
-h1, h2, h3 { margin: 0; line-height: 1.15; }
+h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
 p { margin: 0; }
 ul { margin: 0; padding: 0; list-style: none; }
 
@@ -991,6 +1028,61 @@ ul { margin: 0; padding: 0; list-style: none; }
   line-height: 1;
 }
 
+.ld-menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--button-ghost-bg);
+  color: var(--gold-hi);
+  font: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--bevel), var(--shadow-soft);
+}
+
+.ld-menu-toggle-icon,
+.ld-menu-toggle-icon::before,
+.ld-menu-toggle-icon::after {
+  display: block;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 160ms ease, opacity 160ms ease;
+  content: "";
+}
+
+.ld-menu-toggle-icon {
+  position: relative;
+}
+
+.ld-menu-toggle-icon::before {
+  position: absolute;
+  inset: -5px 0 auto;
+}
+
+.ld-menu-toggle-icon::after {
+  position: absolute;
+  inset: 5px 0 auto;
+}
+
+body[data-landing-menu-open="true"] .ld-menu-toggle-icon {
+  background: transparent;
+}
+
+body[data-landing-menu-open="true"] .ld-menu-toggle-icon::before {
+  transform: translateY(5px) rotate(45deg);
+}
+
+body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
 .ld-nav-links {
   display: flex;
   gap: 4px;
@@ -1018,6 +1110,30 @@ ul { margin: 0; padding: 0; list-style: none; }
   gap: 8px;
   flex-shrink: 0;
   align-items: center;
+}
+
+.ld-mobile-panel {
+  padding-bottom: 16px;
+}
+
+.ld-mobile-links {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--nav-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.ld-mobile-links a {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--parchment-dim);
+  font-size: 0.92rem;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  background: var(--status-surface);
 }
 
 .ld-hero {
@@ -1578,6 +1694,31 @@ ul { margin: 0; padding: 0; list-style: none; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ld-hero-bg,
+  .ld-hero-eyebrow,
+  .ld-hero-title,
+  .ld-hero-desc,
+  .ld-hero-cta,
+  .ld-hero-stats,
+  .ld-hero-scroll-hint,
+  .ld-final-cta-ornament {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 @media (max-width: 1024px) {
   .ld-features-grid {
     grid-template-columns: 1fr;
@@ -1626,10 +1767,19 @@ ul { margin: 0; padding: 0; list-style: none; }
 @media (max-width: 760px) {
   .ld-header-inner {
     gap: 16px;
+    height: auto;
+    min-height: 60px;
+    padding: 10px 0;
+    flex-wrap: wrap;
   }
 
   .ld-nav-links {
     display: none;
+  }
+
+  .ld-menu-toggle {
+    display: inline-flex;
+    margin-left: auto;
   }
 
   .ld-nav-actions {
@@ -1686,8 +1836,10 @@ ul { margin: 0; padding: 0; list-style: none; }
     display: none;
   }
 
-  .ld-nav-actions .ld-btn-ghost {
-    display: none;
+  .ld-nav-actions .ld-btn-ghost,
+  .ld-nav-actions .ld-btn-primary {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
   }
 }
 `,
@@ -2139,6 +2291,25 @@ body {
   display: none !important;
 }
 
+.skip-link {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 400;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--focus-ring);
+  background: var(--panel);
+  color: var(--heading);
+  box-shadow: var(--shadow);
+  transform: translateY(-160%);
+  transition: transform 140ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -2197,7 +2368,7 @@ body[data-shell-kind="app"] .backdrop {
   font-size: 0.58rem;
 }
 
-.top-nav-brand h1 {
+.top-nav-title {
   margin: 0;
   color: var(--heading);
   font-size: 1.05rem;
@@ -2236,6 +2407,10 @@ body[data-shell-kind="app"] .backdrop {
   flex-wrap: nowrap;
 }
 
+.top-nav-field {
+  display: inline-flex;
+}
+
 .top-nav-auth-form[hidden] {
   display: none;
 }
@@ -2260,6 +2435,10 @@ body[data-shell-kind="app"] .backdrop {
 
 .top-nav-auth-form input::placeholder {
   color: var(--field-placeholder);
+}
+
+.top-nav-auth-feedback {
+  min-width: min(220px, 100%);
 }
 
 .panel,
@@ -2427,10 +2606,15 @@ body[data-shell-kind="app"] .backdrop {
 
 .section-title-row h3,
 .tight-header h2,
+.tight-header h1,
 .session-browser-head h2,
+.session-browser-head h1,
 .profile-hero h2,
+.profile-hero h1,
 .register-hero h2,
+.register-hero h1,
 .new-game-shell h2,
+.new-game-shell h1,
 .new-game-shell h3,
 .profile-shell h3,
 .register-shell h3 {
@@ -2555,6 +2739,7 @@ input::placeholder {
   border: 1px solid var(--warning-border);
   background: var(--warning-bg);
   color: var(--muted);
+  line-height: 1.5;
 }
 
 .session-feedback.is-error,
@@ -2629,6 +2814,11 @@ button:hover,
   color: var(--button-primary-text-hover);
   transform: translateY(-2px);
   box-shadow: var(--button-primary-shadow-hover);
+}
+
+:where(a, button, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 button:disabled,
@@ -2935,6 +3125,13 @@ button:disabled,
   .campaign-status-line {
     padding: 16px 18px;
   }
+
+  .session-detail-grid,
+  .game-info-bottom .game-session-card,
+  .map-command-summary,
+  .profile-command-strip {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2980,9 +3177,28 @@ button:disabled,
     justify-content: flex-end;
   }
 
+  .top-nav-auth-feedback {
+    width: 100%;
+    min-width: 0;
+    order: 3;
+  }
+
   .top-nav-auth-form input {
     flex: 1 1 140px;
     width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 `,
@@ -3806,6 +4022,7 @@ select {
 
 .session-name {
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .session-sub {
@@ -4009,6 +4226,11 @@ select {
 
   .session-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .session-detail-actions > * {
+    flex: 1 1 0;
+    justify-content: center;
   }
 }
 
@@ -4683,6 +4905,10 @@ body[data-app-section="game"] .board-shell {
   gap: 12px;
 }
 
+.auth-field {
+  gap: 6px;
+}
+
 .game-phase-banner,
 .game-reinforcement-banner {
   display: flex;
@@ -4916,6 +5142,18 @@ body[data-app-section="game"] .main-nav-shell {
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (max-width: 760px) {
+  .game-map-stage,
+  .game-info-rail,
+  .game-actions-rail {
+    padding: 10px;
+  }
+
+  .game-map-stage .map {
+    min-height: 340px;
+  }
 }
 
 
@@ -5319,6 +5557,13 @@ body[data-app-section="profile"] .main-nav-shell {
   .new-game-brief,
   .new-game-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .new-game-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
   }
 }
 

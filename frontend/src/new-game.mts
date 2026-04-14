@@ -51,6 +51,15 @@ const elements = {
   totalPlayers: byId("setup-total-players") as HTMLSelectElement
 };
 
+function setHeaderAuthFeedback(message = ""): void {
+  if (!message) {
+    window.netriskShell?.clearHeaderAuthFeedback?.();
+    return;
+  }
+
+  window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
+}
+
 function renderNavAvatar(username = "") {
   const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
@@ -285,6 +294,9 @@ async function restoreSession() {
   elements.authStatus.textContent = state.user
     ? t("newGame.auth.commander", { username: state.user.username })
     : t("newGame.authStatus");
+  if (state.user) {
+    setHeaderAuthFeedback("");
+  }
   renderNavAvatar(state.user?.username);
   state.sessionReady = true;
   updateSubmitState();
@@ -380,13 +392,15 @@ if (elements.headerLoginForm) {
     const username = elements.headerAuthUsername?.value.trim() || "";
     const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
       await loginWithCredentials(username, password);
     } catch (error) {
-      setFeedback(messageFromError(error, t("errors.loginFailed")), "error");
+      setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
     }
   });
 }
