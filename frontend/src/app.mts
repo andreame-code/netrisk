@@ -1111,6 +1111,7 @@ function render() {
   if (nextMapSignature !== renderedMapSignature) {
     setMarkup(elements.map, snapshot ? buildGraphMarkup(snapshot) : "");
     renderedMapSignature = nextMapSignature;
+    fitMapBoardToViewport();
     queueMapBoardFit();
   } else {
     updateMapTerritoryHighlights();
