@@ -18,6 +18,7 @@ export interface PieceSkinContract {
   id: string;
   name: string;
   description: string;
+  renderStyleId: string;
   usesPlayerColor: boolean;
   assetBaseUrl?: string | null;
 }
