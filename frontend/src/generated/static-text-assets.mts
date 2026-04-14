@@ -10,6 +10,7 @@ export const staticHtmlAssets = {
       content="Gioco di strategia a turni multiplayer. Conquista territori, comanda le armate, domina il teatro di guerra. Gratuito, niente da installare."
       data-i18n-content="landing.meta.description"
     />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/shell.css" />
     <script type="module" src="/speed-insights.mjs"></script>
@@ -287,6 +288,7 @@ export const staticHtmlAssets = {
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="refresh" content="0; url=/" />
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <script>
       window.location.replace("/");
     </script>
@@ -300,6 +302,7 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="game.title">Frontline Dominion</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/shell.css" />
     <script type="module" src="/speed-insights.mjs"></script>
@@ -369,9 +372,10 @@ export const staticHtmlAssets = {
                   <label for="reinforce-select" data-i18n="game.actions.reinforce">Rinforza</label>
                   <div class="action-stack">
                     <select id="reinforce-select"></select>
-                    <div class="reinforce-actions-row">
-                      <input id="reinforce-amount" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantita rinforzi" data-i18n-aria-label="game.actions.reinforceAmountAria" />
+                    <input id="reinforce-amount" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantita rinforzi" data-i18n-aria-label="game.actions.reinforceAmountAria" />
+                    <div class="action-row">
                       <button id="reinforce-multi-button" data-i18n="game.actions.add">Aggiungi</button>
+                      <button id="reinforce-all-button" type="button">Sposta tutto</button>
                     </div>
                   </div>
                 </div>
@@ -393,7 +397,10 @@ export const staticHtmlAssets = {
                   <label for="conquest-armies" data-i18n="game.actions.afterConquest">Dopo conquista</label>
                   <div class="action-stack">
                     <input id="conquest-armies" type="number" min="1" step="1" />
-                    <button id="conquest-button" data-i18n="game.actions.moveArmies">Sposta armate</button>
+                    <div class="action-row">
+                      <button id="conquest-button" data-i18n="game.actions.moveArmies">Sposta armate</button>
+                      <button id="conquest-all-button" type="button">Sposta tutto</button>
+                    </div>
                   </div>
                 </div>
 
@@ -477,6 +484,7 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="lobby.title">Frontline Dominion - Lobby</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/shell.css" />
     <script type="module" src="/speed-insights.mjs"></script>
@@ -580,6 +588,7 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="newGame.title">Frontline Dominion - Nuova Partita</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/shell.css" />
     <script type="module" src="/speed-insights.mjs"></script>
@@ -702,6 +711,7 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="profile.title">Frontline Dominion - Profilo</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/shell.css" />
     <script type="module" src="/speed-insights.mjs"></script>
@@ -846,6 +856,7 @@ export const staticHtmlAssets = {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="register.title">Frontline Dominion - Registrazione</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
     <link rel="stylesheet" href="/shell.css" />
   </head>
