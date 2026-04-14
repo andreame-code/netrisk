@@ -454,6 +454,7 @@ export const it = Object.freeze({
   ,"game.log.victoryDeclared": "{playerName} conquista la mappa e vince la partita."
   ,"game.log.turnStarted": "Nuovo turno: {playerName} riceve {reinforcementPool} rinforzi."
   ,"game.log.turnTimedOut": "{playerName} supera il limite tempo turno e il turno viene forzato automaticamente."
+  ,"game.log.aiTurnRecovered": "Il sistema recupera un turno AI bloccato per {playerName} e forza la fine del turno."
   ,"game.log.playerRejoined": "{playerName} si ricollega alla lobby."
   ,"game.log.playerJoined": "{playerName} entra nella lobby."
   ,"game.log.reinforced": "{playerName} aggiunge {reinforcementAmount} truppe a {territoryId}. Rinforzi rimasti: {reinforcementPool}."

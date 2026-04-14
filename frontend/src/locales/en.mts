@@ -454,6 +454,7 @@ export const en = Object.freeze({
   "game.log.victoryDeclared": "{playerName} conquers the map and wins the game.",
   "game.log.turnStarted": "New turn: {playerName} receives {reinforcementPool} reinforcements.",
   "game.log.turnTimedOut": "{playerName} exceeded the turn time limit and the turn was auto-forced.",
+  "game.log.aiTurnRecovered": "The system recovered a stuck AI turn for {playerName} and forced the turn to end.",
   "game.log.playerRejoined": "{playerName} reconnects to the lobby.",
   "game.log.playerJoined": "{playerName} enters the lobby.",
   "game.log.reinforced": "{playerName} adds {reinforcementAmount} troops to {territoryId}. Reinforcements left: {reinforcementPool}.",

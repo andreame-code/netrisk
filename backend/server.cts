@@ -22,6 +22,7 @@ const {
   tradeCardSet
 } = require("./engine/game-engine.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
+const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
@@ -376,24 +377,27 @@ function createApp(options: CreateAppOptions = {}) {
 
   async function persistWithAiTurns(gameContext: GameContext, expectedVersion?: number | null) {
     await persistGameContext(gameContext, expectedVersion);
-    const aiReports = runAiTurnsIfNeeded(gameContext.state);
-    if (aiReports.length > 0) {
+    const aiRecovery = await recoverAiTurnState(gameContext.state, {
+      forceEndTurn,
+      runAiTurnsIfNeeded
+    });
+    if (aiRecovery.shouldPersist) {
       await persistGameContext(gameContext, gameContext.version);
     }
-    return aiReports;
+    return aiRecovery;
   }
 
   async function resumeAiTurnsForRead(gameContext: GameContext) {
-    if (!gameContext?.state || gameContext.state.phase !== "active" || gameContext.state.winnerId) {
-      return [];
+    const aiRecovery = await recoverAiTurnState(gameContext?.state, {
+      forceEndTurn,
+      runAiTurnsIfNeeded
+    });
+    if (!aiRecovery.shouldPersist) {
+      return aiRecovery;
     }
 
-    const currentPlayer = getCurrentPlayer(gameContext.state);
-    if (!currentPlayer || !currentPlayer.isAi) {
-      return [];
-    }
-
-    return persistWithAiTurns(gameContext, gameContext.version);
+    await persistGameContext(gameContext, gameContext.version);
+    return aiRecovery;
   }
 
   function extractSessionToken(req: Request, body: Record<string, any> = {}, url: URL | null = null): string | null {
@@ -579,7 +583,12 @@ function createApp(options: CreateAppOptions = {}) {
           saveGame: (gameId: string, nextState: Record<string, unknown>, expectedVersion?: number | null) =>
             gameSessions.saveGame(gameId, nextState, expectedVersion),
           forceEndTurn,
-          runAiTurnsIfNeeded: (nextState: Record<string, unknown>) => runAiTurnsIfNeeded(nextState),
+          recoverAiTurnState: (nextState: Record<string, unknown>, recoveryOptions?: { now?: Date }) =>
+            recoverAiTurnState(nextState, {
+              ...recoveryOptions,
+              forceEndTurn,
+              runAiTurnsIfNeeded
+            }),
           afterSave: ({ gameId, gameName, state: nextState, version }: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => {
             if (gameId === activeGameId) {
               activeGameVersion = version;
