@@ -85,7 +85,7 @@ PORT=3000
 Production deployments on Vercel execute scheduled checks through `vercel.json`:
 
 - path: `/api/cron/scheduled-jobs`
-- schedule: hourly (`0 * * * *`)
+- schedule: daily (`0 0 * * *`)
 
 The endpoint is protected with `Authorization: Bearer ${CRON_SECRET}` and is intended for Vercel Cron invocations.
 The current scheduled job enforces configured turn time limits for active games and is structured so additional jobs can be added under the same scheduler entrypoint.
