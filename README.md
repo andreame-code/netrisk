@@ -200,8 +200,20 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `createStandardDeck`
 - `getDiceRuleSet`
 - `listDiceRuleSets`
+- `getCombatRuleSet`
+- `listCombatRuleSets`
+- `getReinforcementRuleSet`
+- `listReinforcementRuleSets`
+- `getFortifyRuleSet`
+- `listFortifyRuleSets`
 - `getCardRuleSet`
 - `validateStandardCardSet`
+- `getVictoryRuleSet`
+- `listVictoryRuleSets`
+- `listSiteThemes`
+- `listPlayerPieceSets`
+- `listContentPacks`
+- `listContentModules`
 
 Game state notably contains:
 
@@ -213,6 +225,9 @@ Game state notably contains:
 - active player index
 - reinforcement pool
 - optional winner
+- active victory ruleset
+- active fortify ruleset
+- active player piece set
 - action log
 - optional pending conquest
 - active dice ruleset

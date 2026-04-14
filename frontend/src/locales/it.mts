@@ -194,6 +194,8 @@ export const it = Object.freeze({
   "newGame.settings.copy": "Qui scegli il teatro e la dimensione della sessione.",
   "newGame.name.label": "Nome partita",
   "newGame.name.placeholder": "Campagna del Nord",
+  "newGame.contentPack.label": "Content pack",
+  "newGame.contentPack.summary": "{description} Mappa predefinita: {mapName}. Dadi predefiniti: {dice}.",
   "newGame.ruleset.label": "Ruleset",
   "newGame.ruleset.summary.default": "Il ruleset {ruleset} applica i dadi {dice}. La mappa resta sempre selezionabile.",
   "newGame.ruleset.summary.custom": "Il ruleset {ruleset} resta la base della partita, ma stai personalizzando le opzioni. Dadi attivi: {dice}.",
@@ -228,6 +230,8 @@ export const it = Object.freeze({
   "newGame.errors.invalidSession": "Sessione non valida.",
   "newGame.errors.loadOptions": "Impossibile caricare le opzioni di creazione.",
   "newGame.invalidRuleSet": "Il ruleset selezionato non e supportato.",
+  "newGame.invalidPieceSet": "Il set pedine selezionato non e supportato.",
+  "newGame.invalidContentPack": "Il content pack selezionato non e supportato.",
   "newGame.invalidVictoryRuleSet": "La regola vittoria selezionata non e supportata.",
   "newGame.invalidTheme": "Il tema selezionato non e supportato.",
   "newGame.invalidPieceSkin": "La skin pedina selezionata non e supportata.",
@@ -482,6 +486,9 @@ export const it = Object.freeze({
   ,"game.victory.aiOnlyRemain": "La partita si chiude: restano attive solo AI."
   ,"game.victory.pending": "La vittoria non e' ancora stata determinata."
   ,"game.victory.declared": "Vittoria assegnata a {playerName}."
+  ,"game.victory.unsupportedRuleSet": "Set di regole vittoria non supportato."
+  ,"game.pieces.unsupportedSet": "Set di pedine giocatore non supportato."
+  ,"contentPack.unsupported": "Content pack non supportato."
   ,"game.victory.internal.invalidState": "Victory detection richiede uno stato partita valido."
   ,"game.victory.internal.noPlayers": "Victory detection richiede almeno un giocatore."
   ,"game.victory.internal.missingTerritories": "Victory detection richiede i dati di controllo dei territori."

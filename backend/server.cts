@@ -9,8 +9,10 @@ const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
+  listContentPacks,
   listDiceRuleSets,
   listNewGameRuleSets,
+  listPlayerPieceSets,
   listPieceSkins,
   listSupportedMaps,
   listTurnTimeoutHoursOptions,
@@ -30,6 +32,7 @@ const {
   startGame,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
+const { listSupportedThemeIds, resolveStoredThemeId } = require("../shared/extensions.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
@@ -115,7 +118,6 @@ const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
-const { listSupportedThemeIds, resolveStoredThemeId } = require("../shared/extensions.cjs");
 const supportedSiteThemes = new Set(listSupportedThemeIds());
 
 function logAiRecovery(payload: {
@@ -619,7 +621,9 @@ function createApp(options: CreateAppOptions = {}) {
         listVisualThemes,
         listPieceSkins,
         listTurnTimeoutHoursOptions,
-        sendJson
+        sendJson,
+        listPlayerPieceSets,
+        listContentPacks
       );
       return;
     }

@@ -134,6 +134,9 @@ function declareVictory(
     summaryParams: Record<string, unknown>;
   }
 ): VictoryResult {
+  const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
+  const activeHumanPlayers = activePlayers.filter((player) => isActiveHumanPlayer(player));
+
   state.winnerId = winner.id;
   state.phase = "finished";
   state.turnPhase = TurnPhase.FINISHED;
@@ -145,8 +148,10 @@ function declareVictory(
     messageKey: "game.victory.declared",
     messageParams: { playerName: winner.name },
     details: {
-      activePlayerIds: [winner.id],
-      activePlayerCount: 1
+      activePlayerIds: activePlayers.map((player) => player.id),
+      activePlayerCount: activePlayers.length,
+      activeHumanPlayerIds: activeHumanPlayers.map((player) => player.id),
+      activeHumanPlayerCount: activeHumanPlayers.length
     },
     victory: {
       winnerId: winner.id,

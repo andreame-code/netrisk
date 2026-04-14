@@ -64,6 +64,8 @@ export type RuleSetSummary = {
     themeId: string;
     pieceSkinId: string;
   };
+  defaultDiceRuleSetId?: string;
+  defaultVictoryRuleSetId?: string;
 };
 
 export type DiceRuleSet = {
@@ -71,6 +73,30 @@ export type DiceRuleSet = {
   name: string;
   attackerMaxDice: number;
   defenderMaxDice: number;
+};
+
+export type VictoryRuleSetSummary = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type PlayerPieceSetSummary = {
+  id: string;
+  name: string;
+  paletteSize: number;
+};
+
+export type ContentPackSummary = {
+  id: string;
+  name: string;
+  description: string;
+  defaultSiteThemeId: string;
+  defaultMapId: string;
+  defaultDiceRuleSetId: string;
+  defaultCardRuleSetId: string;
+  defaultVictoryRuleSetId: string;
+  defaultPieceSetId: string;
 };
 
 export type ContinentBonusSummary = {
@@ -94,6 +120,8 @@ export type GameOptionsResponse = MessagePayload & {
   victoryRuleSets: VictoryRuleSet[];
   themes: VisualTheme[];
   pieceSkins: PieceSkin[];
+  playerPieceSets?: PlayerPieceSetSummary[];
+  contentPacks?: ContentPackSummary[];
   turnTimeoutHoursOptions: number[];
 };
 
@@ -103,6 +131,8 @@ export type PlayerSlotConfig = {
 };
 
 export type GameConfigSummary = {
+  contentPackId?: string | null;
+  pieceSetId?: string | null;
   extensionSchemaVersion?: number;
   ruleSetId?: string;
   ruleSetName?: string;

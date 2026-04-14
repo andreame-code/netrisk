@@ -1,6 +1,7 @@
 import classicMiniMap = require("./classic-mini.cjs");
 import middleEarthMap = require("./middle-earth.cjs");
 import worldClassicMap = require("./world-classic.cjs");
+import { createModuleRegistry } from "../module-registry.cjs";
 
 export interface MapSummary {
   id: string;
@@ -15,7 +16,13 @@ export interface MapSummary {
   }>;
 }
 
-export const registeredMaps = [classicMiniMap, middleEarthMap, worldClassicMap];
+const mapRegistry = createModuleRegistry([
+  classicMiniMap,
+  middleEarthMap,
+  worldClassicMap
+]);
+
+export const registeredMaps = mapRegistry.entries;
 
 export function summarizeMap(map: (typeof registeredMaps)[number]): MapSummary {
   const continents = Array.isArray(map && map.continents) ? map.continents : [];
@@ -36,9 +43,9 @@ export function summarizeMap(map: (typeof registeredMaps)[number]): MapSummary {
 }
 
 export function listSupportedMaps(): MapSummary[] {
-  return registeredMaps.map(summarizeMap);
+  return mapRegistry.entries.map(summarizeMap);
 }
 
 export function findSupportedMap(mapId: string) {
-  return registeredMaps.find((map) => map.id === mapId) || null;
+  return mapRegistry.find(mapId);
 }
