@@ -64,6 +64,15 @@ const themeManager = window.netriskTheme || {
 
 let profileRequestId = 0;
 
+function setHeaderAuthFeedback(message = ""): void {
+  if (!message) {
+    window.netriskShell?.clearHeaderAuthFeedback?.();
+    return;
+  }
+
+  window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
+}
+
 function themeLabel(theme: string): string {
   return t(`profile.preferences.theme.${theme}`, {}, { fallback: theme });
 }
@@ -131,6 +140,9 @@ async function persistThemePreference(theme: string): Promise<SessionResponse> {
 
 function renderAuthArea(user: PublicUser | null): void {
   const isAuthenticated = Boolean(user);
+  if (isAuthenticated) {
+    setHeaderAuthFeedback("");
+  }
   if (elements.headerLoginForm) {
     setHidden(elements.headerLoginForm as HTMLElement, isAuthenticated);
     if (elements.headerAuthUsername) {
@@ -393,10 +405,12 @@ if (elements.headerLoginForm) {
       const username = elements.headerAuthUsername?.value.trim() || "";
       const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
+      setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
     }
 
     try {
+      setHeaderAuthFeedback("");
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -412,7 +426,7 @@ if (elements.headerLoginForm) {
       }
       await loadProfile();
     } catch (error: unknown) {
-      showFeedback(messageFromError(error, t("errors.loginFailed")), "error");
+      setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
       renderAuthArea(null);
       renderNavAvatar();
     }
