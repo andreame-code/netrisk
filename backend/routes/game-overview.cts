@@ -6,9 +6,11 @@ type ListRuleSets = () => unknown;
 type ListMaps = () => unknown;
 type ListDiceRuleSets = () => unknown;
 type ListVictoryRuleSets = () => unknown;
+type ListThemes = () => unknown;
+type ListPieceSkins = () => unknown;
+type ListTurnTimeoutHoursOptions = () => unknown;
 type ListPlayerPieceSets = () => unknown;
 type ListContentPacks = () => unknown;
-type ListTurnTimeoutHoursOptions = () => unknown;
 
 async function handleGamesListRoute(
   res: unknown,
@@ -29,18 +31,22 @@ function handleGameOptionsRoute(
   listMaps: ListMaps,
   listDiceRuleSets: ListDiceRuleSets,
   listVictoryRuleSets: ListVictoryRuleSets,
-  listPlayerPieceSets: ListPlayerPieceSets,
-  listContentPacks: ListContentPacks,
+  listThemes: ListThemes,
+  listPieceSkins: ListPieceSkins,
   listTurnTimeoutHoursOptions: ListTurnTimeoutHoursOptions,
-  sendJson: SendJson
+  sendJson: SendJson,
+  listPlayerPieceSets?: ListPlayerPieceSets,
+  listContentPacks?: ListContentPacks
 ): void {
   sendJson(res, 200, {
     ruleSets: listRuleSets(),
     maps: listMaps(),
     diceRuleSets: listDiceRuleSets(),
     victoryRuleSets: listVictoryRuleSets(),
-    playerPieceSets: listPlayerPieceSets(),
-    contentPacks: listContentPacks(),
+    themes: listThemes(),
+    pieceSkins: listPieceSkins(),
+    playerPieceSets: typeof listPlayerPieceSets === "function" ? listPlayerPieceSets() : [],
+    contentPacks: typeof listContentPacks === "function" ? listContentPacks() : [],
     turnTimeoutHoursOptions: listTurnTimeoutHoursOptions(),
     playerRange: { min: 2, max: 4 }
   });

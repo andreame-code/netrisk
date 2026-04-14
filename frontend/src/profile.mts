@@ -1,6 +1,6 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
-import type { ProfileResponse, ProfileSummary, PublicUser, SessionResponse } from "./core/types.mjs";
+import type { GameOptionsResponse, ProfileResponse, ProfileSummary, PublicUser, SessionResponse } from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const elements = {
@@ -46,6 +46,13 @@ const themeManager = window.netriskTheme || {
   getThemes() {
     return ["command"];
   },
+  setThemes(themes) {
+    return Array.isArray(themes)
+      ? themes
+        .map((theme) => typeof theme === "string" ? theme : String(theme?.id || ""))
+        .filter(Boolean)
+      : ["command"];
+  },
   getCurrentTheme() {
     return document.documentElement.dataset.theme || "command";
   },
@@ -63,6 +70,7 @@ const themeManager = window.netriskTheme || {
 };
 
 let profileRequestId = 0;
+let themeOptionsLoaded = false;
 
 function setHeaderAuthFeedback(message = ""): void {
   if (!message) {
@@ -81,10 +89,12 @@ function setThemeStatus(message: string): void {
   elements.themeStatus.textContent = message;
 }
 
-function renderThemeOptions() {
-  if (elements.themeSelect.options.length) {
+function renderThemeOptions(force = false) {
+  if (elements.themeSelect.options.length && !force) {
     return;
   }
+
+  elements.themeSelect.textContent = "";
 
   themeManager.getThemes().forEach((theme) => {
     const option = document.createElement("option");
@@ -92,6 +102,24 @@ function renderThemeOptions() {
     option.textContent = themeLabel(theme);
     elements.themeSelect.appendChild(option);
   });
+}
+
+async function loadThemeOptions(): Promise<void> {
+  if (themeOptionsLoaded) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/game/options");
+    const data = await response.json() as GameOptionsResponse;
+    if (response.ok && Array.isArray(data.themes)) {
+      themeManager.setThemes(data.themes.map((theme) => theme.id));
+      renderThemeOptions(true);
+    }
+  } catch (_error: unknown) {
+  } finally {
+    themeOptionsLoaded = true;
+  }
 }
 
 function showThemePreferences(isVisible: boolean): void {
@@ -458,6 +486,7 @@ elements.logoutButton.addEventListener("click", async () => {
   }
 });
 
+await loadThemeOptions();
 renderThemeOptions();
 syncThemePreference();
 elements.themeSelect.addEventListener("change", async () => {

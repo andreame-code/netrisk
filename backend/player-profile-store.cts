@@ -1,5 +1,6 @@
 const path = require("path");
 const { createDatastore } = require("./datastore.cjs");
+const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
 const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { mapMaybe } = require("./maybe-async.cjs");
 import type { ParticipatingGameContract, ProfileContract } from "../shared/api-contracts.cjs";
@@ -33,6 +34,13 @@ type PlayerProfileStore = {
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId);
   return map ? map.name : (mapId || null);
+}
+
+function normalizeEntry(entry: GameEntry): GameEntry {
+  if (entry?.state && typeof entry.state === "object") {
+    migrateGameStateExtensions(entry.state);
+  }
+  return entry;
 }
 
 function territoriesOwnedBy(entry: GameEntry, playerId: string | null | undefined): number {
@@ -129,7 +137,9 @@ function createPlayerProfileStore(options: Record<string, unknown> = {}): Player
     }
 
     return mapMaybe(datastore.listGames(), (games: GameEntry[]) => {
-      const relevantGames = games.filter((entry) =>
+      const relevantGames = games
+        .map(normalizeEntry)
+        .filter((entry) =>
         Array.isArray(entry?.state?.players) &&
         entry.state.players.some((player) => player.name === normalizedUsername)
       );

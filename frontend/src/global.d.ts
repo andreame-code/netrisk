@@ -2,6 +2,7 @@ interface NetRiskThemeManager {
   defaultTheme: string;
   storageKey?: string;
   getThemes(): string[];
+  setThemes(themes: Array<string | { id?: string | null }>): string[];
   getCurrentTheme(): string;
   getThemeFromUser(user?: { preferences?: { theme?: string | null } | null } | null): string | null;
   applyUserTheme(user?: { preferences?: { theme?: string | null } | null } | null): string;
