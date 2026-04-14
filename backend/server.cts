@@ -20,7 +20,7 @@ const {
   startGame,
   tradeCardSet
 } = require("./engine/game-engine.cjs");
-const { runAiTurn } = require("./engine/ai-player.cjs");
+const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { broadcastEventPayload } = require("./event-broadcast.cjs");
@@ -369,27 +369,6 @@ function createApp(options: CreateAppOptions = {}) {
     if (!clients.size) {
       clientsByGameId.delete(gameContext.gameId);
     }
-  }
-
-  function runAiTurnsIfNeeded(targetState: any): any[] {
-    const reports = [];
-    const maxTurns = Math.max(4, targetState.players.length * 4);
-
-    for (let step = 0; step < maxTurns; step += 1) {
-      const currentPlayer = getCurrentPlayer(targetState);
-      if (!currentPlayer || !currentPlayer.isAi || targetState.phase !== "active" || targetState.winnerId) {
-        break;
-      }
-
-      const result = runAiTurn(targetState);
-      if (!result.ok) {
-        throw createLocalizedError(result.error || "Turno AI non riuscito.", result.errorKey || "server.aiTurn.failed", result.errorParams);
-      }
-
-      reports.push(result);
-    }
-
-    return reports;
   }
 
   async function persistWithAiTurns(gameContext: GameContext, expectedVersion?: number | null) {
