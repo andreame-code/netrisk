@@ -72,3 +72,18 @@ register("forceEndTurn risolve la conquista pendente con il minimo prima di pass
   assert.equal(state.territories[enemyTerritory].armies, 2);
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
 });
+
+register("forceEndTurn usa un audit trail dedicato per il recovery AI", () => {
+  const state = setupTimedGame();
+  state.players[0].isAi = true;
+  const currentPlayer = state.players[state.currentTurnIndex];
+
+  const result = forceEndTurn(state, currentPlayer.id, {
+    reason: "aiRecovery",
+    now: new Date("2026-04-11T08:00:00.000Z")
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.lastAction.summaryKey, "game.log.aiTurnRecovered");
+});

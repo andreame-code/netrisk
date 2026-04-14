@@ -929,7 +929,7 @@ export function forceEndTurn(
   state: EngineState,
   playerId: string,
   options: {
-    reason?: "timeout";
+    reason?: "timeout" | "aiRecovery";
     turnTimeoutHours?: number | null;
     now?: Date;
   } = {}
@@ -973,12 +973,15 @@ export function forceEndTurn(
   const reason = options.reason || "timeout";
   const summary = reason === "timeout"
     ? player.name + " supera il limite turno e il sistema forza il passaggio del turno."
-    : player.name + " viene forzato a terminare il turno.";
+    : "Il turno AI di " + player.name + " si blocca e il sistema forza il passaggio del turno.";
+  const summaryKey = reason === "timeout"
+    ? "game.log.turnTimedOut"
+    : "game.log.aiTurnRecovered";
 
   state.lastAction = {
     type: "forceEndTurn",
     summary,
-    summaryKey: reason === "timeout" ? "game.log.turnTimedOut" : "game.log.turnForced",
+    summaryKey,
     summaryParams: {
       playerName: player.name,
       turnTimeoutHours: options.turnTimeoutHours || null
@@ -988,7 +991,7 @@ export function forceEndTurn(
   appendLog(
     state,
     summary,
-    reason === "timeout" ? "game.log.turnTimedOut" : "game.log.turnForced",
+    summaryKey,
     {
       playerName: player.name,
       turnTimeoutHours: options.turnTimeoutHours || null

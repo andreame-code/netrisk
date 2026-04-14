@@ -49,6 +49,8 @@ const {
   validateNewGameConfig
 } = require("../backend/new-game-config.cjs");
 const { handleScheduledJobsRoute } = require("../backend/routes/scheduled-jobs.cjs");
+const { runScheduledJobs } = require("../backend/scheduler/index.cjs");
+const { recoverAiTurnState, recoverStuckAiTurns } = require("../backend/services/ai-turn-recovery.cjs");
 const { enforceTurnTimeouts } = require("../backend/services/turn-timeout-enforcement.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
@@ -1354,7 +1356,11 @@ register("game management route apre una partita e risolve il player autenticato
       state: { players: [{ id: "player-1", linkedUserId: "user-1" }] }
     }),
     async () => [{ id: "game-1", name: "Nuova partita" }],
-    async () => [],
+    async (gameContext: any) => {
+      gameContext.game.version = 4;
+      gameContext.state.players.push({ id: "ai-2", linkedUserId: null, isAi: true });
+      return { shouldPersist: true, forcedTurn: false };
+    },
     (state: any, user: any) => state.players.find((player: any) => player.linkedUserId === user.id) || null,
     (state: any, gameId: any, version: any, gameName: any) => ({
       gameId,
@@ -1369,14 +1375,14 @@ register("game management route apre una partita e risolve il player autenticato
   assert.equal(res.statusCode, 200);
   assert.deepEqual(JSON.parse(res.body), {
     ok: true,
-    game: { id: "game-1", name: "Nuova partita", version: 3 },
+    game: { id: "game-1", name: "Nuova partita", version: 4 },
     games: [{ id: "game-1", name: "Nuova partita" }],
     activeGameId: "game-1",
     state: {
       gameId: "game-1",
-      version: 3,
+      version: 4,
       gameName: "Nuova partita",
-      players: 1
+      players: 2
     },
     playerId: "player-1"
   });
@@ -2897,6 +2903,61 @@ register("scheduled jobs route fallisce in modo esplicito se CRON_SECRET non e c
   }
 });
 
+register("AI turn recovery service forza un turno bloccato e resta idempotente", async () => {
+  const state = createInitialState();
+  state.players = [
+    { id: "p1", name: "CPU Alpha", color: "#111111", connected: true, isAi: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  startGame(state, () => 0, new Date("2026-04-10T08:00:00.000Z"));
+
+  const first = await recoverAiTurnState(state, {
+    runAiTurnsIfNeeded: () => []
+  });
+  const second = await recoverAiTurnState(state, {
+    runAiTurnsIfNeeded: () => []
+  });
+
+  assert.equal(first.forcedTurn, true);
+  assert.equal(first.shouldPersist, true);
+  assert.equal(first.interceptedError, false);
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.lastAction.summaryKey, "game.log.aiTurnRecovered");
+  assert.equal(second.eligible, false);
+  assert.equal(second.shouldPersist, false);
+});
+
+register("AI turn recovery batch job intercetta errori e salta i version conflict", async () => {
+  const state = createInitialState();
+  state.players = [
+    { id: "p1", name: "CPU Alpha", color: "#111111", connected: true, isAi: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  startGame(state, () => 0, new Date("2026-04-10T08:00:00.000Z"));
+
+  const result = await recoverStuckAiTurns({
+    listGames: () => [
+      { id: "ai-stuck", name: "AI Stuck", version: 4, state }
+    ],
+    saveGame: () => {
+      const error = new Error("stale save");
+      (error as Error & { code?: string }).code = "VERSION_CONFLICT";
+      throw error;
+    },
+    runAiTurnsIfNeeded: () => {
+      throw new Error("boom");
+    }
+  });
+
+  assert.equal(result.scannedGames, 1);
+  assert.equal(result.eligibleGames, 1);
+  assert.equal(result.recoveryAttempts, 1);
+  assert.equal(result.interceptedErrors, 1);
+  assert.equal(result.recoveredGames, 0);
+  assert.equal(result.forcedTurns, 0);
+  assert.equal(result.skippedConflicts, 1);
+});
+
 register("turn timeout service ignora partite legacy senza timeout e turni non scaduti", async () => {
   const legacyState = createInitialState();
   legacyState.players = [
@@ -2959,6 +3020,15 @@ register("turn timeout service forza il turno scaduto una sola volta e passa al 
       return { version };
     },
     forceEndTurn,
+    recoverAiTurnState: async () => ({
+      eligible: false,
+      attempted: false,
+      advanced: false,
+      forcedTurn: false,
+      interceptedError: false,
+      shouldPersist: false,
+      reports: []
+    }),
     now: new Date("2026-04-14T08:00:00.000Z")
   });
 
@@ -2974,6 +3044,29 @@ register("turn timeout service forza il turno scaduto una sola volta e passa al 
   assert.equal(secondRun.expiredGames, 0);
   assert.equal(secondRun.forcedTurns, 0);
   assert.equal(saveCalls, 1);
+});
+
+register("scheduler entrypoint espone anche il job di recovery AI", async () => {
+  const payload = await runScheduledJobs({
+    listGames: () => [],
+    saveGame: () => ({ version: 1 }),
+    forceEndTurn,
+    recoverAiTurnState: async () => ({
+      eligible: false,
+      attempted: false,
+      advanced: false,
+      forcedTurn: false,
+      interceptedError: false,
+      shouldPersist: false,
+      reports: []
+    })
+  });
+
+  assert.equal(payload.ok, true);
+  assert.deepEqual(payload.jobs.map((job: any) => job.name), [
+    "turn-timeout-enforcement",
+    "ai-turn-recovery"
+  ]);
 });
 
 register("API games richiede autenticazione per creare una partita", async () => {
@@ -3345,6 +3438,10 @@ register("API cron scheduled jobs forza il turno scaduto e sincronizza lo stato 
       assert.equal(cronResponse.status, 200);
       const cronPayload: any = await readJson(cronResponse);
       assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
+      assert.deepEqual(cronPayload.jobs.map((job: any) => job.name), [
+        "turn-timeout-enforcement",
+        "ai-turn-recovery"
+      ]);
 
       const stateResponse = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(createdPayload.game.id)}`, {
         headers: authHeaders(owner.sessionToken)
