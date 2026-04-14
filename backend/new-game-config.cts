@@ -5,6 +5,21 @@ import {
   STANDARD_DICE_RULE_SET_ID,
   type DiceRuleSet
 } from "../shared/dice.cjs";
+import {
+  DEFAULT_CONTENT_PACK_ID,
+  findContentPack,
+  listContentPacks
+} from "../shared/content-packs.cjs";
+import {
+  findVictoryRuleSet,
+  listVictoryRuleSets,
+  STANDARD_VICTORY_RULE_SET_ID
+} from "../shared/victory-rule-sets.cjs";
+import {
+  DEFAULT_PLAYER_PIECE_SET_ID,
+  findPlayerPieceSet,
+  listPlayerPieceSets
+} from "../shared/player-piece-sets.cjs";
 import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
@@ -12,7 +27,12 @@ import { createLocalizedError, type LocalizedError } from "../shared/messages.cj
 import type { GameState } from "../shared/models.cjs";
 
 type AddPlayerResult = { ok: true } | { ok: false; error?: string; errorKey?: string; errorParams?: Record<string, unknown> };
-type CreateInitialStateFn = (selectedMap?: ReturnType<typeof findSupportedMap>) => GameState & { gameConfig?: Record<string, unknown>; diceRuleSetId: string };
+type CreateInitialStateFn = (selectedMap?: ReturnType<typeof findSupportedMap>) => GameState & {
+  gameConfig?: Record<string, unknown>;
+  diceRuleSetId: string;
+  victoryRuleSetId: string;
+  pieceSetId: string;
+};
 type AddPlayerFn = (state: GameState, name: string | null, options?: { isAi?: boolean }) => AddPlayerResult;
 
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs") as {
@@ -40,7 +60,9 @@ export const STANDARD_NEW_GAME_RULE_SET_ID = "classic";
 export const standardNewGameRuleSet = Object.freeze({
   id: STANDARD_NEW_GAME_RULE_SET_ID,
   name: "Classic",
-  defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID
+  defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID,
+  defaultVictoryRuleSetId: STANDARD_VICTORY_RULE_SET_ID,
+  defaultPieceSetId: DEFAULT_PLAYER_PIECE_SET_ID
 });
 
 export const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
@@ -48,7 +70,9 @@ export const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
 export const defenseThreeNewGameRuleSet = Object.freeze({
   id: DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
   name: "Classic Defense 3",
-  defaultDiceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID
+  defaultDiceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID,
+  defaultVictoryRuleSetId: STANDARD_VICTORY_RULE_SET_ID,
+  defaultPieceSetId: DEFAULT_PLAYER_PIECE_SET_ID
 });
 
 const newGameRuleSets = Object.freeze({
@@ -72,21 +96,27 @@ interface ValidatedPlayerSlot {
 interface NewGameConfigInput {
   name?: string;
   totalPlayers?: number;
+  contentPackId?: string;
   ruleSetId?: string;
   mapId?: string;
   diceRuleSetId?: string;
+  victoryRuleSetId?: string;
+  pieceSetId?: string;
   turnTimeoutHours?: number;
   players?: RequestedPlayerSlot[];
 }
 
 interface ValidatedNewGameConfig {
   name?: string;
+  contentPackId: string;
   ruleSetId: string;
   ruleSetName: string;
   mapId: string;
   mapName: string;
   selectedMap: NonNullable<ReturnType<typeof findSupportedMap>>;
   diceRuleSetId: string;
+  victoryRuleSetId: string;
+  pieceSetId: string;
   turnTimeoutHours: TurnTimeoutHoursValue | null;
   totalPlayers: number;
   players: ValidatedPlayerSlot[];
@@ -104,11 +134,19 @@ export function findNewGameRuleSet(ruleSetId: string | null | undefined): NewGam
   return newGameRuleSets[ruleSetId as keyof typeof newGameRuleSets] || null;
 }
 
-export function listNewGameRuleSets(): Array<{ id: string; name: string; defaultDiceRuleSetId: string }> {
+export function listNewGameRuleSets(): Array<{
+  id: string;
+  name: string;
+  defaultDiceRuleSetId: string;
+  defaultVictoryRuleSetId: string;
+  defaultPieceSetId: string;
+}> {
   return Object.values(newGameRuleSets).map((ruleSet) => ({
     id: ruleSet.id,
     name: ruleSet.name,
-    defaultDiceRuleSetId: ruleSet.defaultDiceRuleSetId
+    defaultDiceRuleSetId: ruleSet.defaultDiceRuleSetId,
+    defaultVictoryRuleSetId: ruleSet.defaultVictoryRuleSetId,
+    defaultPieceSetId: ruleSet.defaultPieceSetId
   }));
 }
 
@@ -146,13 +184,19 @@ export function validateNewGameConfig(
     throw createLocalizedError("Il numero totale di giocatori deve essere compreso tra 2 e 4.", "newGame.invalidTotalPlayers");
   }
 
+  const requestedContentPackId = String(input.contentPackId || DEFAULT_CONTENT_PACK_ID);
+  const selectedContentPack = findContentPack(requestedContentPackId);
+  if (!selectedContentPack) {
+    throw createLocalizedError("Il content pack selezionato non e supportato.", "newGame.invalidContentPack");
+  }
+
   const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
   const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
     throw createLocalizedError("Il ruleset selezionato non e supportato.", "newGame.invalidRuleSet");
   }
 
-  const mapId = String(input.mapId || "classic-mini");
+  const mapId = String(input.mapId || selectedContentPack.defaultMapId || "classic-mini");
   const selectedMap = findSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
@@ -162,6 +206,22 @@ export function validateNewGameConfig(
   const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
+  }
+
+  const requestedVictoryRuleSetId = String(
+    input.victoryRuleSetId || selectedRuleSet.defaultVictoryRuleSetId || STANDARD_VICTORY_RULE_SET_ID
+  );
+  const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
+  if (!selectedVictoryRuleSet) {
+    throw createLocalizedError("La regola vittoria selezionata non e supportata.", "newGame.invalidVictoryRuleSet");
+  }
+
+  const requestedPieceSetId = String(
+    input.pieceSetId || selectedRuleSet.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID
+  );
+  const selectedPieceSet = findPlayerPieceSet(requestedPieceSetId);
+  if (!selectedPieceSet) {
+    throw createLocalizedError("Il set pedine selezionato non e supportato.", "newGame.invalidPieceSet");
   }
 
   const turnTimeoutHours = input.turnTimeoutHours == null
@@ -203,12 +263,15 @@ export function validateNewGameConfig(
 
   return {
     name: input.name,
+    contentPackId: selectedContentPack.id,
     ruleSetId: selectedRuleSet.id,
     ruleSetName: selectedRuleSet.name,
     mapId,
     mapName: selectedMap.name,
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
+    victoryRuleSetId: selectedVictoryRuleSet.id,
+    pieceSetId: selectedPieceSet.id,
     turnTimeoutHours,
     totalPlayers,
     players
@@ -218,16 +281,30 @@ export function validateNewGameConfig(
 export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: { random?: () => number } = {}
-): { state: GameState & { gameConfig?: Record<string, unknown>; diceRuleSetId: string }; gameInput: { name: string | undefined }; config: ValidatedNewGameConfig } {
+): {
+  state: GameState & {
+    gameConfig?: Record<string, unknown>;
+    diceRuleSetId: string;
+    victoryRuleSetId: string;
+    pieceSetId: string;
+  };
+  gameInput: { name: string | undefined };
+  config: ValidatedNewGameConfig;
+} {
   const config = validateNewGameConfig(configInput, options);
   const state = createInitialState(config.selectedMap);
   state.diceRuleSetId = config.diceRuleSetId;
+  state.victoryRuleSetId = config.victoryRuleSetId;
+  state.pieceSetId = config.pieceSetId;
   state.gameConfig = {
+    contentPackId: config.contentPackId,
     ruleSetId: config.ruleSetId,
     ruleSetName: config.ruleSetName,
     mapId: config.mapId,
     mapName: config.mapName,
     diceRuleSetId: config.diceRuleSetId,
+    victoryRuleSetId: config.victoryRuleSetId,
+    pieceSetId: config.pieceSetId,
     turnTimeoutHours: config.turnTimeoutHours,
     totalPlayers: config.totalPlayers,
     players: config.players
@@ -256,7 +333,10 @@ export function createConfiguredInitialState(
 }
 
 export {
+  listContentPacks,
   listDiceRuleSets,
+  listPlayerPieceSets,
+  listVictoryRuleSets,
   listSupportedMaps,
   findSupportedMap
 };

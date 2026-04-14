@@ -1,9 +1,9 @@
+import { createModuleRegistry } from "./module-registry.cjs";
+
 export const STANDARD_DICE_RULE_SET_ID = "standard";
 export const DEFENSE_THREE_DICE_RULE_SET_ID = "defense-3";
 
-export type DiceRuleSetId =
-  | typeof STANDARD_DICE_RULE_SET_ID
-  | typeof DEFENSE_THREE_DICE_RULE_SET_ID;
+export type DiceRuleSetId = string;
 
 export interface DiceRuleSet {
   id: DiceRuleSetId;
@@ -39,25 +39,21 @@ export const defenseThreeDiceRuleSet: Readonly<DiceRuleSet> = Object.freeze({
   defenderWinsTies: true
 });
 
-const diceRuleSets: Readonly<Record<DiceRuleSetId, Readonly<DiceRuleSet>>> = Object.freeze({
-  [STANDARD_DICE_RULE_SET_ID]: standardDiceRuleSet,
-  [DEFENSE_THREE_DICE_RULE_SET_ID]: defenseThreeDiceRuleSet
-});
+const diceRuleSetRegistry = createModuleRegistry<DiceRuleSet>([
+  standardDiceRuleSet,
+  defenseThreeDiceRuleSet
+]);
 
 export function findDiceRuleSet(ruleSetId: string | null | undefined): Readonly<DiceRuleSet> | null {
-  if (!ruleSetId) {
-    return null;
-  }
-
-  return diceRuleSets[ruleSetId as DiceRuleSetId] || null;
+  return diceRuleSetRegistry.find(ruleSetId);
 }
 
 export function getDiceRuleSet(ruleSetId: string = STANDARD_DICE_RULE_SET_ID): Readonly<DiceRuleSet> {
-  return findDiceRuleSet(ruleSetId) || standardDiceRuleSet;
+  return diceRuleSetRegistry.get(ruleSetId, STANDARD_DICE_RULE_SET_ID);
 }
 
 export function listDiceRuleSets(): DiceRuleSetSummary[] {
-  return Object.values(diceRuleSets).map((ruleSet) => ({
+  return diceRuleSetRegistry.entries.map((ruleSet) => ({
     id: ruleSet.id,
     name: ruleSet.name,
     attackerMaxDice: ruleSet.attackerMaxDice,

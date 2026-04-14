@@ -13,8 +13,11 @@ type GameEntry = {
     gameConfig?: {
       players?: unknown[];
       totalPlayers?: number;
+      contentPackId?: string | null;
       mapId?: string | null;
       mapName?: string | null;
+      victoryRuleSetId?: string | null;
+      pieceSetId?: string | null;
     } | null;
     hands?: Record<string, unknown[]>;
   };

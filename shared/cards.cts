@@ -1,4 +1,5 @@
 import { createLocalizedError, createValidationFailure, type MessageParams, type ValidationFailure } from "./messages.cjs";
+import { createModuleRegistry } from "./module-registry.cjs";
 
 export const CardType = Object.freeze({
   INFANTRY: "infantry",
@@ -36,10 +37,17 @@ export type CardSetValidationResult = ValidCardSet | ValidationFailure;
 
 export interface CardRuleSet {
   id: string;
+  name: string;
   cardTypes: readonly CardTypeValue[];
   validateSet: (cards: Card[]) => CardSetValidationResult;
   tradeBonusForIndex: (tradeIndex: number) => number;
   createDeck: (territoryIds?: string[], options?: CreateDeckOptions) => Card[];
+  maxHandBeforeForcedTrade: number;
+}
+
+export interface CardRuleSetSummary {
+  id: string;
+  name: string;
   maxHandBeforeForcedTrade: number;
 }
 
@@ -141,6 +149,7 @@ export function createStandardDeck(territoryIds: string[] = [], options: CreateD
 
 export const standardCardRuleSet: Readonly<CardRuleSet> = Object.freeze({
   id: STANDARD_CARD_RULE_SET_ID,
+  name: "Standard",
   cardTypes: Object.freeze([...STANDARD_NON_WILD_TYPES, CardType.WILD]),
   validateSet: validateStandardCardSet,
   tradeBonusForIndex: standardTradeBonusForIndex,
@@ -148,10 +157,27 @@ export const standardCardRuleSet: Readonly<CardRuleSet> = Object.freeze({
   maxHandBeforeForcedTrade: STANDARD_MAX_HAND_BEFORE_FORCED_TRADE
 });
 
-export function getCardRuleSet(ruleSetId: string = STANDARD_CARD_RULE_SET_ID): Readonly<CardRuleSet> {
-  if (ruleSetId === STANDARD_CARD_RULE_SET_ID) {
-    return standardCardRuleSet;
+const cardRuleSetRegistry = createModuleRegistry<CardRuleSet>(
+  [standardCardRuleSet],
+  {
+    onMissing(ruleSetId) {
+      throw createLocalizedError("Unsupported card rule set.", "cards.unsupportedRuleSet", { ruleSetId });
+    }
   }
+);
 
-  throw createLocalizedError("Unsupported card rule set.", "cards.unsupportedRuleSet");
+export function findCardRuleSet(ruleSetId: string | null | undefined): Readonly<CardRuleSet> | null {
+  return cardRuleSetRegistry.find(ruleSetId);
+}
+
+export function getCardRuleSet(ruleSetId: string = STANDARD_CARD_RULE_SET_ID): Readonly<CardRuleSet> {
+  return cardRuleSetRegistry.get(ruleSetId, STANDARD_CARD_RULE_SET_ID);
+}
+
+export function listCardRuleSets(): CardRuleSetSummary[] {
+  return cardRuleSetRegistry.entries.map((ruleSet) => ({
+    id: ruleSet.id,
+    name: ruleSet.name,
+    maxHandBeforeForcedTrade: ruleSet.maxHandBeforeForcedTrade
+  }));
 }
