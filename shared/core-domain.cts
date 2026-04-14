@@ -57,6 +57,7 @@ export interface GameState {
   diceRuleSetId: string;
   combatRuleSetId: string;
   reinforcementRuleSetId: string;
+  fortifyRuleSetId: string;
   mapId: string;
   contentPackId: string;
   mapName: string | null;
@@ -130,6 +131,7 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     diceRuleSetId: input.diceRuleSetId || "standard",
     combatRuleSetId: input.combatRuleSetId || "standard",
     reinforcementRuleSetId: input.reinforcementRuleSetId || "standard",
+    fortifyRuleSetId: input.fortifyRuleSetId || "standard",
     mapId: input.mapId || "classic-mini",
     contentPackId: input.contentPackId || "core",
     mapName: input.mapName || null,

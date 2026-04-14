@@ -204,6 +204,8 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `listCombatRuleSets`
 - `getReinforcementRuleSet`
 - `listReinforcementRuleSets`
+- `getFortifyRuleSet`
+- `listFortifyRuleSets`
 - `getCardRuleSet`
 - `validateStandardCardSet`
 - `getVictoryRuleSet`
@@ -224,6 +226,7 @@ Game state notably contains:
 - reinforcement pool
 - optional winner
 - active victory ruleset
+- active fortify ruleset
 - active player piece set
 - action log
 - optional pending conquest

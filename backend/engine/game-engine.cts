@@ -10,6 +10,7 @@ import {
   getCombatRuleSet,
   getCardRuleSet,
   getDiceRuleSet,
+  getFortifyRuleSet,
   getPlayerPieceSet,
   type ActionFailure,
   type Card,
@@ -116,6 +117,7 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     contentPackId: "core",
     combatRuleSetId: "standard",
     reinforcementRuleSetId: "standard",
+    fortifyRuleSetId: "standard",
     mapName: sourceMap && sourceMap.name ? sourceMap.name : "Classic Mini",
     mapTerritories,
     mapPositions: sourceMap && sourceMap.positions ? sourceMap.positions : {},
@@ -814,6 +816,7 @@ export function applyFortify(
   toId: string,
   armiesToMove: number
 ): BasicResult {
+  const fortifyRuleSet = getFortifyRuleSet(state.fortifyRuleSetId || "standard");
   const player = getPlayer(state, playerId);
   const from = state.territories[fromId];
   const to = state.territories[toId];
@@ -834,7 +837,7 @@ export function applyFortify(
     return createActionFailure("Puoi fortificare solo nella fase di fortifica.", "game.fortify.phaseOnly");
   }
 
-  if (state.fortifyUsed) {
+  if (fortifyRuleSet.enforceSingleMovePerTurn && state.fortifyUsed) {
     return createActionFailure("Hai gia usato la fortifica in questo turno.", "game.fortify.alreadyUsed");
   }
 
@@ -846,9 +849,11 @@ export function applyFortify(
     return createActionFailure("Puoi spostare armate solo tra tuoi territori.", "game.fortify.mustOwnTerritories");
   }
 
-  const territory = getMapTerritories(state).find((item) => item.id === fromId);
-  if (!territory || territory.neighbors.indexOf(toId) === -1) {
-    return createActionFailure("Puoi fortificare solo tra territori adiacenti.", "game.fortify.notAdjacent");
+  if (fortifyRuleSet.requiresAdjacency) {
+    const territory = getMapTerritories(state).find((item) => item.id === fromId);
+    if (!territory || territory.neighbors.indexOf(toId) === -1) {
+      return createActionFailure("Puoi fortificare solo tra territori adiacenti.", "game.fortify.notAdjacent");
+    }
   }
 
   const moveCount = Number(armiesToMove);
@@ -856,13 +861,15 @@ export function applyFortify(
     return createActionFailure("Inserisci almeno 1 armata da spostare.", "game.fortify.invalidArmyCount");
   }
 
-  if (from.armies - moveCount < 1) {
+  if (fortifyRuleSet.requireLeaveOneBehind && from.armies - moveCount < 1) {
     return createActionFailure("Devi lasciare almeno 1 armata nel territorio di partenza.", "game.fortify.leaveOneBehind");
   }
 
   from.armies -= moveCount;
   to.armies += moveCount;
-  state.fortifyUsed = true;
+  if (fortifyRuleSet.enforceSingleMovePerTurn) {
+    state.fortifyUsed = true;
+  }
   state.lastAction = {
     type: "fortify",
     summary: player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".",

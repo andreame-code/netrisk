@@ -49,7 +49,17 @@ export function findDiceRuleSet(ruleSetId: string | null | undefined): Readonly<
 }
 
 export function getDiceRuleSet(ruleSetId: string = STANDARD_DICE_RULE_SET_ID): Readonly<DiceRuleSet> {
-  return diceRuleSetRegistry.get(ruleSetId, STANDARD_DICE_RULE_SET_ID);
+  const resolvedRuleSet = diceRuleSetRegistry.find(ruleSetId);
+
+  if (!resolvedRuleSet || resolvedRuleSet.id === STANDARD_DICE_RULE_SET_ID) {
+    return standardDiceRuleSet;
+  }
+
+  if (resolvedRuleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID) {
+    return defenseThreeDiceRuleSet;
+  }
+
+  return resolvedRuleSet;
 }
 
 export function listDiceRuleSets(): DiceRuleSetSummary[] {
