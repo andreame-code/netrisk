@@ -2643,7 +2643,11 @@ register("publicState espone modelli condivisi e stato corrente", () => {
   assert.equal(snapshot.turnPhase, "attack");
   assert.equal(Array.isArray(snapshot.continents), true);
   assert.equal(snapshot.currentPlayerId, first.id);
-  assert.equal(snapshot.gameConfig, null);
+  assert.equal(snapshot.gameConfig?.mapId, "classic-mini");
+  assert.equal(snapshot.gameConfig?.diceRuleSetId, "standard");
+  assert.equal(snapshot.gameConfig?.victoryRuleSetId, "conquest");
+  assert.equal(snapshot.gameConfig?.themeId, "command");
+  assert.equal(snapshot.gameConfig?.pieceSkinId, "classic-color");
 });
 
 register("publicState espone anche i metadati configurazione partita", () => {
