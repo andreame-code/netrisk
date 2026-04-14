@@ -7,13 +7,14 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
-const { createConfiguredInitialState, listDiceRuleSets, listNewGameRuleSets, listSupportedMaps } = require("./new-game-config.cjs");
+const { createConfiguredInitialState, listDiceRuleSets, listNewGameRuleSets, listSupportedMaps, listTurnTimeoutHoursOptions } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
 const {
   addPlayer,
   createInitialState,
+  forceEndTurn,
   getCurrentPlayer,
   getPlayer,
   publicState,
@@ -21,6 +22,7 @@ const {
   tradeCardSet
 } = require("./engine/game-engine.cjs");
 const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
+const { runScheduledJobs } = require("./scheduler/index.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { broadcastEventPayload } = require("./event-broadcast.cjs");
@@ -33,6 +35,7 @@ const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs"
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
+const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 
 type Request = import("http").IncomingMessage;
 type Response = import("http").ServerResponse;
@@ -563,7 +566,40 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/game-options") {
-      handleGameOptionsRoute(res, listNewGameRuleSets, listSupportedMaps, listDiceRuleSets, sendJson);
+      handleGameOptionsRoute(res, listNewGameRuleSets, listSupportedMaps, listDiceRuleSets, listTurnTimeoutHoursOptions, sendJson);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/cron/scheduled-jobs") {
+      await handleScheduledJobsRoute(
+        req,
+        res,
+        () => runScheduledJobs({
+          listGames: () => gameSessions.datastore.listGames(),
+          saveGame: (gameId: string, nextState: Record<string, unknown>, expectedVersion?: number | null) =>
+            gameSessions.saveGame(gameId, nextState, expectedVersion),
+          forceEndTurn,
+          runAiTurnsIfNeeded: (nextState: Record<string, unknown>) => runAiTurnsIfNeeded(nextState),
+          afterSave: ({ gameId, gameName, state: nextState, version }: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => {
+            if (gameId === activeGameId) {
+              activeGameVersion = version;
+              activeGameName = gameName;
+              if (nextState !== state) {
+                replaceState(nextState);
+              }
+            }
+
+            broadcastGame({
+              gameId,
+              gameName,
+              version,
+              state: nextState
+            });
+          }
+        }),
+        sendJson,
+        sendLocalizedError
+      );
       return;
     }
 

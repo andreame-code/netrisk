@@ -14,6 +14,7 @@ const {
   computeReinforcements,
   createInitialState,
   endTurn,
+  forceEndTurn,
   getMapTerritories,
   moveAfterConquest,
   publicState,
@@ -44,8 +45,11 @@ const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-
 const {
   DEFENSE_THREE_NEW_GAME_RULE_SET_ID,
   createConfiguredInitialState,
+  listTurnTimeoutHoursOptions,
   validateNewGameConfig
 } = require("../backend/new-game-config.cjs");
+const { handleScheduledJobsRoute } = require("../backend/routes/scheduled-jobs.cjs");
+const { enforceTurnTimeouts } = require("../backend/services/turn-timeout-enforcement.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
@@ -653,11 +657,12 @@ register("required runtime env valida solo preview e production su Vercel", () =
   assert.deepEqual(
     missingRequiredDeployEnv({
       AUTH_ENCRYPTION_KEY: "enc",
+      CRON_SECRET: "",
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "",
       DATASTORE_DRIVER: "supabase"
     }),
-    ["SUPABASE_SERVICE_ROLE_KEY"]
+    ["CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"]
   );
 });
 
@@ -2713,6 +2718,18 @@ register("createConfiguredInitialState usa la mappa shared selezionata", () => {
   assert.equal(state.gameConfig.mapId, "classic-mini");
 });
 
+register("createConfiguredInitialState persiste il turn timeout selezionato", () => {
+  const { state, config } = createConfiguredInitialState({
+    mapId: "classic-mini",
+    turnTimeoutHours: 48,
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai" }]
+  });
+
+  assert.equal(config.turnTimeoutHours, 48);
+  assert.equal(state.gameConfig.turnTimeoutHours, 48);
+});
+
 register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
   const defaultConfig = validateNewGameConfig({
     mapId: "classic-mini",
@@ -2746,6 +2763,30 @@ register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
       players: [{ type: "human" }, { type: "human" }]
     });
   }, /regola dadi selezionata non e supportata/i);
+});
+
+register("validateNewGameConfig accetta solo 24, 48 o 72 ore per il timeout turno", () => {
+  assert.equal(validateNewGameConfig({
+    mapId: "classic-mini",
+    turnTimeoutHours: 24,
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "human" }]
+  }).turnTimeoutHours, 24);
+
+  assert.equal(validateNewGameConfig({
+    mapId: "classic-mini",
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "human" }]
+  }).turnTimeoutHours, null);
+
+  assert.throws(() => {
+    validateNewGameConfig({
+      mapId: "classic-mini",
+      turnTimeoutHours: 12,
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    });
+  }, /limite tempo turno selezionato non e supportato/i);
 });
 
 register("validateNewGameConfig assegna i nomi AI dal server e ignora quelli umani", () => {
@@ -2784,6 +2825,126 @@ register("validateNewGameConfig rifiuta player 1 come AI", () => {
       ]
     });
   }, /giocatore 1 deve essere sempre il creatore umano/i);
+});
+
+register("scheduled jobs route richiede un bearer token valido", async () => {
+  const previousSecret = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "test-cron-secret";
+
+  try {
+    const unauthorizedResponse = makeMockResponse();
+    let executed = false;
+    await handleScheduledJobsRoute(
+      { headers: {} },
+      unauthorizedResponse,
+      async () => {
+        executed = true;
+        return { ok: true, jobs: [] };
+      },
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(unauthorizedResponse.statusCode, 401);
+    assert.equal(executed, false);
+
+    const authorizedResponse = makeMockResponse();
+    await handleScheduledJobsRoute(
+      { headers: { authorization: "Bearer test-cron-secret" } },
+      authorizedResponse,
+      async () => ({ ok: true, jobs: [] }),
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(authorizedResponse.statusCode, 200);
+    assert.deepEqual(JSON.parse(authorizedResponse.body), { ok: true, jobs: [] });
+  } finally {
+    if (previousSecret == null) {
+      delete process.env.CRON_SECRET;
+    } else {
+      process.env.CRON_SECRET = previousSecret;
+    }
+  }
+});
+
+register("turn timeout service ignora partite legacy senza timeout e turni non scaduti", async () => {
+  const legacyState = createInitialState();
+  legacyState.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  startGame(legacyState, () => 0);
+  legacyState.gameConfig = { mapId: "classic-mini" };
+  legacyState.turnStartedAt = new Date("2026-04-10T08:00:00.000Z").toISOString();
+
+  const freshState = createInitialState();
+  freshState.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  startGame(freshState, () => 0);
+  freshState.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
+  freshState.turnStartedAt = new Date("2026-04-13T12:30:00.000Z").toISOString();
+
+  let saveCalls = 0;
+  const result = await enforceTurnTimeouts({
+    listGames: () => [
+      { id: "legacy", name: "Legacy", version: 1, state: legacyState },
+      { id: "fresh", name: "Fresh", version: 1, state: freshState }
+    ],
+    saveGame: () => {
+      saveCalls += 1;
+      return { version: 2 };
+    },
+    forceEndTurn,
+    now: new Date("2026-04-14T08:00:00.000Z")
+  });
+
+  assert.equal(result.scannedGames, 2);
+  assert.equal(result.expiredGames, 0);
+  assert.equal(result.forcedTurns, 0);
+  assert.equal(saveCalls, 0);
+});
+
+register("turn timeout service forza il turno scaduto una sola volta e passa al giocatore successivo", async () => {
+  const state = createInitialState();
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  state.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
+  startGame(state, () => 0);
+  state.turnStartedAt = new Date("2026-04-12T07:00:00.000Z").toISOString();
+
+  let version = 1;
+  let saveCalls = 0;
+  const runJob = () => enforceTurnTimeouts({
+    listGames: () => [
+      { id: "timeout-game", name: "Timeout", version, state }
+    ],
+    saveGame: (_gameId: string, _state: Record<string, unknown>, expectedVersion?: number | null) => {
+      assert.equal(expectedVersion, version);
+      saveCalls += 1;
+      version += 1;
+      return { version };
+    },
+    forceEndTurn,
+    now: new Date("2026-04-14T08:00:00.000Z")
+  });
+
+  const firstRun = await runJob();
+  assert.equal(firstRun.expiredGames, 1);
+  assert.equal(firstRun.forcedTurns, 1);
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.turnPhase, "reinforcement");
+  assert.equal(state.lastAction.summaryKey, "game.log.turnTimedOut");
+  assert.equal(state.turnStartedAt, "2026-04-14T08:00:00.000Z");
+
+  const secondRun = await runJob();
+  assert.equal(secondRun.expiredGames, 0);
+  assert.equal(secondRun.forcedTurns, 0);
+  assert.equal(saveCalls, 1);
 });
 
 register("API games richiede autenticazione per creare una partita", async () => {
@@ -3043,6 +3204,7 @@ register("API game options espone setup base per nuova partita", async () => {
     assert.equal(Array.isArray(payload.diceRuleSets), true);
     assert.equal(payload.diceRuleSets[0].id, "standard");
     assert.equal(payload.diceRuleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID), true);
+    assert.deepEqual(payload.turnTimeoutHoursOptions, listTurnTimeoutHoursOptions());
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
   });
@@ -3059,6 +3221,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
         name: "Scenario AI",
         mapId: "classic-mini",
         diceRuleSetId: "standard",
+        turnTimeoutHours: 72,
         totalPlayers: 3,
         players: [
           { type: "human" },
@@ -3071,7 +3234,9 @@ register("API games crea una sessione da configurazione strutturata", async () =
     const payload: any = await readJson(response);
     assert.equal(payload.game.name, "Scenario AI");
     assert.equal(payload.config.diceRuleSetId, "standard");
+    assert.equal(payload.config.turnTimeoutHours, 72);
     assert.equal(payload.state.gameConfig.diceRuleSetId, "standard");
+    assert.equal(payload.state.gameConfig.turnTimeoutHours, 72);
     assert.equal(payload.config.totalPlayers, 3);
     assert.equal(payload.config.players[0].name, null);
     assert.equal(payload.config.players[1].type, "ai");
@@ -3081,6 +3246,92 @@ register("API games crea una sessione da configurazione strutturata", async () =
     assert.equal(payload.state.players.some((player: any) => player.id === payload.playerId && player.name === session.user.username && player.isAi === false), true);
     assert.equal(payload.state.players.filter((player: any) => player.isAi).length, 2);
   });
+});
+
+register("API cron scheduled jobs forza il turno scaduto e sincronizza lo stato attivo", async () => {
+  const previousSecret = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "integration-cron-secret";
+
+  try {
+    await withServer(async (baseUrl, context) => {
+      const owner = await createAuthenticatedSession(baseUrl, uniqueName("cron_owner"));
+      const opponent = await createAuthenticatedSession(baseUrl, uniqueName("cron_opp"));
+      const created = await fetch(baseUrl + "/api/games", {
+        method: "POST",
+        headers: authHeaders(owner.sessionToken),
+        body: JSON.stringify({
+          name: "Cron Timeout Match",
+          turnTimeoutHours: 24,
+          totalPlayers: 2,
+          players: [
+            { type: "human" },
+            { type: "human" }
+          ]
+        })
+      });
+      assert.equal(created.status, 201);
+      const createdPayload: any = await readJson(created);
+
+      const ownerJoin = await fetch(baseUrl + "/api/join", {
+        method: "POST",
+        headers: authHeaders(owner.sessionToken),
+        body: JSON.stringify({ sessionToken: owner.sessionToken, gameId: createdPayload.game.id })
+      });
+      assert.equal(ownerJoin.status, 200);
+      const ownerJoinPayload: any = await readJson(ownerJoin);
+
+      const opponentJoin = await fetch(baseUrl + "/api/join", {
+        method: "POST",
+        headers: authHeaders(opponent.sessionToken),
+        body: JSON.stringify({ sessionToken: opponent.sessionToken, gameId: createdPayload.game.id })
+      });
+      assert.equal(opponentJoin.status, 201);
+      const opponentJoinPayload: any = await readJson(opponentJoin);
+
+      const startResponse = await fetch(baseUrl + "/api/start", {
+        method: "POST",
+        headers: authHeaders(owner.sessionToken),
+        body: JSON.stringify({
+          sessionToken: owner.sessionToken,
+          gameId: createdPayload.game.id,
+          playerId: ownerJoinPayload.playerId
+        })
+      });
+      assert.equal(startResponse.status, 200);
+
+      const storedGame = await context.app.datastore.findGameById(createdPayload.game.id);
+      storedGame.state.gameConfig = {
+        ...(storedGame.state.gameConfig || {}),
+        turnTimeoutHours: 24
+      };
+      storedGame.state.turnStartedAt = "2000-01-01T00:00:00.000Z";
+      storedGame.updatedAt = new Date().toISOString();
+      await context.app.datastore.updateGame(storedGame);
+
+      const cronResponse = await fetch(baseUrl + "/api/cron/scheduled-jobs", {
+        headers: {
+          authorization: "Bearer integration-cron-secret"
+        }
+      });
+      assert.equal(cronResponse.status, 200);
+      const cronPayload: any = await readJson(cronResponse);
+      assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
+
+      const stateResponse = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(createdPayload.game.id)}`, {
+        headers: authHeaders(owner.sessionToken)
+      });
+      assert.equal(stateResponse.status, 200);
+      const statePayload: any = await readJson(stateResponse);
+      assert.equal(statePayload.currentPlayerId, opponentJoinPayload.playerId);
+      assert.equal(statePayload.turnPhase, "reinforcement");
+    });
+  } finally {
+    if (previousSecret == null) {
+      delete process.env.CRON_SECRET;
+    } else {
+      process.env.CRON_SECRET = previousSecret;
+    }
+  }
 });
 
 register("API games summary espone metadati configurazione", async () => {

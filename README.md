@@ -12,7 +12,7 @@ Today the project includes:
 
 - user registration, login, logout, and profile
 - initial lobby and reopening saved games
-- creation of a new game with supported map and selectable dice ruleset
+- creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
 - 2 to 4 player setup with mandatory first human slot
 - game start and initial territory assignment
@@ -79,6 +79,16 @@ The example configuration in `.env.example` is intended for a Supabase/Vercel en
 DATASTORE_DRIVER=sqlite
 PORT=3000
 ```
+
+## Scheduled jobs
+
+Production deployments on Vercel execute scheduled checks through `vercel.json`:
+
+- path: `/api/cron/scheduled-jobs`
+- schedule: hourly (`0 * * * *`)
+
+The endpoint is protected with `Authorization: Bearer ${CRON_SECRET}` and is intended for Vercel Cron invocations.
+The current scheduled job enforces configured turn time limits for active games and is structured so additional jobs can be added under the same scheduler entrypoint.
 
 ## Useful commands
 

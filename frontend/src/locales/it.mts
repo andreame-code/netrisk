@@ -197,6 +197,8 @@ export const it = Object.freeze({
   "newGame.options.customizeLabel": "Personalizza opzioni",
   "newGame.dice.label": "Dadi",
   "newGame.totalPlayers.label": "Giocatori totali",
+  "newGame.turnTimeout.label": "Limite tempo turno",
+  "newGame.turnTimeout.option": "{hours} ore",
   "newGame.playerSlots.heading": "Slot giocatori",
   "newGame.playerSlots.copy": "Il primo posto e sempre tuo; gli altri definiscono chi arrivera in lobby e chi nascera come AI.",
   "newGame.playerSlots.badge": "Human / AI",
@@ -217,6 +219,7 @@ export const it = Object.freeze({
   "newGame.errors.invalidSession": "Sessione non valida.",
   "newGame.errors.loadOptions": "Impossibile caricare le opzioni di creazione.",
   "newGame.invalidRuleSet": "Il ruleset selezionato non e supportato.",
+  "newGame.invalidTurnTimeoutHours": "Il limite tempo turno selezionato non e supportato.",
   "profile.title": "Frontline Dominion - Profilo",
   "profile.eyebrow": "Command Dossier",
   "profile.heading": "Comandante",
@@ -450,6 +453,7 @@ export const it = Object.freeze({
   ,"game.log.aiOnlyRemain": "La partita si chiude: restano attive solo AI."
   ,"game.log.victoryDeclared": "{playerName} conquista la mappa e vince la partita."
   ,"game.log.turnStarted": "Nuovo turno: {playerName} riceve {reinforcementPool} rinforzi."
+  ,"game.log.turnTimedOut": "{playerName} supera il limite tempo turno e il turno viene forzato automaticamente."
   ,"game.log.playerRejoined": "{playerName} si ricollega alla lobby."
   ,"game.log.playerJoined": "{playerName} entra nella lobby."
   ,"game.log.reinforced": "{playerName} aggiunge {reinforcementAmount} truppe a {territoryId}. Rinforzi rimasti: {reinforcementPool}."

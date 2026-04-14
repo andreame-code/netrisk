@@ -63,6 +63,7 @@ export type GameOptionsResponse = MessagePayload & {
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
   diceRuleSets: DiceRuleSet[];
+  turnTimeoutHoursOptions: number[];
 };
 
 export type PlayerSlotConfig = {
@@ -73,6 +74,7 @@ export type PlayerSlotConfig = {
 export type GameConfigSummary = {
   mapName?: string | null;
   mapId?: string | null;
+  turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<{ type: string }>;
 };

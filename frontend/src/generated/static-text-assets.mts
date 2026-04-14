@@ -675,6 +675,10 @@ export const staticHtmlAssets = {
                   <option value="4">4</option>
                 </select>
               </label>
+              <label class="field-stack">
+                <span data-i18n="newGame.turnTimeout.label">Turn time limit</span>
+                <select id="setup-turn-timeout-hours"></select>
+              </label>
             </section>
 
             <section class="new-game-panel">

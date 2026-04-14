@@ -50,6 +50,7 @@ export interface MapPosition {
 export interface GameState {
   phase: string;
   turnPhase: TurnPhaseValue;
+  turnStartedAt: string | null;
   players: Player[];
   territories: Record<string, TerritoryState>;
   continents: Continent[];
@@ -117,6 +118,7 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
   return {
     phase: input.phase || "lobby",
     turnPhase: input.turnPhase || TurnPhase.LOBBY,
+    turnStartedAt: typeof input.turnStartedAt === "string" ? input.turnStartedAt : null,
     players: input.players || [],
     territories: input.territories || {},
     continents: input.continents || [],

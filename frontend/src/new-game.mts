@@ -14,6 +14,7 @@ const state: {
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
   diceRuleSets: DiceRuleSet[];
+  turnTimeoutHoursOptions: number[];
   user: PublicUser | null;
   creating: boolean;
   sessionReady: boolean;
@@ -21,6 +22,7 @@ const state: {
   ruleSets: [],
   maps: [],
   diceRuleSets: [],
+  turnTimeoutHoursOptions: [],
   user: null,
   creating: false,
   sessionReady: false
@@ -43,6 +45,7 @@ const elements = {
   customizeOptions: byId("setup-customize-options") as HTMLInputElement,
   advancedOptions: byId("setup-advanced-options"),
   diceRuleSet: byId("setup-dice-ruleset") as HTMLSelectElement,
+  turnTimeoutHours: byId("setup-turn-timeout-hours") as HTMLSelectElement,
   playerSlots: byId("setup-player-slots"),
   submit: byId("submit-new-game") as HTMLButtonElement,
   totalPlayers: byId("setup-total-players") as HTMLSelectElement
@@ -209,6 +212,7 @@ function readConfig() {
     ruleSetId: elements.ruleSet.value,
     mapId: elements.map.value,
     ...(elements.customizeOptions.checked ? { diceRuleSetId: elements.diceRuleSet.value } : {}),
+    ...(elements.turnTimeoutHours.value ? { turnTimeoutHours: Number(elements.turnTimeoutHours.value) } : {}),
     totalPlayers,
     players
   };
@@ -237,9 +241,13 @@ async function loadOptions() {
   state.maps = data.maps || [];
   state.ruleSets = data.ruleSets || [];
   state.diceRuleSets = data.diceRuleSets || [];
+  state.turnTimeoutHoursOptions = Array.isArray(data.turnTimeoutHoursOptions) ? data.turnTimeoutHoursOptions : [];
   setMarkup(elements.ruleSet, state.ruleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + ruleSet.name + '</option>').join(""));
   setMarkup(elements.map, state.maps.map((map) => '<option value="' + map.id + '">' + map.name + '</option>').join(""));
   setMarkup(elements.diceRuleSet, state.diceRuleSets.map((ruleSet) => '<option value="' + ruleSet.id + '">' + diceRuleSetLabel(ruleSet) + '</option>').join(""));
+  setMarkup(elements.turnTimeoutHours, state.turnTimeoutHoursOptions.map((hours) =>
+    '<option value="' + hours + '">' + t("newGame.turnTimeout.option", { hours }) + '</option>'
+  ).join(""));
   syncRuleSetDefaults();
   renderRuleSetSummary();
   renderMapDetails();
