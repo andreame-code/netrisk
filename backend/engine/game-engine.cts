@@ -10,6 +10,7 @@ import {
   createStandardDeck,
   getCardRuleSet,
   getDiceRuleSet,
+  getPieceSkin,
   migrateGameConfigExtensions,
   migrateGameStateExtensions,
   standardTradeBonusForIndex,
@@ -376,7 +377,8 @@ export function publicState(state: EngineState) {
     gameConfig: state.gameConfig
       ? {
           ...state.gameConfig,
-          mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null)
+          mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null),
+          pieceSkin: getPieceSkin(typeof state.gameConfig.pieceSkinId === "string" ? state.gameConfig.pieceSkinId : undefined)
         }
       : null,
     log: state.log,

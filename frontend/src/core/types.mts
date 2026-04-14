@@ -30,6 +30,7 @@ export type PieceSkin = {
   id: string;
   name: string;
   description: string;
+  renderStyleId: string;
   usesPlayerColor: boolean;
   assetBaseUrl?: string | null;
 };
@@ -111,6 +112,7 @@ export type GameConfigSummary = {
   victoryRuleSetId?: string | null;
   themeId?: string | null;
   pieceSkinId?: string | null;
+  pieceSkin?: PieceSkin | null;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<{ type: string }>;

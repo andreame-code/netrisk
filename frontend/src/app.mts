@@ -390,18 +390,18 @@ function textColorForBackground(color: string | null | undefined): string {
   return luminance >= 150 ? "#2c1f14" : "#fffaf0";
 }
 
-function pieceSkinIdForSnapshot(snapshot: GameSnapshot | null | undefined): string {
-  const pieceSkinId = snapshot?.gameConfig?.pieceSkinId;
-  return typeof pieceSkinId === "string" && pieceSkinId
-    ? pieceSkinId
-    : "classic-color";
+function pieceSkinRenderStyleForSnapshot(snapshot: GameSnapshot | null | undefined): string {
+  const renderStyleId = snapshot?.gameConfig?.pieceSkin?.renderStyleId;
+  return typeof renderStyleId === "string" && renderStyleId
+    ? renderStyleId
+    : "solid-fill";
 }
 
-function pieceSkinClassName(pieceSkinId: string | null | undefined): string {
-  const normalized = typeof pieceSkinId === "string" && pieceSkinId
-    ? pieceSkinId
-    : "classic-color";
-  return `piece-skin-${normalized.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
+function pieceSkinClassName(renderStyleId: string | null | undefined): string {
+  const normalized = typeof renderStyleId === "string" && renderStyleId
+    ? renderStyleId
+    : "solid-fill";
+  return `piece-skin-style-${normalized.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
 }
 
 function territoryById(territoryId: string | null | undefined): SnapshotTerritory | null {
@@ -841,7 +841,7 @@ function renderGameSessionBrowser() {
 function buildGraphMarkup(snapshot: GameSnapshot): string {
   const renderedLinks = new Set();
   const links: string[] = [];
-  const pieceSkinClass = pieceSkinClassName(pieceSkinIdForSnapshot(snapshot));
+  const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
 
   snapshot.map.forEach((territory) => {
     territory.neighbors.forEach((neighborId) => {
@@ -946,6 +946,7 @@ function currentRenderedMapSignature(snapshot: GameSnapshot | null): string {
     Number.isInteger(snapshot.version) ? snapshot.version : "",
     state.playerId || "",
     snapshot.mapId || "",
+    snapshot.gameConfig?.pieceSkin?.renderStyleId || "",
     snapshot.gameConfig?.pieceSkinId || "",
     snapshot.mapVisual?.imageUrl || "",
     snapshot.mapVisual?.aspectRatio?.width || "",
@@ -1284,7 +1285,7 @@ function renderStatusSummarySection(context: RenderContext): void {
 }
 
 function renderPlayersSection(context: RenderContext): void {
-  const pieceSkinClass = pieceSkinClassName(pieceSkinIdForSnapshot(context.snapshot));
+  const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(context.snapshot));
   const signature = createSignature([
     pieceSkinClass,
     (context.snapshot?.players || []).map((player) => [

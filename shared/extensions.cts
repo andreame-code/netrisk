@@ -28,6 +28,7 @@ export interface PieceSkin {
   id: string;
   name: string;
   description: string;
+  renderStyleId: string;
   usesPlayerColor: boolean;
   assetBaseUrl?: string | null;
 }
@@ -106,6 +107,7 @@ const pieceSkins = Object.freeze<Record<string, Readonly<PieceSkin>>>({
     id: DEFAULT_PIECE_SKIN_ID,
     name: "Classic Color",
     description: "Uses each player's command color for board markers and tokens.",
+    renderStyleId: "solid-fill",
     usesPlayerColor: true,
     assetBaseUrl: null
   }),
@@ -113,6 +115,7 @@ const pieceSkins = Object.freeze<Record<string, Readonly<PieceSkin>>>({
     id: "command-ring",
     name: "Command Ring",
     description: "Renders territory markers as command rings with a tactical core and player-color accents.",
+    renderStyleId: "ring-core",
     usesPlayerColor: true,
     assetBaseUrl: null
   })
