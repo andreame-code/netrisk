@@ -36,6 +36,27 @@ type AiTurnSnapshot = {
   pendingConquestKey: string | null;
 };
 
+type AiTurnRecoveryLogContext = {
+  gameId?: string | null;
+  gameName?: string | null;
+  version?: number | null;
+  source?: "read" | "scheduler" | "mutation" | "unknown";
+};
+
+type AiTurnRecoveryLogger = (payload: {
+  event: "ai_turn_recovery";
+  gameId: string | null;
+  gameName: string | null;
+  version: number | null;
+  source: "read" | "scheduler" | "mutation" | "unknown";
+  playerId: string;
+  forcedTurn: boolean;
+  interceptedError: boolean;
+  reportsCount: number;
+  turnPhaseBefore: string | null;
+  turnStartedAtBefore: string | null;
+}) => void;
+
 export interface RecoverAiTurnStateResult {
   eligible: boolean;
   attempted: boolean;
@@ -54,6 +75,35 @@ export interface AiTurnRecoveryJobResult {
   forcedTurns: number;
   interceptedErrors: number;
   skippedConflicts: number;
+}
+
+function logAiRecoveryEvent(
+  logger: AiTurnRecoveryLogger | undefined,
+  context: AiTurnRecoveryLogContext | undefined,
+  snapshotBefore: AiTurnSnapshot,
+  result: Pick<RecoverAiTurnStateResult, "forcedTurn" | "interceptedError" | "reports">
+): void {
+  if (typeof logger !== "function") {
+    return;
+  }
+
+  if (!result.forcedTurn && !result.interceptedError) {
+    return;
+  }
+
+  logger({
+    event: "ai_turn_recovery",
+    gameId: context?.gameId || null,
+    gameName: context?.gameName || null,
+    version: context?.version ?? null,
+    source: context?.source || "unknown",
+    playerId: snapshotBefore.currentPlayerId,
+    forcedTurn: result.forcedTurn,
+    interceptedError: result.interceptedError,
+    reportsCount: Array.isArray(result.reports) ? result.reports.length : 0,
+    turnPhaseBefore: snapshotBefore.turnPhase,
+    turnStartedAtBefore: snapshotBefore.turnStartedAt
+  });
 }
 
 function pendingConquestKey(state: RecoverableAiState): string | null {
@@ -109,6 +159,8 @@ export async function recoverAiTurnState(
     now?: Date;
     forceEndTurn?: typeof forceEndTurn;
     runAiTurnsIfNeeded?: typeof runAiTurnsIfNeeded;
+    logger?: AiTurnRecoveryLogger;
+    context?: AiTurnRecoveryLogContext;
   } = {}
 ): Promise<RecoverAiTurnStateResult> {
   const snapshotBefore = captureAiTurnSnapshot(state as RecoverableAiState);
@@ -141,7 +193,7 @@ export async function recoverAiTurnState(
   const advanced = !snapshotAfter || !sameAiTurnSnapshot(snapshotBefore, snapshotAfter);
 
   if (advanced) {
-    return {
+    const result = {
       eligible: true,
       attempted: true,
       advanced: true,
@@ -150,11 +202,13 @@ export async function recoverAiTurnState(
       shouldPersist: interceptedError || reports.length > 0 || !sameAiTurnSnapshot(snapshotBefore, snapshotAfter),
       reports
     };
+    logAiRecoveryEvent(options.logger, options.context, snapshotBefore, result);
+    return result;
   }
 
   const currentPlayer = getCurrentPlayer(state as unknown as Parameters<typeof getCurrentPlayer>[0]);
   if (!currentPlayer?.id || currentPlayer.id !== snapshotBefore.currentPlayerId) {
-    return {
+    const result = {
       eligible: true,
       attempted: true,
       advanced: true,
@@ -163,6 +217,8 @@ export async function recoverAiTurnState(
       shouldPersist: interceptedError || reports.length > 0,
       reports
     };
+    logAiRecoveryEvent(options.logger, options.context, snapshotBefore, result);
+    return result;
   }
 
   const forcedResult = executeForceEndTurn(state as unknown as EngineState, snapshotBefore.currentPlayerId, {
@@ -174,7 +230,7 @@ export async function recoverAiTurnState(
     throw new Error((forcedResult as { message?: string }).message || "Impossibile forzare il turno AI bloccato.");
   }
 
-  return {
+  const result = {
     eligible: true,
     attempted: true,
     advanced: true,
@@ -183,6 +239,8 @@ export async function recoverAiTurnState(
     shouldPersist: true,
     reports
   };
+  logAiRecoveryEvent(options.logger, options.context, snapshotBefore, result);
+  return result;
 }
 
 export async function recoverStuckAiTurns(
@@ -193,6 +251,7 @@ export async function recoverStuckAiTurns(
     now?: Date;
     forceEndTurn?: typeof forceEndTurn;
     runAiTurnsIfNeeded?: typeof runAiTurnsIfNeeded;
+    logger?: AiTurnRecoveryLogger;
   }
 ): Promise<AiTurnRecoveryJobResult> {
   const entries = await options.listGames();
@@ -217,7 +276,14 @@ export async function recoverStuckAiTurns(
     const recovery = await recoverAiTurnState(entry.state, {
       now: options.now,
       forceEndTurn: options.forceEndTurn,
-      runAiTurnsIfNeeded: options.runAiTurnsIfNeeded
+      runAiTurnsIfNeeded: options.runAiTurnsIfNeeded,
+      logger: options.logger,
+      context: {
+        gameId: entry.id,
+        gameName: entry.name,
+        version: entry.version ?? null,
+        source: "scheduler"
+      }
     });
 
     if (!recovery.attempted) {
