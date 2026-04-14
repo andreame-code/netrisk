@@ -4,6 +4,7 @@ const gameplayTestModules = [
   "./shared/continent-loader.test.cjs",
   "./setup/game-setup.test.cjs",
   "./turn-flow/turn-flow.test.cjs",
+  "./turn-flow/turn-timeout.test.cjs",
   "./reinforcement/reinforcement-calculation.test.cjs",
   "./reinforcement/map-continent-bonuses.test.cjs",
   "./reinforcement/reinforcement-placement.test.cjs",
