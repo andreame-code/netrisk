@@ -2,7 +2,9 @@ const gameplayTestModules = [
   "./shared/map-graph.test.cjs",
   "./shared/map-loader.test.cjs",
   "./shared/continent-loader.test.cjs",
+  "./shared/extensions.test.cjs",
   "./setup/game-setup.test.cjs",
+  "./setup/new-game-config.test.cjs",
   "./turn-flow/turn-flow.test.cjs",
   "./turn-flow/turn-timeout.test.cjs",
   "./ai/ai-turn-recovery.test.cjs",
@@ -19,6 +21,7 @@ const gameplayTestModules = [
   "./regression/full-flows.test.cjs",
   "./regression/attack-route-guard.test.cjs",
   "./regression/game-read-routes.test.cjs",
+  "./regression/game-overview-route.test.cjs",
   "./regression/event-broadcast.test.cjs"
 ];
 

@@ -10,6 +10,8 @@ import {
   createStandardDeck,
   getCardRuleSet,
   getDiceRuleSet,
+  migrateGameConfigExtensions,
+  migrateGameStateExtensions,
   standardTradeBonusForIndex,
   validateStandardCardSet,
   type ActionFailure,
@@ -131,7 +133,14 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     discardPile: [],
     hands: {},
     tradeCount: 0,
-    conqueredTerritoryThisTurn: false
+    conqueredTerritoryThisTurn: false,
+    gameConfig: migrateGameConfigExtensions({
+      ruleSetId: "classic",
+      ruleSetName: "Classic",
+      mapId: sourceMap && sourceMap.id ? sourceMap.id : "classic-mini",
+      mapName: sourceMap && sourceMap.name ? sourceMap.name : "Classic Mini",
+      diceRuleSetId: "standard"
+    })
   }) as EngineState;
 }
 
@@ -327,6 +336,7 @@ function readableMapName(mapId: string | null | undefined): string | null {
 }
 
 export function publicState(state: EngineState) {
+  migrateGameStateExtensions(state);
   const currentPlayer = getCurrentPlayer(state);
   const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
   const lastAction = state.lastAction as ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>) | null;

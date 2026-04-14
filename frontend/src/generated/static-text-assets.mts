@@ -700,6 +700,18 @@ export const staticHtmlAssets = {
                     <span data-i18n="newGame.dice.label">Dadi</span>
                     <select id="setup-dice-ruleset"></select>
                   </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.victory.label">Victory</span>
+                    <select id="setup-victory-ruleset"></select>
+                  </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.theme.label">Theme</span>
+                    <select id="setup-theme"></select>
+                  </label>
+                  <label class="field-stack">
+                    <span data-i18n="newGame.pieceSkin.label">Piece skin</span>
+                    <select id="setup-piece-skin"></select>
+                  </label>
                 </div>
               </section>
               <label class="field-stack">
@@ -3439,6 +3451,27 @@ h1 {
   margin-bottom: 6px;
 }
 
+.player-card-token {
+  width: 100%;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: var(--player-color);
+}
+
+.player-card.piece-skin-command-ring .player-card-token {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at center, var(--panel) 0 28%, transparent 30%),
+    radial-gradient(circle at center, var(--player-color) 0 62%, rgba(255, 250, 240, 0.92) 64% 72%, var(--player-color) 74% 100%);
+  border: 1px solid rgba(255, 250, 240, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(12, 22, 32, 0.28),
+    0 8px 18px rgba(12, 22, 32, 0.18);
+}
+
 .tactical-map {
   display: grid;
   gap: 12px;
@@ -3544,6 +3577,19 @@ h1 {
 
 .territory-node:hover {
   transform: translate(-50%, -50%) translateY(-2px) scale(1.05);
+}
+
+.territory-node.piece-skin-command-ring {
+  color: #fffaf0;
+  border-color: rgba(255, 250, 240, 0.92);
+  background:
+    radial-gradient(circle at center, rgba(16, 24, 34, 0.96) 0 28%, transparent 30%),
+    radial-gradient(circle at center, var(--owner-color, var(--owner-color-default)) 0 62%, rgba(255, 250, 240, 0.92) 64% 72%, var(--owner-color, var(--owner-color-default)) 74% 100%);
+}
+
+.territory-node.piece-skin-command-ring .territory-armies {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
 }
 
 .territory-node.is-source,
