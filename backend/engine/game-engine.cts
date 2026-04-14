@@ -454,11 +454,15 @@ export function declareWinnerIfNeeded(state: EngineState): boolean {
   if (result.code === "AI_ONLY_REMAIN") {
     appendLog(state, "La partita si chiude: restano attive solo AI.", "game.log.aiOnlyRemain", result.messageParams || {});
   } else if (result.code === "VICTORY_DECLARED" && result.victory) {
+    const summaryParams = result.victory.summaryParams || { playerName: result.victory.winnerName };
+    const localizedSummary = result.victory.summaryKey === "game.log.victoryMajorityControl"
+      ? String(summaryParams.playerName || result.victory.winnerName) + " controlla la maggioranza dei territori e vince la partita."
+      : String(summaryParams.playerName || result.victory.winnerName) + " conquista la mappa e vince la partita.";
     appendLog(
       state,
-      result.victory.summary.replace("conquers the map and wins the game.", "conquista la mappa e vince la partita."),
+      localizedSummary,
       result.victory.summaryKey || "game.log.victoryDeclared",
-      result.victory.summaryParams || { playerName: result.victory.winnerName }
+      summaryParams
     );
   }
 

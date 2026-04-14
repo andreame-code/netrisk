@@ -3331,6 +3331,7 @@ register("API game options espone setup base per nuova partita", async () => {
     assert.equal(payload.diceRuleSets[0].id, "standard");
     assert.equal(payload.diceRuleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID), true);
     assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"), true);
+    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"), true);
     assert.equal(payload.themes.some((theme: any) => theme.id === "command"), true);
     assert.equal(payload.themes.some((theme: any) => theme.id === "midnight"), true);
     assert.equal(payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "classic-color"), true);
@@ -3353,6 +3354,7 @@ register("API game options alias espone le capability modulari dal backend", asy
     assert.equal(Array.isArray(payload.themes), true);
     assert.equal(Array.isArray(payload.pieceSkins), true);
     assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"), true);
+    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"), true);
     assert.equal(payload.themes.some((theme: any) => theme.id === "ember"), true);
     assert.equal(payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "command-ring"), true);
   });
@@ -3369,7 +3371,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
         name: "Scenario AI",
         mapId: "classic-mini",
         diceRuleSetId: "standard",
-        victoryRuleSetId: "conquest",
+        victoryRuleSetId: "majority-control",
         themeId: "ember",
         pieceSkinId: "command-ring",
         turnTimeoutHours: 72,
@@ -3385,12 +3387,12 @@ register("API games crea una sessione da configurazione strutturata", async () =
     const payload: any = await readJson(response);
     assert.equal(payload.game.name, "Scenario AI");
     assert.equal(payload.config.diceRuleSetId, "standard");
-    assert.equal(payload.config.victoryRuleSetId, "conquest");
+    assert.equal(payload.config.victoryRuleSetId, "majority-control");
     assert.equal(payload.config.themeId, "ember");
     assert.equal(payload.config.pieceSkinId, "command-ring");
     assert.equal(payload.config.turnTimeoutHours, 72);
     assert.equal(payload.state.gameConfig.diceRuleSetId, "standard");
-    assert.equal(payload.state.gameConfig.victoryRuleSetId, "conquest");
+    assert.equal(payload.state.gameConfig.victoryRuleSetId, "majority-control");
     assert.equal(payload.state.gameConfig.themeId, "ember");
     assert.equal(payload.state.gameConfig.pieceSkinId, "command-ring");
     assert.equal(payload.state.gameConfig.pieceSkin.id, "command-ring");

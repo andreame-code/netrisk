@@ -4,6 +4,7 @@ import { findSupportedMap, listSupportedMaps } from "./maps/index.cjs";
 export const EXTENSION_SCHEMA_VERSION = 1;
 export const DEFAULT_EXTENSION_PACK_ID = "classic";
 export const DEFAULT_VICTORY_RULE_SET_ID = "conquest";
+export const MAJORITY_CONTROL_VICTORY_RULE_SET_ID = "majority-control";
 export const DEFAULT_THEME_ID = "command";
 export const DEFAULT_PIECE_SKIN_ID = "classic-color";
 
@@ -81,6 +82,11 @@ const victoryRuleSets = Object.freeze<Record<string, Readonly<VictoryRuleSet>>>(
     id: DEFAULT_VICTORY_RULE_SET_ID,
     name: "Conquest",
     description: "Win by being the only active player with territories left on the map."
+  }),
+  [MAJORITY_CONTROL_VICTORY_RULE_SET_ID]: Object.freeze({
+    id: MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+    name: "Majority Control",
+    description: "Win immediately by controlling at least 70% of the map's territories."
   })
 });
 
