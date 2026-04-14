@@ -12,6 +12,7 @@ const section = document.body.dataset.appSection || "";
 const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
 const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
+let availableThemes = [...SUPPORTED_THEMES] as string[];
 
 type ShellKind = "app" | "marketing";
 type NavSection = "lobby" | "game" | "profile";
@@ -45,24 +46,34 @@ function setHeaderAuthFeedback(message = "", tone: "error" | "success" = "error"
 
 function resolveThemeFromUser(user: PublicUser | null | undefined): ThemeName | null {
   const requestedTheme = user?.preferences?.theme;
-  return SUPPORTED_THEMES.includes(requestedTheme as ThemeName) ? (requestedTheme as ThemeName) : null;
+  return availableThemes.includes(String(requestedTheme || "")) ? String(requestedTheme) : null;
+}
+
+function setThemes(themes: Array<string | { id?: string | null }>): string[] {
+  const nextThemes = Array.isArray(themes)
+    ? themes
+      .map((entry) => typeof entry === "string" ? entry : String(entry?.id || ""))
+      .filter(Boolean)
+    : [];
+  availableThemes = nextThemes.length ? [...new Set(nextThemes)] : [...SUPPORTED_THEMES];
+  return [...availableThemes];
 }
 
 function resolveTheme(): ThemeName {
   const requested = routeQuery.get("theme");
   if (requested) {
-    return normalizeTheme(requested);
+    return normalizeTheme(requested, availableThemes);
   }
 
   try {
-    return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME);
+    return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME, availableThemes);
   } catch {
     return DEFAULT_THEME;
   }
 }
 
 function applyTheme(theme: string | null | undefined): ThemeName {
-  const nextTheme = normalizeTheme(theme);
+  const nextTheme = normalizeTheme(theme, availableThemes);
   document.documentElement.dataset.theme = nextTheme;
   document.body.dataset.theme = nextTheme;
 
@@ -79,10 +90,15 @@ window.netriskTheme = Object.freeze({
   defaultTheme: DEFAULT_THEME,
   storageKey: THEME_STORAGE_KEY,
   getThemes() {
-    return [...SUPPORTED_THEMES];
+    return [...availableThemes];
+  },
+  setThemes(themes: Array<string | { id?: string | null }>) {
+    const resolvedThemes = setThemes(themes);
+    const currentTheme = applyTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
+    return resolvedThemes.includes(currentTheme) ? resolvedThemes : [currentTheme, ...resolvedThemes];
   },
   getCurrentTheme() {
-    return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
+    return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME, availableThemes);
   },
   getThemeFromUser(user?: PublicUser | null) {
     return resolveThemeFromUser(user);
@@ -96,7 +112,9 @@ window.netriskTheme = Object.freeze({
     return applyTheme(theme);
   },
   applyTheme,
-  normalizeTheme
+  normalizeTheme(theme: string) {
+    return normalizeTheme(theme, availableThemes);
+  }
 });
 
 window.netriskShell = Object.freeze({
