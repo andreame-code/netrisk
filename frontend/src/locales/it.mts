@@ -367,6 +367,7 @@ export const it = Object.freeze({
   "game.actions.reinforce": "Rinforza",
   "game.actions.reinforceAmountAria": "Quantita rinforzi",
   "game.actions.add": "Aggiungi",
+  "game.actions.moveAll": "Sposta tutto ({count})",
   "game.actions.attack": "Attacca",
   "game.actions.launchAttack": "Lancia attacco",
   "game.actions.banzai": "Banzai",

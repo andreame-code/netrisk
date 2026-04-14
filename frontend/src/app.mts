@@ -162,6 +162,7 @@ const elements = {
   reinforceSelect: document.querySelector("#reinforce-select") as HTMLSelectElement,
   reinforceAmount: document.querySelector("#reinforce-amount") as HTMLInputElement | null,
   reinforceMultiButton: document.querySelector("#reinforce-multi-button") as HTMLButtonElement | null,
+  reinforceAllButton: document.querySelector("#reinforce-all-button") as HTMLButtonElement | null,
   attackGroup: document.querySelector("#attack-group") as HTMLElement | null,
   attackFrom: document.querySelector("#attack-from") as HTMLSelectElement,
   attackTo: document.querySelector("#attack-to") as HTMLSelectElement,
@@ -171,6 +172,7 @@ const elements = {
   conquestGroup: document.querySelector("#conquest-group") as HTMLElement | null,
   conquestArmies: document.querySelector("#conquest-armies") as HTMLInputElement | null,
   conquestButton: document.querySelector("#conquest-button") as HTMLButtonElement,
+  conquestAllButton: document.querySelector("#conquest-all-button") as HTMLButtonElement | null,
   fortifyGroup: document.querySelector("#fortify-group") as HTMLElement | null,
   fortifyFrom: document.querySelector("#fortify-from") as HTMLSelectElement,
   fortifyTo: document.querySelector("#fortify-to") as HTMLSelectElement,
@@ -480,9 +482,41 @@ function normalizedAttackDiceValue() {
 
 function normalizedReinforcementAmount() {
   const rawValue = Number.parseInt(elements.reinforceAmount?.value || "1", 10);
-  const maxAllowed = Math.max(1, Number(state.snapshot?.reinforcementPool || 1));
+  const maxAllowed = Math.max(1, maximumReinforcementAmount());
   const normalized = Number.isFinite(rawValue) ? rawValue : 1;
   return Math.max(1, Math.min(normalized, maxAllowed));
+}
+
+function maximumReinforcementAmount(): number {
+  const rawValue = Number(state.snapshot?.reinforcementPool || 0);
+  return Number.isFinite(rawValue) ? Math.max(0, Math.floor(rawValue)) : 0;
+}
+
+function maximumPendingConquestArmies(): number {
+  const pendingConquest = state.snapshot?.pendingConquest;
+  if (!pendingConquest) {
+    return 0;
+  }
+
+  const rawValue = Number(pendingConquest.maxArmies ?? pendingConquest.minArmies ?? 0);
+  return Number.isFinite(rawValue) ? Math.max(0, Math.floor(rawValue)) : 0;
+}
+
+function normalizedConquestArmiesAmount() {
+  const pendingConquest = state.snapshot?.pendingConquest;
+  if (!pendingConquest) {
+    return 0;
+  }
+
+  const minAllowed = Math.max(1, Number(pendingConquest.minArmies || 1));
+  const maxAllowed = Math.max(minAllowed, maximumPendingConquestArmies());
+  const rawValue = Number.parseInt(elements.conquestArmies?.value || String(minAllowed), 10);
+  const normalized = Number.isFinite(rawValue) ? rawValue : minAllowed;
+  return Math.max(minAllowed, Math.min(normalized, maxAllowed));
+}
+
+function moveAllActionLabel(count: number): string {
+  return t("game.actions.moveAll", { count: Math.max(0, Math.floor(Number(count) || 0)) });
 }
 
 async function applyReinforcements(times: number): Promise<void> {
@@ -516,6 +550,21 @@ async function executeAttack(fromId: string, toId: string, attackDice: number): 
   }
   render();
   return nextState;
+}
+
+async function moveAfterConquest(armies: number): Promise<void> {
+  const data = await send("/api/action", {
+    ...currentGamePayload(),
+    playerId: state.playerId,
+    type: "moveAfterConquest",
+    armies: Math.max(1, Math.floor(Number(armies) || 1)),
+    expectedVersion: currentExpectedVersion()
+  });
+  state.snapshot = data.state || state.snapshot;
+  if (elements.conquestArmies) {
+    elements.conquestArmies.value = "";
+  }
+  render();
 }
 
 async function runBanzaiAttack() {
@@ -953,10 +1002,13 @@ function render() {
     elements.reinforceSelect.value = selectedReinforceId;
   }
   if (elements.reinforceAmount) {
-    const maxReinforcements = Math.max(1, Number(snapshot?.reinforcementPool || 1));
+    const maxReinforcements = Math.max(1, maximumReinforcementAmount());
     elements.reinforceAmount.min = "1";
     elements.reinforceAmount.max = String(maxReinforcements);
     elements.reinforceAmount.value = String(normalizedReinforcementAmount());
+  }
+  if (elements.reinforceAllButton) {
+    elements.reinforceAllButton.textContent = moveAllActionLabel(maximumReinforcementAmount());
   }
 
   const selectedFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
@@ -1111,6 +1163,10 @@ function render() {
     if (!elements.conquestArmies.value) {
       elements.conquestArmies.value = String(pendingConquest.minArmies || 1);
     }
+    elements.conquestArmies.value = String(normalizedConquestArmiesAmount());
+  }
+  if (elements.conquestAllButton) {
+    elements.conquestAllButton.textContent = moveAllActionLabel(maximumPendingConquestArmies());
   }
 
   const lastCombat = snapshot?.lastCombat || null;
@@ -1166,12 +1222,18 @@ function render() {
   if (elements.reinforceMultiButton) {
     elements.reinforceMultiButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
   }
+  if (elements.reinforceAllButton) {
+    elements.reinforceAllButton.disabled = !canInteract || !inReinforcement || Boolean(pendingConquest) || snapshot.reinforcementPool <= 0 || !elements.reinforceSelect.value;
+  }
   elements.attackButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
   if (elements.attackBanzaiButton) {
     elements.attackBanzaiButton.disabled = !canInteract || !inAttack || Boolean(pendingConquest) || Boolean(state.attackBanzaiInFlight) || snapshot.reinforcementPool > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
     elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
   }
   elements.conquestButton.disabled = !canInteract || !pendingConquest || !elements.conquestArmies?.value;
+  if (elements.conquestAllButton) {
+    elements.conquestAllButton.disabled = !canInteract || !pendingConquest;
+  }
   elements.fortifyButton.disabled = !canInteract || !inFortify || snapshot.fortifyUsed || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
   elements.endTurnButton.hidden = !canInteract || inReinforcement || Boolean(pendingConquest);
   elements.endTurnButton.disabled = !canInteract || inReinforcement || Boolean(pendingConquest);
@@ -1608,6 +1670,23 @@ if (elements.reinforceMultiButton) {
     }
   });
 }
+if (elements.reinforceAllButton) {
+  elements.reinforceAllButton.addEventListener("click", async () => {
+    try {
+      const maxReinforcements = maximumReinforcementAmount();
+      if (maxReinforcements < 1) {
+        return;
+      }
+
+      if (elements.reinforceAmount) {
+        elements.reinforceAmount.value = String(maxReinforcements);
+      }
+      await applyReinforcements(maxReinforcements);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
+    }
+  });
+}
 
 elements.reinforceSelect.addEventListener("change", () => {
   state.selectedReinforceTerritoryId = elements.reinforceSelect.value || null;
@@ -1618,6 +1697,15 @@ if (elements.reinforceAmount) {
     if (elements.reinforceAmount) {
       elements.reinforceAmount.value = String(normalizedReinforcementAmount());
     }
+  });
+}
+if (elements.conquestArmies) {
+  elements.conquestArmies.addEventListener("change", () => {
+    if (!state.snapshot?.pendingConquest || !elements.conquestArmies) {
+      return;
+    }
+
+    elements.conquestArmies.value = String(normalizedConquestArmiesAmount());
   });
 }
 elements.attackFrom.addEventListener("change", () => {
@@ -1737,22 +1825,28 @@ if (elements.attackBanzaiButton) {
 
 elements.conquestButton.addEventListener("click", async () => {
   try {
-    const data = await send("/api/action", {
-      ...currentGamePayload(),
-      playerId: state.playerId,
-      type: "moveAfterConquest",
-       armies: Number(elements.conquestArmies?.value || 0),
-       expectedVersion: currentExpectedVersion()
-     });
-    state.snapshot = data.state || state.snapshot;
-    if (elements.conquestArmies) {
-      elements.conquestArmies.value = "";
-    }
-    render();
+    await moveAfterConquest(normalizedConquestArmiesAmount());
   } catch (error: unknown) {
     alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }
 });
+if (elements.conquestAllButton) {
+  elements.conquestAllButton.addEventListener("click", async () => {
+    try {
+      const maxArmies = maximumPendingConquestArmies();
+      if (maxArmies < 1) {
+        return;
+      }
+
+      if (elements.conquestArmies) {
+        elements.conquestArmies.value = String(maxArmies);
+      }
+      await moveAfterConquest(maxArmies);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t("errors.requestFailed"));
+    }
+  });
+}
 
 elements.fortifyButton.addEventListener("click", async () => {
   try {
