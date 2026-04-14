@@ -78,6 +78,17 @@ export type {
   ReinforcementRuleSetSummary
 } from "./reinforcement-rule-sets.cjs";
 export {
+  STANDARD_FORTIFY_RULE_SET_ID,
+  findFortifyRuleSet,
+  getFortifyRuleSet,
+  listFortifyRuleSets,
+  standardFortifyRuleSet
+} from "./fortify-rule-sets.cjs";
+export type {
+  FortifyRuleSet,
+  FortifyRuleSetSummary
+} from "./fortify-rule-sets.cjs";
+export {
   DEFAULT_CONTENT_PACK_ID,
   coreContentPack,
   findContentPack,
