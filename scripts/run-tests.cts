@@ -657,12 +657,11 @@ register("required runtime env valida solo preview e production su Vercel", () =
   assert.deepEqual(
     missingRequiredDeployEnv({
       AUTH_ENCRYPTION_KEY: "enc",
-      CRON_SECRET: "",
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "",
       DATASTORE_DRIVER: "supabase"
     }),
-    ["CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY"]
+    ["SUPABASE_SERVICE_ROLE_KEY"]
   );
 });
 
@@ -2859,6 +2858,36 @@ register("scheduled jobs route richiede un bearer token valido", async () => {
 
     assert.equal(authorizedResponse.statusCode, 200);
     assert.deepEqual(JSON.parse(authorizedResponse.body), { ok: true, jobs: [] });
+  } finally {
+    if (previousSecret == null) {
+      delete process.env.CRON_SECRET;
+    } else {
+      process.env.CRON_SECRET = previousSecret;
+    }
+  }
+});
+
+register("scheduled jobs route fallisce in modo esplicito se CRON_SECRET non e configurato", async () => {
+  const previousSecret = process.env.CRON_SECRET;
+  delete process.env.CRON_SECRET;
+
+  try {
+    const response = makeMockResponse();
+    let executed = false;
+    await handleScheduledJobsRoute(
+      { headers: { authorization: "Bearer anything" } },
+      response,
+      async () => {
+        executed = true;
+        return { ok: true, jobs: [] };
+      },
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(response.statusCode, 500);
+    assert.equal(executed, false);
+    assert.equal(JSON.parse(response.body).code, "CRON_NOT_CONFIGURED");
   } finally {
     if (previousSecret == null) {
       delete process.env.CRON_SECRET;

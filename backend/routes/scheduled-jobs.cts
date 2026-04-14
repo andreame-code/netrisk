@@ -16,6 +16,8 @@ type RequestLike = {
 
 type RunScheduledJobs = () => Promise<unknown>;
 
+const { missingRequiredCronEnv } = require("../required-runtime-env.cjs");
+
 function readAuthorizationHeader(req: RequestLike): string {
   const rawValue = req.headers?.authorization;
   return Array.isArray(rawValue) ? String(rawValue[0] || "") : String(rawValue || "");
@@ -28,8 +30,22 @@ async function handleScheduledJobsRoute(
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
+  const missingCronEnv = missingRequiredCronEnv(process.env);
+  if (missingCronEnv.length) {
+    sendLocalizedError(
+      res,
+      500,
+      null,
+      "Configurazione cron incompleta.",
+      "server.cron.missingSecret",
+      { keys: missingCronEnv.join(", ") },
+      "CRON_NOT_CONFIGURED"
+    );
+    return;
+  }
+
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
-  if (!cronSecret || readAuthorizationHeader(req) !== `Bearer ${cronSecret}`) {
+  if (readAuthorizationHeader(req) !== `Bearer ${cronSecret}`) {
     sendLocalizedError(res, 401, null, "Accesso cron non autorizzato.", "server.cron.unauthorized", {}, "CRON_UNAUTHORIZED");
     return;
   }
