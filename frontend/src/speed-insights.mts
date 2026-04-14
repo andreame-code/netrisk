@@ -5,6 +5,10 @@ type SpeedInsightsWindow = Window & {
   siq?: unknown[][];
 };
 
+function isLocalDevelopmentHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
 function registerSpeedInsights(targetWindow: SpeedInsightsWindow): void {
   targetWindow.si =
     targetWindow.si ??
@@ -13,7 +17,7 @@ function registerSpeedInsights(targetWindow: SpeedInsightsWindow): void {
       targetWindow.siq.push(args);
     });
 
-  if (typeof process !== "undefined" && process.env?.NODE_ENV === "development") {
+  if (isLocalDevelopmentHost(targetWindow.location.hostname)) {
     return;
   }
 
