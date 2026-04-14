@@ -108,6 +108,22 @@ const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(["command", "midnight", "ember"]);
 
+function logAiRecovery(payload: {
+  event: "ai_turn_recovery";
+  gameId: string | null;
+  gameName: string | null;
+  version: number | null;
+  source: "read" | "scheduler" | "mutation" | "unknown";
+  playerId: string;
+  forcedTurn: boolean;
+  interceptedError: boolean;
+  reportsCount: number;
+  turnPhaseBefore: string | null;
+  turnStartedAtBefore: string | null;
+}) {
+  console.info(JSON.stringify(payload));
+}
+
 function resolveStoredTheme(theme: unknown): string {
   return typeof theme === "string" && supportedSiteThemes.has(theme) ? theme : "command";
 }
@@ -379,7 +395,14 @@ function createApp(options: CreateAppOptions = {}) {
     await persistGameContext(gameContext, expectedVersion);
     const aiRecovery = await recoverAiTurnState(gameContext.state, {
       forceEndTurn,
-      runAiTurnsIfNeeded
+      runAiTurnsIfNeeded,
+      logger: logAiRecovery,
+      context: {
+        gameId: gameContext.gameId,
+        gameName: gameContext.gameName,
+        version: gameContext.version,
+        source: "mutation"
+      }
     });
     if (aiRecovery.shouldPersist) {
       await persistGameContext(gameContext, gameContext.version);
@@ -390,7 +413,14 @@ function createApp(options: CreateAppOptions = {}) {
   async function resumeAiTurnsForRead(gameContext: GameContext) {
     const aiRecovery = await recoverAiTurnState(gameContext?.state, {
       forceEndTurn,
-      runAiTurnsIfNeeded
+      runAiTurnsIfNeeded,
+      logger: logAiRecovery,
+      context: {
+        gameId: gameContext?.gameId || null,
+        gameName: gameContext?.gameName || null,
+        version: gameContext?.version ?? null,
+        source: "read"
+      }
     });
     if (!aiRecovery.shouldPersist) {
       return aiRecovery;
@@ -587,7 +617,8 @@ function createApp(options: CreateAppOptions = {}) {
             recoverAiTurnState(nextState, {
               ...recoveryOptions,
               forceEndTurn,
-              runAiTurnsIfNeeded
+              runAiTurnsIfNeeded,
+              logger: logAiRecovery
             }),
           afterSave: ({ gameId, gameName, state: nextState, version }: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => {
             if (gameId === activeGameId) {

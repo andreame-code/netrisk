@@ -90,6 +90,7 @@ Production deployments on Vercel execute scheduled checks through `vercel.json`:
 The endpoint is protected with `Authorization: Bearer ${CRON_SECRET}` and is intended for Vercel Cron invocations.
 Missing `CRON_SECRET` does not block the rest of the application from booting, but it does disable the cron endpoint until the secret is configured.
 The current scheduled jobs enforce configured turn time limits for active games and recover stuck AI turns. They are structured so additional jobs can be added under the same scheduler entrypoint.
+When an AI recovery is intercepted server-side, the backend also emits a structured `ai_turn_recovery` log event so recovery frequency can be monitored from runtime logs.
 
 ## Useful commands
 

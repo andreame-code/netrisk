@@ -55,10 +55,20 @@ register("recoverAiTurnState lascia proseguire un turno AI sano senza forzature"
 
 register("recoverAiTurnState forza la chiusura del turno se il resume AI fallisce", async () => {
   const state = setupAiGame();
+  const logs: Array<Record<string, unknown>> = [];
 
   const result = await recoverAiTurnState(state, {
     runAiTurnsIfNeeded: () => {
       throw new Error("AI exploded");
+    },
+    logger: (payload: Record<string, unknown>) => {
+      logs.push(payload);
+    },
+    context: {
+      gameId: "game-1",
+      gameName: "AI Recovery",
+      version: 7,
+      source: "read"
     }
   });
 
@@ -67,6 +77,12 @@ register("recoverAiTurnState forza la chiusura del turno se il resume AI fallisc
   assert.equal(result.shouldPersist, true);
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
   assert.equal(state.lastAction.summaryKey, "game.log.aiTurnRecovered");
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].event, "ai_turn_recovery");
+  assert.equal(logs[0].gameId, "game-1");
+  assert.equal(logs[0].source, "read");
+  assert.equal(logs[0].forcedTurn, true);
+  assert.equal(logs[0].interceptedError, true);
 });
 
 register("recoverAiTurnState forza il turno se il resume non avanza la stessa AI", async () => {
