@@ -46,6 +46,7 @@ export interface GameConfig {
   totalPlayers?: number;
   mapId?: string;
   mapName?: string;
+  turnTimeoutHours?: number | null;
   [key: string]: unknown;
 }
 
@@ -136,6 +137,10 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
 
 function randomId(): string {
   return crypto.randomBytes(8).toString("hex");
+}
+
+function currentUtcTimestamp(now: Date = new Date()): string {
+  return now.toISOString();
 }
 
 function shuffle<T>(list: T[], random: () => number = secureRandom): T[] {
@@ -388,7 +393,7 @@ export function publicState(state: EngineState) {
   };
 }
 
-export function startGame(state: EngineState, random: () => number = secureRandom): void {
+export function startGame(state: EngineState, random: () => number = secureRandom, now: Date = new Date()): void {
   if (!Array.isArray(state.players) || state.players.length === 0) {
     return;
   }
@@ -397,6 +402,7 @@ export function startGame(state: EngineState, random: () => number = secureRando
   const shuffledTerritories = shuffle(mapTerritories.map((territory) => territory.id), random);
   state.phase = "active";
   state.turnPhase = TurnPhase.REINFORCEMENT;
+  state.turnStartedAt = null;
   state.winnerId = null;
   state.currentTurnIndex = 0;
   state.lastAction = null;
@@ -424,6 +430,7 @@ export function startGame(state: EngineState, random: () => number = secureRando
   }
 
   state.reinforcementPool = computeReinforcements(state, firstPlayer.id);
+  state.turnStartedAt = currentUtcTimestamp(now);
   appendLog(state, "Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.", "game.log.gameStarted", {
     playerName: firstPlayer.name,
     reinforcementPool: state.reinforcementPool
@@ -446,7 +453,7 @@ export function declareWinnerIfNeeded(state: EngineState): boolean {
   return state.phase === "finished";
 }
 
-export function advanceTurn(state: EngineState): void {
+export function advanceTurn(state: EngineState, now: Date = new Date()): void {
   if (state.winnerId || declareWinnerIfNeeded(state)) {
     return;
   }
@@ -459,6 +466,7 @@ export function advanceTurn(state: EngineState): void {
       state.currentTurnIndex = nextIndex;
       state.turnPhase = TurnPhase.REINFORCEMENT;
       state.reinforcementPool = computeReinforcements(state, candidate.id);
+      state.turnStartedAt = currentUtcTimestamp(now);
       state.pendingConquest = null;
       state.fortifyUsed = false;
       state.conqueredTerritoryThisTurn = false;
@@ -915,6 +923,79 @@ export function endTurn(state: EngineState, playerId: string) {
   appendLog(state, player.name + " termina il turno.", "game.log.endTurn", { playerName: player.name });
   advanceTurn(state);
   return { ok: true, awardedCard };
+}
+
+export function forceEndTurn(
+  state: EngineState,
+  playerId: string,
+  options: {
+    reason?: "timeout";
+    turnTimeoutHours?: number | null;
+    now?: Date;
+  } = {}
+) {
+  const player = getPlayer(state, playerId);
+
+  if (!player) {
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
+  }
+
+  if (state.phase !== "active") {
+    return createActionFailure("La partita non e attiva.", "game.notActive");
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state)?.id !== playerId) {
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
+  }
+
+  if (state.pendingConquest) {
+    const minArmies = Number((state.pendingConquest as PendingConquest).minArmies) || 1;
+    const conquestResult = moveAfterConquest(state, playerId, minArmies);
+    if (!conquestResult.ok) {
+      return conquestResult;
+    }
+  }
+
+  if (state.reinforcementPool > 0) {
+    state.reinforcementPool = 0;
+  }
+
+  if (state.turnPhase === TurnPhase.REINFORCEMENT) {
+    state.turnPhase = TurnPhase.ATTACK;
+  }
+
+  if (state.turnPhase === TurnPhase.ATTACK) {
+    state.turnPhase = TurnPhase.FORTIFY;
+    state.fortifyUsed = false;
+  }
+
+  const awardedCard = awardTurnCardIfEligible(state, playerId);
+  const reason = options.reason || "timeout";
+  const summary = reason === "timeout"
+    ? player.name + " supera il limite turno e il sistema forza il passaggio del turno."
+    : player.name + " viene forzato a terminare il turno.";
+
+  state.lastAction = {
+    type: "forceEndTurn",
+    summary,
+    summaryKey: reason === "timeout" ? "game.log.turnTimedOut" : "game.log.turnForced",
+    summaryParams: {
+      playerName: player.name,
+      turnTimeoutHours: options.turnTimeoutHours || null
+    },
+    playerId
+  };
+  appendLog(
+    state,
+    summary,
+    reason === "timeout" ? "game.log.turnTimedOut" : "game.log.turnForced",
+    {
+      playerName: player.name,
+      turnTimeoutHours: options.turnTimeoutHours || null
+    }
+  );
+  advanceTurn(state, options.now);
+  return { ok: true, awardedCard, forced: true };
 }
 
 export function surrenderPlayer(state: EngineState, playerId: string) {

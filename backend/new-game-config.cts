@@ -5,6 +5,7 @@ import {
   STANDARD_DICE_RULE_SET_ID,
   type DiceRuleSet
 } from "../shared/dice.cjs";
+import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
@@ -74,6 +75,7 @@ interface NewGameConfigInput {
   ruleSetId?: string;
   mapId?: string;
   diceRuleSetId?: string;
+  turnTimeoutHours?: number;
   players?: RequestedPlayerSlot[];
 }
 
@@ -85,6 +87,7 @@ interface ValidatedNewGameConfig {
   mapName: string;
   selectedMap: NonNullable<ReturnType<typeof findSupportedMap>>;
   diceRuleSetId: string;
+  turnTimeoutHours: TurnTimeoutHoursValue | null;
   totalPlayers: number;
   players: ValidatedPlayerSlot[];
 }
@@ -107,6 +110,10 @@ export function listNewGameRuleSets(): Array<{ id: string; name: string; default
     name: ruleSet.name,
     defaultDiceRuleSetId: ruleSet.defaultDiceRuleSetId
   }));
+}
+
+export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
+  return [...TURN_TIMEOUT_HOURS_OPTIONS];
 }
 
 export function buildHistoricalAiNames(count: number, random: () => number = secureRandom): string[] {
@@ -157,6 +164,17 @@ export function validateNewGameConfig(
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
   }
 
+  const turnTimeoutHours = input.turnTimeoutHours == null
+    ? null
+    : normalizeTurnTimeoutHours(input.turnTimeoutHours);
+  if (input.turnTimeoutHours != null && turnTimeoutHours == null) {
+    throw createLocalizedError(
+      "Il limite tempo turno selezionato non e supportato.",
+      "newGame.invalidTurnTimeoutHours",
+      { allowedValues: TURN_TIMEOUT_HOURS_OPTIONS.join(", ") }
+    );
+  }
+
   const requestedPlayers = Array.isArray(input.players)
     ? input.players
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
@@ -191,6 +209,7 @@ export function validateNewGameConfig(
     mapName: selectedMap.name,
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
+    turnTimeoutHours,
     totalPlayers,
     players
   };
@@ -209,6 +228,7 @@ export function createConfiguredInitialState(
     mapId: config.mapId,
     mapName: config.mapName,
     diceRuleSetId: config.diceRuleSetId,
+    turnTimeoutHours: config.turnTimeoutHours,
     totalPlayers: config.totalPlayers,
     players: config.players
   };
