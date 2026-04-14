@@ -6,6 +6,19 @@ import {
   type DiceRuleSet
 } from "../shared/dice.cjs";
 import {
+  DEFAULT_CONTENT_PACK_ID,
+  findContentPack,
+  listContentPacks
+} from "../shared/content-packs.cjs";
+import {
+  DEFAULT_PLAYER_PIECE_SET_ID,
+  findPlayerPieceSet,
+  listPlayerPieceSets
+} from "../shared/player-piece-sets.cjs";
+import {
+  DEFAULT_PIECE_SKIN_ID,
+  DEFAULT_THEME_ID,
+  DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
   findExtensionPack,
   findPieceSkin,
@@ -25,7 +38,13 @@ import { createLocalizedError, type LocalizedError } from "../shared/messages.cj
 import type { GameState } from "../shared/models.cjs";
 
 type AddPlayerResult = { ok: true } | { ok: false; error?: string; errorKey?: string; errorParams?: Record<string, unknown> };
-type CreateInitialStateFn = (selectedMap?: ReturnType<typeof findSupportedMap>) => GameState & { gameConfig?: Record<string, unknown>; diceRuleSetId: string };
+type CreateInitialStateFn = (selectedMap?: ReturnType<typeof findSupportedMap>) => GameState & {
+  gameConfig?: Record<string, unknown>;
+  contentPackId: string;
+  diceRuleSetId: string;
+  victoryRuleSetId: string;
+  pieceSetId: string;
+};
 type AddPlayerFn = (state: GameState, name: string | null, options?: { isAi?: boolean }) => AddPlayerResult;
 
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs") as {
@@ -67,10 +86,12 @@ interface ValidatedPlayerSlot {
 interface NewGameConfigInput {
   name?: string;
   totalPlayers?: number;
+  contentPackId?: string;
   ruleSetId?: string;
   mapId?: string;
   diceRuleSetId?: string;
   victoryRuleSetId?: string;
+  pieceSetId?: string;
   themeId?: string;
   pieceSkinId?: string;
   turnTimeoutHours?: number;
@@ -79,6 +100,7 @@ interface NewGameConfigInput {
 
 interface ValidatedNewGameConfig {
   name?: string;
+  contentPackId: string;
   ruleSetId: string;
   ruleSetName: string;
   mapId: string;
@@ -86,6 +108,7 @@ interface ValidatedNewGameConfig {
   selectedMap: NonNullable<ReturnType<typeof findSupportedMap>>;
   diceRuleSetId: string;
   victoryRuleSetId: string;
+  pieceSetId: string;
   themeId: string;
   pieceSkinId: string;
   extensionSchemaVersion: number;
@@ -140,37 +163,53 @@ export function validateNewGameConfig(
     throw createLocalizedError("Il numero totale di giocatori deve essere compreso tra 2 e 4.", "newGame.invalidTotalPlayers");
   }
 
+  const requestedContentPackId = String(input.contentPackId || DEFAULT_CONTENT_PACK_ID);
+  const selectedContentPack = findContentPack(requestedContentPackId);
+  if (!selectedContentPack) {
+    throw createLocalizedError("Il content pack selezionato non e supportato.", "newGame.invalidContentPack");
+  }
+
   const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
   const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
     throw createLocalizedError("Il ruleset selezionato non e supportato.", "newGame.invalidRuleSet");
   }
 
-  const mapId = String(input.mapId || selectedRuleSet.defaults.mapId || "classic-mini");
+  const mapId = String(input.mapId || selectedContentPack.defaultMapId || selectedRuleSet.defaults.mapId || "classic-mini");
   const selectedMap = findSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
 
-  const requestedDiceRuleSetId = String(input.diceRuleSetId || selectedRuleSet.defaults.diceRuleSetId || STANDARD_DICE_RULE_SET_ID);
+  const requestedDiceRuleSetId = String(
+    input.diceRuleSetId || selectedRuleSet.defaults.diceRuleSetId || selectedContentPack.defaultDiceRuleSetId || STANDARD_DICE_RULE_SET_ID
+  );
   const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
   }
 
-  const requestedVictoryRuleSetId = String(input.victoryRuleSetId || selectedRuleSet.defaults.victoryRuleSetId);
+  const requestedVictoryRuleSetId = String(
+    input.victoryRuleSetId || selectedRuleSet.defaults.victoryRuleSetId || selectedContentPack.defaultVictoryRuleSetId || DEFAULT_VICTORY_RULE_SET_ID
+  );
   const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
   if (!selectedVictoryRuleSet) {
     throw createLocalizedError("La regola vittoria selezionata non e supportata.", "newGame.invalidVictoryRuleSet");
   }
 
-  const requestedThemeId = String(input.themeId || selectedRuleSet.defaults.themeId);
+  const requestedPieceSetId = String(input.pieceSetId || selectedContentPack.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID);
+  const selectedPieceSet = findPlayerPieceSet(requestedPieceSetId);
+  if (!selectedPieceSet) {
+    throw createLocalizedError("Il set pedine selezionato non e supportato.", "newGame.invalidPieceSet");
+  }
+
+  const requestedThemeId = String(input.themeId || selectedRuleSet.defaults.themeId || selectedContentPack.defaultSiteThemeId || DEFAULT_THEME_ID);
   const selectedTheme = findVisualTheme(requestedThemeId);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }
 
-  const requestedPieceSkinId = String(input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId);
+  const requestedPieceSkinId = String(input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID);
   const selectedPieceSkin = findPieceSkin(requestedPieceSkinId);
   if (!selectedPieceSkin) {
     throw createLocalizedError("La skin pedina selezionata non e supportata.", "newGame.invalidPieceSkin");
@@ -215,6 +254,7 @@ export function validateNewGameConfig(
 
   return {
     name: input.name,
+    contentPackId: selectedContentPack.id,
     ruleSetId: selectedRuleSet.id,
     ruleSetName: selectedRuleSet.name,
     mapId,
@@ -222,6 +262,7 @@ export function validateNewGameConfig(
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
     victoryRuleSetId: selectedVictoryRuleSet.id,
+    pieceSetId: selectedPieceSet.id,
     themeId: selectedTheme.id,
     pieceSkinId: selectedPieceSkin.id,
     extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
@@ -234,12 +275,27 @@ export function validateNewGameConfig(
 export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: { random?: () => number } = {}
-): { state: GameState & { gameConfig?: Record<string, unknown>; diceRuleSetId: string }; gameInput: { name: string | undefined }; config: ValidatedNewGameConfig } {
+): {
+  state: GameState & {
+    gameConfig?: Record<string, unknown>;
+    contentPackId: string;
+    diceRuleSetId: string;
+    victoryRuleSetId: string;
+    pieceSetId: string;
+  };
+  gameInput: { name: string | undefined };
+  config: ValidatedNewGameConfig;
+} {
   const config = validateNewGameConfig(configInput, options);
   const state = createInitialState(config.selectedMap);
+  state.contentPackId = config.contentPackId;
   state.diceRuleSetId = config.diceRuleSetId;
+  state.victoryRuleSetId = config.victoryRuleSetId;
+  state.pieceSetId = config.pieceSetId;
   state.gameConfig = migrateGameConfigExtensions({
     name: config.name,
+    contentPackId: config.contentPackId,
+    pieceSetId: config.pieceSetId,
     ruleSetId: config.ruleSetId,
     ruleSetName: config.ruleSetName,
     mapId: config.mapId,
@@ -277,7 +333,9 @@ export function createConfiguredInitialState(
 }
 
 export {
+  listContentPacks,
   listDiceRuleSets,
+  listPlayerPieceSets,
   listPieceSkins,
   listSupportedMaps,
   listVictoryRuleSets,

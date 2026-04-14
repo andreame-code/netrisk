@@ -47,6 +47,8 @@ export interface GameOptionsResponseContract {
   victoryRuleSets: VictoryRuleSetContract[];
   themes: VisualThemeContract[];
   pieceSkins: PieceSkinContract[];
+  playerPieceSets?: Array<Record<string, unknown>>;
+  contentPacks?: Array<Record<string, unknown>>;
   turnTimeoutHoursOptions: number[];
   playerRange: {
     min: number;
