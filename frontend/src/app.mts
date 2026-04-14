@@ -390,6 +390,20 @@ function textColorForBackground(color: string | null | undefined): string {
   return luminance >= 150 ? "#2c1f14" : "#fffaf0";
 }
 
+function pieceSkinRenderStyleForSnapshot(snapshot: GameSnapshot | null | undefined): string {
+  const renderStyleId = snapshot?.gameConfig?.pieceSkin?.renderStyleId;
+  return typeof renderStyleId === "string" && renderStyleId
+    ? renderStyleId
+    : "solid-fill";
+}
+
+function pieceSkinClassName(renderStyleId: string | null | undefined): string {
+  const normalized = typeof renderStyleId === "string" && renderStyleId
+    ? renderStyleId
+    : "solid-fill";
+  return `piece-skin-style-${normalized.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
+}
+
 function territoryById(territoryId: string | null | undefined): SnapshotTerritory | null {
   return state.snapshot?.map.find((territory) => territory.id === territoryId) || null;
 }
@@ -827,6 +841,7 @@ function renderGameSessionBrowser() {
 function buildGraphMarkup(snapshot: GameSnapshot): string {
   const renderedLinks = new Set();
   const links: string[] = [];
+  const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
 
   snapshot.map.forEach((territory) => {
     territory.neighbors.forEach((neighborId) => {
@@ -858,6 +873,7 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
       }
       const classes = [
         "territory-node",
+        pieceSkinClass,
         territory.ownerId === state.playerId ? "is-mine" : "",
         activeSelection.sourceId === territory.id ? "is-source" : "",
         activeSelection.targetId === territory.id ? "is-target" : "",
@@ -930,6 +946,8 @@ function currentRenderedMapSignature(snapshot: GameSnapshot | null): string {
     Number.isInteger(snapshot.version) ? snapshot.version : "",
     state.playerId || "",
     snapshot.mapId || "",
+    snapshot.gameConfig?.pieceSkin?.renderStyleId || "",
+    snapshot.gameConfig?.pieceSkinId || "",
     snapshot.mapVisual?.imageUrl || "",
     snapshot.mapVisual?.aspectRatio?.width || "",
     snapshot.mapVisual?.aspectRatio?.height || "",
@@ -1049,7 +1067,6 @@ function prepareRenderContext(): RenderContext {
     ? snapshot.gameConfig.players.filter((player) => player.type === "ai").length
     : 0;
   const playerLabel = totalPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural");
-
   const territories = myTerritories();
   const reinforceOptionsMarkup = territories
     .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
@@ -1267,7 +1284,9 @@ function renderStatusSummarySection(context: RenderContext): void {
 }
 
 function renderPlayersSection(context: RenderContext): void {
+  const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(context.snapshot));
   const signature = createSignature([
+    pieceSkinClass,
     (context.snapshot?.players || []).map((player) => [
       player.id,
       player.name,
@@ -1283,11 +1302,11 @@ function renderPlayersSection(context: RenderContext): void {
   setMarkup(elements.players, (context.snapshot?.players || [])
     .map(
       (player) => `
-        <article class="player-card">
+        <article class="player-card ${pieceSkinClass}">
           <strong>${escapeHtml(player.name)}</strong>
           <div>${t("game.runtime.territories")}: ${player.territoryCount}</div>
           <div>${t("lobby.table.status")}: ${player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}</div>
-          <div style="margin-top: 8px; height: 10px; border-radius: 99px; --player-color:${player.color}; background: var(--player-color);"></div>
+          <div class="player-card-token" style="--player-color:${player.color};"></div>
         </article>
       `
     )

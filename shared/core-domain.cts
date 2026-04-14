@@ -47,6 +47,22 @@ export interface MapPosition {
   y: number | null;
 }
 
+export interface GameConfig {
+  extensionSchemaVersion?: number;
+  ruleSetId?: string;
+  ruleSetName?: string;
+  mapId?: string | null;
+  mapName?: string | null;
+  diceRuleSetId?: string;
+  victoryRuleSetId?: string;
+  themeId?: string;
+  pieceSkinId?: string;
+  turnTimeoutHours?: number | null;
+  totalPlayers?: number;
+  players?: Array<Record<string, unknown>>;
+  [key: string]: unknown;
+}
+
 export interface GameState {
   phase: string;
   turnPhase: TurnPhaseValue;
@@ -75,6 +91,7 @@ export interface GameState {
   hands: Record<string, Card[]>;
   tradeCount: number;
   conqueredTerritoryThisTurn: boolean;
+  gameConfig?: GameConfig | null;
 }
 
 export type CreatePlayerInput = Partial<Player>;
@@ -142,6 +159,7 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     discardPile: Array.isArray(input.discardPile) ? input.discardPile : [],
     hands: input.hands || {},
     tradeCount: typeof input.tradeCount === "number" && Number.isInteger(input.tradeCount) ? input.tradeCount : 0,
-    conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn)
+    conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn),
+    gameConfig: input.gameConfig && typeof input.gameConfig === "object" ? input.gameConfig : null
   };
 }
