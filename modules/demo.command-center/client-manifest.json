@@ -2,12 +2,28 @@
   "ui": {
     "slots": [
       {
+        "slotId": "lobby.page",
+        "itemId": "demo.command-center.dispatch",
+        "title": "Dispatch board",
+        "kind": "page-section",
+        "order": 10,
+        "description": "Sezione demo per mostrare briefing modulari direttamente nella lobby."
+      },
+      {
         "slotId": "new-game.sidebar",
         "itemId": "demo.command-center.briefing",
         "title": "Demo briefing",
         "kind": "panel",
         "order": 20,
         "description": "Pannello briefing dimostrativo per la pagina nuova partita."
+      },
+      {
+        "slotId": "game.sidebar",
+        "itemId": "demo.command-center.operations",
+        "title": "Operations uplink",
+        "kind": "widget",
+        "order": 25,
+        "description": "Widget demo per la sidebar di gioco con estensioni dichiarative."
       },
       {
         "slotId": "admin-modules-page",

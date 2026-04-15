@@ -1,5 +1,6 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   ContentPackSummary,
   DiceRuleSet,
@@ -800,3 +801,10 @@ renderSlots();
 renderAdvancedOptions();
 updateSubmitState();
 await restoreSession();
+void mountModuleSlotSection({
+  slotId: "new-game.sidebar",
+  containerId: "new-game-module-slots",
+  anchor: elements.playerSlots,
+  title: "Briefing moduli",
+  copy: "I moduli attivi possono aggiungere pannelli dichiarativi a supporto del setup partita."
+});
