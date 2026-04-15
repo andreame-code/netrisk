@@ -16,6 +16,16 @@ const demoCommandCenterServerModule = {
           diceRuleSetId: "defense-3",
           victoryRuleSetId: "majority-control"
         },
+        gameplayEffects: {
+          reinforcementAdjustments: [
+            {
+              id: "demo.command-center.supply-lines",
+              label: "Supply lines",
+              flatBonus: 2,
+              minimumTotal: 5
+            }
+          ]
+        },
         scenarioSetup: {
           territoryBonuses: [
             {

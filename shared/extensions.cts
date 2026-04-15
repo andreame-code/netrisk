@@ -3,6 +3,7 @@ import { findSupportedMap, listSupportedMaps } from "./maps/index.cjs";
 import {
   NETRISK_MODULE_SCHEMA_VERSION,
   normalizeNetRiskGameModuleSelection,
+  type NetRiskGameplayEffects,
   type NetRiskGameModuleSelection,
   type NetRiskModuleReference
 } from "./netrisk-modules.cjs";
@@ -76,6 +77,7 @@ export interface ExtensionAwareGameConfig extends ExtensionSelection {
   contentProfileId?: string | null;
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;
+  gameplayEffects?: NetRiskGameplayEffects | null;
   name?: string;
   ruleSetId?: string;
   ruleSetName?: string;

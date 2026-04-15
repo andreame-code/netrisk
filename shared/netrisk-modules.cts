@@ -158,6 +158,17 @@ export interface NetRiskModuleConfigDefaults {
   pieceSkinId?: string | null;
 }
 
+export interface NetRiskReinforcementAdjustment {
+  id?: string | null;
+  label: string;
+  flatBonus?: number | null;
+  minimumTotal?: number | null;
+}
+
+export interface NetRiskGameplayEffects {
+  reinforcementAdjustments?: NetRiskReinforcementAdjustment[];
+}
+
 export interface NetRiskScenarioTerritoryBonus {
   territoryId: string;
   armies: number;
@@ -171,11 +182,13 @@ export interface NetRiskScenarioSetup {
 export interface NetRiskServerProfile {
   id: string;
   defaults?: NetRiskModuleConfigDefaults | null;
+  gameplayEffects?: NetRiskGameplayEffects | null;
   scenarioSetup?: NetRiskScenarioSetup | null;
 }
 
 export interface NetRiskResolvedModuleSetup {
   defaults?: NetRiskModuleConfigDefaults | null;
+  gameplayEffects?: NetRiskGameplayEffects | null;
   scenarioSetup?: NetRiskScenarioSetup | null;
 }
 
@@ -316,6 +329,48 @@ function normalizeModuleConfigDefaults(raw: unknown): NetRiskModuleConfigDefault
   };
 }
 
+function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGameplayEffects | null {
+  if (!isObject(raw)) {
+    return null;
+  }
+
+  const reinforcementAdjustments = Array.isArray(raw.reinforcementAdjustments)
+    ? raw.reinforcementAdjustments.map((entry) => {
+        if (!isObject(entry) || !isNonEmptyString(entry.label)) {
+          throw new Error(`Invalid reinforcement adjustment in "${sourcePath}".`);
+        }
+
+        const hasFlatBonus = typeof entry.flatBonus !== "undefined";
+        const hasMinimumTotal = typeof entry.minimumTotal !== "undefined";
+        const flatBonus = hasFlatBonus ? Number(entry.flatBonus) : null;
+        const minimumTotal = hasMinimumTotal ? Number(entry.minimumTotal) : null;
+
+        if (!hasFlatBonus && !hasMinimumTotal) {
+          throw new Error(`Reinforcement adjustment in "${sourcePath}" must define flatBonus or minimumTotal.`);
+        }
+
+        if (hasFlatBonus && (!Number.isInteger(flatBonus) || (flatBonus as number) < 0)) {
+          throw new Error(`Invalid reinforcement flatBonus in "${sourcePath}".`);
+        }
+
+        if (hasMinimumTotal && (!Number.isInteger(minimumTotal) || (minimumTotal as number) < 1)) {
+          throw new Error(`Invalid reinforcement minimumTotal in "${sourcePath}".`);
+        }
+
+        return {
+          id: isNonEmptyString(entry.id) ? String(entry.id).trim() : null,
+          label: String(entry.label).trim(),
+          flatBonus,
+          minimumTotal
+        };
+      })
+    : [];
+
+  return {
+    reinforcementAdjustments
+  };
+}
+
 function normalizeServerProfiles(raw: unknown, sourcePath: string): NetRiskServerProfile[] {
   if (!Array.isArray(raw)) {
     return [];
@@ -329,6 +384,7 @@ function normalizeServerProfiles(raw: unknown, sourcePath: string): NetRiskServe
     return {
       id: String(entry.id).trim(),
       defaults: normalizeModuleConfigDefaults(entry.defaults),
+      gameplayEffects: normalizeGameplayEffects(entry.gameplayEffects, sourcePath),
       scenarioSetup: normalizeScenarioSetup(entry.scenarioSetup, sourcePath)
     };
   });
