@@ -50,6 +50,27 @@ export type NetRiskModuleProfile = {
   moduleId?: string | null;
 };
 
+export type NetRiskGamePreset = {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+  defaults?: {
+    contentPackId?: string | null;
+    ruleSetId?: string | null;
+    pieceSetId?: string | null;
+    mapId?: string | null;
+    diceRuleSetId?: string | null;
+    victoryRuleSetId?: string | null;
+    themeId?: string | null;
+    pieceSkinId?: string | null;
+  } | null;
+};
+
 export type NetRiskUiSlotContribution = {
   slotId: string;
   itemId: string;
@@ -99,6 +120,7 @@ export type InstalledModuleSummary = {
       gameplay?: NetRiskModuleProfile[];
       ui?: NetRiskModuleProfile[];
     } | null;
+    gamePresets?: NetRiskGamePreset[] | null;
   } | null;
 };
 
@@ -189,6 +211,7 @@ export type GameOptionsResponse = MessagePayload & {
   pieceSkins: PieceSkin[];
   modules?: InstalledModuleSummary[];
   enabledModules?: NetRiskModuleReference[];
+  gamePresets?: NetRiskGamePreset[];
   contentProfiles?: NetRiskModuleProfile[];
   gameplayProfiles?: NetRiskModuleProfile[];
   uiProfiles?: NetRiskModuleProfile[];
@@ -203,6 +226,7 @@ export type ModuleOptionsResponse = MessagePayload & {
   enabledModules: NetRiskModuleReference[];
   gameModules: InstalledModuleSummary[];
   content: NetRiskContentContribution;
+  gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
@@ -234,6 +258,7 @@ export type GameConfigSummary = {
   themeId?: string | null;
   pieceSkinId?: string | null;
   activeModules?: NetRiskModuleReference[];
+  gamePresetId?: string | null;
   contentProfileId?: string | null;
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;

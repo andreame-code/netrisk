@@ -385,6 +385,20 @@ register("module runtime applica defaults setup dai profili server-side del modu
         }
       },
       clientManifest: {
+        gamePresets: [
+          {
+            id: "demo.defaults.command-preset",
+            name: "Defaults Preset",
+            activeModuleIds: ["demo.defaults"],
+            contentProfileId: "demo.defaults.content",
+            gameplayProfileId: "demo.defaults.gameplay",
+            uiProfileId: "demo.defaults.ui",
+            defaults: {
+              mapId: "classic-mini",
+              themeId: "command"
+            }
+          }
+        ],
         profiles: {
           content: [{ id: "demo.defaults.content", name: "Defaults Content" }],
           gameplay: [{ id: "demo.defaults.gameplay", name: "Defaults Gameplay" }],
@@ -398,7 +412,14 @@ register("module runtime applica defaults setup dai profili server-side del modu
       { id: "demo.defaults.content", defaults: { mapId: "world-classic" } }
     ],
     gameplay: [
-      { id: "demo.defaults.gameplay", defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" } }
+      {
+        id: "demo.defaults.gameplay",
+        defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" },
+        scenarioSetup: {
+          territoryBonuses: [{ territoryId: "aurora", armies: 1 }],
+          logMessage: "Scenario defaults applied."
+        }
+      }
     ],
     ui: [
       { id: "demo.defaults.ui", defaults: { themeId: "ember", pieceSkinId: "command-ring" } }
@@ -425,6 +446,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.victoryRuleSetId, "majority-control");
     assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
     assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+    assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId, "aurora");
 
     const explicitOverrideResponse = await callApp(app, "POST", "/api/games", {
       name: "Profile Defaults Override",
@@ -433,12 +455,108 @@ register("module runtime applica defaults setup dai profili server-side del modu
       gameplayProfileId: "demo.defaults.gameplay",
       uiProfileId: "demo.defaults.ui",
       mapId: "classic-mini",
-      themeId: "command"
+      themeId: "command",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
     }, authHeaders(adminSessionToken));
 
     assert.equal(explicitOverrideResponse.statusCode, 201);
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.mapId, "classic-mini");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.themeId, "command");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+
+    const startResponse = await callApp(app, "POST", "/api/start", {
+      gameId: explicitOverrideResponse.payload.game.id,
+      playerId: explicitOverrideResponse.payload.playerId
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(startResponse.statusCode, 200);
+    assert.equal(startResponse.payload.state.map.some((entry: any) => entry.id === "aurora" && entry.armies === 2), true);
+    assert.equal(startResponse.payload.state.log.some((entry: any) => String(entry || "").includes("Scenario defaults applied.")), true);
+  });
+});
+
+register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.presets",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.presets",
+        version: "1.0.0",
+        displayName: "Demo Presets",
+        engineVersion: "1.0.0",
+        kind: "hybrid",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "gameplay-hook", scope: "game", hook: "setup.profile", description: "Preset setup profile" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json",
+          server: "server-module.cjs"
+        }
+      },
+      clientManifest: {
+        gamePresets: [
+          {
+            id: "demo.presets.command-preset",
+            name: "Command Preset",
+            activeModuleIds: ["demo.presets"],
+            contentProfileId: "demo.presets.content",
+            gameplayProfileId: "demo.presets.gameplay",
+            uiProfileId: "demo.presets.ui",
+            defaults: {
+              mapId: "classic-mini",
+              themeId: "command"
+            }
+          }
+        ],
+        profiles: {
+          content: [{ id: "demo.presets.content", name: "Preset Content" }],
+          gameplay: [{ id: "demo.presets.gameplay", name: "Preset Gameplay" }],
+          ui: [{ id: "demo.presets.ui", name: "Preset UI" }]
+        }
+      },
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  profiles: {
+    content: [
+      { id: "demo.presets.content", defaults: { mapId: "world-classic" } }
+    ],
+    gameplay: [
+      { id: "demo.presets.gameplay", defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" } }
+    ],
+    ui: [
+      { id: "demo.presets.ui", defaults: { themeId: "ember", pieceSkinId: "command-ring" } }
+    ]
+  }
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.presets/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(optionsResponse.payload.gamePresets.some((entry: any) => entry.id === "demo.presets.command-preset"), true);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Preset Game",
+      gamePresetId: "demo.presets.command-preset",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.gamePresetId, "demo.presets.command-preset");
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "classic-mini");
+    assert.equal(createGameResponse.payload.state.gameConfig.themeId, "command");
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+    assert.equal(createGameResponse.payload.state.gameConfig.activeModules.some((entry: any) => entry.id === "demo.presets"), true);
+    assert.equal(createGameResponse.payload.state.gameConfig.contentProfileId, "demo.presets.content");
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayProfileId, "demo.presets.gameplay");
+    assert.equal(createGameResponse.payload.state.gameConfig.uiProfileId, "demo.presets.ui");
   });
 });

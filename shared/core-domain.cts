@@ -60,6 +60,7 @@ export interface GameConfig {
   themeId?: string;
   pieceSkinId?: string;
   activeModules?: NetRiskModuleReference[];
+  gamePresetId?: string | null;
   contentProfileId?: string | null;
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;

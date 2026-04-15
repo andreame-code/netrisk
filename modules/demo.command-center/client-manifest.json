@@ -38,6 +38,22 @@
       }
     ]
   },
+  "gamePresets": [
+    {
+      "id": "demo.command-center.command-ops",
+      "name": "Command Ops",
+      "description": "Preset demo che abilita il modulo e applica i profili operativi consigliati.",
+      "activeModuleIds": ["demo.command-center"],
+      "contentProfileId": "demo.command-center.content",
+      "gameplayProfileId": "demo.command-center.gameplay",
+      "uiProfileId": "demo.command-center.ui",
+      "defaults": {
+        "ruleSetId": "classic-defense-3",
+        "themeId": "ember",
+        "pieceSkinId": "command-ring"
+      }
+    }
+  ],
   "profiles": {
     "content": [
       {
