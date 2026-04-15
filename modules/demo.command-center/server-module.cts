@@ -17,6 +17,7 @@ const demoCommandCenterServerModule = {
           victoryRuleSetId: "majority-control"
         },
         gameplayEffects: {
+          majorityControlThresholdPercent: 60,
           reinforcementAdjustments: [
             {
               id: "demo.command-center.supply-lines",
