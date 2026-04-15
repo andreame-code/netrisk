@@ -35,6 +35,18 @@ export interface NetRiskModuleProfileContract {
   moduleId?: string | null;
 }
 
+export interface NetRiskGamePresetContract {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+  defaults?: Record<string, unknown> | null;
+}
+
 export interface NetRiskUiSlotContributionContract {
   slotId: string;
   itemId: string;
@@ -84,6 +96,7 @@ export interface ModuleOptionsResponseContract {
   enabledModules: NetRiskModuleReferenceContract[];
   gameModules: NetRiskInstalledModuleContract[];
   content: NetRiskContentContributionContract;
+  gamePresets: NetRiskGamePresetContract[];
   uiSlots: NetRiskUiSlotContributionContract[];
   contentProfiles: NetRiskModuleProfileContract[];
   gameplayProfiles: NetRiskModuleProfileContract[];
@@ -116,6 +129,7 @@ export interface GameOptionsResponseContract {
   pieceSkins: PieceSkinContract[];
   modules?: NetRiskInstalledModuleContract[];
   enabledModules?: NetRiskModuleReferenceContract[];
+  gamePresets?: NetRiskGamePresetContract[];
   contentProfiles?: NetRiskModuleProfileContract[];
   gameplayProfiles?: NetRiskModuleProfileContract[];
   uiProfiles?: NetRiskModuleProfileContract[];

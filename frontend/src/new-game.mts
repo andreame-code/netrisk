@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   MapSummary,
   NetRiskContentContribution,
+  NetRiskGamePreset,
   NetRiskModuleProfile,
   PieceSkin,
   PublicUser,
@@ -27,10 +28,12 @@ const state: {
   themes: VisualTheme[];
   pieceSkins: PieceSkin[];
   modules: InstalledModuleSummary[];
+  gamePresets: NetRiskGamePreset[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
   uiProfiles: NetRiskModuleProfile[];
   turnTimeoutHoursOptions: number[];
+  selectedGamePresetId: string | null;
   user: PublicUser | null;
   creating: boolean;
   sessionReady: boolean;
@@ -43,10 +46,12 @@ const state: {
   themes: [],
   pieceSkins: [],
   modules: [],
+  gamePresets: [],
   contentProfiles: [],
   gameplayProfiles: [],
   uiProfiles: [],
   turnTimeoutHoursOptions: [],
+  selectedGamePresetId: null,
   user: null,
   creating: false,
   sessionReady: false
@@ -221,6 +226,12 @@ function aggregateSelectedModuleContent(): NetRiskContentContribution {
 function filterProfilesForSelectedModules(profiles: NetRiskModuleProfile[]): NetRiskModuleProfile[] {
   const selectedIds = selectedModuleIdSet();
   return profiles.filter((profile) => !profile.moduleId || selectedIds.has(profile.moduleId));
+}
+
+function availableGamePresets(): NetRiskGamePreset[] {
+  return state.gamePresets.filter((preset) =>
+    !preset.moduleId || state.modules.some((moduleEntry) => moduleEntry.id === preset.moduleId)
+  );
 }
 
 function selectMarkup(options: Array<{ value: string; label: string }>): string {
@@ -421,6 +432,60 @@ function selectedProfileValue(profileKind: "content" | "gameplay" | "ui"): strin
   return select?.value || undefined;
 }
 
+function gamePresetSelectMarkup(presets: NetRiskGamePreset[]): string {
+  return '<label class="field-stack"><span>Preset modulo</span><select id="setup-game-preset">' +
+    '<option value="">' + t("common.notAvailable") + '</option>' +
+    presets.map((preset) => '<option value="' + preset.id + '">' + preset.name + '</option>').join("") +
+  '</select></label>';
+}
+
+function dropSelectedGamePreset(): void {
+  if (!state.selectedGamePresetId) {
+    return;
+  }
+
+  state.selectedGamePresetId = null;
+  renderModuleOptions();
+}
+
+function applySelectedGamePreset(presetId: string): void {
+  const preset = availableGamePresets().find((entry) => entry.id === presetId) || null;
+  state.selectedGamePresetId = preset ? preset.id : null;
+
+  Array.from(document.querySelectorAll<HTMLInputElement>("[data-module-checkbox]")).forEach((checkbox) => {
+    checkbox.checked = Boolean(preset && Array.isArray(preset.activeModuleIds) && preset.activeModuleIds.includes(checkbox.value));
+  });
+
+  renderModuleOptions();
+  refreshSelectableCatalogs();
+
+  const contentProfileSelect = document.querySelector("#setup-content-profile") as HTMLSelectElement | null;
+  const gameplayProfileSelect = document.querySelector("#setup-gameplay-profile") as HTMLSelectElement | null;
+  const uiProfileSelect = document.querySelector("#setup-ui-profile") as HTMLSelectElement | null;
+
+  if (contentProfileSelect) {
+    contentProfileSelect.value = preset?.contentProfileId || "";
+  }
+  if (gameplayProfileSelect) {
+    gameplayProfileSelect.value = preset?.gameplayProfileId || "";
+  }
+  if (uiProfileSelect) {
+    uiProfileSelect.value = preset?.uiProfileId || "";
+  }
+
+  setSelectValueIfAvailable(elements.contentPack, preset?.defaults?.contentPackId);
+  setSelectValueIfAvailable(elements.ruleSet, preset?.defaults?.ruleSetId);
+  setSelectValueIfAvailable(elements.map, preset?.defaults?.mapId);
+  setSelectValueIfAvailable(elements.diceRuleSet, preset?.defaults?.diceRuleSetId);
+  setSelectValueIfAvailable(elements.victoryRuleSet, preset?.defaults?.victoryRuleSetId);
+  setSelectValueIfAvailable(elements.theme, preset?.defaults?.themeId);
+  setSelectValueIfAvailable(elements.pieceSkin, preset?.defaults?.pieceSkinId);
+
+  renderContentPackSummary();
+  renderMapDetails();
+  renderRuleSetSummary();
+}
+
 function availableContentProfiles(): NetRiskModuleProfile[] {
   return filterProfilesForSelectedModules(state.contentProfiles);
 }
@@ -471,7 +536,8 @@ function refreshSelectableCatalogs(): void {
 function renderModuleOptions() {
   const container = ensureModuleOptionsContainer();
   const visibleModules = state.modules.filter((moduleEntry) => moduleEntry.id !== "core.base");
-  if (!visibleModules.length && !state.contentProfiles.length && !state.gameplayProfiles.length && !state.uiProfiles.length) {
+  const gamePresets = availableGamePresets();
+  if (!visibleModules.length && !gamePresets.length && !state.contentProfiles.length && !state.gameplayProfiles.length && !state.uiProfiles.length) {
     setMarkup(container, "");
     setHidden(container, true);
     return;
@@ -492,6 +558,7 @@ function renderModuleOptions() {
       '<span class="badge">' + visibleModules.length + '</span>' +
     '</div>' +
     '<p class="map-setup-copy">Attiva i moduli compatibili installati sul server e salva i profili da associare alla partita.</p>' +
+    gamePresetSelectMarkup(gamePresets) +
     '<div class="setup-player-slots">' +
       (visibleModules.length
         ? visibleModules.map((moduleEntry) =>
@@ -522,6 +589,11 @@ function renderModuleOptions() {
   }
   if (uiProfileSelect && uiProfiles.some((profile) => profile.id === selectedUiProfileId)) {
     uiProfileSelect.value = selectedUiProfileId;
+  }
+
+  const gamePresetSelect = document.querySelector("#setup-game-preset") as HTMLSelectElement | null;
+  if (gamePresetSelect && state.selectedGamePresetId && gamePresets.some((preset) => preset.id === state.selectedGamePresetId)) {
+    gamePresetSelect.value = state.selectedGamePresetId;
   }
 }
 
@@ -565,6 +637,7 @@ function readConfig() {
     victoryRuleSetId: elements.victoryRuleSet.value,
     themeId: elements.theme.value,
     pieceSkinId: elements.pieceSkin.value,
+    ...(state.selectedGamePresetId ? { gamePresetId: state.selectedGamePresetId } : {}),
     activeModuleIds: selectedModuleIds(),
     ...(selectedProfileValue("content") ? { contentProfileId: selectedProfileValue("content") } : {}),
     ...(selectedProfileValue("gameplay") ? { gameplayProfileId: selectedProfileValue("gameplay") } : {}),
@@ -603,6 +676,7 @@ async function loadOptions() {
   state.themes = data.themes || [];
   state.pieceSkins = data.pieceSkins || [];
   state.modules = data.modules || [];
+  state.gamePresets = data.gamePresets || [];
   state.contentProfiles = data.contentProfiles || [];
   state.gameplayProfiles = data.gameplayProfiles || [];
   state.uiProfiles = data.uiProfiles || [];
@@ -680,6 +754,7 @@ async function loginWithCredentials(username: string, password: string): Promise
 }
 
 elements.contentPack.addEventListener("change", () => {
+  dropSelectedGamePreset();
   syncContentPackDefaults();
   renderContentPackSummary();
   renderRuleSetSummary();
@@ -688,19 +763,33 @@ elements.contentPack.addEventListener("change", () => {
 
 elements.totalPlayers.addEventListener("change", renderSlots);
 elements.ruleSet.addEventListener("change", () => {
+  dropSelectedGamePreset();
   syncRuleSetDefaults();
   renderMapDetails();
   renderRuleSetSummary();
 });
 elements.map.addEventListener("change", () => {
+  dropSelectedGamePreset();
   renderMapDetails();
   renderRuleSetSummary();
 });
 elements.customizeOptions.addEventListener("change", renderAdvancedOptions);
-elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
-elements.victoryRuleSet.addEventListener("change", renderRuleSetSummary);
-elements.theme.addEventListener("change", renderRuleSetSummary);
-elements.pieceSkin.addEventListener("change", renderRuleSetSummary);
+elements.diceRuleSet.addEventListener("change", () => {
+  dropSelectedGamePreset();
+  renderRuleSetSummary();
+});
+elements.victoryRuleSet.addEventListener("change", () => {
+  dropSelectedGamePreset();
+  renderRuleSetSummary();
+});
+elements.theme.addEventListener("change", () => {
+  dropSelectedGamePreset();
+  renderRuleSetSummary();
+});
+elements.pieceSkin.addEventListener("change", () => {
+  dropSelectedGamePreset();
+  renderRuleSetSummary();
+});
 elements.advancedOptions.addEventListener("change", (event: Event) => {
   const target = event.target as HTMLElement | null;
   if (!target) {
@@ -708,11 +797,23 @@ elements.advancedOptions.addEventListener("change", (event: Event) => {
   }
 
   if (target.matches("[data-module-checkbox]")) {
+    state.selectedGamePresetId = null;
     renderModuleOptions();
     refreshSelectableCatalogs();
     renderContentPackSummary();
     renderMapDetails();
     renderRuleSetSummary();
+    return;
+  }
+
+  if (target.matches("#setup-game-preset")) {
+    applySelectedGamePreset((target as HTMLSelectElement).value);
+    return;
+  }
+
+  if (target.matches("#setup-content-profile, #setup-gameplay-profile, #setup-ui-profile")) {
+    state.selectedGamePresetId = null;
+    renderModuleOptions();
     return;
   }
 

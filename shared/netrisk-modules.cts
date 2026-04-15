@@ -56,6 +56,18 @@ export interface NetRiskModuleProfile {
   moduleId?: string | null;
 }
 
+export interface NetRiskGamePreset {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+  defaults?: NetRiskModuleConfigDefaults | null;
+}
+
 export interface NetRiskUiSlotContribution {
   slotId: string;
   itemId: string;
@@ -95,6 +107,7 @@ export interface NetRiskModuleClientManifest {
   ui?: NetRiskUiContribution | null;
   gameplay?: NetRiskGameplayContribution | null;
   content?: NetRiskContentContribution | null;
+  gamePresets?: NetRiskGamePreset[] | null;
   profiles?: {
     content?: NetRiskModuleProfile[];
     gameplay?: NetRiskModuleProfile[];
@@ -145,8 +158,36 @@ export interface NetRiskModuleConfigDefaults {
   pieceSkinId?: string | null;
 }
 
+export interface NetRiskScenarioTerritoryBonus {
+  territoryId: string;
+  armies: number;
+}
+
+export interface NetRiskScenarioSetup {
+  territoryBonuses?: NetRiskScenarioTerritoryBonus[];
+  logMessage?: string | null;
+}
+
 export interface NetRiskServerProfile {
   id: string;
+  defaults?: NetRiskModuleConfigDefaults | null;
+  scenarioSetup?: NetRiskScenarioSetup | null;
+}
+
+export interface NetRiskResolvedModuleSetup {
+  defaults?: NetRiskModuleConfigDefaults | null;
+  scenarioSetup?: NetRiskScenarioSetup | null;
+}
+
+export interface NetRiskResolvedGamePreset {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
   defaults?: NetRiskModuleConfigDefaults | null;
 }
 
@@ -228,6 +269,30 @@ function normalizeProfiles(raw: unknown): NetRiskModuleProfile[] {
     }));
 }
 
+function normalizeGamePresets(raw: unknown): NetRiskGamePreset[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error("Invalid module game preset contribution.");
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      description: isNonEmptyString(entry.description) ? String(entry.description).trim() : null,
+      moduleId: isNonEmptyString(entry.moduleId) ? String(entry.moduleId).trim() : null,
+      activeModuleIds: normalizeStringArray(entry.activeModuleIds),
+      contentProfileId: isNonEmptyString(entry.contentProfileId) ? String(entry.contentProfileId).trim() : null,
+      gameplayProfileId: isNonEmptyString(entry.gameplayProfileId) ? String(entry.gameplayProfileId).trim() : null,
+      uiProfileId: isNonEmptyString(entry.uiProfileId) ? String(entry.uiProfileId).trim() : null,
+      defaults: normalizeModuleConfigDefaults(entry.defaults)
+    };
+  });
+}
+
 function normalizeStringArray(raw: unknown): string[] {
   return Array.isArray(raw)
     ? raw.filter((value) => isNonEmptyString(value)).map((value) => String(value).trim())
@@ -263,9 +328,39 @@ function normalizeServerProfiles(raw: unknown, sourcePath: string): NetRiskServe
 
     return {
       id: String(entry.id).trim(),
-      defaults: normalizeModuleConfigDefaults(entry.defaults)
+      defaults: normalizeModuleConfigDefaults(entry.defaults),
+      scenarioSetup: normalizeScenarioSetup(entry.scenarioSetup, sourcePath)
     };
   });
+}
+
+function normalizeScenarioSetup(raw: unknown, sourcePath: string): NetRiskScenarioSetup | null {
+  if (!isObject(raw)) {
+    return null;
+  }
+
+  const territoryBonuses = Array.isArray(raw.territoryBonuses)
+    ? raw.territoryBonuses.map((entry) => {
+        if (!isObject(entry) || !isNonEmptyString(entry.territoryId)) {
+          throw new Error(`Invalid scenario territory bonus in "${sourcePath}".`);
+        }
+
+        const armies = Number(entry.armies);
+        if (!Number.isInteger(armies) || armies < 1) {
+          throw new Error(`Invalid scenario territory bonus armies in "${sourcePath}".`);
+        }
+
+        return {
+          territoryId: String(entry.territoryId).trim(),
+          armies
+        };
+      })
+    : [];
+
+  return {
+    territoryBonuses,
+    logMessage: isNonEmptyString(raw.logMessage) ? String(raw.logMessage).trim() : null
+  };
 }
 
 export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string): NetRiskModuleManifest {
@@ -358,6 +453,7 @@ export function validateNetRiskModuleClientManifest(raw: unknown, sourcePath: st
     ui,
     gameplay,
     content,
+    gamePresets: normalizeGamePresets(raw.gamePresets),
     profiles
   };
 }
