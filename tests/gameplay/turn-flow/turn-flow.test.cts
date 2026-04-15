@@ -108,6 +108,26 @@ register("endTurn from fortify advances to the next active player reinforcement 
   assert.equal(state.reinforcementPool >= 3, true);
 });
 
+register("advanceTurn resetta il contatore attacchi del nuovo turno", () => {
+  const state = setupLiveGame();
+  const firstPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === firstPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
+
+  while (state.reinforcementPool > 0) {
+    applyReinforcement(state, firstPlayer.id, ownedTerritoryId);
+  }
+
+  state.attacksThisTurn = 2;
+  endTurn(state, firstPlayer.id);
+  endTurn(state, firstPlayer.id);
+
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.attacksThisTurn, 0);
+});
+
 register("advanceTurn awards continent bonuses through the game engine reinforcement pool", () => {
   const state = createInitialState(findSupportedMap("world-classic"));
   state.phase = "active";

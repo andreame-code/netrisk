@@ -71,6 +71,7 @@ interface GameplayEffectsLike {
   conquestMinimumArmies?: number | null;
   fortifyMinimumArmies?: number | null;
   attackMinimumArmies?: number | null;
+  attackLimitPerTurn?: number | null;
 }
 
 interface CombatSnapshot {
@@ -100,6 +101,7 @@ type EngineState = GameState & {
   pendingConquest: PendingConquest | null;
   gameConfig?: GameConfig | null;
   fortifyUsed: boolean;
+  attacksThisTurn: number;
   lastAction: Record<string, unknown> | null;
 };
 
@@ -152,6 +154,7 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     lastAction: null,
     pendingConquest: null,
     fortifyUsed: false,
+    attacksThisTurn: 0,
     cardRuleSetId: "standard",
     victoryRuleSetId: "conquest",
     pieceSetId: "classic",
@@ -422,6 +425,11 @@ function resolveAttackMinimumArmies(state: EngineState): number {
   return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
+function resolveAttackLimitPerTurn(state: EngineState): number | null {
+  const configuredLimit = resolveGameplayEffects(state)?.attackLimitPerTurn;
+  return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
+}
+
 function applyScenarioSetupOnStart(state: EngineState): void {
   const scenarioSetup = resolveScenarioSetup(state);
   if (!scenarioSetup) {
@@ -507,6 +515,7 @@ export function publicState(state: EngineState) {
     },
     pendingConquest: state.pendingConquest,
     fortifyUsed: Boolean(state.fortifyUsed),
+    attacksThisTurn: Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0,
     conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
     cardState: {
       ruleSetId: state.cardRuleSetId || "standard",
@@ -535,6 +544,7 @@ export function startGame(state: EngineState, random: () => number = secureRando
   state.lastAction = null;
   state.pendingConquest = null;
   state.fortifyUsed = false;
+  state.attacksThisTurn = 0;
   state.conqueredTerritoryThisTurn = false;
 
   shuffledTerritories.forEach((territoryId) => {
@@ -602,6 +612,7 @@ export function advanceTurn(state: EngineState, now: Date = new Date()): void {
       state.turnStartedAt = currentUtcTimestamp(now);
       state.pendingConquest = null;
       state.fortifyUsed = false;
+      state.attacksThisTurn = 0;
       state.conqueredTerritoryThisTurn = false;
       appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.", "game.log.turnStarted", {
         playerName: candidate.name,
@@ -784,6 +795,15 @@ export function resolveAttack(
     });
   }
 
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return createActionFailure("Hai gia raggiunto il numero massimo di attacchi per questo turno.", "game.attack.limitReached", {
+      attackLimitPerTurn,
+      attacksThisTurn
+    });
+  }
+
   state.turnPhase = TurnPhase.ATTACK;
 
   const defenderOwnerId = to.ownerId;
@@ -807,6 +827,7 @@ export function resolveAttack(
   const { comparisons } = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies });
   const combatRuleSet = getCombatRuleSet(state.combatRuleSetId || "standard");
   const { attackerLosses, defenderLosses } = combatRuleSet.resolveOutcome(comparisons);
+  state.attacksThisTurn = attacksThisTurn + 1;
 
   from.armies -= attackerLosses;
   to.armies -= defenderLosses;

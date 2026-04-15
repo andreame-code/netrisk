@@ -155,6 +155,24 @@ register("validateAttackAttempt applica il minimo modulare sul territorio attacc
   assert.equal(allowed.ok, true);
 });
 
+register("validateAttackAttempt blocca nuovi attacchi quando il limite turno e raggiunto", () => {
+  const { graph, state } = setupValidationState();
+  state.attacksThisTurn = 1;
+  state.gameConfig = {
+    gameplayEffects: {
+      attackLimitPerTurn: 1
+    }
+  };
+
+  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "ATTACK_LIMIT_REACHED");
+  assert.deepEqual(result.details, {
+    attackLimitPerTurn: 1,
+    attacksThisTurn: 1
+  });
+});
+
 register("validateAttackAttempt rejects defenders without an enemy owner", () => {
   const { graph, state } = setupValidationState();
   state.territories.b.ownerId = null;
