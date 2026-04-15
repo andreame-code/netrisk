@@ -297,6 +297,46 @@ register("chooseFortify rispetta il minimo modulare configurato nel gameConfig",
   });
 });
 
+register("runAiTurn forza una fortifica legale quando il profilo modulare la rende obbligatoria", () => {
+  const players = makePlayers(["CPU Alpha", "Bob"]);
+  players[0].isAi = true;
+
+  const state = createAiState({
+    players,
+    turnPhase: TurnPhase.FORTIFY,
+    reinforcementPool: 0,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p1", armies: 1 },
+      { id: "c", ownerId: "p2", armies: 2 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a", "c"]),
+      makeTerritory("c", ["b"]),
+      makeTerritory("d", [])
+    ]
+  });
+  state.gameConfig = {
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  };
+
+  const report = runAiTurn(state);
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.fortify, {
+    fromId: "a",
+    toId: "b",
+    armies: 2,
+    score: 15
+  });
+  assert.equal(report.endedTurn, true);
+  assert.equal(state.currentTurnIndex, 1);
+});
+
 register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn", () => {
   const players = makePlayers(["CPU Alpha", "Bob"]);
   players[0].isAi = true;
