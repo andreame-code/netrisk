@@ -427,6 +427,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
         gameplayEffects: {
           attackMinimumArmies: 3,
           attackLimitPerTurn: 2,
+          minimumAttacksPerTurn: 1,
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
           fortifyMinimumArmies: 2,
@@ -474,6 +475,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.attackMinimumArmies, 3);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.attackLimitPerTurn, 2);
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.minimumAttacksPerTurn, 1);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.majorityControlThresholdPercent, 60);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.conquestMinimumArmies, 2);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.fortifyMinimumArmies, 2);
