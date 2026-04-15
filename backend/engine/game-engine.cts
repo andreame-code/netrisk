@@ -72,6 +72,7 @@ interface GameplayEffectsLike {
   fortifyMinimumArmies?: number | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
+  minimumAttacksPerTurn?: number | null;
 }
 
 interface CombatSnapshot {
@@ -400,10 +401,34 @@ function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null 
   const conquestMinimumArmies = typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies === "number"
     ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
     : null;
+  const fortifyMinimumArmies = typeof (rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies === "number"
+    ? Number((rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies)
+    : null;
+  const attackMinimumArmies = typeof (rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies === "number"
+    ? Number((rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies)
+    : null;
+  const attackLimitPerTurn = typeof (rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn === "number"
+    ? Number((rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn)
+    : null;
+  const minimumAttacksPerTurn = typeof (rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn === "number"
+    ? Number((rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn)
+    : null;
 
   return {
     conquestMinimumArmies: Number.isInteger(conquestMinimumArmies) && (conquestMinimumArmies as number) >= 1
       ? conquestMinimumArmies
+      : null,
+    fortifyMinimumArmies: Number.isInteger(fortifyMinimumArmies) && (fortifyMinimumArmies as number) >= 1
+      ? fortifyMinimumArmies
+      : null,
+    attackMinimumArmies: Number.isInteger(attackMinimumArmies) && (attackMinimumArmies as number) >= 2
+      ? attackMinimumArmies
+      : null,
+    attackLimitPerTurn: Number.isInteger(attackLimitPerTurn) && (attackLimitPerTurn as number) >= 1
+      ? attackLimitPerTurn
+      : null,
+    minimumAttacksPerTurn: Number.isInteger(minimumAttacksPerTurn) && (minimumAttacksPerTurn as number) >= 1
+      ? minimumAttacksPerTurn
       : null
   };
 }
@@ -428,6 +453,34 @@ function resolveAttackMinimumArmies(state: EngineState): number {
 function resolveAttackLimitPerTurn(state: EngineState): number | null {
   const configuredLimit = resolveGameplayEffects(state)?.attackLimitPerTurn;
   return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
+}
+
+function resolveMinimumAttacksPerTurn(state: EngineState): number | null {
+  const configuredMinimum = resolveGameplayEffects(state)?.minimumAttacksPerTurn;
+  return Number.isInteger(configuredMinimum) ? Math.max(1, Number(configuredMinimum)) : null;
+}
+
+function hasAvailableAttack(state: EngineState, playerId: string): boolean {
+  const minimumAttackArmies = resolveAttackMinimumArmies(state);
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return false;
+  }
+
+  return territoriesOwnedBy(state, playerId)
+    .filter((territory): territory is TerritoryDefinition => Boolean(territory.id))
+    .some((territory) => {
+      const fromState = state.territories[territory.id];
+      if (!fromState || fromState.armies < minimumAttackArmies) {
+        return false;
+      }
+
+      return territory.neighbors.some((neighborId) => {
+        const neighborState = state.territories[neighborId];
+        return Boolean(neighborState && neighborState.ownerId && neighborState.ownerId !== playerId);
+      });
+    });
 }
 
 function applyScenarioSetupOnStart(state: EngineState): void {
@@ -1076,6 +1129,19 @@ export function endTurn(state: EngineState, playerId: string) {
   }
 
   if (state.turnPhase === TurnPhase.ATTACK) {
+    const minimumAttacksPerTurn = resolveMinimumAttacksPerTurn(state);
+    const attacksThisTurn = Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0;
+    if (minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn && hasAvailableAttack(state, playerId)) {
+      return createActionFailure(
+        "Devi effettuare almeno " + minimumAttacksPerTurn + " attacchi prima di fortificare.",
+        "game.endTurn.minimumAttacksRequired",
+        {
+          minimumAttacksPerTurn,
+          attacksThisTurn
+        }
+      );
+    }
+
     state.turnPhase = TurnPhase.FORTIFY;
     state.fortifyUsed = false;
     appendLog(state, player.name + " entra nella fase di fortifica.", "game.log.enterFortify", { playerName: player.name });

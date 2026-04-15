@@ -672,7 +672,10 @@ function mergeGameplayEffects(
       : (typeof target.attackMinimumArmies === "number" ? target.attackMinimumArmies : null),
     attackLimitPerTurn: typeof gameplayEffects.attackLimitPerTurn === "number"
       ? gameplayEffects.attackLimitPerTurn
-      : (typeof target.attackLimitPerTurn === "number" ? target.attackLimitPerTurn : null)
+      : (typeof target.attackLimitPerTurn === "number" ? target.attackLimitPerTurn : null),
+    minimumAttacksPerTurn: typeof gameplayEffects.minimumAttacksPerTurn === "number"
+      ? gameplayEffects.minimumAttacksPerTurn
+      : (typeof target.minimumAttacksPerTurn === "number" ? target.minimumAttacksPerTurn : null)
   };
 }
 
@@ -982,7 +985,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         conquestMinimumArmies: null,
         fortifyMinimumArmies: null,
         attackMinimumArmies: null,
-        attackLimitPerTurn: null
+        attackLimitPerTurn: null,
+        minimumAttacksPerTurn: null
       };
       let resolvedScenarioSetup: NetRiskScenarioSetup = {
         territoryBonuses: [],
@@ -1045,6 +1049,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           || typeof resolvedGameplayEffects.fortifyMinimumArmies === "number"
           || typeof resolvedGameplayEffects.attackMinimumArmies === "number"
           || typeof resolvedGameplayEffects.attackLimitPerTurn === "number"
+          || typeof resolvedGameplayEffects.minimumAttacksPerTurn === "number"
           ? resolvedGameplayEffects
           : null,
         scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
