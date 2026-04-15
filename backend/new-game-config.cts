@@ -295,6 +295,13 @@ export function createConfiguredInitialState(
       contentProfileId?: string | null;
       gameplayProfileId?: string | null;
       uiProfileId?: string | null;
+      contentPackId?: string | null;
+      pieceSetId?: string | null;
+      mapId?: string | null;
+      diceRuleSetId?: string | null;
+      victoryRuleSetId?: string | null;
+      themeId?: string | null;
+      pieceSkinId?: string | null;
     }) => NetRiskGameModuleSelection | Promise<NetRiskGameModuleSelection>;
   } = {}
 ): {
@@ -324,7 +331,14 @@ export function createConfiguredInitialState(
         activeModuleIds: Array.isArray(configInput.activeModuleIds) ? configInput.activeModuleIds : [],
         contentProfileId: typeof configInput.contentProfileId === "string" ? configInput.contentProfileId : null,
         gameplayProfileId: typeof configInput.gameplayProfileId === "string" ? configInput.gameplayProfileId : null,
-        uiProfileId: typeof configInput.uiProfileId === "string" ? configInput.uiProfileId : null
+        uiProfileId: typeof configInput.uiProfileId === "string" ? configInput.uiProfileId : null,
+        contentPackId: config.contentPackId,
+        pieceSetId: config.pieceSetId,
+        mapId: config.mapId,
+        diceRuleSetId: config.diceRuleSetId,
+        victoryRuleSetId: config.victoryRuleSetId,
+        themeId: config.themeId,
+        pieceSkinId: config.pieceSkinId
       })
     : config.moduleSelection;
 

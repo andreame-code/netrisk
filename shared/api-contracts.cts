@@ -45,6 +45,19 @@ export interface NetRiskUiSlotContributionContract {
   route?: string | null;
 }
 
+export interface NetRiskContentContributionContract {
+  mapIds?: string[];
+  siteThemeIds?: string[];
+  pieceSkinIds?: string[];
+  playerPieceSetIds?: string[];
+  contentPackIds?: string[];
+  diceRuleSetIds?: string[];
+  cardRuleSetIds?: string[];
+  victoryRuleSetIds?: string[];
+  fortifyRuleSetIds?: string[];
+  reinforcementRuleSetIds?: string[];
+}
+
 export interface NetRiskInstalledModuleContract {
   id: string;
   version: string | null;
@@ -70,6 +83,7 @@ export interface ModuleOptionsResponseContract {
   modules: NetRiskInstalledModuleContract[];
   enabledModules: NetRiskModuleReferenceContract[];
   gameModules: NetRiskInstalledModuleContract[];
+  content: NetRiskContentContributionContract;
   uiSlots: NetRiskUiSlotContributionContract[];
   contentProfiles: NetRiskModuleProfileContract[];
   gameplayProfiles: NetRiskModuleProfileContract[];
