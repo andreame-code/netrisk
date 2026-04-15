@@ -11,6 +11,7 @@ type MockResponse = {
   statusCode: number;
   headers: HeaderMap;
   body: string;
+  setHeader(name: string, value: string): void;
   writeHead(statusCode: number, nextHeaders?: HeaderMap): void;
   end(chunk?: string): void;
 };
@@ -18,6 +19,12 @@ type MockResponse = {
 type CallAppResult = {
   statusCode: number;
   payload: any;
+};
+
+type CallRequestResult = {
+  statusCode: number;
+  headers: HeaderMap;
+  body: string;
 };
 
 function register(name: string, fn: () => unknown | Promise<unknown>) {
@@ -30,6 +37,9 @@ function makeMockResponse(): MockResponse {
     statusCode: 200,
     headers,
     body: "",
+    setHeader(name: string, value: string) {
+      headers[name] = value;
+    },
     writeHead(statusCode: number, nextHeaders: HeaderMap = {}) {
       this.statusCode = statusCode;
       Object.assign(headers, nextHeaders);
@@ -59,6 +69,31 @@ async function callApp(app: any, method: string, pathname: string, body?: any, h
   return {
     statusCode: res.statusCode,
     payload: res.body ? JSON.parse(res.body) : null
+  };
+}
+
+async function callRequest(app: any, method: string, pathname: string, headers: HeaderMap = {}): Promise<CallRequestResult> {
+  const req = new (require("events").EventEmitter)();
+  req.method = method;
+  req.url = pathname;
+  req.headers = { host: "127.0.0.1", ...headers };
+  req.destroy = () => {};
+
+  const res = makeMockResponse();
+
+  await new Promise<void>((resolve) => {
+    const originalEnd = res.end.bind(res);
+    res.end = (chunk = "") => {
+      originalEnd(chunk);
+      resolve();
+    };
+    app.handleRequest(req, res);
+  });
+
+  return {
+    statusCode: res.statusCode,
+    headers: res.headers,
+    body: res.body
   };
 }
 
@@ -112,7 +147,9 @@ async function withModuleServer(
     }
 
     if (moduleEntry.serverEntryPath && typeof moduleEntry.serverEntrySource === "string") {
-      fs.writeFileSync(path.join(moduleRoot, moduleEntry.serverEntryPath), moduleEntry.serverEntrySource);
+      const serverEntryFilePath = path.join(moduleRoot, moduleEntry.serverEntryPath);
+      fs.mkdirSync(path.dirname(serverEntryFilePath), { recursive: true });
+      fs.writeFileSync(serverEntryFilePath, moduleEntry.serverEntrySource);
     }
   });
 
@@ -226,6 +263,61 @@ register("module runtime scandisce moduli validi e invalidi ed espone catalogo e
     assert.equal(optionsResponse.payload.gameModules.some((entry: any) => entry.id === "demo.valid"), true);
     assert.equal(optionsResponse.payload.uiSlots.some((entry: any) => entry.itemId === "demo.valid.briefing"), true);
     assert.equal(optionsResponse.payload.gameplayProfiles.some((entry: any) => entry.id === "demo.valid.gameplay"), true);
+  });
+});
+
+register("module runtime rifiuta client manifest che escono dalla directory del modulo", async () => {
+  await withModuleServer([
+    {
+      dir: "escape.client-manifest",
+      manifest: {
+        schemaVersion: 1,
+        id: "escape.client-manifest",
+        version: "1.0.0",
+        displayName: "Escape Client Manifest",
+        engineVersion: "1.0.0",
+        kind: "ui",
+        capabilities: [],
+        entrypoints: {
+          clientManifest: "../../stolen.json"
+        }
+      }
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const catalogResponse = await callApp(app, "GET", "/api/modules", undefined, authHeaders(adminSessionToken));
+    assert.equal(catalogResponse.statusCode, 200);
+
+    const escapedModule = catalogResponse.payload.modules.find((entry: any) => entry.id === "escape.client-manifest");
+    assert.equal(Boolean(escapedModule), true);
+    assert.equal(escapedModule.status, "incompatible");
+    assert.equal(
+      escapedModule.errors.some((entry: string) => entry.includes('Client manifest "../../stolen.json" escapes the module directory.')),
+      true
+    );
+  });
+});
+
+register("module runtime serve gli asset modulo dal projectRoot runtime", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.runtime-assets",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.runtime-assets",
+        version: "1.0.0",
+        displayName: "Runtime Assets",
+        engineVersion: "1.0.0",
+        kind: "ui",
+        capabilities: []
+      },
+      serverEntryPath: "assets/runtime-only.css",
+      serverEntrySource: ".runtime-only { color: red; }"
+    }
+  ], async ({ app }) => {
+    const staticResponse = await callRequest(app, "GET", "/modules/demo.runtime-assets/assets/runtime-only.css");
+    assert.equal(staticResponse.statusCode, 200);
+    assert.equal(staticResponse.headers["Content-Type"], "text/css; charset=utf-8");
+    assert.match(staticResponse.body, /runtime-only/);
   });
 });
 
