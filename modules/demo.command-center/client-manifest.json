@@ -1,5 +1,8 @@
 {
   "ui": {
+    "stylesheets": [
+      "/modules/demo.command-center/assets/command-center.css"
+    ],
     "slots": [
       {
         "slotId": "lobby.page",

@@ -13,6 +13,7 @@ const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
 const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
 let availableThemes = [...SUPPORTED_THEMES] as string[];
+let moduleOptionsPromise: Promise<ModuleOptionsResponse | null> | null = null;
 
 type ShellKind = "app" | "marketing";
 type NavSection = "lobby" | "game" | "profile";
@@ -284,26 +285,118 @@ async function renderTopNavModuleSlots() {
     return;
   }
 
-  try {
-    const response = await fetch("/api/modules/options");
-    const data = await response.json() as ModuleOptionsResponse;
-    if (!response.ok || !Array.isArray(data.uiSlots)) {
-      setMarkup(container, "");
+  const data = await fetchModuleOptions();
+  if (!data || !Array.isArray(data.uiSlots)) {
+    setMarkup(container, "");
+    return;
+  }
+
+  const topNavSlots = data.uiSlots
+    .filter((slot) => slot.slotId === "top-nav-bar")
+    .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+
+  setMarkup(container, topNavSlots
+    .map((slot) => slot.route
+      ? `<a href="${slot.route}" class="badge">${slot.title}</a>`
+      : `<span class="badge">${slot.title}</span>`)
+    .join(""));
+}
+
+async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
+  if (moduleOptionsPromise) {
+    return moduleOptionsPromise;
+  }
+
+  moduleOptionsPromise = (async () => {
+    try {
+      const response = await fetch("/api/modules/options");
+      const data = await response.json() as ModuleOptionsResponse;
+      if (!response.ok) {
+        return null;
+      }
+
+      return data;
+    } catch {
+      return null;
+    }
+  })();
+
+  return moduleOptionsPromise;
+}
+
+function resolveModuleStylesheetHref(moduleId: string, stylesheet: string): string | null {
+  const trimmed = String(stylesheet || "").trim();
+  if (!trimmed || /^https?:\/\//i.test(trimmed)) {
+    return null;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return trimmed;
+  }
+
+  return `/modules/${encodeURIComponent(moduleId)}/${trimmed.replace(/^\.?\//, "")}`;
+}
+
+function applyModuleStylesheets(data: ModuleOptionsResponse | null): void {
+  if (!data) {
+    return;
+  }
+
+  const enabledIds = new Set((data.enabledModules || []).map((moduleRef) => moduleRef.id));
+  const hrefs = new Set<string>();
+
+  (data.modules || []).forEach((moduleEntry) => {
+    if (!enabledIds.has(moduleEntry.id)) {
       return;
     }
 
-    const topNavSlots = data.uiSlots
-      .filter((slot) => slot.slotId === "top-nav-bar")
-      .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+    const stylesheets = moduleEntry.clientManifest?.ui?.stylesheets || [];
+    stylesheets.forEach((stylesheet) => {
+      const href = resolveModuleStylesheetHref(moduleEntry.id, stylesheet);
+      if (href) {
+        hrefs.add(href);
+      }
+    });
+  });
 
-    setMarkup(container, topNavSlots
-      .map((slot) => slot.route
-        ? `<a href="${slot.route}" class="badge">${slot.title}</a>`
-        : `<span class="badge">${slot.title}</span>`)
-      .join(""));
-  } catch {
-    setMarkup(container, "");
+  const existingLinks = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[data-module-stylesheet="true"]'));
+  existingLinks.forEach((link) => {
+    if (!hrefs.has(link.href.replace(window.location.origin, ""))) {
+      link.remove();
+    }
+  });
+
+  hrefs.forEach((href) => {
+    const existingLink = document.head.querySelector(`link[data-module-stylesheet="true"][href="${href}"]`) as HTMLLinkElement | null;
+    if (existingLink) {
+      return;
+    }
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.moduleStylesheet = "true";
+    document.head.appendChild(link);
+  });
+}
+
+async function applyShellModuleUi(): Promise<void> {
+  const data = await fetchModuleOptions();
+  applyModuleStylesheets(data);
+}
+
+async function renderAppModuleUi(): Promise<void> {
+  const data = await fetchModuleOptions();
+  applyModuleStylesheets(data);
+  if (!data) {
+    const container = document.querySelector("#top-nav-module-slots");
+    if (container) {
+      setMarkup(container, "");
+    }
+    return;
   }
+
+  await renderTopNavModuleSlots();
 }
 
 function sharedFooterMarkup() {
@@ -404,7 +497,7 @@ function initAppShell() {
   mountAppChrome();
   applyTranslations(document, activeLocale);
   syncAppNav();
-  void renderTopNavModuleSlots();
+  void renderAppModuleUi();
 
   document.querySelectorAll(".top-nav-actions").forEach((container) => {
     buildLocaleControl({
@@ -459,6 +552,7 @@ function initAppShell() {
 document.documentElement.lang = activeLocale;
 applyTheme(resolveTheme());
 applyTranslations(document, activeLocale);
+void applyShellModuleUi();
 
 if ((shellKind as ShellKind) === "app") {
   initAppShell();
