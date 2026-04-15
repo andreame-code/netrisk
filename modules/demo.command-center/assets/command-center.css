@@ -1,0 +1,23 @@
+#new-game-module-slots,
+#lobby-module-slots,
+#game-module-slots {
+  border: 1px solid rgba(198, 154, 88, 0.35);
+  background:
+    radial-gradient(circle at top right, rgba(198, 154, 88, 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(16, 23, 35, 0.92), rgba(12, 17, 27, 0.98));
+  box-shadow: 0 18px 36px rgba(3, 8, 15, 0.28);
+}
+
+#new-game-module-slots .profile-note-card,
+#lobby-module-slots .profile-note-card,
+#game-module-slots .profile-note-card {
+  border-color: rgba(255, 214, 153, 0.24);
+  background: rgba(12, 18, 28, 0.72);
+}
+
+#new-game-module-slots .badge,
+#lobby-module-slots .badge,
+#game-module-slots .badge {
+  background: rgba(198, 154, 88, 0.18);
+  border-color: rgba(255, 214, 153, 0.28);
+}
