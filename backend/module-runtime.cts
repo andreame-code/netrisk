@@ -5,7 +5,7 @@ const { findContentPack: findBuiltInContentPack, listContentPacks } = require(".
 const { listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
 const { findSupportedMap: findBuiltInSupportedMap, listSupportedMaps, summarizeMap } = require("../shared/maps/index.cjs");
-const { listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
+const { findPlayerPieceSet: findBuiltInPlayerPieceSet, listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
 const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
@@ -34,6 +34,7 @@ import type {
   NetRiskModuleClientManifest,
   NetRiskModuleManifest,
   NetRiskModuleProfile,
+  NetRiskModulePlayerPieceSetDefinition,
   NetRiskModuleReference,
   NetRiskResolvedGamePreset,
   NetRiskResolvedModuleSetup,
@@ -43,6 +44,7 @@ import type {
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
+import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
 
 type CatalogState = {
   enabledById: Record<string, boolean>;
@@ -64,6 +66,7 @@ type ModuleOptionsSnapshot = {
   gameModules: NetRiskInstalledModule[];
   content: NetRiskContentContribution;
   maps: MapSummary[];
+  playerPieceSets: PlayerPieceSetSummary[];
   contentPacks: ContentPackSummary[];
   gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
@@ -80,6 +83,11 @@ type RuntimeModuleMapEntry = {
 type RuntimeModuleContentPackEntry = {
   moduleId: string;
   contentPack: ContentPackSummary;
+};
+
+type RuntimeModulePlayerPieceSetEntry = {
+  moduleId: string;
+  pieceSet: PlayerPieceSet;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -166,6 +174,19 @@ function cloneContentPackSummary(contentPack: ContentPackSummary): ContentPackSu
   };
 }
 
+function clonePlayerPieceSetSummary(pieceSet: PlayerPieceSetSummary): PlayerPieceSetSummary {
+  return {
+    ...pieceSet
+  };
+}
+
+function clonePlayerPieceSet(pieceSet: PlayerPieceSet): PlayerPieceSet {
+  return {
+    ...pieceSet,
+    palette: Array.isArray(pieceSet.palette) ? [...pieceSet.palette] : []
+  };
+}
+
 function cloneSupportedMap(map: SupportedMap): SupportedMap {
   return {
     ...map,
@@ -223,7 +244,8 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
 function aggregateContentContribution(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[] = [],
-  runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = []
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = [],
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
@@ -251,6 +273,13 @@ function aggregateContentContribution(
     contribution.contentPackIds = Array.from(new Set([
       ...(contribution.contentPackIds || []),
       ...runtimeContentPackEntries.map((entry) => entry.contentPack.id)
+    ]));
+  }
+
+  if (runtimePlayerPieceSetEntries.length) {
+    contribution.playerPieceSetIds = Array.from(new Set([
+      ...(contribution.playerPieceSetIds || []),
+      ...runtimePlayerPieceSetEntries.map((entry) => entry.pieceSet.id)
     ]));
   }
 
@@ -377,6 +406,14 @@ function buildRuntimeModuleContentPack(contentPackDefinition: NetRiskModuleConte
     defaultCardRuleSetId: contentPackDefinition.defaultCardRuleSetId,
     defaultVictoryRuleSetId: contentPackDefinition.defaultVictoryRuleSetId,
     defaultPieceSetId: contentPackDefinition.defaultPieceSetId
+  };
+}
+
+function buildRuntimeModulePlayerPieceSet(pieceSetDefinition: NetRiskModulePlayerPieceSetDefinition): PlayerPieceSet {
+  return {
+    id: pieceSetDefinition.id,
+    name: pieceSetDefinition.name,
+    palette: [...pieceSetDefinition.palette]
   };
 }
 
@@ -733,16 +770,27 @@ function filterContentPacksByAllowedIds(entries: ContentPackSummary[], allowedId
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneContentPackSummary);
 }
 
+function filterPlayerPieceSetsByAllowedIds(entries: PlayerPieceSetSummary[], allowedIds: string[] | null | undefined): PlayerPieceSetSummary[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(clonePlayerPieceSetSummary);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(clonePlayerPieceSetSummary);
+}
+
 function buildModuleOptions(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[],
-  runtimeContentPackEntries: RuntimeModuleContentPackEntry[]
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[]
 ): ModuleOptionsSnapshot {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible);
   const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
   const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries, enabledRuntimeContentPackEntries);
+  const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
+  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries, enabledRuntimeContentPackEntries, enabledRuntimePlayerPieceSetEntries);
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
@@ -754,6 +802,14 @@ function buildModuleOptions(
         ...listSupportedMaps().map(cloneMapSummary),
         ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
       ], content.mapIds),
+      playerPieceSets: filterPlayerPieceSetsByAllowedIds([
+        ...listPlayerPieceSets().map(clonePlayerPieceSetSummary),
+        ...enabledRuntimePlayerPieceSetEntries.map((entry) => ({
+          id: entry.pieceSet.id,
+          name: entry.pieceSet.name,
+          paletteSize: entry.pieceSet.palette.length
+        })).map(clonePlayerPieceSetSummary)
+      ], content.playerPieceSetIds),
       contentPacks: filterContentPacksByAllowedIds([
         ...listContentPacks().map(cloneContentPackSummary),
         ...enabledRuntimeContentPackEntries.map((entry) => cloneContentPackSummary(entry.contentPack))
@@ -866,6 +922,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let serverModulesById = new Map<string, NetRiskServerModule>();
   let runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
+  let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
 
   function registerServerModuleMaps(
     moduleId: string,
@@ -917,7 +974,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       ...Array.from(runtimeMapsById.keys())
     ]);
     const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
-    const knownPieceSetIds = new Set(listPlayerPieceSets().map((entry: { id: string }) => entry.id));
+    const knownPieceSetIds = new Set([
+      ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
+      ...Array.from(runtimePlayerPieceSetsById.keys())
+    ]);
     const knownDiceRuleSetIds = new Set(listDiceRuleSets().map((entry: { id: string }) => entry.id));
     const knownCardRuleSetIds = new Set(listCardRuleSets().map((entry: { id: string }) => entry.id));
     const knownVictoryRuleSetIds = new Set(listVictoryRuleSets().map((entry: { id: string }) => entry.id));
@@ -968,6 +1028,38 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
+  function registerServerModulePlayerPieceSets(
+    moduleId: string,
+    serverModule: NetRiskServerModule,
+    sourcePath: string
+  ): string[] {
+    if (!Array.isArray(serverModule.playerPieceSets) || !serverModule.playerPieceSets.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
+    serverModule.playerPieceSets.forEach((pieceSetDefinition) => {
+      try {
+        if (findBuiltInPlayerPieceSet(pieceSetDefinition.id)) {
+          throw new Error(`Runtime module player piece set "${pieceSetDefinition.id}" conflicts with a built-in player piece set.`);
+        }
+
+        if (runtimePlayerPieceSetsById.has(pieceSetDefinition.id)) {
+          throw new Error(`Duplicate runtime module player piece set "${pieceSetDefinition.id}" detected.`);
+        }
+
+        runtimePlayerPieceSetsById.set(pieceSetDefinition.id, {
+          moduleId,
+          pieceSet: buildRuntimeModulePlayerPieceSet(pieceSetDefinition)
+        });
+      } catch (error: unknown) {
+        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    return errors;
+  }
+
   function listEnabledRuntimeMaps(modules: NetRiskInstalledModule[]): RuntimeModuleMapEntry[] {
     const enabledIds = new Set(
       modules
@@ -995,6 +1087,21 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       .map((entry) => ({
         moduleId: entry.moduleId,
         contentPack: cloneContentPackSummary(entry.contentPack)
+      }));
+  }
+
+  function listEnabledRuntimePlayerPieceSets(modules: NetRiskInstalledModule[]): RuntimeModulePlayerPieceSetEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimePlayerPieceSetsById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        pieceSet: clonePlayerPieceSet(entry.pieceSet)
       }));
   }
 
@@ -1091,6 +1198,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     serverModulesById = new Map<string, NetRiskServerModule>();
     runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
     runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
+    runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -1141,6 +1249,20 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     const manifestModules = modules.filter((moduleEntry) => moduleEntry.manifest);
     const discoveredIds = new Set(manifestModules.map((moduleEntry) => moduleEntry.id));
+
+    manifestModules.forEach((moduleEntry) => {
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const pieceSetErrors = registerServerModulePlayerPieceSets(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      if (pieceSetErrors.length) {
+        moduleEntry.errors.push(...pieceSetErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+      }
+    });
 
     manifestModules.forEach((moduleEntry) => {
       const serverModule = serverModulesById.get(moduleEntry.id);
@@ -1231,7 +1353,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return buildModuleOptions(
       modules,
       listEnabledRuntimeMaps(modules),
-      listEnabledRuntimeContentPacks(modules)
+      listEnabledRuntimeContentPacks(modules),
+      listEnabledRuntimePlayerPieceSets(modules)
     );
   }
 
@@ -1281,6 +1404,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return cloneContentPackSummary(runtimeEntry.contentPack);
+    },
+    findPlayerPieceSet(pieceSetId: string): PlayerPieceSet | null {
+      const builtInPieceSet = findBuiltInPlayerPieceSet(pieceSetId);
+      if (builtInPieceSet) {
+        return clonePlayerPieceSet(builtInPieceSet);
+      }
+
+      const runtimeEntry = runtimePlayerPieceSetsById.get(pieceSetId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return clonePlayerPieceSet(runtimeEntry.pieceSet);
     },
     async getEnabledModules() {
       return enabledReferences(await ensureCatalog());
@@ -1510,7 +1651,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedContent = aggregateContentContribution(
         selectedModuleEntries,
         listEnabledRuntimeMaps(selectedModuleEntries),
-        listEnabledRuntimeContentPacks(selectedModuleEntries)
+        listEnabledRuntimeContentPacks(selectedModuleEntries),
+        listEnabledRuntimePlayerPieceSets(selectedModuleEntries)
       );
       const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
       const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));

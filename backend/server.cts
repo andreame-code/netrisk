@@ -12,7 +12,6 @@ const {
   createConfiguredInitialState,
   listDiceRuleSets,
   listNewGameRuleSets,
-  listPlayerPieceSets,
   listPieceSkins,
   listTurnTimeoutHoursOptions,
   listVictoryRuleSets,
@@ -647,7 +646,7 @@ function createApp(options: CreateAppOptions = {}) {
         () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
         listTurnTimeoutHoursOptions,
         sendJson,
-        () => filterCatalogByAllowedIds(listPlayerPieceSets(), moduleOptions.content?.playerPieceSetIds),
+        () => moduleOptions.playerPieceSets,
         () => moduleOptions.contentPacks,
         async () => {
           return {
@@ -791,6 +790,7 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (body: Record<string, unknown>) => createConfiguredInitialState(body, {
           resolveContentPack: (contentPackId: string) => moduleRuntime.findContentPack(contentPackId),
+          resolvePlayerPieceSet: (pieceSetId: string) => moduleRuntime.findPlayerPieceSet(pieceSetId),
           resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
           resolveGamePreset: (input: {
             gamePresetId?: string | null;
