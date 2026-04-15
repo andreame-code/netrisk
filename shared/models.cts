@@ -28,6 +28,7 @@ export {
   listDiceRuleSets,
   standardDiceRuleSet
 } from "./dice.cjs";
+export type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
 export {
   DEFAULT_EXTENSION_PACK_ID,
   DEFAULT_PIECE_SKIN_ID,
@@ -189,6 +190,7 @@ export type {
   NetRiskModuleClientManifest,
   NetRiskModuleContentPackDefinition,
   NetRiskModuleConfigDefaults,
+  NetRiskModuleDiceRuleSetDefinition,
   NetRiskModuleDependency,
   NetRiskModuleEntrypoints,
   NetRiskModuleKind,

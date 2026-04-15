@@ -1,5 +1,6 @@
 import { getDiceRuleSet } from "../../shared/dice.cjs";
 import type { GameState } from "../../shared/models.cjs";
+import type { DiceRuleSet } from "../../shared/dice.cjs";
 
 type ResolveAttackResult = {
   ok: boolean;
@@ -80,7 +81,7 @@ function normalizeRequestedAttackDice(state: GameState, fromId: string, requeste
     return requestedAttackDice;
   }
 
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = resolveDiceRuleSetFromState(state);
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.max(0, Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve));
   if (maxAttackDice < 1) {
@@ -88,6 +89,32 @@ function normalizeRequestedAttackDice(state: GameState, fromId: string, requeste
   }
 
   return Math.min(requestedAttackDice, maxAttackDice);
+}
+
+function resolveDiceRuleSetFromState(state: GameState): DiceRuleSet {
+  const diceRuleSetId = typeof state.diceRuleSetId === "string" && state.diceRuleSetId
+    ? state.diceRuleSetId
+    : "standard";
+  const gameConfig = state.gameConfig as Record<string, unknown> | null | undefined;
+
+  if (gameConfig
+    && typeof gameConfig.diceRuleSetName === "string"
+    && gameConfig.diceRuleSetName.trim().length
+    && Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice)
+    && Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice)
+    && typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
+    && typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean") {
+    return {
+      id: diceRuleSetId,
+      name: gameConfig.diceRuleSetName,
+      attackerMaxDice: Number(gameConfig.diceRuleSetAttackerMaxDice),
+      defenderMaxDice: Number(gameConfig.diceRuleSetDefenderMaxDice),
+      attackerMustLeaveOneArmyBehind: gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind,
+      defenderWinsTies: gameConfig.diceRuleSetDefenderWinsTies
+    };
+  }
+
+  return getDiceRuleSet(diceRuleSetId);
 }
 
 function canContinueBanzai(state: GameState, playerId: string, fromId: string, toId: string): boolean {

@@ -138,6 +138,31 @@ register("resolveSingleAttackRoll supporta fino a 3 dadi in difesa con il rule s
   assert.deepEqual(result.combat.defenderRolls, [4, 3, 2]);
 });
 
+register("resolveSingleAttackRoll usa i metadata del dice rule set runtime persistiti nel gameConfig", () => {
+  const { graph, state } = setupCombatState(4, 3);
+  state.diceRuleSetId = "duel";
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    diceRuleSetId: "duel",
+    diceRuleSetName: "Duel",
+    diceRuleSetAttackerMaxDice: 2,
+    diceRuleSetDefenderMaxDice: 1,
+    diceRuleSetAttackerMustLeaveOneArmyBehind: true,
+    diceRuleSetDefenderWinsTies: true
+  };
+
+  const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+    random: createFixedRandom(rollsToRandomValues([6, 3, 5]))
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.combat.diceRuleSetId, "duel");
+  assert.equal(result.combat.attackDiceCount, 2);
+  assert.equal(result.combat.defendDiceCount, 1);
+  assert.deepEqual(result.combat.attackerRolls, [6, 3]);
+  assert.deepEqual(result.combat.defenderRolls, [5]);
+});
+
 register("combat dice helpers tirano ordinato e confrontano in modo puro", () => {
   const rolls = rollCombatDice(3, createFixedRandom(rollsToRandomValues([2, 6, 4])));
   assert.deepEqual(rolls, [6, 4, 2]);
