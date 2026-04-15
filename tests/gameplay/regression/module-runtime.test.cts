@@ -526,6 +526,95 @@ register("module runtime applica defaults setup dai profili server-side del modu
   });
 });
 
+register("module runtime espone mappe locali dal server module e le usa davvero in creazione partita", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.maps",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.maps",
+        version: "1.0.0",
+        displayName: "Demo Maps",
+        engineVersion: "1.0.0",
+        kind: "content",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "map", scope: "game", description: "Runtime module maps" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json",
+          server: "server-module.cjs"
+        }
+      },
+      clientManifest: {
+        profiles: {
+          content: [{ id: "demo.maps.content", name: "Demo Maps Content" }]
+        }
+      },
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  maps: [
+    {
+      id: "demo-outpost",
+      name: "Demo Outpost",
+      territoryRecords: [
+        { id: "outpost-north", name: "Outpost North", continentId: "outpost", x: 0.2, y: 0.2, neighbors: ["outpost-south", "frontier-west"] },
+        { id: "outpost-south", name: "Outpost South", continentId: "outpost", x: 0.2, y: 0.7, neighbors: ["outpost-north", "frontier-east"] },
+        { id: "frontier-west", name: "Frontier West", continentId: "frontier", x: 0.7, y: 0.25, neighbors: ["outpost-north", "frontier-east"] },
+        { id: "frontier-east", name: "Frontier East", continentId: "frontier", x: 0.75, y: 0.7, neighbors: ["outpost-south", "frontier-west"] }
+      ],
+      continentRecords: [
+        { id: "outpost", name: "Outpost", bonus: 2, territoryIds: ["outpost-north", "outpost-south"] },
+        { id: "frontier", name: "Frontier", bonus: 3, territoryIds: ["frontier-west", "frontier-east"] }
+      ]
+    }
+  ],
+  profiles: {
+    content: [
+      { id: "demo.maps.content", defaults: { mapId: "demo-outpost" } }
+    ]
+  }
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.maps/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(optionsResponse.payload.maps.some((entry: any) => entry.id === "demo-outpost" && entry.territoryCount === 4), true);
+
+    const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+    assert.equal(moduleOptionsResponse.statusCode, 200);
+    assert.equal(moduleOptionsResponse.payload.content.mapIds.includes("demo-outpost"), true);
+
+    const missingModuleSelectionResponse = await callApp(app, "POST", "/api/games", {
+      name: "Missing Module Map",
+      mapId: "demo-outpost",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+    assert.equal(missingModuleSelectionResponse.statusCode, 400);
+    assert.equal(String(missingModuleSelectionResponse.payload.error || missingModuleSelectionResponse.payload.message).includes("Selected map"), true);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Runtime Module Map",
+      activeModuleIds: ["demo.maps"],
+      mapId: "demo-outpost",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "demo-outpost");
+    assert.equal(createGameResponse.payload.state.gameConfig.mapName, "Demo Outpost");
+    assert.equal(createGameResponse.payload.state.gameConfig.activeModules.some((entry: any) => entry.id === "demo.maps"), true);
+    assert.equal(createGameResponse.payload.state.map.length, 4);
+    assert.equal(createGameResponse.payload.state.map.some((entry: any) => entry.id === "outpost-north"), true);
+  });
+});
+
 register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
   await withModuleServer([
     {

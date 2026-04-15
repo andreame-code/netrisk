@@ -362,9 +362,18 @@ export function migrateGameConfigExtensions(
     themeId: typeof source.themeId === "string" ? source.themeId : fallback.themeId,
     pieceSkinId: typeof source.pieceSkinId === "string" ? source.pieceSkinId : fallback.pieceSkinId
   }, requestedPackId);
+  const runtimeMapId = typeof source.mapId === "string"
+    ? source.mapId.trim()
+    : (typeof fallback.mapId === "string" ? fallback.mapId.trim() : "");
+  const runtimeMapName = typeof source.mapName === "string"
+    ? source.mapName.trim()
+    : (typeof fallback.mapName === "string" ? fallback.mapName.trim() : "");
+  const resolvedMapId = runtimeMapId && !findSupportedMap(runtimeMapId) && runtimeMapName
+    ? runtimeMapId
+    : selection.mapId;
   const mapName = typeof source.mapName === "string"
     ? source.mapName
-    : (typeof fallback.mapName === "string" ? fallback.mapName : readableMapName(selection.mapId));
+    : (typeof fallback.mapName === "string" ? fallback.mapName : readableMapName(resolvedMapId));
   const moduleSelection = normalizeNetRiskGameModuleSelection({
     moduleSchemaVersion: typeof source.moduleSchemaVersion === "number"
       ? source.moduleSchemaVersion
@@ -389,7 +398,7 @@ export function migrateGameConfigExtensions(
     moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
     ruleSetId: pack.id,
     ruleSetName: typeof source.ruleSetName === "string" ? source.ruleSetName : pack.name,
-    mapId: selection.mapId,
+    mapId: resolvedMapId,
     mapName,
     diceRuleSetId: selection.diceRuleSetId,
     victoryRuleSetId: selection.victoryRuleSetId,
