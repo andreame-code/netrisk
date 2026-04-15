@@ -1,0 +1,294 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+
+const { createApp } = require("../../../backend/server.cjs");
+
+type HeaderMap = Record<string, string>;
+
+type MockResponse = {
+  statusCode: number;
+  headers: HeaderMap;
+  body: string;
+  writeHead(statusCode: number, nextHeaders?: HeaderMap): void;
+  end(chunk?: string): void;
+};
+
+type CallAppResult = {
+  statusCode: number;
+  payload: any;
+};
+
+function register(name: string, fn: () => unknown | Promise<unknown>) {
+  (global as typeof globalThis & { register?: (name: string, fn: () => unknown | Promise<unknown>) => void; }).register?.(name, fn);
+}
+
+function makeMockResponse(): MockResponse {
+  const headers: HeaderMap = {};
+  return {
+    statusCode: 200,
+    headers,
+    body: "",
+    writeHead(statusCode: number, nextHeaders: HeaderMap = {}) {
+      this.statusCode = statusCode;
+      Object.assign(headers, nextHeaders);
+    },
+    end(chunk = "") {
+      this.body += chunk || "";
+    }
+  };
+}
+
+async function callApp(app: any, method: string, pathname: string, body?: any, headers: HeaderMap = {}): Promise<CallAppResult> {
+  const req = new (require("events").EventEmitter)();
+  req.method = method;
+  req.headers = { "content-type": "application/json", ...headers };
+  req.destroy = () => {};
+  const res = makeMockResponse();
+  const promise = app.handleApi(req, res, new URL(`http://127.0.0.1${pathname}`));
+
+  process.nextTick(() => {
+    if (body !== undefined) {
+      req.emit("data", JSON.stringify(body));
+    }
+    req.emit("end");
+  });
+
+  await promise;
+  return {
+    statusCode: res.statusCode,
+    payload: res.body ? JSON.parse(res.body) : null
+  };
+}
+
+function authHeaders(sessionToken: string): HeaderMap {
+  return {
+    cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
+  };
+}
+
+function writeJson(filePath: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function cleanupSqliteFiles(baseFile: string): void {
+  [baseFile, `${baseFile}-shm`, `${baseFile}-wal`].forEach((target) => {
+    if (fs.existsSync(target)) {
+      fs.rmSync(target, { force: true });
+    }
+  });
+}
+
+async function withModuleServer(
+  modules: Array<{ dir: string; manifest?: unknown; clientManifest?: unknown; rawManifest?: string }>,
+  run: (context: {
+    app: any;
+    adminSessionToken: string;
+    tempRoot: string;
+  }) => Promise<void>
+): Promise<void> {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-modules-"));
+  const dataDir = path.join(tempRoot, "data");
+  const frontendDir = path.join(tempRoot, "frontend", "src");
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(frontendDir, { recursive: true });
+
+  modules.forEach((moduleEntry) => {
+    const moduleRoot = path.join(tempRoot, "modules", moduleEntry.dir);
+    fs.mkdirSync(moduleRoot, { recursive: true });
+    if (typeof moduleEntry.rawManifest === "string") {
+      fs.writeFileSync(path.join(moduleRoot, "module.json"), moduleEntry.rawManifest);
+      return;
+    }
+
+    if (typeof moduleEntry.manifest !== "undefined") {
+      writeJson(path.join(moduleRoot, "module.json"), moduleEntry.manifest);
+    }
+
+    if (typeof moduleEntry.clientManifest !== "undefined") {
+      writeJson(path.join(moduleRoot, "client-manifest.json"), moduleEntry.clientManifest);
+    }
+  });
+
+  const originalProjectRoot = process.env.NETRISK_PROJECT_ROOT;
+  process.env.NETRISK_PROJECT_ROOT = tempRoot;
+
+  const tempDbFile = path.join(tempRoot, "data", "modules.sqlite");
+  const tempUsersFile = path.join(tempRoot, "data", "users.json");
+  const tempGamesFile = path.join(tempRoot, "data", "games.json");
+  const tempSessionsFile = path.join(tempRoot, "data", "sessions.json");
+  const app = createApp({
+    projectRoot: tempRoot,
+    dbFile: tempDbFile,
+    dataFile: tempUsersFile,
+    gamesFile: tempGamesFile,
+    sessionsFile: tempSessionsFile
+  });
+
+  try {
+    const registered = await app.auth.registerPasswordUser("module_admin", "secret123");
+    assert.equal(registered.ok, true);
+    await app.datastore.updateUserRoleByUsername("module_admin", "admin");
+    const login = await app.auth.loginWithPassword("module_admin", "secret123");
+    assert.equal(login.ok, true);
+
+    await run({
+      app,
+      adminSessionToken: login.sessionToken,
+      tempRoot
+    });
+  } finally {
+    app.datastore.close();
+    cleanupSqliteFiles(tempDbFile);
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+    if (typeof originalProjectRoot === "undefined") {
+      delete process.env.NETRISK_PROJECT_ROOT;
+    } else {
+      process.env.NETRISK_PROJECT_ROOT = originalProjectRoot;
+    }
+  }
+}
+
+register("module runtime scandisce moduli validi e invalidi ed espone catalogo e opzioni", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.valid",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.valid",
+        version: "1.0.0",
+        displayName: "Demo Valid",
+        engineVersion: "1.0.0",
+        kind: "hybrid",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "ui-slot", scope: "global", description: "Demo slot" },
+          { kind: "gameplay-hook", scope: "game", hook: "setup.profile", description: "Demo profile" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json"
+        }
+      },
+      clientManifest: {
+        ui: {
+          slots: [
+            {
+              slotId: "new-game.sidebar",
+              itemId: "demo.valid.briefing",
+              title: "Demo Briefing",
+              kind: "panel",
+              order: 10
+            }
+          ]
+        },
+        profiles: {
+          gameplay: [
+            {
+              id: "demo.valid.gameplay",
+              name: "Demo Gameplay"
+            }
+          ],
+          ui: [
+            {
+              id: "demo.valid.ui",
+              name: "Demo UI"
+            }
+          ]
+        }
+      }
+    },
+    {
+      dir: "broken.module",
+      rawManifest: "{ this is not valid json"
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const catalogResponse = await callApp(app, "GET", "/api/modules", undefined, authHeaders(adminSessionToken));
+    assert.equal(catalogResponse.statusCode, 200);
+    const modules = catalogResponse.payload.modules;
+    assert.equal(Array.isArray(modules), true);
+    assert.equal(modules.some((entry: any) => entry.id === "core.base" && entry.enabled), true);
+    assert.equal(modules.some((entry: any) => entry.id === "demo.valid" && entry.status === "validated"), true);
+    assert.equal(modules.some((entry: any) => entry.id === "broken.module" && entry.status === "error"), true);
+
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.valid/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+    assert.equal(enableResponse.payload.enabledModules.some((entry: any) => entry.id === "demo.valid"), true);
+
+    const optionsResponse = await callApp(app, "GET", "/api/modules/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(optionsResponse.payload.gameModules.some((entry: any) => entry.id === "demo.valid"), true);
+    assert.equal(optionsResponse.payload.uiSlots.some((entry: any) => entry.itemId === "demo.valid.briefing"), true);
+    assert.equal(optionsResponse.payload.gameplayProfiles.some((entry: any) => entry.id === "demo.valid.gameplay"), true);
+  });
+});
+
+register("module runtime pinna activeModules nelle nuove partite e blocca il disable se il modulo e in uso", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.locked",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.locked",
+        version: "1.0.0",
+        displayName: "Demo Locked",
+        engineVersion: "1.0.0",
+        kind: "hybrid",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "gameplay-hook", scope: "game", hook: "setup.profile", description: "Locked gameplay profile" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json"
+        }
+      },
+      clientManifest: {
+        profiles: {
+          content: [{ id: "demo.locked.content", name: "Locked Content" }],
+          gameplay: [{ id: "demo.locked.gameplay", name: "Locked Gameplay" }],
+          ui: [{ id: "demo.locked.ui", name: "Locked UI" }]
+        }
+      }
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.locked/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Modular Game",
+      activeModuleIds: ["demo.locked"],
+      contentProfileId: "demo.locked.content",
+      gameplayProfileId: "demo.locked.gameplay",
+      uiProfileId: "demo.locked.ui"
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.moduleSchemaVersion, 1);
+    assert.equal(createGameResponse.payload.state.gameConfig.activeModules.some((entry: any) => entry.id === "core.base"), true);
+    assert.equal(createGameResponse.payload.state.gameConfig.activeModules.some((entry: any) => entry.id === "demo.locked"), true);
+    assert.equal(createGameResponse.payload.state.gameConfig.contentProfileId, "demo.locked.content");
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayProfileId, "demo.locked.gameplay");
+    assert.equal(createGameResponse.payload.state.gameConfig.uiProfileId, "demo.locked.ui");
+
+    const disableResponse = await callApp(app, "POST", "/api/modules/demo.locked/disable", {}, authHeaders(adminSessionToken));
+    assert.equal(disableResponse.statusCode, 409);
+  });
+});
+
+register("module runtime protegge il catalogo admin da accessi non autorizzati", async () => {
+  await withModuleServer([], async ({ app }) => {
+    const anonymousResponse = await callApp(app, "GET", "/api/modules");
+    assert.equal(anonymousResponse.statusCode, 401);
+
+    const registered = await app.auth.registerPasswordUser("module_user", "secret123");
+    assert.equal(registered.ok, true);
+    const login = await app.auth.loginWithPassword("module_user", "secret123");
+    assert.equal(login.ok, true);
+
+    const nonAdminResponse = await callApp(app, "GET", "/api/modules", undefined, authHeaders(login.sessionToken));
+    assert.equal(nonAdminResponse.statusCode, 403);
+  });
+});

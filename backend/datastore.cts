@@ -469,6 +469,16 @@ function createDatastore(options: DatastoreOptions = {}) {
       const row = statements.getAppState.get("activeGameId");
       return row ? parseJson<string | null>(row.value_json, null) : null;
     },
+    getAppState(key: string) {
+      const row = statements.getAppState.get(String(key || ""));
+      return row ? parseJson<unknown>(row.value_json, null) : null;
+    },
+    setAppState(key: string, value: unknown) {
+      transaction(() => {
+        statements.setAppState.run(String(key || ""), JSON.stringify(value ?? null));
+      });
+      return datastore.getAppState(key);
+    },
     setActiveGameId(gameId: string | null) {
       transaction(() => {
         statements.setAppState.run("activeGameId", JSON.stringify(gameId || null));

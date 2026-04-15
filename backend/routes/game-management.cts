@@ -55,7 +55,7 @@ async function handleCreateGameRoute(
 
   try {
     const policy = authorize("game:create", { user: authContext.user });
-    const configured = createConfiguredInitialState(body);
+    const configured = await createConfiguredInitialState(body);
     const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
     if (!creatorJoin.ok) {
       throw Object.assign(

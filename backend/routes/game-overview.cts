@@ -11,6 +11,7 @@ type ListPieceSkins = () => unknown;
 type ListTurnTimeoutHoursOptions = () => unknown;
 type ListPlayerPieceSets = () => unknown;
 type ListContentPacks = () => unknown;
+type GetExtraGameOptions = () => Record<string, unknown> | Promise<Record<string, unknown>>;
 
 async function handleGamesListRoute(
   res: unknown,
@@ -25,7 +26,7 @@ async function handleGamesListRoute(
   });
 }
 
-function handleGameOptionsRoute(
+async function handleGameOptionsRoute(
   res: unknown,
   listRuleSets: ListRuleSets,
   listMaps: ListMaps,
@@ -36,8 +37,9 @@ function handleGameOptionsRoute(
   listTurnTimeoutHoursOptions: ListTurnTimeoutHoursOptions,
   sendJson: SendJson,
   listPlayerPieceSets?: ListPlayerPieceSets,
-  listContentPacks?: ListContentPacks
-): void {
+  listContentPacks?: ListContentPacks,
+  getExtraGameOptions?: GetExtraGameOptions
+): Promise<void> {
   sendJson(res, 200, {
     ruleSets: listRuleSets(),
     maps: listMaps(),
@@ -48,7 +50,8 @@ function handleGameOptionsRoute(
     playerPieceSets: typeof listPlayerPieceSets === "function" ? listPlayerPieceSets() : [],
     contentPacks: typeof listContentPacks === "function" ? listContentPacks() : [],
     turnTimeoutHoursOptions: listTurnTimeoutHoursOptions(),
-    playerRange: { min: 2, max: 4 }
+    playerRange: { min: 2, max: 4 },
+    ...(typeof getExtraGameOptions === "function" ? await getExtraGameOptions() : {})
   });
 }
 

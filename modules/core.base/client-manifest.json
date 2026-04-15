@@ -1,0 +1,45 @@
+{
+  "ui": {
+    "slots": [
+      {
+        "slotId": "top-nav-bar",
+        "itemId": "core.base.status",
+        "title": "Core status bar",
+        "kind": "badge",
+        "order": 0,
+        "description": "Badge base per la shell condivisa."
+      },
+      {
+        "slotId": "admin-modules-page",
+        "itemId": "core.base.catalog",
+        "title": "Core catalog",
+        "kind": "admin-card",
+        "order": 0,
+        "description": "Card base per la gestione moduli."
+      }
+    ]
+  },
+  "profiles": {
+    "content": [
+      {
+        "id": "core.classic-content",
+        "name": "Classic Content",
+        "description": "Profilo contenuti ufficiale."
+      }
+    ],
+    "gameplay": [
+      {
+        "id": "core.standard-gameplay",
+        "name": "Standard Gameplay",
+        "description": "Profilo gameplay ufficiale."
+      }
+    ],
+    "ui": [
+      {
+        "id": "core.command-ui",
+        "name": "Command UI",
+        "description": "Profilo UI ufficiale."
+      }
+    ]
+  }
+}
