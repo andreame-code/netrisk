@@ -120,6 +120,7 @@ interface ValidatedNewGameConfig {
   mapName: string;
   selectedMap: SupportedMap;
   diceRuleSetId: string;
+  selectedDiceRuleSet: DiceRuleSet;
   victoryRuleSetId: string;
   pieceSetId: string;
   selectedPieceSet: PlayerPieceSet;
@@ -174,6 +175,7 @@ export function validateNewGameConfig(
   options: {
     random?: () => number;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
+    resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
   } = {}
@@ -210,7 +212,10 @@ export function validateNewGameConfig(
   const requestedDiceRuleSetId = String(
     input.diceRuleSetId || selectedRuleSet.defaults.diceRuleSetId || selectedContentPack.defaultDiceRuleSetId || STANDARD_DICE_RULE_SET_ID
   );
-  const selectedDiceRuleSet = findDiceRuleSet(requestedDiceRuleSetId);
+  const resolveDiceRuleSet = typeof options.resolveDiceRuleSet === "function"
+    ? options.resolveDiceRuleSet
+    : findDiceRuleSet;
+  const selectedDiceRuleSet = resolveDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
     throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
   }
@@ -295,6 +300,7 @@ export function validateNewGameConfig(
     mapName: selectedMap.name,
     selectedMap,
     diceRuleSetId: selectedDiceRuleSet.id,
+    selectedDiceRuleSet,
     victoryRuleSetId: selectedVictoryRuleSet.id,
     pieceSetId: selectedPieceSet.id,
     selectedPieceSet,
@@ -312,6 +318,7 @@ export function createConfiguredInitialState(
   options: {
     random?: () => number;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
+    resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveGamePreset?: (input: {
@@ -409,6 +416,7 @@ export function createConfiguredInitialState(
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
         resolveContentPack: options.resolveContentPack,
+        resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,
         resolveSupportedMap: options.resolveSupportedMap
       });
@@ -445,6 +453,11 @@ export function createConfiguredInitialState(
           mapId: config.mapId,
           mapName: config.mapName,
           diceRuleSetId: config.diceRuleSetId,
+          diceRuleSetName: config.selectedDiceRuleSet.name,
+          diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
+          diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
+          diceRuleSetAttackerMustLeaveOneArmyBehind: config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
+          diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
           victoryRuleSetId: config.victoryRuleSetId,
           themeId: config.themeId,
           pieceSkinId: config.pieceSkinId,

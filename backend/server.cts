@@ -10,7 +10,6 @@ const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
-  listDiceRuleSets,
   listNewGameRuleSets,
   listPieceSkins,
   listTurnTimeoutHoursOptions,
@@ -640,7 +639,7 @@ function createApp(options: CreateAppOptions = {}) {
         res,
         listNewGameRuleSets,
         () => moduleOptions.maps,
-        () => filterCatalogByAllowedIds(listDiceRuleSets(), moduleOptions.content?.diceRuleSetIds),
+        () => moduleOptions.diceRuleSets,
         () => filterCatalogByAllowedIds(listVictoryRuleSets(), moduleOptions.content?.victoryRuleSetIds),
         () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
         () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
@@ -790,6 +789,7 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (body: Record<string, unknown>) => createConfiguredInitialState(body, {
           resolveContentPack: (contentPackId: string) => moduleRuntime.findContentPack(contentPackId),
+          resolveDiceRuleSet: (diceRuleSetId: string) => moduleRuntime.findDiceRuleSet(diceRuleSetId),
           resolvePlayerPieceSet: (pieceSetId: string) => moduleRuntime.findPlayerPieceSet(pieceSetId),
           resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
           resolveGamePreset: (input: {
