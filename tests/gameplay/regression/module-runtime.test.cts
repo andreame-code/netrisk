@@ -713,6 +713,86 @@ register("module runtime espone content pack locali e li usa come defaults in cr
   });
 });
 
+register("module runtime espone player piece set locali e li usa per i colori lobby della partita", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.piece-sets",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.piece-sets",
+        version: "1.0.0",
+        displayName: "Demo Piece Sets",
+        engineVersion: "1.0.0",
+        kind: "content",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "player-piece-set", scope: "game", description: "Runtime module piece sets" }
+        ],
+        entrypoints: {
+          server: "server-module.cjs"
+        }
+      },
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  playerPieceSets: [
+    {
+      id: "signal-palette",
+      name: "Signal Palette",
+      palette: ["#112233", "#445566", "#778899", "#99aabb"]
+    }
+  ]
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.piece-sets/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(
+      optionsResponse.payload.playerPieceSets.some((entry: any) => entry.id === "signal-palette" && entry.paletteSize === 4),
+      true
+    );
+
+    const missingModuleSelectionResponse = await callApp(app, "POST", "/api/games", {
+      name: "Missing Piece Set Module",
+      pieceSetId: "signal-palette",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+    assert.equal(missingModuleSelectionResponse.statusCode, 400);
+    assert.equal(String(missingModuleSelectionResponse.payload.error || missingModuleSelectionResponse.payload.message).includes("Selected piece set"), true);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Runtime Piece Set",
+      activeModuleIds: ["demo.piece-sets"],
+      pieceSetId: "signal-palette",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSetId, "signal-palette");
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSetName, "Signal Palette");
+    assert.deepEqual(createGameResponse.payload.state.gameConfig.pieceSetPalette, ["#112233", "#445566", "#778899", "#99aabb"]);
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSet.id, "signal-palette");
+    assert.equal(createGameResponse.payload.state.players[0].color, "#112233");
+
+    const secondRegistered = await app.auth.registerPasswordUser("piece_guest", "secret123");
+    assert.equal(secondRegistered.ok, true);
+    const secondLogin = await app.auth.loginWithPassword("piece_guest", "secret123");
+    assert.equal(secondLogin.ok, true);
+
+    const joinResponse = await callApp(app, "POST", "/api/join", {
+      gameId: createGameResponse.payload.game.id
+    }, authHeaders(secondLogin.sessionToken));
+
+    assert.equal(joinResponse.statusCode, 201);
+    assert.equal(joinResponse.payload.state.players[1].color, "#445566");
+  });
+});
+
 register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
   await withModuleServer([
     {
