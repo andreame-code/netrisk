@@ -67,6 +67,10 @@ interface ScenarioSetupLike {
   logMessage?: string | null;
 }
 
+interface GameplayEffectsLike {
+  conquestMinimumArmies?: number | null;
+}
+
 interface CombatSnapshot {
   fromTerritoryId: string;
   toTerritoryId: string;
@@ -380,6 +384,29 @@ function resolveScenarioSetup(state: EngineState): ScenarioSetupLike | null {
     territoryBonuses,
     logMessage
   };
+}
+
+function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null {
+  const rawGameplayEffects = state.gameConfig?.gameplayEffects;
+  if (!rawGameplayEffects || typeof rawGameplayEffects !== "object" || Array.isArray(rawGameplayEffects)) {
+    return null;
+  }
+
+  const conquestMinimumArmies = typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies === "number"
+    ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
+    : null;
+
+  return {
+    conquestMinimumArmies: Number.isInteger(conquestMinimumArmies) && (conquestMinimumArmies as number) >= 1
+      ? conquestMinimumArmies
+      : null
+  };
+}
+
+function resolvePendingConquestMinimumArmies(state: EngineState, maxArmies: number): number {
+  const moduleMinimum = resolveGameplayEffects(state)?.conquestMinimumArmies;
+  const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
+  return Math.max(1, Math.min(maxArmies, desiredMinimum));
 }
 
 function applyScenarioSetupOnStart(state: EngineState): void {
@@ -772,11 +799,12 @@ export function resolveAttack(
   if (to.armies <= 0) {
     to.ownerId = playerId;
     to.armies = 0;
+    const pendingMaxArmies = Math.max(1, from.armies - 1);
     state.pendingConquest = {
       fromId,
       toId,
-      minArmies: 1,
-      maxArmies: Math.max(1, from.armies - 1)
+      minArmies: resolvePendingConquestMinimumArmies(state, pendingMaxArmies),
+      maxArmies: pendingMaxArmies
     };
     state.conqueredTerritoryThisTurn = true;
     summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
