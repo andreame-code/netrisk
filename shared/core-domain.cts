@@ -99,6 +99,7 @@ export interface GameState {
   lastAction: Record<string, unknown> | null;
   pendingConquest: Record<string, unknown> | null;
   fortifyUsed: boolean;
+  attacksThisTurn: number;
   cardRuleSetId: string;
   deck: Card[];
   discardPile: Card[];
@@ -174,6 +175,7 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     lastAction: input.lastAction || null,
     pendingConquest: input.pendingConquest || null,
     fortifyUsed: Boolean(input.fortifyUsed),
+    attacksThisTurn: typeof input.attacksThisTurn === "number" && Number.isInteger(input.attacksThisTurn) ? input.attacksThisTurn : 0,
     cardRuleSetId: input.cardRuleSetId || "standard",
     deck: Array.isArray(input.deck) ? input.deck : [],
     discardPile: Array.isArray(input.discardPile) ? input.discardPile : [],
