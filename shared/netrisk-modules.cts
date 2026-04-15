@@ -4,6 +4,8 @@ export const NETRISK_MODULE_SCHEMA_VERSION = 1;
 export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
 
+import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
+
 export type NetRiskModuleKind = "content" | "gameplay" | "ui" | "hybrid";
 export type NetRiskModuleStatus = "discovered" | "validated" | "enabled" | "disabled" | "incompatible" | "error";
 export type NetRiskUiSlotKind = "badge" | "panel" | "nav-item" | "page-section" | "admin-card" | "widget";
@@ -158,6 +160,13 @@ export interface NetRiskModuleConfigDefaults {
   pieceSkinId?: string | null;
 }
 
+export interface NetRiskModuleMapDefinition {
+  id: string;
+  name: string;
+  territoryRecords: StaticTerritoryRecord[];
+  continentRecords: StaticContinentRecord[];
+}
+
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
   label: string;
@@ -212,6 +221,7 @@ export interface NetRiskResolvedGamePreset {
 }
 
 export interface NetRiskServerModule {
+  maps?: NetRiskModuleMapDefinition[] | null;
   profiles?: {
     content?: NetRiskServerProfile[];
     gameplay?: NetRiskServerProfile[];
@@ -334,6 +344,70 @@ function normalizeModuleConfigDefaults(raw: unknown): NetRiskModuleConfigDefault
     themeId: isNonEmptyString(raw.themeId) ? String(raw.themeId).trim() : null,
     pieceSkinId: isNonEmptyString(raw.pieceSkinId) ? String(raw.pieceSkinId).trim() : null
   };
+}
+
+function normalizeTerritoryRecords(raw: unknown, sourcePath: string): StaticTerritoryRecord[] {
+  if (!Array.isArray(raw) || !raw.length) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module map territory record in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      continentId: isNonEmptyString(entry.continentId) ? String(entry.continentId).trim() : null,
+      x: Number(entry.x),
+      y: Number(entry.y),
+      neighbors: normalizeStringArray(entry.neighbors)
+    };
+  });
+}
+
+function normalizeContinentRecords(raw: unknown, sourcePath: string): StaticContinentRecord[] {
+  if (!Array.isArray(raw) || !raw.length) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module map continent record in "${sourcePath}".`);
+    }
+
+    const bonus = Number(entry.bonus);
+    if (!Number.isFinite(bonus)) {
+      throw new Error(`Invalid module map continent bonus in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      bonus,
+      territoryIds: normalizeStringArray(entry.territoryIds)
+    };
+  });
+}
+
+function normalizeModuleMaps(raw: unknown, sourcePath: string): NetRiskModuleMapDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module map definition in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      territoryRecords: normalizeTerritoryRecords(entry.territoryRecords, sourcePath),
+      continentRecords: normalizeContinentRecords(entry.continentRecords, sourcePath)
+    };
+  });
 }
 
 function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGameplayEffects | null {
@@ -585,6 +659,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
     : null;
 
   return {
+    maps: normalizeModuleMaps(raw.maps, sourcePath),
     profiles
   };
 }

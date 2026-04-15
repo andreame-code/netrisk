@@ -16,6 +16,8 @@ export interface MapSummary {
   }>;
 }
 
+export type SupportedMap = (typeof registeredMaps)[number];
+
 const mapRegistry = createModuleRegistry([
   classicMiniMap,
   middleEarthMap,
@@ -24,7 +26,7 @@ const mapRegistry = createModuleRegistry([
 
 export const registeredMaps = mapRegistry.entries;
 
-export function summarizeMap(map: (typeof registeredMaps)[number]): MapSummary {
+export function summarizeMap(map: SupportedMap): MapSummary {
   const continents = Array.isArray(map && map.continents) ? map.continents : [];
   const territories = Array.isArray(map && map.territories) ? map.territories : [];
 
