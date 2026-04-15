@@ -43,6 +43,15 @@ function invalid(code: string, message: string, details: Record<string, unknown>
   };
 }
 
+function resolveConquestMinimumArmies(state: GameState, attackDiceCount: number, maxMove: number): number {
+  const rawGameplayEffects = state?.gameConfig?.gameplayEffects;
+  const configuredMinimum = rawGameplayEffects && typeof rawGameplayEffects === "object" && !Array.isArray(rawGameplayEffects) && typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies === "number"
+    ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
+    : null;
+  const minimumMove = Math.max(1, Number(attackDiceCount) || 1, Number.isInteger(configuredMinimum) ? Number(configuredMinimum) : 1);
+  return Math.max(1, Math.min(maxMove, minimumMove));
+}
+
 export function resolveConquest(
   state: GameState,
   combatResult: SuccessfulCombatResolution,
@@ -81,7 +90,8 @@ export function resolveConquest(
     });
   }
 
-  const minimumMove = Math.max(1, Number(attackDiceCount) || 1);
+  const maxMove = attackerState.armies - 1;
+  const minimumMove = resolveConquestMinimumArmies(state, Number(attackDiceCount) || 1, maxMove);
   const requestedMove = Number(armiesToMove);
 
   if (!Number.isInteger(requestedMove)) {
@@ -97,7 +107,6 @@ export function resolveConquest(
     });
   }
 
-  const maxMove = attackerState.armies - 1;
   if (requestedMove > maxMove) {
     return invalid("MOVE_EXCEEDS_AVAILABLE", "The attacker territory must keep at least one army after conquest.", {
       maxMove,

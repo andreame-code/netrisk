@@ -168,6 +168,7 @@ export interface NetRiskReinforcementAdjustment {
 export interface NetRiskGameplayEffects {
   reinforcementAdjustments?: NetRiskReinforcementAdjustment[];
   majorityControlThresholdPercent?: number | null;
+  conquestMinimumArmies?: number | null;
 }
 
 export interface NetRiskScenarioTerritoryBonus {
@@ -369,14 +370,21 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
 
   const hasMajorityControlThresholdPercent = typeof raw.majorityControlThresholdPercent !== "undefined";
   const majorityControlThresholdPercent = hasMajorityControlThresholdPercent ? Number(raw.majorityControlThresholdPercent) : null;
+  const hasConquestMinimumArmies = typeof raw.conquestMinimumArmies !== "undefined";
+  const conquestMinimumArmies = hasConquestMinimumArmies ? Number(raw.conquestMinimumArmies) : null;
 
   if (hasMajorityControlThresholdPercent && (!Number.isInteger(majorityControlThresholdPercent) || (majorityControlThresholdPercent as number) < 50 || (majorityControlThresholdPercent as number) > 100)) {
     throw new Error(`Invalid majorityControlThresholdPercent in "${sourcePath}".`);
   }
 
+  if (hasConquestMinimumArmies && (!Number.isInteger(conquestMinimumArmies) || (conquestMinimumArmies as number) < 1)) {
+    throw new Error(`Invalid conquestMinimumArmies in "${sourcePath}".`);
+  }
+
   return {
     reinforcementAdjustments,
-    majorityControlThresholdPercent
+    majorityControlThresholdPercent,
+    conquestMinimumArmies
   };
 }
 

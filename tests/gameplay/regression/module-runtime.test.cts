@@ -426,6 +426,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
         defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" },
         gameplayEffects: {
           majorityControlThresholdPercent: 60,
+          conquestMinimumArmies: 2,
           reinforcementAdjustments: [
             {
               id: "demo.defaults.supply-lines",
@@ -469,6 +470,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId, "aurora");
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.majorityControlThresholdPercent, 60);
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.conquestMinimumArmies, 2);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].flatBonus, 5);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].minimumTotal, 8);
 

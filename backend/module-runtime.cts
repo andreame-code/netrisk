@@ -660,7 +660,10 @@ function mergeGameplayEffects(
     ],
     majorityControlThresholdPercent: typeof gameplayEffects.majorityControlThresholdPercent === "number"
       ? gameplayEffects.majorityControlThresholdPercent
-      : (typeof target.majorityControlThresholdPercent === "number" ? target.majorityControlThresholdPercent : null)
+      : (typeof target.majorityControlThresholdPercent === "number" ? target.majorityControlThresholdPercent : null),
+    conquestMinimumArmies: typeof gameplayEffects.conquestMinimumArmies === "number"
+      ? gameplayEffects.conquestMinimumArmies
+      : (typeof target.conquestMinimumArmies === "number" ? target.conquestMinimumArmies : null)
   };
 }
 
@@ -966,7 +969,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const resolvedDefaults: NetRiskModuleConfigDefaults = {};
       let resolvedGameplayEffects: NetRiskGameplayEffects = {
         reinforcementAdjustments: [],
-        majorityControlThresholdPercent: null
+        majorityControlThresholdPercent: null,
+        conquestMinimumArmies: null
       };
       let resolvedScenarioSetup: NetRiskScenarioSetup = {
         territoryBonuses: [],
@@ -1023,7 +1027,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
       return {
         defaults: resolvedDefaults,
-        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length || typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number"
+        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length
+          || typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number"
+          || typeof resolvedGameplayEffects.conquestMinimumArmies === "number"
           ? resolvedGameplayEffects
           : null,
         scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
