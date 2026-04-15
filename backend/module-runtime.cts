@@ -667,6 +667,9 @@ function mergeGameplayEffects(
     fortifyMinimumArmies: typeof gameplayEffects.fortifyMinimumArmies === "number"
       ? gameplayEffects.fortifyMinimumArmies
       : (typeof target.fortifyMinimumArmies === "number" ? target.fortifyMinimumArmies : null),
+    requiredFortifyWhenAvailable: typeof gameplayEffects.requiredFortifyWhenAvailable === "boolean"
+      ? gameplayEffects.requiredFortifyWhenAvailable
+      : (typeof target.requiredFortifyWhenAvailable === "boolean" ? target.requiredFortifyWhenAvailable : null),
     attackMinimumArmies: typeof gameplayEffects.attackMinimumArmies === "number"
       ? gameplayEffects.attackMinimumArmies
       : (typeof target.attackMinimumArmies === "number" ? target.attackMinimumArmies : null),
@@ -984,6 +987,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         majorityControlThresholdPercent: null,
         conquestMinimumArmies: null,
         fortifyMinimumArmies: null,
+        requiredFortifyWhenAvailable: null,
         attackMinimumArmies: null,
         attackLimitPerTurn: null,
         minimumAttacksPerTurn: null
@@ -1047,6 +1051,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           || typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number"
           || typeof resolvedGameplayEffects.conquestMinimumArmies === "number"
           || typeof resolvedGameplayEffects.fortifyMinimumArmies === "number"
+          || typeof resolvedGameplayEffects.requiredFortifyWhenAvailable === "boolean"
           || typeof resolvedGameplayEffects.attackMinimumArmies === "number"
           || typeof resolvedGameplayEffects.attackLimitPerTurn === "number"
           || typeof resolvedGameplayEffects.minimumAttacksPerTurn === "number"

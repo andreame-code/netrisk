@@ -23,6 +23,7 @@ const demoCommandCenterServerModule = {
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
           fortifyMinimumArmies: 2,
+          requiredFortifyWhenAvailable: true,
           reinforcementAdjustments: [
             {
               id: "demo.command-center.supply-lines",

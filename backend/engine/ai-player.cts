@@ -39,6 +39,7 @@ interface FortifyChoice {
 
 interface GameplayEffectsLike {
   fortifyMinimumArmies?: number | null;
+  requiredFortifyWhenAvailable?: boolean | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
   minimumAttacksPerTurn?: number | null;
@@ -91,6 +92,13 @@ function resolveMinimumAttacksPerTurn(state: EngineState): number | null {
     ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).minimumAttacksPerTurn
     : null;
   return Number.isInteger(configuredMinimum) ? Math.max(1, Number(configuredMinimum)) : null;
+}
+
+function resolveRequiredFortifyWhenAvailable(state: EngineState): boolean {
+  const configuredValue = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).requiredFortifyWhenAvailable
+    : null;
+  return configuredValue === true;
 }
 
 type EngineModule = {
@@ -215,7 +223,11 @@ export function chooseConquestMove(state: EngineState, playerId: string, pending
   );
 }
 
-export function chooseFortify(state: EngineState, playerId: string): FortifyChoice | null {
+export function chooseFortify(
+  state: EngineState,
+  playerId: string,
+  options: { forceLegalMove?: boolean } = {}
+): FortifyChoice | null {
   const owned = territoriesOwnedBy(state, playerId);
   const borderIds = new Set(
     owned
@@ -243,7 +255,7 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
       }
 
       territoryDef.neighbors.forEach((neighborId) => {
-        if (!borderIds.has(neighborId)) {
+        if (!options.forceLegalMove && !borderIds.has(neighborId)) {
           return;
         }
 
@@ -253,7 +265,7 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
         }
 
         const sourceIsBorder = borderIds.has(territory.id);
-        if (sourceIsBorder) {
+        if (!options.forceLegalMove && sourceIsBorder) {
           return;
         }
 
@@ -266,7 +278,7 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
 
         const armies = Math.min(movableArmies, Math.max(minimumArmies, 2));
         const score = 8 + targetEnemyNeighbors * 4 + (fromState.armies - neighborState.armies);
-        if (score < 3) {
+        if (!options.forceLegalMove && score < 3) {
           return;
         }
 
@@ -409,7 +421,9 @@ export function runAiTurn(
     }
 
     if (state.turnPhase === TurnPhase.FORTIFY) {
-      const fortify = chooseFortify(state, player.id || "");
+      const fortify = chooseFortify(state, player.id || "", {
+        forceLegalMove: resolveRequiredFortifyWhenAvailable(state)
+      });
       if (fortify && player.id) {
         const result = applyFortify(state, player.id, fortify.fromId, fortify.toId, fortify.armies);
         if (!result.ok) {

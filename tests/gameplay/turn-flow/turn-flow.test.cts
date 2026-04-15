@@ -64,6 +64,37 @@ function createAttackPhaseState(overrides: {
   return state;
 }
 
+function createFortifyPhaseState(overrides: {
+  sourceArmies?: number;
+  targetArmies?: number;
+  fortifyUsed?: boolean;
+  gameplayEffects?: Record<string, unknown>;
+} = {}) {
+  const state = createInitialState();
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true, isAi: false, linkedUserId: null, surrendered: false },
+    { id: "p2", name: "Bob", color: "#222222", connected: true, isAi: false, linkedUserId: null, surrendered: false }
+  ];
+  state.currentTurnIndex = 0;
+  state.turnPhase = TurnPhase.FORTIFY;
+  state.reinforcementPool = 0;
+  state.fortifyUsed = overrides.fortifyUsed ?? false;
+  state.mapTerritories = [
+    { id: "a", name: "Alpha", ownerId: null, armies: 0, continentId: null, neighbors: ["b"] },
+    { id: "b", name: "Beta", ownerId: null, armies: 0, continentId: null, neighbors: ["a"] }
+  ];
+  state.territories = {
+    a: { ownerId: "p1", armies: overrides.sourceArmies ?? 4 },
+    b: { ownerId: "p1", armies: overrides.targetArmies ?? 1 }
+  };
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: overrides.gameplayEffects || null
+  };
+  return state;
+}
+
 register("applyReinforcement transitions from reinforcement to attack when pool reaches zero", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
@@ -149,6 +180,39 @@ register("endTurn consente la fortifica se il minimo attacchi non e soddisfatto 
   assert.equal(result.ok, true);
   assert.equal(result.requiresFortifyDecision, true);
   assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn blocca la chiusura del turno se il modulo richiede una fortifica e ne esiste una legale", () => {
+  const state = createFortifyPhaseState({
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, false);
+  assert.equal(result.messageKey, "game.endTurn.requiredFortify");
+  assert.deepEqual(result.messageParams, {
+    playerId: "p1"
+  });
+  assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn consente di chiudere il turno se la fortifica obbligatoria non e disponibile", () => {
+  const state = createFortifyPhaseState({
+    sourceArmies: 1,
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  });
+  state.territories.b.ownerId = "p2";
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, true);
+  assert.equal(state.currentTurnIndex, 1);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
 });
 
 register("endTurn from fortify advances to the next active player reinforcement phase", () => {
