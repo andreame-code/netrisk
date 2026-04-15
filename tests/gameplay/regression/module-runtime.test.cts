@@ -447,6 +447,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
     assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId, "aurora");
+    assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
 
     const explicitOverrideResponse = await callApp(app, "POST", "/api/games", {
       name: "Profile Defaults Override",
@@ -457,13 +458,26 @@ register("module runtime applica defaults setup dai profili server-side del modu
       mapId: "classic-mini",
       themeId: "command",
       totalPlayers: 2,
-      players: [{ type: "human" }, { type: "ai" }]
+      players: [{ type: "human" }, { type: "human" }]
     }, authHeaders(adminSessionToken));
 
     assert.equal(explicitOverrideResponse.statusCode, 201);
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.mapId, "classic-mini");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.themeId, "command");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+    assert.equal(explicitOverrideResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
+
+    const secondRegistered = await app.auth.registerPasswordUser("module_guest", "secret123");
+    assert.equal(secondRegistered.ok, true);
+    const secondLogin = await app.auth.loginWithPassword("module_guest", "secret123");
+    assert.equal(secondLogin.ok, true);
+
+    const joinResponse = await callApp(app, "POST", "/api/join", {
+      gameId: explicitOverrideResponse.payload.game.id
+    }, authHeaders(secondLogin.sessionToken));
+
+    assert.equal(joinResponse.statusCode, 201);
+    assert.equal(joinResponse.payload.state.players.length, 2);
 
     const startResponse = await callApp(app, "POST", "/api/start", {
       gameId: explicitOverrideResponse.payload.game.id,
@@ -472,7 +486,6 @@ register("module runtime applica defaults setup dai profili server-side del modu
 
     assert.equal(startResponse.statusCode, 200);
     assert.equal(startResponse.payload.state.map.some((entry: any) => entry.id === "aurora" && entry.armies === 2), true);
-    assert.equal(startResponse.payload.state.log.some((entry: any) => String(entry || "").includes("Scenario defaults applied.")), true);
   });
 });
 
