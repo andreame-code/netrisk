@@ -256,3 +256,7 @@ The game screen also includes:
 - attack dice selector with default coherent to selected territory
 - latest combat summary panel with dice and comparison
 - current player card panel with set selection and trade submission
+
+## License
+
+This project is released under the [MIT License](./LICENSE).
