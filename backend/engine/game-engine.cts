@@ -7,6 +7,7 @@ import {
   createLogEntry,
   createGameState,
   createPlayer,
+  type DiceRuleSet,
   getCombatRuleSet,
   getCardRuleSet,
   getDiceRuleSet,
@@ -232,6 +233,32 @@ function resolvePlayerPieceSetFromState(state: EngineState): PlayerPieceSet {
   }
 
   return getPlayerPieceSet(pieceSetId);
+}
+
+function resolveDiceRuleSetFromState(state: EngineState): DiceRuleSet {
+  const diceRuleSetId = typeof state.diceRuleSetId === "string" && state.diceRuleSetId
+    ? state.diceRuleSetId
+    : "standard";
+  const gameConfig = state.gameConfig;
+
+  if (gameConfig
+    && typeof gameConfig.diceRuleSetName === "string"
+    && gameConfig.diceRuleSetName.trim().length
+    && Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice)
+    && Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice)
+    && typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
+    && typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean") {
+    return {
+      id: diceRuleSetId,
+      name: gameConfig.diceRuleSetName,
+      attackerMaxDice: Number(gameConfig.diceRuleSetAttackerMaxDice),
+      defenderMaxDice: Number(gameConfig.diceRuleSetDefenderMaxDice),
+      attackerMustLeaveOneArmyBehind: gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind,
+      defenderWinsTies: gameConfig.diceRuleSetDefenderWinsTies
+    };
+  }
+
+  return getDiceRuleSet(diceRuleSetId);
 }
 
 export function territoriesOwnedBy(state: EngineState, playerId: string): TerritoryDefinition[] {
@@ -575,7 +602,7 @@ function applyScenarioSetupOnStart(state: EngineState): void {
 export function publicState(state: EngineState) {
   migrateGameStateExtensions(state);
   const currentPlayer = getCurrentPlayer(state);
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = resolveDiceRuleSetFromState(state);
   const lastAction = state.lastAction as ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>) | null;
 
   return {
@@ -930,7 +957,7 @@ export function resolveAttack(
   const defenderOwnerId = to.ownerId;
   const attackerArmiesBefore = from.armies;
   const defenderArmiesBefore = to.armies;
-  const diceRuleSet = getDiceRuleSet(state.diceRuleSetId || "standard");
+  const diceRuleSet = resolveDiceRuleSetFromState(state);
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve);
   if (maxAttackDice < 1) {

@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { listCardRuleSets } = require("../shared/cards.cjs");
 const { findContentPack: findBuiltInContentPack, listContentPacks } = require("../shared/content-packs.cjs");
-const { listDiceRuleSets } = require("../shared/dice.cjs");
+const { findDiceRuleSet: findBuiltInDiceRuleSet, listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
 const { findSupportedMap: findBuiltInSupportedMap, listSupportedMaps, summarizeMap } = require("../shared/maps/index.cjs");
 const { findPlayerPieceSet: findBuiltInPlayerPieceSet, listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
@@ -33,6 +33,7 @@ import type {
   NetRiskModuleMapDefinition,
   NetRiskModuleClientManifest,
   NetRiskModuleManifest,
+  NetRiskModuleDiceRuleSetDefinition,
   NetRiskModuleProfile,
   NetRiskModulePlayerPieceSetDefinition,
   NetRiskModuleReference,
@@ -43,6 +44,7 @@ import type {
   NetRiskUiSlotContribution
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
+import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
 
@@ -67,6 +69,7 @@ type ModuleOptionsSnapshot = {
   content: NetRiskContentContribution;
   maps: MapSummary[];
   playerPieceSets: PlayerPieceSetSummary[];
+  diceRuleSets: DiceRuleSetSummary[];
   contentPacks: ContentPackSummary[];
   gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
@@ -88,6 +91,11 @@ type RuntimeModuleContentPackEntry = {
 type RuntimeModulePlayerPieceSetEntry = {
   moduleId: string;
   pieceSet: PlayerPieceSet;
+};
+
+type RuntimeModuleDiceRuleSetEntry = {
+  moduleId: string;
+  diceRuleSet: DiceRuleSet;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -187,6 +195,18 @@ function clonePlayerPieceSet(pieceSet: PlayerPieceSet): PlayerPieceSet {
   };
 }
 
+function cloneDiceRuleSetSummary(ruleSet: DiceRuleSetSummary): DiceRuleSetSummary {
+  return {
+    ...ruleSet
+  };
+}
+
+function cloneDiceRuleSet(ruleSet: DiceRuleSet): DiceRuleSet {
+  return {
+    ...ruleSet
+  };
+}
+
 function cloneSupportedMap(map: SupportedMap): SupportedMap {
   return {
     ...map,
@@ -245,7 +265,8 @@ function aggregateContentContribution(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[] = [],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = [],
-  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = []
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = [],
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
@@ -280,6 +301,13 @@ function aggregateContentContribution(
     contribution.playerPieceSetIds = Array.from(new Set([
       ...(contribution.playerPieceSetIds || []),
       ...runtimePlayerPieceSetEntries.map((entry) => entry.pieceSet.id)
+    ]));
+  }
+
+  if (runtimeDiceRuleSetEntries.length) {
+    contribution.diceRuleSetIds = Array.from(new Set([
+      ...(contribution.diceRuleSetIds || []),
+      ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
     ]));
   }
 
@@ -414,6 +442,17 @@ function buildRuntimeModulePlayerPieceSet(pieceSetDefinition: NetRiskModulePlaye
     id: pieceSetDefinition.id,
     name: pieceSetDefinition.name,
     palette: [...pieceSetDefinition.palette]
+  };
+}
+
+function buildRuntimeModuleDiceRuleSet(ruleSetDefinition: NetRiskModuleDiceRuleSetDefinition): DiceRuleSet {
+  return {
+    id: ruleSetDefinition.id,
+    name: ruleSetDefinition.name,
+    attackerMaxDice: ruleSetDefinition.attackerMaxDice,
+    defenderMaxDice: ruleSetDefinition.defenderMaxDice,
+    attackerMustLeaveOneArmyBehind: ruleSetDefinition.attackerMustLeaveOneArmyBehind,
+    defenderWinsTies: ruleSetDefinition.defenderWinsTies
   };
 }
 
@@ -779,18 +818,35 @@ function filterPlayerPieceSetsByAllowedIds(entries: PlayerPieceSetSummary[], all
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(clonePlayerPieceSetSummary);
 }
 
+function filterDiceRuleSetsByAllowedIds(entries: DiceRuleSetSummary[], allowedIds: string[] | null | undefined): DiceRuleSetSummary[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneDiceRuleSetSummary);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneDiceRuleSetSummary);
+}
+
 function buildModuleOptions(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
-  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[]
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
 ): ModuleOptionsSnapshot {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible);
   const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
   const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
   const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries, enabledRuntimeContentPackEntries, enabledRuntimePlayerPieceSetEntries);
+  const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
+  const content = aggregateContentContribution(
+    enabled,
+    enabledRuntimeMapEntries,
+    enabledRuntimeContentPackEntries,
+    enabledRuntimePlayerPieceSetEntries,
+    enabledRuntimeDiceRuleSetEntries
+  );
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
@@ -810,6 +866,15 @@ function buildModuleOptions(
           paletteSize: entry.pieceSet.palette.length
         })).map(clonePlayerPieceSetSummary)
       ], content.playerPieceSetIds),
+      diceRuleSets: filterDiceRuleSetsByAllowedIds([
+        ...listDiceRuleSets().map(cloneDiceRuleSetSummary),
+        ...enabledRuntimeDiceRuleSetEntries.map((entry) => ({
+          id: entry.diceRuleSet.id,
+          name: entry.diceRuleSet.name,
+          attackerMaxDice: entry.diceRuleSet.attackerMaxDice,
+          defenderMaxDice: entry.diceRuleSet.defenderMaxDice
+        })).map(cloneDiceRuleSetSummary)
+      ], content.diceRuleSetIds),
       contentPacks: filterContentPacksByAllowedIds([
         ...listContentPacks().map(cloneContentPackSummary),
         ...enabledRuntimeContentPackEntries.map((entry) => cloneContentPackSummary(entry.contentPack))
@@ -923,6 +988,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
+  let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
 
   function registerServerModuleMaps(
     moduleId: string,
@@ -978,7 +1044,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimePlayerPieceSetsById.keys())
     ]);
-    const knownDiceRuleSetIds = new Set(listDiceRuleSets().map((entry: { id: string }) => entry.id));
+    const knownDiceRuleSetIds = new Set([
+      ...listDiceRuleSets().map((entry: { id: string }) => entry.id),
+      ...Array.from(runtimeDiceRuleSetsById.keys())
+    ]);
     const knownCardRuleSetIds = new Set(listCardRuleSets().map((entry: { id: string }) => entry.id));
     const knownVictoryRuleSetIds = new Set(listVictoryRuleSets().map((entry: { id: string }) => entry.id));
 
@@ -1060,6 +1129,38 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
+  function registerServerModuleDiceRuleSets(
+    moduleId: string,
+    serverModule: NetRiskServerModule,
+    sourcePath: string
+  ): string[] {
+    if (!Array.isArray(serverModule.diceRuleSets) || !serverModule.diceRuleSets.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
+    serverModule.diceRuleSets.forEach((ruleSetDefinition) => {
+      try {
+        if (findBuiltInDiceRuleSet(ruleSetDefinition.id)) {
+          throw new Error(`Runtime module dice rule set "${ruleSetDefinition.id}" conflicts with a built-in dice rule set.`);
+        }
+
+        if (runtimeDiceRuleSetsById.has(ruleSetDefinition.id)) {
+          throw new Error(`Duplicate runtime module dice rule set "${ruleSetDefinition.id}" detected.`);
+        }
+
+        runtimeDiceRuleSetsById.set(ruleSetDefinition.id, {
+          moduleId,
+          diceRuleSet: buildRuntimeModuleDiceRuleSet(ruleSetDefinition)
+        });
+      } catch (error: unknown) {
+        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    return errors;
+  }
+
   function listEnabledRuntimeMaps(modules: NetRiskInstalledModule[]): RuntimeModuleMapEntry[] {
     const enabledIds = new Set(
       modules
@@ -1102,6 +1203,21 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       .map((entry) => ({
         moduleId: entry.moduleId,
         pieceSet: clonePlayerPieceSet(entry.pieceSet)
+      }));
+  }
+
+  function listEnabledRuntimeDiceRuleSets(modules: NetRiskInstalledModule[]): RuntimeModuleDiceRuleSetEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimeDiceRuleSetsById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        diceRuleSet: cloneDiceRuleSet(entry.diceRuleSet)
       }));
   }
 
@@ -1199,6 +1315,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
     runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
     runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
+    runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -1249,6 +1366,20 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     const manifestModules = modules.filter((moduleEntry) => moduleEntry.manifest);
     const discoveredIds = new Set(manifestModules.map((moduleEntry) => moduleEntry.id));
+
+    manifestModules.forEach((moduleEntry) => {
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const diceRuleSetErrors = registerServerModuleDiceRuleSets(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      if (diceRuleSetErrors.length) {
+        moduleEntry.errors.push(...diceRuleSetErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+      }
+    });
 
     manifestModules.forEach((moduleEntry) => {
       const serverModule = serverModulesById.get(moduleEntry.id);
@@ -1354,7 +1485,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       modules,
       listEnabledRuntimeMaps(modules),
       listEnabledRuntimeContentPacks(modules),
-      listEnabledRuntimePlayerPieceSets(modules)
+      listEnabledRuntimePlayerPieceSets(modules),
+      listEnabledRuntimeDiceRuleSets(modules)
     );
   }
 
@@ -1422,6 +1554,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return clonePlayerPieceSet(runtimeEntry.pieceSet);
+    },
+    findDiceRuleSet(diceRuleSetId: string): DiceRuleSet | null {
+      const builtInDiceRuleSet = findBuiltInDiceRuleSet(diceRuleSetId);
+      if (builtInDiceRuleSet) {
+        return cloneDiceRuleSet(builtInDiceRuleSet);
+      }
+
+      const runtimeEntry = runtimeDiceRuleSetsById.get(diceRuleSetId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return cloneDiceRuleSet(runtimeEntry.diceRuleSet);
     },
     async getEnabledModules() {
       return enabledReferences(await ensureCatalog());
@@ -1652,7 +1802,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         selectedModuleEntries,
         listEnabledRuntimeMaps(selectedModuleEntries),
         listEnabledRuntimeContentPacks(selectedModuleEntries),
-        listEnabledRuntimePlayerPieceSets(selectedModuleEntries)
+        listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
+        listEnabledRuntimeDiceRuleSets(selectedModuleEntries)
       );
       const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
       const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));

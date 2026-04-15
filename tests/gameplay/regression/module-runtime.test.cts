@@ -793,6 +793,79 @@ register("module runtime espone player piece set locali e li usa per i colori lo
   });
 });
 
+register("module runtime espone dice rule set locali e li usa in creazione partita", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.dice-rules",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.dice-rules",
+        version: "1.0.0",
+        displayName: "Demo Dice Rules",
+        engineVersion: "1.0.0",
+        kind: "content",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "dice-rule-set", scope: "game", description: "Runtime module dice rules" }
+        ],
+        entrypoints: {
+          server: "server-module.cjs"
+        }
+      },
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  diceRuleSets: [
+    {
+      id: "duel",
+      name: "Duel",
+      attackerMaxDice: 2,
+      defenderMaxDice: 1,
+      attackerMustLeaveOneArmyBehind: true,
+      defenderWinsTies: true
+    }
+  ]
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.dice-rules/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(
+      optionsResponse.payload.diceRuleSets.some((entry: any) => entry.id === "duel" && entry.attackerMaxDice === 2 && entry.defenderMaxDice === 1),
+      true
+    );
+
+    const missingModuleSelectionResponse = await callApp(app, "POST", "/api/games", {
+      name: "Missing Dice Module",
+      diceRuleSetId: "duel",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+    assert.equal(missingModuleSelectionResponse.statusCode, 400);
+    assert.equal(String(missingModuleSelectionResponse.payload.error || missingModuleSelectionResponse.payload.message).includes("Selected dice rule set"), true);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Runtime Dice Rule",
+      activeModuleIds: ["demo.dice-rules"],
+      diceRuleSetId: "duel",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "duel");
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetName, "Duel");
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetAttackerMaxDice, 2);
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetDefenderMaxDice, 1);
+    assert.equal(createGameResponse.payload.state.diceRuleSet.id, "duel");
+    assert.equal(createGameResponse.payload.state.diceRuleSet.attackerMaxDice, 2);
+    assert.equal(createGameResponse.payload.state.diceRuleSet.defenderMaxDice, 1);
+  });
+});
+
 register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
   await withModuleServer([
     {

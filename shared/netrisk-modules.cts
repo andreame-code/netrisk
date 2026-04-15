@@ -5,6 +5,7 @@ export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
 
 import type { ContentPackSummary } from "./content-packs.cjs";
+import type { DiceRuleSet } from "./dice.cjs";
 import type { PlayerPieceSet } from "./player-piece-sets.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
 
@@ -175,6 +176,9 @@ export interface NetRiskModuleContentPackDefinition extends ContentPackSummary {
 export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {
 }
 
+export interface NetRiskModuleDiceRuleSetDefinition extends DiceRuleSet {
+}
+
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
   label: string;
@@ -232,6 +236,7 @@ export interface NetRiskServerModule {
   maps?: NetRiskModuleMapDefinition[] | null;
   contentPacks?: NetRiskModuleContentPackDefinition[] | null;
   playerPieceSets?: NetRiskModulePlayerPieceSetDefinition[] | null;
+  diceRuleSets?: NetRiskModuleDiceRuleSetDefinition[] | null;
   profiles?: {
     content?: NetRiskServerProfile[];
     gameplay?: NetRiskServerProfile[];
@@ -472,6 +477,41 @@ function normalizeModulePlayerPieceSets(raw: unknown, sourcePath: string): NetRi
       id: String(entry.id).trim(),
       name: String(entry.name).trim(),
       palette
+    };
+  });
+}
+
+function normalizeModuleDiceRuleSets(raw: unknown, sourcePath: string): NetRiskModuleDiceRuleSetDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module dice rule set definition in "${sourcePath}".`);
+    }
+
+    const attackerMaxDice = Number(entry.attackerMaxDice);
+    const defenderMaxDice = Number(entry.defenderMaxDice);
+    if (!Number.isInteger(attackerMaxDice) || attackerMaxDice < 1) {
+      throw new Error(`Invalid attackerMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+    }
+
+    if (!Number.isInteger(defenderMaxDice) || defenderMaxDice < 1) {
+      throw new Error(`Invalid defenderMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+    }
+
+    if (typeof entry.attackerMustLeaveOneArmyBehind !== "boolean" || typeof entry.defenderWinsTies !== "boolean") {
+      throw new Error(`Invalid boolean flags for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      attackerMaxDice,
+      defenderMaxDice,
+      attackerMustLeaveOneArmyBehind: entry.attackerMustLeaveOneArmyBehind,
+      defenderWinsTies: entry.defenderWinsTies
     };
   });
 }
@@ -728,6 +768,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
     maps: normalizeModuleMaps(raw.maps, sourcePath),
     contentPacks: normalizeModuleContentPacks(raw.contentPacks, sourcePath),
     playerPieceSets: normalizeModulePlayerPieceSets(raw.playerPieceSets, sourcePath),
+    diceRuleSets: normalizeModuleDiceRuleSets(raw.diceRuleSets, sourcePath),
     profiles
   };
 }

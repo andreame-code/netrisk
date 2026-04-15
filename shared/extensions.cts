@@ -82,6 +82,11 @@ export interface ExtensionAwareGameConfig extends ExtensionSelection {
   ruleSetId?: string;
   ruleSetName?: string;
   mapName?: string | null;
+  diceRuleSetName?: string | null;
+  diceRuleSetAttackerMaxDice?: number | null;
+  diceRuleSetDefenderMaxDice?: number | null;
+  diceRuleSetAttackerMustLeaveOneArmyBehind?: boolean | null;
+  diceRuleSetDefenderWinsTies?: boolean | null;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<Record<string, unknown>>;
@@ -348,7 +353,18 @@ export function normalizeExtensionSelection(
 
 export function migrateGameConfigExtensions(
   input: Record<string, unknown> | null | undefined,
-  fallback: Partial<Record<keyof ExtensionSelection | keyof NetRiskGameModuleSelection | "ruleSetId" | "mapName", unknown>> = {}
+  fallback: Partial<Record<
+    keyof ExtensionSelection
+    | keyof NetRiskGameModuleSelection
+    | "ruleSetId"
+    | "mapName"
+    | "diceRuleSetName"
+    | "diceRuleSetAttackerMaxDice"
+    | "diceRuleSetDefenderMaxDice"
+    | "diceRuleSetAttackerMustLeaveOneArmyBehind"
+    | "diceRuleSetDefenderWinsTies",
+    unknown
+  >> = {}
 ): ExtensionAwareGameConfig {
   const source = input && typeof input === "object" ? input : {};
   const requestedPackId = typeof source.ruleSetId === "string"
@@ -360,8 +376,17 @@ export function migrateGameConfigExtensions(
     diceRuleSetId: typeof source.diceRuleSetId === "string" ? source.diceRuleSetId : fallback.diceRuleSetId,
     victoryRuleSetId: typeof source.victoryRuleSetId === "string" ? source.victoryRuleSetId : fallback.victoryRuleSetId,
     themeId: typeof source.themeId === "string" ? source.themeId : fallback.themeId,
-    pieceSkinId: typeof source.pieceSkinId === "string" ? source.pieceSkinId : fallback.pieceSkinId
+      pieceSkinId: typeof source.pieceSkinId === "string" ? source.pieceSkinId : fallback.pieceSkinId
   }, requestedPackId);
+  const runtimeDiceRuleSetId = typeof source.diceRuleSetId === "string"
+    ? source.diceRuleSetId.trim()
+    : (typeof fallback.diceRuleSetId === "string" ? fallback.diceRuleSetId.trim() : "");
+  const runtimeDiceRuleSetName = typeof source.diceRuleSetName === "string"
+    ? source.diceRuleSetName.trim()
+    : (typeof fallback.diceRuleSetName === "string" ? fallback.diceRuleSetName.trim() : "");
+  const resolvedDiceRuleSetId = runtimeDiceRuleSetId && !findDiceRuleSet(runtimeDiceRuleSetId) && runtimeDiceRuleSetName
+    ? runtimeDiceRuleSetId
+    : selection.diceRuleSetId;
   const runtimeMapId = typeof source.mapId === "string"
     ? source.mapId.trim()
     : (typeof fallback.mapId === "string" ? fallback.mapId.trim() : "");
@@ -400,7 +425,22 @@ export function migrateGameConfigExtensions(
     ruleSetName: typeof source.ruleSetName === "string" ? source.ruleSetName : pack.name,
     mapId: resolvedMapId,
     mapName,
-    diceRuleSetId: selection.diceRuleSetId,
+    diceRuleSetId: resolvedDiceRuleSetId,
+    diceRuleSetName: typeof source.diceRuleSetName === "string"
+      ? source.diceRuleSetName
+      : (typeof fallback.diceRuleSetName === "string" ? fallback.diceRuleSetName : null),
+    diceRuleSetAttackerMaxDice: typeof source.diceRuleSetAttackerMaxDice === "number"
+      ? source.diceRuleSetAttackerMaxDice
+      : (typeof fallback.diceRuleSetAttackerMaxDice === "number" ? fallback.diceRuleSetAttackerMaxDice : null),
+    diceRuleSetDefenderMaxDice: typeof source.diceRuleSetDefenderMaxDice === "number"
+      ? source.diceRuleSetDefenderMaxDice
+      : (typeof fallback.diceRuleSetDefenderMaxDice === "number" ? fallback.diceRuleSetDefenderMaxDice : null),
+    diceRuleSetAttackerMustLeaveOneArmyBehind: typeof source.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
+      ? source.diceRuleSetAttackerMustLeaveOneArmyBehind
+      : (typeof fallback.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean" ? fallback.diceRuleSetAttackerMustLeaveOneArmyBehind : null),
+    diceRuleSetDefenderWinsTies: typeof source.diceRuleSetDefenderWinsTies === "boolean"
+      ? source.diceRuleSetDefenderWinsTies
+      : (typeof fallback.diceRuleSetDefenderWinsTies === "boolean" ? fallback.diceRuleSetDefenderWinsTies : null),
     victoryRuleSetId: selection.victoryRuleSetId,
     themeId: selection.themeId,
     pieceSkinId: selection.pieceSkinId,
