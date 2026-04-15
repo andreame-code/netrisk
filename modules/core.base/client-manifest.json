@@ -1,0 +1,76 @@
+{
+  "content": {
+    "mapIds": ["classic-mini", "middle-earth", "world-classic"],
+    "siteThemeIds": ["command", "midnight", "ember"],
+    "pieceSkinIds": ["classic-color", "command-ring"],
+    "playerPieceSetIds": ["classic"],
+    "contentPackIds": ["core"],
+    "diceRuleSetIds": ["standard", "defense-3"],
+    "cardRuleSetIds": ["standard"],
+    "victoryRuleSetIds": ["conquest", "majority-control"],
+    "fortifyRuleSetIds": ["standard"],
+    "reinforcementRuleSetIds": ["standard"]
+  },
+  "ui": {
+    "slots": [
+      {
+        "slotId": "top-nav-bar",
+        "itemId": "core.base.status",
+        "title": "Core status bar",
+        "kind": "badge",
+        "order": 0,
+        "description": "Badge base per la shell condivisa."
+      },
+      {
+        "slotId": "admin-modules-page",
+        "itemId": "core.base.catalog",
+        "title": "Core catalog",
+        "kind": "admin-card",
+        "order": 0,
+        "description": "Card base per la gestione moduli."
+      }
+    ]
+  },
+  "gamePresets": [
+    {
+      "id": "core.base.standard",
+      "name": "Classic Core",
+      "description": "Preset ufficiale base con profili core e setup classico.",
+      "contentProfileId": "core.classic-content",
+      "gameplayProfileId": "core.standard-gameplay",
+      "uiProfileId": "core.command-ui",
+      "defaults": {
+        "contentPackId": "core",
+        "ruleSetId": "classic",
+        "mapId": "classic-mini",
+        "diceRuleSetId": "standard",
+        "victoryRuleSetId": "conquest",
+        "themeId": "command",
+        "pieceSkinId": "classic-color"
+      }
+    }
+  ],
+  "profiles": {
+    "content": [
+      {
+        "id": "core.classic-content",
+        "name": "Classic Content",
+        "description": "Profilo contenuti ufficiale."
+      }
+    ],
+    "gameplay": [
+      {
+        "id": "core.standard-gameplay",
+        "name": "Standard Gameplay",
+        "description": "Profilo gameplay ufficiale."
+      }
+    ],
+    "ui": [
+      {
+        "id": "core.command-ui",
+        "name": "Command UI",
+        "description": "Profilo UI ufficiale."
+      }
+    ]
+  }
+}

@@ -75,3 +75,21 @@ register("moveFortifyArmies blocks a repeated fortify in the same turn", () => {
   assert.equal(result.ok, false);
   assert.equal(result.code, "FORTIFY_ALREADY_USED");
 });
+
+register("moveFortifyArmies applica il minimo modulare durante la fortifica", () => {
+  const { graph, state } = setupFortifyState();
+  state.gameConfig = {
+    gameplayEffects: {
+      fortifyMinimumArmies: 2
+    }
+  };
+
+  const blocked = moveFortifyArmies(state, graph, "p1", "a", "c", 1);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.code, "MOVE_BELOW_MINIMUM");
+
+  const allowed = moveFortifyArmies(state, graph, "p1", "a", "c", 2);
+  assert.equal(allowed.ok, true);
+  assert.equal(state.territories.a.armies, 2);
+  assert.equal(state.territories.c.armies, 3);
+});

@@ -3,18 +3,15 @@ const fs = require("fs");
 const path = require("path");
 const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
+const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
-  listContentPacks,
-  listDiceRuleSets,
   listNewGameRuleSets,
-  listPlayerPieceSets,
   listPieceSkins,
-  listSupportedMaps,
   listTurnTimeoutHoursOptions,
   listVictoryRuleSets,
   listVisualThemes
@@ -47,8 +44,16 @@ const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
+const {
+  handleDisableModuleRoute,
+  handleEnableModuleRoute,
+  handleListModulesRoute,
+  handleModuleOptionsRoute,
+  handleRescanModulesRoute
+} = require("./routes/modules.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
+const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
 
 type Request = import("http").IncomingMessage;
 type Response = import("http").ServerResponse;
@@ -70,6 +75,7 @@ type CreateAppOptions = {
   dataFile?: string;
   gamesFile?: string;
   sessionsFile?: string;
+  projectRoot?: string;
 };
 type GameContext = {
   gameId: string | null;
@@ -116,9 +122,19 @@ function resolveProjectRoot() {
 
 const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
+const modulesDir = path.join(projectRoot, "modules");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
+
+function filterCatalogByAllowedIds<T extends { id: string }>(entries: T[], allowedIds: string[] | null | undefined): T[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries;
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id));
+}
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -234,6 +250,8 @@ function clearSessionCookie(req: Request): string {
 }
 
 function createApp(options: CreateAppOptions = {}) {
+  const runtimeProjectRoot = options.projectRoot || projectRoot;
+
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
     if (missingEnvKeys.length) {
@@ -253,11 +271,15 @@ function createApp(options: CreateAppOptions = {}) {
   let nextAttackRolls: number[] | null = null;
   const datastore = createDatastore({
     dbFile: options.dbFile || defaultDbFile(),
-    legacyUsersFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
-    legacyGamesFile: options.gamesFile || path.join(projectRoot, "data", "games.json"),
-    legacySessionsFile: options.sessionsFile || path.join(projectRoot, "data", "sessions.json")
+    legacyUsersFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
+    legacyGamesFile: options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json"),
+    legacySessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
-  const gamesFile = options.gamesFile || path.join(projectRoot, "data", "games.json");
+  const moduleRuntime = createModuleRuntime({
+    projectRoot: runtimeProjectRoot,
+    datastore
+  });
+  const gamesFile = options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json");
   const gameSessions = createGameSessionStore({
     datastore,
     dataFile: gamesFile
@@ -268,8 +290,8 @@ function createApp(options: CreateAppOptions = {}) {
   });
   const auth = createAuthStore({
     datastore,
-    dataFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
-    sessionsFile: options.sessionsFile || path.join(projectRoot, "data", "sessions.json")
+    dataFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
+    sessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
   const clientsByGameId = new Map<string, Set<EventClient>>();
   let initPromise: Promise<void> | null = null;
@@ -612,18 +634,107 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
-      handleGameOptionsRoute(
+      const moduleOptions = await moduleRuntime.getModuleOptions();
+      await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
-        listSupportedMaps,
-        listDiceRuleSets,
-        listVictoryRuleSets,
-        listVisualThemes,
-        listPieceSkins,
+        () => moduleOptions.maps,
+        () => moduleOptions.diceRuleSets,
+        () => filterCatalogByAllowedIds(listVictoryRuleSets(), moduleOptions.content?.victoryRuleSetIds),
+        () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
+        () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
         listTurnTimeoutHoursOptions,
         sendJson,
-        listPlayerPieceSets,
-        listContentPacks
+        () => moduleOptions.playerPieceSets,
+        () => moduleOptions.contentPacks,
+        async () => {
+          return {
+            modules: moduleOptions.gameModules,
+            enabledModules: moduleOptions.enabledModules,
+            gamePresets: moduleOptions.gamePresets,
+            contentProfiles: moduleOptions.contentProfiles,
+            gameplayProfiles: moduleOptions.gameplayProfiles,
+            uiProfiles: moduleOptions.uiProfiles,
+            uiSlots: moduleOptions.uiSlots
+          };
+        }
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/modules/options") {
+      await handleModuleOptionsRoute(
+        res,
+        () => moduleRuntime.getModuleOptions(),
+        sendJson
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/modules") {
+      await handleListModulesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        () => moduleRuntime.listInstalledModules(),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/modules/rescan") {
+      await handleRescanModulesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        () => moduleRuntime.rescan(),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    const enableModuleMatch = req.method === "POST"
+      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/enable$/)
+      : null;
+    if (enableModuleMatch) {
+      await handleEnableModuleRoute(
+        req,
+        res,
+        decodeURIComponent(enableModuleMatch[1] || ""),
+        requireAuth,
+        authorize,
+        (moduleId: string) => moduleRuntime.enableModule(moduleId),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    const disableModuleMatch = req.method === "POST"
+      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/disable$/)
+      : null;
+    if (disableModuleMatch) {
+      await handleDisableModuleRoute(
+        req,
+        res,
+        decodeURIComponent(disableModuleMatch[1] || ""),
+        requireAuth,
+        authorize,
+        (moduleId: string) => moduleRuntime.disableModule(moduleId),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
       );
       return;
     }
@@ -669,13 +780,42 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
+      await moduleRuntime.getModuleOptions();
       await handleCreateGameRoute(
         req,
         res,
         body,
         requireAuth,
         authorize,
-        createConfiguredInitialState,
+        (body: Record<string, unknown>) => createConfiguredInitialState(body, {
+          resolveContentPack: (contentPackId: string) => moduleRuntime.findContentPack(contentPackId),
+          resolveDiceRuleSet: (diceRuleSetId: string) => moduleRuntime.findDiceRuleSet(diceRuleSetId),
+          resolvePlayerPieceSet: (pieceSetId: string) => moduleRuntime.findPlayerPieceSet(pieceSetId),
+          resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
+          resolveGamePreset: (input: {
+            gamePresetId?: string | null;
+            activeModuleIds?: string[];
+          }) => moduleRuntime.resolveGamePreset(input),
+          resolveGameModuleConfigDefaults: (input: {
+            activeModuleIds?: string[];
+            contentProfileId?: string | null;
+            gameplayProfileId?: string | null;
+            uiProfileId?: string | null;
+          }) => moduleRuntime.resolveGameConfigDefaults(input),
+          resolveGameModuleSelection: (input: {
+            activeModuleIds?: string[];
+            contentProfileId?: string | null;
+            gameplayProfileId?: string | null;
+            uiProfileId?: string | null;
+            contentPackId?: string | null;
+            pieceSetId?: string | null;
+            mapId?: string | null;
+            diceRuleSetId?: string | null;
+            victoryRuleSetId?: string | null;
+            themeId?: string | null;
+            pieceSkinId?: string | null;
+          }) => moduleRuntime.resolveGameSelection(input)
+        }),
         addPlayer,
         async (state: any, options: Record<string, any>) => {
           const created = await gameSessions.createGame(state, options);
@@ -925,14 +1065,18 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function serveStatic(res: Response, url: URL) {
-    const relativePath = url.pathname === "/"
-      ? "/index.html"
-      : url.pathname.indexOf("/game/") === 0
-        ? "/game.html"
-        : url.pathname;
-    const resolvedPublicDir = path.resolve(publicDir);
-    const filePath = path.resolve(path.join(publicDir, relativePath));
-    if (filePath !== resolvedPublicDir && !filePath.startsWith(resolvedPublicDir + path.sep)) {
+    const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
+    const staticRoot = isModuleAssetRequest ? modulesDir : publicDir;
+    const relativePath = isModuleAssetRequest
+      ? url.pathname.replace(/^\/modules\//, "")
+      : (url.pathname === "/"
+          ? "/index.html"
+          : url.pathname.indexOf("/game/") === 0
+            ? "/game.html"
+            : url.pathname);
+    const resolvedStaticRoot = path.resolve(staticRoot);
+    const filePath = path.resolve(path.join(staticRoot, relativePath));
+    if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
       sendLocalizedError(res, 403, null, "Accesso negato.", "server.static.accessDenied");
       return;
     }
@@ -949,11 +1093,13 @@ function createApp(options: CreateAppOptions = {}) {
         ".css": "text/css; charset=utf-8",
         ".js": "text/javascript; charset=utf-8",
         ".mjs": "text/javascript; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".png": "image/png",
         ".svg": "image/svg+xml",
-        ".webp": "image/webp"
+        ".webp": "image/webp",
+        ".woff2": "font/woff2"
       };
 
       const contentType = contentTypes[extension as keyof typeof contentTypes] || "text/plain; charset=utf-8";

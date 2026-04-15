@@ -116,3 +116,24 @@ register("declareWinnerIfNeeded usa la regola majority control quando configurat
   assert.equal(state.winnerId, "p1");
   assert.equal(state.logEntries[0]?.messageKey, "game.log.victoryMajorityControl");
 });
+
+register("declareWinnerIfNeeded usa la soglia majority control modulare persistita", () => {
+  const state = setupLiveState();
+  const territoryIds = getMapTerritories(state).map((territory: TerritoryRef) => territory.id);
+  territoryIds.forEach((territoryId: string, index: number) => {
+    state.territories[territoryId].ownerId = index < Math.ceil(territoryIds.length * 0.6) ? "p1" : "p2";
+  });
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+    gameplayEffects: {
+      majorityControlThresholdPercent: 60
+    }
+  };
+
+  const won = declareWinnerIfNeeded(state);
+
+  assert.equal(won, true);
+  assert.equal(state.winnerId, "p1");
+  assert.equal(state.logEntries[0]?.messageParams?.majorityControlThresholdPercent, 60);
+});

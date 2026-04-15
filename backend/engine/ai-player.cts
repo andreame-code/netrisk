@@ -37,6 +37,14 @@ interface FortifyChoice {
   score: number;
 }
 
+interface GameplayEffectsLike {
+  fortifyMinimumArmies?: number | null;
+  requiredFortifyWhenAvailable?: boolean | null;
+  attackMinimumArmies?: number | null;
+  attackLimitPerTurn?: number | null;
+  minimumAttacksPerTurn?: number | null;
+}
+
 interface AiTurnReport {
   ok: true;
   playerId: string | null;
@@ -56,6 +64,42 @@ type EngineState = GameState & {
   turnPhase: string;
   hands: Record<string, Card[]>;
 };
+
+function resolveFortifyMinimumArmies(state: EngineState, maxMove: number): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).fortifyMinimumArmies
+    : null;
+  const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
+  return Math.max(1, Math.min(maxMove, desiredMinimum));
+}
+
+function resolveAttackMinimumArmies(state: EngineState): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackMinimumArmies
+    : null;
+  return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
+}
+
+function resolveAttackLimitPerTurn(state: EngineState): number | null {
+  const configuredLimit = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackLimitPerTurn
+    : null;
+  return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
+}
+
+function resolveMinimumAttacksPerTurn(state: EngineState): number | null {
+  const configuredMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).minimumAttacksPerTurn
+    : null;
+  return Number.isInteger(configuredMinimum) ? Math.max(1, Number(configuredMinimum)) : null;
+}
+
+function resolveRequiredFortifyWhenAvailable(state: EngineState): boolean {
+  const configuredValue = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).requiredFortifyWhenAvailable
+    : null;
+  return configuredValue === true;
+}
 
 type EngineModule = {
   applyFortify: (state: EngineState, playerId: string, fromId: string, toId: string, armies: number) => ActionFailure | ActionSuccess;
@@ -122,20 +166,32 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
   return ranked[0] ? ranked[0].territoryId : null;
 }
 
-export function chooseAttack(state: EngineState, playerId: string): AttackChoice | null {
+export function chooseAttack(
+  state: EngineState,
+  playerId: string,
+  options: { forceLegalAttack?: boolean } = {}
+): AttackChoice | null {
   const candidates: AttackChoice[] = [];
+  const minimumAttackArmies = resolveAttackMinimumArmies(state);
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+    ? state.attacksThisTurn
+    : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return null;
+  }
 
   territoriesOwnedBy(state, playerId)
     .filter((territory): territory is Territory & { id: string } => Boolean(territory.id))
     .forEach((territory) => {
       const fromState = state.territories[territory.id];
-      if (!fromState || fromState.armies < 2) {
+      if (!fromState || fromState.armies < minimumAttackArmies) {
         return;
       }
 
       listEnemyNeighbors(state, territory.id, playerId).forEach((neighbor) => {
         const advantage = fromState.armies - neighbor.state.armies;
-        if (advantage < 2) {
+        if (!options.forceLegalAttack && advantage < 2) {
           return;
         }
 
@@ -167,7 +223,11 @@ export function chooseConquestMove(state: EngineState, playerId: string, pending
   );
 }
 
-export function chooseFortify(state: EngineState, playerId: string): FortifyChoice | null {
+export function chooseFortify(
+  state: EngineState,
+  playerId: string,
+  options: { forceLegalMove?: boolean } = {}
+): FortifyChoice | null {
   const owned = territoriesOwnedBy(state, playerId);
   const borderIds = new Set(
     owned
@@ -195,7 +255,7 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
       }
 
       territoryDef.neighbors.forEach((neighborId) => {
-        if (!borderIds.has(neighborId)) {
+        if (!options.forceLegalMove && !borderIds.has(neighborId)) {
           return;
         }
 
@@ -205,15 +265,20 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
         }
 
         const sourceIsBorder = borderIds.has(territory.id);
-        if (sourceIsBorder) {
+        if (!options.forceLegalMove && sourceIsBorder) {
           return;
         }
 
         const targetEnemyNeighbors = listEnemyNeighbors(state, neighborId, playerId).length;
         const movableArmies = fromState.armies - 1;
-        const armies = Math.max(1, Math.min(movableArmies, 2));
+        const minimumArmies = resolveFortifyMinimumArmies(state, movableArmies);
+        if (movableArmies < minimumArmies) {
+          return;
+        }
+
+        const armies = Math.min(movableArmies, Math.max(minimumArmies, 2));
         const score = 8 + targetEnemyNeighbors * 4 + (fromState.armies - neighborState.armies);
-        if (score < 3) {
+        if (!options.forceLegalMove && score < 3) {
           return;
         }
 
@@ -332,7 +397,13 @@ export function runAiTurn(
     }
 
     if (state.turnPhase === TurnPhase.ATTACK) {
-      const attack = chooseAttack(state, player.id || "");
+      const minimumAttacksPerTurn = resolveMinimumAttacksPerTurn(state);
+      const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+        ? state.attacksThisTurn
+        : 0;
+      const attack = chooseAttack(state, player.id || "", {
+        forceLegalAttack: minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn
+      });
       if (attack && player.id) {
         const result = resolveAttack(state, player.id, attack.fromId, attack.toId, random);
         if (!result.ok) {
@@ -350,7 +421,9 @@ export function runAiTurn(
     }
 
     if (state.turnPhase === TurnPhase.FORTIFY) {
-      const fortify = chooseFortify(state, player.id || "");
+      const fortify = chooseFortify(state, player.id || "", {
+        forceLegalMove: resolveRequiredFortifyWhenAvailable(state)
+      });
       if (fortify && player.id) {
         const result = applyFortify(state, player.id, fortify.fromId, fortify.toId, fortify.armies);
         if (!result.ok) {

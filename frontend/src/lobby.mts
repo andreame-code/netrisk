@@ -1,4 +1,5 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type { GameListResponse, GameSummary, LoginResponse, MutationResponse, PublicUser, SessionResponse } from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
@@ -101,6 +102,39 @@ function phaseLabel(phase: string): string {
     return t("common.phase.finished");
   }
   return t("common.phase.lobby");
+}
+
+function activeProfileIds(game: GameSummary | null | undefined): string[] {
+  return [
+    game?.contentProfileId,
+    game?.gameplayProfileId,
+    game?.uiProfileId
+  ].filter((value): value is string => Boolean(value));
+}
+
+function summarizeIdentifiers(values: string[], limit = 3): string {
+  if (!values.length) {
+    return t("common.notAvailable");
+  }
+
+  if (values.length <= limit) {
+    return values.join(", ");
+  }
+
+  return `${values.slice(0, limit).join(", ")} +${values.length - limit}`;
+}
+
+function summarizeSelectedProfiles(game: GameSummary | null | undefined): string {
+  return summarizeIdentifiers(activeProfileIds(game));
+}
+
+function summarizeActiveModules(game: GameSummary | null | undefined): string {
+  const moduleIds = Array.isArray(game?.activeModules)
+    ? game.activeModules
+      .map((entry) => entry?.id)
+      .filter((value): value is string => Boolean(value))
+    : [];
+  return summarizeIdentifiers(moduleIds);
 }
 
 function readinessLabel(game: GameSummary): string {
@@ -278,6 +312,9 @@ function render() {
         '<div class="session-detail-item"><span>' + t("lobby.details.playersConfigured") + '</span><strong>' + (selected.totalPlayers || t("common.notAvailable")) + '</strong></div>' +
         '<div class="session-detail-item"><span>' + t("lobby.details.map") + '</span><strong>' + escapeHtml(selected.mapName || selected.mapId || t("common.classicMini")) + '</strong></div>' +
         '<div class="session-detail-item"><span>' + t("lobby.details.ai") + '</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.preset") + '</span><strong>' + escapeHtml(selected.gamePresetId || t("common.notAvailable")) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.profiles") + '</span><strong>' + escapeHtml(summarizeSelectedProfiles(selected)) + '</strong></div>' +
+        '<div class="session-detail-item"><span>' + t("lobby.details.modules") + '</span><strong>' + escapeHtml(summarizeActiveModules(selected)) + '</strong></div>' +
         '<div class="session-detail-item"><span>' + t("lobby.details.updated") + '</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
         '<div class="session-detail-item"><span>' + t("lobby.details.focus") + '</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
       '</div>' +
@@ -510,6 +547,13 @@ await Promise.all([
 ]);
 render();
 setupInfiniteScroll();
+void mountModuleSlotSection({
+  slotId: "lobby.page",
+  containerId: "lobby-module-slots",
+  anchor: elements.gameSessionDetails,
+  title: "Briefing moduli",
+  copy: "Le estensioni attive possono arricchire la lobby con note operative e link rapidi."
+});
 
 if (elements.headerLoginForm) {
   elements.headerLoginForm.dataset.headerLoginManaged = "true";

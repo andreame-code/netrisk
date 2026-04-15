@@ -33,6 +33,68 @@ function setupLiveGame() {
   return state;
 }
 
+function createAttackPhaseState(overrides: {
+  playerArmies?: number;
+  enemyArmies?: number;
+  attacksThisTurn?: number;
+  gameplayEffects?: Record<string, unknown>;
+} = {}) {
+  const state = createInitialState();
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true, isAi: false, linkedUserId: null, surrendered: false },
+    { id: "p2", name: "Bob", color: "#222222", connected: true, isAi: false, linkedUserId: null, surrendered: false }
+  ];
+  state.currentTurnIndex = 0;
+  state.turnPhase = TurnPhase.ATTACK;
+  state.reinforcementPool = 0;
+  state.mapTerritories = [
+    { id: "a", name: "Alpha", ownerId: null, armies: 0, continentId: null, neighbors: ["b"] },
+    { id: "b", name: "Beta", ownerId: null, armies: 0, continentId: null, neighbors: ["a"] }
+  ];
+  state.territories = {
+    a: { ownerId: "p1", armies: overrides.playerArmies ?? 4 },
+    b: { ownerId: "p2", armies: overrides.enemyArmies ?? 2 }
+  };
+  state.attacksThisTurn = overrides.attacksThisTurn ?? 0;
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: overrides.gameplayEffects || null
+  };
+  return state;
+}
+
+function createFortifyPhaseState(overrides: {
+  sourceArmies?: number;
+  targetArmies?: number;
+  fortifyUsed?: boolean;
+  gameplayEffects?: Record<string, unknown>;
+} = {}) {
+  const state = createInitialState();
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true, isAi: false, linkedUserId: null, surrendered: false },
+    { id: "p2", name: "Bob", color: "#222222", connected: true, isAi: false, linkedUserId: null, surrendered: false }
+  ];
+  state.currentTurnIndex = 0;
+  state.turnPhase = TurnPhase.FORTIFY;
+  state.reinforcementPool = 0;
+  state.fortifyUsed = overrides.fortifyUsed ?? false;
+  state.mapTerritories = [
+    { id: "a", name: "Alpha", ownerId: null, armies: 0, continentId: null, neighbors: ["b"] },
+    { id: "b", name: "Beta", ownerId: null, armies: 0, continentId: null, neighbors: ["a"] }
+  ];
+  state.territories = {
+    a: { ownerId: "p1", armies: overrides.sourceArmies ?? 4 },
+    b: { ownerId: "p1", armies: overrides.targetArmies ?? 1 }
+  };
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: overrides.gameplayEffects || null
+  };
+  return state;
+}
+
 register("applyReinforcement transitions from reinforcement to attack when pool reaches zero", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
@@ -86,6 +148,73 @@ register("endTurn transitions from attack to fortify before advancing the turn",
   assert.equal(state.turnPhase, TurnPhase.FORTIFY);
 });
 
+register("endTurn blocca l'uscita dalla fase attacco finche il minimo modulare non e soddisfatto", () => {
+  const state = createAttackPhaseState({
+    gameplayEffects: {
+      minimumAttacksPerTurn: 1
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /almeno 1 attacchi/i);
+  assert.equal(result.messageKey, "game.endTurn.minimumAttacksRequired");
+  assert.deepEqual(result.messageParams, {
+    minimumAttacksPerTurn: 1,
+    attacksThisTurn: 0
+  });
+  assert.equal(state.turnPhase, TurnPhase.ATTACK);
+});
+
+register("endTurn consente la fortifica se il minimo attacchi non e soddisfatto ma non esistono attacchi legali", () => {
+  const state = createAttackPhaseState({
+    playerArmies: 1,
+    gameplayEffects: {
+      minimumAttacksPerTurn: 2
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, true);
+  assert.equal(result.requiresFortifyDecision, true);
+  assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn blocca la chiusura del turno se il modulo richiede una fortifica e ne esiste una legale", () => {
+  const state = createFortifyPhaseState({
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, false);
+  assert.equal(result.messageKey, "game.endTurn.requiredFortify");
+  assert.deepEqual(result.messageParams, {
+    playerId: "p1"
+  });
+  assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn consente di chiudere il turno se la fortifica obbligatoria non e disponibile", () => {
+  const state = createFortifyPhaseState({
+    sourceArmies: 1,
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  });
+  state.territories.b.ownerId = "p2";
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, true);
+  assert.equal(state.currentTurnIndex, 1);
+  assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
+});
+
 register("endTurn from fortify advances to the next active player reinforcement phase", () => {
   const state = setupLiveGame();
   const firstPlayer = state.players[state.currentTurnIndex];
@@ -106,6 +235,26 @@ register("endTurn from fortify advances to the next active player reinforcement 
   assert.equal(state.turnPhase, TurnPhase.REINFORCEMENT);
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
   assert.equal(state.reinforcementPool >= 3, true);
+});
+
+register("advanceTurn resetta il contatore attacchi del nuovo turno", () => {
+  const state = setupLiveGame();
+  const firstPlayer = state.players[state.currentTurnIndex];
+  const ownedTerritoryId = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === firstPlayer.id);
+  if (!ownedTerritoryId) {
+    throw new Error("Expected at least one owned territory for the current player.");
+  }
+
+  while (state.reinforcementPool > 0) {
+    applyReinforcement(state, firstPlayer.id, ownedTerritoryId);
+  }
+
+  state.attacksThisTurn = 2;
+  endTurn(state, firstPlayer.id);
+  endTurn(state, firstPlayer.id);
+
+  assert.equal(state.players[state.currentTurnIndex].id, "p2");
+  assert.equal(state.attacksThisTurn, 0);
 });
 
 register("advanceTurn awards continent bonuses through the game engine reinforcement pool", () => {

@@ -1,0 +1,80 @@
+{
+  "ui": {
+    "stylesheets": [
+      "/modules/demo.command-center/assets/command-center.css"
+    ],
+    "slots": [
+      {
+        "slotId": "lobby.page",
+        "itemId": "demo.command-center.dispatch",
+        "title": "Dispatch board",
+        "kind": "page-section",
+        "order": 10,
+        "description": "Sezione demo per mostrare briefing modulari direttamente nella lobby."
+      },
+      {
+        "slotId": "new-game.sidebar",
+        "itemId": "demo.command-center.briefing",
+        "title": "Demo briefing",
+        "kind": "panel",
+        "order": 20,
+        "description": "Pannello briefing dimostrativo per la pagina nuova partita."
+      },
+      {
+        "slotId": "game.sidebar",
+        "itemId": "demo.command-center.operations",
+        "title": "Operations uplink",
+        "kind": "widget",
+        "order": 25,
+        "description": "Widget demo per la sidebar di gioco con estensioni dichiarative."
+      },
+      {
+        "slotId": "admin-modules-page",
+        "itemId": "demo.command-center.health",
+        "title": "Demo health widget",
+        "kind": "widget",
+        "order": 30,
+        "description": "Widget demo per la pagina moduli."
+      }
+    ]
+  },
+  "gamePresets": [
+    {
+      "id": "demo.command-center.command-ops",
+      "name": "Command Ops",
+      "description": "Preset demo che abilita il modulo e applica i profili operativi consigliati.",
+      "activeModuleIds": ["demo.command-center"],
+      "contentProfileId": "demo.command-center.content",
+      "gameplayProfileId": "demo.command-center.gameplay",
+      "uiProfileId": "demo.command-center.ui",
+      "defaults": {
+        "ruleSetId": "classic-defense-3",
+        "themeId": "ember",
+        "pieceSkinId": "command-ring"
+      }
+    }
+  ],
+  "profiles": {
+    "content": [
+      {
+        "id": "demo.command-center.content",
+        "name": "Command Center Content",
+        "description": "Profilo demo di contenuti estesi."
+      }
+    ],
+    "gameplay": [
+      {
+        "id": "demo.command-center.gameplay",
+        "name": "Command Center Gameplay",
+        "description": "Profilo demo di gameplay modulare."
+      }
+    ],
+    "ui": [
+      {
+        "id": "demo.command-center.ui",
+        "name": "Command Center UI",
+        "description": "Profilo demo UI esteso."
+      }
+    ]
+  }
+}

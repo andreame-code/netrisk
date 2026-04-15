@@ -36,6 +36,7 @@ interface ActiveVictoryContext {
   state: GameState;
   victoryRuleSet: ReturnType<typeof getVictoryRuleSet>;
   activePlayers: Player[];
+  majorityControlThresholdPercent: number;
 }
 
 function territoryCountByPlayer(state: GameState, playerId: string | null): number {
@@ -184,7 +185,7 @@ function evaluateConquestVictory(context: ActiveVictoryContext): VictoryResult {
 
 function evaluateMajorityControlVictory(context: ActiveVictoryContext): VictoryResult {
   const totalTerritories = Object.keys(context.state.territories || {}).length;
-  const requiredTerritoryCount = Math.max(1, Math.ceil(totalTerritories * 0.7));
+  const requiredTerritoryCount = Math.max(1, Math.ceil(totalTerritories * (context.majorityControlThresholdPercent / 100)));
   const leadingPlayer = context.activePlayers
     .map((player) => ({
       player,
@@ -202,9 +203,19 @@ function evaluateMajorityControlVictory(context: ActiveVictoryContext): VictoryR
     summaryParams: {
       territoryCount: leadingPlayer.territoryCount,
       totalTerritories,
+      majorityControlThresholdPercent: context.majorityControlThresholdPercent,
       requiredTerritoryCount
     }
   });
+}
+
+function resolveMajorityControlThresholdPercent(state: GameState): number {
+  const rawThreshold = state.gameConfig?.gameplayEffects?.majorityControlThresholdPercent;
+  if (typeof rawThreshold === "number" && Number.isInteger(rawThreshold) && rawThreshold >= 50 && rawThreshold <= 100) {
+    return rawThreshold;
+  }
+
+  return 70;
 }
 
 const victoryEvaluators: Record<string, (context: ActiveVictoryContext) => VictoryResult> = {
@@ -217,6 +228,7 @@ export function detectVictory(state: GameState): VictoryResult {
   validateState(state);
   const victoryRuleSetId = state.gameConfig?.victoryRuleSetId || DEFAULT_VICTORY_RULE_SET_ID;
   const victoryRuleSet = getVictoryRuleSet(victoryRuleSetId);
+  const majorityControlThresholdPercent = resolveMajorityControlThresholdPercent(state);
 
   const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
   if (activePlayers.length === 0) {
@@ -235,6 +247,7 @@ export function detectVictory(state: GameState): VictoryResult {
   return evaluateVictory({
     state,
     victoryRuleSet,
-    activePlayers
+    activePlayers,
+    majorityControlThresholdPercent
   });
 }

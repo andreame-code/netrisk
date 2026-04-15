@@ -813,6 +813,30 @@ export const staticHtmlAssets = {
               <p id="profile-theme-status" class="profile-theme-status" aria-live="polite" data-i18n="profile.preferences.status.loading">Caricamento tema attuale...</p>
             </div>
           </section>
+          <section id="profile-modules" class="profile-preferences profile-note-card" hidden>
+            <div class="profile-preferences-head">
+              <div>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.modules.eyebrow">Moduli</p>
+                <h3 data-i18n="profile.modules.heading">Controllo moduli</h3>
+              </div>
+              <div class="page-header-actions compact-actions profile-hero-actions">
+                <button type="button" id="profile-modules-refresh" class="ghost-button profile-back-button" data-i18n="profile.modules.refresh">Aggiorna</button>
+                <button type="button" id="profile-modules-rescan" class="ghost-button profile-back-button" data-i18n="profile.modules.rescan">Rescan</button>
+              </div>
+            </div>
+            <p class="stage-copy" data-i18n="profile.modules.copy">Per gli admin il catalogo moduli mostra compatibilita, stato, warning e permette il lifecycle base del runtime installabile.</p>
+            <p id="profile-modules-status" class="profile-theme-status" aria-live="polite" data-i18n="profile.modules.status.loading">Caricamento catalogo moduli...</p>
+            <div id="profile-modules-empty" class="profile-games-empty" hidden data-i18n="profile.modules.empty">Nessun modulo rilevato.</div>
+            <div id="profile-modules-list" class="profile-games-list"></div>
+            <div class="profile-games-head">
+              <div>
+                <p class="eyebrow profile-section-eyebrow" data-i18n="profile.modules.extensions.eyebrow">Slot admin</p>
+                <h3 data-i18n="profile.modules.extensions.heading">Estensioni admin attive</h3>
+              </div>
+            </div>
+            <div id="profile-module-slots-empty" class="profile-games-empty" hidden data-i18n="profile.modules.extensions.empty">Nessuna estensione admin attiva.</div>
+            <div id="profile-module-slots-list" class="profile-games-list"></div>
+          </section>
           <section id="profile-content" class="profile-content" hidden>
             <div class="profile-summary-card campaign-summary-card">
               <p class="eyebrow profile-section-eyebrow" data-i18n="profile.summary.eyebrow">Panoramica</p>

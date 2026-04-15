@@ -17,6 +17,11 @@ export interface ValidationSuccess {
 
 export type AttackValidationResult = ValidationResult | ValidationSuccess;
 
+interface GameplayEffectsLike {
+  attackMinimumArmies?: number | null;
+  attackLimitPerTurn?: number | null;
+}
+
 function getCurrentPlayer(state: GameState): Player | null {
   if (!state || !Array.isArray(state.players) || state.players.length === 0) {
     return null;
@@ -41,6 +46,20 @@ function valid(details: Record<string, unknown> = {}): ValidationSuccess {
     message: "Attack is allowed.",
     details
   };
+}
+
+function resolveAttackMinimumArmies(
+  state: GameState & { gameConfig?: { gameplayEffects?: GameplayEffectsLike | null } | null }
+): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects?.attackMinimumArmies;
+  return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
+}
+
+function resolveAttackLimitPerTurn(
+  state: GameState & { gameConfig?: { gameplayEffects?: GameplayEffectsLike | null } | null }
+): number | null {
+  const configuredLimit = state.gameConfig?.gameplayEffects?.attackLimitPerTurn;
+  return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
 }
 
 export function validateAttackAttempt(
@@ -73,6 +92,17 @@ export function validateAttackAttempt(
   if (state.turnPhase !== TurnPhase.ATTACK) {
     return invalid("INVALID_PHASE", "Attacks are only allowed during the attack phase.", {
       turnPhase: state.turnPhase
+    });
+  }
+
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+    ? state.attacksThisTurn
+    : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return invalid("ATTACK_LIMIT_REACHED", "The turn attack limit has already been reached.", {
+      attackLimitPerTurn,
+      attacksThisTurn
     });
   }
 
@@ -118,9 +148,11 @@ export function validateAttackAttempt(
     return invalid("NOT_ADJACENT", "The attacker and defender territories must be adjacent.");
   }
 
-  if (!Number.isFinite(fromState.armies) || fromState.armies < 2) {
-    return invalid("INSUFFICIENT_ARMIES", "The attacker territory must contain at least 2 armies.", {
-      armies: fromState.armies
+  const minimumArmies = resolveAttackMinimumArmies(state);
+  if (!Number.isFinite(fromState.armies) || fromState.armies < minimumArmies) {
+    return invalid("INSUFFICIENT_ARMIES", `The attacker territory must contain at least ${minimumArmies} armies.`, {
+      armies: fromState.armies,
+      minimumArmies
     });
   }
 
@@ -128,6 +160,8 @@ export function validateAttackAttempt(
     playerId,
     fromTerritoryId,
     toTerritoryId,
+    attackLimitPerTurn,
+    attacksThisTurn,
     attackerArmies: fromState.armies,
     defenderArmies: toState.armies,
     defenderOwnerId: toState.ownerId
