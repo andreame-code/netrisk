@@ -326,7 +326,7 @@ async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
 
 function resolveModuleStylesheetHref(moduleId: string, stylesheet: string): string | null {
   const trimmed = String(stylesheet || "").trim();
-  if (!trimmed || /^https?:\/\//i.test(trimmed)) {
+  if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed) || /^\/\//.test(trimmed)) {
     return null;
   }
 

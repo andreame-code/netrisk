@@ -121,8 +121,6 @@ function resolveProjectRoot() {
 }
 
 const projectRoot = resolveProjectRoot();
-const publicDir = path.join(projectRoot, "public");
-const modulesDir = path.join(projectRoot, "modules");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
@@ -251,6 +249,8 @@ function clearSessionCookie(req: Request): string {
 
 function createApp(options: CreateAppOptions = {}) {
   const runtimeProjectRoot = options.projectRoot || projectRoot;
+  const runtimePublicDir = path.join(runtimeProjectRoot, "public");
+  const runtimeModulesDir = path.join(runtimeProjectRoot, "modules");
 
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
@@ -1066,7 +1066,7 @@ function createApp(options: CreateAppOptions = {}) {
 
   function serveStatic(res: Response, url: URL) {
     const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
-    const staticRoot = isModuleAssetRequest ? modulesDir : publicDir;
+    const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
       : (url.pathname === "/"
