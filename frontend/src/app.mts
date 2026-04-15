@@ -1,4 +1,5 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   GameListResponse,
   MessagePayload,
@@ -2284,5 +2285,13 @@ await loadGameList();
 await openRequestedGameIfNeeded();
 await loadState().catch(() => {});
 connectEvents();
+void mountModuleSlotSection({
+  slotId: "game.sidebar",
+  containerId: "game-module-slots",
+  anchor: elements.lobbyControlsSection || elements.statusSummary,
+  title: "Supporto moduli",
+  copy: "Il runtime moduli puo aggiungere pannelli laterali dichiarativi anche durante la partita.",
+  sectionClassName: "rail-section profile-note-card"
+});
 
 window.addEventListener("resize", queueMapBoardFit);

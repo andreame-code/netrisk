@@ -1,4 +1,5 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type { GameListResponse, GameSummary, LoginResponse, MutationResponse, PublicUser, SessionResponse } from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
@@ -510,6 +511,13 @@ await Promise.all([
 ]);
 render();
 setupInfiniteScroll();
+void mountModuleSlotSection({
+  slotId: "lobby.page",
+  containerId: "lobby-module-slots",
+  anchor: elements.gameSessionDetails,
+  title: "Briefing moduli",
+  copy: "Le estensioni attive possono arricchire la lobby con note operative e link rapidi."
+});
 
 if (elements.headerLoginForm) {
   elements.headerLoginForm.dataset.headerLoginManaged = "true";
