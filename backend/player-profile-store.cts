@@ -19,6 +19,11 @@ type GameEntry = {
       mapName?: string | null;
       victoryRuleSetId?: string | null;
       pieceSetId?: string | null;
+      activeModules?: Array<{ id?: string; version?: string }> | null;
+      gamePresetId?: string | null;
+      contentProfileId?: string | null;
+      gameplayProfileId?: string | null;
+      uiProfileId?: string | null;
     } | null;
     hands?: Record<string, unknown[]>;
   };
@@ -92,11 +97,25 @@ function turnPhaseLabel(turnPhase: TurnPhaseValue | string | null | undefined): 
   return "Lobby";
 }
 
+function normalizeActiveModules(activeModules: Array<{ id?: string; version?: string }> | null | undefined): Array<{ id: string; version: string }> {
+  if (!Array.isArray(activeModules)) {
+    return [];
+  }
+
+  return activeModules
+    .filter((entry): entry is { id: string; version: string } => Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string"))
+    .map((entry) => ({
+      id: String(entry.id),
+      version: String(entry.version)
+    }));
+}
+
 function summarizeParticipatingGame(entry: GameEntry, username: string): ParticipatingGameContract {
   const config = entry?.state?.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
   const configuredTotalPlayers = config?.totalPlayers;
   const totalPlayers = Number.isInteger(configuredTotalPlayers) ? configuredTotalPlayers : configuredPlayers.length;
+  const activeModules = normalizeActiveModules(config?.activeModules);
   const player = Array.isArray(entry?.state?.players)
     ? entry.state.players.find((candidate) => candidate?.name === username)
     : null;
@@ -111,6 +130,11 @@ function summarizeParticipatingGame(entry: GameEntry, username: string): Partici
     totalPlayers: totalPlayers || null,
     mapName: config ? (config.mapName || readableMapName(config?.mapId)) : null,
     updatedAt: entry.updatedAt,
+    activeModules,
+    gamePresetId: typeof config?.gamePresetId === "string" ? config.gamePresetId : null,
+    contentProfileId: typeof config?.contentProfileId === "string" ? config.contentProfileId : null,
+    gameplayProfileId: typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
+    uiProfileId: typeof config?.uiProfileId === "string" ? config.uiProfileId : null,
     myLobby: {
       playerName: player?.name || username,
       statusLabel: statusLabelForPlayer(entry, player || null, territoryCount),

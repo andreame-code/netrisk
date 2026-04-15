@@ -110,6 +110,14 @@ type RenderContext = {
   aiCount: number;
   playerLabel: string;
 };
+
+type GameModuleSummary = {
+  activeModules?: Array<{ id: string; version: string }> | null;
+  gamePresetId?: string | null;
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+};
 const renderSignatures: Record<RenderSectionKey, string | null> = {
   auth: null,
   sessionBrowser: null,
@@ -751,6 +759,37 @@ function phaseLabel(phase: string | null | undefined): string {
   return t("common.phase.lobby");
 }
 
+function selectedProfileIds(summary: GameModuleSummary | null | undefined): string[] {
+  return [
+    summary?.contentProfileId,
+    summary?.gameplayProfileId,
+    summary?.uiProfileId
+  ].filter((value): value is string => Boolean(value));
+}
+
+function gameMetaModuleSummary(summary: GameModuleSummary | null | undefined): string {
+  if (!summary) {
+    return "";
+  }
+
+  const parts: string[] = [];
+  if (summary.gamePresetId) {
+    parts.push(t("game.runtime.modularPreset", { id: summary.gamePresetId }));
+  }
+
+  const profileIds = selectedProfileIds(summary);
+  if (profileIds.length) {
+    parts.push(t("game.runtime.modularProfiles", { count: profileIds.length }));
+  }
+
+  const moduleCount = Array.isArray(summary.activeModules) ? summary.activeModules.length : 0;
+  if (moduleCount > 0) {
+    parts.push(t("game.runtime.modularModules", { count: moduleCount }));
+  }
+
+  return parts.join(" · ");
+}
+
 function selectedGame() {
   const selectedId = state.selectedGameId || state.currentGameId;
   return state.gameList.find((game) => game.id === selectedId) || null;
@@ -1224,6 +1263,13 @@ function renderGameMetaSection(context: RenderContext): void {
     context.snapshot?.gameConfig?.mapId,
     context.totalPlayers,
     context.aiCount,
+    context.snapshot?.gameConfig?.gamePresetId,
+    context.snapshot?.gameConfig?.contentProfileId,
+    context.snapshot?.gameConfig?.gameplayProfileId,
+    context.snapshot?.gameConfig?.uiProfileId,
+    Array.isArray(context.snapshot?.gameConfig?.activeModules)
+      ? context.snapshot?.gameConfig?.activeModules.map((entry) => `${entry.id}@${entry.version}`).join("|")
+      : "",
     state.user?.id,
     context.me?.id,
     context.me?.name,
@@ -1239,11 +1285,13 @@ function renderGameMetaSection(context: RenderContext): void {
     ? (state.currentGameName || state.currentGameId)
     : t("game.runtime.none");
   elements.gameMapMeta.textContent = context.snapshot?.gameConfig?.mapName || context.snapshot?.gameConfig?.mapId || t("common.classicMini");
-  elements.gameSetupMeta.textContent = t("game.runtime.setupMeta", {
+  const setupMeta = t("game.runtime.setupMeta", {
     totalPlayers: context.totalPlayers,
     playerLabel: context.playerLabel,
     aiCount: context.aiCount
   });
+  const modularSetupMeta = gameMetaModuleSummary(context.snapshot?.gameConfig || null);
+  elements.gameSetupMeta.textContent = [setupMeta, modularSetupMeta].filter(Boolean).join(" · ");
   elements.identityStatus.textContent = state.user
     ? context.me
       ? context.me.name

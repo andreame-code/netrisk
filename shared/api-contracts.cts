@@ -118,6 +118,11 @@ export interface GameSummaryContract {
   phase: string;
   playerCount: number;
   updatedAt: string;
+  activeModules?: NetRiskModuleReferenceContract[];
+  gamePresetId?: string | null;
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
 }
 
 export interface GameOptionsResponseContract {

@@ -9,6 +9,11 @@ interface GamePlayerConfig {
   type?: string;
 }
 
+interface GameModuleReference {
+  id?: string;
+  version?: string;
+}
+
 interface GameConfig {
   players?: GamePlayerConfig[];
   totalPlayers?: number;
@@ -18,6 +23,11 @@ interface GameConfig {
   diceRuleSetId?: string | null;
   victoryRuleSetId?: string | null;
   pieceSetId?: string | null;
+  activeModules?: GameModuleReference[] | null;
+  gamePresetId?: string | null;
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
 }
 
 interface GameStateRecord {
@@ -50,6 +60,11 @@ interface GameSummary {
   diceRuleSetId: string | null;
   totalPlayers: number | null;
   aiCount: number;
+  activeModules: Array<{ id: string; version: string }>;
+  gamePresetId: string | null;
+  contentProfileId: string | null;
+  gameplayProfileId: string | null;
+  uiProfileId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -89,6 +104,19 @@ function normalizeStateRecord<T extends GameStateRecord>(state: T): T {
   return migrateGameStateExtensions(state) as T;
 }
 
+function normalizeActiveModules(activeModules: GameModuleReference[] | null | undefined): Array<{ id: string; version: string }> {
+  if (!Array.isArray(activeModules)) {
+    return [];
+  }
+
+  return activeModules
+    .filter((entry): entry is GameModuleReference => Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string"))
+    .map((entry) => ({
+      id: String(entry.id),
+      version: String(entry.version)
+    }));
+}
+
 function normalizeGameName(name: unknown, fallbackIndex: number): string {
   if (name == null) {
     return `Partita ${fallbackIndex}`;
@@ -112,6 +140,7 @@ function summarizeGame(entry: GameEntry): GameSummary {
   const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players) ? config.players : [];
   const totalPlayers = Number.isInteger(config?.totalPlayers) ? Number(config?.totalPlayers) : configuredPlayers.length;
   const version = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
+  const activeModules = normalizeActiveModules(config?.activeModules);
 
   return {
     id: entry.id,
@@ -126,6 +155,11 @@ function summarizeGame(entry: GameEntry): GameSummary {
     diceRuleSetId: config?.diceRuleSetId || null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
+    activeModules,
+    gamePresetId: typeof config?.gamePresetId === "string" ? config.gamePresetId : null,
+    contentProfileId: typeof config?.contentProfileId === "string" ? config.contentProfileId : null,
+    gameplayProfileId: typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
+    uiProfileId: typeof config?.uiProfileId === "string" ? config.uiProfileId : null,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt
   };
