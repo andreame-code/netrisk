@@ -70,6 +70,7 @@ interface ScenarioSetupLike {
 interface GameplayEffectsLike {
   conquestMinimumArmies?: number | null;
   fortifyMinimumArmies?: number | null;
+  requiredFortifyWhenAvailable?: boolean | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
   minimumAttacksPerTurn?: number | null;
@@ -404,6 +405,9 @@ function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null 
   const fortifyMinimumArmies = typeof (rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies === "number"
     ? Number((rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies)
     : null;
+  const requiredFortifyWhenAvailable = typeof (rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown }).requiredFortifyWhenAvailable === "boolean"
+    ? Boolean((rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown }).requiredFortifyWhenAvailable)
+    : null;
   const attackMinimumArmies = typeof (rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies === "number"
     ? Number((rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies)
     : null;
@@ -420,6 +424,9 @@ function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null 
       : null,
     fortifyMinimumArmies: Number.isInteger(fortifyMinimumArmies) && (fortifyMinimumArmies as number) >= 1
       ? fortifyMinimumArmies
+      : null,
+    requiredFortifyWhenAvailable: typeof requiredFortifyWhenAvailable === "boolean"
+      ? requiredFortifyWhenAvailable
       : null,
     attackMinimumArmies: Number.isInteger(attackMinimumArmies) && (attackMinimumArmies as number) >= 2
       ? attackMinimumArmies
@@ -443,6 +450,10 @@ function resolveFortifyMinimumArmies(state: EngineState, maxArmies: number): num
   const moduleMinimum = resolveGameplayEffects(state)?.fortifyMinimumArmies;
   const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
   return Math.max(1, Math.min(maxArmies, desiredMinimum));
+}
+
+function resolveRequiredFortifyWhenAvailable(state: EngineState): boolean {
+  return resolveGameplayEffects(state)?.requiredFortifyWhenAvailable === true;
 }
 
 function resolveAttackMinimumArmies(state: EngineState): number {
@@ -479,6 +490,33 @@ function hasAvailableAttack(state: EngineState, playerId: string): boolean {
       return territory.neighbors.some((neighborId) => {
         const neighborState = state.territories[neighborId];
         return Boolean(neighborState && neighborState.ownerId && neighborState.ownerId !== playerId);
+      });
+    });
+}
+
+function hasAvailableFortifyMove(state: EngineState, playerId: string): boolean {
+  const fortifyRuleSet = getFortifyRuleSet(state.fortifyRuleSetId || "standard");
+  if (fortifyRuleSet.enforceSingleMovePerTurn && state.fortifyUsed) {
+    return false;
+  }
+
+  return territoriesOwnedBy(state, playerId)
+    .filter((territory): territory is TerritoryDefinition => Boolean(territory.id))
+    .some((territory) => {
+      const fromState = state.territories[territory.id];
+      if (!fromState || fromState.ownerId !== playerId || fromState.armies <= 1) {
+        return false;
+      }
+
+      const maxMove = Math.max(1, fromState.armies - 1);
+      const minimumMove = resolveFortifyMinimumArmies(state, maxMove);
+      if (maxMove < minimumMove) {
+        return false;
+      }
+
+      return territory.neighbors.some((neighborId) => {
+        const neighborState = state.territories[neighborId];
+        return Boolean(neighborState && neighborState.ownerId === playerId && neighborId !== territory.id);
       });
     });
 }
@@ -1146,6 +1184,16 @@ export function endTurn(state: EngineState, playerId: string) {
     state.fortifyUsed = false;
     appendLog(state, player.name + " entra nella fase di fortifica.", "game.log.enterFortify", { playerName: player.name });
     return { ok: true, requiresFortifyDecision: true };
+  }
+
+  if (state.turnPhase === TurnPhase.FORTIFY && resolveRequiredFortifyWhenAvailable(state) && hasAvailableFortifyMove(state, playerId)) {
+    return createActionFailure(
+      "Devi effettuare una fortifica valida prima di terminare il turno.",
+      "game.endTurn.requiredFortify",
+      {
+        playerId
+      }
+    );
   }
 
   const awardedCard = awardTurnCardIfEligible(state, playerId);

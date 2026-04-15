@@ -170,6 +170,7 @@ export interface NetRiskGameplayEffects {
   majorityControlThresholdPercent?: number | null;
   conquestMinimumArmies?: number | null;
   fortifyMinimumArmies?: number | null;
+  requiredFortifyWhenAvailable?: boolean | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
   minimumAttacksPerTurn?: number | null;
@@ -378,6 +379,8 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
   const conquestMinimumArmies = hasConquestMinimumArmies ? Number(raw.conquestMinimumArmies) : null;
   const hasFortifyMinimumArmies = typeof raw.fortifyMinimumArmies !== "undefined";
   const fortifyMinimumArmies = hasFortifyMinimumArmies ? Number(raw.fortifyMinimumArmies) : null;
+  const hasRequiredFortifyWhenAvailable = typeof raw.requiredFortifyWhenAvailable !== "undefined";
+  const requiredFortifyWhenAvailable = hasRequiredFortifyWhenAvailable ? Boolean(raw.requiredFortifyWhenAvailable) : null;
   const hasAttackMinimumArmies = typeof raw.attackMinimumArmies !== "undefined";
   const attackMinimumArmies = hasAttackMinimumArmies ? Number(raw.attackMinimumArmies) : null;
   const hasAttackLimitPerTurn = typeof raw.attackLimitPerTurn !== "undefined";
@@ -397,6 +400,10 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
     throw new Error(`Invalid fortifyMinimumArmies in "${sourcePath}".`);
   }
 
+  if (hasRequiredFortifyWhenAvailable && typeof raw.requiredFortifyWhenAvailable !== "boolean") {
+    throw new Error(`Invalid requiredFortifyWhenAvailable in "${sourcePath}".`);
+  }
+
   if (hasAttackMinimumArmies && (!Number.isInteger(attackMinimumArmies) || (attackMinimumArmies as number) < 2)) {
     throw new Error(`Invalid attackMinimumArmies in "${sourcePath}".`);
   }
@@ -414,6 +421,7 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
     majorityControlThresholdPercent,
     conquestMinimumArmies,
     fortifyMinimumArmies,
+    requiredFortifyWhenAvailable,
     attackMinimumArmies,
     attackLimitPerTurn,
     minimumAttacksPerTurn
