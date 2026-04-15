@@ -38,13 +38,13 @@ import {
   type NetRiskResolvedModuleSetup
 } from "../shared/netrisk-modules.cjs";
 import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
-import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
+import { findSupportedMap, listSupportedMaps, type SupportedMap } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
 
 type AddPlayerResult = { ok: true } | { ok: false; error?: string; errorKey?: string; errorParams?: Record<string, unknown> };
-type CreateInitialStateFn = (selectedMap?: ReturnType<typeof findSupportedMap>) => GameState & {
+type CreateInitialStateFn = (selectedMap?: SupportedMap | null) => GameState & {
   gameConfig?: Record<string, unknown>;
   contentPackId: string;
   diceRuleSetId: string;
@@ -116,7 +116,7 @@ interface ValidatedNewGameConfig {
   ruleSetName: string;
   mapId: string;
   mapName: string;
-  selectedMap: NonNullable<ReturnType<typeof findSupportedMap>>;
+  selectedMap: SupportedMap;
   diceRuleSetId: string;
   victoryRuleSetId: string;
   pieceSetId: string;
@@ -168,7 +168,7 @@ export function buildHistoricalAiNames(count: number, random: () => number = sec
 
 export function validateNewGameConfig(
   input: NewGameConfigInput = {},
-  options: { random?: () => number } = {}
+  options: { random?: () => number; resolveSupportedMap?: (mapId: string) => SupportedMap | null } = {}
 ): ValidatedNewGameConfig {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
   if (!Number.isInteger(totalPlayers) || totalPlayers < 2 || totalPlayers > 4) {
@@ -188,7 +188,10 @@ export function validateNewGameConfig(
   }
 
   const mapId = String(input.mapId || selectedContentPack.defaultMapId || selectedRuleSet.defaults.mapId || "classic-mini");
-  const selectedMap = findSupportedMap(mapId);
+  const resolveSupportedMap = typeof options.resolveSupportedMap === "function"
+    ? options.resolveSupportedMap
+    : findSupportedMap;
+  const selectedMap = resolveSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
@@ -293,6 +296,7 @@ export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
       activeModuleIds?: string[];
@@ -385,7 +389,10 @@ export function createConfiguredInitialState(
         ...(typeof resolvedDefaults?.pieceSkinId === "string" ? { pieceSkinId: resolvedDefaults.pieceSkinId } : {}),
         ...hydratedPresetInput
       };
-      const config = validateNewGameConfig(hydratedConfigInput, options);
+      const config = validateNewGameConfig(hydratedConfigInput, {
+        random: options.random,
+        resolveSupportedMap: options.resolveSupportedMap
+      });
       const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
         ? options.resolveGameModuleSelection({
             activeModuleIds: Array.isArray(hydratedConfigInput.activeModuleIds) ? hydratedConfigInput.activeModuleIds : [],

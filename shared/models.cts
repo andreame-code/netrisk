@@ -191,6 +191,7 @@ export type {
   NetRiskModuleDependency,
   NetRiskModuleEntrypoints,
   NetRiskModuleKind,
+  NetRiskModuleMapDefinition,
   NetRiskModuleManifest,
   NetRiskModuleProfile,
   NetRiskModuleReference,

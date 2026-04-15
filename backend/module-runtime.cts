@@ -4,10 +4,11 @@ const { listCardRuleSets } = require("../shared/cards.cjs");
 const { listContentPacks } = require("../shared/content-packs.cjs");
 const { listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
-const { listSupportedMaps } = require("../shared/maps/index.cjs");
+const { findSupportedMap: findBuiltInSupportedMap, listSupportedMaps, summarizeMap } = require("../shared/maps/index.cjs");
 const { listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
 const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
 const { listSiteThemes } = require("../shared/site-themes.cjs");
+const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const { listPieceSkins, listVictoryRuleSets } = require("../shared/extensions.cjs");
 const {
   CORE_MODULE_ID,
@@ -28,6 +29,7 @@ import type {
   NetRiskGamePreset,
   NetRiskGameModuleSelection,
   NetRiskInstalledModule,
+  NetRiskModuleMapDefinition,
   NetRiskModuleClientManifest,
   NetRiskModuleManifest,
   NetRiskModuleProfile,
@@ -38,6 +40,7 @@ import type {
   NetRiskServerModule,
   NetRiskUiSlotContribution
 } from "../shared/netrisk-modules.cjs";
+import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 
 type CatalogState = {
   enabledById: Record<string, boolean>;
@@ -58,11 +61,17 @@ type ModuleOptionsSnapshot = {
   enabledModules: NetRiskModuleReference[];
   gameModules: NetRiskInstalledModule[];
   content: NetRiskContentContribution;
+  maps: MapSummary[];
   gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
   uiProfiles: NetRiskModuleProfile[];
+};
+
+type RuntimeModuleMapEntry = {
+  moduleId: string;
+  map: SupportedMap;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -134,7 +143,73 @@ function emptyContentContribution(): NetRiskContentContribution {
   };
 }
 
-function aggregateContentContribution(modules: NetRiskInstalledModule[]): NetRiskContentContribution {
+function cloneMapSummary(summary: MapSummary): MapSummary {
+  return {
+    ...summary,
+    continentBonuses: Array.isArray(summary.continentBonuses)
+      ? summary.continentBonuses.map((continent) => ({ ...continent }))
+      : []
+  };
+}
+
+function cloneSupportedMap(map: SupportedMap): SupportedMap {
+  return {
+    ...map,
+    territories: Array.isArray(map.territories)
+      ? map.territories.map((territory) => ({
+          ...territory,
+          neighbors: Array.isArray(territory.neighbors) ? [...territory.neighbors] : []
+        }))
+      : [],
+    positions: isObject(map.positions)
+      ? Object.entries(map.positions).reduce<Record<string, { x: number; y: number }>>((accumulator, [territoryId, position]) => {
+          if (isObject(position) && typeof position.x === "number" && typeof position.y === "number") {
+            accumulator[territoryId] = { x: position.x, y: position.y };
+          }
+          return accumulator;
+        }, {})
+      : {},
+    continents: Array.isArray(map.continents)
+      ? map.continents.map((continent) => ({
+          ...continent,
+          territoryIds: Array.isArray(continent.territoryIds) ? [...continent.territoryIds] : []
+        }))
+      : [],
+    mapDefinition: isObject(map.mapDefinition)
+      ? {
+          ...map.mapDefinition,
+          territories: Array.isArray(map.mapDefinition.territories)
+            ? map.mapDefinition.territories.map((entry) => ({
+                territory: {
+                  ...entry.territory,
+                  neighbors: Array.isArray(entry.territory.neighbors) ? [...entry.territory.neighbors] : []
+                },
+                position: { ...entry.position }
+              }))
+            : [],
+          positions: isObject(map.mapDefinition.positions)
+            ? Object.entries(map.mapDefinition.positions).reduce<Record<string, { x: number; y: number }>>((accumulator, [territoryId, position]) => {
+                if (isObject(position) && typeof position.x === "number" && typeof position.y === "number") {
+                  accumulator[territoryId] = { x: position.x, y: position.y };
+                }
+                return accumulator;
+              }, {})
+            : {},
+          continents: Array.isArray(map.mapDefinition.continents)
+            ? map.mapDefinition.continents.map((continent) => ({
+                ...continent,
+                territoryIds: Array.isArray(continent.territoryIds) ? [...continent.territoryIds] : []
+              }))
+            : []
+        }
+      : map.mapDefinition
+  };
+}
+
+function aggregateContentContribution(
+  modules: NetRiskInstalledModule[],
+  runtimeMapEntries: RuntimeModuleMapEntry[] = []
+): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
   modules.forEach((moduleEntry) => {
@@ -149,6 +224,13 @@ function aggregateContentContribution(modules: NetRiskInstalledModule[]): NetRis
       contribution[key] = Array.from(new Set([...currentValues, ...nextValues]));
     });
   });
+
+  if (runtimeMapEntries.length) {
+    contribution.mapIds = Array.from(new Set([
+      ...(contribution.mapIds || []),
+      ...runtimeMapEntries.map((entry) => entry.map.id)
+    ]));
+  }
 
   return contribution;
 }
@@ -233,6 +315,32 @@ function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInsta
             : null
         }
       : null
+  };
+}
+
+function buildRuntimeModuleMap(
+  moduleId: string,
+  mapDefinition: NetRiskModuleMapDefinition,
+  sourcePath: string
+): SupportedMap {
+  const mapSource = `${sourcePath}#${mapDefinition.id}`;
+  const resolvedMapDefinition = buildMapDefinition(mapSource, mapDefinition.territoryRecords);
+  const continentDefinition = buildContinentDefinition(mapSource, mapDefinition.continentRecords, {
+    validTerritoryIds: resolvedMapDefinition.territories
+      .map((entry: { territory: { id?: string | null; }; }) => entry.territory.id)
+      .filter((territoryId: unknown): territoryId is string => isNonEmptyString(territoryId))
+  });
+
+  return {
+    id: mapDefinition.id,
+    name: mapDefinition.name,
+    territories: resolvedMapDefinition.territories.map((entry: { territory: SupportedMap["territories"][number]; }) => entry.territory),
+    positions: resolvedMapDefinition.positions,
+    continents: continentDefinition.continents,
+    mapDefinition: {
+      ...resolvedMapDefinition,
+      continents: continentDefinition.continents
+    }
   };
 }
 
@@ -571,16 +679,34 @@ function activeGameUsesModule(moduleId: string, games: Array<Record<string, unkn
   });
 }
 
-function buildModuleOptions(modules: NetRiskInstalledModule[]): ModuleOptionsSnapshot {
+function filterMapsByAllowedIds(entries: MapSummary[], allowedIds: string[] | null | undefined): MapSummary[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneMapSummary);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneMapSummary);
+}
+
+function buildModuleOptions(
+  modules: NetRiskInstalledModule[],
+  runtimeMapEntries: RuntimeModuleMapEntry[]
+): ModuleOptionsSnapshot {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible);
+  const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
+  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries);
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
     gameModules: enabled
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
       .map(cloneInstalledModule),
-    content: aggregateContentContribution(enabled),
+    content,
+    maps: filterMapsByAllowedIds([
+      ...listSupportedMaps().map(cloneMapSummary),
+      ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
+    ], content.mapIds),
     gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
@@ -687,6 +813,57 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let cachedModules: NetRiskInstalledModule[] = [];
   let cachedState: CatalogState | null = null;
   let serverModulesById = new Map<string, NetRiskServerModule>();
+  let runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
+
+  function registerServerModuleMaps(
+    moduleId: string,
+    serverModule: NetRiskServerModule,
+    sourcePath: string
+  ): string[] {
+    if (!Array.isArray(serverModule.maps) || !serverModule.maps.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
+    serverModule.maps.forEach((moduleMap) => {
+      try {
+        if (findBuiltInSupportedMap(moduleMap.id)) {
+          errors.push(`Module map "${moduleMap.id}" conflicts with a built-in map.`);
+          return;
+        }
+
+        const existing = runtimeMapsById.get(moduleMap.id);
+        if (existing && existing.moduleId !== moduleId) {
+          errors.push(`Module map "${moduleMap.id}" conflicts with module "${existing.moduleId}".`);
+          return;
+        }
+
+        runtimeMapsById.set(moduleMap.id, {
+          moduleId,
+          map: buildRuntimeModuleMap(moduleId, moduleMap, sourcePath)
+        });
+      } catch (error: unknown) {
+        errors.push(error instanceof Error ? error.message : String(error));
+      }
+    });
+
+    return errors;
+  }
+
+  function listEnabledRuntimeMaps(modules: NetRiskInstalledModule[]): RuntimeModuleMapEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimeMapsById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        map: cloneSupportedMap(entry.map)
+      }));
+  }
 
   async function loadCatalogState(): Promise<CatalogState> {
     if (cachedState) {
@@ -724,6 +901,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         const manifest = validateNetRiskModuleManifest(safeReadJson(manifestPath), manifestPath);
         const clientManifestResult = loadClientManifest(moduleRoot, manifest);
         const serverModuleResult = loadServerModule(moduleRoot, manifest, options.projectRoot);
+        const moduleMapErrors = serverModuleResult.serverModule
+          ? registerServerModuleMaps(manifest.id, serverModuleResult.serverModule, manifestPath)
+          : [];
         const moduleEntry = baseInstalledModuleFromManifest(
           manifest,
           moduleRoot,
@@ -731,7 +911,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           clientManifestResult.clientManifest,
           clientManifestResult.clientManifestPath,
           [...clientManifestResult.warnings, ...serverModuleResult.warnings],
-          [...clientManifestResult.errors, ...serverModuleResult.errors]
+          [...clientManifestResult.errors, ...serverModuleResult.errors, ...moduleMapErrors]
         );
         if (serverModuleResult.serverModule) {
           serverModulesById.set(manifest.id, serverModuleResult.serverModule);
@@ -741,6 +921,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           moduleEntry.status = "error";
         }
         if (serverModuleResult.errors.length) {
+          moduleEntry.compatible = false;
+          moduleEntry.status = "error";
+        }
+        if (moduleMapErrors.length) {
           moduleEntry.compatible = false;
           moduleEntry.status = "error";
         }
@@ -772,6 +956,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   async function buildCatalog(): Promise<NetRiskInstalledModule[]> {
     const catalogState = await loadCatalogState();
     serverModulesById = new Map<string, NetRiskServerModule>();
+    runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -800,6 +985,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const serverModuleResult = loadServerModule(coreModuleRoot, coreManifest, options.projectRoot);
       if (serverModuleResult.serverModule) {
         serverModulesById.set(CORE_MODULE_ID, serverModuleResult.serverModule);
+        coreErrors = coreErrors.concat(registerServerModuleMaps(CORE_MODULE_ID, serverModuleResult.serverModule, coreManifestPath));
       }
       coreWarnings = coreWarnings.concat(serverModuleResult.warnings);
       coreErrors = coreErrors.concat(serverModuleResult.errors);
@@ -893,7 +1079,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   }
 
   async function getModuleOptions() {
-    return buildModuleOptions(await ensureCatalog());
+    const modules = await ensureCatalog();
+    return buildModuleOptions(modules, listEnabledRuntimeMaps(modules));
   }
 
     return {
@@ -906,6 +1093,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     },
     async getModuleOptions() {
       return getModuleOptions();
+    },
+    findSupportedMap(mapId: string): SupportedMap | null {
+      const builtInMap = findBuiltInSupportedMap(mapId);
+      if (builtInMap) {
+        return cloneSupportedMap(builtInMap);
+      }
+
+      const runtimeEntry = runtimeMapsById.get(mapId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return cloneSupportedMap(runtimeEntry.map);
     },
     async getEnabledModules() {
       return enabledReferences(await ensureCatalog());
@@ -1132,7 +1337,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedContentProfiles = summarizeProfiles(selectedModuleEntries, "content");
       const selectedGameplayProfiles = summarizeProfiles(selectedModuleEntries, "gameplay");
       const selectedUiProfiles = summarizeProfiles(selectedModuleEntries, "ui");
-      const selectedContent = aggregateContentContribution(selectedModuleEntries);
+      const selectedContent = aggregateContentContribution(selectedModuleEntries, listEnabledRuntimeMaps(selectedModuleEntries));
       const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
       const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));
       const availableUiProfiles = new Set(selectedUiProfiles.map((profile) => profile.id));

@@ -15,7 +15,6 @@ const {
   listNewGameRuleSets,
   listPlayerPieceSets,
   listPieceSkins,
-  listSupportedMaps,
   listTurnTimeoutHoursOptions,
   listVictoryRuleSets,
   listVisualThemes
@@ -642,7 +641,7 @@ function createApp(options: CreateAppOptions = {}) {
       await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
-        () => filterCatalogByAllowedIds(listSupportedMaps(), moduleOptions.content?.mapIds),
+        () => moduleOptions.maps,
         () => filterCatalogByAllowedIds(listDiceRuleSets(), moduleOptions.content?.diceRuleSetIds),
         () => filterCatalogByAllowedIds(listVictoryRuleSets(), moduleOptions.content?.victoryRuleSetIds),
         () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
@@ -784,6 +783,7 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
+      await moduleRuntime.getModuleOptions();
       await handleCreateGameRoute(
         req,
         res,
@@ -791,6 +791,7 @@ function createApp(options: CreateAppOptions = {}) {
         requireAuth,
         authorize,
         (body: Record<string, unknown>) => createConfiguredInitialState(body, {
+          resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
           resolveGamePreset: (input: {
             gamePresetId?: string | null;
             activeModuleIds?: string[];
