@@ -23,6 +23,86 @@ export interface PieceSkinContract {
   assetBaseUrl?: string | null;
 }
 
+export interface NetRiskModuleReferenceContract {
+  id: string;
+  version: string;
+}
+
+export interface NetRiskModuleProfileContract {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+}
+
+export interface NetRiskGamePresetContract {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+  defaults?: Record<string, unknown> | null;
+}
+
+export interface NetRiskUiSlotContributionContract {
+  slotId: string;
+  itemId: string;
+  title: string;
+  kind: string;
+  order?: number;
+  description?: string | null;
+  route?: string | null;
+}
+
+export interface NetRiskContentContributionContract {
+  mapIds?: string[];
+  siteThemeIds?: string[];
+  pieceSkinIds?: string[];
+  playerPieceSetIds?: string[];
+  contentPackIds?: string[];
+  diceRuleSetIds?: string[];
+  cardRuleSetIds?: string[];
+  victoryRuleSetIds?: string[];
+  fortifyRuleSetIds?: string[];
+  reinforcementRuleSetIds?: string[];
+}
+
+export interface NetRiskInstalledModuleContract {
+  id: string;
+  version: string | null;
+  displayName: string;
+  description?: string | null;
+  kind: string | null;
+  sourcePath: string;
+  status: string;
+  enabled: boolean;
+  compatible: boolean;
+  warnings: string[];
+  errors: string[];
+  capabilities: Array<Record<string, unknown>>;
+}
+
+export interface ModulesCatalogResponseContract {
+  modules: NetRiskInstalledModuleContract[];
+  engineVersion: string;
+  enabledModules: NetRiskModuleReferenceContract[];
+}
+
+export interface ModuleOptionsResponseContract {
+  modules: NetRiskInstalledModuleContract[];
+  enabledModules: NetRiskModuleReferenceContract[];
+  gameModules: NetRiskInstalledModuleContract[];
+  content: NetRiskContentContributionContract;
+  gamePresets: NetRiskGamePresetContract[];
+  uiSlots: NetRiskUiSlotContributionContract[];
+  contentProfiles: NetRiskModuleProfileContract[];
+  gameplayProfiles: NetRiskModuleProfileContract[];
+  uiProfiles: NetRiskModuleProfileContract[];
+}
+
 export interface PublicUserContract {
   id: string;
   username: string;
@@ -38,6 +118,11 @@ export interface GameSummaryContract {
   phase: string;
   playerCount: number;
   updatedAt: string;
+  activeModules?: NetRiskModuleReferenceContract[];
+  gamePresetId?: string | null;
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
 }
 
 export interface GameOptionsResponseContract {
@@ -47,6 +132,13 @@ export interface GameOptionsResponseContract {
   victoryRuleSets: VictoryRuleSetContract[];
   themes: VisualThemeContract[];
   pieceSkins: PieceSkinContract[];
+  modules?: NetRiskInstalledModuleContract[];
+  enabledModules?: NetRiskModuleReferenceContract[];
+  gamePresets?: NetRiskGamePresetContract[];
+  contentProfiles?: NetRiskModuleProfileContract[];
+  gameplayProfiles?: NetRiskModuleProfileContract[];
+  uiProfiles?: NetRiskModuleProfileContract[];
+  uiSlots?: NetRiskUiSlotContributionContract[];
   playerPieceSets?: Array<Record<string, unknown>>;
   contentPacks?: Array<Record<string, unknown>>;
   turnTimeoutHoursOptions: number[];

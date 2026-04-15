@@ -28,6 +28,7 @@ export {
   listDiceRuleSets,
   standardDiceRuleSet
 } from "./dice.cjs";
+export type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
 export {
   DEFAULT_EXTENSION_PACK_ID,
   DEFAULT_PIECE_SKIN_ID,
@@ -163,6 +164,53 @@ export type {
 } from "./player-piece-sets.cjs";
 export { listContentModules } from "./content-catalog.cjs";
 export type { ContentModuleKind, ContentModuleSummary } from "./content-catalog.cjs";
+export {
+  CORE_MODULE_ID,
+  CORE_MODULE_VERSION,
+  NETRISK_ENGINE_VERSION,
+  NETRISK_MODULE_MANIFEST_SCHEMA_VERSION,
+  NETRISK_MODULE_SCHEMA_VERSION,
+  coreModuleReference,
+  createModuleReference,
+  isEngineVersionCompatible,
+  normalizeNetRiskGameModuleSelection,
+  parseSemverMajor,
+  uniqueModuleReferences,
+  validateNetRiskModuleClientManifest,
+  validateNetRiskModuleManifest
+} from "./netrisk-modules.cjs";
+export type {
+  NetRiskContentContribution,
+  NetRiskEnabledModuleSet,
+  NetRiskGamePreset,
+  NetRiskGameModuleSelection,
+  NetRiskGameplayContribution,
+  NetRiskInstalledModule,
+  NetRiskModuleCapability,
+  NetRiskModuleClientManifest,
+  NetRiskModuleContentPackDefinition,
+  NetRiskModuleConfigDefaults,
+  NetRiskModuleDiceRuleSetDefinition,
+  NetRiskModuleDependency,
+  NetRiskModuleEntrypoints,
+  NetRiskModuleKind,
+  NetRiskModuleMapDefinition,
+  NetRiskModuleManifest,
+  NetRiskModulePlayerPieceSetDefinition,
+  NetRiskModuleProfile,
+  NetRiskModuleReference,
+  NetRiskResolvedGamePreset,
+  NetRiskGameplayEffects,
+  NetRiskResolvedModuleSetup,
+  NetRiskReinforcementAdjustment,
+  NetRiskScenarioSetup,
+  NetRiskScenarioTerritoryBonus,
+  NetRiskModuleStatus,
+  NetRiskServerModule,
+  NetRiskUiContribution,
+  NetRiskUiSlotContribution,
+  NetRiskUiSlotKind
+} from "./netrisk-modules.cjs";
 export { GameAction } from "./game-actions.cjs";
 export type { GameActionValue } from "./game-actions.cjs";
 export {

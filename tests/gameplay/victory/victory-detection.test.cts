@@ -153,3 +153,36 @@ register("detectVictory majority control keeps the match active below the thresh
   assert.equal(state.phase, "active");
   assert.equal(state.winnerId, null);
 });
+
+register("detectVictory majority control usa la soglia modulare persistita nel gameConfig", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 1 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p1", armies: 1 },
+      { id: "e", ownerId: "p1", armies: 1 },
+      { id: "f", ownerId: "p1", armies: 1 },
+      { id: "g", ownerId: "p2", armies: 1 },
+      { id: "h", ownerId: "p2", armies: 1 },
+      { id: "i", ownerId: "p2", armies: 1 },
+      { id: "j", ownerId: "p2", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK
+  });
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+    gameplayEffects: {
+      majorityControlThresholdPercent: 60
+    }
+  };
+
+  const result = detectVictory(state);
+
+  assert.equal(result.code, "VICTORY_DECLARED");
+  assert.equal(result.victory?.winnerId, "p1");
+  assert.equal(result.victory?.summaryParams?.majorityControlThresholdPercent, 60);
+  assert.equal(result.victory?.summaryParams?.requiredTerritoryCount, 6);
+});

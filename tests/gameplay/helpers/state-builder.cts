@@ -20,6 +20,7 @@ type StateOptions = {
   lastAction?: GameState["lastAction"];
   pendingConquest?: GameState["pendingConquest"];
   fortifyUsed?: boolean;
+  attacksThisTurn?: number;
   fortifyMoveUsed?: boolean;
 };
 
@@ -83,7 +84,8 @@ function makeState(options: StateOptions = {}): GameState {
     log: options.log || [],
     lastAction: options.lastAction || null,
     pendingConquest: options.pendingConquest || null,
-    fortifyUsed: Boolean(options.fortifyUsed)
+    fortifyUsed: Boolean(options.fortifyUsed),
+    attacksThisTurn: typeof options.attacksThisTurn === "number" ? options.attacksThisTurn : 0
   });
   (state as GameState & { fortifyMoveUsed?: boolean }).fortifyMoveUsed = Boolean(options.fortifyMoveUsed);
   return state;

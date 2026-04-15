@@ -65,6 +65,23 @@ register("migrateGameStateExtensions backfills gameConfig for legacy states", ()
   assert.equal(migrated.gameConfig.pieceSkinId, DEFAULT_PIECE_SKIN_ID);
 });
 
+register("migrateGameConfigExtensions preserves runtime dice rule ids when metadata is present", () => {
+  const migrated = migrateGameConfigExtensions({
+    ruleSetId: "classic",
+    diceRuleSetId: "duel",
+    diceRuleSetName: "Duel",
+    diceRuleSetAttackerMaxDice: 2,
+    diceRuleSetDefenderMaxDice: 1,
+    diceRuleSetAttackerMustLeaveOneArmyBehind: true,
+    diceRuleSetDefenderWinsTies: true
+  });
+
+  assert.equal(migrated.diceRuleSetId, "duel");
+  assert.equal(migrated.diceRuleSetName, "Duel");
+  assert.equal(migrated.diceRuleSetAttackerMaxDice, 2);
+  assert.equal(migrated.diceRuleSetDefenderMaxDice, 1);
+});
+
 register("normalizeExtensionSelection falls back to pack defaults for unsupported capability ids", () => {
   const normalized = normalizeExtensionSelection({
     ruleSetId: "classic-defense-3",
