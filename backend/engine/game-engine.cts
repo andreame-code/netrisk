@@ -70,6 +70,7 @@ interface ScenarioSetupLike {
 interface GameplayEffectsLike {
   conquestMinimumArmies?: number | null;
   fortifyMinimumArmies?: number | null;
+  attackMinimumArmies?: number | null;
 }
 
 interface CombatSnapshot {
@@ -414,6 +415,11 @@ function resolveFortifyMinimumArmies(state: EngineState, maxArmies: number): num
   const moduleMinimum = resolveGameplayEffects(state)?.fortifyMinimumArmies;
   const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
   return Math.max(1, Math.min(maxArmies, desiredMinimum));
+}
+
+function resolveAttackMinimumArmies(state: EngineState): number {
+  const moduleMinimum = resolveGameplayEffects(state)?.attackMinimumArmies;
+  return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
 function applyScenarioSetupOnStart(state: EngineState): void {
@@ -771,8 +777,11 @@ export function resolveAttack(
     return createActionFailure("I territori non sono confinanti.", "game.attack.notAdjacent");
   }
 
-  if (from.armies < 2) {
-    return createActionFailure("Servono almeno 2 armate per attaccare.", "game.attack.notEnoughArmies");
+  const minimumAttackArmies = resolveAttackMinimumArmies(state);
+  if (from.armies < minimumAttackArmies) {
+    return createActionFailure("Servono almeno " + minimumAttackArmies + " armate per attaccare.", "game.attack.minArmies", {
+      minArmies: minimumAttackArmies
+    });
   }
 
   state.turnPhase = TurnPhase.ATTACK;

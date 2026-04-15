@@ -57,3 +57,20 @@ register("resolveAttack clampa il minimo movimento modulare alla disponibilita r
   assert.equal(state.pendingConquest?.maxArmies, 2);
   assert.equal(state.pendingConquest?.minArmies, 2);
 });
+
+register("resolveAttack applica il minimo modulare per iniziare un attacco", () => {
+  const state = setupAttackState();
+  state.territories.aurora.armies = 2;
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: {
+      attackMinimumArmies: 3
+    }
+  };
+
+  const result = resolveAttack(state, "p1", "aurora", "bastion");
+
+  assert.equal(result.ok, false);
+  assert.equal(result.messageKey, "game.attack.minArmies");
+  assert.deepEqual(result.messageParams, { minArmies: 3 });
+});

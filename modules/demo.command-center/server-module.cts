@@ -17,6 +17,7 @@ const demoCommandCenterServerModule = {
           victoryRuleSetId: "majority-control"
         },
         gameplayEffects: {
+          attackMinimumArmies: 3,
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
           fortifyMinimumArmies: 2,

@@ -17,6 +17,10 @@ export interface ValidationSuccess {
 
 export type AttackValidationResult = ValidationResult | ValidationSuccess;
 
+interface GameplayEffectsLike {
+  attackMinimumArmies?: number | null;
+}
+
 function getCurrentPlayer(state: GameState): Player | null {
   if (!state || !Array.isArray(state.players) || state.players.length === 0) {
     return null;
@@ -41,6 +45,13 @@ function valid(details: Record<string, unknown> = {}): ValidationSuccess {
     message: "Attack is allowed.",
     details
   };
+}
+
+function resolveAttackMinimumArmies(
+  state: GameState & { gameConfig?: { gameplayEffects?: GameplayEffectsLike | null } | null }
+): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects?.attackMinimumArmies;
+  return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
 export function validateAttackAttempt(
@@ -118,9 +129,11 @@ export function validateAttackAttempt(
     return invalid("NOT_ADJACENT", "The attacker and defender territories must be adjacent.");
   }
 
-  if (!Number.isFinite(fromState.armies) || fromState.armies < 2) {
-    return invalid("INSUFFICIENT_ARMIES", "The attacker territory must contain at least 2 armies.", {
-      armies: fromState.armies
+  const minimumArmies = resolveAttackMinimumArmies(state);
+  if (!Number.isFinite(fromState.armies) || fromState.armies < minimumArmies) {
+    return invalid("INSUFFICIENT_ARMIES", `The attacker territory must contain at least ${minimumArmies} armies.`, {
+      armies: fromState.armies,
+      minimumArmies
     });
   }
 

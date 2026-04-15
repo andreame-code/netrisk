@@ -39,6 +39,7 @@ interface FortifyChoice {
 
 interface GameplayEffectsLike {
   fortifyMinimumArmies?: number | null;
+  attackMinimumArmies?: number | null;
 }
 
 interface AiTurnReport {
@@ -67,6 +68,13 @@ function resolveFortifyMinimumArmies(state: EngineState, maxMove: number): numbe
     : null;
   const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
   return Math.max(1, Math.min(maxMove, desiredMinimum));
+}
+
+function resolveAttackMinimumArmies(state: EngineState): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackMinimumArmies
+    : null;
+  return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
 type EngineModule = {
@@ -136,12 +144,13 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
 
 export function chooseAttack(state: EngineState, playerId: string): AttackChoice | null {
   const candidates: AttackChoice[] = [];
+  const minimumAttackArmies = resolveAttackMinimumArmies(state);
 
   territoriesOwnedBy(state, playerId)
     .filter((territory): territory is Territory & { id: string } => Boolean(territory.id))
     .forEach((territory) => {
       const fromState = state.territories[territory.id];
-      if (!fromState || fromState.armies < 2) {
+      if (!fromState || fromState.armies < minimumAttackArmies) {
         return;
       }
 
