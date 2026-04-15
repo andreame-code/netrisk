@@ -126,6 +126,7 @@ function resolveProjectRoot() {
 
 const projectRoot = resolveProjectRoot();
 const publicDir = path.join(projectRoot, "public");
+const modulesDir = path.join(projectRoot, "modules");
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
@@ -1052,14 +1053,18 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function serveStatic(res: Response, url: URL) {
-    const relativePath = url.pathname === "/"
-      ? "/index.html"
-      : url.pathname.indexOf("/game/") === 0
-        ? "/game.html"
-        : url.pathname;
-    const resolvedPublicDir = path.resolve(publicDir);
-    const filePath = path.resolve(path.join(publicDir, relativePath));
-    if (filePath !== resolvedPublicDir && !filePath.startsWith(resolvedPublicDir + path.sep)) {
+    const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
+    const staticRoot = isModuleAssetRequest ? modulesDir : publicDir;
+    const relativePath = isModuleAssetRequest
+      ? url.pathname.replace(/^\/modules\//, "")
+      : (url.pathname === "/"
+          ? "/index.html"
+          : url.pathname.indexOf("/game/") === 0
+            ? "/game.html"
+            : url.pathname);
+    const resolvedStaticRoot = path.resolve(staticRoot);
+    const filePath = path.resolve(path.join(staticRoot, relativePath));
+    if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
       sendLocalizedError(res, 403, null, "Accesso negato.", "server.static.accessDenied");
       return;
     }
@@ -1076,11 +1081,13 @@ function createApp(options: CreateAppOptions = {}) {
         ".css": "text/css; charset=utf-8",
         ".js": "text/javascript; charset=utf-8",
         ".mjs": "text/javascript; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".png": "image/png",
         ".svg": "image/svg+xml",
-        ".webp": "image/webp"
+        ".webp": "image/webp",
+        ".woff2": "font/woff2"
       };
 
       const contentType = contentTypes[extension as keyof typeof contentTypes] || "text/plain; charset=utf-8";

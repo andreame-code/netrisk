@@ -17,5 +17,6 @@
   "entrypoints": {
     "clientManifest": "client-manifest.json"
   },
+  "assetsDir": "assets",
   "permissions": []
 }

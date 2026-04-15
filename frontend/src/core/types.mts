@@ -87,6 +87,12 @@ export type InstalledModuleSummary = {
   errors: string[];
   capabilities: Array<Record<string, unknown>>;
   clientManifest?: {
+    ui?: {
+      slots?: NetRiskUiSlotContribution[];
+      themeTokens?: string[];
+      stylesheets?: string[];
+      locales?: string[];
+    } | null;
     content?: NetRiskContentContribution | null;
     profiles?: {
       content?: NetRiskModuleProfile[];
