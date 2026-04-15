@@ -8,7 +8,8 @@ import {
 import {
   DEFAULT_CONTENT_PACK_ID,
   findContentPack,
-  listContentPacks
+  listContentPacks,
+  type ContentPackSummary
 } from "../shared/content-packs.cjs";
 import {
   DEFAULT_PLAYER_PIECE_SET_ID,
@@ -168,7 +169,11 @@ export function buildHistoricalAiNames(count: number, random: () => number = sec
 
 export function validateNewGameConfig(
   input: NewGameConfigInput = {},
-  options: { random?: () => number; resolveSupportedMap?: (mapId: string) => SupportedMap | null } = {}
+  options: {
+    random?: () => number;
+    resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
+    resolveSupportedMap?: (mapId: string) => SupportedMap | null;
+  } = {}
 ): ValidatedNewGameConfig {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
   if (!Number.isInteger(totalPlayers) || totalPlayers < 2 || totalPlayers > 4) {
@@ -176,7 +181,10 @@ export function validateNewGameConfig(
   }
 
   const requestedContentPackId = String(input.contentPackId || DEFAULT_CONTENT_PACK_ID);
-  const selectedContentPack = findContentPack(requestedContentPackId);
+  const resolveContentPack = typeof options.resolveContentPack === "function"
+    ? options.resolveContentPack
+    : findContentPack;
+  const selectedContentPack = resolveContentPack(requestedContentPackId);
   if (!selectedContentPack) {
     throw createLocalizedError("Il content pack selezionato non e supportato.", "newGame.invalidContentPack");
   }
@@ -296,6 +304,7 @@ export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
@@ -391,6 +400,7 @@ export function createConfiguredInitialState(
       };
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
+        resolveContentPack: options.resolveContentPack,
         resolveSupportedMap: options.resolveSupportedMap
       });
       const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"

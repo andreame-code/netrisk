@@ -187,6 +187,7 @@ export type {
   NetRiskInstalledModule,
   NetRiskModuleCapability,
   NetRiskModuleClientManifest,
+  NetRiskModuleContentPackDefinition,
   NetRiskModuleConfigDefaults,
   NetRiskModuleDependency,
   NetRiskModuleEntrypoints,

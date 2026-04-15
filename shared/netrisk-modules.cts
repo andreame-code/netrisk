@@ -4,6 +4,7 @@ export const NETRISK_MODULE_SCHEMA_VERSION = 1;
 export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
 
+import type { ContentPackSummary } from "./content-packs.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
 
 export type NetRiskModuleKind = "content" | "gameplay" | "ui" | "hybrid";
@@ -167,6 +168,9 @@ export interface NetRiskModuleMapDefinition {
   continentRecords: StaticContinentRecord[];
 }
 
+export interface NetRiskModuleContentPackDefinition extends ContentPackSummary {
+}
+
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
   label: string;
@@ -222,6 +226,7 @@ export interface NetRiskResolvedGamePreset {
 
 export interface NetRiskServerModule {
   maps?: NetRiskModuleMapDefinition[] | null;
+  contentPacks?: NetRiskModuleContentPackDefinition[] | null;
   profiles?: {
     content?: NetRiskServerProfile[];
     gameplay?: NetRiskServerProfile[];
@@ -406,6 +411,39 @@ function normalizeModuleMaps(raw: unknown, sourcePath: string): NetRiskModuleMap
       name: String(entry.name).trim(),
       territoryRecords: normalizeTerritoryRecords(entry.territoryRecords, sourcePath),
       continentRecords: normalizeContinentRecords(entry.continentRecords, sourcePath)
+    };
+  });
+}
+
+function normalizeModuleContentPacks(raw: unknown, sourcePath: string): NetRiskModuleContentPackDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name) || !isNonEmptyString(entry.description)) {
+      throw new Error(`Invalid module content pack definition in "${sourcePath}".`);
+    }
+
+    if (!isNonEmptyString(entry.defaultSiteThemeId)
+      || !isNonEmptyString(entry.defaultMapId)
+      || !isNonEmptyString(entry.defaultDiceRuleSetId)
+      || !isNonEmptyString(entry.defaultCardRuleSetId)
+      || !isNonEmptyString(entry.defaultVictoryRuleSetId)
+      || !isNonEmptyString(entry.defaultPieceSetId)) {
+      throw new Error(`Invalid module content pack defaults in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      description: String(entry.description).trim(),
+      defaultSiteThemeId: String(entry.defaultSiteThemeId).trim(),
+      defaultMapId: String(entry.defaultMapId).trim(),
+      defaultDiceRuleSetId: String(entry.defaultDiceRuleSetId).trim(),
+      defaultCardRuleSetId: String(entry.defaultCardRuleSetId).trim(),
+      defaultVictoryRuleSetId: String(entry.defaultVictoryRuleSetId).trim(),
+      defaultPieceSetId: String(entry.defaultPieceSetId).trim()
     };
   });
 }
@@ -660,6 +698,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
 
   return {
     maps: normalizeModuleMaps(raw.maps, sourcePath),
+    contentPacks: normalizeModuleContentPacks(raw.contentPacks, sourcePath),
     profiles
   };
 }

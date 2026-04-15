@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { listCardRuleSets } = require("../shared/cards.cjs");
-const { listContentPacks } = require("../shared/content-packs.cjs");
+const { findContentPack: findBuiltInContentPack, listContentPacks } = require("../shared/content-packs.cjs");
 const { listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
 const { findSupportedMap: findBuiltInSupportedMap, listSupportedMaps, summarizeMap } = require("../shared/maps/index.cjs");
@@ -25,6 +25,7 @@ const {
 import type {
   NetRiskGameplayEffects,
   NetRiskModuleConfigDefaults,
+  NetRiskModuleContentPackDefinition,
   NetRiskContentContribution,
   NetRiskGamePreset,
   NetRiskGameModuleSelection,
@@ -40,6 +41,7 @@ import type {
   NetRiskServerModule,
   NetRiskUiSlotContribution
 } from "../shared/netrisk-modules.cjs";
+import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 
 type CatalogState = {
@@ -62,6 +64,7 @@ type ModuleOptionsSnapshot = {
   gameModules: NetRiskInstalledModule[];
   content: NetRiskContentContribution;
   maps: MapSummary[];
+  contentPacks: ContentPackSummary[];
   gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
@@ -72,6 +75,11 @@ type ModuleOptionsSnapshot = {
 type RuntimeModuleMapEntry = {
   moduleId: string;
   map: SupportedMap;
+};
+
+type RuntimeModuleContentPackEntry = {
+  moduleId: string;
+  contentPack: ContentPackSummary;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -152,6 +160,12 @@ function cloneMapSummary(summary: MapSummary): MapSummary {
   };
 }
 
+function cloneContentPackSummary(contentPack: ContentPackSummary): ContentPackSummary {
+  return {
+    ...contentPack
+  };
+}
+
 function cloneSupportedMap(map: SupportedMap): SupportedMap {
   return {
     ...map,
@@ -208,7 +222,8 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
 
 function aggregateContentContribution(
   modules: NetRiskInstalledModule[],
-  runtimeMapEntries: RuntimeModuleMapEntry[] = []
+  runtimeMapEntries: RuntimeModuleMapEntry[] = [],
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
@@ -229,6 +244,13 @@ function aggregateContentContribution(
     contribution.mapIds = Array.from(new Set([
       ...(contribution.mapIds || []),
       ...runtimeMapEntries.map((entry) => entry.map.id)
+    ]));
+  }
+
+  if (runtimeContentPackEntries.length) {
+    contribution.contentPackIds = Array.from(new Set([
+      ...(contribution.contentPackIds || []),
+      ...runtimeContentPackEntries.map((entry) => entry.contentPack.id)
     ]));
   }
 
@@ -341,6 +363,20 @@ function buildRuntimeModuleMap(
       ...resolvedMapDefinition,
       continents: continentDefinition.continents
     }
+  };
+}
+
+function buildRuntimeModuleContentPack(contentPackDefinition: NetRiskModuleContentPackDefinition): ContentPackSummary {
+  return {
+    id: contentPackDefinition.id,
+    name: contentPackDefinition.name,
+    description: contentPackDefinition.description,
+    defaultSiteThemeId: contentPackDefinition.defaultSiteThemeId,
+    defaultMapId: contentPackDefinition.defaultMapId,
+    defaultDiceRuleSetId: contentPackDefinition.defaultDiceRuleSetId,
+    defaultCardRuleSetId: contentPackDefinition.defaultCardRuleSetId,
+    defaultVictoryRuleSetId: contentPackDefinition.defaultVictoryRuleSetId,
+    defaultPieceSetId: contentPackDefinition.defaultPieceSetId
   };
 }
 
@@ -688,14 +724,25 @@ function filterMapsByAllowedIds(entries: MapSummary[], allowedIds: string[] | nu
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneMapSummary);
 }
 
+function filterContentPacksByAllowedIds(entries: ContentPackSummary[], allowedIds: string[] | null | undefined): ContentPackSummary[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneContentPackSummary);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneContentPackSummary);
+}
+
 function buildModuleOptions(
   modules: NetRiskInstalledModule[],
-  runtimeMapEntries: RuntimeModuleMapEntry[]
+  runtimeMapEntries: RuntimeModuleMapEntry[],
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[]
 ): ModuleOptionsSnapshot {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible);
   const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries);
+  const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
+  const content = aggregateContentContribution(enabled, enabledRuntimeMapEntries, enabledRuntimeContentPackEntries);
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
@@ -703,11 +750,15 @@ function buildModuleOptions(
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
       .map(cloneInstalledModule),
     content,
-    maps: filterMapsByAllowedIds([
-      ...listSupportedMaps().map(cloneMapSummary),
-      ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
-    ], content.mapIds),
-    gamePresets: summarizeGamePresets(enabled),
+      maps: filterMapsByAllowedIds([
+        ...listSupportedMaps().map(cloneMapSummary),
+        ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
+      ], content.mapIds),
+      contentPacks: filterContentPacksByAllowedIds([
+        ...listContentPacks().map(cloneContentPackSummary),
+        ...enabledRuntimeContentPackEntries.map((entry) => cloneContentPackSummary(entry.contentPack))
+      ], content.contentPackIds),
+      gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
       .sort((left, right) => (left.order || 0) - (right.order || 0))
@@ -814,6 +865,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let cachedState: CatalogState | null = null;
   let serverModulesById = new Map<string, NetRiskServerModule>();
   let runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
+  let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
 
   function registerServerModuleMaps(
     moduleId: string,
@@ -850,6 +902,72 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
+  function registerServerModuleContentPacks(
+    moduleId: string,
+    serverModule: NetRiskServerModule,
+    sourcePath: string
+  ): string[] {
+    if (!Array.isArray(serverModule.contentPacks) || !serverModule.contentPacks.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
+    const knownMapIds = new Set([
+      ...listSupportedMaps().map((entry: { id: string }) => entry.id),
+      ...Array.from(runtimeMapsById.keys())
+    ]);
+    const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
+    const knownPieceSetIds = new Set(listPlayerPieceSets().map((entry: { id: string }) => entry.id));
+    const knownDiceRuleSetIds = new Set(listDiceRuleSets().map((entry: { id: string }) => entry.id));
+    const knownCardRuleSetIds = new Set(listCardRuleSets().map((entry: { id: string }) => entry.id));
+    const knownVictoryRuleSetIds = new Set(listVictoryRuleSets().map((entry: { id: string }) => entry.id));
+
+    serverModule.contentPacks.forEach((contentPackDefinition) => {
+      try {
+        if (findBuiltInContentPack(contentPackDefinition.id)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" conflicts with a built-in content pack.`);
+        }
+
+        if (runtimeContentPacksById.has(contentPackDefinition.id)) {
+          throw new Error(`Duplicate runtime module content pack "${contentPackDefinition.id}" detected.`);
+        }
+
+        if (!knownThemeIds.has(contentPackDefinition.defaultSiteThemeId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown site theme "${contentPackDefinition.defaultSiteThemeId}".`);
+        }
+
+        if (!knownMapIds.has(contentPackDefinition.defaultMapId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown map "${contentPackDefinition.defaultMapId}".`);
+        }
+
+        if (!knownDiceRuleSetIds.has(contentPackDefinition.defaultDiceRuleSetId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown dice rule set "${contentPackDefinition.defaultDiceRuleSetId}".`);
+        }
+
+        if (!knownCardRuleSetIds.has(contentPackDefinition.defaultCardRuleSetId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown card rule set "${contentPackDefinition.defaultCardRuleSetId}".`);
+        }
+
+        if (!knownVictoryRuleSetIds.has(contentPackDefinition.defaultVictoryRuleSetId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown victory rule set "${contentPackDefinition.defaultVictoryRuleSetId}".`);
+        }
+
+        if (!knownPieceSetIds.has(contentPackDefinition.defaultPieceSetId)) {
+          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown player piece set "${contentPackDefinition.defaultPieceSetId}".`);
+        }
+
+        runtimeContentPacksById.set(contentPackDefinition.id, {
+          moduleId,
+          contentPack: buildRuntimeModuleContentPack(contentPackDefinition)
+        });
+      } catch (error: unknown) {
+        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    return errors;
+  }
+
   function listEnabledRuntimeMaps(modules: NetRiskInstalledModule[]): RuntimeModuleMapEntry[] {
     const enabledIds = new Set(
       modules
@@ -859,9 +977,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     return Array.from(runtimeMapsById.values())
       .filter((entry) => enabledIds.has(entry.moduleId))
+        .map((entry) => ({
+          moduleId: entry.moduleId,
+          map: cloneSupportedMap(entry.map)
+        }));
+  }
+
+  function listEnabledRuntimeContentPacks(modules: NetRiskInstalledModule[]): RuntimeModuleContentPackEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimeContentPacksById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
       .map((entry) => ({
         moduleId: entry.moduleId,
-        map: cloneSupportedMap(entry.map)
+        contentPack: cloneContentPackSummary(entry.contentPack)
       }));
   }
 
@@ -957,6 +1090,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     const catalogState = await loadCatalogState();
     serverModulesById = new Map<string, NetRiskServerModule>();
     runtimeMapsById = new Map<string, RuntimeModuleMapEntry>();
+    runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -1007,6 +1141,20 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     const manifestModules = modules.filter((moduleEntry) => moduleEntry.manifest);
     const discoveredIds = new Set(manifestModules.map((moduleEntry) => moduleEntry.id));
+
+    manifestModules.forEach((moduleEntry) => {
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const contentPackErrors = registerServerModuleContentPacks(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      if (contentPackErrors.length) {
+        moduleEntry.errors.push(...contentPackErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+      }
+    });
 
     manifestModules.forEach((moduleEntry) => {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
@@ -1080,7 +1228,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function getModuleOptions() {
     const modules = await ensureCatalog();
-    return buildModuleOptions(modules, listEnabledRuntimeMaps(modules));
+    return buildModuleOptions(
+      modules,
+      listEnabledRuntimeMaps(modules),
+      listEnabledRuntimeContentPacks(modules)
+    );
   }
 
     return {
@@ -1111,6 +1263,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return cloneSupportedMap(runtimeEntry.map);
+    },
+    findContentPack(contentPackId: string): ContentPackSummary | null {
+      const builtInContentPack = findBuiltInContentPack(contentPackId);
+      if (builtInContentPack) {
+        return cloneContentPackSummary(builtInContentPack);
+      }
+
+      const runtimeEntry = runtimeContentPacksById.get(contentPackId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return cloneContentPackSummary(runtimeEntry.contentPack);
     },
     async getEnabledModules() {
       return enabledReferences(await ensureCatalog());
@@ -1337,7 +1507,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedContentProfiles = summarizeProfiles(selectedModuleEntries, "content");
       const selectedGameplayProfiles = summarizeProfiles(selectedModuleEntries, "gameplay");
       const selectedUiProfiles = summarizeProfiles(selectedModuleEntries, "ui");
-      const selectedContent = aggregateContentContribution(selectedModuleEntries, listEnabledRuntimeMaps(selectedModuleEntries));
+      const selectedContent = aggregateContentContribution(
+        selectedModuleEntries,
+        listEnabledRuntimeMaps(selectedModuleEntries),
+        listEnabledRuntimeContentPacks(selectedModuleEntries)
+      );
       const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
       const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));
       const availableUiProfiles = new Set(selectedUiProfiles.map((profile) => profile.id));

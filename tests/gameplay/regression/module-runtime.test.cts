@@ -615,6 +615,104 @@ register("module runtime espone mappe locali dal server module e le usa davvero 
   });
 });
 
+register("module runtime espone content pack locali e li usa come defaults in creazione partita", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.content-packs",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.content-packs",
+        version: "1.0.0",
+        displayName: "Demo Content Packs",
+        engineVersion: "1.0.0",
+        kind: "content",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "map", scope: "game", description: "Runtime module maps" },
+          { kind: "content-pack", scope: "game", description: "Runtime module content packs" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json",
+          server: "server-module.cjs"
+        }
+      },
+      clientManifest: {},
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  maps: [
+    {
+      id: "demo-packlands",
+      name: "Demo Packlands",
+      territoryRecords: [
+        { id: "pack-north", name: "Pack North", continentId: "pack-alpha", x: 0.2, y: 0.2, neighbors: ["pack-south", "pack-east"] },
+        { id: "pack-south", name: "Pack South", continentId: "pack-alpha", x: 0.2, y: 0.75, neighbors: ["pack-north", "pack-west"] },
+        { id: "pack-east", name: "Pack East", continentId: "pack-beta", x: 0.75, y: 0.25, neighbors: ["pack-north", "pack-west"] },
+        { id: "pack-west", name: "Pack West", continentId: "pack-beta", x: 0.75, y: 0.75, neighbors: ["pack-south", "pack-east"] }
+      ],
+      continentRecords: [
+        { id: "pack-alpha", name: "Pack Alpha", bonus: 2, territoryIds: ["pack-north", "pack-south"] },
+        { id: "pack-beta", name: "Pack Beta", bonus: 3, territoryIds: ["pack-east", "pack-west"] }
+      ]
+    }
+  ],
+  contentPacks: [
+    {
+      id: "demo-command-pack",
+      name: "Demo Command Pack",
+      description: "Runtime command pack for modular setup.",
+      defaultSiteThemeId: "ember",
+      defaultMapId: "demo-packlands",
+      defaultDiceRuleSetId: "defense-3",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "majority-control",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.content-packs/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(
+      optionsResponse.payload.contentPacks.some((entry: any) => entry.id === "demo-command-pack" && entry.defaultMapId === "demo-packlands"),
+      true
+    );
+
+    const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+    assert.equal(moduleOptionsResponse.statusCode, 200);
+    assert.equal(moduleOptionsResponse.payload.content.contentPackIds.includes("demo-command-pack"), true);
+
+    const missingModuleSelectionResponse = await callApp(app, "POST", "/api/games", {
+      name: "Missing Content Pack Module",
+      contentPackId: "demo-command-pack",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+    assert.equal(missingModuleSelectionResponse.statusCode, 400);
+    assert.equal(String(missingModuleSelectionResponse.payload.error || missingModuleSelectionResponse.payload.message).includes("Selected content pack"), true);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Runtime Content Pack",
+      activeModuleIds: ["demo.content-packs"],
+      contentPackId: "demo-command-pack",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.contentPackId, "demo-command-pack");
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "demo-packlands");
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSetId, "classic");
+    assert.equal(createGameResponse.payload.state.gameConfig.activeModules.some((entry: any) => entry.id === "demo.content-packs"), true);
+    assert.equal(createGameResponse.payload.state.map.length, 4);
+    assert.equal(createGameResponse.payload.state.map.some((entry: any) => entry.id === "pack-north"), true);
+  });
+});
+
 register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
   await withModuleServer([
     {
