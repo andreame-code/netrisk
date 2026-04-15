@@ -657,7 +657,10 @@ function mergeGameplayEffects(
       ...(Array.isArray(gameplayEffects.reinforcementAdjustments)
         ? gameplayEffects.reinforcementAdjustments.map((entry) => ({ ...entry }))
         : [])
-    ]
+    ],
+    majorityControlThresholdPercent: typeof gameplayEffects.majorityControlThresholdPercent === "number"
+      ? gameplayEffects.majorityControlThresholdPercent
+      : (typeof target.majorityControlThresholdPercent === "number" ? target.majorityControlThresholdPercent : null)
   };
 }
 
@@ -962,7 +965,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedModuleIds = new Set(selectedModuleEntries.map((moduleEntry) => moduleEntry.id));
       const resolvedDefaults: NetRiskModuleConfigDefaults = {};
       let resolvedGameplayEffects: NetRiskGameplayEffects = {
-        reinforcementAdjustments: []
+        reinforcementAdjustments: [],
+        majorityControlThresholdPercent: null
       };
       let resolvedScenarioSetup: NetRiskScenarioSetup = {
         territoryBonuses: [],
@@ -1019,7 +1023,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
       return {
         defaults: resolvedDefaults,
-        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length
+        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length || typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number"
           ? resolvedGameplayEffects
           : null,
         scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
