@@ -40,6 +40,7 @@ interface FortifyChoice {
 interface GameplayEffectsLike {
   fortifyMinimumArmies?: number | null;
   attackMinimumArmies?: number | null;
+  attackLimitPerTurn?: number | null;
 }
 
 interface AiTurnReport {
@@ -75,6 +76,13 @@ function resolveAttackMinimumArmies(state: EngineState): number {
     ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackMinimumArmies
     : null;
   return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
+}
+
+function resolveAttackLimitPerTurn(state: EngineState): number | null {
+  const configuredLimit = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackLimitPerTurn
+    : null;
+  return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
 }
 
 type EngineModule = {
@@ -145,6 +153,13 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
 export function chooseAttack(state: EngineState, playerId: string): AttackChoice | null {
   const candidates: AttackChoice[] = [];
   const minimumAttackArmies = resolveAttackMinimumArmies(state);
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+    ? state.attacksThisTurn
+    : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return null;
+  }
 
   territoriesOwnedBy(state, playerId)
     .filter((territory): territory is Territory & { id: string } => Boolean(territory.id))

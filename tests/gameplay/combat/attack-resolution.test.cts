@@ -74,3 +74,27 @@ register("resolveAttack applica il minimo modulare per iniziare un attacco", () 
   assert.equal(result.messageKey, "game.attack.minArmies");
   assert.deepEqual(result.messageParams, { minArmies: 3 });
 });
+
+register("resolveAttack incrementa il contatore e blocca attacchi oltre il limite turno", () => {
+  const state = setupAttackState();
+  state.territories.bastion.armies = 3;
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: {
+      attackLimitPerTurn: 1
+    }
+  };
+
+  const firstAttack = resolveAttack(state, "p1", "aurora", "bastion", createFixedRandom(rollsToRandomValues([6, 1])), 1);
+  assert.equal(firstAttack.ok, true);
+  assert.equal(state.attacksThisTurn, 1);
+  assert.equal(state.pendingConquest, null);
+
+  const blockedAttack = resolveAttack(state, "p1", "aurora", "bastion", createFixedRandom(rollsToRandomValues([6, 1])), 1);
+  assert.equal(blockedAttack.ok, false);
+  assert.equal(blockedAttack.messageKey, "game.attack.limitReached");
+  assert.deepEqual(blockedAttack.messageParams, {
+    attackLimitPerTurn: 1,
+    attacksThisTurn: 1
+  });
+});

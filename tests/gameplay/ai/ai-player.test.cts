@@ -37,6 +37,7 @@ type AiStateOptions = {
   deck?: ReturnType<typeof createCard>[];
   tradeCount?: number;
   pendingConquest?: ExtendedAiState["pendingConquest"];
+  attacksThisTurn?: number;
 };
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -62,7 +63,8 @@ function createAiState(options: AiStateOptions = {}): ExtendedAiState {
     ]),
     turnPhase: options.turnPhase || TurnPhase.REINFORCEMENT,
     currentTurnIndex: options.currentTurnIndex || 0,
-    reinforcementPool: options.reinforcementPool || 0
+    reinforcementPool: options.reinforcementPool || 0,
+    attacksThisTurn: options.attacksThisTurn || 0
   }) as ExtendedAiState;
 
   state.mapTerritories = territories;
@@ -143,6 +145,33 @@ register("chooseAttack rispetta il minimo modulare per iniziare un attacco", () 
     toId: "b",
     score: 28
   });
+});
+
+register("chooseAttack si ferma quando il limite di attacchi turno e raggiunto", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    attacksThisTurn: 1,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 5 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p1", armies: 5 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      attackLimitPerTurn: 1
+    }
+  };
+
+  assert.equal(chooseAttack(state, "p1"), null);
 });
 
 register("chooseConquestMove and chooseFortify respect AI heuristics", () => {

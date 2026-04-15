@@ -18,6 +18,7 @@ const demoCommandCenterServerModule = {
         },
         gameplayEffects: {
           attackMinimumArmies: 3,
+          attackLimitPerTurn: 2,
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
           fortifyMinimumArmies: 2,

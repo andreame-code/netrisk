@@ -19,6 +19,7 @@ export type AttackValidationResult = ValidationResult | ValidationSuccess;
 
 interface GameplayEffectsLike {
   attackMinimumArmies?: number | null;
+  attackLimitPerTurn?: number | null;
 }
 
 function getCurrentPlayer(state: GameState): Player | null {
@@ -54,6 +55,13 @@ function resolveAttackMinimumArmies(
   return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
+function resolveAttackLimitPerTurn(
+  state: GameState & { gameConfig?: { gameplayEffects?: GameplayEffectsLike | null } | null }
+): number | null {
+  const configuredLimit = state.gameConfig?.gameplayEffects?.attackLimitPerTurn;
+  return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
+}
+
 export function validateAttackAttempt(
   state: GameState,
   graph: MapGraph,
@@ -84,6 +92,17 @@ export function validateAttackAttempt(
   if (state.turnPhase !== TurnPhase.ATTACK) {
     return invalid("INVALID_PHASE", "Attacks are only allowed during the attack phase.", {
       turnPhase: state.turnPhase
+    });
+  }
+
+  const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
+  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+    ? state.attacksThisTurn
+    : 0;
+  if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
+    return invalid("ATTACK_LIMIT_REACHED", "The turn attack limit has already been reached.", {
+      attackLimitPerTurn,
+      attacksThisTurn
     });
   }
 
@@ -141,6 +160,8 @@ export function validateAttackAttempt(
     playerId,
     fromTerritoryId,
     toTerritoryId,
+    attackLimitPerTurn,
+    attacksThisTurn,
     attackerArmies: fromState.armies,
     defenderArmies: toState.armies,
     defenderOwnerId: toState.ownerId
