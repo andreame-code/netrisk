@@ -19,6 +19,7 @@ const demoCommandCenterServerModule = {
         gameplayEffects: {
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
+          fortifyMinimumArmies: 2,
           reinforcementAdjustments: [
             {
               id: "demo.command-center.supply-lines",

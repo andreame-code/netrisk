@@ -36,6 +36,19 @@ interface FortifyOptions {
   enforceSingleMove?: boolean;
 }
 
+interface GameplayEffectsLike {
+  fortifyMinimumArmies?: number | null;
+}
+
+function resolveFortifyMinimumArmies(
+  state: GameState & { gameConfig?: { gameplayEffects?: GameplayEffectsLike | null } | null },
+  maxMove: number
+): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects?.fortifyMinimumArmies;
+  const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
+  return Math.max(1, Math.min(maxMove, desiredMinimum));
+}
+
 function getCurrentPlayer(state: GameState): Player | null {
   if (!state || !Array.isArray(state.players) || state.players.length === 0) {
     return null;
@@ -169,6 +182,15 @@ export function moveFortifyArmies(
   }
 
   const maxMove = fromState.armies - 1;
+  const minimumMove = resolveFortifyMinimumArmies(state, maxMove);
+  if (requestedArmies < minimumMove) {
+    return invalid("MOVE_BELOW_MINIMUM", `Fortify movement requires moving at least ${minimumMove} armies.`, {
+      minimumMove,
+      requestedArmies,
+      sourceArmies: fromState.armies
+    });
+  }
+
   if (requestedArmies > maxMove) {
     return invalid("MOVE_EXCEEDS_AVAILABLE", "The source territory must keep at least one army after fortifying.", {
       maxMove,

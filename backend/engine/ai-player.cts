@@ -37,6 +37,10 @@ interface FortifyChoice {
   score: number;
 }
 
+interface GameplayEffectsLike {
+  fortifyMinimumArmies?: number | null;
+}
+
 interface AiTurnReport {
   ok: true;
   playerId: string | null;
@@ -56,6 +60,14 @@ type EngineState = GameState & {
   turnPhase: string;
   hands: Record<string, Card[]>;
 };
+
+function resolveFortifyMinimumArmies(state: EngineState, maxMove: number): number {
+  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).fortifyMinimumArmies
+    : null;
+  const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
+  return Math.max(1, Math.min(maxMove, desiredMinimum));
+}
 
 type EngineModule = {
   applyFortify: (state: EngineState, playerId: string, fromId: string, toId: string, armies: number) => ActionFailure | ActionSuccess;
@@ -211,7 +223,12 @@ export function chooseFortify(state: EngineState, playerId: string): FortifyChoi
 
         const targetEnemyNeighbors = listEnemyNeighbors(state, neighborId, playerId).length;
         const movableArmies = fromState.armies - 1;
-        const armies = Math.max(1, Math.min(movableArmies, 2));
+        const minimumArmies = resolveFortifyMinimumArmies(state, movableArmies);
+        if (movableArmies < minimumArmies) {
+          return;
+        }
+
+        const armies = Math.min(movableArmies, Math.max(minimumArmies, 2));
         const score = 8 + targetEnemyNeighbors * 4 + (fromState.armies - neighborState.armies);
         if (score < 3) {
           return;
