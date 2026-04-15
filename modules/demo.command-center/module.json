@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "demo.command-center",
+  "version": "1.0.0",
+  "displayName": "Command Center Demo",
+  "description": "Modulo demo installabile per testare catalogo, profili e slot UI esterni.",
+  "engineVersion": "1.0.0",
+  "kind": "hybrid",
+  "dependencies": [
+    { "id": "core.base", "version": "1.x" }
+  ],
+  "conflicts": [],
+  "capabilities": [
+    { "kind": "ui-slot", "scope": "global", "description": "Aggiunge pannelli e badge demo." },
+    { "kind": "gameplay-hook", "hook": "setup.profile", "scope": "game", "description": "Espone un profilo demo selezionabile in creazione partita." }
+  ],
+  "entrypoints": {
+    "server": "server-module.cts",
+    "clientManifest": "client-manifest.json"
+  },
+  "assetsDir": "assets",
+  "permissions": []
+}

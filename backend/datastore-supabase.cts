@@ -567,6 +567,19 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       const row = await selectOne<AppStateRow>("app_state", { key: "eq.activeGameId" });
       return row ? parseJson<string | null>(row.value_json, null) : null;
     },
+    async getAppState(key: string) {
+      await ensureInitialized();
+      const row = await selectOne<AppStateRow>("app_state", { key: `eq.${String(key || "")}` });
+      return row ? parseJson<unknown>(row.value_json, null) : null;
+    },
+    async setAppState(key: string, value: unknown) {
+      await ensureInitialized();
+      await upsertRows("app_state", [{
+        key: String(key || ""),
+        value_json: JSON.stringify(value ?? null)
+      }], "key");
+      return datastore.getAppState(key);
+    },
     async setActiveGameId(gameId: string | null) {
       await ensureInitialized();
       await upsertRows("app_state", [{

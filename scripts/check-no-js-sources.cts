@@ -8,9 +8,11 @@ const allowedPathPatterns = [
   /^\.gitignore$/,
   /^\.githooks\/.+$/,
   /^\.github\/.+\.yml$/,
+  /^LICENSE$/,
   /^package(?:-lock)?\.json$/,
   /^tsconfig(?:\.[^/]+)?\.json$/,
   /^vercel\.json$/,
+  /^modules\/.+\.(json|css|png|jpg|jpeg|svg|webp)$/i,
   /^frontend\/assets\/.+\.(png|jpg|jpeg|svg|webp)$/i,
   /^e2e\/.+-snapshots\/.+\.png$/i,
   /(^|\/)[^/]+\.md$/i

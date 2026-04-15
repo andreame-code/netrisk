@@ -37,6 +37,7 @@ type AiStateOptions = {
   deck?: ReturnType<typeof createCard>[];
   tradeCount?: number;
   pendingConquest?: ExtendedAiState["pendingConquest"];
+  attacksThisTurn?: number;
 };
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -62,7 +63,8 @@ function createAiState(options: AiStateOptions = {}): ExtendedAiState {
     ]),
     turnPhase: options.turnPhase || TurnPhase.REINFORCEMENT,
     currentTurnIndex: options.currentTurnIndex || 0,
-    reinforcementPool: options.reinforcementPool || 0
+    reinforcementPool: options.reinforcementPool || 0,
+    attacksThisTurn: options.attacksThisTurn || 0
   }) as ExtendedAiState;
 
   state.mapTerritories = territories;
@@ -113,6 +115,108 @@ register("chooseAttack selects the highest-value favorable attack", () => {
   });
 });
 
+register("chooseAttack rispetta il minimo modulare per iniziare un attacco", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p1", armies: 2 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      attackMinimumArmies: 5
+    }
+  };
+
+  assert.equal(chooseAttack(state, "p1"), null);
+  state.territories.a.armies = 5;
+  assert.deepEqual(chooseAttack(state, "p1"), {
+    fromId: "a",
+    toId: "b",
+    score: 28
+  });
+});
+
+register("chooseAttack si ferma quando il limite di attacchi turno e raggiunto", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    attacksThisTurn: 1,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 5 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p1", armies: 5 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      attackLimitPerTurn: 1
+    }
+  };
+
+  assert.equal(chooseAttack(state, "p1"), null);
+});
+
+register("runAiTurn forza almeno un attacco legale quando il profilo modulare lo richiede", () => {
+  const players = makePlayers(["CPU Alpha", "Bob"]);
+  players[0].isAi = true;
+
+  const state = createAiState({
+    players,
+    turnPhase: TurnPhase.ATTACK,
+    reinforcementPool: 0,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p2", armies: 3 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+  state.gameConfig = {
+    gameplayEffects: {
+      minimumAttacksPerTurn: 1,
+      attackLimitPerTurn: 1
+    }
+  };
+
+  const report = runAiTurn(state, {
+    random: createFixedRandom(new Array(24).fill(0))
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.attacks.length >= 1, true);
+  assert.deepEqual(report.attacks[0], {
+    fromId: "a",
+    toId: "b",
+    score: 7
+  });
+  assert.equal(report.endedTurn, true);
+  assert.equal(state.currentTurnIndex, 1);
+});
+
 register("chooseConquestMove and chooseFortify respect AI heuristics", () => {
   const conquestState = createAiState({
     turnPhase: TurnPhase.ATTACK,
@@ -160,6 +264,77 @@ register("chooseConquestMove and chooseFortify respect AI heuristics", () => {
     armies: 2,
     score: 15
   });
+});
+
+register("chooseFortify rispetta il minimo modulare configurato nel gameConfig", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.FORTIFY,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 5 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p2", armies: 2 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a", "c"]),
+      makeTerritory("c", ["b", "d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      fortifyMinimumArmies: 3
+    }
+  };
+
+  assert.deepEqual(chooseFortify(state, "p1"), {
+    fromId: "b",
+    toId: "c",
+    armies: 3,
+    score: 16
+  });
+});
+
+register("runAiTurn forza una fortifica legale quando il profilo modulare la rende obbligatoria", () => {
+  const players = makePlayers(["CPU Alpha", "Bob"]);
+  players[0].isAi = true;
+
+  const state = createAiState({
+    players,
+    turnPhase: TurnPhase.FORTIFY,
+    reinforcementPool: 0,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p1", armies: 1 },
+      { id: "c", ownerId: "p2", armies: 2 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a", "c"]),
+      makeTerritory("c", ["b"]),
+      makeTerritory("d", [])
+    ]
+  });
+  state.gameConfig = {
+    gameplayEffects: {
+      requiredFortifyWhenAvailable: true
+    }
+  };
+
+  const report = runAiTurn(state);
+
+  assert.equal(report.ok, true);
+  assert.deepEqual(report.fortify, {
+    fromId: "a",
+    toId: "b",
+    armies: 2,
+    score: 15
+  });
+  assert.equal(report.endedTurn, true);
+  assert.equal(state.currentTurnIndex, 1);
 });
 
 register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn", () => {
