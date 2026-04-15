@@ -82,7 +82,7 @@ function cleanupSqliteFiles(baseFile: string): void {
 }
 
 async function withModuleServer(
-  modules: Array<{ dir: string; manifest?: unknown; clientManifest?: unknown; rawManifest?: string }>,
+  modules: Array<{ dir: string; manifest?: unknown; clientManifest?: unknown; rawManifest?: string; serverEntryPath?: string; serverEntrySource?: string }>,
   run: (context: {
     app: any;
     adminSessionToken: string;
@@ -109,6 +109,10 @@ async function withModuleServer(
 
     if (typeof moduleEntry.clientManifest !== "undefined") {
       writeJson(path.join(moduleRoot, "client-manifest.json"), moduleEntry.clientManifest);
+    }
+
+    if (moduleEntry.serverEntryPath && typeof moduleEntry.serverEntrySource === "string") {
+      fs.writeFileSync(path.join(moduleRoot, moduleEntry.serverEntryPath), moduleEntry.serverEntrySource);
     }
   });
 
@@ -356,5 +360,85 @@ register("module runtime filtra il catalogo setup e blocca contenuti non esposti
     }, authHeaders(adminSessionToken));
     assert.equal(invalidCreateResponse.statusCode, 400);
     assert.equal(String(invalidCreateResponse.payload.error || invalidCreateResponse.payload.message).includes("Selected map"), true);
+  });
+});
+
+register("module runtime applica defaults setup dai profili server-side del modulo selezionato", async () => {
+  await withModuleServer([
+    {
+      dir: "demo.defaults",
+      manifest: {
+        schemaVersion: 1,
+        id: "demo.defaults",
+        version: "1.0.0",
+        displayName: "Demo Defaults",
+        engineVersion: "1.0.0",
+        kind: "hybrid",
+        dependencies: [{ id: "core.base", version: "1.x" }],
+        conflicts: [],
+        capabilities: [
+          { kind: "gameplay-hook", scope: "game", hook: "setup.profile", description: "Setup defaults profile" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json",
+          server: "server-module.cjs"
+        }
+      },
+      clientManifest: {
+        profiles: {
+          content: [{ id: "demo.defaults.content", name: "Defaults Content" }],
+          gameplay: [{ id: "demo.defaults.gameplay", name: "Defaults Gameplay" }],
+          ui: [{ id: "demo.defaults.ui", name: "Defaults UI" }]
+        }
+      },
+      serverEntryPath: "server-module.cjs",
+      serverEntrySource: `module.exports = {
+  profiles: {
+    content: [
+      { id: "demo.defaults.content", defaults: { mapId: "world-classic" } }
+    ],
+    gameplay: [
+      { id: "demo.defaults.gameplay", defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" } }
+    ],
+    ui: [
+      { id: "demo.defaults.ui", defaults: { themeId: "ember", pieceSkinId: "command-ring" } }
+    ]
+  }
+};`
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const enableResponse = await callApp(app, "POST", "/api/modules/demo.defaults/enable", {}, authHeaders(adminSessionToken));
+    assert.equal(enableResponse.statusCode, 200);
+
+    const createGameResponse = await callApp(app, "POST", "/api/games", {
+      name: "Profile Defaults Game",
+      activeModuleIds: ["demo.defaults"],
+      contentProfileId: "demo.defaults.content",
+      gameplayProfileId: "demo.defaults.gameplay",
+      uiProfileId: "demo.defaults.ui"
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
+    assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+    assert.equal(createGameResponse.payload.state.gameConfig.victoryRuleSetId, "majority-control");
+    assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+
+    const explicitOverrideResponse = await callApp(app, "POST", "/api/games", {
+      name: "Profile Defaults Override",
+      activeModuleIds: ["demo.defaults"],
+      contentProfileId: "demo.defaults.content",
+      gameplayProfileId: "demo.defaults.gameplay",
+      uiProfileId: "demo.defaults.ui",
+      mapId: "classic-mini",
+      themeId: "command"
+    }, authHeaders(adminSessionToken));
+
+    assert.equal(explicitOverrideResponse.statusCode, 201);
+    assert.equal(explicitOverrideResponse.payload.state.gameConfig.mapId, "classic-mini");
+    assert.equal(explicitOverrideResponse.payload.state.gameConfig.themeId, "command");
+    assert.equal(explicitOverrideResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
   });
 });

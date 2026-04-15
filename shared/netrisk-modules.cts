@@ -134,11 +134,28 @@ export interface NetRiskGameModuleSelection {
   uiProfileId?: string | null;
 }
 
+export interface NetRiskModuleConfigDefaults {
+  contentPackId?: string | null;
+  ruleSetId?: string | null;
+  pieceSetId?: string | null;
+  mapId?: string | null;
+  diceRuleSetId?: string | null;
+  victoryRuleSetId?: string | null;
+  themeId?: string | null;
+  pieceSkinId?: string | null;
+}
+
+export interface NetRiskServerProfile {
+  id: string;
+  defaults?: NetRiskModuleConfigDefaults | null;
+}
+
 export interface NetRiskServerModule {
-  manifest: NetRiskModuleManifest;
-  content?: NetRiskContentContribution | null;
-  gameplay?: NetRiskGameplayContribution | null;
-  ui?: NetRiskUiContribution | null;
+  profiles?: {
+    content?: NetRiskServerProfile[];
+    gameplay?: NetRiskServerProfile[];
+    ui?: NetRiskServerProfile[];
+  } | null;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -215,6 +232,40 @@ function normalizeStringArray(raw: unknown): string[] {
   return Array.isArray(raw)
     ? raw.filter((value) => isNonEmptyString(value)).map((value) => String(value).trim())
     : [];
+}
+
+function normalizeModuleConfigDefaults(raw: unknown): NetRiskModuleConfigDefaults | null {
+  if (!isObject(raw)) {
+    return null;
+  }
+
+  return {
+    contentPackId: isNonEmptyString(raw.contentPackId) ? String(raw.contentPackId).trim() : null,
+    ruleSetId: isNonEmptyString(raw.ruleSetId) ? String(raw.ruleSetId).trim() : null,
+    pieceSetId: isNonEmptyString(raw.pieceSetId) ? String(raw.pieceSetId).trim() : null,
+    mapId: isNonEmptyString(raw.mapId) ? String(raw.mapId).trim() : null,
+    diceRuleSetId: isNonEmptyString(raw.diceRuleSetId) ? String(raw.diceRuleSetId).trim() : null,
+    victoryRuleSetId: isNonEmptyString(raw.victoryRuleSetId) ? String(raw.victoryRuleSetId).trim() : null,
+    themeId: isNonEmptyString(raw.themeId) ? String(raw.themeId).trim() : null,
+    pieceSkinId: isNonEmptyString(raw.pieceSkinId) ? String(raw.pieceSkinId).trim() : null
+  };
+}
+
+function normalizeServerProfiles(raw: unknown, sourcePath: string): NetRiskServerProfile[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id)) {
+      throw new Error(`Invalid server profile contribution in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      defaults: normalizeModuleConfigDefaults(entry.defaults)
+    };
+  });
 }
 
 export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string): NetRiskModuleManifest {
@@ -307,6 +358,24 @@ export function validateNetRiskModuleClientManifest(raw: unknown, sourcePath: st
     ui,
     gameplay,
     content,
+    profiles
+  };
+}
+
+export function validateNetRiskServerModule(raw: unknown, sourcePath: string): NetRiskServerModule {
+  if (!isObject(raw)) {
+    throw new Error(`Module server entrypoint "${sourcePath}" must export an object.`);
+  }
+
+  const profiles = isObject(raw.profiles)
+    ? {
+        content: normalizeServerProfiles(raw.profiles.content, sourcePath),
+        gameplay: normalizeServerProfiles(raw.profiles.gameplay, sourcePath),
+        ui: normalizeServerProfiles(raw.profiles.ui, sourcePath)
+      }
+    : null;
+
+  return {
     profiles
   };
 }
