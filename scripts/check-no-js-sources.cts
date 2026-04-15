@@ -11,6 +11,7 @@ const allowedPathPatterns = [
   /^package(?:-lock)?\.json$/,
   /^tsconfig(?:\.[^/]+)?\.json$/,
   /^vercel\.json$/,
+  /^modules\/.+\.json$/i,
   /^frontend\/assets\/.+\.(png|jpg|jpeg|svg|webp)$/i,
   /^e2e\/.+-snapshots\/.+\.png$/i,
   /(^|\/)[^/]+\.md$/i
