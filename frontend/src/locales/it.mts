@@ -172,6 +172,9 @@ export const it = Object.freeze({
   "lobby.details.playersConfigured": "Giocatori configurati",
   "lobby.details.map": "Mappa",
   "lobby.details.ai": "AI",
+  "lobby.details.preset": "Preset",
+  "lobby.details.profiles": "Profili",
+  "lobby.details.modules": "Moduli",
   "lobby.details.updated": "Ultimo update",
   "lobby.details.focus": "Focus",
   "lobby.details.note": "La Lobby gestisce creazione, selezione e apertura. Il tabellone Game resta dedicato al comando della partita attiva.",
@@ -485,6 +488,9 @@ export const it = Object.freeze({
   ,"game.runtime.playerSingle": "giocatore"
   ,"game.runtime.playerPlural": "giocatori"
   ,"game.runtime.setupMeta": "{totalPlayers} {playerLabel} · {aiCount} AI"
+  ,"game.runtime.modularPreset": "Preset {id}"
+  ,"game.runtime.modularProfiles": "{count} profili"
+  ,"game.runtime.modularModules": "{count} moduli"
   ,"game.runtime.unassigned": "Non assegnato"
   ,"game.runtime.notConnected": "Non connesso"
   ,"game.runtime.finished": "Partita conclusa"

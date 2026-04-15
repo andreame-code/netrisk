@@ -155,6 +155,11 @@ export type GameSummary = {
   mapId?: string | null;
   aiCount?: number;
   creatorUserId?: string | null;
+  activeModules?: NetRiskModuleReference[];
+  gamePresetId?: string | null;
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
 };
 
 export type GameListResponse = MessagePayload & {

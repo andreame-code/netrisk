@@ -277,6 +277,15 @@ register("module runtime pinna activeModules nelle nuove partite e blocca il dis
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayProfileId, "demo.locked.gameplay");
     assert.equal(createGameResponse.payload.state.gameConfig.uiProfileId, "demo.locked.ui");
 
+    const gameListResponse = await callApp(app, "GET", "/api/games");
+    assert.equal(gameListResponse.statusCode, 200);
+    const listedGame = gameListResponse.payload.games.find((entry: any) => entry.id === createGameResponse.payload.game.id);
+    assert.equal(Boolean(listedGame), true);
+    assert.equal(listedGame.activeModules.some((entry: any) => entry.id === "demo.locked"), true);
+    assert.equal(listedGame.contentProfileId, "demo.locked.content");
+    assert.equal(listedGame.gameplayProfileId, "demo.locked.gameplay");
+    assert.equal(listedGame.uiProfileId, "demo.locked.ui");
+
     const disableResponse = await callApp(app, "POST", "/api/modules/demo.locked/disable", {}, authHeaders(adminSessionToken));
     assert.equal(disableResponse.statusCode, 409);
   });
@@ -585,5 +594,15 @@ register("module runtime espone e risolve game preset modulari nel setup partita
     assert.equal(createGameResponse.payload.state.gameConfig.contentProfileId, "demo.presets.content");
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayProfileId, "demo.presets.gameplay");
     assert.equal(createGameResponse.payload.state.gameConfig.uiProfileId, "demo.presets.ui");
+
+    const gameListResponse = await callApp(app, "GET", "/api/games");
+    assert.equal(gameListResponse.statusCode, 200);
+    const listedGame = gameListResponse.payload.games.find((entry: any) => entry.id === createGameResponse.payload.game.id);
+    assert.equal(Boolean(listedGame), true);
+    assert.equal(listedGame.gamePresetId, "demo.presets.command-preset");
+    assert.equal(listedGame.activeModules.some((entry: any) => entry.id === "demo.presets"), true);
+    assert.equal(listedGame.contentProfileId, "demo.presets.content");
+    assert.equal(listedGame.gameplayProfileId, "demo.presets.gameplay");
+    assert.equal(listedGame.uiProfileId, "demo.presets.ui");
   });
 });
