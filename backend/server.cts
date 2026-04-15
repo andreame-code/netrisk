@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
+const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
@@ -47,8 +48,16 @@ const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
+const {
+  handleDisableModuleRoute,
+  handleEnableModuleRoute,
+  handleListModulesRoute,
+  handleModuleOptionsRoute,
+  handleRescanModulesRoute
+} = require("./routes/modules.cjs");
 const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
+const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
 
 type Request = import("http").IncomingMessage;
 type Response = import("http").ServerResponse;
@@ -70,6 +79,7 @@ type CreateAppOptions = {
   dataFile?: string;
   gamesFile?: string;
   sessionsFile?: string;
+  projectRoot?: string;
 };
 type GameContext = {
   gameId: string | null;
@@ -234,6 +244,8 @@ function clearSessionCookie(req: Request): string {
 }
 
 function createApp(options: CreateAppOptions = {}) {
+  const runtimeProjectRoot = options.projectRoot || projectRoot;
+
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
     if (missingEnvKeys.length) {
@@ -253,11 +265,15 @@ function createApp(options: CreateAppOptions = {}) {
   let nextAttackRolls: number[] | null = null;
   const datastore = createDatastore({
     dbFile: options.dbFile || defaultDbFile(),
-    legacyUsersFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
-    legacyGamesFile: options.gamesFile || path.join(projectRoot, "data", "games.json"),
-    legacySessionsFile: options.sessionsFile || path.join(projectRoot, "data", "sessions.json")
+    legacyUsersFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
+    legacyGamesFile: options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json"),
+    legacySessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
-  const gamesFile = options.gamesFile || path.join(projectRoot, "data", "games.json");
+  const moduleRuntime = createModuleRuntime({
+    projectRoot: runtimeProjectRoot,
+    datastore
+  });
+  const gamesFile = options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json");
   const gameSessions = createGameSessionStore({
     datastore,
     dataFile: gamesFile
@@ -268,8 +284,8 @@ function createApp(options: CreateAppOptions = {}) {
   });
   const auth = createAuthStore({
     datastore,
-    dataFile: options.dataFile || path.join(projectRoot, "data", "users.json"),
-    sessionsFile: options.sessionsFile || path.join(projectRoot, "data", "sessions.json")
+    dataFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
+    sessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
   const clientsByGameId = new Map<string, Set<EventClient>>();
   let initPromise: Promise<void> | null = null;
@@ -612,7 +628,7 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
-      handleGameOptionsRoute(
+      await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
         listSupportedMaps,
@@ -623,7 +639,95 @@ function createApp(options: CreateAppOptions = {}) {
         listTurnTimeoutHoursOptions,
         sendJson,
         listPlayerPieceSets,
-        listContentPacks
+        listContentPacks,
+        async () => {
+          const moduleOptions = await moduleRuntime.getModuleOptions();
+          return {
+            modules: moduleOptions.gameModules,
+            enabledModules: moduleOptions.enabledModules,
+            contentProfiles: moduleOptions.contentProfiles,
+            gameplayProfiles: moduleOptions.gameplayProfiles,
+            uiProfiles: moduleOptions.uiProfiles,
+            uiSlots: moduleOptions.uiSlots
+          };
+        }
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/modules/options") {
+      await handleModuleOptionsRoute(
+        res,
+        () => moduleRuntime.getModuleOptions(),
+        sendJson
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/modules") {
+      await handleListModulesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        () => moduleRuntime.listInstalledModules(),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/modules/rescan") {
+      await handleRescanModulesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        () => moduleRuntime.rescan(),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    const enableModuleMatch = req.method === "POST"
+      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/enable$/)
+      : null;
+    if (enableModuleMatch) {
+      await handleEnableModuleRoute(
+        req,
+        res,
+        decodeURIComponent(enableModuleMatch[1] || ""),
+        requireAuth,
+        authorize,
+        (moduleId: string) => moduleRuntime.enableModule(moduleId),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    const disableModuleMatch = req.method === "POST"
+      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/disable$/)
+      : null;
+    if (disableModuleMatch) {
+      await handleDisableModuleRoute(
+        req,
+        res,
+        decodeURIComponent(disableModuleMatch[1] || ""),
+        requireAuth,
+        authorize,
+        (moduleId: string) => moduleRuntime.disableModule(moduleId),
+        () => moduleRuntime.getEnabledModules(),
+        sendJson,
+        sendLocalizedError,
+        NETRISK_ENGINE_VERSION
       );
       return;
     }
@@ -675,7 +779,14 @@ function createApp(options: CreateAppOptions = {}) {
         body,
         requireAuth,
         authorize,
-        createConfiguredInitialState,
+        (body: Record<string, unknown>) => createConfiguredInitialState(body, {
+          resolveGameModuleSelection: (input: {
+            activeModuleIds?: string[];
+            contentProfileId?: string | null;
+            gameplayProfileId?: string | null;
+            uiProfileId?: string | null;
+          }) => moduleRuntime.resolveGameSelection(input)
+        }),
         addPlayer,
         async (state: any, options: Record<string, any>) => {
           const created = await gameSessions.createGame(state, options);

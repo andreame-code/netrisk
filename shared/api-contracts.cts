@@ -23,6 +23,59 @@ export interface PieceSkinContract {
   assetBaseUrl?: string | null;
 }
 
+export interface NetRiskModuleReferenceContract {
+  id: string;
+  version: string;
+}
+
+export interface NetRiskModuleProfileContract {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+}
+
+export interface NetRiskUiSlotContributionContract {
+  slotId: string;
+  itemId: string;
+  title: string;
+  kind: string;
+  order?: number;
+  description?: string | null;
+  route?: string | null;
+}
+
+export interface NetRiskInstalledModuleContract {
+  id: string;
+  version: string | null;
+  displayName: string;
+  description?: string | null;
+  kind: string | null;
+  sourcePath: string;
+  status: string;
+  enabled: boolean;
+  compatible: boolean;
+  warnings: string[];
+  errors: string[];
+  capabilities: Array<Record<string, unknown>>;
+}
+
+export interface ModulesCatalogResponseContract {
+  modules: NetRiskInstalledModuleContract[];
+  engineVersion: string;
+  enabledModules: NetRiskModuleReferenceContract[];
+}
+
+export interface ModuleOptionsResponseContract {
+  modules: NetRiskInstalledModuleContract[];
+  enabledModules: NetRiskModuleReferenceContract[];
+  gameModules: NetRiskInstalledModuleContract[];
+  uiSlots: NetRiskUiSlotContributionContract[];
+  contentProfiles: NetRiskModuleProfileContract[];
+  gameplayProfiles: NetRiskModuleProfileContract[];
+  uiProfiles: NetRiskModuleProfileContract[];
+}
+
 export interface PublicUserContract {
   id: string;
   username: string;
@@ -47,6 +100,12 @@ export interface GameOptionsResponseContract {
   victoryRuleSets: VictoryRuleSetContract[];
   themes: VisualThemeContract[];
   pieceSkins: PieceSkinContract[];
+  modules?: NetRiskInstalledModuleContract[];
+  enabledModules?: NetRiskModuleReferenceContract[];
+  contentProfiles?: NetRiskModuleProfileContract[];
+  gameplayProfiles?: NetRiskModuleProfileContract[];
+  uiProfiles?: NetRiskModuleProfileContract[];
+  uiSlots?: NetRiskUiSlotContributionContract[];
   playerPieceSets?: Array<Record<string, unknown>>;
   contentPacks?: Array<Record<string, unknown>>;
   turnTimeoutHoursOptions: number[];

@@ -4,8 +4,10 @@ import type {
   ContentPackSummary,
   DiceRuleSet,
   GameOptionsResponse,
+  InstalledModuleSummary,
   LoginResponse,
   MapSummary,
+  NetRiskModuleProfile,
   PieceSkin,
   PublicUser,
   RuleSetSummary,
@@ -22,6 +24,10 @@ const state: {
   victoryRuleSets: VictoryRuleSet[];
   themes: VisualTheme[];
   pieceSkins: PieceSkin[];
+  modules: InstalledModuleSummary[];
+  contentProfiles: NetRiskModuleProfile[];
+  gameplayProfiles: NetRiskModuleProfile[];
+  uiProfiles: NetRiskModuleProfile[];
   turnTimeoutHoursOptions: number[];
   user: PublicUser | null;
   creating: boolean;
@@ -34,6 +40,10 @@ const state: {
   victoryRuleSets: [],
   themes: [],
   pieceSkins: [],
+  modules: [],
+  contentProfiles: [],
+  gameplayProfiles: [],
+  uiProfiles: [],
   turnTimeoutHoursOptions: [],
   user: null,
   creating: false,
@@ -267,6 +277,9 @@ function renderRuleSetSummary() {
       '<span class="badge">' + namedOptionLabel(activeTheme) + '</span>' +
       '<span class="badge">' + namedOptionLabel(activePieceSkin) + '</span>' +
       '<span class="badge">' + (selectedMapSummary()?.name || t("common.notAvailable")) + '</span>' +
+      (selectedModuleIds().length
+        ? '<span class="badge">' + selectedModuleIds().length + ' mod</span>'
+        : '') +
     '</div>' +
     '<p class="map-setup-copy">' +
       namedOptionLabel(activeVictoryRuleSet) + " · " + namedOptionLabel(activeTheme) + " · " + namedOptionLabel(activePieceSkin) +
@@ -275,7 +288,73 @@ function renderRuleSetSummary() {
 
 function renderAdvancedOptions() {
   setHidden(elements.advancedOptions, !elements.customizeOptions.checked);
+  renderModuleOptions();
   renderRuleSetSummary();
+}
+
+function ensureModuleOptionsContainer(): HTMLElement {
+  let container = document.querySelector("#setup-module-options") as HTMLElement | null;
+  if (container) {
+    return container;
+  }
+
+  container = document.createElement("section");
+  container.id = "setup-module-options";
+  container.className = "setup-options-stack";
+  elements.advancedOptions.appendChild(container);
+  return container;
+}
+
+function selectedModuleIds(): string[] {
+  return Array.from(document.querySelectorAll<HTMLInputElement>("[data-module-checkbox]:checked"))
+    .map((checkbox) => checkbox.value)
+    .filter(Boolean);
+}
+
+function selectedProfileValue(profileKind: "content" | "gameplay" | "ui"): string | undefined {
+  const select = document.querySelector(`#setup-${profileKind}-profile`) as HTMLSelectElement | null;
+  return select?.value || undefined;
+}
+
+function profileSelectMarkup(profileKind: "content" | "gameplay" | "ui", label: string, profiles: NetRiskModuleProfile[]): string {
+  return '<label class="field-stack"><span>' + label + '</span><select id="setup-' + profileKind + '-profile">' +
+    '<option value="">' + t("common.notAvailable") + '</option>' +
+    profiles.map((profile) => '<option value="' + profile.id + '">' + profile.name + '</option>').join("") +
+  '</select></label>';
+}
+
+function renderModuleOptions() {
+  const container = ensureModuleOptionsContainer();
+  if (!state.modules.length && !state.contentProfiles.length && !state.gameplayProfiles.length && !state.uiProfiles.length) {
+    setMarkup(container, "");
+    setHidden(container, true);
+    return;
+  }
+
+  setHidden(container, false);
+  setMarkup(container,
+    '<div class="map-setup-card-head">' +
+      '<strong>Moduli partita</strong>' +
+      '<span class="badge">' + state.modules.length + '</span>' +
+    '</div>' +
+    '<p class="map-setup-copy">Attiva i moduli compatibili installati sul server e salva i profili da associare alla partita.</p>' +
+    '<div class="setup-player-slots">' +
+      (state.modules.length
+        ? state.modules.map((moduleEntry) =>
+            '<label class="setup-slot">' +
+              '<span class="setup-slot-head"><strong>' + moduleEntry.displayName + '</strong><span class="badge">' + (moduleEntry.kind || "module") + '</span></span>' +
+              '<span class="map-setup-copy">' + (moduleEntry.description || "") + '</span>' +
+              '<input type="checkbox" data-module-checkbox value="' + moduleEntry.id + '" />' +
+            '</label>'
+          ).join("")
+        : '<p class="map-setup-copy">Nessun modulo extra disponibile.</p>') +
+    '</div>' +
+    '<div class="setup-advanced-options">' +
+      profileSelectMarkup("content", "Profilo contenuti", state.contentProfiles) +
+      profileSelectMarkup("gameplay", "Profilo gameplay", state.gameplayProfiles) +
+      profileSelectMarkup("ui", "Profilo UI", state.uiProfiles) +
+    '</div>'
+  );
 }
 
 function renderMapDetails() {
@@ -318,6 +397,10 @@ function readConfig() {
     victoryRuleSetId: elements.victoryRuleSet.value,
     themeId: elements.theme.value,
     pieceSkinId: elements.pieceSkin.value,
+    activeModuleIds: selectedModuleIds(),
+    ...(selectedProfileValue("content") ? { contentProfileId: selectedProfileValue("content") } : {}),
+    ...(selectedProfileValue("gameplay") ? { gameplayProfileId: selectedProfileValue("gameplay") } : {}),
+    ...(selectedProfileValue("ui") ? { uiProfileId: selectedProfileValue("ui") } : {}),
     ...(elements.turnTimeoutHours.value ? { turnTimeoutHours: Number(elements.turnTimeoutHours.value) } : {}),
     totalPlayers,
     players
@@ -351,6 +434,10 @@ async function loadOptions() {
   state.victoryRuleSets = data.victoryRuleSets || [];
   state.themes = data.themes || [];
   state.pieceSkins = data.pieceSkins || [];
+  state.modules = data.modules || [];
+  state.contentProfiles = data.contentProfiles || [];
+  state.gameplayProfiles = data.gameplayProfiles || [];
+  state.uiProfiles = data.uiProfiles || [];
   state.turnTimeoutHoursOptions = Array.isArray(data.turnTimeoutHoursOptions) ? data.turnTimeoutHoursOptions : [];
   setMarkup(elements.contentPack, state.contentPacks.map((pack) => '<option value="' + pack.id + '">' + pack.name + '</option>').join(""));
   window.netriskTheme?.setThemes?.(state.themes.map((theme) => theme.id));
@@ -366,6 +453,7 @@ async function loadOptions() {
   syncContentPackDefaults();
   syncRuleSetDefaults();
   renderContentPackSummary();
+  renderModuleOptions();
   renderRuleSetSummary();
   renderMapDetails();
 }
@@ -451,6 +539,16 @@ elements.diceRuleSet.addEventListener("change", renderRuleSetSummary);
 elements.victoryRuleSet.addEventListener("change", renderRuleSetSummary);
 elements.theme.addEventListener("change", renderRuleSetSummary);
 elements.pieceSkin.addEventListener("change", renderRuleSetSummary);
+elements.advancedOptions.addEventListener("change", (event: Event) => {
+  const target = event.target as HTMLElement | null;
+  if (!target) {
+    return;
+  }
+
+  if (target.matches("[data-module-checkbox], #setup-content-profile, #setup-gameplay-profile, #setup-ui-profile")) {
+    renderRuleSetSummary();
+  }
+});
 elements.playerSlots.addEventListener("change", (event: Event) => {
   const trigger = closest(event.target, '[data-role="type"]');
   if (!trigger) {

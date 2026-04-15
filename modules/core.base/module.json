@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "core.base",
+  "version": "1.0.0",
+  "displayName": "NetRisk Core Base",
+  "description": "Modulo first-party che dichiara le fondamenta ufficiali di gameplay, contenuti e shell UI.",
+  "engineVersion": "1.0.0",
+  "kind": "hybrid",
+  "dependencies": [],
+  "conflicts": [],
+  "capabilities": [
+    { "kind": "map", "scope": "game", "description": "Mappe ufficiali NetRisk." },
+    { "kind": "site-theme", "scope": "global", "description": "Temi ufficiali del sito." },
+    { "kind": "player-piece-set", "scope": "game", "description": "Set pedine ufficiali." },
+    { "kind": "dice-rule-set", "scope": "game", "description": "Ruleset dadi ufficiali." },
+    { "kind": "card-rule-set", "scope": "game", "description": "Ruleset carte ufficiali." },
+    { "kind": "victory-rule-set", "scope": "game", "description": "Condizioni vittoria ufficiali." },
+    { "kind": "ui-slot", "scope": "global", "description": "Slot host UI ufficiali." }
+  ],
+  "entrypoints": {
+    "clientManifest": "client-manifest.json"
+  },
+  "permissions": []
+}
