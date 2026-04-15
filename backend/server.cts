@@ -790,6 +790,12 @@ function createApp(options: CreateAppOptions = {}) {
         requireAuth,
         authorize,
         (body: Record<string, unknown>) => createConfiguredInitialState(body, {
+          resolveGameModuleConfigDefaults: (input: {
+            activeModuleIds?: string[];
+            contentProfileId?: string | null;
+            gameplayProfileId?: string | null;
+            uiProfileId?: string | null;
+          }) => moduleRuntime.resolveGameConfigDefaults(input),
           resolveGameModuleSelection: (input: {
             activeModuleIds?: string[];
             contentProfileId?: string | null;
