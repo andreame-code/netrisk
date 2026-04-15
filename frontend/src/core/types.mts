@@ -60,6 +60,19 @@ export type NetRiskUiSlotContribution = {
   route?: string | null;
 };
 
+export type NetRiskContentContribution = {
+  mapIds?: string[];
+  siteThemeIds?: string[];
+  pieceSkinIds?: string[];
+  playerPieceSetIds?: string[];
+  contentPackIds?: string[];
+  diceRuleSetIds?: string[];
+  cardRuleSetIds?: string[];
+  victoryRuleSetIds?: string[];
+  fortifyRuleSetIds?: string[];
+  reinforcementRuleSetIds?: string[];
+};
+
 export type InstalledModuleSummary = {
   id: string;
   version: string | null;
@@ -175,6 +188,7 @@ export type ModuleOptionsResponse = MessagePayload & {
   modules: InstalledModuleSummary[];
   enabledModules: NetRiskModuleReference[];
   gameModules: InstalledModuleSummary[];
+  content: NetRiskContentContribution;
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];

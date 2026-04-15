@@ -1,4 +1,16 @@
 {
+  "content": {
+    "mapIds": ["classic-mini", "middle-earth", "world-classic"],
+    "siteThemeIds": ["command", "midnight", "ember"],
+    "pieceSkinIds": ["classic-color", "command-ring"],
+    "playerPieceSetIds": ["classic"],
+    "contentPackIds": ["core"],
+    "diceRuleSetIds": ["standard", "defense-3"],
+    "cardRuleSetIds": ["standard"],
+    "victoryRuleSetIds": ["conquest", "majority-control"],
+    "fortifyRuleSetIds": ["standard"],
+    "reinforcementRuleSetIds": ["standard"]
+  },
   "ui": {
     "slots": [
       {
