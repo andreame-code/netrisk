@@ -50,6 +50,20 @@ export type NetRiskModuleProfile = {
   moduleId?: string | null;
 };
 
+export type NetRiskModuleDependency = {
+  id: string;
+  version?: string | null;
+  optional?: boolean;
+};
+
+export type NetRiskModuleCapability = {
+  kind: string;
+  targetId?: string | null;
+  hook?: string | null;
+  scope?: string | null;
+  description?: string | null;
+};
+
 export type NetRiskGamePreset = {
   id: string;
   name: string;
@@ -106,7 +120,13 @@ export type InstalledModuleSummary = {
   compatible: boolean;
   warnings: string[];
   errors: string[];
-  capabilities: Array<Record<string, unknown>>;
+  capabilities: NetRiskModuleCapability[];
+  manifest?: {
+    dependencies?: NetRiskModuleDependency[];
+    conflicts?: string[];
+    permissions?: string[];
+    assetsDir?: string | null;
+  } | null;
   clientManifest?: {
     ui?: {
       slots?: NetRiskUiSlotContribution[];

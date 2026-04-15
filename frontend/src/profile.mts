@@ -2,6 +2,8 @@ import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./
 import { messageFromError } from "./core/errors.mjs";
 import type {
   GameOptionsResponse,
+  NetRiskModuleCapability,
+  NetRiskModuleDependency,
   InstalledModuleSummary,
   ModuleOptionsResponse,
   ModulesCatalogResponse,
@@ -283,6 +285,61 @@ function moduleIssuesLabel(moduleEntry: InstalledModuleSummary): string {
   return issues.length ? issues.join(" | ") : t("profile.modules.issue.none");
 }
 
+function renderBadgeList(title: string, values: string[], emptyLabel: string): string {
+  return (
+    `<div class="profile-mini-lobby">` +
+      `<span class="profile-mini-lobby-title">${escapeHtml(title)}</span>` +
+      `<div class="profile-game-meta-row">` +
+        (values.length
+          ? values.map((value) => `<span class="badge">${escapeHtml(value)}</span>`).join("")
+          : `<span class="badge">${escapeHtml(emptyLabel)}</span>`) +
+      `</div>` +
+    `</div>`
+  );
+}
+
+function moduleDependencyLabel(dependency: NetRiskModuleDependency): string {
+  const versionSuffix = dependency.version ? `@${dependency.version}` : "";
+  const optionalSuffix = dependency.optional ? ` (${t("profile.modules.optional")})` : "";
+  return `${dependency.id}${versionSuffix}${optionalSuffix}`;
+}
+
+function moduleCapabilityLabel(capability: NetRiskModuleCapability): string {
+  const parts = [capability.kind];
+  if (capability.scope) {
+    parts.push(capability.scope);
+  }
+  if (capability.hook) {
+    parts.push(capability.hook);
+  }
+  if (capability.targetId) {
+    parts.push(capability.targetId);
+  }
+  return parts.filter(Boolean).join(" / ");
+}
+
+function moduleProfileLabels(moduleEntry: InstalledModuleSummary): string[] {
+  const contentProfiles = moduleEntry.clientManifest?.profiles?.content || [];
+  const gameplayProfiles = moduleEntry.clientManifest?.profiles?.gameplay || [];
+  const uiProfiles = moduleEntry.clientManifest?.profiles?.ui || [];
+  return [...contentProfiles, ...gameplayProfiles, ...uiProfiles].map((profile) => profile.name || profile.id);
+}
+
+function moduleContributionLabels(moduleEntry: InstalledModuleSummary): string[] {
+  const labels: string[] = [];
+  const presets = moduleEntry.clientManifest?.gamePresets || [];
+  const slots = moduleEntry.clientManifest?.ui?.slots || [];
+  const stylesheets = moduleEntry.clientManifest?.ui?.stylesheets || [];
+  const locales = moduleEntry.clientManifest?.ui?.locales || [];
+
+  presets.forEach((preset) => labels.push(`${t("profile.modules.presets")}: ${preset.name || preset.id}`));
+  slots.forEach((slot) => labels.push(`${t("profile.modules.slots")}: ${slot.title || slot.itemId}`));
+  stylesheets.forEach((stylesheet) => labels.push(`${t("profile.modules.stylesheets")}: ${stylesheet}`));
+  locales.forEach((locale) => labels.push(`${t("profile.modules.locales")}: ${locale}`));
+
+  return labels;
+}
+
 function canToggleModule(moduleEntry: InstalledModuleSummary): boolean {
   if (moduleEntry.id === "core.base") {
     return false;
@@ -312,8 +369,14 @@ function renderModuleCatalog(modules: InstalledModuleSummary[], engineVersion: s
         { label: t("profile.modules.detail.status"), value: moduleStateLabel(moduleEntry.status) },
         { label: t("profile.modules.detail.source"), value: moduleEntry.sourcePath },
         { label: t("profile.modules.detail.capabilities"), value: String(moduleEntry.capabilities.length) },
+        { label: t("profile.modules.detail.dependencies"), value: String(moduleEntry.manifest?.dependencies?.length || 0) },
         { label: t("profile.modules.detail.issues"), value: moduleIssuesLabel(moduleEntry) }
       ];
+      const dependencyLabels = (moduleEntry.manifest?.dependencies || []).map(moduleDependencyLabel);
+      const conflictLabels = (moduleEntry.manifest?.conflicts || []).map((entry) => String(entry || ""));
+      const capabilityLabels = moduleEntry.capabilities.map((capability) => moduleCapabilityLabel(capability as NetRiskModuleCapability));
+      const profileLabels = moduleProfileLabels(moduleEntry);
+      const contributionLabels = moduleContributionLabels(moduleEntry);
 
       return (
         `<article class="profile-note-card">` +
@@ -339,6 +402,11 @@ function renderModuleCatalog(modules: InstalledModuleSummary[], engineVersion: s
               )).join("") +
             `</span>` +
           `</div>` +
+          renderBadgeList(t("profile.modules.dependencies"), dependencyLabels, t("profile.modules.issue.none")) +
+          renderBadgeList(t("profile.modules.conflicts"), conflictLabels, t("profile.modules.issue.none")) +
+          renderBadgeList(t("profile.modules.capabilities"), capabilityLabels, t("profile.modules.issue.none")) +
+          renderBadgeList(t("profile.modules.profiles"), profileLabels, t("profile.modules.issue.none")) +
+          renderBadgeList(t("profile.modules.contributions"), contributionLabels, t("profile.modules.issue.none")) +
           `<div class="profile-game-meta-row">` +
             (canToggleModule(moduleEntry)
               ? `<button type="button" class="ghost-button profile-back-button" data-module-id="${escapeHtml(moduleEntry.id)}" data-module-action="${moduleEntry.enabled ? "disable" : "enable"}">${escapeHtml(actionLabel)}</button>`
