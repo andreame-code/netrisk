@@ -1,0 +1,45 @@
+{
+  "ui": {
+    "slots": [
+      {
+        "slotId": "new-game.sidebar",
+        "itemId": "demo.command-center.briefing",
+        "title": "Demo briefing",
+        "kind": "panel",
+        "order": 20,
+        "description": "Pannello briefing dimostrativo per la pagina nuova partita."
+      },
+      {
+        "slotId": "admin-modules-page",
+        "itemId": "demo.command-center.health",
+        "title": "Demo health widget",
+        "kind": "widget",
+        "order": 30,
+        "description": "Widget demo per la pagina moduli."
+      }
+    ]
+  },
+  "profiles": {
+    "content": [
+      {
+        "id": "demo.command-center.content",
+        "name": "Command Center Content",
+        "description": "Profilo demo di contenuti estesi."
+      }
+    ],
+    "gameplay": [
+      {
+        "id": "demo.command-center.gameplay",
+        "name": "Command Center Gameplay",
+        "description": "Profilo demo di gameplay modulare."
+      }
+    ],
+    "ui": [
+      {
+        "id": "demo.command-center.ui",
+        "name": "Command Center UI",
+        "description": "Profilo demo UI esteso."
+      }
+    ]
+  }
+}

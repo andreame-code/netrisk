@@ -5,6 +5,9 @@ export type ThemePreferences = {
 export type PublicUser = {
   id: string;
   username: string;
+  role?: string;
+  authMethods?: string[];
+  hasEmail?: boolean;
   preferences?: ThemePreferences | null;
 };
 
@@ -33,6 +36,43 @@ export type PieceSkin = {
   renderStyleId: string;
   usesPlayerColor: boolean;
   assetBaseUrl?: string | null;
+};
+
+export type NetRiskModuleReference = {
+  id: string;
+  version: string;
+};
+
+export type NetRiskModuleProfile = {
+  id: string;
+  name: string;
+  description?: string | null;
+  moduleId?: string | null;
+};
+
+export type NetRiskUiSlotContribution = {
+  slotId: string;
+  itemId: string;
+  title: string;
+  kind: string;
+  order?: number;
+  description?: string | null;
+  route?: string | null;
+};
+
+export type InstalledModuleSummary = {
+  id: string;
+  version: string | null;
+  displayName: string;
+  description?: string | null;
+  kind: string | null;
+  sourcePath: string;
+  status: string;
+  enabled: boolean;
+  compatible: boolean;
+  warnings: string[];
+  errors: string[];
+  capabilities: Array<Record<string, unknown>>;
 };
 
 export type GameSummary = {
@@ -120,9 +160,31 @@ export type GameOptionsResponse = MessagePayload & {
   victoryRuleSets: VictoryRuleSet[];
   themes: VisualTheme[];
   pieceSkins: PieceSkin[];
+  modules?: InstalledModuleSummary[];
+  enabledModules?: NetRiskModuleReference[];
+  contentProfiles?: NetRiskModuleProfile[];
+  gameplayProfiles?: NetRiskModuleProfile[];
+  uiProfiles?: NetRiskModuleProfile[];
+  uiSlots?: NetRiskUiSlotContribution[];
   playerPieceSets?: PlayerPieceSetSummary[];
   contentPacks?: ContentPackSummary[];
   turnTimeoutHoursOptions: number[];
+};
+
+export type ModuleOptionsResponse = MessagePayload & {
+  modules: InstalledModuleSummary[];
+  enabledModules: NetRiskModuleReference[];
+  gameModules: InstalledModuleSummary[];
+  uiSlots: NetRiskUiSlotContribution[];
+  contentProfiles: NetRiskModuleProfile[];
+  gameplayProfiles: NetRiskModuleProfile[];
+  uiProfiles: NetRiskModuleProfile[];
+};
+
+export type ModulesCatalogResponse = MessagePayload & {
+  modules: InstalledModuleSummary[];
+  enabledModules: NetRiskModuleReference[];
+  engineVersion: string;
 };
 
 export type PlayerSlotConfig = {
@@ -134,6 +196,7 @@ export type GameConfigSummary = {
   contentPackId?: string | null;
   pieceSetId?: string | null;
   extensionSchemaVersion?: number;
+  moduleSchemaVersion?: number;
   ruleSetId?: string;
   ruleSetName?: string;
   mapName?: string | null;
@@ -142,6 +205,10 @@ export type GameConfigSummary = {
   victoryRuleSetId?: string | null;
   themeId?: string | null;
   pieceSkinId?: string | null;
+  activeModules?: NetRiskModuleReference[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
   pieceSkin?: PieceSkin | null;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;

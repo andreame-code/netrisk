@@ -31,6 +31,10 @@ import {
   migrateGameConfigExtensions,
   type ExtensionPackManifest
 } from "../shared/extensions.cjs";
+import {
+  normalizeNetRiskGameModuleSelection,
+  type NetRiskGameModuleSelection
+} from "../shared/netrisk-modules.cjs";
 import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
@@ -94,6 +98,10 @@ interface NewGameConfigInput {
   pieceSetId?: string;
   themeId?: string;
   pieceSkinId?: string;
+  activeModuleIds?: string[];
+  contentProfileId?: string;
+  gameplayProfileId?: string;
+  uiProfileId?: string;
   turnTimeoutHours?: number;
   players?: RequestedPlayerSlot[];
 }
@@ -111,6 +119,7 @@ interface ValidatedNewGameConfig {
   pieceSetId: string;
   themeId: string;
   pieceSkinId: string;
+  moduleSelection: NetRiskGameModuleSelection;
   extensionSchemaVersion: number;
   turnTimeoutHours: TurnTimeoutHoursValue | null;
   totalPlayers: number;
@@ -253,6 +262,11 @@ export function validateNewGameConfig(
   });
 
   return {
+    moduleSelection: normalizeNetRiskGameModuleSelection({
+      contentProfileId: typeof input.contentProfileId === "string" ? input.contentProfileId : null,
+      gameplayProfileId: typeof input.gameplayProfileId === "string" ? input.gameplayProfileId : null,
+      uiProfileId: typeof input.uiProfileId === "string" ? input.uiProfileId : null
+    }),
     name: input.name,
     contentPackId: selectedContentPack.id,
     ruleSetId: selectedRuleSet.id,
@@ -274,7 +288,15 @@ export function validateNewGameConfig(
 
 export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
-  options: { random?: () => number } = {}
+  options: {
+    random?: () => number;
+    resolveGameModuleSelection?: (input: {
+      activeModuleIds?: string[];
+      contentProfileId?: string | null;
+      gameplayProfileId?: string | null;
+      uiProfileId?: string | null;
+    }) => NetRiskGameModuleSelection | Promise<NetRiskGameModuleSelection>;
+  } = {}
 ): {
   state: GameState & {
     gameConfig?: Record<string, unknown>;
@@ -285,8 +307,28 @@ export function createConfiguredInitialState(
   };
   gameInput: { name: string | undefined };
   config: ValidatedNewGameConfig;
-} {
+} | Promise<{
+  state: GameState & {
+    gameConfig?: Record<string, unknown>;
+    contentPackId: string;
+    diceRuleSetId: string;
+    victoryRuleSetId: string;
+    pieceSetId: string;
+  };
+  gameInput: { name: string | undefined };
+  config: ValidatedNewGameConfig;
+}> {
   const config = validateNewGameConfig(configInput, options);
+  const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
+    ? options.resolveGameModuleSelection({
+        activeModuleIds: Array.isArray(configInput.activeModuleIds) ? configInput.activeModuleIds : [],
+        contentProfileId: typeof configInput.contentProfileId === "string" ? configInput.contentProfileId : null,
+        gameplayProfileId: typeof configInput.gameplayProfileId === "string" ? configInput.gameplayProfileId : null,
+        uiProfileId: typeof configInput.uiProfileId === "string" ? configInput.uiProfileId : null
+      })
+    : config.moduleSelection;
+
+  const finalizeConfiguredState = (moduleSelection: NetRiskGameModuleSelection) => {
   const state = createInitialState(config.selectedMap);
   state.contentPackId = config.contentPackId;
   state.diceRuleSetId = config.diceRuleSetId;
@@ -304,6 +346,11 @@ export function createConfiguredInitialState(
     victoryRuleSetId: config.victoryRuleSetId,
     themeId: config.themeId,
     pieceSkinId: config.pieceSkinId,
+    moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
+    activeModules: moduleSelection.activeModules,
+    contentProfileId: moduleSelection.contentProfileId || null,
+    gameplayProfileId: moduleSelection.gameplayProfileId || null,
+    uiProfileId: moduleSelection.uiProfileId || null,
     extensionSchemaVersion: config.extensionSchemaVersion,
     turnTimeoutHours: config.turnTimeoutHours,
     totalPlayers: config.totalPlayers,
@@ -328,8 +375,18 @@ export function createConfiguredInitialState(
   return {
     state,
     gameInput: { name: config.name },
-    config
+    config: {
+      ...config,
+      moduleSelection
+    }
   };
+  };
+
+  if (resolvedModuleSelection && typeof (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then === "function") {
+    return (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then(finalizeConfiguredState);
+  }
+
+  return finalizeConfiguredState(resolvedModuleSelection as NetRiskGameModuleSelection);
 }
 
 export {

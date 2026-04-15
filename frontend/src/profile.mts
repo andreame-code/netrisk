@@ -1,6 +1,16 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
-import type { GameOptionsResponse, ProfileResponse, ProfileSummary, PublicUser, SessionResponse } from "./core/types.mjs";
+import type {
+  GameOptionsResponse,
+  InstalledModuleSummary,
+  ModuleOptionsResponse,
+  ModulesCatalogResponse,
+  NetRiskUiSlotContribution,
+  ProfileResponse,
+  ProfileSummary,
+  PublicUser,
+  SessionResponse
+} from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const elements = {
@@ -16,6 +26,14 @@ const elements = {
   profilePreferences: byId("profile-preferences"),
   themeSelect: byId("profile-theme-select") as HTMLSelectElement,
   themeStatus: byId("profile-theme-status"),
+  profileModules: byId("profile-modules"),
+  profileModulesStatus: byId("profile-modules-status"),
+  profileModulesEmpty: byId("profile-modules-empty"),
+  profileModulesList: byId("profile-modules-list"),
+  profileModuleSlotsEmpty: byId("profile-module-slots-empty"),
+  profileModuleSlotsList: byId("profile-module-slots-list"),
+  profileModulesRefresh: byId("profile-modules-refresh") as HTMLButtonElement,
+  profileModulesRescan: byId("profile-modules-rescan") as HTMLButtonElement,
   profileContent: byId("profile-content"),
   profileHeading: byId("profile-heading"),
   profileCopy: byId("profile-copy"),
@@ -70,7 +88,9 @@ const themeManager = window.netriskTheme || {
 };
 
 let profileRequestId = 0;
+let moduleCatalogRequestId = 0;
 let themeOptionsLoaded = false;
+let currentSessionUser: PublicUser | null = null;
 
 function setHeaderAuthFeedback(message = ""): void {
   if (!message) {
@@ -124,6 +144,29 @@ async function loadThemeOptions(): Promise<void> {
 
 function showThemePreferences(isVisible: boolean): void {
   setHidden(elements.profilePreferences, !isVisible);
+}
+
+function isAdminUser(user: PublicUser | null | undefined): boolean {
+  return Boolean(user && user.role === "admin");
+}
+
+function setModuleStatus(message: string): void {
+  elements.profileModulesStatus.textContent = message;
+}
+
+function showModuleControls(isVisible: boolean): void {
+  setHidden(elements.profileModules, !isVisible);
+}
+
+function resetModuleControls(): void {
+  showModuleControls(false);
+  setModuleStatus(t("profile.modules.status.loading"));
+  setMarkup(elements.profileModulesList, "");
+  setMarkup(elements.profileModuleSlotsList, "");
+  setHidden(elements.profileModulesEmpty, true);
+  setHidden(elements.profileModuleSlotsEmpty, true);
+  setDisabled(elements.profileModulesRefresh, false);
+  setDisabled(elements.profileModulesRescan, false);
 }
 
 function syncThemePreference({ announce = false, preferredTheme = null }: { announce?: boolean; preferredTheme?: string | null } = {}): void {
@@ -211,6 +254,248 @@ function escapeHtml(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function moduleKindLabel(kind: string | null | undefined): string {
+  if (!kind) {
+    return t("profile.modules.kind.unknown");
+  }
+
+  return t(`profile.modules.kind.${kind}`, {}, { fallback: kind });
+}
+
+function moduleStateLabel(status: string | null | undefined): string {
+  if (!status) {
+    return t("profile.modules.state.discovered");
+  }
+
+  return t(`profile.modules.state.${status}`, {}, { fallback: status });
+}
+
+function moduleCompatibilityLabel(moduleEntry: InstalledModuleSummary): string {
+  return moduleEntry.compatible
+    ? t("profile.modules.state.compatible")
+    : t("profile.modules.state.notCompatible");
+}
+
+function moduleIssuesLabel(moduleEntry: InstalledModuleSummary): string {
+  const issues = [...moduleEntry.errors, ...moduleEntry.warnings].filter(Boolean);
+  return issues.length ? issues.join(" | ") : t("profile.modules.issue.none");
+}
+
+function canToggleModule(moduleEntry: InstalledModuleSummary): boolean {
+  if (moduleEntry.id === "core.base") {
+    return false;
+  }
+
+  return moduleEntry.enabled || moduleEntry.compatible;
+}
+
+function renderModuleCatalog(modules: InstalledModuleSummary[], engineVersion: string): void {
+  showModuleControls(true);
+  setModuleStatus(t("profile.modules.status.ready", { count: modules.length, engineVersion }));
+
+  if (!modules.length) {
+    setMarkup(elements.profileModulesList, "");
+    setHidden(elements.profileModulesEmpty, false);
+    return;
+  }
+
+  setHidden(elements.profileModulesEmpty, true);
+  setMarkup(elements.profileModulesList, modules
+    .map((moduleEntry) => {
+      const actionLabel = moduleEntry.enabled
+        ? t("profile.modules.action.disable")
+        : t("profile.modules.action.enable");
+      const detailItems = [
+        { label: t("profile.modules.detail.version"), value: moduleEntry.version || t("common.notAvailable") },
+        { label: t("profile.modules.detail.status"), value: moduleStateLabel(moduleEntry.status) },
+        { label: t("profile.modules.detail.source"), value: moduleEntry.sourcePath },
+        { label: t("profile.modules.detail.capabilities"), value: String(moduleEntry.capabilities.length) },
+        { label: t("profile.modules.detail.issues"), value: moduleIssuesLabel(moduleEntry) }
+      ];
+
+      return (
+        `<article class="profile-note-card">` +
+          `<div class="profile-games-head">` +
+            `<div>` +
+              `<p class="eyebrow profile-section-eyebrow">${escapeHtml(moduleKindLabel(moduleEntry.kind))}</p>` +
+              `<h3>${escapeHtml(moduleEntry.displayName)}</h3>` +
+              `<p class="stage-copy">${escapeHtml(moduleEntry.description || t("profile.modules.descriptionFallback"))}</p>` +
+            `</div>` +
+            `<div class="profile-game-meta-row">` +
+              `<span class="badge">${escapeHtml(moduleStateLabel(moduleEntry.status))}</span>` +
+              `<span class="badge">${escapeHtml(moduleCompatibilityLabel(moduleEntry))}</span>` +
+              (moduleEntry.enabled
+                ? `<span class="badge">${escapeHtml(t("profile.modules.state.enabled"))}</span>`
+                : "") +
+            `</div>` +
+          `</div>` +
+          `<div class="profile-mini-lobby">` +
+            `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.details"))}</span>` +
+            `<span class="profile-mini-lobby-grid">` +
+              detailItems.map((item) => (
+                `<span class="profile-mini-lobby-item"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></span>`
+              )).join("") +
+            `</span>` +
+          `</div>` +
+          `<div class="profile-game-meta-row">` +
+            (canToggleModule(moduleEntry)
+              ? `<button type="button" class="ghost-button profile-back-button" data-module-id="${escapeHtml(moduleEntry.id)}" data-module-action="${moduleEntry.enabled ? "disable" : "enable"}">${escapeHtml(actionLabel)}</button>`
+              : `<span class="badge">${escapeHtml(t("profile.modules.action.locked"))}</span>`) +
+          `</div>` +
+        `</article>`
+      );
+    })
+    .join(""));
+}
+
+function renderAdminModuleSlots(slots: NetRiskUiSlotContribution[]): void {
+  if (!slots.length) {
+    setMarkup(elements.profileModuleSlotsList, "");
+    setHidden(elements.profileModuleSlotsEmpty, false);
+    return;
+  }
+
+  setHidden(elements.profileModuleSlotsEmpty, true);
+  setMarkup(elements.profileModuleSlotsList, slots
+    .map((slot) => {
+      const routeMarkup = slot.route
+        ? `<a class="ghost-button profile-back-button" href="${escapeHtml(slot.route)}">${escapeHtml(t("profile.modules.extensions.open"))}</a>`
+        : "";
+
+      return (
+        `<article class="profile-note-card">` +
+          `<div class="profile-games-head">` +
+            `<div>` +
+              `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slot.itemId)}</p>` +
+              `<h3>${escapeHtml(slot.title)}</h3>` +
+              `<p class="stage-copy">${escapeHtml(slot.description || t("profile.modules.descriptionFallback"))}</p>` +
+            `</div>` +
+            `<div class="profile-game-meta-row">` +
+              `<span class="badge">${escapeHtml(slot.kind)}</span>` +
+              routeMarkup +
+            `</div>` +
+          `</div>` +
+          `<div class="profile-mini-lobby">` +
+            `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.extensions.details"))}</span>` +
+            `<span class="profile-mini-lobby-grid">` +
+              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.kind"))}</span><strong>${escapeHtml(slot.kind)}</strong></span>` +
+              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.slot"))}</span><strong>${escapeHtml(slot.slotId)}</strong></span>` +
+              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.route"))}</span><strong>${escapeHtml(slot.route || t("common.notAvailable"))}</strong></span>` +
+            `</span>` +
+          `</div>` +
+        `</article>`
+      );
+    })
+    .join(""));
+}
+
+async function loadAdminModuleSlots(): Promise<void> {
+  try {
+    const response = await fetch("/api/modules/options");
+    const payload = await response.json() as ModuleOptionsResponse;
+    if (!response.ok) {
+      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
+    }
+
+    const adminSlots = Array.isArray(payload.uiSlots)
+      ? payload.uiSlots.filter((slot) => slot.slotId === "admin-modules-page")
+      : [];
+    renderAdminModuleSlots(adminSlots);
+  } catch (_error: unknown) {
+    setMarkup(elements.profileModuleSlotsList, "");
+    setHidden(elements.profileModuleSlotsEmpty, false);
+  }
+}
+
+async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: boolean } = {}): Promise<void> {
+  if (!isAdminUser(user)) {
+    resetModuleControls();
+    return;
+  }
+
+  const requestId = ++moduleCatalogRequestId;
+  showModuleControls(true);
+  setDisabled(elements.profileModulesRefresh, true);
+  setDisabled(elements.profileModulesRescan, true);
+  setModuleStatus(t(options.rescan ? "profile.modules.status.rescanning" : "profile.modules.status.refreshing"));
+
+  try {
+    const response = await fetch(options.rescan ? "/api/modules/rescan" : "/api/modules", {
+      method: options.rescan ? "POST" : "GET",
+      headers: options.rescan ? { "Content-Type": "application/json" } : undefined,
+      body: options.rescan ? JSON.stringify({}) : undefined
+    });
+    const payload = await response.json() as ModulesCatalogResponse;
+    if (!response.ok) {
+      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
+    }
+
+    if (requestId !== moduleCatalogRequestId) {
+      return;
+    }
+
+    renderModuleCatalog(Array.isArray(payload.modules) ? payload.modules : [], payload.engineVersion || "-");
+    await loadAdminModuleSlots();
+    if (options.rescan) {
+      setModuleStatus(t("profile.modules.status.rescanned"));
+    }
+  } catch (error: unknown) {
+    if (requestId !== moduleCatalogRequestId) {
+      return;
+    }
+
+    setModuleStatus(messageFromError(error, t("profile.modules.status.error")));
+  } finally {
+    if (requestId === moduleCatalogRequestId) {
+      setDisabled(elements.profileModulesRefresh, false);
+      setDisabled(elements.profileModulesRescan, false);
+    }
+  }
+}
+
+async function toggleModule(moduleId: string, action: "enable" | "disable", user: PublicUser | null): Promise<void> {
+  if (!isAdminUser(user)) {
+    resetModuleControls();
+    return;
+  }
+
+  const requestId = ++moduleCatalogRequestId;
+  setDisabled(elements.profileModulesRefresh, true);
+  setDisabled(elements.profileModulesRescan, true);
+  setModuleStatus(t("profile.modules.status.refreshing"));
+
+  try {
+    const response = await fetch(`/api/modules/${encodeURIComponent(moduleId)}/${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    const payload = await response.json() as ModulesCatalogResponse;
+    if (!response.ok) {
+      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
+    }
+
+    if (requestId !== moduleCatalogRequestId) {
+      return;
+    }
+
+    renderModuleCatalog(Array.isArray(payload.modules) ? payload.modules : [], payload.engineVersion || "-");
+    await loadAdminModuleSlots();
+    setModuleStatus(t("profile.modules.status.updated"));
+  } catch (error: unknown) {
+    if (requestId !== moduleCatalogRequestId) {
+      return;
+    }
+
+    setModuleStatus(messageFromError(error, t("profile.modules.status.error")));
+  } finally {
+    if (requestId === moduleCatalogRequestId) {
+      setDisabled(elements.profileModulesRefresh, false);
+      setDisabled(elements.profileModulesRescan, false);
+    }
+  }
 }
 
 function phaseLabel(phase: string): string {
@@ -374,12 +659,14 @@ async function loadProfile() {
       return;
     }
     sessionUser = session.user;
+    currentSessionUser = session.user;
     themeManager.applyUserTheme(session.user);
     elements.authStatus.textContent = t("profile.auth.loggedIn", { username: session.user.username });
     renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
     showThemePreferences(true);
     syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(session.user) });
+    await loadModuleCatalog(session.user);
     const profileResponse = await fetch("/api/profile");
 
     if (!profileResponse.ok) {
@@ -405,6 +692,7 @@ async function loadProfile() {
       themeManager.applyUserTheme(sessionUser);
       showThemePreferences(true);
       syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(sessionUser) });
+      await loadModuleCatalog(sessionUser);
       elements.profileName.textContent = sessionUser.username;
       if (elements.profileSubtitle) {
         elements.profileSubtitle.textContent = t("profile.runtime.temporarilyUnavailable");
@@ -413,9 +701,11 @@ async function loadProfile() {
     }
 
     elements.authStatus.textContent = t("profile.auth.unavailable");
+    currentSessionUser = null;
     renderAuthArea(null);
     renderNavAvatar();
     showThemePreferences(false);
+    resetModuleControls();
     elements.profileName.textContent = t("profile.runtime.unavailableTitle");
     if (elements.profileSubtitle) {
       elements.profileSubtitle.textContent = t("profile.runtime.unavailableSubtitle");
@@ -463,9 +753,11 @@ if (elements.headerLoginForm) {
 
 elements.logoutButton.addEventListener("click", async () => {
   profileRequestId += 1;
+  currentSessionUser = null;
   localStorage.removeItem("frontline-player-id");
   renderAuthArea(null);
   showThemePreferences(false);
+  resetModuleControls();
   elements.authStatus.textContent = t("profile.auth.loggedOut");
   renderNavAvatar();
   showFeedback(t("profile.runtime.loggedOutFeedback"), "error");
@@ -484,6 +776,29 @@ elements.logoutButton.addEventListener("click", async () => {
     });
   } catch (_error: unknown) {
   }
+});
+
+elements.profileModulesRefresh.addEventListener("click", async () => {
+  await loadModuleCatalog(currentSessionUser);
+});
+
+elements.profileModulesRescan.addEventListener("click", async () => {
+  await loadModuleCatalog(currentSessionUser, { rescan: true });
+});
+
+elements.profileModulesList.addEventListener("click", async (event) => {
+  const trigger = closest<HTMLElement>(event.target, "[data-module-id][data-module-action]");
+  if (!trigger) {
+    return;
+  }
+
+  const moduleId = trigger.dataset.moduleId;
+  const action = trigger.dataset.moduleAction;
+  if (!moduleId || (action !== "enable" && action !== "disable")) {
+    return;
+  }
+
+  await toggleModule(moduleId, action, currentSessionUser);
 });
 
 await loadThemeOptions();

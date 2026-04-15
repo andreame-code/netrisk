@@ -163,6 +163,41 @@ export type {
 } from "./player-piece-sets.cjs";
 export { listContentModules } from "./content-catalog.cjs";
 export type { ContentModuleKind, ContentModuleSummary } from "./content-catalog.cjs";
+export {
+  CORE_MODULE_ID,
+  CORE_MODULE_VERSION,
+  NETRISK_ENGINE_VERSION,
+  NETRISK_MODULE_MANIFEST_SCHEMA_VERSION,
+  NETRISK_MODULE_SCHEMA_VERSION,
+  coreModuleReference,
+  createModuleReference,
+  isEngineVersionCompatible,
+  normalizeNetRiskGameModuleSelection,
+  parseSemverMajor,
+  uniqueModuleReferences,
+  validateNetRiskModuleClientManifest,
+  validateNetRiskModuleManifest
+} from "./netrisk-modules.cjs";
+export type {
+  NetRiskContentContribution,
+  NetRiskEnabledModuleSet,
+  NetRiskGameModuleSelection,
+  NetRiskGameplayContribution,
+  NetRiskInstalledModule,
+  NetRiskModuleCapability,
+  NetRiskModuleClientManifest,
+  NetRiskModuleDependency,
+  NetRiskModuleEntrypoints,
+  NetRiskModuleKind,
+  NetRiskModuleManifest,
+  NetRiskModuleProfile,
+  NetRiskModuleReference,
+  NetRiskModuleStatus,
+  NetRiskServerModule,
+  NetRiskUiContribution,
+  NetRiskUiSlotContribution,
+  NetRiskUiSlotKind
+} from "./netrisk-modules.cjs";
 export { GameAction } from "./game-actions.cjs";
 export type { GameActionValue } from "./game-actions.cjs";
 export {

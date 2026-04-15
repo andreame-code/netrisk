@@ -2,7 +2,7 @@ import { setMarkup } from "./core/dom.mjs";
 import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
 import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
-import type { PublicUser } from "./core/types.mjs";
+import type { ModuleOptionsResponse, PublicUser } from "./core/types.mjs";
 import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
 
 const THEME_STORAGE_KEY = "netrisk.theme";
@@ -256,6 +256,8 @@ function sharedNavMarkup() {
       <a href="/profile.html" class="nav-link" data-nav-section="profile">${navLabels.profile}</a>
     </nav>
 
+    <div class="top-nav-zone top-nav-module-slots" id="top-nav-module-slots"></div>
+
     <div class="top-nav-zone top-nav-actions">
       <form id="header-login-form" class="top-nav-auth-form" method="post">
         <label class="top-nav-field">
@@ -274,6 +276,34 @@ function sharedNavMarkup() {
       <div class="nav-avatar" id="nav-avatar" aria-label="${t("auth.userProfile")}" data-i18n-aria-label="auth.userProfile">C</div>
     </div>
   `;
+}
+
+async function renderTopNavModuleSlots() {
+  const container = document.querySelector("#top-nav-module-slots");
+  if (!container) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/modules/options");
+    const data = await response.json() as ModuleOptionsResponse;
+    if (!response.ok || !Array.isArray(data.uiSlots)) {
+      setMarkup(container, "");
+      return;
+    }
+
+    const topNavSlots = data.uiSlots
+      .filter((slot) => slot.slotId === "top-nav-bar")
+      .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+
+    setMarkup(container, topNavSlots
+      .map((slot) => slot.route
+        ? `<a href="${slot.route}" class="badge">${slot.title}</a>`
+        : `<span class="badge">${slot.title}</span>`)
+      .join(""));
+  } catch {
+    setMarkup(container, "");
+  }
 }
 
 function sharedFooterMarkup() {
@@ -374,6 +404,7 @@ function initAppShell() {
   mountAppChrome();
   applyTranslations(document, activeLocale);
   syncAppNav();
+  void renderTopNavModuleSlots();
 
   document.querySelectorAll(".top-nav-actions").forEach((container) => {
     buildLocaleControl({
