@@ -426,6 +426,7 @@ export function createConfiguredInitialState(
           contentProfileId: moduleSelection.contentProfileId || null,
           gameplayProfileId: moduleSelection.gameplayProfileId || null,
           uiProfileId: moduleSelection.uiProfileId || null,
+          gameplayEffects: resolvedSetup?.gameplayEffects || null,
           scenarioSetup: resolvedSetup?.scenarioSetup || null,
           extensionSchemaVersion: config.extensionSchemaVersion,
           turnTimeoutHours: config.turnTimeoutHours,

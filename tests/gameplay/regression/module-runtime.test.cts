@@ -415,6 +415,16 @@ register("module runtime applica defaults setup dai profili server-side del modu
       {
         id: "demo.defaults.gameplay",
         defaults: { ruleSetId: "classic-defense-3", diceRuleSetId: "defense-3", victoryRuleSetId: "majority-control" },
+        gameplayEffects: {
+          reinforcementAdjustments: [
+            {
+              id: "demo.defaults.supply-lines",
+              label: "Supply lines",
+              flatBonus: 5,
+              minimumTotal: 8
+            }
+          ]
+        },
         scenarioSetup: {
           territoryBonuses: [{ territoryId: "aurora", armies: 1 }],
           logMessage: "Scenario defaults applied."
@@ -448,6 +458,8 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId, "aurora");
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].flatBonus, 5);
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].minimumTotal, 8);
 
     const explicitOverrideResponse = await callApp(app, "POST", "/api/games", {
       name: "Profile Defaults Override",
@@ -466,6 +478,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.themeId, "command");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
     assert.equal(explicitOverrideResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
+    assert.equal(explicitOverrideResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].label, "Supply lines");
 
     const secondRegistered = await app.auth.registerPasswordUser("module_guest", "secret123");
     assert.equal(secondRegistered.ok, true);
@@ -485,6 +498,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     }, authHeaders(adminSessionToken));
 
     assert.equal(startResponse.statusCode, 200);
+    assert.equal(startResponse.payload.state.reinforcementPool >= 8, true);
     assert.equal(startResponse.payload.state.map.some((entry: any) => entry.id === "aurora" && entry.armies === 2), true);
   });
 });
