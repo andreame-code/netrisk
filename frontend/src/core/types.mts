@@ -86,6 +86,14 @@ export type InstalledModuleSummary = {
   warnings: string[];
   errors: string[];
   capabilities: Array<Record<string, unknown>>;
+  clientManifest?: {
+    content?: NetRiskContentContribution | null;
+    profiles?: {
+      content?: NetRiskModuleProfile[];
+      gameplay?: NetRiskModuleProfile[];
+      ui?: NetRiskModuleProfile[];
+    } | null;
+  } | null;
 };
 
 export type GameSummary = {
