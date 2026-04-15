@@ -162,6 +162,37 @@ register("chooseConquestMove and chooseFortify respect AI heuristics", () => {
   });
 });
 
+register("chooseFortify rispetta il minimo modulare configurato nel gameConfig", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.FORTIFY,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 5 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p2", armies: 2 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a", "c"]),
+      makeTerritory("c", ["b", "d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      fortifyMinimumArmies: 3
+    }
+  };
+
+  assert.deepEqual(chooseFortify(state, "p1"), {
+    fromId: "b",
+    toId: "c",
+    armies: 3,
+    score: 16
+  });
+});
+
 register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn", () => {
   const players = makePlayers(["CPU Alpha", "Bob"]);
   players[0].isAi = true;

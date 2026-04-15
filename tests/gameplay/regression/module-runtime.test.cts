@@ -427,6 +427,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
         gameplayEffects: {
           majorityControlThresholdPercent: 60,
           conquestMinimumArmies: 2,
+          fortifyMinimumArmies: 2,
           reinforcementAdjustments: [
             {
               id: "demo.defaults.supply-lines",
@@ -471,6 +472,7 @@ register("module runtime applica defaults setup dai profili server-side del modu
     assert.equal(createGameResponse.payload.state.gameConfig.scenarioSetup.logMessage, "Scenario defaults applied.");
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.majorityControlThresholdPercent, 60);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.conquestMinimumArmies, 2);
+    assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.fortifyMinimumArmies, 2);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].flatBonus, 5);
     assert.equal(createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0].minimumTotal, 8);
 
