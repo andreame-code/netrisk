@@ -41,6 +41,7 @@ interface GameplayEffectsLike {
   fortifyMinimumArmies?: number | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
+  minimumAttacksPerTurn?: number | null;
 }
 
 interface AiTurnReport {
@@ -83,6 +84,13 @@ function resolveAttackLimitPerTurn(state: EngineState): number | null {
     ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackLimitPerTurn
     : null;
   return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
+}
+
+function resolveMinimumAttacksPerTurn(state: EngineState): number | null {
+  const configuredMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).minimumAttacksPerTurn
+    : null;
+  return Number.isInteger(configuredMinimum) ? Math.max(1, Number(configuredMinimum)) : null;
 }
 
 type EngineModule = {
@@ -150,7 +158,11 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
   return ranked[0] ? ranked[0].territoryId : null;
 }
 
-export function chooseAttack(state: EngineState, playerId: string): AttackChoice | null {
+export function chooseAttack(
+  state: EngineState,
+  playerId: string,
+  options: { forceLegalAttack?: boolean } = {}
+): AttackChoice | null {
   const candidates: AttackChoice[] = [];
   const minimumAttackArmies = resolveAttackMinimumArmies(state);
   const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
@@ -171,7 +183,7 @@ export function chooseAttack(state: EngineState, playerId: string): AttackChoice
 
       listEnemyNeighbors(state, territory.id, playerId).forEach((neighbor) => {
         const advantage = fromState.armies - neighbor.state.armies;
-        if (advantage < 2) {
+        if (!options.forceLegalAttack && advantage < 2) {
           return;
         }
 
@@ -373,7 +385,13 @@ export function runAiTurn(
     }
 
     if (state.turnPhase === TurnPhase.ATTACK) {
-      const attack = chooseAttack(state, player.id || "");
+      const minimumAttacksPerTurn = resolveMinimumAttacksPerTurn(state);
+      const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+        ? state.attacksThisTurn
+        : 0;
+      const attack = chooseAttack(state, player.id || "", {
+        forceLegalAttack: minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn
+      });
       if (attack && player.id) {
         const result = resolveAttack(state, player.id, attack.fromId, attack.toId, random);
         if (!result.ok) {

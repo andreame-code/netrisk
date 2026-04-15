@@ -174,6 +174,49 @@ register("chooseAttack si ferma quando il limite di attacchi turno e raggiunto",
   assert.equal(chooseAttack(state, "p1"), null);
 });
 
+register("runAiTurn forza almeno un attacco legale quando il profilo modulare lo richiede", () => {
+  const players = makePlayers(["CPU Alpha", "Bob"]);
+  players[0].isAi = true;
+
+  const state = createAiState({
+    players,
+    turnPhase: TurnPhase.ATTACK,
+    reinforcementPool: 0,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p2", armies: 3 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+  state.gameConfig = {
+    gameplayEffects: {
+      minimumAttacksPerTurn: 1,
+      attackLimitPerTurn: 1
+    }
+  };
+
+  const report = runAiTurn(state, {
+    random: createFixedRandom(new Array(24).fill(0))
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.attacks.length >= 1, true);
+  assert.deepEqual(report.attacks[0], {
+    fromId: "a",
+    toId: "b",
+    score: 7
+  });
+  assert.equal(report.endedTurn, true);
+  assert.equal(state.currentTurnIndex, 1);
+});
+
 register("chooseConquestMove and chooseFortify respect AI heuristics", () => {
   const conquestState = createAiState({
     turnPhase: TurnPhase.ATTACK,

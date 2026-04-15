@@ -172,6 +172,7 @@ export interface NetRiskGameplayEffects {
   fortifyMinimumArmies?: number | null;
   attackMinimumArmies?: number | null;
   attackLimitPerTurn?: number | null;
+  minimumAttacksPerTurn?: number | null;
 }
 
 export interface NetRiskScenarioTerritoryBonus {
@@ -381,6 +382,8 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
   const attackMinimumArmies = hasAttackMinimumArmies ? Number(raw.attackMinimumArmies) : null;
   const hasAttackLimitPerTurn = typeof raw.attackLimitPerTurn !== "undefined";
   const attackLimitPerTurn = hasAttackLimitPerTurn ? Number(raw.attackLimitPerTurn) : null;
+  const hasMinimumAttacksPerTurn = typeof raw.minimumAttacksPerTurn !== "undefined";
+  const minimumAttacksPerTurn = hasMinimumAttacksPerTurn ? Number(raw.minimumAttacksPerTurn) : null;
 
   if (hasMajorityControlThresholdPercent && (!Number.isInteger(majorityControlThresholdPercent) || (majorityControlThresholdPercent as number) < 50 || (majorityControlThresholdPercent as number) > 100)) {
     throw new Error(`Invalid majorityControlThresholdPercent in "${sourcePath}".`);
@@ -402,13 +405,18 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
     throw new Error(`Invalid attackLimitPerTurn in "${sourcePath}".`);
   }
 
+  if (hasMinimumAttacksPerTurn && (!Number.isInteger(minimumAttacksPerTurn) || (minimumAttacksPerTurn as number) < 1)) {
+    throw new Error(`Invalid minimumAttacksPerTurn in "${sourcePath}".`);
+  }
+
   return {
     reinforcementAdjustments,
     majorityControlThresholdPercent,
     conquestMinimumArmies,
     fortifyMinimumArmies,
     attackMinimumArmies,
-    attackLimitPerTurn
+    attackLimitPerTurn,
+    minimumAttacksPerTurn
   };
 }
 

@@ -33,6 +33,37 @@ function setupLiveGame() {
   return state;
 }
 
+function createAttackPhaseState(overrides: {
+  playerArmies?: number;
+  enemyArmies?: number;
+  attacksThisTurn?: number;
+  gameplayEffects?: Record<string, unknown>;
+} = {}) {
+  const state = createInitialState();
+  state.phase = "active";
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true, isAi: false, linkedUserId: null, surrendered: false },
+    { id: "p2", name: "Bob", color: "#222222", connected: true, isAi: false, linkedUserId: null, surrendered: false }
+  ];
+  state.currentTurnIndex = 0;
+  state.turnPhase = TurnPhase.ATTACK;
+  state.reinforcementPool = 0;
+  state.mapTerritories = [
+    { id: "a", name: "Alpha", ownerId: null, armies: 0, continentId: null, neighbors: ["b"] },
+    { id: "b", name: "Beta", ownerId: null, armies: 0, continentId: null, neighbors: ["a"] }
+  ];
+  state.territories = {
+    a: { ownerId: "p1", armies: overrides.playerArmies ?? 4 },
+    b: { ownerId: "p2", armies: overrides.enemyArmies ?? 2 }
+  };
+  state.attacksThisTurn = overrides.attacksThisTurn ?? 0;
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    gameplayEffects: overrides.gameplayEffects || null
+  };
+  return state;
+}
+
 register("applyReinforcement transitions from reinforcement to attack when pool reaches zero", () => {
   const state = setupLiveGame();
   const currentPlayer = state.players[state.currentTurnIndex];
@@ -81,6 +112,40 @@ register("endTurn transitions from attack to fortify before advancing the turn",
   }
 
   const result = endTurn(state, currentPlayer.id);
+  assert.equal(result.ok, true);
+  assert.equal(result.requiresFortifyDecision, true);
+  assert.equal(state.turnPhase, TurnPhase.FORTIFY);
+});
+
+register("endTurn blocca l'uscita dalla fase attacco finche il minimo modulare non e soddisfatto", () => {
+  const state = createAttackPhaseState({
+    gameplayEffects: {
+      minimumAttacksPerTurn: 1
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
+  assert.equal(result.ok, false);
+  assert.match(result.message, /almeno 1 attacchi/i);
+  assert.equal(result.messageKey, "game.endTurn.minimumAttacksRequired");
+  assert.deepEqual(result.messageParams, {
+    minimumAttacksPerTurn: 1,
+    attacksThisTurn: 0
+  });
+  assert.equal(state.turnPhase, TurnPhase.ATTACK);
+});
+
+register("endTurn consente la fortifica se il minimo attacchi non e soddisfatto ma non esistono attacchi legali", () => {
+  const state = createAttackPhaseState({
+    playerArmies: 1,
+    gameplayEffects: {
+      minimumAttacksPerTurn: 2
+    }
+  });
+
+  const result = endTurn(state, "p1");
+
   assert.equal(result.ok, true);
   assert.equal(result.requiresFortifyDecision, true);
   assert.equal(state.turnPhase, TurnPhase.FORTIFY);
