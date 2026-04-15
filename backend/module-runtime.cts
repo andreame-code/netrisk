@@ -22,6 +22,7 @@ const {
 } = require("../shared/netrisk-modules.cjs");
 
 import type {
+  NetRiskGameplayEffects,
   NetRiskModuleConfigDefaults,
   NetRiskContentContribution,
   NetRiskGamePreset,
@@ -640,6 +641,26 @@ function mergeScenarioSetup(
   };
 }
 
+function mergeGameplayEffects(
+  target: NetRiskGameplayEffects,
+  gameplayEffects: NetRiskGameplayEffects | null | undefined
+): NetRiskGameplayEffects {
+  if (!gameplayEffects) {
+    return target;
+  }
+
+  return {
+    reinforcementAdjustments: [
+      ...(Array.isArray(target.reinforcementAdjustments)
+        ? target.reinforcementAdjustments.map((entry) => ({ ...entry }))
+        : []),
+      ...(Array.isArray(gameplayEffects.reinforcementAdjustments)
+        ? gameplayEffects.reinforcementAdjustments.map((entry) => ({ ...entry }))
+        : [])
+    ]
+  };
+}
+
 function createModuleRuntime(options: ModuleRuntimeOptions) {
   const modulesRoot = path.join(options.projectRoot, "modules");
   let cachedModules: NetRiskInstalledModule[] = [];
@@ -940,6 +961,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
       const selectedModuleIds = new Set(selectedModuleEntries.map((moduleEntry) => moduleEntry.id));
       const resolvedDefaults: NetRiskModuleConfigDefaults = {};
+      let resolvedGameplayEffects: NetRiskGameplayEffects = {
+        reinforcementAdjustments: []
+      };
       let resolvedScenarioSetup: NetRiskScenarioSetup = {
         territoryBonuses: [],
         logMessage: null
@@ -951,6 +975,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.content?.find((entry) => entry.id === input.contentProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
             resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
@@ -962,6 +987,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.gameplay?.find((entry) => entry.id === input.gameplayProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
             resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
@@ -973,6 +999,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.ui?.find((entry) => entry.id === input.uiProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
             resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
@@ -992,6 +1019,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
       return {
         defaults: resolvedDefaults,
+        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length
+          ? resolvedGameplayEffects
+          : null,
         scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
           ? resolvedScenarioSetup
           : null

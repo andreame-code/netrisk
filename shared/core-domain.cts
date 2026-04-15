@@ -1,6 +1,6 @@
 import type { Card } from "./cards.cjs";
 import type { LogEntry } from "./messages.cjs";
-import type { NetRiskModuleReference } from "./netrisk-modules.cjs";
+import type { NetRiskGameplayEffects, NetRiskModuleReference } from "./netrisk-modules.cjs";
 
 export const TurnPhase = Object.freeze({
   LOBBY: "lobby",
@@ -64,6 +64,7 @@ export interface GameConfig {
   contentProfileId?: string | null;
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;
+  gameplayEffects?: NetRiskGameplayEffects | null;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<Record<string, unknown>>;
