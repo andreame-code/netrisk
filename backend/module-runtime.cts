@@ -696,7 +696,17 @@ function loadClientManifest(moduleRoot: string, manifest: NetRiskModuleManifest)
   const warnings: string[] = [];
   const errors: string[] = [];
   const relativeClientManifestPath = manifest.entrypoints?.clientManifest || "client-manifest.json";
-  const absoluteClientManifestPath = path.join(moduleRoot, relativeClientManifestPath);
+  const absoluteClientManifestPath = path.resolve(moduleRoot, relativeClientManifestPath);
+
+  if (absoluteClientManifestPath !== moduleRoot && !absoluteClientManifestPath.startsWith(moduleRoot + path.sep)) {
+    errors.push(`Client manifest "${relativeClientManifestPath}" escapes the module directory.`);
+    return {
+      clientManifest: null,
+      clientManifestPath: null,
+      warnings,
+      errors
+    };
+  }
 
   if (!fs.existsSync(absoluteClientManifestPath)) {
     if (manifest.entrypoints?.clientManifest) {
