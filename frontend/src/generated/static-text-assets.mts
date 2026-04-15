@@ -3502,9 +3502,49 @@ h1 {
 }
 
 .tactical-map {
+  position: relative;
   display: grid;
   gap: 12px;
   height: 100%;
+}
+
+.map-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.map-board-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-board-surface.is-zoomed {
+  cursor: grab;
+}
+
+.map-board-surface.is-dragging {
+  cursor: grabbing;
+}
+
+.map-board-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.map-board-transform {
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .map-board {
@@ -3582,6 +3622,44 @@ h1 {
   stroke: var(--line);
   stroke-width: 6;
   stroke-linecap: round;
+}
+
+.map-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.map-control-button {
+  pointer-events: auto;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--heading);
+  box-shadow: var(--shadow-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+}
+
+.map-control-button-reset {
+  min-width: 78px;
+  border-radius: 999px;
+}
+
+.map-control-button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
 }
 
 .territory-node {
@@ -5109,18 +5187,23 @@ body[data-app-section="game"] .board-shell {
 }
 
 .game-map-stage .map {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 0;
-    height: auto;
-    width: 100%;
-    overflow: hidden;
-  }
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  overflow: hidden;
+}
+
+.game-map-stage .map-viewport,
+.game-map-stage .map-board-surface {
+  height: 100%;
+}
 
 .game-map-stage .map-board {
   aspect-ratio: auto;
-  width: 100%;
+  width: auto;
   height: auto;
   max-height: none;
   margin: 0;
