@@ -5,6 +5,7 @@ export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
 
 import type { ContentPackSummary } from "./content-packs.cjs";
+import type { PlayerPieceSet } from "./player-piece-sets.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
 
 export type NetRiskModuleKind = "content" | "gameplay" | "ui" | "hybrid";
@@ -171,6 +172,9 @@ export interface NetRiskModuleMapDefinition {
 export interface NetRiskModuleContentPackDefinition extends ContentPackSummary {
 }
 
+export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {
+}
+
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
   label: string;
@@ -227,6 +231,7 @@ export interface NetRiskResolvedGamePreset {
 export interface NetRiskServerModule {
   maps?: NetRiskModuleMapDefinition[] | null;
   contentPacks?: NetRiskModuleContentPackDefinition[] | null;
+  playerPieceSets?: NetRiskModulePlayerPieceSetDefinition[] | null;
   profiles?: {
     content?: NetRiskServerProfile[];
     gameplay?: NetRiskServerProfile[];
@@ -444,6 +449,29 @@ function normalizeModuleContentPacks(raw: unknown, sourcePath: string): NetRiskM
       defaultCardRuleSetId: String(entry.defaultCardRuleSetId).trim(),
       defaultVictoryRuleSetId: String(entry.defaultVictoryRuleSetId).trim(),
       defaultPieceSetId: String(entry.defaultPieceSetId).trim()
+    };
+  });
+}
+
+function normalizeModulePlayerPieceSets(raw: unknown, sourcePath: string): NetRiskModulePlayerPieceSetDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module player piece set definition in "${sourcePath}".`);
+    }
+
+    const palette = normalizeStringArray(entry.palette);
+    if (!palette.length) {
+      throw new Error(`Module player piece set "${String(entry.id).trim()}" in "${sourcePath}" must define a non-empty palette.`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      palette
     };
   });
 }
@@ -699,6 +727,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
   return {
     maps: normalizeModuleMaps(raw.maps, sourcePath),
     contentPacks: normalizeModuleContentPacks(raw.contentPacks, sourcePath),
+    playerPieceSets: normalizeModulePlayerPieceSets(raw.playerPieceSets, sourcePath),
     profiles
   };
 }

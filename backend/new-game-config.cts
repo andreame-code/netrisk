@@ -14,7 +14,8 @@ import {
 import {
   DEFAULT_PLAYER_PIECE_SET_ID,
   findPlayerPieceSet,
-  listPlayerPieceSets
+  listPlayerPieceSets,
+  type PlayerPieceSet
 } from "../shared/player-piece-sets.cjs";
 import {
   DEFAULT_PIECE_SKIN_ID,
@@ -121,6 +122,7 @@ interface ValidatedNewGameConfig {
   diceRuleSetId: string;
   victoryRuleSetId: string;
   pieceSetId: string;
+  selectedPieceSet: PlayerPieceSet;
   themeId: string;
   pieceSkinId: string;
   moduleSelection: NetRiskGameModuleSelection;
@@ -172,6 +174,7 @@ export function validateNewGameConfig(
   options: {
     random?: () => number;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
+    resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
   } = {}
 ): ValidatedNewGameConfig {
@@ -221,7 +224,10 @@ export function validateNewGameConfig(
   }
 
   const requestedPieceSetId = String(input.pieceSetId || selectedContentPack.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID);
-  const selectedPieceSet = findPlayerPieceSet(requestedPieceSetId);
+  const resolvePlayerPieceSet = typeof options.resolvePlayerPieceSet === "function"
+    ? options.resolvePlayerPieceSet
+    : findPlayerPieceSet;
+  const selectedPieceSet = resolvePlayerPieceSet(requestedPieceSetId);
   if (!selectedPieceSet) {
     throw createLocalizedError("Il set pedine selezionato non e supportato.", "newGame.invalidPieceSet");
   }
@@ -291,6 +297,7 @@ export function validateNewGameConfig(
     diceRuleSetId: selectedDiceRuleSet.id,
     victoryRuleSetId: selectedVictoryRuleSet.id,
     pieceSetId: selectedPieceSet.id,
+    selectedPieceSet,
     themeId: selectedTheme.id,
     pieceSkinId: selectedPieceSkin.id,
     extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
@@ -305,6 +312,7 @@ export function createConfiguredInitialState(
   options: {
     random?: () => number;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
+    resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
@@ -401,6 +409,7 @@ export function createConfiguredInitialState(
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
         resolveContentPack: options.resolveContentPack,
+        resolvePlayerPieceSet: options.resolvePlayerPieceSet,
         resolveSupportedMap: options.resolveSupportedMap
       });
       const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
@@ -429,6 +438,8 @@ export function createConfiguredInitialState(
           name: config.name,
           contentPackId: config.contentPackId,
           pieceSetId: config.pieceSetId,
+          pieceSetName: config.selectedPieceSet.name,
+          pieceSetPalette: [...config.selectedPieceSet.palette],
           ruleSetId: config.ruleSetId,
           ruleSetName: config.ruleSetName,
           mapId: config.mapId,

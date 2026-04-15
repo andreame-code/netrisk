@@ -24,6 +24,7 @@ import {
   type GameState,
   type MessageParams,
   type Player,
+  type PlayerPieceSet,
   type Territory
 } from "../../shared/models.cjs";
 import { detectVictory } from "./victory-detection.cjs";
@@ -210,6 +211,27 @@ export function getMapTerritories(state: EngineState): TerritoryDefinition[] {
 
 function getMapPositions(state: EngineState): MapPositions {
   return state && state.mapPositions ? state.mapPositions : {};
+}
+
+function resolvePlayerPieceSetFromState(state: EngineState): PlayerPieceSet {
+  const pieceSetId = typeof state.pieceSetId === "string" && state.pieceSetId
+    ? state.pieceSetId
+    : "classic";
+  const configuredPalette = Array.isArray(state.gameConfig?.pieceSetPalette)
+    ? state.gameConfig.pieceSetPalette.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    : [];
+
+  if (configuredPalette.length) {
+    return {
+      id: pieceSetId,
+      name: typeof state.gameConfig?.pieceSetName === "string" && state.gameConfig.pieceSetName.trim().length
+        ? state.gameConfig.pieceSetName
+        : pieceSetId,
+      palette: configuredPalette
+    };
+  }
+
+  return getPlayerPieceSet(pieceSetId);
 }
 
 export function territoriesOwnedBy(state: EngineState, playerId: string): TerritoryDefinition[] {
@@ -588,13 +610,21 @@ export function publicState(state: EngineState) {
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
-    gameConfig: state.gameConfig
-      ? {
-          ...state.gameConfig,
-          mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null),
-          pieceSkin: getPieceSkin(typeof state.gameConfig.pieceSkinId === "string" ? state.gameConfig.pieceSkinId : undefined)
-        }
-      : null,
+      gameConfig: state.gameConfig
+        ? {
+            ...state.gameConfig,
+            mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null),
+            pieceSet: (() => {
+              const pieceSet = resolvePlayerPieceSetFromState(state);
+              return {
+                id: pieceSet.id,
+                name: pieceSet.name,
+                paletteSize: Array.isArray(pieceSet.palette) ? pieceSet.palette.length : 0
+              };
+            })(),
+            pieceSkin: getPieceSkin(typeof state.gameConfig.pieceSkinId === "string" ? state.gameConfig.pieceSkinId : undefined)
+          }
+        : null,
     log: state.log,
     logEntries: state.logEntries,
     lastAction,
@@ -754,7 +784,7 @@ export function addPlayer(state: EngineState, name: string, options: AddPlayerOp
     return createDomainFailure("La lobby e piena.", "game.addPlayer.lobbyFull");
   }
 
-  const pieceSet = getPlayerPieceSet(state.pieceSetId || "classic");
+  const pieceSet = resolvePlayerPieceSetFromState(state);
   const player = createPlayer({
     id: randomId(),
     name: normalizedName,

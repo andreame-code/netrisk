@@ -194,6 +194,7 @@ export type {
   NetRiskModuleKind,
   NetRiskModuleMapDefinition,
   NetRiskModuleManifest,
+  NetRiskModulePlayerPieceSetDefinition,
   NetRiskModuleProfile,
   NetRiskModuleReference,
   NetRiskResolvedGamePreset,
