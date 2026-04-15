@@ -113,6 +113,38 @@ register("chooseAttack selects the highest-value favorable attack", () => {
   });
 });
 
+register("chooseAttack rispetta il minimo modulare per iniziare un attacco", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p1", armies: 2 },
+      { id: "d", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a"]),
+      makeTerritory("c", ["d"]),
+      makeTerritory("d", ["c"])
+    ]
+  });
+
+  state.gameConfig = {
+    gameplayEffects: {
+      attackMinimumArmies: 5
+    }
+  };
+
+  assert.equal(chooseAttack(state, "p1"), null);
+  state.territories.a.armies = 5;
+  assert.deepEqual(chooseAttack(state, "p1"), {
+    fromId: "a",
+    toId: "b",
+    score: 28
+  });
+});
+
 register("chooseConquestMove and chooseFortify respect AI heuristics", () => {
   const conquestState = createAiState({
     turnPhase: TurnPhase.ATTACK,
