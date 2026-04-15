@@ -69,6 +69,7 @@ interface ScenarioSetupLike {
 
 interface GameplayEffectsLike {
   conquestMinimumArmies?: number | null;
+  fortifyMinimumArmies?: number | null;
 }
 
 interface CombatSnapshot {
@@ -405,6 +406,12 @@ function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null 
 
 function resolvePendingConquestMinimumArmies(state: EngineState, maxArmies: number): number {
   const moduleMinimum = resolveGameplayEffects(state)?.conquestMinimumArmies;
+  const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
+  return Math.max(1, Math.min(maxArmies, desiredMinimum));
+}
+
+function resolveFortifyMinimumArmies(state: EngineState, maxArmies: number): number {
+  const moduleMinimum = resolveGameplayEffects(state)?.fortifyMinimumArmies;
   const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
   return Math.max(1, Math.min(maxArmies, desiredMinimum));
 }
@@ -972,6 +979,14 @@ export function applyFortify(
   const moveCount = Number(armiesToMove);
   if (!Number.isInteger(moveCount) || moveCount < 1) {
     return createActionFailure("Inserisci almeno 1 armata da spostare.", "game.fortify.invalidArmyCount");
+  }
+
+  const maxMove = Math.max(1, from.armies - 1);
+  const minimumMove = resolveFortifyMinimumArmies(state, maxMove);
+  if (moveCount < minimumMove) {
+    return createActionFailure("Devi spostare almeno " + minimumMove + " armate.", "game.fortify.minArmies", {
+      minArmies: minimumMove
+    });
   }
 
   if (fortifyRuleSet.requireLeaveOneBehind && from.armies - moveCount < 1) {
