@@ -33,7 +33,9 @@ import {
 } from "../shared/extensions.cjs";
 import {
   normalizeNetRiskGameModuleSelection,
-  type NetRiskGameModuleSelection
+  type NetRiskGameModuleSelection,
+  type NetRiskResolvedGamePreset,
+  type NetRiskResolvedModuleSetup
 } from "../shared/netrisk-modules.cjs";
 import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps } from "../shared/maps/index.cjs";
@@ -98,6 +100,7 @@ interface NewGameConfigInput {
   pieceSetId?: string;
   themeId?: string;
   pieceSkinId?: string;
+  gamePresetId?: string;
   activeModuleIds?: string[];
   contentProfileId?: string;
   gameplayProfileId?: string;
@@ -290,12 +293,16 @@ export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveGamePreset?: (input: {
+      gamePresetId?: string | null;
+      activeModuleIds?: string[];
+    }) => NetRiskResolvedGamePreset | Promise<NetRiskResolvedGamePreset | null> | null;
     resolveGameModuleConfigDefaults?: (input: {
       activeModuleIds?: string[];
       contentProfileId?: string | null;
       gameplayProfileId?: string | null;
       uiProfileId?: string | null;
-    }) => Partial<NewGameConfigInput> | Promise<Partial<NewGameConfigInput>>;
+    }) => NetRiskResolvedModuleSetup | Promise<NetRiskResolvedModuleSetup>;
     resolveGameModuleSelection?: (input: {
       activeModuleIds?: string[];
       contentProfileId?: string | null;
@@ -331,103 +338,145 @@ export function createConfiguredInitialState(
   gameInput: { name: string | undefined };
   config: ValidatedNewGameConfig;
 }> {
-  const resolvedProfileDefaults = typeof options.resolveGameModuleConfigDefaults === "function"
-    ? options.resolveGameModuleConfigDefaults({
-        activeModuleIds: Array.isArray(configInput.activeModuleIds) ? configInput.activeModuleIds : [],
-        contentProfileId: typeof configInput.contentProfileId === "string" ? configInput.contentProfileId : null,
-        gameplayProfileId: typeof configInput.gameplayProfileId === "string" ? configInput.gameplayProfileId : null,
-        uiProfileId: typeof configInput.uiProfileId === "string" ? configInput.uiProfileId : null
+  const resolvedPreset = typeof options.resolveGamePreset === "function"
+    ? options.resolveGamePreset({
+        gamePresetId: typeof configInput.gamePresetId === "string" ? configInput.gamePresetId : null,
+        activeModuleIds: Array.isArray(configInput.activeModuleIds) ? configInput.activeModuleIds : []
       })
     : null;
 
-  const finalizeWithResolvedInput = (resolvedDefaults: Partial<NewGameConfigInput> | null | undefined) => {
-    const hydratedConfigInput: NewGameConfigInput = {
-      ...(resolvedDefaults || {}),
+  const finalizeWithResolvedPreset = (resolvedGamePreset: NetRiskResolvedGamePreset | null | undefined) => {
+    const hydratedPresetInput: NewGameConfigInput = {
+      ...(typeof resolvedGamePreset?.defaults?.contentPackId === "string" ? { contentPackId: resolvedGamePreset.defaults.contentPackId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.ruleSetId === "string" ? { ruleSetId: resolvedGamePreset.defaults.ruleSetId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.pieceSetId === "string" ? { pieceSetId: resolvedGamePreset.defaults.pieceSetId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.mapId === "string" ? { mapId: resolvedGamePreset.defaults.mapId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.diceRuleSetId === "string" ? { diceRuleSetId: resolvedGamePreset.defaults.diceRuleSetId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.victoryRuleSetId === "string" ? { victoryRuleSetId: resolvedGamePreset.defaults.victoryRuleSetId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.themeId === "string" ? { themeId: resolvedGamePreset.defaults.themeId } : {}),
+      ...(typeof resolvedGamePreset?.defaults?.pieceSkinId === "string" ? { pieceSkinId: resolvedGamePreset.defaults.pieceSkinId } : {}),
+      ...(Array.isArray(resolvedGamePreset?.activeModuleIds) ? { activeModuleIds: resolvedGamePreset.activeModuleIds } : {}),
+      ...(typeof resolvedGamePreset?.contentProfileId === "string" ? { contentProfileId: resolvedGamePreset.contentProfileId } : {}),
+      ...(typeof resolvedGamePreset?.gameplayProfileId === "string" ? { gameplayProfileId: resolvedGamePreset.gameplayProfileId } : {}),
+      ...(typeof resolvedGamePreset?.uiProfileId === "string" ? { uiProfileId: resolvedGamePreset.uiProfileId } : {}),
+      ...(typeof resolvedGamePreset?.id === "string" ? { gamePresetId: resolvedGamePreset.id } : {}),
       ...configInput
     };
-    const config = validateNewGameConfig(hydratedConfigInput, options);
-    const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
-      ? options.resolveGameModuleSelection({
-          activeModuleIds: Array.isArray(hydratedConfigInput.activeModuleIds) ? hydratedConfigInput.activeModuleIds : [],
-          contentProfileId: typeof hydratedConfigInput.contentProfileId === "string" ? hydratedConfigInput.contentProfileId : null,
-          gameplayProfileId: typeof hydratedConfigInput.gameplayProfileId === "string" ? hydratedConfigInput.gameplayProfileId : null,
-          uiProfileId: typeof hydratedConfigInput.uiProfileId === "string" ? hydratedConfigInput.uiProfileId : null,
+
+    const resolvedProfileDefaults = typeof options.resolveGameModuleConfigDefaults === "function"
+      ? options.resolveGameModuleConfigDefaults({
+          activeModuleIds: Array.isArray(hydratedPresetInput.activeModuleIds) ? hydratedPresetInput.activeModuleIds : [],
+          contentProfileId: typeof hydratedPresetInput.contentProfileId === "string" ? hydratedPresetInput.contentProfileId : null,
+          gameplayProfileId: typeof hydratedPresetInput.gameplayProfileId === "string" ? hydratedPresetInput.gameplayProfileId : null,
+          uiProfileId: typeof hydratedPresetInput.uiProfileId === "string" ? hydratedPresetInput.uiProfileId : null
+        })
+      : null;
+
+    const finalizeWithResolvedInput = (resolvedSetup: NetRiskResolvedModuleSetup | null | undefined) => {
+      const resolvedDefaults = resolvedSetup?.defaults || null;
+      const hydratedConfigInput: NewGameConfigInput = {
+        ...(typeof resolvedDefaults?.contentPackId === "string" ? { contentPackId: resolvedDefaults.contentPackId } : {}),
+        ...(typeof resolvedDefaults?.ruleSetId === "string" ? { ruleSetId: resolvedDefaults.ruleSetId } : {}),
+        ...(typeof resolvedDefaults?.pieceSetId === "string" ? { pieceSetId: resolvedDefaults.pieceSetId } : {}),
+        ...(typeof resolvedDefaults?.mapId === "string" ? { mapId: resolvedDefaults.mapId } : {}),
+        ...(typeof resolvedDefaults?.diceRuleSetId === "string" ? { diceRuleSetId: resolvedDefaults.diceRuleSetId } : {}),
+        ...(typeof resolvedDefaults?.victoryRuleSetId === "string" ? { victoryRuleSetId: resolvedDefaults.victoryRuleSetId } : {}),
+        ...(typeof resolvedDefaults?.themeId === "string" ? { themeId: resolvedDefaults.themeId } : {}),
+        ...(typeof resolvedDefaults?.pieceSkinId === "string" ? { pieceSkinId: resolvedDefaults.pieceSkinId } : {}),
+        ...hydratedPresetInput
+      };
+      const config = validateNewGameConfig(hydratedConfigInput, options);
+      const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
+        ? options.resolveGameModuleSelection({
+            activeModuleIds: Array.isArray(hydratedConfigInput.activeModuleIds) ? hydratedConfigInput.activeModuleIds : [],
+            contentProfileId: typeof hydratedConfigInput.contentProfileId === "string" ? hydratedConfigInput.contentProfileId : null,
+            gameplayProfileId: typeof hydratedConfigInput.gameplayProfileId === "string" ? hydratedConfigInput.gameplayProfileId : null,
+            uiProfileId: typeof hydratedConfigInput.uiProfileId === "string" ? hydratedConfigInput.uiProfileId : null,
+            contentPackId: config.contentPackId,
+            pieceSetId: config.pieceSetId,
+            mapId: config.mapId,
+            diceRuleSetId: config.diceRuleSetId,
+            victoryRuleSetId: config.victoryRuleSetId,
+            themeId: config.themeId,
+            pieceSkinId: config.pieceSkinId
+          })
+        : config.moduleSelection;
+
+      const finalizeConfiguredState = (moduleSelection: NetRiskGameModuleSelection) => {
+        const state = createInitialState(config.selectedMap);
+        state.contentPackId = config.contentPackId;
+        state.diceRuleSetId = config.diceRuleSetId;
+        state.victoryRuleSetId = config.victoryRuleSetId;
+        state.pieceSetId = config.pieceSetId;
+        state.gameConfig = migrateGameConfigExtensions({
+          name: config.name,
           contentPackId: config.contentPackId,
           pieceSetId: config.pieceSetId,
+          ruleSetId: config.ruleSetId,
+          ruleSetName: config.ruleSetName,
           mapId: config.mapId,
+          mapName: config.mapName,
           diceRuleSetId: config.diceRuleSetId,
           victoryRuleSetId: config.victoryRuleSetId,
           themeId: config.themeId,
-          pieceSkinId: config.pieceSkinId
-        })
-      : config.moduleSelection;
+          pieceSkinId: config.pieceSkinId,
+          moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
+          activeModules: moduleSelection.activeModules,
+          gamePresetId: typeof hydratedConfigInput.gamePresetId === "string" ? hydratedConfigInput.gamePresetId : null,
+          contentProfileId: moduleSelection.contentProfileId || null,
+          gameplayProfileId: moduleSelection.gameplayProfileId || null,
+          uiProfileId: moduleSelection.uiProfileId || null,
+          scenarioSetup: resolvedSetup?.scenarioSetup || null,
+          extensionSchemaVersion: config.extensionSchemaVersion,
+          turnTimeoutHours: config.turnTimeoutHours,
+          totalPlayers: config.totalPlayers,
+          players: config.players
+        });
 
-    const finalizeConfiguredState = (moduleSelection: NetRiskGameModuleSelection) => {
-      const state = createInitialState(config.selectedMap);
-      state.contentPackId = config.contentPackId;
-      state.diceRuleSetId = config.diceRuleSetId;
-      state.victoryRuleSetId = config.victoryRuleSetId;
-      state.pieceSetId = config.pieceSetId;
-      state.gameConfig = migrateGameConfigExtensions({
-        name: config.name,
-        contentPackId: config.contentPackId,
-        pieceSetId: config.pieceSetId,
-        ruleSetId: config.ruleSetId,
-        ruleSetName: config.ruleSetName,
-        mapId: config.mapId,
-        mapName: config.mapName,
-        diceRuleSetId: config.diceRuleSetId,
-        victoryRuleSetId: config.victoryRuleSetId,
-        themeId: config.themeId,
-        pieceSkinId: config.pieceSkinId,
-        moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
-        activeModules: moduleSelection.activeModules,
-        contentProfileId: moduleSelection.contentProfileId || null,
-        gameplayProfileId: moduleSelection.gameplayProfileId || null,
-        uiProfileId: moduleSelection.uiProfileId || null,
-        extensionSchemaVersion: config.extensionSchemaVersion,
-        turnTimeoutHours: config.turnTimeoutHours,
-        totalPlayers: config.totalPlayers,
-        players: config.players
-      });
+        config.players.forEach((player) => {
+          if (player.type !== "ai") {
+            return;
+          }
 
-      config.players.forEach((player) => {
-        if (player.type !== "ai") {
-          return;
-        }
+          const result = addPlayer(state, player.name, { isAi: true });
+          if (!result.ok) {
+            throw createLocalizedError(
+              result.error || "Impossibile aggiungere il giocatore AI.",
+              result.errorKey || "newGame.addAiFailed",
+              result.errorParams
+            );
+          }
+        });
 
-        const result = addPlayer(state, player.name, { isAi: true });
-        if (!result.ok) {
-          throw createLocalizedError(
-            result.error || "Impossibile aggiungere il giocatore AI.",
-            result.errorKey || "newGame.addAiFailed",
-            result.errorParams
-          );
-        }
-      });
-
-      return {
-        state,
-        gameInput: { name: config.name },
-        config: {
-          ...config,
-          moduleSelection
-        }
+        return {
+          state,
+          gameInput: { name: config.name },
+          config: {
+            ...config,
+            moduleSelection
+          }
+        };
       };
+
+      if (resolvedModuleSelection && typeof (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then === "function") {
+        return (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then(finalizeConfiguredState);
+      }
+
+      return finalizeConfiguredState(resolvedModuleSelection as NetRiskGameModuleSelection);
     };
 
-    if (resolvedModuleSelection && typeof (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then === "function") {
-      return (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then(finalizeConfiguredState);
+    if (resolvedProfileDefaults && typeof (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then === "function") {
+      return (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then(finalizeWithResolvedInput);
     }
 
-    return finalizeConfiguredState(resolvedModuleSelection as NetRiskGameModuleSelection);
+    return finalizeWithResolvedInput(resolvedProfileDefaults as NetRiskResolvedModuleSetup | null | undefined);
   };
 
-  if (resolvedProfileDefaults && typeof (resolvedProfileDefaults as Promise<Partial<NewGameConfigInput>>).then === "function") {
-    return (resolvedProfileDefaults as Promise<Partial<NewGameConfigInput>>).then(finalizeWithResolvedInput);
+  if (resolvedPreset && typeof (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then === "function") {
+    return (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then(finalizeWithResolvedPreset);
   }
 
-  return finalizeWithResolvedInput(resolvedProfileDefaults as Partial<NewGameConfigInput> | null | undefined);
+  return finalizeWithResolvedPreset(resolvedPreset as NetRiskResolvedGamePreset | null | undefined);
 }
 
 export {

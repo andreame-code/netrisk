@@ -655,6 +655,7 @@ function createApp(options: CreateAppOptions = {}) {
           return {
             modules: moduleOptions.gameModules,
             enabledModules: moduleOptions.enabledModules,
+            gamePresets: moduleOptions.gamePresets,
             contentProfiles: moduleOptions.contentProfiles,
             gameplayProfiles: moduleOptions.gameplayProfiles,
             uiProfiles: moduleOptions.uiProfiles,
@@ -790,6 +791,10 @@ function createApp(options: CreateAppOptions = {}) {
         requireAuth,
         authorize,
         (body: Record<string, unknown>) => createConfiguredInitialState(body, {
+          resolveGamePreset: (input: {
+            gamePresetId?: string | null;
+            activeModuleIds?: string[];
+          }) => moduleRuntime.resolveGamePreset(input),
           resolveGameModuleConfigDefaults: (input: {
             activeModuleIds?: string[];
             contentProfileId?: string | null;

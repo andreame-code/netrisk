@@ -72,6 +72,7 @@ export interface ExtensionCatalogValidationResult {
 export interface ExtensionAwareGameConfig extends ExtensionSelection {
   moduleSchemaVersion?: number;
   activeModules?: NetRiskModuleReference[];
+  gamePresetId?: string | null;
   contentProfileId?: string | null;
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;

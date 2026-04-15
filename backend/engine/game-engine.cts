@@ -57,6 +57,16 @@ export interface GameConfig {
   [key: string]: unknown;
 }
 
+interface ScenarioTerritoryBonus {
+  territoryId: string;
+  armies: number;
+}
+
+interface ScenarioSetupLike {
+  territoryBonuses?: ScenarioTerritoryBonus[];
+  logMessage?: string | null;
+}
+
 interface CombatSnapshot {
   fromTerritoryId: string;
   toTerritoryId: string;
@@ -346,6 +356,61 @@ function readableMapName(mapId: string | null | undefined): string | null {
   return map ? map.name : (mapId || null);
 }
 
+function resolveScenarioSetup(state: EngineState): ScenarioSetupLike | null {
+  const rawScenarioSetup = state.gameConfig?.scenarioSetup;
+  if (!rawScenarioSetup || typeof rawScenarioSetup !== "object" || Array.isArray(rawScenarioSetup)) {
+    return null;
+  }
+
+  const territoryBonuses = Array.isArray((rawScenarioSetup as { territoryBonuses?: unknown }).territoryBonuses)
+    ? ((rawScenarioSetup as { territoryBonuses?: unknown[] }).territoryBonuses || [])
+        .filter((entry) => entry && typeof entry === "object" && !Array.isArray(entry))
+        .map((entry) => ({
+          territoryId: String((entry as { territoryId?: unknown }).territoryId || "").trim(),
+          armies: Number((entry as { armies?: unknown }).armies)
+        }))
+        .filter((entry) => entry.territoryId && Number.isInteger(entry.armies) && entry.armies > 0)
+    : [];
+
+  const logMessage = typeof (rawScenarioSetup as { logMessage?: unknown }).logMessage === "string"
+    ? String((rawScenarioSetup as { logMessage?: unknown }).logMessage).trim()
+    : null;
+
+  return {
+    territoryBonuses,
+    logMessage
+  };
+}
+
+function applyScenarioSetupOnStart(state: EngineState): void {
+  const scenarioSetup = resolveScenarioSetup(state);
+  if (!scenarioSetup) {
+    return;
+  }
+
+  let appliedBonuses = 0;
+  (scenarioSetup.territoryBonuses || []).forEach((entry) => {
+    const territoryState = state.territories[entry.territoryId];
+    if (!territoryState) {
+      return;
+    }
+
+    territoryState.armies += entry.armies;
+    appliedBonuses += 1;
+  });
+
+  if (!appliedBonuses && !scenarioSetup.logMessage) {
+    return;
+  }
+
+  appendLog(
+    state,
+    scenarioSetup.logMessage || `Scenario applied: ${appliedBonuses} territory bonuses activated.`,
+    "game.log.scenarioApplied",
+    { territoryCount: appliedBonuses }
+  );
+}
+
 export function publicState(state: EngineState) {
   migrateGameStateExtensions(state);
   const currentPlayer = getCurrentPlayer(state);
@@ -445,6 +510,8 @@ export function startGame(state: EngineState, random: () => number = secureRando
     player.surrendered = false;
     state.territories[territoryId] = { ownerId: player.id, armies: 1 };
   });
+
+  applyScenarioSetupOnStart(state);
 
   const firstPlayer = getCurrentPlayer(state);
   if (!firstPlayer || !firstPlayer.id) {

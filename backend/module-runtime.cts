@@ -24,12 +24,16 @@ const {
 import type {
   NetRiskModuleConfigDefaults,
   NetRiskContentContribution,
+  NetRiskGamePreset,
   NetRiskGameModuleSelection,
   NetRiskInstalledModule,
   NetRiskModuleClientManifest,
   NetRiskModuleManifest,
   NetRiskModuleProfile,
   NetRiskModuleReference,
+  NetRiskResolvedGamePreset,
+  NetRiskResolvedModuleSetup,
+  NetRiskScenarioSetup,
   NetRiskServerModule,
   NetRiskUiSlotContribution
 } from "../shared/netrisk-modules.cjs";
@@ -53,6 +57,7 @@ type ModuleOptionsSnapshot = {
   enabledModules: NetRiskModuleReference[];
   gameModules: NetRiskInstalledModule[];
   content: NetRiskContentContribution;
+  gamePresets: NetRiskGamePreset[];
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
@@ -94,6 +99,22 @@ function toModuleProfileArray(
   return profiles.map((profile) => ({
     ...profile,
     moduleId: profile.moduleId || moduleId
+  }));
+}
+
+function toGamePresetArray(
+  presets: NetRiskGamePreset[] | null | undefined,
+  moduleId: string
+): NetRiskGamePreset[] {
+  if (!Array.isArray(presets)) {
+    return [];
+  }
+
+  return presets.map((preset) => ({
+    ...preset,
+    moduleId: preset.moduleId || moduleId,
+    activeModuleIds: Array.isArray(preset.activeModuleIds) ? [...preset.activeModuleIds] : [],
+    defaults: preset.defaults ? { ...preset.defaults } : null
   }));
 }
 
@@ -201,6 +222,7 @@ function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInsta
                 reinforcementRuleSetIds: [...(moduleEntry.clientManifest.content.reinforcementRuleSetIds || [])]
               }
             : null,
+          gamePresets: toGamePresetArray(moduleEntry.clientManifest.gamePresets, moduleEntry.id),
           profiles: moduleEntry.clientManifest.profiles
             ? {
                 content: toModuleProfileArray(moduleEntry.clientManifest.profiles.content, moduleEntry.id),
@@ -279,6 +301,27 @@ function defaultCoreClientManifest(): NetRiskModuleClientManifest {
       stylesheets: [],
       locales: []
     },
+    gamePresets: [
+      {
+        id: "core.base.standard",
+        name: "Classic Core",
+        description: "Preset ufficiale base con profili core e setup classico.",
+        moduleId: CORE_MODULE_ID,
+        activeModuleIds: [],
+        contentProfileId: "core.classic-content",
+        gameplayProfileId: "core.standard-gameplay",
+        uiProfileId: "core.command-ui",
+        defaults: {
+          contentPackId: "core",
+          ruleSetId: "classic",
+          mapId: "classic-mini",
+          diceRuleSetId: "standard",
+          victoryRuleSetId: "conquest",
+          themeId: "command",
+          pieceSkinId: "classic-color"
+        }
+      }
+    ],
     profiles: {
       content: [
         {
@@ -501,6 +544,10 @@ function summarizeProfiles(modules: NetRiskInstalledModule[], profileKind: "cont
   });
 }
 
+function summarizeGamePresets(modules: NetRiskInstalledModule[]): NetRiskGamePreset[] {
+  return modules.flatMap((moduleEntry) => toGamePresetArray(moduleEntry.clientManifest?.gamePresets, moduleEntry.id));
+}
+
 function enabledReferences(modules: NetRiskInstalledModule[]): NetRiskModuleReference[] {
   return modules
     .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible && isNonEmptyString(moduleEntry.version))
@@ -533,6 +580,7 @@ function buildModuleOptions(modules: NetRiskInstalledModule[]): ModuleOptionsSna
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
       .map(cloneInstalledModule),
     content: aggregateContentContribution(enabled),
+    gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
       .sort((left, right) => (left.order || 0) - (right.order || 0))
@@ -568,6 +616,28 @@ function mergeConfigDefaults(
   });
 
   return next;
+}
+
+function mergeScenarioSetup(
+  target: NetRiskScenarioSetup,
+  scenarioSetup: NetRiskScenarioSetup | null | undefined
+): NetRiskScenarioSetup {
+  if (!scenarioSetup) {
+    return target;
+  }
+
+  const nextBonuses = new Map<string, number>();
+  (target.territoryBonuses || []).forEach((entry) => {
+    nextBonuses.set(entry.territoryId, (nextBonuses.get(entry.territoryId) || 0) + entry.armies);
+  });
+  (scenarioSetup.territoryBonuses || []).forEach((entry) => {
+    nextBonuses.set(entry.territoryId, (nextBonuses.get(entry.territoryId) || 0) + entry.armies);
+  });
+
+  return {
+    territoryBonuses: Array.from(nextBonuses.entries()).map(([territoryId, armies]) => ({ territoryId, armies })),
+    logMessage: target.logMessage || scenarioSetup.logMessage || null
+  };
 }
 
 function createModuleRuntime(options: ModuleRuntimeOptions) {
@@ -862,7 +932,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       contentProfileId?: string | null;
       gameplayProfileId?: string | null;
       uiProfileId?: string | null;
-    } = {}): Promise<NetRiskModuleConfigDefaults> {
+    } = {}): Promise<NetRiskResolvedModuleSetup> {
       const optionsSnapshot = await getModuleOptions();
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
@@ -870,6 +940,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
       const selectedModuleIds = new Set(selectedModuleEntries.map((moduleEntry) => moduleEntry.id));
       const resolvedDefaults: NetRiskModuleConfigDefaults = {};
+      let resolvedScenarioSetup: NetRiskScenarioSetup = {
+        territoryBonuses: [],
+        logMessage: null
+      };
 
       if (input.contentProfileId) {
         selectedModuleEntries.forEach((moduleEntry) => {
@@ -877,6 +951,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.content?.find((entry) => entry.id === input.contentProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
       }
@@ -887,6 +962,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.gameplay?.find((entry) => entry.id === input.gameplayProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
       }
@@ -897,6 +973,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           const profile = serverModule?.profiles?.ui?.find((entry) => entry.id === input.uiProfileId);
           if (profile) {
             Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
           }
         });
       }
@@ -913,7 +990,50 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         throw new Error(`Unknown UI profile "${input.uiProfileId}".`);
       }
 
-      return resolvedDefaults;
+      return {
+        defaults: resolvedDefaults,
+        scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
+          ? resolvedScenarioSetup
+          : null
+      };
+    },
+    async resolveGamePreset(input: {
+      gamePresetId?: string | null;
+      activeModuleIds?: string[];
+    } = {}): Promise<NetRiskResolvedGamePreset | null> {
+      if (!isNonEmptyString(input.gamePresetId)) {
+        return null;
+      }
+
+      const optionsSnapshot = await getModuleOptions();
+      const preset = optionsSnapshot.gamePresets.find((entry) => entry.id === input.gamePresetId) || null;
+      if (!preset) {
+        throw new Error(`Unknown game preset "${input.gamePresetId}".`);
+      }
+
+      const activeModuleIds = Array.from(new Set([
+        ...((Array.isArray(preset.activeModuleIds) ? preset.activeModuleIds : []).filter((value) => isNonEmptyString(value))),
+        ...(preset.moduleId && preset.moduleId !== CORE_MODULE_ID ? [preset.moduleId] : [])
+      ]));
+
+      activeModuleIds.forEach((moduleId) => {
+        const match = optionsSnapshot.gameModules.find((moduleEntry) => moduleEntry.id === moduleId);
+        if (!match || !match.enabled || !match.compatible) {
+          throw new Error(`Game preset "${input.gamePresetId}" requires unavailable module "${moduleId}".`);
+        }
+      });
+
+      return {
+        id: preset.id,
+        name: preset.name,
+        description: preset.description || null,
+        moduleId: preset.moduleId || null,
+        activeModuleIds,
+        contentProfileId: preset.contentProfileId || null,
+        gameplayProfileId: preset.gameplayProfileId || null,
+        uiProfileId: preset.uiProfileId || null,
+        defaults: preset.defaults ? { ...preset.defaults } : null
+      };
     },
     async resolveGameSelection(input: {
       activeModuleIds?: string[];
