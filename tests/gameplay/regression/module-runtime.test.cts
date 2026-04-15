@@ -292,3 +292,69 @@ register("module runtime protegge il catalogo admin da accessi non autorizzati",
     assert.equal(nonAdminResponse.statusCode, 403);
   });
 });
+
+register("module runtime filtra il catalogo setup e blocca contenuti non esposti dai moduli attivi", async () => {
+  await withModuleServer([
+    {
+      dir: "core.base",
+      manifest: {
+        schemaVersion: 1,
+        id: "core.base",
+        version: "1.0.0",
+        displayName: "Core Restricted",
+        engineVersion: "1.0.0",
+        kind: "hybrid",
+        dependencies: [],
+        conflicts: [],
+        capabilities: [
+          { kind: "map", scope: "game", description: "Restricted core maps" },
+          { kind: "site-theme", scope: "global", description: "Restricted core themes" }
+        ],
+        entrypoints: {
+          clientManifest: "client-manifest.json"
+        }
+      },
+      clientManifest: {
+        content: {
+          mapIds: ["classic-mini"],
+          siteThemeIds: ["command"],
+          pieceSkinIds: ["classic-color"],
+          playerPieceSetIds: ["classic"],
+          contentPackIds: ["core"],
+          diceRuleSetIds: ["standard"],
+          cardRuleSetIds: ["standard"],
+          victoryRuleSetIds: ["conquest"],
+          fortifyRuleSetIds: ["standard"],
+          reinforcementRuleSetIds: ["standard"]
+        },
+        profiles: {
+          content: [{ id: "core.classic-content", name: "Classic Content" }],
+          gameplay: [{ id: "core.standard-gameplay", name: "Standard Gameplay" }],
+          ui: [{ id: "core.command-ui", name: "Command UI" }]
+        }
+      }
+    }
+  ], async ({ app, adminSessionToken }) => {
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.deepEqual(optionsResponse.payload.maps.map((entry: any) => entry.id), ["classic-mini"]);
+    assert.deepEqual(optionsResponse.payload.diceRuleSets.map((entry: any) => entry.id), ["standard"]);
+    assert.deepEqual(optionsResponse.payload.victoryRuleSets.map((entry: any) => entry.id), ["conquest"]);
+    assert.deepEqual(optionsResponse.payload.themes.map((entry: any) => entry.id), ["command"]);
+    assert.deepEqual(optionsResponse.payload.pieceSkins.map((entry: any) => entry.id), ["classic-color"]);
+    assert.deepEqual(optionsResponse.payload.playerPieceSets.map((entry: any) => entry.id), ["classic"]);
+    assert.deepEqual(optionsResponse.payload.contentPacks.map((entry: any) => entry.id), ["core"]);
+
+    const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+    assert.equal(moduleOptionsResponse.statusCode, 200);
+    assert.deepEqual(moduleOptionsResponse.payload.content.mapIds, ["classic-mini"]);
+    assert.deepEqual(moduleOptionsResponse.payload.content.siteThemeIds, ["command"]);
+
+    const invalidCreateResponse = await callApp(app, "POST", "/api/games", {
+      name: "Restricted Catalog Game",
+      mapId: "world-classic"
+    }, authHeaders(adminSessionToken));
+    assert.equal(invalidCreateResponse.statusCode, 400);
+    assert.equal(String(invalidCreateResponse.payload.error || invalidCreateResponse.payload.message).includes("Selected map"), true);
+  });
+});

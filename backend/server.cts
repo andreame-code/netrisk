@@ -130,6 +130,15 @@ const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
 
+function filterCatalogByAllowedIds<T extends { id: string }>(entries: T[], allowedIds: string[] | null | undefined): T[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries;
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id));
+}
+
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
   gameId: string | null;
@@ -628,20 +637,20 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
+      const moduleOptions = await moduleRuntime.getModuleOptions();
       await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
-        listSupportedMaps,
-        listDiceRuleSets,
-        listVictoryRuleSets,
-        listVisualThemes,
-        listPieceSkins,
+        () => filterCatalogByAllowedIds(listSupportedMaps(), moduleOptions.content?.mapIds),
+        () => filterCatalogByAllowedIds(listDiceRuleSets(), moduleOptions.content?.diceRuleSetIds),
+        () => filterCatalogByAllowedIds(listVictoryRuleSets(), moduleOptions.content?.victoryRuleSetIds),
+        () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
+        () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
         listTurnTimeoutHoursOptions,
         sendJson,
-        listPlayerPieceSets,
-        listContentPacks,
+        () => filterCatalogByAllowedIds(listPlayerPieceSets(), moduleOptions.content?.playerPieceSetIds),
+        () => filterCatalogByAllowedIds(listContentPacks(), moduleOptions.content?.contentPackIds),
         async () => {
-          const moduleOptions = await moduleRuntime.getModuleOptions();
           return {
             modules: moduleOptions.gameModules,
             enabledModules: moduleOptions.enabledModules,
@@ -785,6 +794,13 @@ function createApp(options: CreateAppOptions = {}) {
             contentProfileId?: string | null;
             gameplayProfileId?: string | null;
             uiProfileId?: string | null;
+            contentPackId?: string | null;
+            pieceSetId?: string | null;
+            mapId?: string | null;
+            diceRuleSetId?: string | null;
+            victoryRuleSetId?: string | null;
+            themeId?: string | null;
+            pieceSkinId?: string | null;
           }) => moduleRuntime.resolveGameSelection(input)
         }),
         addPlayer,

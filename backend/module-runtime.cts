@@ -1,5 +1,14 @@
 const fs = require("fs");
 const path = require("path");
+const { listCardRuleSets } = require("../shared/cards.cjs");
+const { listContentPacks } = require("../shared/content-packs.cjs");
+const { listDiceRuleSets } = require("../shared/dice.cjs");
+const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
+const { listSupportedMaps } = require("../shared/maps/index.cjs");
+const { listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
+const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
+const { listSiteThemes } = require("../shared/site-themes.cjs");
+const { listPieceSkins, listVictoryRuleSets } = require("../shared/extensions.cjs");
 const {
   CORE_MODULE_ID,
   CORE_MODULE_VERSION,
@@ -12,6 +21,7 @@ const {
 } = require("../shared/netrisk-modules.cjs");
 
 import type {
+  NetRiskContentContribution,
   NetRiskGameModuleSelection,
   NetRiskInstalledModule,
   NetRiskModuleClientManifest,
@@ -39,6 +49,7 @@ type ModuleOptionsSnapshot = {
   modules: NetRiskInstalledModule[];
   enabledModules: NetRiskModuleReference[];
   gameModules: NetRiskInstalledModule[];
+  content: NetRiskContentContribution;
   uiSlots: NetRiskUiSlotContribution[];
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
@@ -46,6 +57,20 @@ type ModuleOptionsSnapshot = {
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
+const CONTENT_CONTRIBUTION_KEYS = [
+  "mapIds",
+  "siteThemeIds",
+  "pieceSkinIds",
+  "playerPieceSetIds",
+  "contentPackIds",
+  "diceRuleSetIds",
+  "cardRuleSetIds",
+  "victoryRuleSetIds",
+  "fortifyRuleSetIds",
+  "reinforcementRuleSetIds"
+] as const;
+
+type ContentContributionKey = (typeof CONTENT_CONTRIBUTION_KEYS)[number];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -67,6 +92,59 @@ function toModuleProfileArray(
     ...profile,
     moduleId: profile.moduleId || moduleId
   }));
+}
+
+function emptyContentContribution(): NetRiskContentContribution {
+  return {
+    mapIds: [],
+    siteThemeIds: [],
+    pieceSkinIds: [],
+    playerPieceSetIds: [],
+    contentPackIds: [],
+    diceRuleSetIds: [],
+    cardRuleSetIds: [],
+    victoryRuleSetIds: [],
+    fortifyRuleSetIds: [],
+    reinforcementRuleSetIds: []
+  };
+}
+
+function aggregateContentContribution(modules: NetRiskInstalledModule[]): NetRiskContentContribution {
+  const contribution = emptyContentContribution();
+
+  modules.forEach((moduleEntry) => {
+    const content = moduleEntry.clientManifest?.content;
+    if (!content) {
+      return;
+    }
+
+    CONTENT_CONTRIBUTION_KEYS.forEach((key) => {
+      const currentValues = contribution[key] || [];
+      const nextValues = Array.isArray(content[key]) ? content[key] : [];
+      contribution[key] = Array.from(new Set([...currentValues, ...nextValues]));
+    });
+  });
+
+  return contribution;
+}
+
+function moduleEntriesForSelection(modules: NetRiskInstalledModule[], moduleIds: string[]): NetRiskInstalledModule[] {
+  const requestedIds = new Set([CORE_MODULE_ID, ...moduleIds]);
+  return modules.filter((moduleEntry) => requestedIds.has(moduleEntry.id));
+}
+
+function ensureAllowedContentId(
+  kind: string,
+  requestedId: string | null | undefined,
+  availableIds: string[] | null | undefined
+): void {
+  if (!isNonEmptyString(requestedId) || !Array.isArray(availableIds) || !availableIds.length) {
+    return;
+  }
+
+  if (!availableIds.includes(requestedId)) {
+    throw new Error(`Selected ${kind} "${requestedId}" is not exposed by the active modules.`);
+  }
 }
 
 function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInstalledModule {
@@ -163,6 +241,18 @@ function defaultCoreManifest(): NetRiskModuleManifest {
 
 function defaultCoreClientManifest(): NetRiskModuleClientManifest {
   return {
+    content: {
+      mapIds: listSupportedMaps().map((map: { id: string }) => map.id),
+      siteThemeIds: listSiteThemes().map((theme: { id: string }) => theme.id),
+      pieceSkinIds: listPieceSkins().map((skin: { id: string }) => skin.id),
+      playerPieceSetIds: listPlayerPieceSets().map((pieceSet: { id: string }) => pieceSet.id),
+      contentPackIds: listContentPacks().map((pack: { id: string }) => pack.id),
+      diceRuleSetIds: listDiceRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
+      cardRuleSetIds: listCardRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
+      victoryRuleSetIds: listVictoryRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
+      fortifyRuleSetIds: listFortifyRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
+      reinforcementRuleSetIds: listReinforcementRuleSets().map((ruleSet: { id: string }) => ruleSet.id)
+    },
     ui: {
       slots: [
         {
@@ -350,6 +440,7 @@ function buildModuleOptions(modules: NetRiskInstalledModule[]): ModuleOptionsSna
     gameModules: enabled
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
       .map(cloneInstalledModule),
+    content: aggregateContentContribution(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
       .sort((left, right) => (left.order || 0) - (right.order || 0))
@@ -635,12 +726,19 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       contentProfileId?: string | null;
       gameplayProfileId?: string | null;
       uiProfileId?: string | null;
+      contentPackId?: string | null;
+      pieceSetId?: string | null;
+      mapId?: string | null;
+      diceRuleSetId?: string | null;
+      victoryRuleSetId?: string | null;
+      themeId?: string | null;
+      pieceSkinId?: string | null;
     } = {}): Promise<NetRiskGameModuleSelection> {
       const optionsSnapshot = await getModuleOptions();
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
-      const selectedModules = requestedIds.map((moduleId) => {
+      const selectedModuleRefs = requestedIds.map((moduleId) => {
         const match = optionsSnapshot.gameModules.find((moduleEntry) => moduleEntry.id === moduleId);
         if (!match || !match.version) {
           throw new Error(`Game module "${moduleId}" is not available.`);
@@ -651,9 +749,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         };
       });
 
-      const availableContentProfiles = new Set(optionsSnapshot.contentProfiles.map((profile) => profile.id));
-      const availableGameplayProfiles = new Set(optionsSnapshot.gameplayProfiles.map((profile) => profile.id));
-      const availableUiProfiles = new Set(optionsSnapshot.uiProfiles.map((profile) => profile.id));
+      const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
+      const selectedContentProfiles = summarizeProfiles(selectedModuleEntries, "content");
+      const selectedGameplayProfiles = summarizeProfiles(selectedModuleEntries, "gameplay");
+      const selectedUiProfiles = summarizeProfiles(selectedModuleEntries, "ui");
+      const selectedContent = aggregateContentContribution(selectedModuleEntries);
+      const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
+      const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));
+      const availableUiProfiles = new Set(selectedUiProfiles.map((profile) => profile.id));
 
       if (input.contentProfileId && !availableContentProfiles.has(input.contentProfileId)) {
         throw new Error(`Unknown content profile "${input.contentProfileId}".`);
@@ -667,8 +770,16 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         throw new Error(`Unknown UI profile "${input.uiProfileId}".`);
       }
 
+      ensureAllowedContentId("content pack", input.contentPackId || null, selectedContent.contentPackIds);
+      ensureAllowedContentId("piece set", input.pieceSetId || null, selectedContent.playerPieceSetIds);
+      ensureAllowedContentId("map", input.mapId || null, selectedContent.mapIds);
+      ensureAllowedContentId("dice rule set", input.diceRuleSetId || null, selectedContent.diceRuleSetIds);
+      ensureAllowedContentId("victory rule set", input.victoryRuleSetId || null, selectedContent.victoryRuleSetIds);
+      ensureAllowedContentId("theme", input.themeId || null, selectedContent.siteThemeIds);
+      ensureAllowedContentId("piece skin", input.pieceSkinId || null, selectedContent.pieceSkinIds);
+
       return normalizeNetRiskGameModuleSelection({
-        activeModules: [coreModuleReference(), ...selectedModules],
+        activeModules: [coreModuleReference(), ...selectedModuleRefs],
         contentProfileId: input.contentProfileId || null,
         gameplayProfileId: input.gameplayProfileId || null,
         uiProfileId: input.uiProfileId || null
