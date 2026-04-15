@@ -15,6 +15,7 @@
     { "kind": "gameplay-hook", "hook": "setup.profile", "scope": "game", "description": "Espone un profilo demo selezionabile in creazione partita." }
   ],
   "entrypoints": {
+    "server": "server-module.cts",
     "clientManifest": "client-manifest.json"
   },
   "assetsDir": "assets",

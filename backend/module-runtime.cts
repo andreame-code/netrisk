@@ -16,11 +16,13 @@ const {
   coreModuleReference,
   isEngineVersionCompatible,
   normalizeNetRiskGameModuleSelection,
+  validateNetRiskServerModule,
   validateNetRiskModuleClientManifest,
   validateNetRiskModuleManifest
 } = require("../shared/netrisk-modules.cjs");
 
 import type {
+  NetRiskModuleConfigDefaults,
   NetRiskContentContribution,
   NetRiskGameModuleSelection,
   NetRiskInstalledModule,
@@ -28,6 +30,7 @@ import type {
   NetRiskModuleManifest,
   NetRiskModuleProfile,
   NetRiskModuleReference,
+  NetRiskServerModule,
   NetRiskUiSlotContribution
 } from "../shared/netrisk-modules.cjs";
 
@@ -331,6 +334,95 @@ function safeReadJson(filePath: string): unknown {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function resolveCompiledServerEntrypointPath(projectRoot: string, absoluteSourcePath: string): string | null {
+  const relativePath = path.relative(projectRoot, absoluteSourcePath);
+  if (!relativePath || relativePath.startsWith("..")) {
+    return null;
+  }
+
+  if (absoluteSourcePath.endsWith(".cts")) {
+    return path.join(projectRoot, ".tsbuild", relativePath.replace(/\.cts$/i, ".cjs"));
+  }
+
+  if (absoluteSourcePath.endsWith(".ts")) {
+    return path.join(projectRoot, ".tsbuild", relativePath.replace(/\.ts$/i, ".js"));
+  }
+
+  return null;
+}
+
+function loadServerModule(
+  moduleRoot: string,
+  manifest: NetRiskModuleManifest,
+  projectRoot: string
+): {
+  serverModule: NetRiskServerModule | null;
+  warnings: string[];
+  errors: string[];
+} {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  const relativeServerPath = manifest.entrypoints?.server;
+
+  if (!relativeServerPath) {
+    return {
+      serverModule: null,
+      warnings,
+      errors
+    };
+  }
+
+  const absoluteSourcePath = path.resolve(moduleRoot, relativeServerPath);
+  if (absoluteSourcePath !== moduleRoot && !absoluteSourcePath.startsWith(moduleRoot + path.sep)) {
+    errors.push(`Server entrypoint "${relativeServerPath}" escapes the module directory.`);
+    return {
+      serverModule: null,
+      warnings,
+      errors
+    };
+  }
+
+  let requirePath = absoluteSourcePath;
+  if (absoluteSourcePath.endsWith(".cts") || absoluteSourcePath.endsWith(".ts")) {
+    const compiledPath = resolveCompiledServerEntrypointPath(projectRoot, absoluteSourcePath);
+    if (!compiledPath || !fs.existsSync(compiledPath)) {
+      errors.push(`Compiled server entrypoint not found for "${relativeServerPath}".`);
+      return {
+        serverModule: null,
+        warnings,
+        errors
+      };
+    }
+
+    requirePath = compiledPath;
+  } else if (!fs.existsSync(requirePath)) {
+    errors.push(`Server entrypoint not found: ${relativeServerPath}.`);
+    return {
+      serverModule: null,
+      warnings,
+      errors
+    };
+  }
+
+  try {
+    delete require.cache[require.resolve(requirePath)];
+    const requiredModule = require(requirePath);
+    const exported = requiredModule && requiredModule.default ? requiredModule.default : requiredModule;
+    return {
+      serverModule: validateNetRiskServerModule(exported, requirePath),
+      warnings,
+      errors
+    };
+  } catch (error: unknown) {
+    errors.push(error instanceof Error ? error.message : String(error));
+    return {
+      serverModule: null,
+      warnings,
+      errors
+    };
+  }
+}
+
 function loadClientManifest(moduleRoot: string, manifest: NetRiskModuleManifest): {
   clientManifest: NetRiskModuleClientManifest | null;
   clientManifestPath: string | null;
@@ -451,10 +543,38 @@ function buildModuleOptions(modules: NetRiskInstalledModule[]): ModuleOptionsSna
   };
 }
 
+function mergeConfigDefaults(
+  target: NetRiskModuleConfigDefaults,
+  defaults: NetRiskModuleConfigDefaults | null | undefined
+): NetRiskModuleConfigDefaults {
+  if (!defaults) {
+    return target;
+  }
+
+  const next = { ...target };
+  ([
+    "contentPackId",
+    "ruleSetId",
+    "pieceSetId",
+    "mapId",
+    "diceRuleSetId",
+    "victoryRuleSetId",
+    "themeId",
+    "pieceSkinId"
+  ] as const).forEach((key) => {
+    if (!isNonEmptyString(next[key]) && isNonEmptyString(defaults[key])) {
+      next[key] = defaults[key];
+    }
+  });
+
+  return next;
+}
+
 function createModuleRuntime(options: ModuleRuntimeOptions) {
   const modulesRoot = path.join(options.projectRoot, "modules");
   let cachedModules: NetRiskInstalledModule[] = [];
   let cachedState: CatalogState | null = null;
+  let serverModulesById = new Map<string, NetRiskServerModule>();
 
   async function loadCatalogState(): Promise<CatalogState> {
     if (cachedState) {
@@ -491,16 +611,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       try {
         const manifest = validateNetRiskModuleManifest(safeReadJson(manifestPath), manifestPath);
         const clientManifestResult = loadClientManifest(moduleRoot, manifest);
+        const serverModuleResult = loadServerModule(moduleRoot, manifest, options.projectRoot);
         const moduleEntry = baseInstalledModuleFromManifest(
           manifest,
           moduleRoot,
           enabledById,
           clientManifestResult.clientManifest,
           clientManifestResult.clientManifestPath,
-          clientManifestResult.warnings,
-          clientManifestResult.errors
+          [...clientManifestResult.warnings, ...serverModuleResult.warnings],
+          [...clientManifestResult.errors, ...serverModuleResult.errors]
         );
+        if (serverModuleResult.serverModule) {
+          serverModulesById.set(manifest.id, serverModuleResult.serverModule);
+        }
         if (clientManifestResult.errors.length) {
+          moduleEntry.compatible = false;
+          moduleEntry.status = "error";
+        }
+        if (serverModuleResult.errors.length) {
           moduleEntry.compatible = false;
           moduleEntry.status = "error";
         }
@@ -531,6 +659,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function buildCatalog(): Promise<NetRiskInstalledModule[]> {
     const catalogState = await loadCatalogState();
+    serverModulesById = new Map<string, NetRiskServerModule>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -555,6 +684,13 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       coreWarnings = coreWarnings.concat(clientManifestResult.warnings);
       coreErrors = coreErrors.concat(clientManifestResult.errors);
       coreClientManifestPath = clientManifestResult.clientManifestPath;
+
+      const serverModuleResult = loadServerModule(coreModuleRoot, coreManifest, options.projectRoot);
+      if (serverModuleResult.serverModule) {
+        serverModulesById.set(CORE_MODULE_ID, serverModuleResult.serverModule);
+      }
+      coreWarnings = coreWarnings.concat(serverModuleResult.warnings);
+      coreErrors = coreErrors.concat(serverModuleResult.errors);
     }
 
     const filesystemModules = scanFilesystemModules(catalogState.enabledById).filter((moduleEntry) => moduleEntry.id !== CORE_MODULE_ID);
@@ -648,7 +784,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return buildModuleOptions(await ensureCatalog());
   }
 
-  return {
+    return {
     async rescan() {
       cachedModules = [];
       return ensureCatalog();
@@ -720,6 +856,64 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       await saveCatalogState(nextState);
       cachedModules = [];
       return ensureCatalog();
+    },
+    async resolveGameConfigDefaults(input: {
+      activeModuleIds?: string[];
+      contentProfileId?: string | null;
+      gameplayProfileId?: string | null;
+      uiProfileId?: string | null;
+    } = {}): Promise<NetRiskModuleConfigDefaults> {
+      const optionsSnapshot = await getModuleOptions();
+      const requestedIds = Array.isArray(input.activeModuleIds)
+        ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
+        : [];
+      const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
+      const selectedModuleIds = new Set(selectedModuleEntries.map((moduleEntry) => moduleEntry.id));
+      const resolvedDefaults: NetRiskModuleConfigDefaults = {};
+
+      if (input.contentProfileId) {
+        selectedModuleEntries.forEach((moduleEntry) => {
+          const serverModule = serverModulesById.get(moduleEntry.id);
+          const profile = serverModule?.profiles?.content?.find((entry) => entry.id === input.contentProfileId);
+          if (profile) {
+            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+          }
+        });
+      }
+
+      if (input.gameplayProfileId) {
+        selectedModuleEntries.forEach((moduleEntry) => {
+          const serverModule = serverModulesById.get(moduleEntry.id);
+          const profile = serverModule?.profiles?.gameplay?.find((entry) => entry.id === input.gameplayProfileId);
+          if (profile) {
+            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+          }
+        });
+      }
+
+      if (input.uiProfileId) {
+        selectedModuleEntries.forEach((moduleEntry) => {
+          const serverModule = serverModulesById.get(moduleEntry.id);
+          const profile = serverModule?.profiles?.ui?.find((entry) => entry.id === input.uiProfileId);
+          if (profile) {
+            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
+          }
+        });
+      }
+
+      if (input.contentProfileId && !optionsSnapshot.contentProfiles.some((profile) => profile.id === input.contentProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+        throw new Error(`Unknown content profile "${input.contentProfileId}".`);
+      }
+
+      if (input.gameplayProfileId && !optionsSnapshot.gameplayProfiles.some((profile) => profile.id === input.gameplayProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+        throw new Error(`Unknown gameplay profile "${input.gameplayProfileId}".`);
+      }
+
+      if (input.uiProfileId && !optionsSnapshot.uiProfiles.some((profile) => profile.id === input.uiProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+        throw new Error(`Unknown UI profile "${input.uiProfileId}".`);
+      }
+
+      return resolvedDefaults;
     },
     async resolveGameSelection(input: {
       activeModuleIds?: string[];

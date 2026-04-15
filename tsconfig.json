@@ -17,6 +17,7 @@
   "include": [
     "backend/**/*",
     "api/**/*",
+    "modules/**/*.cts",
     "shared/**/*",
     "scripts/**/*",
     "supabase/**/*.cts",
