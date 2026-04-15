@@ -134,6 +134,27 @@ register("validateAttackAttempt rejects attacker territories with fewer than two
   assert.equal(result.code, "INSUFFICIENT_ARMIES");
 });
 
+register("validateAttackAttempt applica il minimo modulare sul territorio attaccante", () => {
+  const { graph, state } = setupValidationState();
+  state.gameConfig = {
+    gameplayEffects: {
+      attackMinimumArmies: 4
+    }
+  };
+
+  const blocked = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.code, "INSUFFICIENT_ARMIES");
+  assert.deepEqual(blocked.details, {
+    armies: 3,
+    minimumArmies: 4
+  });
+
+  state.territories.a.armies = 4;
+  const allowed = validateAttackAttempt(state, graph, "p1", "a", "b");
+  assert.equal(allowed.ok, true);
+});
+
 register("validateAttackAttempt rejects defenders without an enemy owner", () => {
   const { graph, state } = setupValidationState();
   state.territories.b.ownerId = null;
