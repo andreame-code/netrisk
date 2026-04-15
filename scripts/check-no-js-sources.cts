@@ -8,6 +8,7 @@ const allowedPathPatterns = [
   /^\.gitignore$/,
   /^\.githooks\/.+$/,
   /^\.github\/.+\.yml$/,
+  /^LICENSE$/,
   /^package(?:-lock)?\.json$/,
   /^tsconfig(?:\.[^/]+)?\.json$/,
   /^vercel\.json$/,
