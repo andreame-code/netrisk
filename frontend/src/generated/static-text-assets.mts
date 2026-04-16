@@ -3633,11 +3633,13 @@ h1 {
 
 .map-controls {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 84px;
+  right: 14px;
   z-index: 5;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
   pointer-events: none;
 }
 
@@ -3657,11 +3659,6 @@ h1 {
   font: inherit;
   font-weight: 700;
   backdrop-filter: blur(12px);
-}
-
-.map-control-button-reset {
-  min-width: 78px;
-  border-radius: 999px;
 }
 
 .map-control-button:disabled {
