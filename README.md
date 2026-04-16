@@ -99,6 +99,10 @@ npm start
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
 npm run vercel:env:check
+npm run lint
+npm run lint:fix
+npm run format
+npm run format:check
 npm test
 npm run test:gameplay
 npm run test:e2e
@@ -111,11 +115,25 @@ npm run test:all:e2e
 - `npm run backup:data`: creates a consistent SQLite snapshot in `data/backups/`
 - `npm run backup:check -- --file ...`: verifies that a SQLite backup is readable and complete
 - `npm run vercel:env:check`: checks parity between required deploy variables and expected configuration
+- `npm run lint`: runs the warning-first ESLint baseline for repository TypeScript sources
+- `npm run lint:fix`: applies safe auto-fixes from the current ESLint baseline
+- `npm run format`: formats the scoped repository sources and docs with Prettier
+- `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
 - `npm run test:e2e:update`: intentionally updates Playwright visual baselines
 - `npm run test:all`: repository + gameplay tests
 - `npm run test:all:e2e`: repository + gameplay + e2e tests
+
+## Code quality
+
+ESLint and Prettier are configured as a TypeScript-first quality baseline for `backend`, `frontend`,
+`shared`, `scripts`, `tests`, `api`, and `supabase`.
+
+- `npm run lint` is intentionally warning-first for noisy legacy areas and fails only on higher-value
+  correctness issues.
+- `npm run format:check` is enforced in CI to keep formatting drift out of follow-up migration work.
+- `npm run lint:fix` and `npm run format` are safe local helpers before opening a PR.
 
 ## Testing
 
