@@ -1,6 +1,7 @@
-# Issue 7: Lack of CSRF Protection for State-Changing Operations
+# Issue 7: Absence of Explicit CSRF Protection (Hardening Recommendation)
 
 - **Component**: `backend/server.cts`
-- **Description**: While session cookies are set with `SameSite=Lax`, there is no explicit CSRF protection (like anti-CSRF tokens) for POST/PUT/DELETE requests.
-- **Impact**: Under certain conditions, users could be tricked into performing unintended actions on the site if they are logged in.
-- **Recommendation**: Implement a CSRF protection mechanism, such as synchronizer tokens or Double Submit Cookies, especially for sensitive operations.
+- **Description**: The application currently lacks explicit CSRF protection (e.g., anti-CSRF tokens) for state-changing operations.
+- **Status**: Low severity hardening. Most write operations are JSON-based API calls, and session cookies are already configured with `SameSite=Lax`, providing a significant baseline defense.
+- **Impact**: While the risk is mitigated by current cookie settings and request types, the absence of an explicit secondary defense mechanism is a noted hardening gap.
+- **Recommendation**: Reassess the need for explicit CSRF protection (like Double Submit Cookies) after the authentication and cookie model is finalized, particularly for any non-JSON or sensitive state-changing routes.
