@@ -849,6 +849,15 @@ function setPlayerIdentity(playerId: string): void {
   localStorage.setItem("frontline-player-id", playerId);
 }
 
+function currentActionPlayerId(): string | null {
+  const resolvedPlayerId = resolveCurrentPlayer()?.id || null;
+  if (resolvedPlayerId && resolvedPlayerId !== state.playerId) {
+    setPlayerIdentity(resolvedPlayerId);
+  }
+
+  return resolvedPlayerId || state.playerId || null;
+}
+
 function territoryOptionLabel(territory: SnapshotTerritory): string {
   return `${territory.name} (${territory.armies})`;
 }
@@ -924,7 +933,7 @@ async function applyReinforcements(times: number): Promise<void> {
   const total = Math.max(1, Math.floor(Number(times) || 1));
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "reinforce",
     territoryId: elements.reinforceSelect.value,
     amount: total,
@@ -937,7 +946,7 @@ async function applyReinforcements(times: number): Promise<void> {
 async function executeAttack(fromId: string, toId: string, attackDice: number): Promise<GameSnapshot | undefined> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "attack",
     fromId,
     toId,
@@ -956,7 +965,7 @@ async function executeAttack(fromId: string, toId: string, attackDice: number): 
 async function moveAfterConquest(armies: number): Promise<void> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "moveAfterConquest",
     armies: Math.max(1, Math.floor(Number(armies) || 1)),
     expectedVersion: currentExpectedVersion()
@@ -985,7 +994,7 @@ async function runBanzaiAttack() {
 
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "attackBanzai",
       fromId: initialContext.fromId,
       toId: initialContext.toId,
@@ -2363,7 +2372,7 @@ elements.startButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/start", {
       ...currentGamePayload(),
-      playerId: state.playerId
+      playerId: currentActionPlayerId()
     });
     state.snapshot = data.state || state.snapshot;
     render();
@@ -2769,7 +2778,7 @@ elements.fortifyButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "fortify",
       fromId: elements.fortifyFrom.value,
       toId: elements.fortifyTo.value,
@@ -2787,7 +2796,7 @@ elements.endTurnButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "endTurn",
       expectedVersion: currentExpectedVersion()
     });
@@ -2811,7 +2820,7 @@ if (elements.surrenderButton) {
     try {
       const data = await send("/api/action", {
         ...currentGamePayload(),
-        playerId: state.playerId,
+        playerId: currentActionPlayerId(),
         type: "surrender",
         expectedVersion: currentExpectedVersion()
       });
@@ -2828,7 +2837,7 @@ if (elements.cardTradeButton) {
     try {
       const data = await send("/api/cards/trade", {
         ...currentGamePayload(),
-        playerId: state.playerId,
+        playerId: currentActionPlayerId(),
         cardIds: state.selectedTradeCardIds,
         expectedVersion: currentExpectedVersion()
       });
