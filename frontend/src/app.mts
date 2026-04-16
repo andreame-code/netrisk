@@ -695,6 +695,13 @@ function resolveCurrentPlayer() {
     return null;
   }
 
+  if (state.snapshot.playerId) {
+    const bySnapshotPlayerId = state.snapshot.players.find((player) => player.id === state.snapshot?.playerId) || null;
+    if (bySnapshotPlayerId) {
+      return bySnapshotPlayerId;
+    }
+  }
+
   if (state.playerId) {
     const byId = state.snapshot.players.find((player) => player.id === state.playerId) || null;
     if (byId) {
@@ -850,12 +857,17 @@ function setPlayerIdentity(playerId: string): void {
 }
 
 function currentActionPlayerId(): string | null {
+  const snapshotPlayerId = state.snapshot?.playerId || null;
+  if (snapshotPlayerId && snapshotPlayerId !== state.playerId) {
+    setPlayerIdentity(snapshotPlayerId);
+  }
+
   const resolvedPlayerId = resolveCurrentPlayer()?.id || null;
   if (resolvedPlayerId && resolvedPlayerId !== state.playerId) {
     setPlayerIdentity(resolvedPlayerId);
   }
 
-  return resolvedPlayerId || state.playerId || null;
+  return snapshotPlayerId || resolvedPlayerId || state.playerId || null;
 }
 
 function territoryOptionLabel(territory: SnapshotTerritory): string {
