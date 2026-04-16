@@ -24,16 +24,19 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await openWorldClassicGame(page, "interactions");
   const surface = page.locator("[data-map-surface]");
+  const firstTerritory = page.locator("[data-territory-id]").first();
 
   const initialViewport = await surface.evaluate((node) => ({
     scale: Number(node.getAttribute("data-map-scale") || "0"),
     translateX: Number(node.getAttribute("data-map-translate-x") || "0"),
     translateY: Number(node.getAttribute("data-map-translate-y") || "0")
   }));
+  const initialTerritorySize = await firstTerritory.boundingBox();
 
   expect(initialViewport.scale).toBeCloseTo(1, 3);
   expect(initialViewport.translateX).toBeCloseTo(0, 1);
   expect(initialViewport.translateY).toBeCloseTo(0, 1);
+  expect(initialTerritorySize).not.toBeNull();
   await expect(page.locator('[data-map-control="reset"]')).toBeDisabled();
 
   await surface.hover();
@@ -42,7 +45,15 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
   await expect
     .poll(async () => Number(await surface.getAttribute("data-map-scale")))
     .toBeGreaterThan(1.05);
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-node-scale")))
+    .toBeLessThan(1);
   await expect(page.locator('[data-map-control="reset"]')).toBeEnabled();
+
+  const zoomedTerritorySize = await firstTerritory.boundingBox();
+  expect(zoomedTerritorySize).not.toBeNull();
+  expect(Math.abs((zoomedTerritorySize?.width || 0) - (initialTerritorySize?.width || 0))).toBeLessThanOrEqual(3.5);
+  expect(Math.abs((zoomedTerritorySize?.height || 0) - (initialTerritorySize?.height || 0))).toBeLessThanOrEqual(3.5);
 
   const beforeDrag = await surface.evaluate((node) => ({
     x: Number(node.getAttribute("data-map-translate-x") || "0"),

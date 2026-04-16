@@ -3517,6 +3517,7 @@ h1 {
 
 .map-board-surface {
   position: relative;
+  --map-territory-node-scale: 1;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -3664,8 +3665,8 @@ h1 {
 
 .territory-node {
   position: absolute;
-  width: clamp(34px, 4.5vw, 42px);
-  height: clamp(34px, 4.5vw, 42px);
+  width: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
+  height: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
   margin: 0;
   transform: translate(-50%, -50%);
   padding: 0;
@@ -3683,7 +3684,10 @@ h1 {
 }
 
 .territory-node:hover {
-  transform: translate(-50%, -50%) translateY(-2px) scale(1.05);
+  transform:
+    translate(-50%, -50%)
+    translateY(calc(-2px * var(--map-territory-node-scale, 1)))
+    scale(1.05);
 }
 
 .territory-node.piece-skin-style-ring-core {

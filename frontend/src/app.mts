@@ -448,8 +448,10 @@ function applyMapViewport(): void {
   surface.classList.toggle("is-zoomed", mapViewportState.scale > MAP_VIEWPORT_MIN_SCALE + 0.001);
   surface.classList.toggle("is-dragging", mapViewportState.isDragging);
   surface.dataset.mapScale = mapViewportState.scale.toFixed(3);
+  surface.dataset.mapNodeScale = (1 / mapViewportState.scale).toFixed(4);
   surface.dataset.mapTranslateX = mapViewportState.translateX.toFixed(2);
   surface.dataset.mapTranslateY = mapViewportState.translateY.toFixed(2);
+  surface.style.setProperty("--map-territory-node-scale", (1 / mapViewportState.scale).toFixed(4));
 
   if (zoomInButton) {
     zoomInButton.disabled = mapViewportState.scale >= mapViewportState.maxScale - 0.001;
