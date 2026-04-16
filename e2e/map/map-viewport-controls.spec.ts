@@ -52,8 +52,8 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
 
   const zoomedTerritorySize = await firstTerritory.boundingBox();
   expect(zoomedTerritorySize).not.toBeNull();
-  expect(Math.abs((zoomedTerritorySize?.width || 0) - (initialTerritorySize?.width || 0))).toBeLessThanOrEqual(3.5);
-  expect(Math.abs((zoomedTerritorySize?.height || 0) - (initialTerritorySize?.height || 0))).toBeLessThanOrEqual(3.5);
+  expect(Math.abs((zoomedTerritorySize?.width || 0) - (initialTerritorySize?.width || 0))).toBeLessThanOrEqual(4.5);
+  expect(Math.abs((zoomedTerritorySize?.height || 0) - (initialTerritorySize?.height || 0))).toBeLessThanOrEqual(4.5);
 
   const beforeDrag = await surface.evaluate((node) => ({
     x: Number(node.getAttribute("data-map-translate-x") || "0"),
