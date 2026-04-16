@@ -13,15 +13,11 @@ function pad(value: number): string {
 }
 
 function timestampLabel(date: Date = new Date()): string {
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate())
-  ].join("") + "-" + [
-    pad(date.getHours()),
-    pad(date.getMinutes()),
-    pad(date.getSeconds())
-  ].join("");
+  return (
+    [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join("") +
+    "-" +
+    [pad(date.getHours()), pad(date.getMinutes()), pad(date.getSeconds())].join("")
+  );
 }
 
 function parseArgs(argv: string[]): BackupArgs {
@@ -73,12 +69,15 @@ function pruneBackups(outputFile: string, keepCount?: number): string[] {
     return [];
   }
 
-  const backups = fs.readdirSync(directory)
+  const backups = fs
+    .readdirSync(directory)
     .filter((name: string) => name.startsWith(baseName + "-") && name.endsWith(".sqlite"))
     .sort()
     .reverse();
 
-  const removed = backups.slice(normalizedKeepCount).map((name: string) => path.join(directory, name));
+  const removed = backups
+    .slice(normalizedKeepCount)
+    .map((name: string) => path.join(directory, name));
   removed.forEach((filePath: string) => {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -90,7 +89,9 @@ function pruneBackups(outputFile: string, keepCount?: number): string[] {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const dbFile = args.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite");
-  const outputFile = args.outputFile || path.join(__dirname, "..", "data", "backups", `netrisk-${timestampLabel()}.sqlite`);
+  const outputFile =
+    args.outputFile ||
+    path.join(__dirname, "..", "data", "backups", `netrisk-${timestampLabel()}.sqlite`);
   const datastore = createDatastore({ dbFile });
 
   try {
@@ -113,7 +114,7 @@ module.exports = {
   timestampLabel
 };
 
-  if (require.main === module) {
+if (require.main === module) {
   main().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

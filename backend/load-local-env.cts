@@ -8,7 +8,7 @@ function stripWrappingQuotes(value: string): string {
 
   const first = value[0];
   const last = value[value.length - 1];
-  if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
+  if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
     return value.slice(1, -1);
   }
 
@@ -58,24 +58,34 @@ function loadEnvFile(filePath: string): boolean {
 }
 
 function loadLocalEnv(): void {
-  if (String(process.env.E2E || "").toLowerCase() === "true" || String(process.env.TEST || "").toLowerCase() === "true" || String(process.env.NODE_ENV || "").toLowerCase() === "test") {
+  if (
+    String(process.env.E2E || "").toLowerCase() === "true" ||
+    String(process.env.TEST || "").toLowerCase() === "true" ||
+    String(process.env.NODE_ENV || "").toLowerCase() === "test"
+  ) {
     return;
   }
 
-  const candidates = [process.cwd(), process.env.NETRISK_PROJECT_ROOT, path.join(__dirname, ".."), path.join(__dirname, "../..")];
+  const candidates = [
+    process.cwd(),
+    process.env.NETRISK_PROJECT_ROOT,
+    path.join(__dirname, ".."),
+    path.join(__dirname, "../..")
+  ];
   const seen = new Set<string>();
-  const rootDir = candidates.find((candidate): boolean => {
-    if (!candidate) {
-      return false;
-    }
+  const rootDir =
+    candidates.find((candidate): boolean => {
+      if (!candidate) {
+        return false;
+      }
 
-    const absolute = path.resolve(candidate);
-    if (seen.has(absolute)) {
-      return false;
-    }
-    seen.add(absolute);
-    return fs.existsSync(path.join(absolute, ".env"));
-  }) || process.cwd();
+      const absolute = path.resolve(candidate);
+      if (seen.has(absolute)) {
+        return false;
+      }
+      seen.add(absolute);
+      return fs.existsSync(path.join(absolute, ".env"));
+    }) || process.cwd();
 
   loadEnvFile(path.join(rootDir, ".env"));
   loadEnvFile(path.join(rootDir, ".env.local"));

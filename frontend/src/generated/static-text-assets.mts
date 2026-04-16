@@ -1000,7 +1000,7 @@ export const staticHtmlAssets = {
     <script type="module" src="/register.mjs"></script>
   </body>
 </html>
-`,
+`
 } as const;
 
 export const staticCssAssets = {
@@ -5824,5 +5824,5 @@ body[data-app-section="profile"] .main-nav-shell {
 .game-bottom-shell {
   margin-top: 4px;
 }
-`,
+`
 } as const;

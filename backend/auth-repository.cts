@@ -41,11 +41,22 @@ interface LocalDatastore {
   findUserByUsername(username: string): Promise<UserRecord | null> | UserRecord | null;
   findUserById(userId: string): Promise<UserRecord | null> | UserRecord | null;
   createUser(user: UserRecord): Promise<UserRecord | null> | UserRecord | null;
-  updateUserCredentials(userId: string, credentials: Record<string, unknown>): Promise<UserRecord | null> | UserRecord | null;
-  updateUserProfile(userId: string, profile: Record<string, unknown>): Promise<UserRecord | null> | UserRecord | null;
-  updateUserThemePreference?(userId: string, theme: string): Promise<UserRecord | null> | UserRecord | null;
+  updateUserCredentials(
+    userId: string,
+    credentials: Record<string, unknown>
+  ): Promise<UserRecord | null> | UserRecord | null;
+  updateUserProfile(
+    userId: string,
+    profile: Record<string, unknown>
+  ): Promise<UserRecord | null> | UserRecord | null;
+  updateUserThemePreference?(
+    userId: string,
+    theme: string
+  ): Promise<UserRecord | null> | UserRecord | null;
   createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
-  findSession(token: string): Promise<SessionRecord | SessionRow | null> | SessionRecord | SessionRow | null;
+  findSession(
+    token: string
+  ): Promise<SessionRecord | SessionRow | null> | SessionRecord | SessionRow | null;
   deleteSession(token: string): Promise<void> | void;
   close?(): void;
 }
@@ -93,7 +104,9 @@ function normalizeUser(row: UserRow | null | undefined): UserRecord | null {
   };
 }
 
-function normalizeSession(row: SessionRow | SessionRecord | null | undefined): SessionRecord | null {
+function normalizeSession(
+  row: SessionRow | SessionRecord | null | undefined
+): SessionRecord | null {
   if (!row) {
     return null;
   }
@@ -106,12 +119,14 @@ function normalizeSession(row: SessionRow | SessionRecord | null | undefined): S
 }
 
 function createLocalAuthRepository(options: AuthRepositoryOptions = {}) {
-  const datastore = (options.datastore || createDatastore({
-    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
-    legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
-    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
-    legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
-  })) as LocalDatastore;
+  const datastore = (options.datastore ||
+    createDatastore({
+      dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+      legacyUsersFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+      legacySessionsFile:
+        options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
+      legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json")
+    })) as LocalDatastore;
 
   return {
     driver: "local",
@@ -156,9 +171,14 @@ function createLocalAuthRepository(options: AuthRepositoryOptions = {}) {
 }
 
 function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
-  const supabaseUrl = String(options.supabaseUrl || process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
-  const serviceRoleKey = String(options.supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-  const schema = String(options.supabaseSchema || process.env.SUPABASE_DB_SCHEMA || "public").trim() || "public";
+  const supabaseUrl = String(options.supabaseUrl || process.env.SUPABASE_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const serviceRoleKey = String(
+    options.supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  ).trim();
+  const schema =
+    String(options.supabaseSchema || process.env.SUPABASE_DB_SCHEMA || "public").trim() || "public";
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error("Configurazione Supabase incompleta per il repository auth.");
@@ -201,10 +221,11 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
     const payload = raw ? JSON.parse(raw) : null;
 
     if (!response.ok) {
-      const message = (payload as Record<string, unknown> | null)?.message
-        || (payload as Record<string, unknown> | null)?.error_description
-        || (payload as Record<string, unknown> | null)?.error
-        || `Supabase auth request fallita (${response.status}).`;
+      const message =
+        (payload as Record<string, unknown> | null)?.message ||
+        (payload as Record<string, unknown> | null)?.error_description ||
+        (payload as Record<string, unknown> | null)?.error ||
+        `Supabase auth request fallita (${response.status}).`;
       throw new Error(String(message));
     }
 
@@ -218,7 +239,9 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
         select: "*",
         order: "created_at.asc"
       });
-      return Array.isArray(rows) ? rows.map((row) => normalizeUser(row as UserRow)).filter(Boolean) : [];
+      return Array.isArray(rows)
+        ? rows.map((row) => normalizeUser(row as UserRow)).filter(Boolean)
+        : [];
     },
     async findUserByUsername(username: string) {
       const rows = await request("users", "GET", {
@@ -237,30 +260,50 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0] as UserRow) : null;
     },
     async createUser(user: UserRecord) {
-      const rows = await request("users", "POST", {}, [{
-        id: user.id,
-        username: user.username,
-        role: user.role === "admin" ? "admin" : "user",
-        profile_json: JSON.stringify(user.profile || {}),
-        credentials_json: JSON.stringify(user.credentials || {}),
-        created_at: user.createdAt || new Date().toISOString()
-      }], true);
+      const rows = await request(
+        "users",
+        "POST",
+        {},
+        [
+          {
+            id: user.id,
+            username: user.username,
+            role: user.role === "admin" ? "admin" : "user",
+            profile_json: JSON.stringify(user.profile || {}),
+            credentials_json: JSON.stringify(user.credentials || {}),
+            created_at: user.createdAt || new Date().toISOString()
+          }
+        ],
+        true
+      );
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0] as UserRow) : null;
     },
     async updateUserCredentials(userId: string, credentials: Record<string, unknown>) {
-      const rows = await request("users", "PATCH", {
-        id: `eq.${String(userId || "").trim()}`
-      }, {
-        credentials_json: JSON.stringify(credentials || {})
-      }, true);
+      const rows = await request(
+        "users",
+        "PATCH",
+        {
+          id: `eq.${String(userId || "").trim()}`
+        },
+        {
+          credentials_json: JSON.stringify(credentials || {})
+        },
+        true
+      );
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0] as UserRow) : null;
     },
     async updateUserProfile(userId: string, profile: Record<string, unknown>) {
-      const rows = await request("users", "PATCH", {
-        id: `eq.${String(userId || "").trim()}`
-      }, {
-        profile_json: JSON.stringify(profile || {})
-      }, true);
+      const rows = await request(
+        "users",
+        "PATCH",
+        {
+          id: `eq.${String(userId || "").trim()}`
+        },
+        {
+          profile_json: JSON.stringify(profile || {})
+        },
+        true
+      );
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0] as UserRow) : null;
     },
     async updateUserThemePreference(userId: string, theme: string) {
@@ -269,25 +312,41 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
         return null;
       }
 
-      const rows = await request("users", "PATCH", {
-        id: `eq.${String(userId || "").trim()}`
-      }, {
-        profile_json: JSON.stringify({
-          ...(latestUser.profile || {}),
-          preferences: {
-            ...(((latestUser.profile as Record<string, unknown> | undefined)?.preferences as Record<string, unknown> | undefined) || {}),
-            theme: String(theme || "")
-          }
-        })
-      }, true);
+      const rows = await request(
+        "users",
+        "PATCH",
+        {
+          id: `eq.${String(userId || "").trim()}`
+        },
+        {
+          profile_json: JSON.stringify({
+            ...(latestUser.profile || {}),
+            preferences: {
+              ...(((latestUser.profile as Record<string, unknown> | undefined)?.preferences as
+                | Record<string, unknown>
+                | undefined) || {}),
+              theme: String(theme || "")
+            }
+          })
+        },
+        true
+      );
       return Array.isArray(rows) && rows.length ? normalizeUser(rows[0] as UserRow) : null;
     },
     async createSession(token: string, userId: string, createdAt: number) {
-      await request("sessions", "POST", {}, [{
-        token,
-        user_id: userId,
-        created_at: createdAt || Date.now()
-      }], false);
+      await request(
+        "sessions",
+        "POST",
+        {},
+        [
+          {
+            token,
+            user_id: userId,
+            created_at: createdAt || Date.now()
+          }
+        ],
+        false
+      );
     },
     async findSession(token: string) {
       const rows = await request("sessions", "GET", {
@@ -302,13 +361,14 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
         token: `eq.${String(token || "").trim()}`
       });
     },
-    close() {
-    }
+    close() {}
   };
 }
 
 function createAuthRepository(options: AuthRepositoryOptions = {}) {
-  const driver = String(options.driver || process.env.DATASTORE_DRIVER || "local").trim().toLowerCase();
+  const driver = String(options.driver || process.env.DATASTORE_DRIVER || "local")
+    .trim()
+    .toLowerCase();
   return driver === "supabase"
     ? createSupabaseAuthRepository(options)
     : createLocalAuthRepository(options);

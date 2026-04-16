@@ -62,9 +62,18 @@ interface AuthRepository {
   findUserByUsername(username: string): Promise<StoredUser | null> | StoredUser | null;
   findUserById(userId: string): Promise<StoredUser | null> | StoredUser | null;
   createUser(user: StoredUser): Promise<StoredUser | null> | StoredUser | null;
-  updateUserCredentials(userId: string, credentials: UserCredentials): Promise<StoredUser | null> | StoredUser | null;
-  updateUserProfile(userId: string, profile: UserProfile): Promise<StoredUser | null> | StoredUser | null;
-  updateUserThemePreference?(userId: string, theme: string): Promise<StoredUser | null> | StoredUser | null;
+  updateUserCredentials(
+    userId: string,
+    credentials: UserCredentials
+  ): Promise<StoredUser | null> | StoredUser | null;
+  updateUserProfile(
+    userId: string,
+    profile: UserProfile
+  ): Promise<StoredUser | null> | StoredUser | null;
+  updateUserThemePreference?(
+    userId: string,
+    theme: string
+  ): Promise<StoredUser | null> | StoredUser | null;
   createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
   findSession(token: string): Promise<AuthSession | null> | AuthSession | null;
   deleteSession(token: string): Promise<void> | void;
@@ -96,7 +105,9 @@ interface AuthFailure {
   errorParams: Record<string, unknown>;
 }
 
-function passwordRecord(secret: unknown): Required<Pick<PasswordHashRecord, "algorithm" | "salt" | "keylen" | "hash">> {
+function passwordRecord(
+  secret: unknown
+): Required<Pick<PasswordHashRecord, "algorithm" | "salt" | "keylen" | "hash">> {
   const salt = crypto.randomBytes(16).toString("hex");
   const keylen = 64;
   const hash = crypto.scryptSync(String(secret || ""), salt, keylen).toString("hex");
@@ -109,11 +120,15 @@ function passwordRecord(secret: unknown): Required<Pick<PasswordHashRecord, "alg
 }
 
 function normalizeUsername(username: unknown): string {
-  return String(username || "").trim().toLowerCase();
+  return String(username || "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeEmail(email: unknown): string {
-  return String(email || "").trim().toLowerCase();
+  return String(email || "")
+    .trim()
+    .toLowerCase();
 }
 
 function userRole(user: StoredUser | null | undefined): string {
@@ -157,7 +172,9 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
   } else {
     const iterations = Number.isInteger(record.iterations) ? record.iterations : 120000;
     const digest = record.digest || "sha256";
-    candidate = crypto.pbkdf2Sync(String(password || ""), record.salt, iterations, 32, digest).toString("hex");
+    candidate = crypto
+      .pbkdf2Sync(String(password || ""), record.salt, iterations, 32, digest)
+      .toString("hex");
   }
 
   const expected = Buffer.from(record.hash, "hex");
@@ -170,11 +187,7 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
-  const raw = String(
-    options.encryptionKey
-    || process.env.AUTH_ENCRYPTION_KEY
-    || ""
-  ).trim();
+  const raw = String(options.encryptionKey || process.env.AUTH_ENCRYPTION_KEY || "").trim();
 
   return raw ? crypto.createHash("sha256").update(raw).digest() : null;
 }
@@ -188,7 +201,10 @@ function createFieldProtector(options: AuthStoreOptions = {}) {
     },
     encrypt(value: unknown): string {
       if (!key) {
-        throw createLocalizedError("AUTH_ENCRYPTION_KEY mancante.", "auth.internal.missingEncryptionKey");
+        throw createLocalizedError(
+          "AUTH_ENCRYPTION_KEY mancante.",
+          "auth.internal.missingEncryptionKey"
+        );
       }
 
       const iv = crypto.randomBytes(12);
@@ -209,34 +225,51 @@ function registrationInput(inputOrUsername: unknown, password?: unknown): Regist
   if (inputOrUsername && typeof inputOrUsername === "object" && !Array.isArray(inputOrUsername)) {
     const input = inputOrUsername as Record<string, unknown>;
     return {
-      username: String(input.username || "").trim().slice(0, 32),
+      username: String(input.username || "")
+        .trim()
+        .slice(0, 32),
       password: String(input.password || ""),
       email: normalizeEmail(input.email)
     };
   }
 
   return {
-    username: String(inputOrUsername || "").trim().slice(0, 32),
+    username: String(inputOrUsername || "")
+      .trim()
+      .slice(0, 32),
     password: String(password || ""),
     email: ""
   };
 }
 
-function authFailure(error: string, errorKey: string, errorParams: Record<string, unknown> = {}): AuthFailure {
+function authFailure(
+  error: string,
+  errorKey: string,
+  errorParams: Record<string, unknown> = {}
+): AuthFailure {
   return { ok: false, error, errorKey, errorParams };
 }
 
-function registrationValidationError(input: RegistrationInput, protector: ReturnType<typeof createFieldProtector>): AuthFailure | null {
+function registrationValidationError(
+  input: RegistrationInput,
+  protector: ReturnType<typeof createFieldProtector>
+): AuthFailure | null {
   if (!input.username || !input.password) {
     return authFailure("Inserisci utente e password.", "auth.register.requiredFields");
   }
 
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(input.username)) {
-    return authFailure("Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.", "auth.register.invalidUsername");
+    return authFailure(
+      "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",
+      "auth.register.invalidUsername"
+    );
   }
 
   if (input.password.length < 4) {
-    return authFailure("Password troppo corta: usa almeno 4 caratteri.", "auth.register.shortPassword");
+    return authFailure(
+      "Password troppo corta: usa almeno 4 caratteri.",
+      "auth.register.shortPassword"
+    );
   }
 
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
@@ -266,7 +299,11 @@ function maskEmail(email: string): string {
   return `${visible}@${domain}`;
 }
 
-function buildProfile(username: string, email: string, protector: ReturnType<typeof createFieldProtector>): UserProfile {
+function buildProfile(
+  username: string,
+  email: string,
+  protector: ReturnType<typeof createFieldProtector>
+): UserProfile {
   const profile: UserProfile = {
     displayName: username
   };
@@ -282,16 +319,17 @@ function buildProfile(username: string, email: string, protector: ReturnType<typ
 }
 
 function createAuthStore(options: AuthStoreOptions = {}) {
-  const datastore = (options.datastore || createAuthRepository({
-    driver: options.driver || process.env.DATASTORE_DRIVER || "local",
-    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
-    dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
-    sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
-    gamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
-    supabaseUrl: options.supabaseUrl,
-    supabaseServiceRoleKey: options.supabaseServiceRoleKey,
-    supabaseSchema: options.supabaseSchema
-  })) as AuthRepository;
+  const datastore = (options.datastore ||
+    createAuthRepository({
+      driver: options.driver || process.env.DATASTORE_DRIVER || "local",
+      dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+      dataFile: options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+      sessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json"),
+      gamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
+      supabaseUrl: options.supabaseUrl,
+      supabaseServiceRoleKey: options.supabaseServiceRoleKey,
+      supabaseSchema: options.supabaseSchema
+    })) as AuthRepository;
   const protector = createFieldProtector(options);
 
   async function listUsers() {

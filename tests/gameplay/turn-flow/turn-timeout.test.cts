@@ -37,41 +37,48 @@ register("forceEndTurn da reinforcement passa il controllo al giocatore successi
   assert.equal(state.turnStartedAt, "2026-04-11T08:00:00.000Z");
 });
 
-register("forceEndTurn risolve la conquista pendente con il minimo prima di passare il turno", () => {
-  const state = setupTimedGame();
-  const currentPlayer = state.players[state.currentTurnIndex];
-  const ownedOrigin = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
-  const enemyTerritory = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId !== currentPlayer.id);
+register(
+  "forceEndTurn risolve la conquista pendente con il minimo prima di passare il turno",
+  () => {
+    const state = setupTimedGame();
+    const currentPlayer = state.players[state.currentTurnIndex];
+    const ownedOrigin = Object.keys(state.territories).find(
+      (territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id
+    );
+    const enemyTerritory = Object.keys(state.territories).find(
+      (territoryId: string) => state.territories[territoryId].ownerId !== currentPlayer.id
+    );
 
-  if (!ownedOrigin || !enemyTerritory) {
-    throw new Error("Expected a valid origin and enemy territory.");
+    if (!ownedOrigin || !enemyTerritory) {
+      throw new Error("Expected a valid origin and enemy territory.");
+    }
+
+    state.reinforcementPool = 0;
+    state.turnPhase = "attack";
+    state.territories[ownedOrigin].armies = 5;
+    state.territories[enemyTerritory].ownerId = currentPlayer.id;
+    state.territories[enemyTerritory].armies = 0;
+    state.pendingConquest = {
+      fromId: ownedOrigin,
+      toId: enemyTerritory,
+      minArmies: 2,
+      maxArmies: 4
+    };
+    state.conqueredTerritoryThisTurn = true;
+
+    const result = forceEndTurn(state, currentPlayer.id, {
+      reason: "timeout",
+      turnTimeoutHours: 24,
+      now: new Date("2026-04-11T08:00:00.000Z")
+    });
+
+    assert.equal(result.ok, true);
+    assert.equal(state.pendingConquest, null);
+    assert.equal(state.territories[enemyTerritory].ownerId, currentPlayer.id);
+    assert.equal(state.territories[enemyTerritory].armies, 2);
+    assert.equal(state.players[state.currentTurnIndex].id, "p2");
   }
-
-  state.reinforcementPool = 0;
-  state.turnPhase = "attack";
-  state.territories[ownedOrigin].armies = 5;
-  state.territories[enemyTerritory].ownerId = currentPlayer.id;
-  state.territories[enemyTerritory].armies = 0;
-  state.pendingConquest = {
-    fromId: ownedOrigin,
-    toId: enemyTerritory,
-    minArmies: 2,
-    maxArmies: 4
-  };
-  state.conqueredTerritoryThisTurn = true;
-
-  const result = forceEndTurn(state, currentPlayer.id, {
-    reason: "timeout",
-    turnTimeoutHours: 24,
-    now: new Date("2026-04-11T08:00:00.000Z")
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(state.pendingConquest, null);
-  assert.equal(state.territories[enemyTerritory].ownerId, currentPlayer.id);
-  assert.equal(state.territories[enemyTerritory].armies, 2);
-  assert.equal(state.players[state.currentTurnIndex].id, "p2");
-});
+);
 
 register("forceEndTurn usa un audit trail dedicato per il recovery AI", () => {
   const state = setupTimedGame();

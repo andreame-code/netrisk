@@ -1,6 +1,14 @@
-const { createContinent, createGameState, createPlayer, createTerritory, TurnPhase } = require("../../../shared/models.cjs") as typeof import("../../../shared/models.cjs");
-const { buildMapGraph } = require("../../../shared/map-graph.cjs") as typeof import("../../../shared/map-graph.cjs");
-import type { Continent, GameState, Player, Territory, TurnPhaseValue } from "../../../shared/models.cjs";
+const { createContinent, createGameState, createPlayer, createTerritory, TurnPhase } =
+  require("../../../shared/models.cjs") as typeof import("../../../shared/models.cjs");
+const { buildMapGraph } =
+  require("../../../shared/map-graph.cjs") as typeof import("../../../shared/map-graph.cjs");
+import type {
+  Continent,
+  GameState,
+  Player,
+  Territory,
+  TurnPhaseValue
+} from "../../../shared/models.cjs";
 
 type TerritoryStateInput = Pick<Territory, "id"> & {
   ownerId?: string | null;
@@ -28,7 +36,12 @@ function makePlayer(id: string, name: string, overrides: Partial<Player> = {}): 
   return createPlayer({
     id,
     name,
-    color: overrides.color || ("#" + String(id || "p1").padEnd(6, "0").slice(0, 6)),
+    color:
+      overrides.color ||
+      "#" +
+        String(id || "p1")
+          .padEnd(6, "0")
+          .slice(0, 6),
     connected: overrides.connected !== false,
     ...overrides
   });
@@ -38,7 +51,11 @@ function makePlayers(names: string[] = ["Alice", "Bob"]): Player[] {
   return names.map((name, index) => makePlayer(`p${index + 1}`, name));
 }
 
-function makeTerritory(id: string, neighbors: string[] = [], overrides: Partial<Territory> = {}): Territory {
+function makeTerritory(
+  id: string,
+  neighbors: string[] = [],
+  overrides: Partial<Territory> = {}
+): Territory {
   return createTerritory({
     id,
     name: overrides.name || id.charAt(0).toUpperCase() + id.slice(1),
@@ -50,7 +67,12 @@ function makeTerritory(id: string, neighbors: string[] = [], overrides: Partial<
   });
 }
 
-function makeContinent(id: string, territoryIds: string[], bonus: number = 0, overrides: Partial<Continent> = {}): Continent {
+function makeContinent(
+  id: string,
+  territoryIds: string[],
+  bonus: number = 0,
+  overrides: Partial<Continent> = {}
+): Continent {
   return createContinent({
     id,
     name: overrides.name || id.charAt(0).toUpperCase() + id.slice(1),
@@ -61,14 +83,17 @@ function makeContinent(id: string, territoryIds: string[], bonus: number = 0, ov
 }
 
 function territoryStates(entries: TerritoryStateInput[]): GameState["territories"] {
-  return entries.reduce((accumulator, entry) => {
-    const territoryId = String(entry.id || "");
-    accumulator[territoryId] = {
-      ownerId: entry.ownerId || null,
-      armies: entry.armies == null ? 0 : entry.armies
-    };
-    return accumulator;
-  }, {} as GameState["territories"]);
+  return entries.reduce(
+    (accumulator, entry) => {
+      const territoryId = String(entry.id || "");
+      accumulator[territoryId] = {
+        ownerId: entry.ownerId || null,
+        armies: entry.armies == null ? 0 : entry.armies
+      };
+      return accumulator;
+    },
+    {} as GameState["territories"]
+  );
 }
 
 function makeState(options: StateOptions = {}): GameState {
@@ -87,7 +112,9 @@ function makeState(options: StateOptions = {}): GameState {
     fortifyUsed: Boolean(options.fortifyUsed),
     attacksThisTurn: typeof options.attacksThisTurn === "number" ? options.attacksThisTurn : 0
   });
-  (state as GameState & { fortifyMoveUsed?: boolean }).fortifyMoveUsed = Boolean(options.fortifyMoveUsed);
+  (state as GameState & { fortifyMoveUsed?: boolean }).fortifyMoveUsed = Boolean(
+    options.fortifyMoveUsed
+  );
   return state;
 }
 

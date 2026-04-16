@@ -41,19 +41,19 @@ export function localizedPayload(
 } {
   const isObject = Boolean(input) && typeof input === "object";
   const message = isObject
-    ? (input?.message || input?.error || input?.reason || input?.defaultMessage || fallbackMessage)
+    ? input?.message || input?.error || input?.reason || input?.defaultMessage || fallbackMessage
     : fallbackMessage;
   const messageKey = isObject
-    ? (input?.messageKey || input?.errorKey || input?.reasonKey || null)
+    ? input?.messageKey || input?.errorKey || input?.reasonKey || null
     : null;
   const messageParams = isObject
-    ? (input?.messageParams || input?.errorParams || input?.reasonParams || {})
+    ? input?.messageParams || input?.errorParams || input?.reasonParams || {}
     : {};
 
   return {
     error: message || fallbackMessage,
     messageKey: messageKey || fallbackKey || null,
-    messageParams: messageKey ? messageParams : (fallbackKey ? fallbackParams : {})
+    messageParams: messageKey ? messageParams : fallbackKey ? fallbackParams : {}
   };
 }
 

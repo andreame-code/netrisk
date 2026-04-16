@@ -38,7 +38,11 @@ type AuthorizationError = Error & {
   code: string;
 };
 
-function createAuthorizationError(message: string, statusCode: number, code: string): AuthorizationError {
+function createAuthorizationError(
+  message: string,
+  statusCode: number,
+  code: string
+): AuthorizationError {
   const error = new Error(message) as AuthorizationError;
   error.statusCode = statusCode;
   error.code = code;
@@ -67,7 +71,11 @@ function isActorPlayer(player: PlayerLike | null | undefined, actor: Actor) {
   return player.name === actor.username;
 }
 
-function canOpenGame(actor: Actor | null, game: GameLike | null | undefined, state: AuthorizationContext["state"]): boolean {
+function canOpenGame(
+  actor: Actor | null,
+  game: GameLike | null | undefined,
+  state: AuthorizationContext["state"]
+): boolean {
   if (!actor || !actor.id || !game) {
     return false;
   }
@@ -92,7 +100,11 @@ function canOpenGame(actor: Actor | null, game: GameLike | null | undefined, sta
   return !game.creatorUserId;
 }
 
-function canReadGame(actor: Actor | null, game: GameLike | null | undefined, state: AuthorizationContext["state"]): boolean {
+function canReadGame(
+  actor: Actor | null,
+  game: GameLike | null | undefined,
+  state: AuthorizationContext["state"]
+): boolean {
   if (!actor || !actor.id || !game) {
     return false;
   }
@@ -146,7 +158,11 @@ function authorize(action: string, context: AuthorizationContext = {}) {
     }
 
     if (!canCreateGame(actor)) {
-      throw createAuthorizationError("Non hai i permessi per creare una partita.", 403, "FORBIDDEN");
+      throw createAuthorizationError(
+        "Non hai i permessi per creare una partita.",
+        403,
+        "FORBIDDEN"
+      );
     }
 
     return { ok: true, actor };
@@ -157,12 +173,17 @@ function authorize(action: string, context: AuthorizationContext = {}) {
       throw createAuthorizationError("Sessione non valida.", 401, "AUTH_REQUIRED");
     }
 
-    const allowed = action === "game:read"
-      ? canReadGame(actor, context.game, context.state)
-      : canOpenGame(actor, context.game, context.state);
+    const allowed =
+      action === "game:read"
+        ? canReadGame(actor, context.game, context.state)
+        : canOpenGame(actor, context.game, context.state);
 
     if (!allowed) {
-      throw createAuthorizationError("Puoi aprire solo partite di cui fai parte.", 403, "MEMBER_ONLY");
+      throw createAuthorizationError(
+        "Puoi aprire solo partite di cui fai parte.",
+        403,
+        "MEMBER_ONLY"
+      );
     }
 
     return { ok: true, actor };
@@ -174,7 +195,11 @@ function authorize(action: string, context: AuthorizationContext = {}) {
     }
 
     if (!canStartGame(actor, context.game)) {
-      throw createAuthorizationError("Solo il creatore della partita puo avviarla.", 403, "HOST_ONLY");
+      throw createAuthorizationError(
+        "Solo il creatore della partita puo avviarla.",
+        403,
+        "HOST_ONLY"
+      );
     }
 
     return { ok: true, actor };

@@ -4,10 +4,10 @@
 
 NetRisk is currently in an early pre-1.0 stage. Security fixes are applied only to the latest maintained line and are not backported to older snapshots or historical commits.
 
-| Version | Supported |
-| ------- | --------- |
-| `0.1.x` | Yes |
-| `< 0.1.0` and older snapshots | No |
+| Version                       | Supported |
+| ----------------------------- | --------- |
+| `0.1.x`                       | Yes       |
+| `< 0.1.0` and older snapshots | No        |
 
 In practice, the `main` branch and the latest release derived from it are the only supported targets for security fixes.
 

@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -33,9 +38,10 @@ type ResolveBanzaiAttack = ResolveAttack;
 type ConsumeQueuedAttackRandom = () => (() => number) | null;
 
 function mappedAttackResolverError(error: unknown): { message: string; messageKey: string } | null {
-  const runtimeMessage = error && typeof error === "object" && "message" in error
-    ? String((error as { message?: unknown }).message || "")
-    : "";
+  const runtimeMessage =
+    error && typeof error === "object" && "message" in error
+      ? String((error as { message?: unknown }).message || "")
+      : "";
 
   if (!runtimeMessage) {
     return null;
@@ -85,7 +91,8 @@ async function handleAttackGameActionRoute(
   }
 
   const random = consumeQueuedAttackRandom() || undefined;
-  const requestedAttackDice = body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
+  const requestedAttackDice =
+    body.attackDice == null || body.attackDice === "" ? null : Number(body.attackDice);
   const actionFromId = String(body.fromId || "");
   const actionToId = String(body.toId || "");
   if (!isValidTerritoryId(actionFromId) || !isValidTerritoryId(actionToId)) {
@@ -95,9 +102,24 @@ async function handleAttackGameActionRoute(
 
   let result;
   try {
-    result = type === "attackBanzai"
-      ? resolveBanzaiAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice)
-      : resolveAttack(gameContext.state, playerId, actionFromId, actionToId, random, requestedAttackDice);
+    result =
+      type === "attackBanzai"
+        ? resolveBanzaiAttack(
+            gameContext.state,
+            playerId,
+            actionFromId,
+            actionToId,
+            random,
+            requestedAttackDice
+          )
+        : resolveAttack(
+            gameContext.state,
+            playerId,
+            actionFromId,
+            actionToId,
+            random,
+            requestedAttackDice
+          );
   } catch (error) {
     const mappedError = mappedAttackResolverError(error);
     if (!mappedError) {
@@ -124,7 +146,13 @@ async function handleAttackGameActionRoute(
   broadcastGame(gameContext);
   sendJson(res, 200, {
     ok: true,
-    state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user),
+    state: snapshotForUser(
+      gameContext.state,
+      gameContext.gameId,
+      gameContext.version,
+      gameContext.gameName,
+      user
+    ),
     rounds: Array.isArray(result.rounds) ? result.rounds : undefined
   });
   return true;

@@ -27,7 +27,9 @@ function registerSpeedInsights(targetWindow: SpeedInsightsWindow): void {
   script.dataset.sdkn = "@vercel/speed-insights";
   script.dataset.sdkv = "2.0.0";
   script.onerror = () => {
-    console.log("[Vercel Speed Insights] Failed to load script. This is expected in local development.");
+    console.log(
+      "[Vercel Speed Insights] Failed to load script. This is expected in local development."
+    );
   };
 
   document.head.appendChild(script);

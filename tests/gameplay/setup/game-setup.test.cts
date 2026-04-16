@@ -30,12 +30,18 @@ register("createInitialGameState assigns all territories with owners and one arm
 
 register("createInitialGameState rejects empty player lists", () => {
   const territories = [makeTerritory("alpha", [])];
-  assert.throws(() => createInitialGameState(makeMapDefinition(territories), []), /at least one player/i);
+  assert.throws(
+    () => createInitialGameState(makeMapDefinition(territories), []),
+    /at least one player/i
+  );
 });
 
 register("createInitialGameState rejects empty maps", () => {
   const players = makePlayers(["Alice", "Bob"]);
-  assert.throws(() => createInitialGameState({ territories: [] }, players), /at least one territory/i);
+  assert.throws(
+    () => createInitialGameState({ territories: [] }, players),
+    /at least one territory/i
+  );
 });
 
 register("createInitialGameState rejects duplicate player ids", () => {
@@ -45,5 +51,8 @@ register("createInitialGameState rejects duplicate player ids", () => {
   ];
   const territories = [makeTerritory("alpha", [])];
 
-  assert.throws(() => createInitialGameState(makeMapDefinition(territories), players), /duplicate player id/i);
+  assert.throws(
+    () => createInitialGameState(makeMapDefinition(territories), players),
+    /duplicate player id/i
+  );
 });

@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -17,7 +22,11 @@ type AuthContext = {
   };
 };
 
-type RequireAuth = (req: unknown, res: unknown, body: Record<string, unknown>) => Promise<AuthContext | null>;
+type RequireAuth = (
+  req: unknown,
+  res: unknown,
+  body: Record<string, unknown>
+) => Promise<AuthContext | null>;
 type Authorize = (action: string, context: Record<string, unknown>) => unknown;
 type ListInstalledModules = () => Promise<unknown>;
 type GetEnabledModules = () => Promise<unknown>;
@@ -68,7 +77,13 @@ async function handleListModulesRoute(
       engineVersion
     });
   } catch (error: any) {
-    sendLocalizedError(res, error?.statusCode || 403, error, "Accesso catalogo moduli non autorizzato.", "server.modules.listUnauthorized");
+    sendLocalizedError(
+      res,
+      error?.statusCode || 403,
+      error,
+      "Accesso catalogo moduli non autorizzato.",
+      "server.modules.listUnauthorized"
+    );
   }
 }
 
@@ -104,7 +119,13 @@ async function handleRescanModulesRoute(
       engineVersion
     });
   } catch (error: any) {
-    sendLocalizedError(res, error?.statusCode || 400, error, "Rescan moduli non riuscito.", "server.modules.rescanFailed");
+    sendLocalizedError(
+      res,
+      error?.statusCode || 400,
+      error,
+      "Rescan moduli non riuscito.",
+      "server.modules.rescanFailed"
+    );
   }
 }
 
@@ -133,7 +154,13 @@ async function handleEnableModuleRoute(
       engineVersion
     });
   } catch (error: any) {
-    sendLocalizedError(res, error?.statusCode || 400, error, "Abilitazione modulo non riuscita.", "server.modules.enableFailed");
+    sendLocalizedError(
+      res,
+      error?.statusCode || 400,
+      error,
+      "Abilitazione modulo non riuscita.",
+      "server.modules.enableFailed"
+    );
   }
 }
 
@@ -162,15 +189,18 @@ async function handleDisableModuleRoute(
       engineVersion
     });
   } catch (error: any) {
-    const message = typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-      ? "Il modulo e ancora usato da una partita attiva."
-      : "Disabilitazione modulo non riuscita.";
-    const key = typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-      ? "server.modules.disableInUse"
-      : "server.modules.disableFailed";
-    const statusCode = typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-      ? 409
-      : (error?.statusCode || 400);
+    const message =
+      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
+        ? "Il modulo e ancora usato da una partita attiva."
+        : "Disabilitazione modulo non riuscita.";
+    const key =
+      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
+        ? "server.modules.disableInUse"
+        : "server.modules.disableFailed";
+    const statusCode =
+      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
+        ? 409
+        : error?.statusCode || 400;
     sendLocalizedError(res, statusCode, error, message, key);
   }
 }

@@ -88,24 +88,23 @@ export const standardVictoryRuleSet: Readonly<VictoryRuleSet> = Object.freeze({
   }
 });
 
-const victoryRuleSetRegistry = createModuleRegistry<VictoryRuleSet>(
-  [standardVictoryRuleSet],
-  {
-    onMissing(ruleSetId) {
-      throw createLocalizedError(
-        "Unsupported victory rule set.",
-        "game.victory.unsupportedRuleSet",
-        { ruleSetId }
-      );
-    }
+const victoryRuleSetRegistry = createModuleRegistry<VictoryRuleSet>([standardVictoryRuleSet], {
+  onMissing(ruleSetId) {
+    throw createLocalizedError("Unsupported victory rule set.", "game.victory.unsupportedRuleSet", {
+      ruleSetId
+    });
   }
-);
+});
 
-export function findVictoryRuleSet(ruleSetId: string | null | undefined): Readonly<VictoryRuleSet> | null {
+export function findVictoryRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<VictoryRuleSet> | null {
   return victoryRuleSetRegistry.find(ruleSetId);
 }
 
-export function getVictoryRuleSet(ruleSetId: string = STANDARD_VICTORY_RULE_SET_ID): Readonly<VictoryRuleSet> {
+export function getVictoryRuleSet(
+  ruleSetId: string = STANDARD_VICTORY_RULE_SET_ID
+): Readonly<VictoryRuleSet> {
   return victoryRuleSetRegistry.get(ruleSetId, STANDARD_VICTORY_RULE_SET_ID);
 }
 
