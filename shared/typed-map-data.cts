@@ -1,4 +1,10 @@
-import { createContinent, createTerritory, type Continent, type MapPosition, type Territory } from "./core-domain.cjs";
+import {
+  createContinent,
+  createTerritory,
+  type Continent,
+  type MapPosition,
+  type Territory
+} from "./core-domain.cjs";
 
 export interface MapDefinitionTerritoryEntry {
   territory: Territory;
@@ -42,7 +48,9 @@ function normalizeCoordinate(rawValue: number, fieldName: string, territoryId: s
   }
 
   if (rawValue < 0 || rawValue > 1) {
-    throw new Error(`Territory "${territoryId}" must use scalable ${fieldName} coordinates between 0 and 1.`);
+    throw new Error(
+      `Territory "${territoryId}" must use scalable ${fieldName} coordinates between 0 and 1.`
+    );
   }
 
   return rawValue;
@@ -58,7 +66,10 @@ function validateAdjacency(territoriesById: Record<string, MapDefinitionTerritor
   });
 }
 
-function validateTerritoryReferences(continents: Continent[], validTerritoryIds: readonly string[] = []): void {
+function validateTerritoryReferences(
+  continents: Continent[],
+  validTerritoryIds: readonly string[] = []
+): void {
   if (!validTerritoryIds.length) {
     return;
   }
@@ -67,13 +78,18 @@ function validateTerritoryReferences(continents: Continent[], validTerritoryIds:
   continents.forEach((continent) => {
     continent.territoryIds.forEach((territoryId) => {
       if (!territoryIdSet.has(territoryId)) {
-        throw new Error(`Continent "${continent.id}" references unknown territory "${territoryId}".`);
+        throw new Error(
+          `Continent "${continent.id}" references unknown territory "${territoryId}".`
+        );
       }
     });
   });
 }
 
-export function buildMapDefinition(source: string, territoryRecords: readonly StaticTerritoryRecord[]): MapDefinition {
+export function buildMapDefinition(
+  source: string,
+  territoryRecords: readonly StaticTerritoryRecord[]
+): MapDefinition {
   if (territoryRecords.length < 1) {
     throw new Error("Map definition must contain at least one territory.");
   }
@@ -112,14 +128,17 @@ export function buildMapDefinition(source: string, territoryRecords: readonly St
   return {
     source,
     territories: Object.values(territoriesById),
-    positions: Object.values(territoriesById).reduce<Record<string, MapPosition>>((accumulator, entry) => {
-      if (!entry.territory.id) {
-        throw new Error("Territory id is required.");
-      }
+    positions: Object.values(territoriesById).reduce<Record<string, MapPosition>>(
+      (accumulator, entry) => {
+        if (!entry.territory.id) {
+          throw new Error("Territory id is required.");
+        }
 
-      accumulator[entry.territory.id] = entry.position;
-      return accumulator;
-    }, {})
+        accumulator[entry.territory.id] = entry.position;
+        return accumulator;
+      },
+      {}
+    )
   };
 }
 

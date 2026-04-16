@@ -27,10 +27,12 @@ export const en = Object.freeze({
   "auth.userProfile": "User profile",
   "auth.login.invalidCredentials": "Invalid credentials.",
   "auth.register.requiredFields": "Enter username and password.",
-  "auth.register.invalidUsername": "Valid username: 3-32 characters, letters, numbers, underscore, and hyphen.",
+  "auth.register.invalidUsername":
+    "Valid username: 3-32 characters, letters, numbers, underscore, and hyphen.",
   "auth.register.shortPassword": "Password too short: use at least 4 characters.",
   "auth.register.invalidEmail": "Invalid email.",
-  "auth.register.emailProtectionUnavailable": "Optional email is available only when AUTH_ENCRYPTION_KEY is configured on the server.",
+  "auth.register.emailProtectionUnavailable":
+    "Optional email is available only when AUTH_ENCRYPTION_KEY is configured on the server.",
   "auth.register.userExists": "User already registered.",
   "auth.internal.missingEncryptionKey": "AUTH_ENCRYPTION_KEY is missing.",
   "common.cancel": "Cancel",
@@ -42,7 +44,8 @@ export const en = Object.freeze({
   "index.heading": "Opening game",
   "index.copy": "Redirecting to the dedicated game page.",
   "landing.meta.title": "Frontline Dominion - Conquer the World",
-  "landing.meta.description": "Turn-based multiplayer strategy game. Conquer territories, command your armies, and dominate the theater of war. Free to play, nothing to install.",
+  "landing.meta.description":
+    "Turn-based multiplayer strategy game. Conquer territories, command your armies, and dominate the theater of war. Free to play, nothing to install.",
   "landing.nav.primaryAria": "Primary navigation",
   "landing.nav.menuOpen": "Open menu",
   "landing.nav.menuClose": "Close menu",
@@ -52,7 +55,8 @@ export const en = Object.freeze({
   "landing.hero.eyebrow": "The Turn-Based Strategy Game",
   "landing.hero.titleLine1": "Conquer the World.",
   "landing.hero.titleLine2": "Command the Armies.",
-  "landing.hero.desc": "Plan like a general. Strike at decisive moments. Defend what you have conquered. Frontline Dominion is the strategic theater of war that tests both mind and nerve.",
+  "landing.hero.desc":
+    "Plan like a general. Strike at decisive moments. Defend what you have conquered. Frontline Dominion is the strategic theater of war that tests both mind and nerve.",
   "landing.hero.ctaPrimary": "Start Free",
   "landing.hero.ctaSecondary": "Explore the Maps",
   "landing.hero.statsAria": "Game stats",
@@ -61,18 +65,24 @@ export const en = Object.freeze({
   "landing.hero.stats.strategies": "Strategies",
   "landing.features.eyebrow": "Features",
   "landing.features.heading": "A game of mind and courage",
-  "landing.features.desc": "Every match is a military campaign. Plan expansion, defend borders, and choose the right moment to strike.",
+  "landing.features.desc":
+    "Every match is a military campaign. Plan expansion, defend borders, and choose the right moment to strike.",
   "landing.features.cards.maps.title": "Two War Theaters",
-  "landing.features.cards.maps.body": "Fight across epic maps: the <strong>Classic World</strong> with 42 territories and the legendary <strong>Middle-earth</strong>. Each map brings new tactical challenges and strategic routes to dominate.",
+  "landing.features.cards.maps.body":
+    "Fight across epic maps: the <strong>Classic World</strong> with 42 territories and the legendary <strong>Middle-earth</strong>. Each map brings new tactical challenges and strategic routes to dominate.",
   "landing.features.cards.strategy.title": "Pure Strategy",
-  "landing.features.cards.strategy.body": "Reinforce vulnerable borders, plan deep attack chains, fortify key regions. Every move has consequences: there are no wasted turns.",
+  "landing.features.cards.strategy.body":
+    "Reinforce vulnerable borders, plan deep attack chains, fortify key regions. Every move has consequences: there are no wasted turns.",
   "landing.features.cards.multiplayer.title": "Persistent Multiplayer",
-  "landing.features.cards.multiplayer.body": "Up to <strong>6 commanders</strong> in the field. Matches save automatically: resume whenever you want and decide when to attack. No rush, only tactics.",
+  "landing.features.cards.multiplayer.body":
+    "Up to <strong>6 commanders</strong> in the field. Matches save automatically: resume whenever you want and decide when to attack. No rush, only tactics.",
   "landing.maps.eyebrow": "War Theaters",
   "landing.maps.heading": "Choose your battlefield",
-  "landing.maps.desc": "Two maps, two eras, endless campaigns. The same objective: dominate every corner of the world.",
+  "landing.maps.desc":
+    "Two maps, two eras, endless campaigns. The same objective: dominate every corner of the world.",
   "landing.maps.tagsAria": "Map details",
-  "landing.maps.classic.alt": "Gameplay screenshot - Classic World map with 4 active players on turn 14",
+  "landing.maps.classic.alt":
+    "Gameplay screenshot - Classic World map with 4 active players on turn 14",
   "landing.maps.classic.hudTop": "Campaign in progress · Turn 14",
   "landing.maps.classic.players.red": "Red Commander - 14 territories",
   "landing.maps.classic.players.blue": "Blue Commander - 11 territories",
@@ -82,7 +92,8 @@ export const en = Object.freeze({
   "landing.maps.classic.hudBottom.players": "4 / 6 players",
   "landing.maps.classic.hudBottom.phase": "Attack phase",
   "landing.maps.classic.title": "Classic World",
-  "landing.maps.classic.body": "The original theater. Six continents, 42 territories, endless possibilities. Dominate Europe, consolidate Asia, cut enemy routes from South America. The map that defined the genre.",
+  "landing.maps.classic.body":
+    "The original theater. Six continents, 42 territories, endless possibilities. Dominate Europe, consolidate Asia, cut enemy routes from South America. The map that defined the genre.",
   "landing.maps.classic.tags.territories": "42 Territories",
   "landing.maps.classic.tags.continents": "6 Continents",
   "landing.maps.classic.tags.players": "Up to 6 players",
@@ -95,7 +106,8 @@ export const en = Object.freeze({
   "landing.maps.middleEarth.hudBottom.players": "3 / 6 players",
   "landing.maps.middleEarth.hudBottom.phase": "Reinforcement phase",
   "landing.maps.middleEarth.title": "Middle-earth",
-  "landing.maps.middleEarth.body": "A legendary theater of war. From the Shire to the lands of Mordor, every region carries the weight of history. Who will dominate the realms of Men and the plains of Rohan?",
+  "landing.maps.middleEarth.body":
+    "A legendary theater of war. From the Shire to the lands of Mordor, every region carries the weight of history. Who will dominate the realms of Men and the plains of Rohan?",
   "landing.maps.middleEarth.tags.kind": "Fantasy map",
   "landing.maps.middleEarth.tags.regions": "Iconic regions",
   "landing.maps.middleEarth.tags.setting": "Epic setting",
@@ -103,14 +115,18 @@ export const en = Object.freeze({
   "landing.howto.heading": "On the field in three steps",
   "landing.howto.desc": "No endless tutorials. You are ready to fight in minutes.",
   "landing.howto.step1.title": "Create your account",
-  "landing.howto.step1.body": "Register in seconds. Free, with nothing to install. Choose your commander name and you are ready.",
+  "landing.howto.step1.body":
+    "Register in seconds. Free, with nothing to install. Choose your commander name and you are ready.",
   "landing.howto.step2.title": "Choose the battle",
-  "landing.howto.step2.body": "From the Command Lobby, create a new match or join an existing session. Choose the map and challenge your opponents.",
+  "landing.howto.step2.body":
+    "From the Command Lobby, create a new match or join an existing session. Choose the map and challenge your opponents.",
   "landing.howto.step3.title": "Conquer the world",
-  "landing.howto.step3.body": "Reinforce your armies, plan attacks, expand your dominion. The territory is yours until someone challenges you.",
+  "landing.howto.step3.body":
+    "Reinforce your armies, plan attacks, expand your dominion. The territory is yours until someone challenges you.",
   "landing.final.eyebrow": "Join the war",
   "landing.final.heading": "Your army awaits.",
-  "landing.final.desc": "Your starting territory is still free. New campaigns begin every day: do not stand by and watch.",
+  "landing.final.desc":
+    "Your starting territory is still free. New campaigns begin every day: do not stand by and watch.",
   "landing.final.ctaPrimary": "Register Free",
   "landing.final.ctaSecondary": "Enter Lobby",
   "landing.footer.aria": "Footer links",
@@ -119,8 +135,10 @@ export const en = Object.freeze({
   "lobby.title": "Frontline Dominion - Lobby",
   "lobby.eyebrow": "War Room",
   "lobby.heading": "Command Lobby",
-  "lobby.copy": "Reopen the right game quickly, check which lobbies are ready, and choose the next theater to open right away.",
-  "lobby.authStatus": "Log in from the Game page to connect, then come back here to manage sessions.",
+  "lobby.copy":
+    "Reopen the right game quickly, check which lobbies are ready, and choose the next theater to open right away.",
+  "lobby.authStatus":
+    "Log in from the Game page to connect, then come back here to manage sessions.",
   "lobby.gameStatus": "No active game",
   "lobby.focus.label": "Session in focus",
   "lobby.focus.value": "None",
@@ -134,9 +152,11 @@ export const en = Object.freeze({
   "lobby.readySessions.copy": "Lobbies that can be started without extra setup.",
   "lobby.readiness.label": "Operational readiness",
   "lobby.readiness.value": "Select",
-  "lobby.readiness.copy": "Use the list and detail panel to quickly compare composition, status, and last update.",
+  "lobby.readiness.copy":
+    "Use the list and detail panel to quickly compare composition, status, and last update.",
   "lobby.availableSessions.heading": "Available sessions",
-  "lobby.availableSessions.copy": "Select a lobby to immediately see whether it is worth reopening.",
+  "lobby.availableSessions.copy":
+    "Select a lobby to immediately see whether it is worth reopening.",
   "lobby.table.game": "Game",
   "lobby.table.map": "Map",
   "lobby.table.status": "Status",
@@ -144,9 +164,11 @@ export const en = Object.freeze({
   "lobby.table.updated": "Updated",
   "lobby.loading": "Loading sessions...",
   "lobby.details.heading": "Session details",
-  "lobby.details.copy": "Check the real status, slot occupancy, and last useful context before opening.",
+  "lobby.details.copy":
+    "Check the real status, slot occupancy, and last useful context before opening.",
   "lobby.details.emptyBadge": "No selection",
-  "lobby.details.empty": "Select a game to inspect its current state and open it on the game board.",
+  "lobby.details.empty":
+    "Select a game to inspect its current state and open it on the game board.",
   "lobby.empty": "No games available. Create a new one to get started.",
   "lobby.errors.loadGames": "Unable to load games.",
   "lobby.readiness.archive": "Campaign archive",
@@ -177,18 +199,22 @@ export const en = Object.freeze({
   "lobby.details.modules": "Modules",
   "lobby.details.updated": "Last update",
   "lobby.details.focus": "Focus",
-  "lobby.details.note": "Lobby handles creation, selection, and opening. The Game board remains dedicated to controlling the active match.",
+  "lobby.details.note":
+    "Lobby handles creation, selection, and opening. The Game board remains dedicated to controlling the active match.",
   "lobby.details.open": "Open on war board",
   "lobby.details.joinOpen": "Join and open",
-  "lobby.details.emptyExtended": "Select a game to inspect its current status, readiness, and open it on the game board.",
+  "lobby.details.emptyExtended":
+    "Select a game to inspect its current status, readiness, and open it on the game board.",
   "newGame.title": "Frontline Dominion - New Game",
   "newGame.eyebrow": "New Game Setup",
   "newGame.heading": "Set up a new game",
-  "newGame.copy": "Define the theater, control how many slots to open, and immediately verify how humans and AI will enter before creating the session.",
+  "newGame.copy":
+    "Define the theater, control how many slots to open, and immediately verify how humans and AI will enter before creating the session.",
   "newGame.authStatus": "Local setup ready.",
   "newGame.goal.label": "Objective",
   "newGame.goal.title": "Fast preparation",
-  "newGame.goal.copy": "Keep only the decisions that really matter visible: name, map, seats at the table, and the nature of each slot.",
+  "newGame.goal.copy":
+    "Keep only the decisions that really matter visible: name, map, seats at the table, and the nature of each slot.",
   "newGame.sequence.label": "Sequence",
   "newGame.sequence.step1": "1. Choose map and name",
   "newGame.sequence.step2": "2. Define the seats at the table",
@@ -200,8 +226,10 @@ export const en = Object.freeze({
   "newGame.contentPack.label": "Content pack",
   "newGame.contentPack.summary": "{description} Default map: {mapName}. Default dice: {dice}.",
   "newGame.ruleset.label": "Ruleset",
-  "newGame.ruleset.summary.default": "The {ruleset} ruleset applies {dice} dice. The map always stays selectable.",
-  "newGame.ruleset.summary.custom": "The {ruleset} ruleset remains the match baseline, but you are customizing options. Active dice: {dice}.",
+  "newGame.ruleset.summary.default":
+    "The {ruleset} ruleset applies {dice} dice. The map always stays selectable.",
+  "newGame.ruleset.summary.custom":
+    "The {ruleset} ruleset remains the match baseline, but you are customizing options. Active dice: {dice}.",
   "newGame.map.label": "Map",
   "newGame.options.heading": "Rule options",
   "newGame.options.copy": "Keep the preset as-is or open the available option customization.",
@@ -214,12 +242,14 @@ export const en = Object.freeze({
   "newGame.turnTimeout.label": "Turn time limit",
   "newGame.turnTimeout.option": "{hours} hours",
   "newGame.playerSlots.heading": "Player slots",
-  "newGame.playerSlots.copy": "The first slot is always yours; the others define who will arrive in the lobby and who will start as AI.",
+  "newGame.playerSlots.copy":
+    "The first slot is always yours; the others define who will arrive in the lobby and who will start as AI.",
   "newGame.playerSlots.badge": "Human / AI",
   "newGame.createOpen": "Create and open",
   "newGame.slot.locked": "Locked slot: this is the game creator.",
   "newGame.slot.aiDescription": "Name assigned by the server from a list of historical generals.",
-  "newGame.slot.humanDescription": "The name will be taken from the player when they enter the lobby.",
+  "newGame.slot.humanDescription":
+    "The name will be taken from the player when they enter the lobby.",
   "newGame.slot.playerLabel": "Player {number}",
   "newGame.slot.creatorBadge": "Creator",
   "newGame.slot.typeLabel": "Type",
@@ -250,7 +280,8 @@ export const en = Object.freeze({
   "profile.feedback": "Loading player data...",
   "profile.preferences.eyebrow": "Preferences",
   "profile.preferences.heading": "Site theme",
-  "profile.preferences.copy": "Choose the visual theme you prefer: the change is applied immediately across the site in this browser.",
+  "profile.preferences.copy":
+    "Choose the visual theme you prefer: the change is applied immediately across the site in this browser.",
   "profile.preferences.label": "Theme",
   "profile.preferences.status.loading": "Loading current theme...",
   "profile.preferences.status.saving": "Saving theme...",
@@ -262,7 +293,8 @@ export const en = Object.freeze({
   "profile.preferences.theme.ember": "Ember",
   "profile.modules.eyebrow": "Modules",
   "profile.modules.heading": "Module control",
-  "profile.modules.copy": "For admins, the module catalog exposes compatibility, status, warnings, and the base lifecycle for the installable runtime.",
+  "profile.modules.copy":
+    "For admins, the module catalog exposes compatibility, status, warnings, and the base lifecycle for the installable runtime.",
   "profile.modules.refresh": "Refresh",
   "profile.modules.rescan": "Rescan",
   "profile.modules.empty": "No modules detected.",
@@ -328,7 +360,8 @@ export const en = Object.freeze({
   "profile.front.copy": "Open a session to resume the current theater.",
   "profile.directive.label": "Directive",
   "profile.directive.value": "Hold command",
-  "profile.directive.copy": "Lobby and Game remain the two quick access points to create or reopen a campaign.",
+  "profile.directive.copy":
+    "Lobby and Game remain the two quick access points to create or reopen a campaign.",
   "profile.metrics.gamesPlayed": "Games played",
   "profile.metrics.wins": "Wins",
   "profile.metrics.losses": "Losses",
@@ -339,24 +372,28 @@ export const en = Object.freeze({
   "profile.games.count": "0 active",
   "profile.games.empty": "No active game linked to your profile.",
   "profile.space.heading": "Commander space",
-  "profile.space.copy": "Use this area as a quick place to read your operational status before going back to the lobby or board.",
+  "profile.space.copy":
+    "Use this area as a quick place to read your operational status before going back to the lobby or board.",
   "profile.ranking.eyebrow": "Ranking",
   "profile.ranking.title": "Recruit",
-  "profile.ranking.copy": "Complete campaigns and improve your win rate to climb the operational rank.",
+  "profile.ranking.copy":
+    "Complete campaigns and improve your win rate to climb the operational rank.",
   "profile.map.eyebrow": "Map detail",
   "profile.map.title": "No observed map",
-  "profile.map.copy": "Open or complete a game to build an initial reading of the fronts you have played.",
+  "profile.map.copy":
+    "Open or complete a game to build an initial reading of the fronts you have played.",
   "profile.advanced.eyebrow": "Advanced stats",
   "profile.advanced.title": "Operational picture",
-  "profile.advanced.copy": "A concise reading of campaign pace across open fronts, results, and operational continuity.",
+  "profile.advanced.copy":
+    "A concise reading of campaign pace across open fronts, results, and operational continuity.",
   "profile.auth.loggedIn": "Logged in as {username}.",
   "profile.auth.unavailable": "Session unavailable.",
   "profile.auth.loggedOut": "Session ended.",
   "profile.errors.loginRequired": "Log in before opening the player profile.",
   "profile.errors.unavailable": "Profile unavailable.",
   "profile.errors.loadFailed": "Unable to load the profile.",
-    "profile.games.activeCount.one": "{count} active",
-    "profile.games.activeCount.other": "{count} active",
+  "profile.games.activeCount.one": "{count} active",
+  "profile.games.activeCount.other": "{count} active",
   "profile.games.kicker": "Operational theater",
   "profile.games.playerCount": "{current}/{total} players",
   "profile.games.updatedAt": "Updated {updatedAt}",
@@ -372,34 +409,48 @@ export const en = Object.freeze({
   "profile.ranks.supremeStrategist": "Supreme Strategist",
   "profile.ranks.armyCommander": "Army Commander",
   "profile.ranks.lineOfficer": "Line Officer",
-  "profile.runtime.subtitle.withHistory": "Operational record of completed campaigns and sessions still open.",
-  "profile.runtime.subtitle.noHistory": "The dossier is ready: the first campaign will complete the commander's operational picture.",
-  "profile.runtime.copy.withHistory": "A quick read of overall performance, designed to get you back into the game with the right context.",
-  "profile.runtime.copy.noHistory": "The commander does not yet have a full history. Start or complete a match to open the first operational dossier.",
+  "profile.runtime.subtitle.withHistory":
+    "Operational record of completed campaigns and sessions still open.",
+  "profile.runtime.subtitle.noHistory":
+    "The dossier is ready: the first campaign will complete the commander's operational picture.",
+  "profile.runtime.copy.withHistory":
+    "A quick read of overall performance, designed to get you back into the game with the right context.",
+  "profile.runtime.copy.noHistory":
+    "The commander does not yet have a full history. Start or complete a match to open the first operational dossier.",
   "profile.runtime.commandStatus.withHistory": "Active record: {gamesPlayed} monitored campaigns.",
-  "profile.runtime.commandStatus.noHistory": "No complete record available yet: the dossier will update after the first campaigns.",
+  "profile.runtime.commandStatus.noHistory":
+    "No complete record available yet: the dossier will update after the first campaigns.",
   "profile.runtime.commandFocusNote.active": "{phase} on {mapName}.",
-  "profile.runtime.commandFocusNote.none": "Open a session from the lobby to have an active front in the dossier.",
+  "profile.runtime.commandFocusNote.none":
+    "Open a session from the lobby to have an active front in the dossier.",
   "profile.runtime.directive.resume": "Resume front",
   "profile.runtime.directive.plan": "Plan a new campaign",
   "profile.runtime.directiveNote.active": "You have {count} active sessions ready to reopen.",
-  "profile.runtime.directiveNote.none": "Create a new game from the lobby to start filling the commander's record.",
-  "profile.runtime.rankingCopy.withHistory": "{wins} wins, {losses} losses, and {winRate} win rate in the current dossier.",
-  "profile.runtime.rankingCopy.noHistory": "Complete at least one campaign to assign the first operational rank.",
+  "profile.runtime.directiveNote.none":
+    "Create a new game from the lobby to start filling the commander's record.",
+  "profile.runtime.rankingCopy.withHistory":
+    "{wins} wins, {losses} losses, and {winRate} win rate in the current dossier.",
+  "profile.runtime.rankingCopy.noHistory":
+    "Complete at least one campaign to assign the first operational rank.",
   "profile.runtime.mapCopy.withHistory": "Tracked fronts in the profile: {maps}.",
-  "profile.runtime.mapCopy.noHistory": "Open or complete a game to record the first front in the map dossier.",
+  "profile.runtime.mapCopy.noHistory":
+    "Open or complete a game to record the first front in the map dossier.",
   "profile.runtime.advancedTitle.withHistory": "Momentum {momentum}",
-  "profile.runtime.advancedCopy.withHistory": "{inProgress} open fronts and {gamesPlayed} campaigns recorded in the dossier.",
-  "profile.runtime.advancedCopy.noHistory": "The advanced summary will show campaign pace as soon as first results are recorded.",
+  "profile.runtime.advancedCopy.withHistory":
+    "{inProgress} open fronts and {gamesPlayed} campaigns recorded in the dossier.",
+  "profile.runtime.advancedCopy.noHistory":
+    "The advanced summary will show campaign pace as soon as first results are recorded.",
   "profile.runtime.noStats": "No stats available: complete at least one game to build the record.",
   "profile.runtime.temporarilyUnavailable": "Profile temporarily unavailable.",
   "profile.runtime.unavailableTitle": "Profile unavailable",
   "profile.runtime.unavailableSubtitle": "Check the session or try again later.",
-  "profile.runtime.loggedOutFeedback": "Session closed. Log in again from the Game page to inspect the profile.",
+  "profile.runtime.loggedOutFeedback":
+    "Session closed. Log in again from the Game page to inspect the profile.",
   "register.title": "Frontline Dominion - Registration",
   "register.eyebrow": "Account Setup",
   "register.heading": "Create your commander profile",
-  "register.copy": "Standard registration, optional email, strong password, and sensitive data protected server-side.",
+  "register.copy":
+    "Standard registration, optional email, strong password, and sensitive data protected server-side.",
   "register.authStatus": "Fill out the form to create the account.",
   "register.username.label": "Username",
   "register.username.placeholder": "Commander_01",
@@ -409,13 +460,15 @@ export const en = Object.freeze({
   "register.password.placeholder": "Strong password",
   "register.passwordConfirm.label": "Confirm password",
   "register.passwordConfirm.placeholder": "Repeat password",
-  "register.guideline.username": "Username: 3-32 characters, letters, numbers, underscore, or hyphen.",
+  "register.guideline.username":
+    "Username: 3-32 characters, letters, numbers, underscore, or hyphen.",
   "register.guideline.email": "Email is optional.",
   "register.guideline.password": "Password: at least 4 characters.",
   "register.submit": "Register",
   "register.auth.loggedIn": "You are already logged in as {username}.",
   "register.errors.requiredFields": "Fill in the required fields.",
-  "register.errors.invalidUsername": "Valid username: 3-32 characters, letters, numbers, underscore, and hyphen.",
+  "register.errors.invalidUsername":
+    "Valid username: 3-32 characters, letters, numbers, underscore, and hyphen.",
   "register.errors.shortPassword": "Use a password with at least 4 characters.",
   "register.errors.passwordMismatch": "Passwords do not match.",
   "register.errors.invalidEmail": "Invalid email.",
@@ -484,7 +537,8 @@ export const en = Object.freeze({
   "game.runtime.noGamesOption": "No games",
   "game.runtime.sessionShort": "Session {id}",
   "game.runtime.openGame": "Open game",
-  "game.runtime.selectGameFromList": "Select a game from the list to view details, status, and main actions.",
+  "game.runtime.selectGameFromList":
+    "Select a game from the list to view details, status, and main actions.",
   "game.runtime.loggedIn": "{username}",
   "game.runtime.accessRequired": "Access required",
   "game.runtime.none": "None",
@@ -511,11 +565,13 @@ export const en = Object.freeze({
   "game.runtime.combat.conquered": "Territory conquered",
   "game.runtime.combat.defenseBroken": "Defense broken",
   "game.runtime.combat.resolved": "Combat resolved",
-  "game.runtime.tradeAlert.mustTradeNow": "You have {cardCount} cards in hand: trade 3 to continue. Hand limit {limit}.",
+  "game.runtime.tradeAlert.mustTradeNow":
+    "You have {cardCount} cards in hand: trade 3 to continue. Hand limit {limit}.",
   "game.runtime.cardsInHand": "Cards in hand: {count}.",
   "game.runtime.nextTradeBonus": "Next trade: +{bonus} reinforcements.",
   "game.runtime.noCardsAvailable": "No cards available.",
-  "game.runtime.tradeHelp.mustTrade": "Mandatory trade: you must trade 3 cards to continue. Hand limit: {limit}.",
+  "game.runtime.tradeHelp.mustTrade":
+    "Mandatory trade: you must trade 3 cards to continue. Hand limit: {limit}.",
   "game.runtime.tradeHelp.selected": "{selected}/3 cards selected.",
   "game.runtime.banzaiLoading": "Banzai...",
   "game.runtime.goToFortify": "Go to fortify",
@@ -525,24 +581,32 @@ export const en = Object.freeze({
   "game.runtime.hint.attack": "Attack",
   "game.runtime.hint.observation": "Observation",
   "game.runtime.hint.login": "Login",
-  "game.runtime.confirmSurrender": "Do you really want to surrender and leave the match? You will be permanently eliminated from this session.",
+  "game.runtime.confirmSurrender":
+    "Do you really want to surrender and leave the match? You will be permanently eliminated from this session.",
   "game.runtime.tradeSuccess": "Valid set: +{bonus} reinforcements.",
   "game.log.lobbyCreated": "Lobby created. Join and start the game.",
   "game.log.turnCardAwarded": "{playerName} receives a territory card.",
   "game.log.tradeCompleted": "{playerName} trades a card set and receives {bonus} reinforcements.",
-    "game.log.gameStarted": "Game started. {playerName}'s turn with {reinforcementPool} reinforcements.",
-    "game.log.aiOnlyRemain": "The game closes: only AI players remain active.",
-    "game.log.victoryDeclared": "{playerName} conquers the map and wins the game.",
-    "game.log.victoryMajorityControl": "{playerName} secures majority control and wins the game.",
-    "game.log.turnStarted": "New turn: {playerName} receives {reinforcementPool} reinforcements.",
-  "game.log.turnTimedOut": "{playerName} exceeded the turn time limit and the turn was auto-forced.",
-  "game.log.aiTurnRecovered": "The system recovered a stuck AI turn for {playerName} and forced the turn to end.",
+  "game.log.gameStarted":
+    "Game started. {playerName}'s turn with {reinforcementPool} reinforcements.",
+  "game.log.aiOnlyRemain": "The game closes: only AI players remain active.",
+  "game.log.victoryDeclared": "{playerName} conquers the map and wins the game.",
+  "game.log.victoryMajorityControl": "{playerName} secures majority control and wins the game.",
+  "game.log.turnStarted": "New turn: {playerName} receives {reinforcementPool} reinforcements.",
+  "game.log.turnTimedOut":
+    "{playerName} exceeded the turn time limit and the turn was auto-forced.",
+  "game.log.aiTurnRecovered":
+    "The system recovered a stuck AI turn for {playerName} and forced the turn to end.",
   "game.log.playerRejoined": "{playerName} reconnects to the lobby.",
   "game.log.playerJoined": "{playerName} enters the lobby.",
-  "game.log.reinforced": "{playerName} adds {reinforcementAmount} troops to {territoryId}. Reinforcements left: {reinforcementPool}.",
-  "game.log.attackConquered": "{attackerName} attacks {toId}: {attackRolls} against {defendRolls}. {attackerName} conquers {toId} and must move armies.",
-  "game.log.attackDamaged": "{attackerName} attacks {toId}: {attackRolls} against {defendRolls}. The defender loses {defenderLosses} troops.",
-  "game.log.attackFailed": "{attackerName} fails the attack on {toId}: {attackRolls} against {defendRolls}.",
+  "game.log.reinforced":
+    "{playerName} adds {reinforcementAmount} troops to {territoryId}. Reinforcements left: {reinforcementPool}.",
+  "game.log.attackConquered":
+    "{attackerName} attacks {toId}: {attackRolls} against {defendRolls}. {attackerName} conquers {toId} and must move armies.",
+  "game.log.attackDamaged":
+    "{attackerName} attacks {toId}: {attackRolls} against {defendRolls}. The defender loses {defenderLosses} troops.",
+  "game.log.attackFailed":
+    "{attackerName} fails the attack on {toId}: {attackRolls} against {defendRolls}.",
   "game.log.moveAfterConquest": "{playerName} moves {moveCount} armies into {territoryId}.",
   "game.log.fortified": "{playerName} moves {moveCount} armies from {fromId} to {toId}.",
   "game.log.enterFortify": "{playerName} enters the fortify phase.",
@@ -556,10 +620,14 @@ export const en = Object.freeze({
   "contentPack.unsupported": "Unsupported content pack.",
   "game.victory.internal.invalidState": "Victory detection requires a valid game state.",
   "game.victory.internal.noPlayers": "Victory detection requires at least one player.",
-  "game.victory.internal.missingTerritories": "Victory detection requires territory ownership data.",
-  "game.victory.internal.invalidPlayer": "Victory detection found an invalid player at index {index}.",
-  "game.victory.internal.duplicatePlayer": "Victory detection found duplicate player id \"{playerId}\".",
-  "game.victory.internal.noActivePlayers": "Victory detection found no active players with territories.",
+  "game.victory.internal.missingTerritories":
+    "Victory detection requires territory ownership data.",
+  "game.victory.internal.invalidPlayer":
+    "Victory detection found an invalid player at index {index}.",
+  "game.victory.internal.duplicatePlayer":
+    'Victory detection found duplicate player id "{playerId}".',
+  "game.victory.internal.noActivePlayers":
+    "Victory detection found no active players with territories.",
   "cards.invalidSetLength": "Card sets must contain exactly three cards.",
   "cards.unsupportedType": "Card set contains an unsupported card type.",
   "cards.invalidTrade": "Card set does not match a valid standard trade.",
@@ -583,7 +651,8 @@ export const en = Object.freeze({
   "game.attack.mustSpendReinforcements": "You must spend all reinforcements first.",
   "game.attack.mustTradeCards": "You must trade cards first: you exceeded the hand limit.",
   "game.attack.mustMoveAfterConquest": "You must move armies into the conquered territory first.",
-  "game.attack.invalidOwnership": "You can attack only from one of your territories to an enemy territory.",
+  "game.attack.invalidOwnership":
+    "You can attack only from one of your territories to an enemy territory.",
   "game.attack.notAdjacent": "The territories are not adjacent.",
   "game.attack.notEnoughArmies": "You need at least 2 armies to attack.",
   "game.attack.notEnoughDiceArmies": "You do not have enough armies to roll attack dice.",

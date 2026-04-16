@@ -10,8 +10,20 @@ import type { PlayerPieceSet } from "./player-piece-sets.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
 
 export type NetRiskModuleKind = "content" | "gameplay" | "ui" | "hybrid";
-export type NetRiskModuleStatus = "discovered" | "validated" | "enabled" | "disabled" | "incompatible" | "error";
-export type NetRiskUiSlotKind = "badge" | "panel" | "nav-item" | "page-section" | "admin-card" | "widget";
+export type NetRiskModuleStatus =
+  | "discovered"
+  | "validated"
+  | "enabled"
+  | "disabled"
+  | "incompatible"
+  | "error";
+export type NetRiskUiSlotKind =
+  | "badge"
+  | "panel"
+  | "nav-item"
+  | "page-section"
+  | "admin-card"
+  | "widget";
 
 export interface NetRiskModuleCapability {
   kind: string;
@@ -170,14 +182,11 @@ export interface NetRiskModuleMapDefinition {
   continentRecords: StaticContinentRecord[];
 }
 
-export interface NetRiskModuleContentPackDefinition extends ContentPackSummary {
-}
+export interface NetRiskModuleContentPackDefinition extends ContentPackSummary {}
 
-export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {
-}
+export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {}
 
-export interface NetRiskModuleDiceRuleSetDefinition extends DiceRuleSet {
-}
+export interface NetRiskModuleDiceRuleSetDefinition extends DiceRuleSet {}
 
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
@@ -279,12 +288,24 @@ function normalizeDependency(raw: unknown, sourcePath: string): NetRiskModuleDep
 }
 
 function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContribution {
-  if (!isObject(raw) || !isNonEmptyString(raw.slotId) || !isNonEmptyString(raw.itemId) || !isNonEmptyString(raw.title)) {
+  if (
+    !isObject(raw) ||
+    !isNonEmptyString(raw.slotId) ||
+    !isNonEmptyString(raw.itemId) ||
+    !isNonEmptyString(raw.title)
+  ) {
     throw new Error(`Invalid UI slot contribution in "${sourcePath}".`);
   }
 
   const kind = raw.kind;
-  if (kind !== "badge" && kind !== "panel" && kind !== "nav-item" && kind !== "page-section" && kind !== "admin-card" && kind !== "widget") {
+  if (
+    kind !== "badge" &&
+    kind !== "panel" &&
+    kind !== "nav-item" &&
+    kind !== "page-section" &&
+    kind !== "admin-card" &&
+    kind !== "widget"
+  ) {
     throw new Error(`Invalid UI slot kind in "${sourcePath}".`);
   }
 
@@ -305,7 +326,9 @@ function normalizeProfiles(raw: unknown): NetRiskModuleProfile[] {
   }
 
   return raw
-    .filter((entry) => isObject(entry) && isNonEmptyString(entry.id) && isNonEmptyString(entry.name))
+    .filter(
+      (entry) => isObject(entry) && isNonEmptyString(entry.id) && isNonEmptyString(entry.name)
+    )
     .map((entry) => ({
       id: String(entry.id).trim(),
       name: String(entry.name).trim(),
@@ -330,8 +353,12 @@ function normalizeGamePresets(raw: unknown): NetRiskGamePreset[] {
       description: isNonEmptyString(entry.description) ? String(entry.description).trim() : null,
       moduleId: isNonEmptyString(entry.moduleId) ? String(entry.moduleId).trim() : null,
       activeModuleIds: normalizeStringArray(entry.activeModuleIds),
-      contentProfileId: isNonEmptyString(entry.contentProfileId) ? String(entry.contentProfileId).trim() : null,
-      gameplayProfileId: isNonEmptyString(entry.gameplayProfileId) ? String(entry.gameplayProfileId).trim() : null,
+      contentProfileId: isNonEmptyString(entry.contentProfileId)
+        ? String(entry.contentProfileId).trim()
+        : null,
+      gameplayProfileId: isNonEmptyString(entry.gameplayProfileId)
+        ? String(entry.gameplayProfileId).trim()
+        : null,
       uiProfileId: isNonEmptyString(entry.uiProfileId) ? String(entry.uiProfileId).trim() : null,
       defaults: normalizeModuleConfigDefaults(entry.defaults)
     };
@@ -355,7 +382,9 @@ function normalizeModuleConfigDefaults(raw: unknown): NetRiskModuleConfigDefault
     pieceSetId: isNonEmptyString(raw.pieceSetId) ? String(raw.pieceSetId).trim() : null,
     mapId: isNonEmptyString(raw.mapId) ? String(raw.mapId).trim() : null,
     diceRuleSetId: isNonEmptyString(raw.diceRuleSetId) ? String(raw.diceRuleSetId).trim() : null,
-    victoryRuleSetId: isNonEmptyString(raw.victoryRuleSetId) ? String(raw.victoryRuleSetId).trim() : null,
+    victoryRuleSetId: isNonEmptyString(raw.victoryRuleSetId)
+      ? String(raw.victoryRuleSetId).trim()
+      : null,
     themeId: isNonEmptyString(raw.themeId) ? String(raw.themeId).trim() : null,
     pieceSkinId: isNonEmptyString(raw.pieceSkinId) ? String(raw.pieceSkinId).trim() : null
   };
@@ -425,22 +454,32 @@ function normalizeModuleMaps(raw: unknown, sourcePath: string): NetRiskModuleMap
   });
 }
 
-function normalizeModuleContentPacks(raw: unknown, sourcePath: string): NetRiskModuleContentPackDefinition[] {
+function normalizeModuleContentPacks(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleContentPackDefinition[] {
   if (!Array.isArray(raw)) {
     return [];
   }
 
   return raw.map((entry) => {
-    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name) || !isNonEmptyString(entry.description)) {
+    if (
+      !isObject(entry) ||
+      !isNonEmptyString(entry.id) ||
+      !isNonEmptyString(entry.name) ||
+      !isNonEmptyString(entry.description)
+    ) {
       throw new Error(`Invalid module content pack definition in "${sourcePath}".`);
     }
 
-    if (!isNonEmptyString(entry.defaultSiteThemeId)
-      || !isNonEmptyString(entry.defaultMapId)
-      || !isNonEmptyString(entry.defaultDiceRuleSetId)
-      || !isNonEmptyString(entry.defaultCardRuleSetId)
-      || !isNonEmptyString(entry.defaultVictoryRuleSetId)
-      || !isNonEmptyString(entry.defaultPieceSetId)) {
+    if (
+      !isNonEmptyString(entry.defaultSiteThemeId) ||
+      !isNonEmptyString(entry.defaultMapId) ||
+      !isNonEmptyString(entry.defaultDiceRuleSetId) ||
+      !isNonEmptyString(entry.defaultCardRuleSetId) ||
+      !isNonEmptyString(entry.defaultVictoryRuleSetId) ||
+      !isNonEmptyString(entry.defaultPieceSetId)
+    ) {
       throw new Error(`Invalid module content pack defaults in "${sourcePath}".`);
     }
 
@@ -458,7 +497,10 @@ function normalizeModuleContentPacks(raw: unknown, sourcePath: string): NetRiskM
   });
 }
 
-function normalizeModulePlayerPieceSets(raw: unknown, sourcePath: string): NetRiskModulePlayerPieceSetDefinition[] {
+function normalizeModulePlayerPieceSets(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModulePlayerPieceSetDefinition[] {
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -470,7 +512,9 @@ function normalizeModulePlayerPieceSets(raw: unknown, sourcePath: string): NetRi
 
     const palette = normalizeStringArray(entry.palette);
     if (!palette.length) {
-      throw new Error(`Module player piece set "${String(entry.id).trim()}" in "${sourcePath}" must define a non-empty palette.`);
+      throw new Error(
+        `Module player piece set "${String(entry.id).trim()}" in "${sourcePath}" must define a non-empty palette.`
+      );
     }
 
     return {
@@ -481,7 +525,10 @@ function normalizeModulePlayerPieceSets(raw: unknown, sourcePath: string): NetRi
   });
 }
 
-function normalizeModuleDiceRuleSets(raw: unknown, sourcePath: string): NetRiskModuleDiceRuleSetDefinition[] {
+function normalizeModuleDiceRuleSets(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleDiceRuleSetDefinition[] {
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -494,15 +541,24 @@ function normalizeModuleDiceRuleSets(raw: unknown, sourcePath: string): NetRiskM
     const attackerMaxDice = Number(entry.attackerMaxDice);
     const defenderMaxDice = Number(entry.defenderMaxDice);
     if (!Number.isInteger(attackerMaxDice) || attackerMaxDice < 1) {
-      throw new Error(`Invalid attackerMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+      throw new Error(
+        `Invalid attackerMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`
+      );
     }
 
     if (!Number.isInteger(defenderMaxDice) || defenderMaxDice < 1) {
-      throw new Error(`Invalid defenderMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+      throw new Error(
+        `Invalid defenderMaxDice for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`
+      );
     }
 
-    if (typeof entry.attackerMustLeaveOneArmyBehind !== "boolean" || typeof entry.defenderWinsTies !== "boolean") {
-      throw new Error(`Invalid boolean flags for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`);
+    if (
+      typeof entry.attackerMustLeaveOneArmyBehind !== "boolean" ||
+      typeof entry.defenderWinsTies !== "boolean"
+    ) {
+      throw new Error(
+        `Invalid boolean flags for module dice rule set "${String(entry.id).trim()}" in "${sourcePath}".`
+      );
     }
 
     return {
@@ -533,7 +589,9 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
         const minimumTotal = hasMinimumTotal ? Number(entry.minimumTotal) : null;
 
         if (!hasFlatBonus && !hasMinimumTotal) {
-          throw new Error(`Reinforcement adjustment in "${sourcePath}" must define flatBonus or minimumTotal.`);
+          throw new Error(
+            `Reinforcement adjustment in "${sourcePath}" must define flatBonus or minimumTotal.`
+          );
         }
 
         if (hasFlatBonus && (!Number.isInteger(flatBonus) || (flatBonus as number) < 0)) {
@@ -553,14 +611,19 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
       })
     : [];
 
-  const hasMajorityControlThresholdPercent = typeof raw.majorityControlThresholdPercent !== "undefined";
-  const majorityControlThresholdPercent = hasMajorityControlThresholdPercent ? Number(raw.majorityControlThresholdPercent) : null;
+  const hasMajorityControlThresholdPercent =
+    typeof raw.majorityControlThresholdPercent !== "undefined";
+  const majorityControlThresholdPercent = hasMajorityControlThresholdPercent
+    ? Number(raw.majorityControlThresholdPercent)
+    : null;
   const hasConquestMinimumArmies = typeof raw.conquestMinimumArmies !== "undefined";
   const conquestMinimumArmies = hasConquestMinimumArmies ? Number(raw.conquestMinimumArmies) : null;
   const hasFortifyMinimumArmies = typeof raw.fortifyMinimumArmies !== "undefined";
   const fortifyMinimumArmies = hasFortifyMinimumArmies ? Number(raw.fortifyMinimumArmies) : null;
   const hasRequiredFortifyWhenAvailable = typeof raw.requiredFortifyWhenAvailable !== "undefined";
-  const requiredFortifyWhenAvailable = hasRequiredFortifyWhenAvailable ? Boolean(raw.requiredFortifyWhenAvailable) : null;
+  const requiredFortifyWhenAvailable = hasRequiredFortifyWhenAvailable
+    ? Boolean(raw.requiredFortifyWhenAvailable)
+    : null;
   const hasAttackMinimumArmies = typeof raw.attackMinimumArmies !== "undefined";
   const attackMinimumArmies = hasAttackMinimumArmies ? Number(raw.attackMinimumArmies) : null;
   const hasAttackLimitPerTurn = typeof raw.attackLimitPerTurn !== "undefined";
@@ -568,15 +631,26 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
   const hasMinimumAttacksPerTurn = typeof raw.minimumAttacksPerTurn !== "undefined";
   const minimumAttacksPerTurn = hasMinimumAttacksPerTurn ? Number(raw.minimumAttacksPerTurn) : null;
 
-  if (hasMajorityControlThresholdPercent && (!Number.isInteger(majorityControlThresholdPercent) || (majorityControlThresholdPercent as number) < 50 || (majorityControlThresholdPercent as number) > 100)) {
+  if (
+    hasMajorityControlThresholdPercent &&
+    (!Number.isInteger(majorityControlThresholdPercent) ||
+      (majorityControlThresholdPercent as number) < 50 ||
+      (majorityControlThresholdPercent as number) > 100)
+  ) {
     throw new Error(`Invalid majorityControlThresholdPercent in "${sourcePath}".`);
   }
 
-  if (hasConquestMinimumArmies && (!Number.isInteger(conquestMinimumArmies) || (conquestMinimumArmies as number) < 1)) {
+  if (
+    hasConquestMinimumArmies &&
+    (!Number.isInteger(conquestMinimumArmies) || (conquestMinimumArmies as number) < 1)
+  ) {
     throw new Error(`Invalid conquestMinimumArmies in "${sourcePath}".`);
   }
 
-  if (hasFortifyMinimumArmies && (!Number.isInteger(fortifyMinimumArmies) || (fortifyMinimumArmies as number) < 1)) {
+  if (
+    hasFortifyMinimumArmies &&
+    (!Number.isInteger(fortifyMinimumArmies) || (fortifyMinimumArmies as number) < 1)
+  ) {
     throw new Error(`Invalid fortifyMinimumArmies in "${sourcePath}".`);
   }
 
@@ -584,15 +658,24 @@ function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGame
     throw new Error(`Invalid requiredFortifyWhenAvailable in "${sourcePath}".`);
   }
 
-  if (hasAttackMinimumArmies && (!Number.isInteger(attackMinimumArmies) || (attackMinimumArmies as number) < 2)) {
+  if (
+    hasAttackMinimumArmies &&
+    (!Number.isInteger(attackMinimumArmies) || (attackMinimumArmies as number) < 2)
+  ) {
     throw new Error(`Invalid attackMinimumArmies in "${sourcePath}".`);
   }
 
-  if (hasAttackLimitPerTurn && (!Number.isInteger(attackLimitPerTurn) || (attackLimitPerTurn as number) < 1)) {
+  if (
+    hasAttackLimitPerTurn &&
+    (!Number.isInteger(attackLimitPerTurn) || (attackLimitPerTurn as number) < 1)
+  ) {
     throw new Error(`Invalid attackLimitPerTurn in "${sourcePath}".`);
   }
 
-  if (hasMinimumAttacksPerTurn && (!Number.isInteger(minimumAttacksPerTurn) || (minimumAttacksPerTurn as number) < 1)) {
+  if (
+    hasMinimumAttacksPerTurn &&
+    (!Number.isInteger(minimumAttacksPerTurn) || (minimumAttacksPerTurn as number) < 1)
+  ) {
     throw new Error(`Invalid minimumAttacksPerTurn in "${sourcePath}".`);
   }
 
@@ -656,13 +739,19 @@ function normalizeScenarioSetup(raw: unknown, sourcePath: string): NetRiskScenar
   };
 }
 
-export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string): NetRiskModuleManifest {
+export function validateNetRiskModuleManifest(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleManifest {
   if (!isObject(raw)) {
     throw new Error(`Module manifest "${sourcePath}" must contain an object.`);
   }
 
   const schemaVersion = Number(raw.schemaVersion);
-  if (!Number.isInteger(schemaVersion) || schemaVersion !== NETRISK_MODULE_MANIFEST_SCHEMA_VERSION) {
+  if (
+    !Number.isInteger(schemaVersion) ||
+    schemaVersion !== NETRISK_MODULE_MANIFEST_SCHEMA_VERSION
+  ) {
     throw new Error(`Module manifest "${sourcePath}" uses unsupported schema version.`);
   }
 
@@ -671,7 +760,12 @@ export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string):
     throw new Error(`Module manifest "${sourcePath}" has unsupported kind.`);
   }
 
-  if (!isNonEmptyString(raw.id) || !isNonEmptyString(raw.version) || !isNonEmptyString(raw.displayName) || !isNonEmptyString(raw.engineVersion)) {
+  if (
+    !isNonEmptyString(raw.id) ||
+    !isNonEmptyString(raw.version) ||
+    !isNonEmptyString(raw.displayName) ||
+    !isNonEmptyString(raw.engineVersion)
+  ) {
     throw new Error(`Module manifest "${sourcePath}" is missing required string fields.`);
   }
 
@@ -683,13 +777,21 @@ export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string):
     description: isNonEmptyString(raw.description) ? String(raw.description).trim() : null,
     engineVersion: String(raw.engineVersion).trim(),
     kind,
-    dependencies: Array.isArray(raw.dependencies) ? raw.dependencies.map((entry) => normalizeDependency(entry, sourcePath)) : [],
+    dependencies: Array.isArray(raw.dependencies)
+      ? raw.dependencies.map((entry) => normalizeDependency(entry, sourcePath))
+      : [],
     conflicts: normalizeStringArray(raw.conflicts),
-    capabilities: Array.isArray(raw.capabilities) ? raw.capabilities.map((entry) => normalizeCapability(entry, sourcePath)) : [],
+    capabilities: Array.isArray(raw.capabilities)
+      ? raw.capabilities.map((entry) => normalizeCapability(entry, sourcePath))
+      : [],
     entrypoints: isObject(raw.entrypoints)
       ? {
-          server: isNonEmptyString(raw.entrypoints.server) ? String(raw.entrypoints.server).trim() : null,
-          clientManifest: isNonEmptyString(raw.entrypoints.clientManifest) ? String(raw.entrypoints.clientManifest).trim() : null
+          server: isNonEmptyString(raw.entrypoints.server)
+            ? String(raw.entrypoints.server).trim()
+            : null,
+          clientManifest: isNonEmptyString(raw.entrypoints.clientManifest)
+            ? String(raw.entrypoints.clientManifest).trim()
+            : null
         }
       : null,
     assetsDir: isNonEmptyString(raw.assetsDir) ? String(raw.assetsDir).trim() : null,
@@ -698,14 +800,19 @@ export function validateNetRiskModuleManifest(raw: unknown, sourcePath: string):
   };
 }
 
-export function validateNetRiskModuleClientManifest(raw: unknown, sourcePath: string): NetRiskModuleClientManifest {
+export function validateNetRiskModuleClientManifest(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleClientManifest {
   if (!isObject(raw)) {
     throw new Error(`Module client manifest "${sourcePath}" must contain an object.`);
   }
 
   const ui = isObject(raw.ui)
     ? {
-        slots: Array.isArray(raw.ui.slots) ? raw.ui.slots.map((entry) => normalizeUiSlot(entry, sourcePath)) : [],
+        slots: Array.isArray(raw.ui.slots)
+          ? raw.ui.slots.map((entry) => normalizeUiSlot(entry, sourcePath))
+          : [],
         themeTokens: normalizeStringArray(raw.ui.themeTokens),
         stylesheets: normalizeStringArray(raw.ui.stylesheets),
         locales: normalizeStringArray(raw.ui.locales)
@@ -778,11 +885,16 @@ export function parseSemverMajor(version: string | null | undefined): number | n
     return null;
   }
 
-  const match = String(version).trim().match(/^(\d+)(?:\.\d+)?(?:\.\d+)?/);
+  const match = String(version)
+    .trim()
+    .match(/^(\d+)(?:\.\d+)?(?:\.\d+)?/);
   return match ? Number(match[1]) : null;
 }
 
-export function isEngineVersionCompatible(engineVersion: string, requestedVersion: string): boolean {
+export function isEngineVersionCompatible(
+  engineVersion: string,
+  requestedVersion: string
+): boolean {
   const engineMajor = parseSemverMajor(engineVersion);
   const requestedMajor = parseSemverMajor(requestedVersion);
   if (engineMajor == null || requestedMajor == null) {
@@ -799,7 +911,9 @@ export function createModuleReference(id: string, version: string): NetRiskModul
   };
 }
 
-export function uniqueModuleReferences(references: readonly NetRiskModuleReference[]): NetRiskModuleReference[] {
+export function uniqueModuleReferences(
+  references: readonly NetRiskModuleReference[]
+): NetRiskModuleReference[] {
   const byId = new Map<string, NetRiskModuleReference>();
   references.forEach((reference) => {
     if (!isNonEmptyString(reference?.id) || !isNonEmptyString(reference?.version)) {
@@ -831,8 +945,12 @@ export function normalizeNetRiskGameModuleSelection(
   return {
     moduleSchemaVersion: NETRISK_MODULE_SCHEMA_VERSION,
     activeModules,
-    contentProfileId: isNonEmptyString(input?.contentProfileId) ? String(input?.contentProfileId).trim() : null,
-    gameplayProfileId: isNonEmptyString(input?.gameplayProfileId) ? String(input?.gameplayProfileId).trim() : null,
+    contentProfileId: isNonEmptyString(input?.contentProfileId)
+      ? String(input?.contentProfileId).trim()
+      : null,
+    gameplayProfileId: isNonEmptyString(input?.gameplayProfileId)
+      ? String(input?.gameplayProfileId).trim()
+      : null,
     uiProfileId: isNonEmptyString(input?.uiProfileId) ? String(input?.uiProfileId).trim() : null
   };
 }

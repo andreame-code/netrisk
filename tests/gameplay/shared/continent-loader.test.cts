@@ -42,90 +42,56 @@ register("loadContinentsFromCsv parses a valid CSV with trimming and empty terri
 });
 
 register("loadContinentsFromCsv rejects CSV files with missing headers", () => {
-  withCsvFile(
-    [
-      "id,name,bonus",
-      "north,North,5"
-    ].join("\n"),
-    (filePath) => {
-      assert.throws(() => loadContinentsFromCsv(filePath), /missing required headers: territoryIds/i);
-    }
-  );
+  withCsvFile(["id,name,bonus", "north,North,5"].join("\n"), (filePath) => {
+    assert.throws(() => loadContinentsFromCsv(filePath), /missing required headers: territoryIds/i);
+  });
 });
 
 register("loadContinentsFromCsv rejects invalid bonus values", () => {
-  withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      "north,North,nope,alpha"
-    ].join("\n"),
-    (filePath) => {
-      assert.throws(() => loadContinentsFromCsv(filePath), /invalid bonus value/i);
-    }
-  );
+  withCsvFile(["id,name,bonus,territoryIds", "north,North,nope,alpha"].join("\n"), (filePath) => {
+    assert.throws(() => loadContinentsFromCsv(filePath), /invalid bonus value/i);
+  });
 });
 
 register("loadContinentsFromCsv rejects rows without continent id", () => {
-  withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      ",North,5,alpha"
-    ].join("\n"),
-    (filePath) => {
-      assert.throws(() => loadContinentsFromCsv(filePath), /missing continent id/i);
-    }
-  );
+  withCsvFile(["id,name,bonus,territoryIds", ",North,5,alpha"].join("\n"), (filePath) => {
+    assert.throws(() => loadContinentsFromCsv(filePath), /missing continent id/i);
+  });
 });
 
 register("loadContinentsFromCsv rejects rows without continent name", () => {
-  withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      "north,,5,alpha"
-    ].join("\n"),
-    (filePath) => {
-      assert.throws(() => loadContinentsFromCsv(filePath), /missing a name/i);
-    }
-  );
+  withCsvFile(["id,name,bonus,territoryIds", "north,,5,alpha"].join("\n"), (filePath) => {
+    assert.throws(() => loadContinentsFromCsv(filePath), /missing a name/i);
+  });
 });
 
 register("loadContinentsFromCsv rejects duplicate continent ids", () => {
   withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      "north,North,5,alpha",
-      "north,North 2,3,beta"
-    ].join("\n"),
+    ["id,name,bonus,territoryIds", "north,North,5,alpha", "north,North 2,3,beta"].join("\n"),
     (filePath) => {
       assert.throws(() => loadContinentsFromCsv(filePath), /Duplicate continent id "north"/i);
     }
   );
 });
 
-register("loadContinentsFromCsv rejects unknown territory references when a valid territory list is provided", () => {
-  withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      "north,North,5,missing"
-    ].join("\n"),
-    (filePath) => {
+register(
+  "loadContinentsFromCsv rejects unknown territory references when a valid territory list is provided",
+  () => {
+    withCsvFile(["id,name,bonus,territoryIds", "north,North,5,missing"].join("\n"), (filePath) => {
       assert.throws(
         () => loadContinentsFromCsv(filePath, { validTerritoryIds: ["alpha", "beta"] }),
         /unknown territory "missing"/i
       );
-    }
-  );
-});
+    });
+  }
+);
 
-register("loadContinentsFromCsv allows territory references when no validation list is provided", () => {
-  withCsvFile(
-    [
-      "id,name,bonus,territoryIds",
-      "north,North,5,missing"
-    ].join("\n"),
-    (filePath) => {
+register(
+  "loadContinentsFromCsv allows territory references when no validation list is provided",
+  () => {
+    withCsvFile(["id,name,bonus,territoryIds", "north,North,5,missing"].join("\n"), (filePath) => {
       const continents = loadContinentsFromCsv(filePath);
       assert.deepEqual(continents.continents[0].territoryIds, ["missing"]);
-    }
-  );
-});
+    });
+  }
+);

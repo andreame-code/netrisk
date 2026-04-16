@@ -1,10 +1,19 @@
 import { buildContinentDefinition, buildMapDefinition } from "../typed-map-data.cjs";
-import { worldClassicContinentRecords, worldClassicTerritoryRecords } from "./data/world-classic-data.cjs";
+import {
+  worldClassicContinentRecords,
+  worldClassicTerritoryRecords
+} from "./data/world-classic-data.cjs";
 
 const mapDefinition = buildMapDefinition("shared/maps/world-classic", worldClassicTerritoryRecords);
-const continentDefinition = buildContinentDefinition("shared/maps/world-classic", worldClassicContinentRecords, {
-  validTerritoryIds: mapDefinition.territories.map((entry) => entry.territory.id).filter((id): id is string => Boolean(id))
-});
+const continentDefinition = buildContinentDefinition(
+  "shared/maps/world-classic",
+  worldClassicContinentRecords,
+  {
+    validTerritoryIds: mapDefinition.territories
+      .map((entry) => entry.territory.id)
+      .filter((id): id is string => Boolean(id))
+  }
+);
 
 const territories = mapDefinition.territories.map((entry) => entry.territory);
 const positions = mapDefinition.positions;

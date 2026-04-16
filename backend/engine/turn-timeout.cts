@@ -1,4 +1,7 @@
-import { normalizeTurnTimeoutHours, type TurnTimeoutHoursValue } from "../../shared/turn-timeouts.cjs";
+import {
+  normalizeTurnTimeoutHours,
+  type TurnTimeoutHoursValue
+} from "../../shared/turn-timeouts.cjs";
 import type { GameState } from "../../shared/models.cjs";
 
 type TimeoutAwareGameState = GameState & {
@@ -14,7 +17,9 @@ export interface ExpiredTurn {
   elapsedMilliseconds: number;
 }
 
-export function resolveTurnTimeoutHours(state: TimeoutAwareGameState): TurnTimeoutHoursValue | null {
+export function resolveTurnTimeoutHours(
+  state: TimeoutAwareGameState
+): TurnTimeoutHoursValue | null {
   return normalizeTurnTimeoutHours(state?.gameConfig?.turnTimeoutHours);
 }
 
@@ -27,7 +32,10 @@ export function resolveTurnStartDate(state: TimeoutAwareGameState): Date | null 
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function findExpiredTurn(state: TimeoutAwareGameState, now: Date = new Date()): ExpiredTurn | null {
+export function findExpiredTurn(
+  state: TimeoutAwareGameState,
+  now: Date = new Date()
+): ExpiredTurn | null {
   if (!state || state.phase !== "active") {
     return null;
   }

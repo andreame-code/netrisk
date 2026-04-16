@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -57,7 +62,13 @@ async function handleTurnGameActionRoute(
     broadcastGame(gameContext);
     sendJson(res, 200, {
       ok: true,
-      state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user)
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        user
+      )
     });
     return true;
   }
@@ -80,7 +91,13 @@ async function handleTurnGameActionRoute(
     broadcastGame(gameContext);
     sendJson(res, 200, {
       ok: true,
-      state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user)
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        user
+      )
     });
     return true;
   }

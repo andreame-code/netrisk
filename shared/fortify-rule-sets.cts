@@ -21,30 +21,30 @@ export interface FortifyRuleSetSummary {
 export const standardFortifyRuleSet: Readonly<FortifyRuleSet> = Object.freeze({
   id: STANDARD_FORTIFY_RULE_SET_ID,
   name: "Standard",
-  description: "Fortify once per turn between adjacent owned territories while leaving one army behind.",
+  description:
+    "Fortify once per turn between adjacent owned territories while leaving one army behind.",
   requiresAdjacency: true,
   enforceSingleMovePerTurn: true,
   requireLeaveOneBehind: true
 });
 
-const fortifyRuleSetRegistry = createModuleRegistry<FortifyRuleSet>(
-  [standardFortifyRuleSet],
-  {
-    onMissing(ruleSetId) {
-      throw createLocalizedError(
-        "Unsupported fortify rule set.",
-        "game.fortify.unsupportedRuleSet",
-        { ruleSetId }
-      );
-    }
+const fortifyRuleSetRegistry = createModuleRegistry<FortifyRuleSet>([standardFortifyRuleSet], {
+  onMissing(ruleSetId) {
+    throw createLocalizedError("Unsupported fortify rule set.", "game.fortify.unsupportedRuleSet", {
+      ruleSetId
+    });
   }
-);
+});
 
-export function findFortifyRuleSet(ruleSetId: string | null | undefined): Readonly<FortifyRuleSet> | null {
+export function findFortifyRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<FortifyRuleSet> | null {
   return fortifyRuleSetRegistry.find(ruleSetId);
 }
 
-export function getFortifyRuleSet(ruleSetId: string = STANDARD_FORTIFY_RULE_SET_ID): Readonly<FortifyRuleSet> {
+export function getFortifyRuleSet(
+  ruleSetId: string = STANDARD_FORTIFY_RULE_SET_ID
+): Readonly<FortifyRuleSet> {
   return fortifyRuleSetRegistry.get(ruleSetId, STANDARD_FORTIFY_RULE_SET_ID);
 }
 

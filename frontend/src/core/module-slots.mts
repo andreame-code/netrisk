@@ -29,7 +29,7 @@ async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
   moduleOptionsPromise = (async () => {
     try {
       const response = await fetch("/api/modules/options");
-      const payload = await response.json() as ModuleOptionsResponse;
+      const payload = (await response.json()) as ModuleOptionsResponse;
       if (!response.ok) {
         return null;
       }
@@ -50,22 +50,26 @@ function slotCardMarkup(slot: NetRiskUiSlotContribution): string {
 
   return (
     `<article class="profile-note-card">` +
-      `<div class="profile-games-head">` +
-        `<div>` +
-          `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slot.kind)}</p>` +
-          `<h3>${escapeHtml(slot.title)}</h3>` +
-          `<p class="stage-copy">${escapeHtml(slot.description || "Estensione dichiarativa attiva nel runtime moduli.")}</p>` +
-        `</div>` +
-        `<div class="profile-game-meta-row">` +
-          `<span class="badge">${escapeHtml(slot.slotId)}</span>` +
-          actionMarkup +
-        `</div>` +
-      `</div>` +
+    `<div class="profile-games-head">` +
+    `<div>` +
+    `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slot.kind)}</p>` +
+    `<h3>${escapeHtml(slot.title)}</h3>` +
+    `<p class="stage-copy">${escapeHtml(slot.description || "Estensione dichiarativa attiva nel runtime moduli.")}</p>` +
+    `</div>` +
+    `<div class="profile-game-meta-row">` +
+    `<span class="badge">${escapeHtml(slot.slotId)}</span>` +
+    actionMarkup +
+    `</div>` +
+    `</div>` +
     `</article>`
   );
 }
 
-function ensureSection(anchor: HTMLElement, containerId: string, sectionClassName: string): HTMLElement {
+function ensureSection(
+  anchor: HTMLElement,
+  containerId: string,
+  sectionClassName: string
+): HTMLElement {
   const existingSection = document.querySelector(`#${containerId}`) as HTMLElement | null;
   if (existingSection) {
     existingSection.className = sectionClassName;
@@ -94,8 +98,8 @@ export async function mountModuleSlotSection({
   const payload = await fetchModuleOptions();
   const slots = Array.isArray(payload?.uiSlots)
     ? payload.uiSlots
-      .filter((slot) => slot.slotId === slotId)
-      .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
+        .filter((slot) => slot.slotId === slotId)
+        .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
     : [];
 
   const existingSection = document.querySelector(`#${containerId}`) as HTMLElement | null;
@@ -105,16 +109,17 @@ export async function mountModuleSlotSection({
   }
 
   const section = ensureSection(anchor, containerId, sectionClassName);
-  setMarkup(section,
+  setMarkup(
+    section,
     `<div class="profile-preferences-head">` +
       `<div>` +
-        `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slotId)}</p>` +
-        `<h3>${escapeHtml(title)}</h3>` +
+      `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slotId)}</p>` +
+      `<h3>${escapeHtml(title)}</h3>` +
       `</div>` +
-    `</div>` +
-    (copy ? `<p class="stage-copy">${escapeHtml(copy)}</p>` : "") +
-    `<div class="profile-games-list">` +
+      `</div>` +
+      (copy ? `<p class="stage-copy">${escapeHtml(copy)}</p>` : "") +
+      `<div class="profile-games-list">` +
       slots.map((slot) => slotCardMarkup(slot)).join("") +
-    `</div>`
+      `</div>`
   );
 }

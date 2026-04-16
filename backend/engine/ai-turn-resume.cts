@@ -1,10 +1,8 @@
-const {
-  advanceTurn,
-  getCurrentPlayer,
-  territoriesOwnedBy
-} = require("./game-engine.cjs") as typeof import("./game-engine.cjs");
+const { advanceTurn, getCurrentPlayer, territoriesOwnedBy } =
+  require("./game-engine.cjs") as typeof import("./game-engine.cjs");
 const { runAiTurn } = require("./ai-player.cjs") as typeof import("./ai-player.cjs");
-const { createLocalizedError } = require("../../shared/messages.cjs") as typeof import("../../shared/messages.cjs");
+const { createLocalizedError } =
+  require("../../shared/messages.cjs") as typeof import("../../shared/messages.cjs");
 
 type ResumeState = {
   players: Array<unknown>;
@@ -27,7 +25,10 @@ type SuccessfulAiTurn = {
 
 type AiTurnResult = FailedAiTurn | SuccessfulAiTurn;
 
-function currentAiTurnIsStale(state: ResumeState, currentPlayer: ReturnType<typeof getCurrentPlayer>): boolean {
+function currentAiTurnIsStale(
+  state: ResumeState,
+  currentPlayer: ReturnType<typeof getCurrentPlayer>
+): boolean {
   if (!currentPlayer || !currentPlayer.isAi) {
     return false;
   }
@@ -36,7 +37,10 @@ function currentAiTurnIsStale(state: ResumeState, currentPlayer: ReturnType<type
     return true;
   }
 
-  return territoriesOwnedBy(state as Parameters<typeof territoriesOwnedBy>[0], currentPlayer.id).length === 0;
+  return (
+    territoriesOwnedBy(state as Parameters<typeof territoriesOwnedBy>[0], currentPlayer.id)
+      .length === 0
+  );
 }
 
 export function runAiTurnsIfNeeded(
@@ -48,12 +52,21 @@ export function runAiTurnsIfNeeded(
 ): AiTurnResult[] {
   const reports: AiTurnResult[] = [];
   const maxTurns = Math.max(4, targetState.players.length * 4);
-  const executeAiTurn = options.runAiTurn || ((state: ResumeState, runOptions?: { random?: () => number }) =>
-    runAiTurn(state as Parameters<typeof runAiTurn>[0], runOptions)) as NonNullable<typeof options.runAiTurn>;
+  const executeAiTurn =
+    options.runAiTurn ||
+    (((state: ResumeState, runOptions?: { random?: () => number }) =>
+      runAiTurn(state as Parameters<typeof runAiTurn>[0], runOptions)) as NonNullable<
+      typeof options.runAiTurn
+    >);
 
   for (let step = 0; step < maxTurns; step += 1) {
     const currentPlayer = getCurrentPlayer(targetState as Parameters<typeof getCurrentPlayer>[0]);
-    if (!currentPlayer || !currentPlayer.isAi || targetState.phase !== "active" || targetState.winnerId) {
+    if (
+      !currentPlayer ||
+      !currentPlayer.isAi ||
+      targetState.phase !== "active" ||
+      targetState.winnerId
+    ) {
       break;
     }
 

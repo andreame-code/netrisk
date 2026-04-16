@@ -90,7 +90,9 @@ export function buildMapGraph(input: GraphInputEntry[]): MapGraph {
     neighbors.forEach((neighborId) => {
       const reverseNeighbors = adjacency.get(neighborId);
       if (!reverseNeighbors || !reverseNeighbors.has(territoryId)) {
-        throw new Error(`Adjacency between "${territoryId}" and "${neighborId}" must be bidirectional.`);
+        throw new Error(
+          `Adjacency between "${territoryId}" and "${neighborId}" must be bidirectional.`
+        );
       }
 
       const edgeKey = [territoryId, neighborId].sort().join(":");

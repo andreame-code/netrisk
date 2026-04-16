@@ -1,10 +1,19 @@
 import { buildContinentDefinition, buildMapDefinition } from "../typed-map-data.cjs";
-import { middleEarthContinentRecords, middleEarthTerritoryRecords } from "./data/middle-earth-data.cjs";
+import {
+  middleEarthContinentRecords,
+  middleEarthTerritoryRecords
+} from "./data/middle-earth-data.cjs";
 
 const mapDefinition = buildMapDefinition("shared/maps/middle-earth", middleEarthTerritoryRecords);
-const continentDefinition = buildContinentDefinition("shared/maps/middle-earth", middleEarthContinentRecords, {
-  validTerritoryIds: mapDefinition.territories.map((entry) => entry.territory.id).filter((id): id is string => Boolean(id))
-});
+const continentDefinition = buildContinentDefinition(
+  "shared/maps/middle-earth",
+  middleEarthContinentRecords,
+  {
+    validTerritoryIds: mapDefinition.territories
+      .map((entry) => entry.territory.id)
+      .filter((id): id is string => Boolean(id))
+  }
+);
 
 const territories = mapDefinition.territories.map((entry) => entry.territory);
 const positions = mapDefinition.positions;

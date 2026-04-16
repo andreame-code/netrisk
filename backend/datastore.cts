@@ -169,16 +169,27 @@ function normalizeGame(row: GameRow | null): GameRecord | null {
 }
 
 function createDatastore(options: DatastoreOptions = {}) {
-  const requestedDriver = String(options.driver || process.env.DATASTORE_DRIVER || "").trim().toLowerCase();
-  const shouldUseSupabase = requestedDriver === "supabase" || (requestedDriver !== "sqlite" && Boolean(process.env.SUPABASE_URL));
+  const requestedDriver = String(options.driver || process.env.DATASTORE_DRIVER || "")
+    .trim()
+    .toLowerCase();
+  const shouldUseSupabase =
+    requestedDriver === "supabase" ||
+    (requestedDriver !== "sqlite" && Boolean(process.env.SUPABASE_URL));
   if (shouldUseSupabase) {
     return createSupabaseDatastore(options);
   }
 
   const dbFile = options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite");
-  const legacyUsersFile = options.legacyUsersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json");
-  const legacyGamesFile = options.legacyGamesFile || options.gamesFile || path.join(__dirname, "..", "data", "games.json");
-  const legacySessionsFile = options.legacySessionsFile || options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json");
+  const legacyUsersFile =
+    options.legacyUsersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json");
+  const legacyGamesFile =
+    options.legacyGamesFile ||
+    options.gamesFile ||
+    path.join(__dirname, "..", "data", "games.json");
+  const legacySessionsFile =
+    options.legacySessionsFile ||
+    options.sessionsFile ||
+    path.join(__dirname, "..", "data", "sessions.json");
 
   ensureDirectory(dbFile);
   const db = new DatabaseSync(dbFile);
@@ -218,23 +229,47 @@ function createDatastore(options: DatastoreOptions = {}) {
     countGames: db.prepare("SELECT COUNT(*) AS count FROM games") as Statement<CountRow>,
     countSessions: db.prepare("SELECT COUNT(*) AS count FROM sessions") as Statement<CountRow>,
     probe: db.prepare("SELECT 1 AS ok") as Statement<ProbeRow>,
-    insertUser: db.prepare("INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)") as Statement<unknown>,
-    updateUserCredentials: db.prepare("UPDATE users SET credentials_json = ? WHERE id = ?") as Statement<unknown>,
-    updateUserProfile: db.prepare("UPDATE users SET profile_json = ? WHERE id = ?") as Statement<unknown>,
-    updateUserThemePreference: db.prepare("UPDATE users SET profile_json = json_patch(COALESCE(NULLIF(profile_json, ''), '{}'), json_object('preferences', json_object('theme', ?))) WHERE id = ?") as Statement<unknown>,
-    updateUserRoleByUsername: db.prepare("UPDATE users SET role = ? WHERE lower(username) = lower(?)") as Statement<unknown>,
-    findUserByUsername: db.prepare("SELECT * FROM users WHERE lower(username) = lower(?)") as Statement<UserRow | null>,
+    insertUser: db.prepare(
+      "INSERT INTO users (id, username, role, profile_json, credentials_json, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ) as Statement<unknown>,
+    updateUserCredentials: db.prepare(
+      "UPDATE users SET credentials_json = ? WHERE id = ?"
+    ) as Statement<unknown>,
+    updateUserProfile: db.prepare(
+      "UPDATE users SET profile_json = ? WHERE id = ?"
+    ) as Statement<unknown>,
+    updateUserThemePreference: db.prepare(
+      "UPDATE users SET profile_json = json_patch(COALESCE(NULLIF(profile_json, ''), '{}'), json_object('preferences', json_object('theme', ?))) WHERE id = ?"
+    ) as Statement<unknown>,
+    updateUserRoleByUsername: db.prepare(
+      "UPDATE users SET role = ? WHERE lower(username) = lower(?)"
+    ) as Statement<unknown>,
+    findUserByUsername: db.prepare(
+      "SELECT * FROM users WHERE lower(username) = lower(?)"
+    ) as Statement<UserRow | null>,
     findUserById: db.prepare("SELECT * FROM users WHERE id = ?") as Statement<UserRow | null>,
     listUsers: db.prepare("SELECT * FROM users ORDER BY created_at ASC") as Statement<UserRow>,
-    insertSession: db.prepare("INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)") as Statement<unknown>,
-    findSession: db.prepare("SELECT * FROM sessions WHERE token = ?") as Statement<SessionRow | null>,
+    insertSession: db.prepare(
+      "INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)"
+    ) as Statement<unknown>,
+    findSession: db.prepare(
+      "SELECT * FROM sessions WHERE token = ?"
+    ) as Statement<SessionRow | null>,
     deleteSession: db.prepare("DELETE FROM sessions WHERE token = ?") as Statement<unknown>,
     listGames: db.prepare("SELECT * FROM games ORDER BY updated_at DESC") as Statement<GameRow>,
     findGameById: db.prepare("SELECT * FROM games WHERE id = ?") as Statement<GameRow | null>,
-    insertGame: db.prepare("INSERT INTO games (id, name, version, creator_user_id, state_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)") as Statement<unknown>,
-    updateGame: db.prepare("UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?") as Statement<unknown>,
-    getAppState: db.prepare("SELECT value_json FROM app_state WHERE key = ?") as Statement<AppStateRow | null>,
-    setAppState: db.prepare("INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json") as Statement<unknown>
+    insertGame: db.prepare(
+      "INSERT INTO games (id, name, version, creator_user_id, state_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ) as Statement<unknown>,
+    updateGame: db.prepare(
+      "UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?"
+    ) as Statement<unknown>,
+    getAppState: db.prepare(
+      "SELECT value_json FROM app_state WHERE key = ?"
+    ) as Statement<AppStateRow | null>,
+    setAppState: db.prepare(
+      "INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json"
+    ) as Statement<unknown>
   };
 
   function transaction<T>(run: () => T): T {
@@ -289,7 +324,11 @@ function createDatastore(options: DatastoreOptions = {}) {
           return;
         }
 
-        statements.insertSession.run(session.token, session.userId, Number(session.createdAt) || Date.now());
+        statements.insertSession.run(
+          session.token,
+          session.userId,
+          Number(session.createdAt) || Date.now()
+        );
       });
     });
   }
@@ -314,7 +353,9 @@ function createDatastore(options: DatastoreOptions = {}) {
         statements.insertGame.run(
           game.id,
           game.name,
-          typeof game.version === "number" && Number.isInteger(game.version) && game.version > 0 ? game.version : 1,
+          typeof game.version === "number" && Number.isInteger(game.version) && game.version > 0
+            ? game.version
+            : 1,
           game.creatorUserId || null,
           JSON.stringify(game.state || {}),
           game.createdAt || new Date().toISOString(),

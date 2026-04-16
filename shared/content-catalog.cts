@@ -23,12 +23,40 @@ export interface ContentModuleSummary {
 
 export function listContentModules(): ContentModuleSummary[] {
   return [
-    ...listSiteThemes().map((entry) => ({ id: entry.id, name: entry.name, kind: "site-theme" as const })),
-    ...listDiceRuleSets().map((entry) => ({ id: entry.id, name: entry.name, kind: "dice-rule-set" as const })),
-    ...listCardRuleSets().map((entry) => ({ id: entry.id, name: entry.name, kind: "card-rule-set" as const })),
-    ...listVictoryRuleSets().map((entry) => ({ id: entry.id, name: entry.name, kind: "victory-rule-set" as const })),
-    ...listSupportedMaps().map((entry) => ({ id: entry.id, name: entry.name, kind: "map" as const })),
-    ...listPlayerPieceSets().map((entry) => ({ id: entry.id, name: entry.name, kind: "player-piece-set" as const })),
-    ...listContentPacks().map((entry) => ({ id: entry.id, name: entry.name, kind: "content-pack" as const }))
+    ...listSiteThemes().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "site-theme" as const
+    })),
+    ...listDiceRuleSets().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "dice-rule-set" as const
+    })),
+    ...listCardRuleSets().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "card-rule-set" as const
+    })),
+    ...listVictoryRuleSets().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "victory-rule-set" as const
+    })),
+    ...listSupportedMaps().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "map" as const
+    })),
+    ...listPlayerPieceSets().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "player-piece-set" as const
+    })),
+    ...listContentPacks().map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      kind: "content-pack" as const
+    }))
   ];
 }

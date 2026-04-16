@@ -1,10 +1,12 @@
 # NetRisk - Agent Instructions
 
 ## Mission
+
 Build and evolve NetRisk as a maintainable turn-based strategy game inspired by Risk/Risiko.
 The project must be safe to extend over time without rewriting existing work.
 
 ## Core principles
+
 1. Never rewrite entire files unless explicitly requested.
 2. Modify only the minimum code needed for the requested change.
 3. Never delete existing code unless explicitly requested.
@@ -17,6 +19,7 @@ The project must be safe to extend over time without rewriting existing work.
 10. If a request would require broad refactoring, stop and explain the impact before changing code.
 
 ## Architecture rules
+
 1. The frontend must only handle rendering, user input, and UI state.
 2. The backend is the source of truth for game state and rule validation.
 3. Shared models and types must live in the shared area.
@@ -24,18 +27,21 @@ The project must be safe to extend over time without rewriting existing work.
 5. Game logic must be organized in dedicated engine modules.
 
 ## Language policy
+
 1. The project must evolve toward pure TypeScript.
 2. All new code must be written in pure TypeScript.
 3. Legacy non-TypeScript code may be kept only where needed for backward compatibility.
 4. Do not introduce new non-TypeScript code unless it is strictly required to integrate with legacy parts.
 
 ## Preferred structure
+
 - frontend: UI, map rendering, panels, local presentation state
 - backend: API, game orchestration, persistence, multiplayer support
 - backend/engine: pure game rules and turn logic
 - shared: shared types, DTOs, enums, schemas
 
 ## Change safety rules
+
 1. Always inspect relevant files before editing.
 2. Reuse existing conventions and naming.
 3. Do not introduce new dependencies unless necessary.
@@ -45,6 +51,7 @@ The project must be safe to extend over time without rewriting existing work.
 7. When possible, keep one concern per change.
 
 ## Git safety workflow
+
 For every new chat, automatically create and switch to a dedicated git branch before making changes.
 Each chat must always continue on its own dedicated branch, even when switching between different chats.
 Before large changes, remind the user to create a git checkpoint.
@@ -52,6 +59,7 @@ Before heavy code changes requested by the user, automatically create and switch
 After changes, summarize exactly which files were touched and why.
 
 ## Expected workflow for every task
+
 1. Read the current structure.
 2. Propose a concise plan.
 3. Wait for or follow the requested step scope.
@@ -60,13 +68,16 @@ After changes, summarize exactly which files were touched and why.
 6. Mention risks or follow-up steps separately.
 
 ## Communication style
+
 - Be direct and concise.
 - Do not overengineer.
 - Do not produce giant rewrites.
 - Prefer practical progress over speculative redesign.
 
 ## For this project specifically
+
 NetRisk should be built incrementally in this order:
+
 1. architecture and models
 2. map and territories
 3. turn flow
@@ -79,6 +90,7 @@ NetRisk should be built incrementally in this order:
 10. map editor and custom rules
 
 ## Important project guardrails
+
 - Do not rebuild the whole app when implementing a single feature.
 - Do not move business logic into React components.
 - Do not mix transport, persistence, and game rules in one file.

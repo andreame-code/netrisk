@@ -39,13 +39,19 @@ import {
   type NetRiskResolvedGamePreset,
   type NetRiskResolvedModuleSetup
 } from "../shared/netrisk-modules.cjs";
-import { normalizeTurnTimeoutHours, TURN_TIMEOUT_HOURS_OPTIONS, type TurnTimeoutHoursValue } from "../shared/turn-timeouts.cjs";
+import {
+  normalizeTurnTimeoutHours,
+  TURN_TIMEOUT_HOURS_OPTIONS,
+  type TurnTimeoutHoursValue
+} from "../shared/turn-timeouts.cjs";
 import { findSupportedMap, listSupportedMaps, type SupportedMap } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
 
-type AddPlayerResult = { ok: true } | { ok: false; error?: string; errorKey?: string; errorParams?: Record<string, unknown> };
+type AddPlayerResult =
+  | { ok: true }
+  | { ok: false; error?: string; errorKey?: string; errorParams?: Record<string, unknown> };
 type CreateInitialStateFn = (selectedMap?: SupportedMap | null) => GameState & {
   gameConfig?: Record<string, unknown>;
   contentPackId: string;
@@ -53,7 +59,11 @@ type CreateInitialStateFn = (selectedMap?: SupportedMap | null) => GameState & {
   victoryRuleSetId: string;
   pieceSetId: string;
 };
-type AddPlayerFn = (state: GameState, name: string | null, options?: { isAi?: boolean }) => AddPlayerResult;
+type AddPlayerFn = (
+  state: GameState,
+  name: string | null,
+  options?: { isAi?: boolean }
+) => AddPlayerResult;
 
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs") as {
   addPlayer: AddPlayerFn;
@@ -149,7 +159,10 @@ export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
   return [...TURN_TIMEOUT_HOURS_OPTIONS];
 }
 
-export function buildHistoricalAiNames(count: number, random: () => number = secureRandom): string[] {
+export function buildHistoricalAiNames(
+  count: number,
+  random: () => number = secureRandom
+): string[] {
   const pool = AI_GENERAL_NAMES.slice();
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
@@ -182,76 +195,116 @@ export function validateNewGameConfig(
 ): ValidatedNewGameConfig {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
   if (!Number.isInteger(totalPlayers) || totalPlayers < 2 || totalPlayers > 4) {
-    throw createLocalizedError("Il numero totale di giocatori deve essere compreso tra 2 e 4.", "newGame.invalidTotalPlayers");
+    throw createLocalizedError(
+      "Il numero totale di giocatori deve essere compreso tra 2 e 4.",
+      "newGame.invalidTotalPlayers"
+    );
   }
 
   const requestedContentPackId = String(input.contentPackId || DEFAULT_CONTENT_PACK_ID);
-  const resolveContentPack = typeof options.resolveContentPack === "function"
-    ? options.resolveContentPack
-    : findContentPack;
+  const resolveContentPack =
+    typeof options.resolveContentPack === "function" ? options.resolveContentPack : findContentPack;
   const selectedContentPack = resolveContentPack(requestedContentPackId);
   if (!selectedContentPack) {
-    throw createLocalizedError("Il content pack selezionato non e supportato.", "newGame.invalidContentPack");
+    throw createLocalizedError(
+      "Il content pack selezionato non e supportato.",
+      "newGame.invalidContentPack"
+    );
   }
 
   const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
   const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
-    throw createLocalizedError("Il ruleset selezionato non e supportato.", "newGame.invalidRuleSet");
+    throw createLocalizedError(
+      "Il ruleset selezionato non e supportato.",
+      "newGame.invalidRuleSet"
+    );
   }
 
-  const mapId = String(input.mapId || selectedContentPack.defaultMapId || selectedRuleSet.defaults.mapId || "classic-mini");
-  const resolveSupportedMap = typeof options.resolveSupportedMap === "function"
-    ? options.resolveSupportedMap
-    : findSupportedMap;
+  const mapId = String(
+    input.mapId ||
+      selectedContentPack.defaultMapId ||
+      selectedRuleSet.defaults.mapId ||
+      "classic-mini"
+  );
+  const resolveSupportedMap =
+    typeof options.resolveSupportedMap === "function"
+      ? options.resolveSupportedMap
+      : findSupportedMap;
   const selectedMap = resolveSupportedMap(mapId);
   if (!selectedMap) {
     throw createLocalizedError("La mappa selezionata non e supportata.", "newGame.invalidMap");
   }
 
   const requestedDiceRuleSetId = String(
-    input.diceRuleSetId || selectedRuleSet.defaults.diceRuleSetId || selectedContentPack.defaultDiceRuleSetId || STANDARD_DICE_RULE_SET_ID
+    input.diceRuleSetId ||
+      selectedRuleSet.defaults.diceRuleSetId ||
+      selectedContentPack.defaultDiceRuleSetId ||
+      STANDARD_DICE_RULE_SET_ID
   );
-  const resolveDiceRuleSet = typeof options.resolveDiceRuleSet === "function"
-    ? options.resolveDiceRuleSet
-    : findDiceRuleSet;
+  const resolveDiceRuleSet =
+    typeof options.resolveDiceRuleSet === "function" ? options.resolveDiceRuleSet : findDiceRuleSet;
   const selectedDiceRuleSet = resolveDiceRuleSet(requestedDiceRuleSetId);
   if (!selectedDiceRuleSet) {
-    throw createLocalizedError("La regola dadi selezionata non e supportata.", "newGame.invalidDiceRuleSet");
+    throw createLocalizedError(
+      "La regola dadi selezionata non e supportata.",
+      "newGame.invalidDiceRuleSet"
+    );
   }
 
   const requestedVictoryRuleSetId = String(
-    input.victoryRuleSetId || selectedRuleSet.defaults.victoryRuleSetId || selectedContentPack.defaultVictoryRuleSetId || DEFAULT_VICTORY_RULE_SET_ID
+    input.victoryRuleSetId ||
+      selectedRuleSet.defaults.victoryRuleSetId ||
+      selectedContentPack.defaultVictoryRuleSetId ||
+      DEFAULT_VICTORY_RULE_SET_ID
   );
   const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
   if (!selectedVictoryRuleSet) {
-    throw createLocalizedError("La regola vittoria selezionata non e supportata.", "newGame.invalidVictoryRuleSet");
+    throw createLocalizedError(
+      "La regola vittoria selezionata non e supportata.",
+      "newGame.invalidVictoryRuleSet"
+    );
   }
 
-  const requestedPieceSetId = String(input.pieceSetId || selectedContentPack.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID);
-  const resolvePlayerPieceSet = typeof options.resolvePlayerPieceSet === "function"
-    ? options.resolvePlayerPieceSet
-    : findPlayerPieceSet;
+  const requestedPieceSetId = String(
+    input.pieceSetId || selectedContentPack.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID
+  );
+  const resolvePlayerPieceSet =
+    typeof options.resolvePlayerPieceSet === "function"
+      ? options.resolvePlayerPieceSet
+      : findPlayerPieceSet;
   const selectedPieceSet = resolvePlayerPieceSet(requestedPieceSetId);
   if (!selectedPieceSet) {
-    throw createLocalizedError("Il set pedine selezionato non e supportato.", "newGame.invalidPieceSet");
+    throw createLocalizedError(
+      "Il set pedine selezionato non e supportato.",
+      "newGame.invalidPieceSet"
+    );
   }
 
-  const requestedThemeId = String(input.themeId || selectedRuleSet.defaults.themeId || selectedContentPack.defaultSiteThemeId || DEFAULT_THEME_ID);
+  const requestedThemeId = String(
+    input.themeId ||
+      selectedRuleSet.defaults.themeId ||
+      selectedContentPack.defaultSiteThemeId ||
+      DEFAULT_THEME_ID
+  );
   const selectedTheme = findVisualTheme(requestedThemeId);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }
 
-  const requestedPieceSkinId = String(input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID);
+  const requestedPieceSkinId = String(
+    input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID
+  );
   const selectedPieceSkin = findPieceSkin(requestedPieceSkinId);
   if (!selectedPieceSkin) {
-    throw createLocalizedError("La skin pedina selezionata non e supportata.", "newGame.invalidPieceSkin");
+    throw createLocalizedError(
+      "La skin pedina selezionata non e supportata.",
+      "newGame.invalidPieceSkin"
+    );
   }
 
-  const turnTimeoutHours = input.turnTimeoutHours == null
-    ? null
-    : normalizeTurnTimeoutHours(input.turnTimeoutHours);
+  const turnTimeoutHours =
+    input.turnTimeoutHours == null ? null : normalizeTurnTimeoutHours(input.turnTimeoutHours);
   if (input.turnTimeoutHours != null && turnTimeoutHours == null) {
     throw createLocalizedError(
       "Il limite tempo turno selezionato non e supportato.",
@@ -265,15 +318,23 @@ export function validateNewGameConfig(
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
 
   if (requestedPlayers.length !== totalPlayers) {
-    throw createLocalizedError("Configura tutti gli slot giocatore prima di creare la partita.", "newGame.invalidPlayers");
+    throw createLocalizedError(
+      "Configura tutti gli slot giocatore prima di creare la partita.",
+      "newGame.invalidPlayers"
+    );
   }
 
   const firstSlotType = normalizePlayerType(requestedPlayers[0] && requestedPlayers[0].type);
   if (firstSlotType !== "human") {
-    throw createLocalizedError("Il giocatore 1 deve essere sempre il creatore umano.", "newGame.invalidCreatorSlot");
+    throw createLocalizedError(
+      "Il giocatore 1 deve essere sempre il creatore umano.",
+      "newGame.invalidCreatorSlot"
+    );
   }
 
-  const aiCount = requestedPlayers.slice(1).filter((slot) => normalizePlayerType(slot && slot.type) === "ai").length;
+  const aiCount = requestedPlayers
+    .slice(1)
+    .filter((slot) => normalizePlayerType(slot && slot.type) === "ai").length;
   const aiNames = buildHistoricalAiNames(aiCount, options.random);
   let nextAiIndex = 0;
 
@@ -289,7 +350,8 @@ export function validateNewGameConfig(
   return {
     moduleSelection: normalizeNetRiskGameModuleSelection({
       contentProfileId: typeof input.contentProfileId === "string" ? input.contentProfileId : null,
-      gameplayProfileId: typeof input.gameplayProfileId === "string" ? input.gameplayProfileId : null,
+      gameplayProfileId:
+        typeof input.gameplayProfileId === "string" ? input.gameplayProfileId : null,
       uiProfileId: typeof input.uiProfileId === "string" ? input.uiProfileId : null
     }),
     name: input.name,
@@ -345,72 +407,134 @@ export function createConfiguredInitialState(
       pieceSkinId?: string | null;
     }) => NetRiskGameModuleSelection | Promise<NetRiskGameModuleSelection>;
   } = {}
-): {
-  state: GameState & {
-    gameConfig?: Record<string, unknown>;
-    contentPackId: string;
-    diceRuleSetId: string;
-    victoryRuleSetId: string;
-    pieceSetId: string;
-  };
-  gameInput: { name: string | undefined };
-  config: ValidatedNewGameConfig;
-} | Promise<{
-  state: GameState & {
-    gameConfig?: Record<string, unknown>;
-    contentPackId: string;
-    diceRuleSetId: string;
-    victoryRuleSetId: string;
-    pieceSetId: string;
-  };
-  gameInput: { name: string | undefined };
-  config: ValidatedNewGameConfig;
-}> {
-  const resolvedPreset = typeof options.resolveGamePreset === "function"
-    ? options.resolveGamePreset({
-        gamePresetId: typeof configInput.gamePresetId === "string" ? configInput.gamePresetId : null,
-        activeModuleIds: Array.isArray(configInput.activeModuleIds) ? configInput.activeModuleIds : []
-      })
-    : null;
-
-  const finalizeWithResolvedPreset = (resolvedGamePreset: NetRiskResolvedGamePreset | null | undefined) => {
-    const hydratedPresetInput: NewGameConfigInput = {
-      ...(typeof resolvedGamePreset?.defaults?.contentPackId === "string" ? { contentPackId: resolvedGamePreset.defaults.contentPackId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.ruleSetId === "string" ? { ruleSetId: resolvedGamePreset.defaults.ruleSetId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.pieceSetId === "string" ? { pieceSetId: resolvedGamePreset.defaults.pieceSetId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.mapId === "string" ? { mapId: resolvedGamePreset.defaults.mapId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.diceRuleSetId === "string" ? { diceRuleSetId: resolvedGamePreset.defaults.diceRuleSetId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.victoryRuleSetId === "string" ? { victoryRuleSetId: resolvedGamePreset.defaults.victoryRuleSetId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.themeId === "string" ? { themeId: resolvedGamePreset.defaults.themeId } : {}),
-      ...(typeof resolvedGamePreset?.defaults?.pieceSkinId === "string" ? { pieceSkinId: resolvedGamePreset.defaults.pieceSkinId } : {}),
-      ...(Array.isArray(resolvedGamePreset?.activeModuleIds) ? { activeModuleIds: resolvedGamePreset.activeModuleIds } : {}),
-      ...(typeof resolvedGamePreset?.contentProfileId === "string" ? { contentProfileId: resolvedGamePreset.contentProfileId } : {}),
-      ...(typeof resolvedGamePreset?.gameplayProfileId === "string" ? { gameplayProfileId: resolvedGamePreset.gameplayProfileId } : {}),
-      ...(typeof resolvedGamePreset?.uiProfileId === "string" ? { uiProfileId: resolvedGamePreset.uiProfileId } : {}),
-      ...(typeof resolvedGamePreset?.id === "string" ? { gamePresetId: resolvedGamePreset.id } : {}),
-      ...configInput
-    };
-
-    const resolvedProfileDefaults = typeof options.resolveGameModuleConfigDefaults === "function"
-      ? options.resolveGameModuleConfigDefaults({
-          activeModuleIds: Array.isArray(hydratedPresetInput.activeModuleIds) ? hydratedPresetInput.activeModuleIds : [],
-          contentProfileId: typeof hydratedPresetInput.contentProfileId === "string" ? hydratedPresetInput.contentProfileId : null,
-          gameplayProfileId: typeof hydratedPresetInput.gameplayProfileId === "string" ? hydratedPresetInput.gameplayProfileId : null,
-          uiProfileId: typeof hydratedPresetInput.uiProfileId === "string" ? hydratedPresetInput.uiProfileId : null
+):
+  | {
+      state: GameState & {
+        gameConfig?: Record<string, unknown>;
+        contentPackId: string;
+        diceRuleSetId: string;
+        victoryRuleSetId: string;
+        pieceSetId: string;
+      };
+      gameInput: { name: string | undefined };
+      config: ValidatedNewGameConfig;
+    }
+  | Promise<{
+      state: GameState & {
+        gameConfig?: Record<string, unknown>;
+        contentPackId: string;
+        diceRuleSetId: string;
+        victoryRuleSetId: string;
+        pieceSetId: string;
+      };
+      gameInput: { name: string | undefined };
+      config: ValidatedNewGameConfig;
+    }> {
+  const resolvedPreset =
+    typeof options.resolveGamePreset === "function"
+      ? options.resolveGamePreset({
+          gamePresetId:
+            typeof configInput.gamePresetId === "string" ? configInput.gamePresetId : null,
+          activeModuleIds: Array.isArray(configInput.activeModuleIds)
+            ? configInput.activeModuleIds
+            : []
         })
       : null;
 
-    const finalizeWithResolvedInput = (resolvedSetup: NetRiskResolvedModuleSetup | null | undefined) => {
+  const finalizeWithResolvedPreset = (
+    resolvedGamePreset: NetRiskResolvedGamePreset | null | undefined
+  ) => {
+    const hydratedPresetInput: NewGameConfigInput = {
+      ...(typeof resolvedGamePreset?.defaults?.contentPackId === "string"
+        ? { contentPackId: resolvedGamePreset.defaults.contentPackId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.ruleSetId === "string"
+        ? { ruleSetId: resolvedGamePreset.defaults.ruleSetId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.pieceSetId === "string"
+        ? { pieceSetId: resolvedGamePreset.defaults.pieceSetId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.mapId === "string"
+        ? { mapId: resolvedGamePreset.defaults.mapId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.diceRuleSetId === "string"
+        ? { diceRuleSetId: resolvedGamePreset.defaults.diceRuleSetId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.victoryRuleSetId === "string"
+        ? { victoryRuleSetId: resolvedGamePreset.defaults.victoryRuleSetId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.themeId === "string"
+        ? { themeId: resolvedGamePreset.defaults.themeId }
+        : {}),
+      ...(typeof resolvedGamePreset?.defaults?.pieceSkinId === "string"
+        ? { pieceSkinId: resolvedGamePreset.defaults.pieceSkinId }
+        : {}),
+      ...(Array.isArray(resolvedGamePreset?.activeModuleIds)
+        ? { activeModuleIds: resolvedGamePreset.activeModuleIds }
+        : {}),
+      ...(typeof resolvedGamePreset?.contentProfileId === "string"
+        ? { contentProfileId: resolvedGamePreset.contentProfileId }
+        : {}),
+      ...(typeof resolvedGamePreset?.gameplayProfileId === "string"
+        ? { gameplayProfileId: resolvedGamePreset.gameplayProfileId }
+        : {}),
+      ...(typeof resolvedGamePreset?.uiProfileId === "string"
+        ? { uiProfileId: resolvedGamePreset.uiProfileId }
+        : {}),
+      ...(typeof resolvedGamePreset?.id === "string"
+        ? { gamePresetId: resolvedGamePreset.id }
+        : {}),
+      ...configInput
+    };
+
+    const resolvedProfileDefaults =
+      typeof options.resolveGameModuleConfigDefaults === "function"
+        ? options.resolveGameModuleConfigDefaults({
+            activeModuleIds: Array.isArray(hydratedPresetInput.activeModuleIds)
+              ? hydratedPresetInput.activeModuleIds
+              : [],
+            contentProfileId:
+              typeof hydratedPresetInput.contentProfileId === "string"
+                ? hydratedPresetInput.contentProfileId
+                : null,
+            gameplayProfileId:
+              typeof hydratedPresetInput.gameplayProfileId === "string"
+                ? hydratedPresetInput.gameplayProfileId
+                : null,
+            uiProfileId:
+              typeof hydratedPresetInput.uiProfileId === "string"
+                ? hydratedPresetInput.uiProfileId
+                : null
+          })
+        : null;
+
+    const finalizeWithResolvedInput = (
+      resolvedSetup: NetRiskResolvedModuleSetup | null | undefined
+    ) => {
       const resolvedDefaults = resolvedSetup?.defaults || null;
       const hydratedConfigInput: NewGameConfigInput = {
-        ...(typeof resolvedDefaults?.contentPackId === "string" ? { contentPackId: resolvedDefaults.contentPackId } : {}),
-        ...(typeof resolvedDefaults?.ruleSetId === "string" ? { ruleSetId: resolvedDefaults.ruleSetId } : {}),
-        ...(typeof resolvedDefaults?.pieceSetId === "string" ? { pieceSetId: resolvedDefaults.pieceSetId } : {}),
+        ...(typeof resolvedDefaults?.contentPackId === "string"
+          ? { contentPackId: resolvedDefaults.contentPackId }
+          : {}),
+        ...(typeof resolvedDefaults?.ruleSetId === "string"
+          ? { ruleSetId: resolvedDefaults.ruleSetId }
+          : {}),
+        ...(typeof resolvedDefaults?.pieceSetId === "string"
+          ? { pieceSetId: resolvedDefaults.pieceSetId }
+          : {}),
         ...(typeof resolvedDefaults?.mapId === "string" ? { mapId: resolvedDefaults.mapId } : {}),
-        ...(typeof resolvedDefaults?.diceRuleSetId === "string" ? { diceRuleSetId: resolvedDefaults.diceRuleSetId } : {}),
-        ...(typeof resolvedDefaults?.victoryRuleSetId === "string" ? { victoryRuleSetId: resolvedDefaults.victoryRuleSetId } : {}),
-        ...(typeof resolvedDefaults?.themeId === "string" ? { themeId: resolvedDefaults.themeId } : {}),
-        ...(typeof resolvedDefaults?.pieceSkinId === "string" ? { pieceSkinId: resolvedDefaults.pieceSkinId } : {}),
+        ...(typeof resolvedDefaults?.diceRuleSetId === "string"
+          ? { diceRuleSetId: resolvedDefaults.diceRuleSetId }
+          : {}),
+        ...(typeof resolvedDefaults?.victoryRuleSetId === "string"
+          ? { victoryRuleSetId: resolvedDefaults.victoryRuleSetId }
+          : {}),
+        ...(typeof resolvedDefaults?.themeId === "string"
+          ? { themeId: resolvedDefaults.themeId }
+          : {}),
+        ...(typeof resolvedDefaults?.pieceSkinId === "string"
+          ? { pieceSkinId: resolvedDefaults.pieceSkinId }
+          : {}),
         ...hydratedPresetInput
       };
       const config = validateNewGameConfig(hydratedConfigInput, {
@@ -420,21 +544,33 @@ export function createConfiguredInitialState(
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,
         resolveSupportedMap: options.resolveSupportedMap
       });
-      const resolvedModuleSelection = typeof options.resolveGameModuleSelection === "function"
-        ? options.resolveGameModuleSelection({
-            activeModuleIds: Array.isArray(hydratedConfigInput.activeModuleIds) ? hydratedConfigInput.activeModuleIds : [],
-            contentProfileId: typeof hydratedConfigInput.contentProfileId === "string" ? hydratedConfigInput.contentProfileId : null,
-            gameplayProfileId: typeof hydratedConfigInput.gameplayProfileId === "string" ? hydratedConfigInput.gameplayProfileId : null,
-            uiProfileId: typeof hydratedConfigInput.uiProfileId === "string" ? hydratedConfigInput.uiProfileId : null,
-            contentPackId: config.contentPackId,
-            pieceSetId: config.pieceSetId,
-            mapId: config.mapId,
-            diceRuleSetId: config.diceRuleSetId,
-            victoryRuleSetId: config.victoryRuleSetId,
-            themeId: config.themeId,
-            pieceSkinId: config.pieceSkinId
-          })
-        : config.moduleSelection;
+      const resolvedModuleSelection =
+        typeof options.resolveGameModuleSelection === "function"
+          ? options.resolveGameModuleSelection({
+              activeModuleIds: Array.isArray(hydratedConfigInput.activeModuleIds)
+                ? hydratedConfigInput.activeModuleIds
+                : [],
+              contentProfileId:
+                typeof hydratedConfigInput.contentProfileId === "string"
+                  ? hydratedConfigInput.contentProfileId
+                  : null,
+              gameplayProfileId:
+                typeof hydratedConfigInput.gameplayProfileId === "string"
+                  ? hydratedConfigInput.gameplayProfileId
+                  : null,
+              uiProfileId:
+                typeof hydratedConfigInput.uiProfileId === "string"
+                  ? hydratedConfigInput.uiProfileId
+                  : null,
+              contentPackId: config.contentPackId,
+              pieceSetId: config.pieceSetId,
+              mapId: config.mapId,
+              diceRuleSetId: config.diceRuleSetId,
+              victoryRuleSetId: config.victoryRuleSetId,
+              themeId: config.themeId,
+              pieceSkinId: config.pieceSkinId
+            })
+          : config.moduleSelection;
 
       const finalizeConfiguredState = (moduleSelection: NetRiskGameModuleSelection) => {
         const state = createInitialState(config.selectedMap);
@@ -456,14 +592,18 @@ export function createConfiguredInitialState(
           diceRuleSetName: config.selectedDiceRuleSet.name,
           diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
           diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
-          diceRuleSetAttackerMustLeaveOneArmyBehind: config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
+          diceRuleSetAttackerMustLeaveOneArmyBehind:
+            config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
           diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
           victoryRuleSetId: config.victoryRuleSetId,
           themeId: config.themeId,
           pieceSkinId: config.pieceSkinId,
           moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
           activeModules: moduleSelection.activeModules,
-          gamePresetId: typeof hydratedConfigInput.gamePresetId === "string" ? hydratedConfigInput.gamePresetId : null,
+          gamePresetId:
+            typeof hydratedConfigInput.gamePresetId === "string"
+              ? hydratedConfigInput.gamePresetId
+              : null,
           contentProfileId: moduleSelection.contentProfileId || null,
           gameplayProfileId: moduleSelection.gameplayProfileId || null,
           uiProfileId: moduleSelection.uiProfileId || null,
@@ -500,22 +640,39 @@ export function createConfiguredInitialState(
         };
       };
 
-      if (resolvedModuleSelection && typeof (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then === "function") {
-        return (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then(finalizeConfiguredState);
+      if (
+        resolvedModuleSelection &&
+        typeof (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then === "function"
+      ) {
+        return (resolvedModuleSelection as Promise<NetRiskGameModuleSelection>).then(
+          finalizeConfiguredState
+        );
       }
 
       return finalizeConfiguredState(resolvedModuleSelection as NetRiskGameModuleSelection);
     };
 
-    if (resolvedProfileDefaults && typeof (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then === "function") {
-      return (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then(finalizeWithResolvedInput);
+    if (
+      resolvedProfileDefaults &&
+      typeof (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then === "function"
+    ) {
+      return (resolvedProfileDefaults as Promise<NetRiskResolvedModuleSetup>).then(
+        finalizeWithResolvedInput
+      );
     }
 
-    return finalizeWithResolvedInput(resolvedProfileDefaults as NetRiskResolvedModuleSetup | null | undefined);
+    return finalizeWithResolvedInput(
+      resolvedProfileDefaults as NetRiskResolvedModuleSetup | null | undefined
+    );
   };
 
-  if (resolvedPreset && typeof (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then === "function") {
-    return (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then(finalizeWithResolvedPreset);
+  if (
+    resolvedPreset &&
+    typeof (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then === "function"
+  ) {
+    return (resolvedPreset as Promise<NetRiskResolvedGamePreset | null>).then(
+      finalizeWithResolvedPreset
+    );
   }
 
   return finalizeWithResolvedPreset(resolvedPreset as NetRiskResolvedGamePreset | null | undefined);

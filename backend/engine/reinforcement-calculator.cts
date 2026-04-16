@@ -65,26 +65,49 @@ function getControlledContinents(state: GameState, ownedTerritoryIds: string[]):
       throw new Error(`Continent "${continent.id}" must define territoryIds as an array.`);
     }
 
-    return continent.territoryIds.length > 0 && continent.territoryIds.every((territoryId) => ownedSet.has(territoryId));
+    return (
+      continent.territoryIds.length > 0 &&
+      continent.territoryIds.every((territoryId) => ownedSet.has(territoryId))
+    );
   });
 }
 
 function resolveGameplayEffects(state: GameState): NetRiskGameplayEffects | null {
   const rawGameplayEffects = state?.gameConfig?.gameplayEffects;
-  if (!rawGameplayEffects || typeof rawGameplayEffects !== "object" || Array.isArray(rawGameplayEffects)) {
+  if (
+    !rawGameplayEffects ||
+    typeof rawGameplayEffects !== "object" ||
+    Array.isArray(rawGameplayEffects)
+  ) {
     return null;
   }
 
-  const reinforcementAdjustments = Array.isArray((rawGameplayEffects as { reinforcementAdjustments?: unknown }).reinforcementAdjustments)
-    ? ((rawGameplayEffects as { reinforcementAdjustments?: Array<Record<string, unknown>> }).reinforcementAdjustments || [])
-        .filter((entry) => entry && typeof entry === "object" && !Array.isArray(entry) && typeof entry.label === "string" && entry.label.trim())
+  const reinforcementAdjustments = Array.isArray(
+    (rawGameplayEffects as { reinforcementAdjustments?: unknown }).reinforcementAdjustments
+  )
+    ? (
+        (rawGameplayEffects as { reinforcementAdjustments?: Array<Record<string, unknown>> })
+          .reinforcementAdjustments || []
+      )
+        .filter(
+          (entry) =>
+            entry &&
+            typeof entry === "object" &&
+            !Array.isArray(entry) &&
+            typeof entry.label === "string" &&
+            entry.label.trim()
+        )
         .map((entry) => ({
           id: typeof entry.id === "string" && entry.id.trim() ? entry.id.trim() : null,
           label: String(entry.label).trim(),
           flatBonus: Number.isInteger(entry.flatBonus) ? Number(entry.flatBonus) : null,
           minimumTotal: Number.isInteger(entry.minimumTotal) ? Number(entry.minimumTotal) : null
         }))
-        .filter((entry) => (entry.flatBonus != null && entry.flatBonus >= 0) || (entry.minimumTotal != null && entry.minimumTotal > 0))
+        .filter(
+          (entry) =>
+            (entry.flatBonus != null && entry.flatBonus >= 0) ||
+            (entry.minimumTotal != null && entry.minimumTotal > 0)
+        )
     : [];
 
   return {
@@ -92,7 +115,10 @@ function resolveGameplayEffects(state: GameState): NetRiskGameplayEffects | null
   };
 }
 
-export function calculateReinforcements(state: GameState, playerId: string): ReinforcementCalculation {
+export function calculateReinforcements(
+  state: GameState,
+  playerId: string
+): ReinforcementCalculation {
   validateState(state);
 
   if (!playerId) {
@@ -107,7 +133,9 @@ export function calculateReinforcements(state: GameState, playerId: string): Rei
   const ownedTerritoryIds = getOwnedTerritoryIds(state, playerId);
   const territoryCount = ownedTerritoryIds.length;
   const controlledContinents = getControlledContinents(state, ownedTerritoryIds);
-  const reinforcementRuleSet = getReinforcementRuleSet(state.reinforcementRuleSetId || STANDARD_REINFORCEMENT_RULE_SET_ID);
+  const reinforcementRuleSet = getReinforcementRuleSet(
+    state.reinforcementRuleSetId || STANDARD_REINFORCEMENT_RULE_SET_ID
+  );
   const resolution = reinforcementRuleSet.resolve({
     territoryCount,
     controlledContinents
@@ -116,13 +144,18 @@ export function calculateReinforcements(state: GameState, playerId: string): Rei
   const moduleAdjustments = Array.isArray(gameplayEffects?.reinforcementAdjustments)
     ? gameplayEffects.reinforcementAdjustments.map((entry) => ({ ...entry }))
     : [];
-  const moduleBonusTotal = moduleAdjustments.reduce((total, entry) => total + (Number.isInteger(entry.flatBonus) ? Number(entry.flatBonus) : 0), 0);
+  const moduleBonusTotal = moduleAdjustments.reduce(
+    (total, entry) => total + (Number.isInteger(entry.flatBonus) ? Number(entry.flatBonus) : 0),
+    0
+  );
   const moduleMinimumTotal = moduleAdjustments.reduce<number | null>((current, entry) => {
     if (!Number.isInteger(entry.minimumTotal) || Number(entry.minimumTotal) < 1) {
       return current;
     }
 
-    return current == null ? Number(entry.minimumTotal) : Math.max(current, Number(entry.minimumTotal));
+    return current == null
+      ? Number(entry.minimumTotal)
+      : Math.max(current, Number(entry.minimumTotal));
   }, null);
   const totalReinforcements = Math.max(
     resolution.totalReinforcements + moduleBonusTotal,

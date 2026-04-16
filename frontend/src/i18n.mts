@@ -32,13 +32,17 @@ function normalizeLocale(input: unknown): LocaleCode | null {
     return null;
   }
 
-  const directMatch = SUPPORTED_LOCALES.find((locale) => locale === normalized) as LocaleCode | undefined;
+  const directMatch = SUPPORTED_LOCALES.find((locale) => locale === normalized) as
+    | LocaleCode
+    | undefined;
   if (directMatch) {
     return directMatch;
   }
 
   const baseLocale = normalized.split("-")[0];
-  return (SUPPORTED_LOCALES.find((locale) => locale === baseLocale) as LocaleCode | undefined) || null;
+  return (
+    (SUPPORTED_LOCALES.find((locale) => locale === baseLocale) as LocaleCode | undefined) || null
+  );
 }
 
 function browserLocale(): LocaleCode | null {
@@ -80,18 +84,17 @@ export function getLocale(): LocaleCode {
 }
 
 export function resolveLocale(options: LocaleOptions = {}): LocaleCode {
-  const searchParams = options.searchParams
-    || (typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null);
-  const requested = searchParams && typeof searchParams.get === "function"
-    ? searchParams.get("lang")
-    : null;
+  const searchParams =
+    options.searchParams ||
+    (typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null);
+  const requested =
+    searchParams && typeof searchParams.get === "function" ? searchParams.get("lang") : null;
   const fromQuery = normalizeLocale(requested);
   if (fromQuery) {
     return fromQuery;
   }
 
-  const storage = options.storage
-    || (typeof window !== "undefined" ? window.localStorage : null);
+  const storage = options.storage || (typeof window !== "undefined" ? window.localStorage : null);
   if (storage && typeof storage.getItem === "function") {
     const fromStorage = normalizeLocale(storage.getItem(LOCALE_STORAGE_KEY));
     if (fromStorage) {
@@ -102,7 +105,10 @@ export function resolveLocale(options: LocaleOptions = {}): LocaleCode {
   return browserLocale() || DEFAULT_LOCALE;
 }
 
-export function setLocale(locale: string | null | undefined, options: LocaleOptions = {}): LocaleCode {
+export function setLocale(
+  locale: string | null | undefined,
+  options: LocaleOptions = {}
+): LocaleCode {
   const normalized = normalizeLocale(locale);
   const nextLocale = normalized || DEFAULT_LOCALE;
 
@@ -110,8 +116,7 @@ export function setLocale(locale: string | null | undefined, options: LocaleOpti
     window.__netriskLocale = nextLocale;
   }
 
-  const storage = options.storage
-    || (typeof window !== "undefined" ? window.localStorage : null);
+  const storage = options.storage || (typeof window !== "undefined" ? window.localStorage : null);
   if (storage && typeof storage.setItem === "function") {
     storage.setItem(LOCALE_STORAGE_KEY, nextLocale);
   }
@@ -124,17 +129,22 @@ export function setLocale(locale: string | null | undefined, options: LocaleOpti
 }
 
 function interpolate(template: string, params: TranslationParams = {}): string {
-  return String(template).replace(/\{(\w+)\}/g, (match, key) => (
+  return String(template).replace(/\{(\w+)\}/g, (match, key) =>
     Object.prototype.hasOwnProperty.call(params, key) ? String(params[key]) : match
-  ));
+  );
 }
 
-export function t(key: string, params: TranslationParams = {}, options: LocaleOptions = {}): string {
+export function t(
+  key: string,
+  params: TranslationParams = {},
+  options: LocaleOptions = {}
+): string {
   const requestedLocale = options.locale || getLocale();
   const dictionary = getLocaleDictionary(requestedLocale);
   const fallbackDictionary = getLocaleDictionary(DEFAULT_LOCALE);
 
-  const template = dictionary[key as keyof LocaleDictionary] ?? fallbackDictionary[key as keyof LocaleDictionary];
+  const template =
+    dictionary[key as keyof LocaleDictionary] ?? fallbackDictionary[key as keyof LocaleDictionary];
   if (template == null) {
     return options.fallback ?? key;
   }
@@ -142,7 +152,11 @@ export function t(key: string, params: TranslationParams = {}, options: LocaleOp
   return interpolate(template, params);
 }
 
-export function formatDate(value: Date | string | number | null | undefined, options: Intl.DateTimeFormatOptions = {}, locale = getLocale()): string {
+export function formatDate(
+  value: Date | string | number | null | undefined,
+  options: Intl.DateTimeFormatOptions = {},
+  locale = getLocale()
+): string {
   if (!value) {
     return "";
   }
@@ -159,7 +173,10 @@ export function listSupportedLocales() {
   return SUPPORTED_LOCALES.slice();
 }
 
-export function translateMessagePayload(payload: MessagePayload | null | undefined, fallback = ""): string {
+export function translateMessagePayload(
+  payload: MessagePayload | null | undefined,
+  fallback = ""
+): string {
   if (!payload || typeof payload !== "object") {
     return fallback;
   }
@@ -167,28 +184,36 @@ export function translateMessagePayload(payload: MessagePayload | null | undefin
   const messageKey = payload.messageKey || payload.errorKey || payload.reasonKey || null;
   const messageParams = payload.messageParams || payload.errorParams || payload.reasonParams || {};
   if (messageKey) {
-    return t(messageKey, messageParams as TranslationParams, { fallback: payload.error || payload.message || payload.reason || fallback });
+    return t(messageKey, messageParams as TranslationParams, {
+      fallback: payload.error || payload.message || payload.reason || fallback
+    });
   }
 
   return payload.error || payload.message || payload.reason || fallback;
 }
 
-export function translateServerMessage(payload: MessagePayload | null | undefined, fallback = ""): string {
+export function translateServerMessage(
+  payload: MessagePayload | null | undefined,
+  fallback = ""
+): string {
   return translateMessagePayload(payload, fallback);
 }
 
-export function translateGameLogEntries(snapshot: Pick<GameSnapshot, "playerHand"> & {
-  logEntries?: MessagePayload[];
-  log?: string[];
-} | null | undefined): string[] {
+export function translateGameLogEntries(
+  snapshot:
+    | (Pick<GameSnapshot, "playerHand"> & {
+        logEntries?: MessagePayload[];
+        log?: string[];
+      })
+    | null
+    | undefined
+): string[] {
   const localizedEntries = Array.isArray(snapshot?.logEntries)
     ? snapshot.logEntries
-      .map((entry) => translateMessagePayload(entry, entry?.message || ""))
-      .filter(Boolean)
+        .map((entry) => translateMessagePayload(entry, entry?.message || ""))
+        .filter(Boolean)
     : [];
-  const legacyEntries = Array.isArray(snapshot?.log)
-    ? snapshot.log.filter(Boolean)
-    : [];
+  const legacyEntries = Array.isArray(snapshot?.log) ? snapshot.log.filter(Boolean) : [];
 
   if (!localizedEntries.length) {
     return legacyEntries;
@@ -229,26 +254,41 @@ export function applyTranslations(root: ParentNode = document, locale = getLocal
 
   root.querySelectorAll("[data-i18n-content]").forEach((element) => {
     const translatedElement = element as HTMLElement;
-    translatedElement.setAttribute("content", t(translatedElement.dataset.i18nContent || "", {}, { locale }));
+    translatedElement.setAttribute(
+      "content",
+      t(translatedElement.dataset.i18nContent || "", {}, { locale })
+    );
   });
 
   root.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
     const translatedElement = element as HTMLElement;
-    translatedElement.setAttribute("placeholder", t(translatedElement.dataset.i18nPlaceholder || "", {}, { locale }));
+    translatedElement.setAttribute(
+      "placeholder",
+      t(translatedElement.dataset.i18nPlaceholder || "", {}, { locale })
+    );
   });
 
   root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
     const translatedElement = element as HTMLElement;
-    translatedElement.setAttribute("aria-label", t(translatedElement.dataset.i18nAriaLabel || "", {}, { locale }));
+    translatedElement.setAttribute(
+      "aria-label",
+      t(translatedElement.dataset.i18nAriaLabel || "", {}, { locale })
+    );
   });
 
   root.querySelectorAll("[data-i18n-title]").forEach((element) => {
     const translatedElement = element as HTMLElement;
-    translatedElement.setAttribute("title", t(translatedElement.dataset.i18nTitle || "", {}, { locale }));
+    translatedElement.setAttribute(
+      "title",
+      t(translatedElement.dataset.i18nTitle || "", {}, { locale })
+    );
   });
 
   root.querySelectorAll("[data-i18n-alt]").forEach((element) => {
     const translatedElement = element as HTMLElement;
-    translatedElement.setAttribute("alt", t(translatedElement.dataset.i18nAlt || "", {}, { locale }));
+    translatedElement.setAttribute(
+      "alt",
+      t(translatedElement.dataset.i18nAlt || "", {}, { locale })
+    );
   });
 }

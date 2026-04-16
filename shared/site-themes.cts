@@ -8,7 +8,4 @@ export {
   midnightSiteTheme
 } from "./content/site-themes/index.cjs";
 
-export type {
-  SiteTheme,
-  SiteThemeSummary
-} from "./content/site-themes/index.cjs";
+export type { SiteTheme, SiteThemeSummary } from "./content/site-themes/index.cjs";

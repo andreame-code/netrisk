@@ -1,5 +1,7 @@
-const { forceEndTurn, getCurrentPlayer } = require("../engine/game-engine.cjs") as typeof import("../engine/game-engine.cjs");
-const { runAiTurnsIfNeeded } = require("../engine/ai-turn-resume.cjs") as typeof import("../engine/ai-turn-resume.cjs");
+const { forceEndTurn, getCurrentPlayer } =
+  require("../engine/game-engine.cjs") as typeof import("../engine/game-engine.cjs");
+const { runAiTurnsIfNeeded } =
+  require("../engine/ai-turn-resume.cjs") as typeof import("../engine/ai-turn-resume.cjs");
 
 type EngineState = Parameters<typeof forceEndTurn>[0];
 
@@ -135,7 +137,10 @@ function captureAiTurnSnapshot(state: RecoverableAiState): AiTurnSnapshot | null
   return {
     currentTurnIndex,
     currentPlayerId: currentPlayer.id,
-    turnStartedAt: typeof state.turnStartedAt === "string" && state.turnStartedAt.trim() ? state.turnStartedAt : null,
+    turnStartedAt:
+      typeof state.turnStartedAt === "string" && state.turnStartedAt.trim()
+        ? state.turnStartedAt
+        : null,
     turnPhase: typeof state.turnPhase === "string" ? state.turnPhase : null,
     pendingConquestKey: pendingConquestKey(state)
   };
@@ -146,11 +151,13 @@ function sameAiTurnSnapshot(left: AiTurnSnapshot | null, right: AiTurnSnapshot |
     return false;
   }
 
-  return left.currentTurnIndex === right.currentTurnIndex
-    && left.currentPlayerId === right.currentPlayerId
-    && left.turnStartedAt === right.turnStartedAt
-    && left.turnPhase === right.turnPhase
-    && left.pendingConquestKey === right.pendingConquestKey;
+  return (
+    left.currentTurnIndex === right.currentTurnIndex &&
+    left.currentPlayerId === right.currentPlayerId &&
+    left.turnStartedAt === right.turnStartedAt &&
+    left.turnPhase === right.turnPhase &&
+    left.pendingConquestKey === right.pendingConquestKey
+  );
 }
 
 export async function recoverAiTurnState(
@@ -183,7 +190,9 @@ export async function recoverAiTurnState(
   let interceptedError = false;
 
   try {
-    const nextReports = await Promise.resolve(executeAiTurns(state as unknown as Parameters<typeof runAiTurnsIfNeeded>[0]));
+    const nextReports = await Promise.resolve(
+      executeAiTurns(state as unknown as Parameters<typeof runAiTurnsIfNeeded>[0])
+    );
     reports = Array.isArray(nextReports) ? nextReports : [];
   } catch (error) {
     interceptedError = true;
@@ -199,14 +208,19 @@ export async function recoverAiTurnState(
       advanced: true,
       forcedTurn: false,
       interceptedError,
-      shouldPersist: interceptedError || reports.length > 0 || !sameAiTurnSnapshot(snapshotBefore, snapshotAfter),
+      shouldPersist:
+        interceptedError ||
+        reports.length > 0 ||
+        !sameAiTurnSnapshot(snapshotBefore, snapshotAfter),
       reports
     };
     logAiRecoveryEvent(options.logger, options.context, snapshotBefore, result);
     return result;
   }
 
-  const currentPlayer = getCurrentPlayer(state as unknown as Parameters<typeof getCurrentPlayer>[0]);
+  const currentPlayer = getCurrentPlayer(
+    state as unknown as Parameters<typeof getCurrentPlayer>[0]
+  );
   if (!currentPlayer?.id || currentPlayer.id !== snapshotBefore.currentPlayerId) {
     const result = {
       eligible: true,
@@ -221,13 +235,19 @@ export async function recoverAiTurnState(
     return result;
   }
 
-  const forcedResult = executeForceEndTurn(state as unknown as EngineState, snapshotBefore.currentPlayerId, {
-    reason: "aiRecovery",
-    now: options.now
-  });
+  const forcedResult = executeForceEndTurn(
+    state as unknown as EngineState,
+    snapshotBefore.currentPlayerId,
+    {
+      reason: "aiRecovery",
+      now: options.now
+    }
+  );
 
   if (forcedResult.ok !== true) {
-    throw new Error((forcedResult as { message?: string }).message || "Impossibile forzare il turno AI bloccato.");
+    throw new Error(
+      (forcedResult as { message?: string }).message || "Impossibile forzare il turno AI bloccato."
+    );
   }
 
   const result = {
@@ -243,17 +263,24 @@ export async function recoverAiTurnState(
   return result;
 }
 
-export async function recoverStuckAiTurns(
-  options: {
-    listGames: () => Promise<GameEntry[]> | GameEntry[];
-    saveGame: (gameId: string, state: Record<string, unknown>, expectedVersion?: number | null) => Promise<unknown> | unknown;
-    afterSave?: (payload: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => Promise<void> | void;
-    now?: Date;
-    forceEndTurn?: typeof forceEndTurn;
-    runAiTurnsIfNeeded?: typeof runAiTurnsIfNeeded;
-    logger?: AiTurnRecoveryLogger;
-  }
-): Promise<AiTurnRecoveryJobResult> {
+export async function recoverStuckAiTurns(options: {
+  listGames: () => Promise<GameEntry[]> | GameEntry[];
+  saveGame: (
+    gameId: string,
+    state: Record<string, unknown>,
+    expectedVersion?: number | null
+  ) => Promise<unknown> | unknown;
+  afterSave?: (payload: {
+    gameId: string;
+    gameName: string;
+    state: Record<string, unknown>;
+    version: number | null;
+  }) => Promise<void> | void;
+  now?: Date;
+  forceEndTurn?: typeof forceEndTurn;
+  runAiTurnsIfNeeded?: typeof runAiTurnsIfNeeded;
+  logger?: AiTurnRecoveryLogger;
+}): Promise<AiTurnRecoveryJobResult> {
   const entries = await options.listGames();
   const result: AiTurnRecoveryJobResult = {
     scannedGames: entries.length,
@@ -300,7 +327,9 @@ export async function recoverStuckAiTurns(
     }
 
     try {
-      const savedGame = await options.saveGame(entry.id, entry.state, entry.version ?? null) as { version?: number | null } | null;
+      const savedGame = (await options.saveGame(entry.id, entry.state, entry.version ?? null)) as {
+        version?: number | null;
+      } | null;
       const version = savedGame?.version ?? entry.version ?? null;
       result.recoveredGames += 1;
       if (recovery.forcedTurn) {

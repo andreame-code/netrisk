@@ -1,6 +1,7 @@
 # Test Gaps
 
 ## Covered
+
 - Card system: long-game card awarding reshuffles discard back into deck
 - Visual regression expansion: Lobby, New Game, Profile
 - Admin policy coverage
@@ -32,7 +33,9 @@
 - Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
 
 ## Missing
+
 - None currently tracked
 
 ## Next Recommended Gap
+
 - None currently tracked

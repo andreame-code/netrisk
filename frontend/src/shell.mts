@@ -3,14 +3,24 @@ import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contract
 import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type { ModuleOptionsResponse, PublicUser } from "./core/types.mjs";
-import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t, translateServerMessage } from "./i18n.mjs";
+import {
+  applyTranslations,
+  listSupportedLocales,
+  resolveLocale,
+  setLocale,
+  t,
+  translateServerMessage
+} from "./i18n.mjs";
 
 const THEME_STORAGE_KEY = "netrisk.theme";
 const routeQuery = new URLSearchParams(window.location.search);
-const shellKind = document.body.dataset.shellKind || (document.body.dataset.appSection ? "app" : "marketing");
+const shellKind =
+  document.body.dataset.shellKind || (document.body.dataset.appSection ? "app" : "marketing");
 const section = document.body.dataset.appSection || "";
 const pathGameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
-const currentGameId = pathGameMatch ? decodeURIComponent(pathGameMatch[1]) : routeQuery.get("gameId");
+const currentGameId = pathGameMatch
+  ? decodeURIComponent(pathGameMatch[1])
+  : routeQuery.get("gameId");
 const activeLocale = setLocale(resolveLocale());
 let availableThemes = [...SUPPORTED_THEMES] as string[];
 let moduleOptionsPromise: Promise<ModuleOptionsResponse | null> | null = null;
@@ -53,8 +63,8 @@ function resolveThemeFromUser(user: PublicUser | null | undefined): ThemeName | 
 function setThemes(themes: Array<string | { id?: string | null }>): string[] {
   const nextThemes = Array.isArray(themes)
     ? themes
-      .map((entry) => typeof entry === "string" ? entry : String(entry?.id || ""))
-      .filter(Boolean)
+        .map((entry) => (typeof entry === "string" ? entry : String(entry?.id || "")))
+        .filter(Boolean)
     : [];
   availableThemes = nextThemes.length ? [...new Set(nextThemes)] : [...SUPPORTED_THEMES];
   return [...availableThemes];
@@ -67,7 +77,10 @@ function resolveTheme(): ThemeName {
   }
 
   try {
-    return normalizeTheme(window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME, availableThemes);
+    return normalizeTheme(
+      window.localStorage?.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME,
+      availableThemes
+    );
   } catch {
     return DEFAULT_THEME;
   }
@@ -96,7 +109,9 @@ window.netriskTheme = Object.freeze({
   setThemes(themes: Array<string | { id?: string | null }>) {
     const resolvedThemes = setThemes(themes);
     const currentTheme = applyTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
-    return resolvedThemes.includes(currentTheme) ? resolvedThemes : [currentTheme, ...resolvedThemes];
+    return resolvedThemes.includes(currentTheme)
+      ? resolvedThemes
+      : [currentTheme, ...resolvedThemes];
   },
   getCurrentTheme() {
     return normalizeTheme(document.documentElement.dataset.theme || DEFAULT_THEME, availableThemes);
@@ -196,7 +211,9 @@ function initMarketingShell() {
     position: "prepend"
   });
 
-  const menuButton = document.querySelector("[data-landing-menu-toggle]") as HTMLButtonElement | null;
+  const menuButton = document.querySelector(
+    "[data-landing-menu-toggle]"
+  ) as HTMLButtonElement | null;
   const menuLabel = document.querySelector("[data-landing-menu-label]") as HTMLElement | null;
   const menuPanel = document.querySelector("[data-landing-mobile-panel]") as HTMLElement | null;
   if (!menuButton || !menuLabel || !menuPanel) {
@@ -205,7 +222,10 @@ function initMarketingShell() {
 
   const setMenuState = (expanded: boolean) => {
     menuButton.setAttribute("aria-expanded", expanded ? "true" : "false");
-    menuButton.setAttribute("aria-label", t(expanded ? "landing.nav.menuClose" : "landing.nav.menuOpen"));
+    menuButton.setAttribute(
+      "aria-label",
+      t(expanded ? "landing.nav.menuClose" : "landing.nav.menuOpen")
+    );
     menuLabel.textContent = t(expanded ? "landing.nav.menuClose" : "landing.nav.menuOpen");
     menuPanel.hidden = !expanded;
     document.body.dataset.landingMenuOpen = expanded ? "true" : "false";
@@ -295,11 +315,16 @@ async function renderTopNavModuleSlots() {
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
 
-  setMarkup(container, topNavSlots
-    .map((slot) => slot.route
-      ? `<a href="${slot.route}" class="badge">${slot.title}</a>`
-      : `<span class="badge">${slot.title}</span>`)
-    .join(""));
+  setMarkup(
+    container,
+    topNavSlots
+      .map((slot) =>
+        slot.route
+          ? `<a href="${slot.route}" class="badge">${slot.title}</a>`
+          : `<span class="badge">${slot.title}</span>`
+      )
+      .join("")
+  );
 }
 
 async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
@@ -310,7 +335,7 @@ async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
   moduleOptionsPromise = (async () => {
     try {
       const response = await fetch("/api/modules/options");
-      const data = await response.json() as ModuleOptionsResponse;
+      const data = (await response.json()) as ModuleOptionsResponse;
       if (!response.ok) {
         return null;
       }
@@ -359,7 +384,9 @@ function applyModuleStylesheets(data: ModuleOptionsResponse | null): void {
     });
   });
 
-  const existingLinks = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[data-module-stylesheet="true"]'));
+  const existingLinks = Array.from(
+    document.head.querySelectorAll<HTMLLinkElement>('link[data-module-stylesheet="true"]')
+  );
   existingLinks.forEach((link) => {
     if (!hrefs.has(link.href.replace(window.location.origin, ""))) {
       link.remove();
@@ -367,7 +394,9 @@ function applyModuleStylesheets(data: ModuleOptionsResponse | null): void {
   });
 
   hrefs.forEach((href) => {
-    const existingLink = document.head.querySelector(`link[data-module-stylesheet="true"][href="${href}"]`) as HTMLLinkElement | null;
+    const existingLink = document.head.querySelector(
+      `link[data-module-stylesheet="true"][href="${href}"]`
+    ) as HTMLLinkElement | null;
     if (existingLink) {
       return;
     }
@@ -406,9 +435,8 @@ function sharedFooterMarkup() {
     game: t("nav.game"),
     profile: t("nav.profile")
   };
-  const activeLabel = (section && section in navLabels)
-    ? navLabels[section as NavSection]
-    : t("app.title");
+  const activeLabel =
+    section && section in navLabels ? navLabels[section as NavSection] : t("app.title");
 
   return `
     <div class="shared-footer-copy">
@@ -472,7 +500,10 @@ function syncAppNav() {
   });
 }
 
-async function fallbackHeaderLogin(username: string, password: string): Promise<{ user?: PublicUser }> {
+async function fallbackHeaderLogin(
+  username: string,
+  password: string
+): Promise<{ user?: PublicUser }> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -511,42 +542,46 @@ function initAppShell() {
     });
   });
 
-  document.addEventListener("submit", async (event) => {
-    const form = event.target instanceof HTMLFormElement ? event.target : null;
-    if (!form || form.id !== "header-login-form") {
-      return;
-    }
-
-    if (form.dataset.headerLoginManaged === "true") {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    const usernameInput = form.querySelector("#header-auth-username") as HTMLInputElement | null;
-    const passwordInput = form.querySelector("#header-auth-password") as HTMLInputElement | null;
-    const username = usernameInput?.value?.trim() || "";
-    const password = passwordInput?.value || "";
-    if (!username || !password) {
-      setHeaderAuthFeedback(t("auth.login.requiredFields"));
-      return;
-    }
-
-    try {
-      setHeaderAuthFeedback("");
-      await fallbackHeaderLogin(username, password);
-      const nextUrl = sanitizedCurrentUrl();
-      if (nextUrl.pathname === "/register.html") {
-        window.location.href = "/profile.html";
+  document.addEventListener(
+    "submit",
+    async (event) => {
+      const form = event.target instanceof HTMLFormElement ? event.target : null;
+      if (!form || form.id !== "header-login-form") {
         return;
       }
 
-      window.location.href = nextUrl.toString();
-    } catch (error) {
-      setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
-    }
-  }, true);
+      if (form.dataset.headerLoginManaged === "true") {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const usernameInput = form.querySelector("#header-auth-username") as HTMLInputElement | null;
+      const passwordInput = form.querySelector("#header-auth-password") as HTMLInputElement | null;
+      const username = usernameInput?.value?.trim() || "";
+      const password = passwordInput?.value || "";
+      if (!username || !password) {
+        setHeaderAuthFeedback(t("auth.login.requiredFields"));
+        return;
+      }
+
+      try {
+        setHeaderAuthFeedback("");
+        await fallbackHeaderLogin(username, password);
+        const nextUrl = sanitizedCurrentUrl();
+        if (nextUrl.pathname === "/register.html") {
+          window.location.href = "/profile.html";
+          return;
+        }
+
+        window.location.href = nextUrl.toString();
+      } catch (error) {
+        setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
+      }
+    },
+    true
+  );
 }
 
 document.documentElement.lang = activeLocale;

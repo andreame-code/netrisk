@@ -85,12 +85,26 @@ register("resolveAttack incrementa il contatore e blocca attacchi oltre il limit
     }
   };
 
-  const firstAttack = resolveAttack(state, "p1", "aurora", "bastion", createFixedRandom(rollsToRandomValues([6, 1])), 1);
+  const firstAttack = resolveAttack(
+    state,
+    "p1",
+    "aurora",
+    "bastion",
+    createFixedRandom(rollsToRandomValues([6, 1])),
+    1
+  );
   assert.equal(firstAttack.ok, true);
   assert.equal(state.attacksThisTurn, 1);
   assert.equal(state.pendingConquest, null);
 
-  const blockedAttack = resolveAttack(state, "p1", "aurora", "bastion", createFixedRandom(rollsToRandomValues([6, 1])), 1);
+  const blockedAttack = resolveAttack(
+    state,
+    "p1",
+    "aurora",
+    "bastion",
+    createFixedRandom(rollsToRandomValues([6, 1])),
+    1
+  );
   assert.equal(blockedAttack.ok, false);
   assert.equal(blockedAttack.messageKey, "game.attack.limitReached");
   assert.deepEqual(blockedAttack.messageParams, {

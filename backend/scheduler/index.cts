@@ -6,15 +6,11 @@ export async function runScheduledJobs(
 ): Promise<{
   ok: true;
   jobs: Array<
-    | Awaited<ReturnType<typeof runTurnTimeoutJob>>
-    | Awaited<ReturnType<typeof runAiTurnRecoveryJob>>
+    Awaited<ReturnType<typeof runTurnTimeoutJob>> | Awaited<ReturnType<typeof runAiTurnRecoveryJob>>
   >;
 }> {
   return {
     ok: true,
-    jobs: [
-      await runTurnTimeoutJob(options),
-      await runAiTurnRecoveryJob(options)
-    ]
+    jobs: [await runTurnTimeoutJob(options), await runAiTurnRecoveryJob(options)]
   };
 }

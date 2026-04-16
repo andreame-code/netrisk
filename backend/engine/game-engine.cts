@@ -88,7 +88,12 @@ interface CombatSnapshot {
   defendDiceCount: number;
   attackerRolls: number[];
   defenderRolls: number[];
-  comparisons: Array<{ winner: "attacker" | "defender"; attackDie: number; defendDie: number; pair: number }>;
+  comparisons: Array<{
+    winner: "attacker" | "defender";
+    attackDie: number;
+    defendDie: number;
+    pair: number;
+  }>;
   attackerArmiesBefore: number;
   defenderArmiesBefore: number;
   attackerArmiesRemaining: number;
@@ -119,18 +124,22 @@ type BasicOk = { ok: true };
 type BasicResult = ActionFailure | BasicOk;
 
 const defaultMap = findSupportedMap("classic-mini");
-export const territories: TerritoryDefinition[] = defaultMap ? (defaultMap.territories as TerritoryDefinition[]) : [];
+export const territories: TerritoryDefinition[] = defaultMap
+  ? (defaultMap.territories as TerritoryDefinition[])
+  : [];
 export const continents = defaultMap ? defaultMap.continents : [];
 
 export function createInitialState(selectedMap: LoadedMap | null = defaultMap): EngineState {
   const sourceMap = selectedMap || defaultMap;
   const visualMap = sourceMap as (LoadedMap & Record<string, unknown>) | null;
-  const mapTerritories = Array.isArray(sourceMap?.territories) && sourceMap.territories.length
-    ? (sourceMap.territories as TerritoryDefinition[])
-    : territories;
-  const mapContinents = Array.isArray(sourceMap?.continents) && sourceMap.continents.length
-    ? sourceMap.continents
-    : continents;
+  const mapTerritories =
+    Array.isArray(sourceMap?.territories) && sourceMap.territories.length
+      ? (sourceMap.territories as TerritoryDefinition[])
+      : territories;
+  const mapContinents =
+    Array.isArray(sourceMap?.continents) && sourceMap.continents.length
+      ? sourceMap.continents
+      : continents;
 
   return createGameState({
     phase: "lobby",
@@ -148,13 +157,16 @@ export function createInitialState(selectedMap: LoadedMap | null = defaultMap): 
     mapName: sourceMap && sourceMap.name ? sourceMap.name : "Classic Mini",
     mapTerritories,
     mapPositions: sourceMap && sourceMap.positions ? sourceMap.positions : {},
-    mapImageUrl: visualMap && typeof visualMap.backgroundImage === "string" ? visualMap.backgroundImage : null,
+    mapImageUrl:
+      visualMap && typeof visualMap.backgroundImage === "string" ? visualMap.backgroundImage : null,
     mapAspectRatio: visualMap && "aspectRatio" in visualMap ? visualMap.aspectRatio : null,
     currentTurnIndex: 0,
     reinforcementPool: 0,
     winnerId: null,
     log: ["Lobby creata. Unisciti e avvia la partita."],
-    logEntries: [createLogEntry("Lobby creata. Unisciti e avvia la partita.", "game.log.lobbyCreated")],
+    logEntries: [
+      createLogEntry("Lobby creata. Unisciti e avvia la partita.", "game.log.lobbyCreated")
+    ],
     lastAction: null,
     pendingConquest: null,
     fortifyUsed: false,
@@ -215,19 +227,22 @@ function getMapPositions(state: EngineState): MapPositions {
 }
 
 function resolvePlayerPieceSetFromState(state: EngineState): PlayerPieceSet {
-  const pieceSetId = typeof state.pieceSetId === "string" && state.pieceSetId
-    ? state.pieceSetId
-    : "classic";
+  const pieceSetId =
+    typeof state.pieceSetId === "string" && state.pieceSetId ? state.pieceSetId : "classic";
   const configuredPalette = Array.isArray(state.gameConfig?.pieceSetPalette)
-    ? state.gameConfig.pieceSetPalette.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+    ? state.gameConfig.pieceSetPalette.filter(
+        (entry): entry is string => typeof entry === "string" && entry.trim().length > 0
+      )
     : [];
 
   if (configuredPalette.length) {
     return {
       id: pieceSetId,
-      name: typeof state.gameConfig?.pieceSetName === "string" && state.gameConfig.pieceSetName.trim().length
-        ? state.gameConfig.pieceSetName
-        : pieceSetId,
+      name:
+        typeof state.gameConfig?.pieceSetName === "string" &&
+        state.gameConfig.pieceSetName.trim().length
+          ? state.gameConfig.pieceSetName
+          : pieceSetId,
       palette: configuredPalette
     };
   }
@@ -236,18 +251,21 @@ function resolvePlayerPieceSetFromState(state: EngineState): PlayerPieceSet {
 }
 
 function resolveDiceRuleSetFromState(state: EngineState): DiceRuleSet {
-  const diceRuleSetId = typeof state.diceRuleSetId === "string" && state.diceRuleSetId
-    ? state.diceRuleSetId
-    : "standard";
+  const diceRuleSetId =
+    typeof state.diceRuleSetId === "string" && state.diceRuleSetId
+      ? state.diceRuleSetId
+      : "standard";
   const gameConfig = state.gameConfig;
 
-  if (gameConfig
-    && typeof gameConfig.diceRuleSetName === "string"
-    && gameConfig.diceRuleSetName.trim().length
-    && Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice)
-    && Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice)
-    && typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
-    && typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean") {
+  if (
+    gameConfig &&
+    typeof gameConfig.diceRuleSetName === "string" &&
+    gameConfig.diceRuleSetName.trim().length &&
+    Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice) &&
+    Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice) &&
+    typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean" &&
+    typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean"
+  ) {
     return {
       id: diceRuleSetId,
       name: gameConfig.diceRuleSetName,
@@ -262,11 +280,15 @@ function resolveDiceRuleSetFromState(state: EngineState): DiceRuleSet {
 }
 
 export function territoriesOwnedBy(state: EngineState, playerId: string): TerritoryDefinition[] {
-  return getMapTerritories(state).filter((territory) => state.territories[territory.id]?.ownerId === playerId);
+  return getMapTerritories(state).filter(
+    (territory) => state.territories[territory.id]?.ownerId === playerId
+  );
 }
 
 function isPlayerAlive(state: EngineState, player: Player | null): boolean {
-  return Boolean(player && player.id && !player.surrendered && territoriesOwnedBy(state, player.id).length > 0);
+  return Boolean(
+    player && player.id && !player.surrendered && territoriesOwnedBy(state, player.id).length > 0
+  );
 }
 
 export function computeReinforcements(state: EngineState, playerId: string): number {
@@ -303,7 +325,10 @@ export function playerMustTradeCards(state: EngineState, playerId: string): bool
   return ensurePlayerHand(state, playerId).length > getForcedTradeLimit(state);
 }
 
-function refillDeckFromDiscardIfNeeded(state: EngineState, random: () => number = secureRandom): boolean {
+function refillDeckFromDiscardIfNeeded(
+  state: EngineState,
+  random: () => number = secureRandom
+): boolean {
   if (!Array.isArray(state.deck)) {
     state.deck = [];
   }
@@ -321,7 +346,11 @@ function refillDeckFromDiscardIfNeeded(state: EngineState, random: () => number 
   return true;
 }
 
-export function awardTurnCardIfEligible(state: EngineState, playerId: string, random: () => number = secureRandom): Card | null {
+export function awardTurnCardIfEligible(
+  state: EngineState,
+  playerId: string,
+  random: () => number = secureRandom
+): Card | null {
   if (!state.conqueredTerritoryThisTurn) {
     return null;
   }
@@ -343,11 +372,17 @@ export function awardTurnCardIfEligible(state: EngineState, playerId: string, ra
 
   ensurePlayerHand(state, playerId).push(nextCard);
   state.conqueredTerritoryThisTurn = false;
-  appendLog(state, player.name + " riceve una carta territorio.", "game.log.turnCardAwarded", { playerName: player.name });
+  appendLog(state, player.name + " riceve una carta territorio.", "game.log.turnCardAwarded", {
+    playerName: player.name
+  });
   return nextCard;
 }
 
-export function tradeCardSet(state: EngineState, playerId: string, cardIds: string[]): ActionFailure | { ok: true; bonus: number; validation: CardSetValidationResult } {
+export function tradeCardSet(
+  state: EngineState,
+  playerId: string,
+  cardIds: string[]
+): ActionFailure | { ok: true; bonus: number; validation: CardSetValidationResult } {
   const player = getPlayer(state, playerId);
   if (!player) {
     return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
@@ -362,23 +397,35 @@ export function tradeCardSet(state: EngineState, playerId: string, cardIds: stri
   }
 
   if (state.turnPhase !== TurnPhase.REINFORCEMENT) {
-    return createActionFailure("Puoi scambiare carte solo nella fase di rinforzo.", "game.tradeCards.reinforcementOnly");
+    return createActionFailure(
+      "Puoi scambiare carte solo nella fase di rinforzo.",
+      "game.tradeCards.reinforcementOnly"
+    );
   }
 
   if (!Array.isArray(cardIds) || cardIds.length !== 3) {
-    return createActionFailure("Devi selezionare esattamente 3 carte.", "game.tradeCards.exactlyThree");
+    return createActionFailure(
+      "Devi selezionare esattamente 3 carte.",
+      "game.tradeCards.exactlyThree"
+    );
   }
 
   const uniqueCardIds = [...new Set(cardIds)];
   if (uniqueCardIds.length !== 3) {
-    return createActionFailure("Non puoi usare la stessa carta due volte.", "game.tradeCards.noDuplicateCards");
+    return createActionFailure(
+      "Non puoi usare la stessa carta due volte.",
+      "game.tradeCards.noDuplicateCards"
+    );
   }
 
   const cardRuleSet = getCardRuleSet(state.cardRuleSetId || "standard");
   const hand = ensurePlayerHand(state, playerId);
   const selectedCards = uniqueCardIds.map((cardId) => hand.find((card) => card.id === cardId));
   if (selectedCards.some((card) => !card)) {
-    return createActionFailure("Le carte selezionate non sono disponibili nella mano del giocatore.", "game.tradeCards.cardsUnavailable");
+    return createActionFailure(
+      "Le carte selezionate non sono disponibili nella mano del giocatore.",
+      "game.tradeCards.cardsUnavailable"
+    );
   }
 
   const resolvedCards = selectedCards as Card[];
@@ -404,25 +451,36 @@ export function tradeCardSet(state: EngineState, playerId: string, cardIds: stri
       bonus
     }
   };
-  appendLog(state, player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.", "game.log.tradeCompleted", {
-    playerName: player.name,
-    bonus
-  });
+  appendLog(
+    state,
+    player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
+    "game.log.tradeCompleted",
+    {
+      playerName: player.name,
+      bonus
+    }
+  );
   return { ok: true, bonus, validation };
 }
 
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId || "");
-  return map ? map.name : (mapId || null);
+  return map ? map.name : mapId || null;
 }
 
 function resolveScenarioSetup(state: EngineState): ScenarioSetupLike | null {
   const rawScenarioSetup = state.gameConfig?.scenarioSetup;
-  if (!rawScenarioSetup || typeof rawScenarioSetup !== "object" || Array.isArray(rawScenarioSetup)) {
+  if (
+    !rawScenarioSetup ||
+    typeof rawScenarioSetup !== "object" ||
+    Array.isArray(rawScenarioSetup)
+  ) {
     return null;
   }
 
-  const territoryBonuses = Array.isArray((rawScenarioSetup as { territoryBonuses?: unknown }).territoryBonuses)
+  const territoryBonuses = Array.isArray(
+    (rawScenarioSetup as { territoryBonuses?: unknown }).territoryBonuses
+  )
     ? ((rawScenarioSetup as { territoryBonuses?: unknown[] }).territoryBonuses || [])
         .filter((entry) => entry && typeof entry === "object" && !Array.isArray(entry))
         .map((entry) => ({
@@ -432,9 +490,10 @@ function resolveScenarioSetup(state: EngineState): ScenarioSetupLike | null {
         .filter((entry) => entry.territoryId && Number.isInteger(entry.armies) && entry.armies > 0)
     : [];
 
-  const logMessage = typeof (rawScenarioSetup as { logMessage?: unknown }).logMessage === "string"
-    ? String((rawScenarioSetup as { logMessage?: unknown }).logMessage).trim()
-    : null;
+  const logMessage =
+    typeof (rawScenarioSetup as { logMessage?: unknown }).logMessage === "string"
+      ? String((rawScenarioSetup as { logMessage?: unknown }).logMessage).trim()
+      : null;
 
   return {
     territoryBonuses,
@@ -444,48 +503,70 @@ function resolveScenarioSetup(state: EngineState): ScenarioSetupLike | null {
 
 function resolveGameplayEffects(state: EngineState): GameplayEffectsLike | null {
   const rawGameplayEffects = state.gameConfig?.gameplayEffects;
-  if (!rawGameplayEffects || typeof rawGameplayEffects !== "object" || Array.isArray(rawGameplayEffects)) {
+  if (
+    !rawGameplayEffects ||
+    typeof rawGameplayEffects !== "object" ||
+    Array.isArray(rawGameplayEffects)
+  ) {
     return null;
   }
 
-  const conquestMinimumArmies = typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies === "number"
-    ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
-    : null;
-  const fortifyMinimumArmies = typeof (rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies === "number"
-    ? Number((rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies)
-    : null;
-  const requiredFortifyWhenAvailable = typeof (rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown }).requiredFortifyWhenAvailable === "boolean"
-    ? Boolean((rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown }).requiredFortifyWhenAvailable)
-    : null;
-  const attackMinimumArmies = typeof (rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies === "number"
-    ? Number((rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies)
-    : null;
-  const attackLimitPerTurn = typeof (rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn === "number"
-    ? Number((rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn)
-    : null;
-  const minimumAttacksPerTurn = typeof (rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn === "number"
-    ? Number((rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn)
-    : null;
+  const conquestMinimumArmies =
+    typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies ===
+    "number"
+      ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
+      : null;
+  const fortifyMinimumArmies =
+    typeof (rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies ===
+    "number"
+      ? Number((rawGameplayEffects as { fortifyMinimumArmies?: unknown }).fortifyMinimumArmies)
+      : null;
+  const requiredFortifyWhenAvailable =
+    typeof (rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown })
+      .requiredFortifyWhenAvailable === "boolean"
+      ? Boolean(
+          (rawGameplayEffects as { requiredFortifyWhenAvailable?: unknown })
+            .requiredFortifyWhenAvailable
+        )
+      : null;
+  const attackMinimumArmies =
+    typeof (rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies ===
+    "number"
+      ? Number((rawGameplayEffects as { attackMinimumArmies?: unknown }).attackMinimumArmies)
+      : null;
+  const attackLimitPerTurn =
+    typeof (rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn === "number"
+      ? Number((rawGameplayEffects as { attackLimitPerTurn?: unknown }).attackLimitPerTurn)
+      : null;
+  const minimumAttacksPerTurn =
+    typeof (rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn ===
+    "number"
+      ? Number((rawGameplayEffects as { minimumAttacksPerTurn?: unknown }).minimumAttacksPerTurn)
+      : null;
 
   return {
-    conquestMinimumArmies: Number.isInteger(conquestMinimumArmies) && (conquestMinimumArmies as number) >= 1
-      ? conquestMinimumArmies
-      : null,
-    fortifyMinimumArmies: Number.isInteger(fortifyMinimumArmies) && (fortifyMinimumArmies as number) >= 1
-      ? fortifyMinimumArmies
-      : null,
-    requiredFortifyWhenAvailable: typeof requiredFortifyWhenAvailable === "boolean"
-      ? requiredFortifyWhenAvailable
-      : null,
-    attackMinimumArmies: Number.isInteger(attackMinimumArmies) && (attackMinimumArmies as number) >= 2
-      ? attackMinimumArmies
-      : null,
-    attackLimitPerTurn: Number.isInteger(attackLimitPerTurn) && (attackLimitPerTurn as number) >= 1
-      ? attackLimitPerTurn
-      : null,
-    minimumAttacksPerTurn: Number.isInteger(minimumAttacksPerTurn) && (minimumAttacksPerTurn as number) >= 1
-      ? minimumAttacksPerTurn
-      : null
+    conquestMinimumArmies:
+      Number.isInteger(conquestMinimumArmies) && (conquestMinimumArmies as number) >= 1
+        ? conquestMinimumArmies
+        : null,
+    fortifyMinimumArmies:
+      Number.isInteger(fortifyMinimumArmies) && (fortifyMinimumArmies as number) >= 1
+        ? fortifyMinimumArmies
+        : null,
+    requiredFortifyWhenAvailable:
+      typeof requiredFortifyWhenAvailable === "boolean" ? requiredFortifyWhenAvailable : null,
+    attackMinimumArmies:
+      Number.isInteger(attackMinimumArmies) && (attackMinimumArmies as number) >= 2
+        ? attackMinimumArmies
+        : null,
+    attackLimitPerTurn:
+      Number.isInteger(attackLimitPerTurn) && (attackLimitPerTurn as number) >= 1
+        ? attackLimitPerTurn
+        : null,
+    minimumAttacksPerTurn:
+      Number.isInteger(minimumAttacksPerTurn) && (minimumAttacksPerTurn as number) >= 1
+        ? minimumAttacksPerTurn
+        : null
   };
 }
 
@@ -538,7 +619,9 @@ function hasAvailableAttack(state: EngineState, playerId: string): boolean {
 
       return territory.neighbors.some((neighborId) => {
         const neighborState = state.territories[neighborId];
-        return Boolean(neighborState && neighborState.ownerId && neighborState.ownerId !== playerId);
+        return Boolean(
+          neighborState && neighborState.ownerId && neighborState.ownerId !== playerId
+        );
       });
     });
 }
@@ -565,7 +648,9 @@ function hasAvailableFortifyMove(state: EngineState, playerId: string): boolean 
 
       return territory.neighbors.some((neighborId) => {
         const neighborState = state.territories[neighborId];
-        return Boolean(neighborState && neighborState.ownerId === playerId && neighborId !== territory.id);
+        return Boolean(
+          neighborState && neighborState.ownerId === playerId && neighborId !== territory.id
+        );
       });
     });
 }
@@ -603,7 +688,9 @@ export function publicState(state: EngineState) {
   migrateGameStateExtensions(state);
   const currentPlayer = getCurrentPlayer(state);
   const diceRuleSet = resolveDiceRuleSetFromState(state);
-  const lastAction = state.lastAction as ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>) | null;
+  const lastAction = state.lastAction as
+    | ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>)
+    | null;
 
   return {
     phase: state.phase,
@@ -617,7 +704,8 @@ export function publicState(state: EngineState) {
       surrendered: Boolean(player.surrendered),
       territoryCount: player.id ? territoriesOwnedBy(state, player.id).length : 0,
       eliminated: state.phase !== "lobby" && !isPlayerAlive(state, player),
-      cardCount: player.id && Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
+      cardCount:
+        player.id && Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
     })),
     map: getMapTerritories(state).map((territory) => ({
       id: territory.id,
@@ -637,25 +725,34 @@ export function publicState(state: EngineState) {
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: state.reinforcementPool,
     winnerId: state.winnerId,
-      gameConfig: state.gameConfig
-        ? {
-            ...state.gameConfig,
-            mapName: state.gameConfig.mapName || readableMapName(typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null),
-            pieceSet: (() => {
-              const pieceSet = resolvePlayerPieceSetFromState(state);
-              return {
-                id: pieceSet.id,
-                name: pieceSet.name,
-                paletteSize: Array.isArray(pieceSet.palette) ? pieceSet.palette.length : 0
-              };
-            })(),
-            pieceSkin: getPieceSkin(typeof state.gameConfig.pieceSkinId === "string" ? state.gameConfig.pieceSkinId : undefined)
-          }
-        : null,
+    gameConfig: state.gameConfig
+      ? {
+          ...state.gameConfig,
+          mapName:
+            state.gameConfig.mapName ||
+            readableMapName(
+              typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null
+            ),
+          pieceSet: (() => {
+            const pieceSet = resolvePlayerPieceSetFromState(state);
+            return {
+              id: pieceSet.id,
+              name: pieceSet.name,
+              paletteSize: Array.isArray(pieceSet.palette) ? pieceSet.palette.length : 0
+            };
+          })(),
+          pieceSkin: getPieceSkin(
+            typeof state.gameConfig.pieceSkinId === "string"
+              ? state.gameConfig.pieceSkinId
+              : undefined
+          )
+        }
+      : null,
     log: state.log,
     logEntries: state.logEntries,
     lastAction,
-    lastCombat: lastAction && lastAction.type === GameAction.ATTACK ? lastAction.combat || null : null,
+    lastCombat:
+      lastAction && lastAction.type === GameAction.ATTACK ? lastAction.combat || null : null,
     diceRuleSet: {
       id: diceRuleSet.id || "standard",
       attackerMaxDice: diceRuleSet.attackerMaxDice,
@@ -670,20 +767,30 @@ export function publicState(state: EngineState) {
       tradeCount: Number.isInteger(state.tradeCount) ? state.tradeCount : 0,
       deckCount: Array.isArray(state.deck) ? state.deck.length : 0,
       discardCount: Array.isArray(state.discardPile) ? state.discardPile.length : 0,
-      nextTradeBonus: getCardRuleSet(state.cardRuleSetId || "standard").tradeBonusForIndex(Number.isInteger(state.tradeCount) ? state.tradeCount : 0),
+      nextTradeBonus: getCardRuleSet(state.cardRuleSetId || "standard").tradeBonusForIndex(
+        Number.isInteger(state.tradeCount) ? state.tradeCount : 0
+      ),
       maxHandBeforeForcedTrade: getForcedTradeLimit(state),
-      currentPlayerMustTrade: currentPlayer && currentPlayer.id ? playerMustTradeCards(state, currentPlayer.id) : false
+      currentPlayerMustTrade:
+        currentPlayer && currentPlayer.id ? playerMustTradeCards(state, currentPlayer.id) : false
     }
   };
 }
 
-export function startGame(state: EngineState, random: () => number = secureRandom, now: Date = new Date()): void {
+export function startGame(
+  state: EngineState,
+  random: () => number = secureRandom,
+  now: Date = new Date()
+): void {
   if (!Array.isArray(state.players) || state.players.length === 0) {
     return;
   }
 
   const mapTerritories = getMapTerritories(state);
-  const shuffledTerritories = shuffle(mapTerritories.map((territory) => territory.id), random);
+  const shuffledTerritories = shuffle(
+    mapTerritories.map((territory) => territory.id),
+    random
+  );
   state.phase = "active";
   state.turnPhase = TurnPhase.REINFORCEMENT;
   state.turnStartedAt = null;
@@ -718,21 +825,38 @@ export function startGame(state: EngineState, random: () => number = secureRando
 
   state.reinforcementPool = computeReinforcements(state, firstPlayer.id);
   state.turnStartedAt = currentUtcTimestamp(now);
-  appendLog(state, "Partita iniziata. Turno di " + firstPlayer.name + " con " + state.reinforcementPool + " rinforzi.", "game.log.gameStarted", {
-    playerName: firstPlayer.name,
-    reinforcementPool: state.reinforcementPool
-  });
+  appendLog(
+    state,
+    "Partita iniziata. Turno di " +
+      firstPlayer.name +
+      " con " +
+      state.reinforcementPool +
+      " rinforzi.",
+    "game.log.gameStarted",
+    {
+      playerName: firstPlayer.name,
+      reinforcementPool: state.reinforcementPool
+    }
+  );
 }
 
 export function declareWinnerIfNeeded(state: EngineState): boolean {
   const result = detectVictory(state);
   if (result.code === "AI_ONLY_REMAIN") {
-    appendLog(state, "La partita si chiude: restano attive solo AI.", "game.log.aiOnlyRemain", result.messageParams || {});
+    appendLog(
+      state,
+      "La partita si chiude: restano attive solo AI.",
+      "game.log.aiOnlyRemain",
+      result.messageParams || {}
+    );
   } else if (result.code === "VICTORY_DECLARED" && result.victory) {
     const summaryParams = result.victory.summaryParams || { playerName: result.victory.winnerName };
-    const localizedSummary = result.victory.summaryKey === "game.log.victoryMajorityControl"
-      ? String(summaryParams.playerName || result.victory.winnerName) + " controlla la maggioranza dei territori e vince la partita."
-      : String(summaryParams.playerName || result.victory.winnerName) + " conquista la mappa e vince la partita.";
+    const localizedSummary =
+      result.victory.summaryKey === "game.log.victoryMajorityControl"
+        ? String(summaryParams.playerName || result.victory.winnerName) +
+          " controlla la maggioranza dei territori e vince la partita."
+        : String(summaryParams.playerName || result.victory.winnerName) +
+          " conquista la mappa e vince la partita.";
     appendLog(
       state,
       localizedSummary,
@@ -762,21 +886,33 @@ export function advanceTurn(state: EngineState, now: Date = new Date()): void {
       state.fortifyUsed = false;
       state.attacksThisTurn = 0;
       state.conqueredTerritoryThisTurn = false;
-      appendLog(state, "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.", "game.log.turnStarted", {
-        playerName: candidate.name,
-        reinforcementPool: state.reinforcementPool
-      });
+      appendLog(
+        state,
+        "Nuovo turno: " + candidate.name + " riceve " + state.reinforcementPool + " rinforzi.",
+        "game.log.turnStarted",
+        {
+          playerName: candidate.name,
+          reinforcementPool: state.reinforcementPool
+        }
+      );
       return;
     }
   }
 }
 
-export function addPlayer(state: EngineState, name: string, options: AddPlayerOptions = {}): AddPlayerResult {
-  const normalizedName = String(name || "").trim().slice(0, 24);
-  const linkedUserId = options.isAi ? null : (options.linkedUserId || null);
-  const maxPlayers = Number.isInteger(state?.gameConfig?.totalPlayers) && (state.gameConfig?.totalPlayers || 0) > 0
-    ? (state.gameConfig?.totalPlayers as number)
-    : 4;
+export function addPlayer(
+  state: EngineState,
+  name: string,
+  options: AddPlayerOptions = {}
+): AddPlayerResult {
+  const normalizedName = String(name || "")
+    .trim()
+    .slice(0, 24);
+  const linkedUserId = options.isAi ? null : options.linkedUserId || null;
+  const maxPlayers =
+    Number.isInteger(state?.gameConfig?.totalPlayers) && (state.gameConfig?.totalPlayers || 0) > 0
+      ? (state.gameConfig?.totalPlayers as number)
+      : 4;
   if (!normalizedName) {
     return createDomainFailure("Inserisci un nome.", "game.addPlayer.nameRequired");
   }
@@ -799,7 +935,9 @@ export function addPlayer(state: EngineState, name: string, options: AddPlayerOp
     } else if (linkedUserId && !existing.linkedUserId) {
       existing.linkedUserId = linkedUserId;
     }
-    appendLog(state, existing.name + " si ricollega alla lobby.", "game.log.playerRejoined", { playerName: existing.name });
+    appendLog(state, existing.name + " si ricollega alla lobby.", "game.log.playerRejoined", {
+      playerName: existing.name
+    });
     return { ok: true, player: existing, rejoined: true };
   }
 
@@ -821,7 +959,9 @@ export function addPlayer(state: EngineState, name: string, options: AddPlayerOp
     linkedUserId
   });
   state.players.push(player);
-  appendLog(state, player.name + " entra nella lobby.", "game.log.playerJoined", { playerName: player.name });
+  appendLog(state, player.name + " entra nella lobby.", "game.log.playerJoined", {
+    playerName: player.name
+  });
   return { ok: true, player, rejoined: false };
 }
 
@@ -856,11 +996,17 @@ export function applyReinforcement(
   }
 
   if (reinforcementAmount > state.reinforcementPool) {
-    return createActionFailure("Stai tentando di usare piu rinforzi di quelli disponibili.", "game.reinforce.tooMany");
+    return createActionFailure(
+      "Stai tentando di usare piu rinforzi di quelli disponibili.",
+      "game.reinforce.tooMany"
+    );
   }
 
   if (!territoryState || territoryState.ownerId !== playerId) {
-    return createActionFailure("Puoi rinforzare solo un tuo territorio.", "game.reinforce.mustOwnTerritory");
+    return createActionFailure(
+      "Puoi rinforzare solo un tuo territorio.",
+      "game.reinforce.mustOwnTerritory"
+    );
   }
 
   territoryState.armies += reinforcementAmount;
@@ -876,10 +1022,22 @@ export function applyReinforcement(
       reinforcementPool: state.reinforcementPool
     }
   };
-  state.turnPhase = state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId) ? TurnPhase.ATTACK : TurnPhase.REINFORCEMENT;
+  state.turnPhase =
+    state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId)
+      ? TurnPhase.ATTACK
+      : TurnPhase.REINFORCEMENT;
   appendLog(
     state,
-    player.name + " aggiunge " + reinforcementAmount + " " + (reinforcementAmount === 1 ? "armata" : "armate") + " a " + territoryId + ". Rinforzi rimasti: " + state.reinforcementPool + ".",
+    player.name +
+      " aggiunge " +
+      reinforcementAmount +
+      " " +
+      (reinforcementAmount === 1 ? "armata" : "armate") +
+      " a " +
+      territoryId +
+      ". Rinforzi rimasti: " +
+      state.reinforcementPool +
+      ".",
     "game.log.reinforced",
     {
       playerName: player.name,
@@ -917,19 +1075,31 @@ export function resolveAttack(
   }
 
   if (state.reinforcementPool > 0) {
-    return createActionFailure("Devi prima spendere tutti i rinforzi.", "game.attack.mustSpendReinforcements");
+    return createActionFailure(
+      "Devi prima spendere tutti i rinforzi.",
+      "game.attack.mustSpendReinforcements"
+    );
   }
 
   if (playerMustTradeCards(state, playerId)) {
-    return createActionFailure("Devi prima scambiare carte: hai superato il limite di mano.", "game.attack.mustTradeCards");
+    return createActionFailure(
+      "Devi prima scambiare carte: hai superato il limite di mano.",
+      "game.attack.mustTradeCards"
+    );
   }
 
   if (state.pendingConquest) {
-    return createActionFailure("Devi prima spostare le armate nel territorio conquistato.", "game.attack.mustMoveAfterConquest");
+    return createActionFailure(
+      "Devi prima spostare le armate nel territorio conquistato.",
+      "game.attack.mustMoveAfterConquest"
+    );
   }
 
   if (from.ownerId !== playerId || to.ownerId === playerId) {
-    return createActionFailure("Puoi attaccare solo da un tuo territorio verso uno nemico.", "game.attack.invalidOwnership");
+    return createActionFailure(
+      "Puoi attaccare solo da un tuo territorio verso uno nemico.",
+      "game.attack.invalidOwnership"
+    );
   }
 
   if (territory.neighbors.indexOf(toId) === -1) {
@@ -938,18 +1108,26 @@ export function resolveAttack(
 
   const minimumAttackArmies = resolveAttackMinimumArmies(state);
   if (from.armies < minimumAttackArmies) {
-    return createActionFailure("Servono almeno " + minimumAttackArmies + " armate per attaccare.", "game.attack.minArmies", {
-      minArmies: minimumAttackArmies
-    });
+    return createActionFailure(
+      "Servono almeno " + minimumAttackArmies + " armate per attaccare.",
+      "game.attack.minArmies",
+      {
+        minArmies: minimumAttackArmies
+      }
+    );
   }
 
   const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
   const attacksThisTurn = Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0;
   if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
-    return createActionFailure("Hai gia raggiunto il numero massimo di attacchi per questo turno.", "game.attack.limitReached", {
-      attackLimitPerTurn,
-      attacksThisTurn
-    });
+    return createActionFailure(
+      "Hai gia raggiunto il numero massimo di attacchi per questo turno.",
+      "game.attack.limitReached",
+      {
+        attackLimitPerTurn,
+        attacksThisTurn
+      }
+    );
   }
 
   state.turnPhase = TurnPhase.ATTACK;
@@ -961,25 +1139,43 @@ export function resolveAttack(
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
   const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve);
   if (maxAttackDice < 1) {
-    return createActionFailure("Non hai abbastanza armate per tirare dadi in attacco.", "game.attack.notEnoughDiceArmies");
+    return createActionFailure(
+      "Non hai abbastanza armate per tirare dadi in attacco.",
+      "game.attack.notEnoughDiceArmies"
+    );
   }
-  const attackDiceCount = requestedAttackDice == null
-    ? maxAttackDice
-    : Number(requestedAttackDice);
-  if (!Number.isInteger(attackDiceCount) || attackDiceCount < 1 || attackDiceCount > maxAttackDice) {
-    return createActionFailure("Numero di dadi di attacco non valido.", "game.attack.invalidDiceCount");
+  const attackDiceCount = requestedAttackDice == null ? maxAttackDice : Number(requestedAttackDice);
+  if (
+    !Number.isInteger(attackDiceCount) ||
+    attackDiceCount < 1 ||
+    attackDiceCount > maxAttackDice
+  ) {
+    return createActionFailure(
+      "Numero di dadi di attacco non valido.",
+      "game.attack.invalidDiceCount"
+    );
   }
   const defendDiceCount = Math.min(diceRuleSet.defenderMaxDice, to.armies);
   const attackRolls = rollCombatDice(attackDiceCount, random);
   const defendRolls = rollCombatDice(defendDiceCount, random);
-  const { comparisons } = compareCombatDice(attackRolls, defendRolls, { defenderWinsTies: diceRuleSet.defenderWinsTies });
+  const { comparisons } = compareCombatDice(attackRolls, defendRolls, {
+    defenderWinsTies: diceRuleSet.defenderWinsTies
+  });
   const combatRuleSet = getCombatRuleSet(state.combatRuleSetId || "standard");
   const { attackerLosses, defenderLosses } = combatRuleSet.resolveOutcome(comparisons);
   state.attacksThisTurn = attacksThisTurn + 1;
 
   from.armies -= attackerLosses;
   to.armies -= defenderLosses;
-  let summary = attacker.name + " attacca " + toId + ": " + attackRolls.join("-") + " contro " + defendRolls.join("-") + ".";
+  let summary =
+    attacker.name +
+    " attacca " +
+    toId +
+    ": " +
+    attackRolls.join("-") +
+    " contro " +
+    defendRolls.join("-") +
+    ".";
 
   if (to.armies <= 0) {
     to.ownerId = playerId;
@@ -994,9 +1190,18 @@ export function resolveAttack(
     state.conqueredTerritoryThisTurn = true;
     summary += " " + attacker.name + " conquista " + toId + " e deve spostare armate.";
   } else if (defenderLosses > 0) {
-    summary += " Il difensore perde " + defenderLosses + " armata" + (defenderLosses > 1 ? "e" : "") + ".";
+    summary +=
+      " Il difensore perde " + defenderLosses + " armata" + (defenderLosses > 1 ? "e" : "") + ".";
   } else {
-    summary = attacker.name + " fallisce l'attacco su " + toId + ": " + attackRolls.join("-") + " contro " + defendRolls.join("-") + ".";
+    summary =
+      attacker.name +
+      " fallisce l'attacco su " +
+      toId +
+      ": " +
+      attackRolls.join("-") +
+      " contro " +
+      defendRolls.join("-") +
+      ".";
   }
 
   const combat: CombatSnapshot = {
@@ -1021,7 +1226,11 @@ export function resolveAttack(
   state.lastAction = {
     type: GameAction.ATTACK,
     summary,
-    summaryKey: state.pendingConquest ? "game.log.attackConquered" : defenderLosses > 0 ? "game.log.attackDamaged" : "game.log.attackFailed",
+    summaryKey: state.pendingConquest
+      ? "game.log.attackConquered"
+      : defenderLosses > 0
+        ? "game.log.attackDamaged"
+        : "game.log.attackFailed",
     summaryParams: {
       attackerName: attacker.name,
       toId,
@@ -1033,18 +1242,31 @@ export function resolveAttack(
     toId,
     combat
   };
-  appendLog(state, summary, state.pendingConquest ? "game.log.attackConquered" : defenderLosses > 0 ? "game.log.attackDamaged" : "game.log.attackFailed", {
-    attackerName: attacker.name,
-    toId,
-    attackRolls: attackRolls.join("-"),
-    defendRolls: defendRolls.join("-"),
-    defenderLosses
-  });
+  appendLog(
+    state,
+    summary,
+    state.pendingConquest
+      ? "game.log.attackConquered"
+      : defenderLosses > 0
+        ? "game.log.attackDamaged"
+        : "game.log.attackFailed",
+    {
+      attackerName: attacker.name,
+      toId,
+      attackRolls: attackRolls.join("-"),
+      defendRolls: defendRolls.join("-"),
+      defenderLosses
+    }
+  );
   declareWinnerIfNeeded(state);
   return { ok: true, summary, combat, pendingConquest: state.pendingConquest };
 }
 
-export function moveAfterConquest(state: EngineState, playerId: string, armiesToMove: number): BasicResult {
+export function moveAfterConquest(
+  state: EngineState,
+  playerId: string,
+  armiesToMove: number
+): BasicResult {
   const player = getPlayer(state, playerId);
   const pending = state.pendingConquest;
 
@@ -1066,7 +1288,10 @@ export function moveAfterConquest(state: EngineState, playerId: string, armiesTo
 
   const moveCount = Number(armiesToMove);
   if (!Number.isInteger(moveCount)) {
-    return createActionFailure("Inserisci un numero intero di armate.", "game.conquest.invalidArmyCount");
+    return createActionFailure(
+      "Inserisci un numero intero di armate.",
+      "game.conquest.invalidArmyCount"
+    );
   }
 
   const from = state.territories[pending.fromId];
@@ -1078,11 +1303,18 @@ export function moveAfterConquest(state: EngineState, playerId: string, armiesTo
   const maxArmies = Math.max(1, from.armies - 1);
 
   if (moveCount < pending.minArmies) {
-    return createActionFailure("Devi spostare almeno " + pending.minArmies + " armata.", "game.conquest.minArmies", { minArmies: pending.minArmies });
+    return createActionFailure(
+      "Devi spostare almeno " + pending.minArmies + " armata.",
+      "game.conquest.minArmies",
+      { minArmies: pending.minArmies }
+    );
   }
 
   if (moveCount > maxArmies) {
-    return createActionFailure("Devi lasciare almeno 1 armata nel territorio di partenza.", "game.conquest.leaveOneBehind");
+    return createActionFailure(
+      "Devi lasciare almeno 1 armata nel territorio di partenza.",
+      "game.conquest.leaveOneBehind"
+    );
   }
 
   from.armies -= moveCount;
@@ -1099,11 +1331,16 @@ export function moveAfterConquest(state: EngineState, playerId: string, armiesTo
       territoryId: pending.toId
     }
   };
-  appendLog(state, player.name + " sposta " + moveCount + " armate in " + pending.toId + ".", "game.log.moveAfterConquest", {
-    playerName: player.name,
-    moveCount,
-    territoryId: pending.toId
-  });
+  appendLog(
+    state,
+    player.name + " sposta " + moveCount + " armate in " + pending.toId + ".",
+    "game.log.moveAfterConquest",
+    {
+      playerName: player.name,
+      moveCount,
+      territoryId: pending.toId
+    }
+  );
   return { ok: true };
 }
 
@@ -1132,43 +1369,68 @@ export function applyFortify(
   }
 
   if (state.turnPhase !== TurnPhase.FORTIFY) {
-    return createActionFailure("Puoi fortificare solo nella fase di fortifica.", "game.fortify.phaseOnly");
+    return createActionFailure(
+      "Puoi fortificare solo nella fase di fortifica.",
+      "game.fortify.phaseOnly"
+    );
   }
 
   if (fortifyRuleSet.enforceSingleMovePerTurn && state.fortifyUsed) {
-    return createActionFailure("Hai gia usato la fortifica in questo turno.", "game.fortify.alreadyUsed");
+    return createActionFailure(
+      "Hai gia usato la fortifica in questo turno.",
+      "game.fortify.alreadyUsed"
+    );
   }
 
   if (!from || !to || fromId === toId) {
-    return createActionFailure("Seleziona due territori validi e distinti.", "game.fortify.invalidTerritories");
+    return createActionFailure(
+      "Seleziona due territori validi e distinti.",
+      "game.fortify.invalidTerritories"
+    );
   }
 
   if (from.ownerId !== playerId || to.ownerId !== playerId) {
-    return createActionFailure("Puoi spostare armate solo tra tuoi territori.", "game.fortify.mustOwnTerritories");
+    return createActionFailure(
+      "Puoi spostare armate solo tra tuoi territori.",
+      "game.fortify.mustOwnTerritories"
+    );
   }
 
   if (fortifyRuleSet.requiresAdjacency) {
     const territory = getMapTerritories(state).find((item) => item.id === fromId);
     if (!territory || territory.neighbors.indexOf(toId) === -1) {
-      return createActionFailure("Puoi fortificare solo tra territori adiacenti.", "game.fortify.notAdjacent");
+      return createActionFailure(
+        "Puoi fortificare solo tra territori adiacenti.",
+        "game.fortify.notAdjacent"
+      );
     }
   }
 
   const moveCount = Number(armiesToMove);
   if (!Number.isInteger(moveCount) || moveCount < 1) {
-    return createActionFailure("Inserisci almeno 1 armata da spostare.", "game.fortify.invalidArmyCount");
+    return createActionFailure(
+      "Inserisci almeno 1 armata da spostare.",
+      "game.fortify.invalidArmyCount"
+    );
   }
 
   const maxMove = Math.max(1, from.armies - 1);
   const minimumMove = resolveFortifyMinimumArmies(state, maxMove);
   if (moveCount < minimumMove) {
-    return createActionFailure("Devi spostare almeno " + minimumMove + " armate.", "game.fortify.minArmies", {
-      minArmies: minimumMove
-    });
+    return createActionFailure(
+      "Devi spostare almeno " + minimumMove + " armate.",
+      "game.fortify.minArmies",
+      {
+        minArmies: minimumMove
+      }
+    );
   }
 
   if (fortifyRuleSet.requireLeaveOneBehind && from.armies - moveCount < 1) {
-    return createActionFailure("Devi lasciare almeno 1 armata nel territorio di partenza.", "game.fortify.leaveOneBehind");
+    return createActionFailure(
+      "Devi lasciare almeno 1 armata nel territorio di partenza.",
+      "game.fortify.leaveOneBehind"
+    );
   }
 
   from.armies -= moveCount;
@@ -1187,12 +1449,17 @@ export function applyFortify(
       toId
     }
   };
-  appendLog(state, player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".", "game.log.fortified", {
-    playerName: player.name,
-    moveCount,
-    fromId,
-    toId
-  });
+  appendLog(
+    state,
+    player.name + " sposta " + moveCount + " armate da " + fromId + " a " + toId + ".",
+    "game.log.fortified",
+    {
+      playerName: player.name,
+      moveCount,
+      fromId,
+      toId
+    }
+  );
   return { ok: true };
 }
 
@@ -1212,21 +1479,34 @@ export function endTurn(state: EngineState, playerId: string) {
   }
 
   if (state.reinforcementPool > 0) {
-    return createActionFailure("Spendi prima tutti i rinforzi.", "game.endTurn.mustSpendReinforcements");
+    return createActionFailure(
+      "Spendi prima tutti i rinforzi.",
+      "game.endTurn.mustSpendReinforcements"
+    );
   }
 
   if (playerMustTradeCards(state, playerId)) {
-    return createActionFailure("Devi prima scambiare carte: hai superato il limite di mano.", "game.endTurn.mustTradeCards");
+    return createActionFailure(
+      "Devi prima scambiare carte: hai superato il limite di mano.",
+      "game.endTurn.mustTradeCards"
+    );
   }
 
   if (state.pendingConquest) {
-    return createActionFailure("Sposta prima le armate nel territorio conquistato.", "game.endTurn.mustMoveAfterConquest");
+    return createActionFailure(
+      "Sposta prima le armate nel territorio conquistato.",
+      "game.endTurn.mustMoveAfterConquest"
+    );
   }
 
   if (state.turnPhase === TurnPhase.ATTACK) {
     const minimumAttacksPerTurn = resolveMinimumAttacksPerTurn(state);
     const attacksThisTurn = Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0;
-    if (minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn && hasAvailableAttack(state, playerId)) {
+    if (
+      minimumAttacksPerTurn !== null &&
+      attacksThisTurn < minimumAttacksPerTurn &&
+      hasAvailableAttack(state, playerId)
+    ) {
       return createActionFailure(
         "Devi effettuare almeno " + minimumAttacksPerTurn + " attacchi prima di fortificare.",
         "game.endTurn.minimumAttacksRequired",
@@ -1239,11 +1519,17 @@ export function endTurn(state: EngineState, playerId: string) {
 
     state.turnPhase = TurnPhase.FORTIFY;
     state.fortifyUsed = false;
-    appendLog(state, player.name + " entra nella fase di fortifica.", "game.log.enterFortify", { playerName: player.name });
+    appendLog(state, player.name + " entra nella fase di fortifica.", "game.log.enterFortify", {
+      playerName: player.name
+    });
     return { ok: true, requiresFortifyDecision: true };
   }
 
-  if (state.turnPhase === TurnPhase.FORTIFY && resolveRequiredFortifyWhenAvailable(state) && hasAvailableFortifyMove(state, playerId)) {
+  if (
+    state.turnPhase === TurnPhase.FORTIFY &&
+    resolveRequiredFortifyWhenAvailable(state) &&
+    hasAvailableFortifyMove(state, playerId)
+  ) {
     return createActionFailure(
       "Devi effettuare una fortifica valida prima di terminare il turno.",
       "game.endTurn.requiredFortify",
@@ -1254,7 +1540,9 @@ export function endTurn(state: EngineState, playerId: string) {
   }
 
   const awardedCard = awardTurnCardIfEligible(state, playerId);
-  appendLog(state, player.name + " termina il turno.", "game.log.endTurn", { playerName: player.name });
+  appendLog(state, player.name + " termina il turno.", "game.log.endTurn", {
+    playerName: player.name
+  });
   advanceTurn(state);
   return { ok: true, awardedCard };
 }
@@ -1305,12 +1593,11 @@ export function forceEndTurn(
 
   const awardedCard = awardTurnCardIfEligible(state, playerId);
   const reason = options.reason || "timeout";
-  const summary = reason === "timeout"
-    ? player.name + " supera il limite turno e il sistema forza il passaggio del turno."
-    : "Il turno AI di " + player.name + " si blocca e il sistema forza il passaggio del turno.";
-  const summaryKey = reason === "timeout"
-    ? "game.log.turnTimedOut"
-    : "game.log.aiTurnRecovered";
+  const summary =
+    reason === "timeout"
+      ? player.name + " supera il limite turno e il sistema forza il passaggio del turno."
+      : "Il turno AI di " + player.name + " si blocca e il sistema forza il passaggio del turno.";
+  const summaryKey = reason === "timeout" ? "game.log.turnTimedOut" : "game.log.aiTurnRecovered";
 
   state.lastAction = {
     type: "forceEndTurn",
@@ -1322,15 +1609,10 @@ export function forceEndTurn(
     },
     playerId
   };
-  appendLog(
-    state,
-    summary,
-    summaryKey,
-    {
-      playerName: player.name,
-      turnTimeoutHours: options.turnTimeoutHours || null
-    }
-  );
+  appendLog(state, summary, summaryKey, {
+    playerName: player.name,
+    turnTimeoutHours: options.turnTimeoutHours || null
+  });
   advanceTurn(state, options.now);
   return { ok: true, awardedCard, forced: true };
 }
@@ -1343,11 +1625,17 @@ export function surrenderPlayer(state: EngineState, playerId: string) {
   }
 
   if (state.phase !== "active") {
-    return createActionFailure("Puoi arrenderti solo durante una partita attiva.", "game.surrender.activeOnly");
+    return createActionFailure(
+      "Puoi arrenderti solo durante una partita attiva.",
+      "game.surrender.activeOnly"
+    );
   }
 
   if (player.surrendered) {
-    return createActionFailure("Il giocatore si e gia arreso.", "game.surrender.alreadySurrendered");
+    return createActionFailure(
+      "Il giocatore si e gia arreso.",
+      "game.surrender.alreadySurrendered"
+    );
   }
 
   if (territoriesOwnedBy(state, playerId).length === 0) {
