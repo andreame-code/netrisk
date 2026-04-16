@@ -4699,4 +4699,4 @@ async function run() {
   console.log(`\n${tests.length} test superati.`);
 }
 
-run();
+void run();

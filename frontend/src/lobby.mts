@@ -509,7 +509,7 @@ elements.gameSessionList?.addEventListener("click", async (event: Event) => {
 elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
   const joinTrigger = closestElement<HTMLElement>(event.target, "#join-selected-inline");
   if (joinTrigger) {
-    handleJoinSelectedGame();
+    void handleJoinSelectedGame();
     return;
   }
 
@@ -518,7 +518,7 @@ elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
     return;
   }
 
-  handleOpenSelectedGame();
+  void handleOpenSelectedGame();
 });
 
 async function restoreSession(options: { renderOnChange?: boolean } = {}): Promise<void> {

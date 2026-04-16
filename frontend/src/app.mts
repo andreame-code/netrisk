@@ -2480,7 +2480,7 @@ if (elements.gameSessionDetails) {
       return;
     }
 
-    handleOpenSelectedGame();
+    void handleOpenSelectedGame();
   });
 }
 if (elements.cardTradeList) {

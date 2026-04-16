@@ -43,7 +43,7 @@ gameplayTestModules.forEach((relativePath) => {
   require(path.join(__dirname, relativePath));
 });
 
-(async function run() {
+void (async function run() {
   let failures = 0;
 
   for (const entry of tests) {
