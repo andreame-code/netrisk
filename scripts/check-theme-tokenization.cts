@@ -12,7 +12,9 @@ type ThemeTokenizationError = Error & {
 
 function checkThemeTokenization(): void {
   const publicDir = path.join(projectRoot, "public");
-  const cssFiles = fs.readdirSync(publicDir).filter((fileName: string) => fileName.endsWith(".css"));
+  const cssFiles = fs
+    .readdirSync(publicDir)
+    .filter((fileName: string) => fileName.endsWith(".css"));
   const violations: string[] = [];
 
   cssFiles.forEach((fileName: string) => {
@@ -26,7 +28,9 @@ function checkThemeTokenization(): void {
       }
 
       if (!inTokenSection && TOKEN_LITERAL_PATTERN.test(line)) {
-        violations.push(`${path.relative(path.join(__dirname, ".."), absolutePath)}:${index + 1}: ${line.trim()}`);
+        violations.push(
+          `${path.relative(path.join(__dirname, ".."), absolutePath)}:${index + 1}: ${line.trim()}`
+        );
       }
 
       if (line.includes(TOKEN_SECTION_END)) {

@@ -33,7 +33,11 @@ export interface SuccessfulConquestResolution {
 
 export type ConquestResolution = FailedConquestResolution | SuccessfulConquestResolution;
 
-function invalid(code: string, message: string, details: Record<string, unknown> = {}): FailedConquestResolution {
+function invalid(
+  code: string,
+  message: string,
+  details: Record<string, unknown> = {}
+): FailedConquestResolution {
   return {
     ok: false,
     code,
@@ -43,12 +47,25 @@ function invalid(code: string, message: string, details: Record<string, unknown>
   };
 }
 
-function resolveConquestMinimumArmies(state: GameState, attackDiceCount: number, maxMove: number): number {
+function resolveConquestMinimumArmies(
+  state: GameState,
+  attackDiceCount: number,
+  maxMove: number
+): number {
   const rawGameplayEffects = state?.gameConfig?.gameplayEffects;
-  const configuredMinimum = rawGameplayEffects && typeof rawGameplayEffects === "object" && !Array.isArray(rawGameplayEffects) && typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies === "number"
-    ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
-    : null;
-  const minimumMove = Math.max(1, Number(attackDiceCount) || 1, Number.isInteger(configuredMinimum) ? Number(configuredMinimum) : 1);
+  const configuredMinimum =
+    rawGameplayEffects &&
+    typeof rawGameplayEffects === "object" &&
+    !Array.isArray(rawGameplayEffects) &&
+    typeof (rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies ===
+      "number"
+      ? Number((rawGameplayEffects as { conquestMinimumArmies?: unknown }).conquestMinimumArmies)
+      : null;
+  const minimumMove = Math.max(
+    1,
+    Number(attackDiceCount) || 1,
+    Number.isInteger(configuredMinimum) ? Number(configuredMinimum) : 1
+  );
   return Math.max(1, Math.min(maxMove, minimumMove));
 }
 
@@ -84,10 +101,14 @@ export function resolveConquest(
   }
 
   if (!defenderReducedToZero || defenderState.armies !== 0) {
-    return invalid("CONQUEST_NOT_AVAILABLE", "Territory conquest is only allowed after the defender has been reduced to zero armies.", {
-      defenderReducedToZero,
-      defenderArmies: defenderState.armies
-    });
+    return invalid(
+      "CONQUEST_NOT_AVAILABLE",
+      "Territory conquest is only allowed after the defender has been reduced to zero armies.",
+      {
+        defenderReducedToZero,
+        defenderArmies: defenderState.armies
+      }
+    );
   }
 
   const maxMove = attackerState.armies - 1;
@@ -101,21 +122,32 @@ export function resolveConquest(
   }
 
   if (requestedMove < minimumMove) {
-    return invalid("MOVE_BELOW_MINIMUM", `You must move at least ${minimumMove} armies into the conquered territory.`, {
-      minimumMove,
-      requestedMove
-    });
+    return invalid(
+      "MOVE_BELOW_MINIMUM",
+      `You must move at least ${minimumMove} armies into the conquered territory.`,
+      {
+        minimumMove,
+        requestedMove
+      }
+    );
   }
 
   if (requestedMove > maxMove) {
-    return invalid("MOVE_EXCEEDS_AVAILABLE", "The attacker territory must keep at least one army after conquest.", {
-      maxMove,
-      requestedMove,
-      attackerArmies: attackerState.armies
-    });
+    return invalid(
+      "MOVE_EXCEEDS_AVAILABLE",
+      "The attacker territory must keep at least one army after conquest.",
+      {
+        maxMove,
+        requestedMove,
+        attackerArmies: attackerState.armies
+      }
+    );
   }
 
-  const newOwnerId = combatResult.details && typeof combatResult.details.playerId === "string" ? combatResult.details.playerId : null;
+  const newOwnerId =
+    combatResult.details && typeof combatResult.details.playerId === "string"
+      ? combatResult.details.playerId
+      : null;
   if (!newOwnerId) {
     throw new Error("Combat result is missing the attacking player id.");
   }

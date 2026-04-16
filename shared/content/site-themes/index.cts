@@ -28,13 +28,6 @@ export function listSiteThemes(): SiteThemeSummary[] {
   }));
 }
 
-export {
-  commandSiteTheme,
-  emberSiteTheme,
-  midnightSiteTheme
-};
+export { commandSiteTheme, emberSiteTheme, midnightSiteTheme };
 
-export type {
-  SiteTheme,
-  SiteThemeSummary
-};
+export type { SiteTheme, SiteThemeSummary };

@@ -175,12 +175,18 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
     lastAction: input.lastAction || null,
     pendingConquest: input.pendingConquest || null,
     fortifyUsed: Boolean(input.fortifyUsed),
-    attacksThisTurn: typeof input.attacksThisTurn === "number" && Number.isInteger(input.attacksThisTurn) ? input.attacksThisTurn : 0,
+    attacksThisTurn:
+      typeof input.attacksThisTurn === "number" && Number.isInteger(input.attacksThisTurn)
+        ? input.attacksThisTurn
+        : 0,
     cardRuleSetId: input.cardRuleSetId || "standard",
     deck: Array.isArray(input.deck) ? input.deck : [],
     discardPile: Array.isArray(input.discardPile) ? input.discardPile : [],
     hands: input.hands || {},
-    tradeCount: typeof input.tradeCount === "number" && Number.isInteger(input.tradeCount) ? input.tradeCount : 0,
+    tradeCount:
+      typeof input.tradeCount === "number" && Number.isInteger(input.tradeCount)
+        ? input.tradeCount
+        : 0,
     conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn),
     gameConfig: input.gameConfig && typeof input.gameConfig === "object" ? input.gameConfig : null
   };

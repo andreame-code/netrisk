@@ -9,9 +9,11 @@ process.env.TEST = "true";
 
 const tests: GameplayTest[] = [];
 
-(global as typeof globalThis & {
-  register?: (name: string, fn: GameplayTest["fn"]) => void;
-}).register = function register(name: string, fn: GameplayTest["fn"]) {
+(
+  global as typeof globalThis & {
+    register?: (name: string, fn: GameplayTest["fn"]) => void;
+  }
+).register = function register(name: string, fn: GameplayTest["fn"]) {
   tests.push({ name, fn });
 };
 

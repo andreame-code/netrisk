@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -46,7 +51,15 @@ async function handleScheduledJobsRoute(
 
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
   if (readAuthorizationHeader(req) !== `Bearer ${cronSecret}`) {
-    sendLocalizedError(res, 401, null, "Accesso cron non autorizzato.", "server.cron.unauthorized", {}, "CRON_UNAUTHORIZED");
+    sendLocalizedError(
+      res,
+      401,
+      null,
+      "Accesso cron non autorizzato.",
+      "server.cron.unauthorized",
+      {},
+      "CRON_UNAUTHORIZED"
+    );
     return;
   }
 
@@ -54,7 +67,13 @@ async function handleScheduledJobsRoute(
     const payload = await runScheduledJobs();
     sendJson(res, 200, payload);
   } catch (error) {
-    sendLocalizedError(res, 500, error, "Esecuzione job schedulati non riuscita.", "server.cron.failed");
+    sendLocalizedError(
+      res,
+      500,
+      error,
+      "Esecuzione job schedulati non riuscita.",
+      "server.cron.failed"
+    );
   }
 }
 

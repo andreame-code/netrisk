@@ -8,7 +8,14 @@ const {
   listDiceRuleSets
 } = require("../../../shared/dice.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
-const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makeGraph,
+  makePlayers,
+  makeState,
+  makeTerritory,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 type CombatComparison = {
   winner: string;
@@ -101,7 +108,6 @@ register("resolveSingleAttackRoll supports one-die attacks", () => {
   assert.equal(result.combat.defenderReducedToZero, true);
 });
 
-
 register("standard dice rule set espone i limiti classici di combattimento", () => {
   const ruleSet = getDiceRuleSet();
   assert.equal(ruleSet.id, STANDARD_DICE_RULE_SET_ID);
@@ -138,30 +144,33 @@ register("resolveSingleAttackRoll supporta fino a 3 dadi in difesa con il rule s
   assert.deepEqual(result.combat.defenderRolls, [4, 3, 2]);
 });
 
-register("resolveSingleAttackRoll usa i metadata del dice rule set runtime persistiti nel gameConfig", () => {
-  const { graph, state } = setupCombatState(4, 3);
-  state.diceRuleSetId = "duel";
-  state.gameConfig = {
-    ...(state.gameConfig || {}),
-    diceRuleSetId: "duel",
-    diceRuleSetName: "Duel",
-    diceRuleSetAttackerMaxDice: 2,
-    diceRuleSetDefenderMaxDice: 1,
-    diceRuleSetAttackerMustLeaveOneArmyBehind: true,
-    diceRuleSetDefenderWinsTies: true
-  };
+register(
+  "resolveSingleAttackRoll usa i metadata del dice rule set runtime persistiti nel gameConfig",
+  () => {
+    const { graph, state } = setupCombatState(4, 3);
+    state.diceRuleSetId = "duel";
+    state.gameConfig = {
+      ...(state.gameConfig || {}),
+      diceRuleSetId: "duel",
+      diceRuleSetName: "Duel",
+      diceRuleSetAttackerMaxDice: 2,
+      diceRuleSetDefenderMaxDice: 1,
+      diceRuleSetAttackerMustLeaveOneArmyBehind: true,
+      diceRuleSetDefenderWinsTies: true
+    };
 
-  const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
-    random: createFixedRandom(rollsToRandomValues([6, 3, 5]))
-  });
+    const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+      random: createFixedRandom(rollsToRandomValues([6, 3, 5]))
+    });
 
-  assert.equal(result.ok, true);
-  assert.equal(result.combat.diceRuleSetId, "duel");
-  assert.equal(result.combat.attackDiceCount, 2);
-  assert.equal(result.combat.defendDiceCount, 1);
-  assert.deepEqual(result.combat.attackerRolls, [6, 3]);
-  assert.deepEqual(result.combat.defenderRolls, [5]);
-});
+    assert.equal(result.ok, true);
+    assert.equal(result.combat.diceRuleSetId, "duel");
+    assert.equal(result.combat.attackDiceCount, 2);
+    assert.equal(result.combat.defendDiceCount, 1);
+    assert.deepEqual(result.combat.attackerRolls, [6, 3]);
+    assert.deepEqual(result.combat.defenderRolls, [5]);
+  }
+);
 
 register("combat dice helpers tirano ordinato e confrontano in modo puro", () => {
   const rolls = rollCombatDice(3, createFixedRandom(rollsToRandomValues([2, 6, 4])));
@@ -170,5 +179,8 @@ register("combat dice helpers tirano ordinato e confrontano in modo puro", () =>
   const compared = compareCombatDice([2, 6, 4], [5, 1], { defenderWinsTies: true });
   assert.deepEqual(compared.attackerRolls, [6, 4, 2]);
   assert.deepEqual(compared.defenderRolls, [5, 1]);
-  assert.deepEqual(compared.comparisons.map((entry: CombatComparison) => entry.winner), ["attacker", "attacker"]);
+  assert.deepEqual(
+    compared.comparisons.map((entry: CombatComparison) => entry.winner),
+    ["attacker", "attacker"]
+  );
 });

@@ -31,7 +31,9 @@ function normalizeCoordinate(rawValue: string, fieldName: string, territoryId: s
   }
 
   if (value < 0 || value > 1) {
-    throw new Error(`Territory "${territoryId}" must use scalable ${fieldName} coordinates between 0 and 1.`);
+    throw new Error(
+      `Territory "${territoryId}" must use scalable ${fieldName} coordinates between 0 and 1.`
+    );
   }
 
   return value;
@@ -59,7 +61,10 @@ function validateHeaders(headers: string[]): void {
   }
 }
 
-function parseTerritoryRecord(record: TerritoryRecord, rowNumber: number): MapDefinitionTerritoryEntry {
+function parseTerritoryRecord(
+  record: TerritoryRecord,
+  rowNumber: number
+): MapDefinitionTerritoryEntry {
   if (!record.id) {
     throw new Error(`Row ${rowNumber} is missing territory id.`);
   }
@@ -151,13 +156,16 @@ export function loadMapDefinitionFromCsv(csvPath: string): MapDefinition {
       territory,
       position
     })),
-    positions: Object.values(territoriesById).reduce<Record<string, MapPosition>>((accumulator, entry) => {
-      if (!entry.territory.id) {
-        throw new Error("Territory id is required.");
-      }
+    positions: Object.values(territoriesById).reduce<Record<string, MapPosition>>(
+      (accumulator, entry) => {
+        if (!entry.territory.id) {
+          throw new Error("Territory id is required.");
+        }
 
-      accumulator[entry.territory.id] = entry.position;
-      return accumulator;
-    }, {})
+        accumulator[entry.territory.id] = entry.position;
+        return accumulator;
+      },
+      {}
+    )
   };
 }

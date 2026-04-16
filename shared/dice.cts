@@ -44,11 +44,15 @@ const diceRuleSetRegistry = createModuleRegistry<DiceRuleSet>([
   defenseThreeDiceRuleSet
 ]);
 
-export function findDiceRuleSet(ruleSetId: string | null | undefined): Readonly<DiceRuleSet> | null {
+export function findDiceRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<DiceRuleSet> | null {
   return diceRuleSetRegistry.find(ruleSetId);
 }
 
-export function getDiceRuleSet(ruleSetId: string = STANDARD_DICE_RULE_SET_ID): Readonly<DiceRuleSet> {
+export function getDiceRuleSet(
+  ruleSetId: string = STANDARD_DICE_RULE_SET_ID
+): Readonly<DiceRuleSet> {
   const resolvedRuleSet = diceRuleSetRegistry.find(ruleSetId);
 
   if (!resolvedRuleSet || resolvedRuleSet.id === STANDARD_DICE_RULE_SET_ID) {

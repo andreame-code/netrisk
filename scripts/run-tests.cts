@@ -50,7 +50,10 @@ const {
 } = require("../backend/new-game-config.cjs");
 const { handleScheduledJobsRoute } = require("../backend/routes/scheduled-jobs.cjs");
 const { runScheduledJobs } = require("../backend/scheduler/index.cjs");
-const { recoverAiTurnState, recoverStuckAiTurns } = require("../backend/services/ai-turn-recovery.cjs");
+const {
+  recoverAiTurnState,
+  recoverStuckAiTurns
+} = require("../backend/services/ai-turn-recovery.cjs");
 const { enforceTurnTimeouts } = require("../backend/services/turn-timeout-enforcement.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
@@ -58,15 +61,25 @@ const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
-const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("../backend/required-runtime-env.cjs");
+const {
+  missingRequiredDeployEnv,
+  shouldValidateDeployEnv
+} = require("../backend/required-runtime-env.cjs");
 const { createApp } = require("../backend/server.cjs");
 const { sendJson, localizedPayload, sendLocalizedError } = require("../backend/http-response.cjs");
-const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("../backend/routes/account.cjs");
+const {
+  handleAuthSessionRoute,
+  handleProfileRoute,
+  handleThemePreferenceRoute
+} = require("../backend/routes/account.cjs");
 const { handleGameActionRoute } = require("../backend/routes/game-actions.cjs");
 const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
-const { handleCreateGameRoute, handleOpenGameRoute } = require("../backend/routes/game-management.cjs");
+const {
+  handleCreateGameRoute,
+  handleOpenGameRoute
+} = require("../backend/routes/game-management.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -118,7 +131,9 @@ interface Body {
 
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
-const frontendI18nModulePromise = import(pathToFileURL(path.join(projectRoot, "public", "i18n.mjs")).href);
+const frontendI18nModulePromise = import(
+  pathToFileURL(path.join(projectRoot, "public", "i18n.mjs")).href
+);
 
 function register(name: string, fn: TestFn) {
   tests.push({ name, fn });
@@ -157,7 +172,13 @@ function makeMockResponse(): MockResponse {
   };
 }
 
-async function callApp(app: any, method: string, pathname: string, body?: any, headers: HeaderMap = {}): Promise<CallAppResult> {
+async function callApp(
+  app: any,
+  method: string,
+  pathname: string,
+  body?: any,
+  headers: HeaderMap = {}
+): Promise<CallAppResult> {
   const req = new (require("events").EventEmitter)();
   req.method = method;
   req.headers = { "content-type": "application/json", ...headers };
@@ -180,7 +201,8 @@ async function callApp(app: any, method: string, pathname: string, body?: any, h
 }
 
 async function fetchGame(app: any, pathname: string, options: FetchGameOptions = {}): Promise<any> {
-  return (await callApp(app, options.method || "GET", pathname, options.body, options.headers)).payload;
+  return (await callApp(app, options.method || "GET", pathname, options.body, options.headers))
+    .payload;
 }
 
 async function readJson(response: any): Promise<any> {
@@ -192,7 +214,6 @@ function sessionTokenFromSetCookie(rawSetCookie: string | string[] | null | unde
   const match = value.match(/netrisk_session=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : "";
 }
-
 
 async function createAuthenticatedSession(baseUrl: string, username: string): Promise<any> {
   const password = TEST_PASSWORD;
@@ -241,34 +262,37 @@ register("vercel build command compila TypeScript prima della sync degli asset",
   assert.equal(config.buildCommand, "npm run build:ts");
 });
 
-register("game log merge mantiene la cronologia legacy quando arrivano entry localizzate", async () => {
-  const { setLocale, translateGameLogEntries } = await frontendI18nModulePromise;
-  setLocale("it", {
-    storage: { setItem() {} },
-    applyDocument: false
-  });
+register(
+  "game log merge mantiene la cronologia legacy quando arrivano entry localizzate",
+  async () => {
+    const { setLocale, translateGameLogEntries } = await frontendI18nModulePromise;
+    setLocale("it", {
+      storage: { setItem() {} },
+      applyDocument: false
+    });
 
-  const snapshot = {
-    logEntries: [
-      {
-        message: "Lobby creata. Unisciti e avvia la partita.",
-        messageKey: "game.log.lobbyCreated",
-        messageParams: {}
-      }
-    ],
-    log: [
+    const snapshot = {
+      logEntries: [
+        {
+          message: "Lobby creata. Unisciti e avvia la partita.",
+          messageKey: "game.log.lobbyCreated",
+          messageParams: {}
+        }
+      ],
+      log: [
+        "Lobby creata. Unisciti e avvia la partita.",
+        "Partita iniziata",
+        "Alice conquista Kamchatka"
+      ]
+    };
+
+    assert.deepEqual(translateGameLogEntries(snapshot), [
       "Lobby creata. Unisciti e avvia la partita.",
       "Partita iniziata",
       "Alice conquista Kamchatka"
-    ]
-  };
-
-  assert.deepEqual(translateGameLogEntries(snapshot), [
-    "Lobby creata. Unisciti e avvia la partita.",
-    "Partita iniziata",
-    "Alice conquista Kamchatka"
-  ]);
-});
+    ]);
+  }
+);
 
 function createMockSupabaseResponse(status: number, payload: any) {
   const text = payload == null ? "" : JSON.stringify(payload);
@@ -283,10 +307,18 @@ function createMockSupabaseResponse(status: number, payload: any) {
 
 function createMockSupabaseFetch(initialData: MockSupabaseData = {}) {
   const tables: Record<string, any[]> = {
-    users: Array.isArray(initialData.users) ? initialData.users.map((row: any) => ({ ...row })) : [],
-    games: Array.isArray(initialData.games) ? initialData.games.map((row: any) => ({ ...row })) : [],
-    sessions: Array.isArray(initialData.sessions) ? initialData.sessions.map((row: any) => ({ ...row })) : [],
-    app_state: Array.isArray(initialData.app_state) ? initialData.app_state.map((row: any) => ({ ...row })) : []
+    users: Array.isArray(initialData.users)
+      ? initialData.users.map((row: any) => ({ ...row }))
+      : [],
+    games: Array.isArray(initialData.games)
+      ? initialData.games.map((row: any) => ({ ...row }))
+      : [],
+    sessions: Array.isArray(initialData.sessions)
+      ? initialData.sessions.map((row: any) => ({ ...row }))
+      : [],
+    app_state: Array.isArray(initialData.app_state)
+      ? initialData.app_state.map((row: any) => ({ ...row }))
+      : []
   };
 
   function parseFilter(rawValue: any) {
@@ -395,7 +427,10 @@ function createMockSupabaseFetch(initialData: MockSupabaseData = {}) {
       rows.forEach((row: any) => {
         const nextRow = { ...row };
         if (onConflict) {
-          const existingIndex = table.findIndex((candidate: any) => String(candidate[onConflict] ?? "") === String(nextRow[onConflict] ?? ""));
+          const existingIndex = table.findIndex(
+            (candidate: any) =>
+              String(candidate[onConflict] ?? "") === String(nextRow[onConflict] ?? "")
+          );
           if (existingIndex >= 0) {
             table[existingIndex] = { ...table[existingIndex], ...nextRow };
             inserted.push({ ...table[existingIndex] });
@@ -447,7 +482,10 @@ function createMockSupabaseFetch(initialData: MockSupabaseData = {}) {
   };
 }
 
-async function withMockSupabase(run: (mock: any) => Promise<void>, initialData: MockSupabaseData = {}) {
+async function withMockSupabase(
+  run: (mock: any) => Promise<void>,
+  initialData: MockSupabaseData = {}
+) {
   const originalFetch: any = global.fetch;
   const envKeys = [
     "DATASTORE_DRIVER",
@@ -490,8 +528,8 @@ register("auth repository supabase normalizza utenti, preferenze e sessioni", as
       id: "legacy-user",
       username: "legacy_user",
       role: "admin",
-      credentials_json: "{\"password\":{\"hash\":\"abc\"}}",
-      profile_json: "{\"preferences\":{\"theme\":\"ember\"}}",
+      credentials_json: '{"password":{"hash":"abc"}}',
+      profile_json: '{"preferences":{"theme":"ember"}}',
       created_at: "2024-01-02T03:04:05.000Z"
     });
 
@@ -516,7 +554,9 @@ register("auth repository supabase normalizza utenti, preferenze e sessioni", as
     assert.equal(createdUser.username, "supa_created");
     assert.equal(createdUser.profile.displayName, "Supa");
 
-    const updatedCredentials = await repository.updateUserCredentials("user-2", { password: { hash: "hash-2" } });
+    const updatedCredentials = await repository.updateUserCredentials("user-2", {
+      password: { hash: "hash-2" }
+    });
     assert.equal(updatedCredentials.credentials.password.hash, "hash-2");
 
     const updatedProfile = await repository.updateUserProfile("user-2", {
@@ -595,12 +635,25 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
   });
 
   assert.deepEqual(await localRepository.listUsers(), [{ id: "u1" }]);
-  assert.deepEqual(await localRepository.findUserByUsername("alice"), { id: "u1", username: "alice" });
+  assert.deepEqual(await localRepository.findUserByUsername("alice"), {
+    id: "u1",
+    username: "alice"
+  });
   assert.deepEqual(await localRepository.findUserById("u1"), { id: "u1" });
   assert.equal((await localRepository.createUser({ id: "u2", username: "bob" })).username, "bob");
-  assert.equal((await localRepository.updateUserCredentials("u2", { password: { hash: "abc" } })).credentials.password.hash, "abc");
-  assert.equal((await localRepository.updateUserProfile("u2", { displayName: "Bobby" })).profile.displayName, "Bobby");
-  assert.equal((await localRepository.updateUserThemePreference("u2", "ember")).profile.preferences.theme, "ember");
+  assert.equal(
+    (await localRepository.updateUserCredentials("u2", { password: { hash: "abc" } })).credentials
+      .password.hash,
+    "abc"
+  );
+  assert.equal(
+    (await localRepository.updateUserProfile("u2", { displayName: "Bobby" })).profile.displayName,
+    "Bobby"
+  );
+  assert.equal(
+    (await localRepository.updateUserThemePreference("u2", "ember")).profile.preferences.theme,
+    "ember"
+  );
   await localRepository.createSession("token-local", "u2", 55);
   assert.deepEqual(await localRepository.findSession("token-local"), {
     token: "token-local",
@@ -610,8 +663,14 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
   await localRepository.deleteSession("token-local");
   localRepository.close();
 
-  assert.equal(calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserProfile"), true);
-  assert.equal(calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserThemePreference"), true);
+  assert.equal(
+    calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserProfile"),
+    true
+  );
+  assert.equal(
+    calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserThemePreference"),
+    true
+  );
   assert.equal(calls.includes("close"), true);
 });
 
@@ -625,11 +684,19 @@ register("json file store usa backup e valida il payload letto", () => {
   fs.writeFileSync(filePath, "{ invalid json", "utf8");
   fs.writeFileSync(backupPath, JSON.stringify({ ok: true, source: "backup" }), "utf8");
 
-  const recovered = readJsonFile(filePath, { ok: false }, (value: any) => value && value.ok === true);
+  const recovered = readJsonFile(
+    filePath,
+    { ok: false },
+    (value: any) => value && value.ok === true
+  );
   assert.deepEqual(recovered, { ok: true, source: "backup" });
 
   fs.writeFileSync(filePath, JSON.stringify({ ok: false }), "utf8");
-  const fallback = readJsonFile(filePath, { ok: "fallback" }, (value: any) => value && value.ok === true);
+  const fallback = readJsonFile(
+    filePath,
+    { ok: "fallback" },
+    (value: any) => value && value.ok === true
+  );
   assert.deepEqual(fallback, { ok: "fallback" });
 
   fs.rmSync(tempDir, { recursive: true, force: true });
@@ -645,7 +712,10 @@ register("json file store scrive backup del contenuto precedente", () => {
   writeJsonFile(filePath, { version: 2, value: "after" });
 
   assert.deepEqual(JSON.parse(fs.readFileSync(filePath, "utf8")), { version: 2, value: "after" });
-  assert.deepEqual(JSON.parse(fs.readFileSync(`${filePath}.bak`, "utf8")), { version: 1, value: "before" });
+  assert.deepEqual(JSON.parse(fs.readFileSync(`${filePath}.bak`, "utf8")), {
+    version: 1,
+    value: "before"
+  });
 
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
@@ -745,7 +815,10 @@ register("player profile store riassume vittorie, sconfitte e partite in corso",
   assert.equal(profile.losses, 1);
   assert.equal(profile.gamesInProgress, 2);
   assert.equal(profile.winRate, 50);
-  assert.deepEqual(profile.participatingGames.map((game: any) => game.id), ["active-2", "active-1"]);
+  assert.deepEqual(
+    profile.participatingGames.map((game: any) => game.id),
+    ["active-2", "active-1"]
+  );
   assert.equal(profile.participatingGames[0].myLobby.focusLabel, "Tocca a te");
   assert.equal(profile.participatingGames[0].myLobby.statusLabel, "Operativo");
   assert.equal(profile.participatingGames[0].myLobby.cardCount, 2);
@@ -843,11 +916,11 @@ register("account routes rispondono con sessione, profilo e validazione tema", a
     },
     sendJson,
     sendLocalizedError,
-      extractUserPreferences(user: any) {
+    extractUserPreferences(user: any) {
       return { theme: user?.preferences?.theme || "command" };
     },
     supportedSiteThemes: new Set(["command", "midnight", "ember"]),
-      resolveStoredTheme(theme: any) {
+    resolveStoredTheme(theme: any) {
       return theme;
     }
   });
@@ -895,11 +968,11 @@ register("account routes rispondono con sessione, profilo e validazione tema", a
     },
     sendJson,
     sendLocalizedError,
-      extractUserPreferences(user: any) {
+    extractUserPreferences(user: any) {
       return { theme: user?.preferences?.theme || "command" };
     },
     supportedSiteThemes: new Set(["command", "midnight", "ember"]),
-      resolveStoredTheme(theme: any) {
+    resolveStoredTheme(theme: any) {
       return theme;
     }
   });
@@ -909,33 +982,36 @@ register("account routes rispondono con sessione, profilo e validazione tema", a
   assert.equal(JSON.parse(profileRes.body).profile.preferences.theme, "ember");
 
   const invalidThemeRes = makeMockResponse();
-  const invalidThemeHandled = await handleThemePreferenceRoute({
-    req: { method: "PUT", headers: {} },
-    res: invalidThemeRes,
-    requireAuth: async () => authContext,
-    auth: {
-      publicUser() {
-        return null;
+  const invalidThemeHandled = await handleThemePreferenceRoute(
+    {
+      req: { method: "PUT", headers: {} },
+      res: invalidThemeRes,
+      requireAuth: async () => authContext,
+      auth: {
+        publicUser() {
+          return null;
+        },
+        async updateUserThemePreference() {
+          return null;
+        }
       },
-      async updateUserThemePreference() {
-        return null;
-      }
-    },
-    playerProfiles: {
-      async getPlayerProfile() {
-        return {};
-      }
-    },
-    sendJson,
-    sendLocalizedError,
-    extractUserPreferences() {
-      return { theme: "command" };
-    },
-    supportedSiteThemes: new Set(["command", "midnight", "ember"]),
+      playerProfiles: {
+        async getPlayerProfile() {
+          return {};
+        }
+      },
+      sendJson,
+      sendLocalizedError,
+      extractUserPreferences() {
+        return { theme: "command" };
+      },
+      supportedSiteThemes: new Set(["command", "midnight", "ember"]),
       resolveStoredTheme(theme: any) {
-      return theme;
-    }
-  }, { theme: "ultraviolet" });
+        return theme;
+      }
+    },
+    { theme: "ultraviolet" }
+  );
 
   assert.equal(invalidThemeHandled, true);
   assert.equal(invalidThemeRes.statusCode, 400);
@@ -1061,79 +1137,82 @@ register("basic game action route valida i territori nel fortify", async () => {
   });
 });
 
-register("attack game action route gestisce un attacco con random consumato dalla queue", async () => {
-  const res = makeMockResponse();
-  const gameContext = {
-    state: { territories: { alpha: {}, beta: {} } },
-    gameId: "game-attack",
-    version: 5,
-    gameName: "Attack Route"
-  };
-  const persisted: any[] = [];
-  const broadcasts: any[] = [];
-  let consumeCount = 0;
-
-  const handled = await handleAttackGameActionRoute(
-    "attack",
-    res,
-    { fromId: "alpha", toId: "beta", attackDice: "3" },
-    gameContext,
-    "p1",
-    5,
-    { id: "user-1" },
-    (state: any, playerId: any, fromId: any, toId: any, random: any, attackDice: any) => {
-      assert.equal(playerId, "p1");
-      assert.equal(fromId, "alpha");
-      assert.equal(toId, "beta");
-      assert.equal(attackDice, 3);
-      assert.equal(typeof random, "function");
-      assert.equal(random(), 0.25);
-      state.lastAttack = { fromId, toId };
-      return { ok: true, rounds: [{ attack: 6, defend: 2 }] };
-    },
-    () => {
-      throw new Error("resolveBanzaiAttack should not be called");
-    },
-    () => {
-      consumeCount += 1;
-      return () => 0.25;
-    },
-    async (context: any, expectedVersion: any) => {
-      persisted.push(expectedVersion);
-      context.version = 6;
-    },
-    (context: any) => {
-      broadcasts.push(context.version);
-    },
-    (state: any, gameId: any, version: any, gameName: any, user: any) => ({
-      gameId,
-      version,
-      gameName,
-      lastAttack: state.lastAttack,
-      playerId: user.id
-    }),
-    () => false,
-    (territoryId: any) => territoryId === "alpha" || territoryId === "beta",
-    sendJson,
-    sendLocalizedError
-  );
-
-  assert.equal(handled, true);
-  assert.equal(consumeCount, 1);
-  assert.deepEqual(persisted, [5]);
-  assert.deepEqual(broadcasts, [6]);
-  assert.deepEqual(JSON.parse(res.body), {
-    ok: true,
-    state: {
+register(
+  "attack game action route gestisce un attacco con random consumato dalla queue",
+  async () => {
+    const res = makeMockResponse();
+    const gameContext = {
+      state: { territories: { alpha: {}, beta: {} } },
       gameId: "game-attack",
-      version: 6,
-      gameName: "Attack Route",
-      lastAttack: { fromId: "alpha", toId: "beta" },
-      playerId: "user-1"
-    },
-    rounds: [{ attack: 6, defend: 2 }]
-  });
-});
+      version: 5,
+      gameName: "Attack Route"
+    };
+    const persisted: any[] = [];
+    const broadcasts: any[] = [];
+    let consumeCount = 0;
+
+    const handled = await handleAttackGameActionRoute(
+      "attack",
+      res,
+      { fromId: "alpha", toId: "beta", attackDice: "3" },
+      gameContext,
+      "p1",
+      5,
+      { id: "user-1" },
+      (state: any, playerId: any, fromId: any, toId: any, random: any, attackDice: any) => {
+        assert.equal(playerId, "p1");
+        assert.equal(fromId, "alpha");
+        assert.equal(toId, "beta");
+        assert.equal(attackDice, 3);
+        assert.equal(typeof random, "function");
+        assert.equal(random(), 0.25);
+        state.lastAttack = { fromId, toId };
+        return { ok: true, rounds: [{ attack: 6, defend: 2 }] };
+      },
+      () => {
+        throw new Error("resolveBanzaiAttack should not be called");
+      },
+      () => {
+        consumeCount += 1;
+        return () => 0.25;
+      },
+      async (context: any, expectedVersion: any) => {
+        persisted.push(expectedVersion);
+        context.version = 6;
+      },
+      (context: any) => {
+        broadcasts.push(context.version);
+      },
+      (state: any, gameId: any, version: any, gameName: any, user: any) => ({
+        gameId,
+        version,
+        gameName,
+        lastAttack: state.lastAttack,
+        playerId: user.id
+      }),
+      () => false,
+      (territoryId: any) => territoryId === "alpha" || territoryId === "beta",
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(handled, true);
+    assert.equal(consumeCount, 1);
+    assert.deepEqual(persisted, [5]);
+    assert.deepEqual(broadcasts, [6]);
+    assert.deepEqual(JSON.parse(res.body), {
+      ok: true,
+      state: {
+        gameId: "game-attack",
+        version: 6,
+        gameName: "Attack Route",
+        lastAttack: { fromId: "alpha", toId: "beta" },
+        playerId: "user-1"
+      },
+      rounds: [{ attack: 6, defend: 2 }]
+    });
+  }
+);
 
 register("attack game action route valida i territori prima del banzai", async () => {
   const res = makeMockResponse();
@@ -1361,7 +1440,8 @@ register("game management route apre una partita e risolve il player autenticato
       gameContext.state.players.push({ id: "ai-2", linkedUserId: null, isAi: true });
       return { shouldPersist: true, forcedTurn: false };
     },
-    (state: any, user: any) => state.players.find((player: any) => player.linkedUserId === user.id) || null,
+    (state: any, user: any) =>
+      state.players.find((player: any) => player.linkedUserId === user.id) || null,
     (state: any, gameId: any, version: any, gameName: any) => ({
       gameId,
       version,
@@ -1511,13 +1591,23 @@ function cleanupSqliteFiles(filePath: string) {
   });
 }
 
-async function withServer(run: (baseUrl: string, context: ServerTestContext) => Promise<void>): Promise<void> {
+async function withServer(
+  run: (baseUrl: string, context: ServerTestContext) => Promise<void>
+): Promise<void> {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${uniqueSuffix()}.json`);
   const tempGamesFile = path.join(__dirname, `tmp-games-${Date.now()}-${uniqueSuffix()}.json`);
-  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${Date.now()}-${uniqueSuffix()}.json`);
+  const tempSessionsFile = path.join(
+    __dirname,
+    `tmp-sessions-${Date.now()}-${uniqueSuffix()}.json`
+  );
   const tempDbFile = path.join(__dirname, `tmp-store-${unique}.sqlite`);
-  const app = createApp({ dataFile: tempFile, gamesFile: tempGamesFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
+  const app = createApp({
+    dataFile: tempFile,
+    gamesFile: tempGamesFile,
+    sessionsFile: tempSessionsFile,
+    dbFile: tempDbFile
+  });
   const listener = app.server.listen(0);
 
   await new Promise<void>((resolve, reject) => {
@@ -1527,7 +1617,13 @@ async function withServer(run: (baseUrl: string, context: ServerTestContext) => 
 
   try {
     const address = listener.address() as { port: number };
-    return await run(`http://127.0.0.1:${address.port}`, { app, tempFile, tempGamesFile, tempSessionsFile, tempDbFile });
+    return await run(`http://127.0.0.1:${address.port}`, {
+      app,
+      tempFile,
+      tempGamesFile,
+      tempSessionsFile,
+      tempDbFile
+    });
   } finally {
     await new Promise<void>((resolve) => {
       if (!listener.listening) {
@@ -1605,31 +1701,34 @@ register("auth store registra e autentica utenti password", async () => {
   cleanupSqliteFiles(tempDbFile);
 });
 
-register("i form di login pubblici usano POST per non esporre credenziali nella query string", () => {
-  const headerLoginPages = [
-    "game.html",
-    "lobby.html",
-    "new-game.html",
-    "profile.html",
-    "register.html"
-  ];
+register(
+  "i form di login pubblici usano POST per non esporre credenziali nella query string",
+  () => {
+    const headerLoginPages = [
+      "game.html",
+      "lobby.html",
+      "new-game.html",
+      "profile.html",
+      "register.html"
+    ];
 
-  headerLoginPages.forEach((fileName) => {
-    const html = readPublicHtml(fileName);
+    headerLoginPages.forEach((fileName) => {
+      const html = readPublicHtml(fileName);
+      assert.match(
+        html,
+        /<form id="header-login-form"[^>]*method="post"/,
+        `${fileName} deve usare POST per il form di login header`
+      );
+    });
+
+    const gameHtml = readPublicHtml("game.html");
     assert.match(
-      html,
-      /<form id="header-login-form"[^>]*method="post"/,
-      `${fileName} deve usare POST per il form di login header`
+      gameHtml,
+      /<form id="auth-form"[^>]*method="post"/,
+      "game.html deve usare POST per il form login principale"
     );
-  });
-
-  const gameHtml = readPublicHtml("game.html");
-  assert.match(
-    gameHtml,
-    /<form id="auth-form"[^>]*method="post"/,
-    "game.html deve usare POST per il form login principale"
-  );
-});
+  }
+);
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
   for (let index = 0; index < 32; index += 1) {
@@ -1652,14 +1751,22 @@ register("auth store mantiene la sessione dopo il riavvio del processo", async (
   const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
 
   try {
-    const firstStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
+    const firstStore = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
     const registered = await firstStore.registerPasswordUser("persisted", TEST_PASSWORD);
     assert.equal(registered.ok, true);
 
     const login = await firstStore.loginWithPassword("persisted", TEST_PASSWORD);
     assert.equal(login.ok, true);
 
-    const restartedStore = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
+    const restartedStore = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
     const user = await restartedStore.getUserFromSession(login.sessionToken);
     assert.equal(Boolean(user), true);
     assert.equal(user.username, "persisted");
@@ -1685,22 +1792,36 @@ register("auth store migra password legacy in hash al login riuscito", async () 
   const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
 
   try {
-    fs.writeFileSync(tempFile, JSON.stringify([{
-      id: "legacy-user",
-      username: "legacy",
-      credentials: {
-        password: {
-          secret: "secret"
-        }
-      },
-      role: "user",
-      profile: {
-        displayName: "legacy"
-      },
-      createdAt: new Date().toISOString()
-    }], null, 2) + "\n", "utf8");
+    fs.writeFileSync(
+      tempFile,
+      JSON.stringify(
+        [
+          {
+            id: "legacy-user",
+            username: "legacy",
+            credentials: {
+              password: {
+                secret: "secret"
+              }
+            },
+            role: "user",
+            profile: {
+              displayName: "legacy"
+            },
+            createdAt: new Date().toISOString()
+          }
+        ],
+        null,
+        2
+      ) + "\n",
+      "utf8"
+    );
 
-    const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
+    const auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
     const login = await auth.loginWithPassword("legacy", "secret");
     assert.equal(login.ok, true);
 
@@ -1785,7 +1906,12 @@ register("datastore backup crea uno snapshot sqlite leggibile", async () => {
   const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
   const legacyGamesFile = path.join(__dirname, `tmp-legacy-games-${unique}.json`);
   const legacySessionsFile = path.join(__dirname, `tmp-legacy-sessions-${unique}.json`);
-  const datastore = createDatastore({ dbFile: sourceDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+  const datastore = createDatastore({
+    dbFile: sourceDbFile,
+    legacyUsersFile,
+    legacyGamesFile,
+    legacySessionsFile
+  });
 
   try {
     datastore.createUser({
@@ -1811,7 +1937,12 @@ register("datastore backup crea uno snapshot sqlite leggibile", async () => {
     const backup = await datastore.backupTo(targetDbFile);
     assert.equal(backup.targetFile, targetDbFile);
 
-    const restored = createDatastore({ dbFile: targetDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+    const restored = createDatastore({
+      dbFile: targetDbFile,
+      legacyUsersFile,
+      legacyGamesFile,
+      legacySessionsFile
+    });
     try {
       const health = restored.healthSummary();
       assert.equal(health.ok, true);
@@ -1849,14 +1980,11 @@ register("backup retention mantiene solo gli snapshot piu recenti", () => {
 
     const removed = pruneBackups(path.join(backupDir, "netrisk-20260403-130000.sqlite"), 2);
     assert.equal(removed.length, 2);
-    assert.deepEqual(
-      fs.readdirSync(backupDir).sort(),
-      [
-        "netrisk-20260403-110000.sqlite",
-        "netrisk-20260403-120000.sqlite",
-        "other-20260403-120000.sqlite"
-      ]
-    );
+    assert.deepEqual(fs.readdirSync(backupDir).sort(), [
+      "netrisk-20260403-110000.sqlite",
+      "netrisk-20260403-120000.sqlite",
+      "other-20260403-120000.sqlite"
+    ]);
   } finally {
     fs.rmSync(backupDir, { recursive: true, force: true });
   }
@@ -1869,7 +1997,12 @@ register("backup verification legge uno snapshot sqlite esistente", async () => 
   const legacyUsersFile = path.join(__dirname, `tmp-legacy-users-${unique}.json`);
   const legacyGamesFile = path.join(__dirname, `tmp-legacy-games-${unique}.json`);
   const legacySessionsFile = path.join(__dirname, `tmp-legacy-sessions-${unique}.json`);
-  const datastore = createDatastore({ dbFile: sourceDbFile, legacyUsersFile, legacyGamesFile, legacySessionsFile });
+  const datastore = createDatastore({
+    dbFile: sourceDbFile,
+    legacyUsersFile,
+    legacyGamesFile,
+    legacySessionsFile
+  });
 
   try {
     datastore.createUser({
@@ -1925,7 +2058,10 @@ register("startGame distribuisce tutti i territori e assegna rinforzi iniziali",
   assert.equal(state.phase, "active");
   assert.equal(state.turnPhase, "reinforcement");
   assert.equal(state.reinforcementPool >= 3, true);
-  assert.equal(territoriesOwnedBy(state, first.id).length + territoriesOwnedBy(state, second.id).length, 9);
+  assert.equal(
+    territoriesOwnedBy(state, first.id).length + territoriesOwnedBy(state, second.id).length,
+    9
+  );
 });
 
 register("applyReinforcement centralizza la mutazione di rinforzo", () => {
@@ -2003,15 +2139,24 @@ register("listSupportedMaps espone riepiloghi con bonus continente per il setup"
 
   assert.equal(classicMini.territoryCount, classicMiniMap.territories.length);
   assert.equal(classicMini.continentCount, classicMiniMap.continents.length);
-  assert.deepEqual(classicMini.continentBonuses.map((continent: any) => continent.bonus), [1, 2, 1, 1]);
+  assert.deepEqual(
+    classicMini.continentBonuses.map((continent: any) => continent.bonus),
+    [1, 2, 1, 1]
+  );
 
   assert.equal(middleEarth.territoryCount, middleEarthMap.territories.length);
   assert.equal(middleEarth.continentCount, middleEarthMap.continents.length);
-  assert.deepEqual(middleEarth.continentBonuses.map((continent: any) => continent.bonus), [2, 3, 4, 3, 2, 2, 3, 2]);
+  assert.deepEqual(
+    middleEarth.continentBonuses.map((continent: any) => continent.bonus),
+    [2, 3, 4, 3, 2, 2, 3, 2]
+  );
 
   assert.equal(worldClassic.territoryCount, worldClassicMap.territories.length);
   assert.equal(worldClassic.continentCount, worldClassicMap.continents.length);
-  assert.deepEqual(worldClassic.continentBonuses.map((continent: any) => continent.bonus), [5, 2, 5, 3, 7, 2]);
+  assert.deepEqual(
+    worldClassic.continentBonuses.map((continent: any) => continent.bonus),
+    [5, 2, 5, 3, 7, 2]
+  );
 });
 
 register("resolveAttack rifiuta un numero di dadi oltre il massimo disponibile", () => {
@@ -2028,36 +2173,39 @@ register("resolveAttack rifiuta un numero di dadi oltre il massimo disponibile",
   assert.equal(result.message, "Numero di dadi di attacco non valido.");
 });
 
-register("resolveAttack espone un risultato strutturato anche quando il difensore vince il confronto", () => {
-  const { state, first, second } = setupLobby();
-  state.phase = "active";
-  state.turnPhase = "attack";
-  state.currentTurnIndex = 0;
-  state.reinforcementPool = 0;
-  state.territories.aurora = { ownerId: first.id, armies: 3 };
-  state.territories.bastion = { ownerId: second.id, armies: 2 };
+register(
+  "resolveAttack espone un risultato strutturato anche quando il difensore vince il confronto",
+  () => {
+    const { state, first, second } = setupLobby();
+    state.phase = "active";
+    state.turnPhase = "attack";
+    state.currentTurnIndex = 0;
+    state.reinforcementPool = 0;
+    state.territories.aurora = { ownerId: first.id, armies: 3 };
+    state.territories.bastion = { ownerId: second.id, armies: 2 };
 
-  const random = (() => {
-    const values = [0.5, 0.5, 0.5, 0.5];
-    return () => values.shift();
-  })();
+    const random = (() => {
+      const values = [0.5, 0.5, 0.5, 0.5];
+      return () => values.shift();
+    })();
 
-  const result = resolveAttack(state, first.id, "aurora", "bastion", random);
-  assert.equal(result.ok, true);
-  assert.equal(result.combat.attackDiceCount, 2);
-  assert.equal(result.combat.defendDiceCount, 2);
-  assert.equal(result.combat.comparisons[0].winner, "defender");
-  assert.equal(result.combat.comparisons[1].winner, "defender");
-  assert.equal(result.combat.attackerArmiesBefore, 3);
-  assert.equal(result.combat.defenderArmiesBefore, 2);
-  assert.equal(result.combat.attackerArmiesRemaining, 1);
-  assert.equal(result.combat.defenderArmiesRemaining, 2);
-  assert.equal(result.combat.defenderReducedToZero, false);
-  assert.equal(result.combat.conqueredTerritory, false);
-  assert.equal(result.pendingConquest, null);
-  assert.equal(state.pendingConquest, null);
-  assert.deepEqual(state.lastAction.combat, result.combat);
-});
+    const result = resolveAttack(state, first.id, "aurora", "bastion", random);
+    assert.equal(result.ok, true);
+    assert.equal(result.combat.attackDiceCount, 2);
+    assert.equal(result.combat.defendDiceCount, 2);
+    assert.equal(result.combat.comparisons[0].winner, "defender");
+    assert.equal(result.combat.comparisons[1].winner, "defender");
+    assert.equal(result.combat.attackerArmiesBefore, 3);
+    assert.equal(result.combat.defenderArmiesBefore, 2);
+    assert.equal(result.combat.attackerArmiesRemaining, 1);
+    assert.equal(result.combat.defenderArmiesRemaining, 2);
+    assert.equal(result.combat.defenderReducedToZero, false);
+    assert.equal(result.combat.conqueredTerritory, false);
+    assert.equal(result.pendingConquest, null);
+    assert.equal(state.pendingConquest, null);
+    assert.deepEqual(state.lastAction.combat, result.combat);
+  }
+);
 
 register("moveAfterConquest trasferisce armate prima di poter chiudere il turno", () => {
   const { state, first, second } = setupLobby();
@@ -2302,7 +2450,9 @@ register("combat resolution applica i limiti dadi dal rule set centralizzato", (
     }
   };
   const graph = {
-    hasTerritory(id: any) { return id === "a" || id === "b"; },
+    hasTerritory(id: any) {
+      return id === "a" || id === "b";
+    },
     areAdjacent(fromId: any, toId: any) {
       return (fromId === "a" && toId === "b") || (fromId === "b" && toId === "a");
     }
@@ -2321,16 +2471,22 @@ register("combat resolution applica i limiti dadi dal rule set centralizzato", (
 });
 
 register("combat dice helpers separano tiro e confronto", () => {
-  const rolls = rollCombatDice(3, (() => {
-    const values = [0.2, 0.95, 0.5];
-    return () => values.shift();
-  })());
+  const rolls = rollCombatDice(
+    3,
+    (() => {
+      const values = [0.2, 0.95, 0.5];
+      return () => values.shift();
+    })()
+  );
   assert.deepEqual(rolls, [6, 4, 2]);
 
   const compared = compareCombatDice([2, 6, 4], [4, 1], { defenderWinsTies: true });
   assert.deepEqual(compared.attackerRolls, [6, 4, 2]);
   assert.deepEqual(compared.defenderRolls, [4, 1]);
-  assert.deepEqual(compared.comparisons.map((entry: any) => entry.winner), ["attacker", "attacker"]);
+  assert.deepEqual(
+    compared.comparisons.map((entry: any) => entry.winner),
+    ["attacker", "attacker"]
+  );
 });
 
 register("standard card rules rifiutano set invalidi e centralizzano la progressione bonus", () => {
@@ -2370,7 +2526,10 @@ register("tradeCardSet converte un set valido in rinforzi e incrementa la progre
   assert.equal(state.reinforcementPool, 7);
   assert.equal(state.tradeCount, 1);
   assert.deepEqual(state.hands[first.id], []);
-  assert.deepEqual(state.discardPile.map((card: any) => card.id), ["t1", "t2", "t3"]);
+  assert.deepEqual(
+    state.discardPile.map((card: any) => card.id),
+    ["t1", "t2", "t3"]
+  );
 });
 
 register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo stato", () => {
@@ -2403,8 +2562,9 @@ register("tradeCardSet rifiuta set invalidi o trade fuori fase senza mutare lo s
 
 register("playerMustTradeCards segnala il limite mano standard", () => {
   const { state, first } = setupLobby();
-  state.hands[first.id] = Array.from({ length: STANDARD_MAX_HAND_BEFORE_FORCED_TRADE + 1 }, (_, index) =>
-    createCard({ id: "limit-" + index, type: CardType.INFANTRY })
+  state.hands[first.id] = Array.from(
+    { length: STANDARD_MAX_HAND_BEFORE_FORCED_TRADE + 1 },
+    (_, index) => createCard({ id: "limit-" + index, type: CardType.INFANTRY })
   );
 
   assert.equal(playerMustTradeCards(state, first.id), true);
@@ -2484,18 +2644,21 @@ register("awardTurnCardIfEligible assegna una carta solo dopo almeno una conquis
   assert.equal(state.conqueredTerritoryThisTurn, false);
 });
 
-register("awardTurnCardIfEligible non assegna carte senza conquista o senza carte disponibili", () => {
-  const { state, first } = setupLobby();
-  const noneWithoutConquest = awardTurnCardIfEligible(state, first.id);
-  assert.equal(noneWithoutConquest, null);
+register(
+  "awardTurnCardIfEligible non assegna carte senza conquista o senza carte disponibili",
+  () => {
+    const { state, first } = setupLobby();
+    const noneWithoutConquest = awardTurnCardIfEligible(state, first.id);
+    assert.equal(noneWithoutConquest, null);
 
-  state.conqueredTerritoryThisTurn = true;
-  state.deck = [];
-  state.discardPile = [];
-  const noneWithoutCards = awardTurnCardIfEligible(state, first.id);
-  assert.equal(noneWithoutCards, null);
-  assert.equal(Array.isArray(state.hands[first.id]), false);
-});
+    state.conqueredTerritoryThisTurn = true;
+    state.deck = [];
+    state.discardPile = [];
+    const noneWithoutCards = awardTurnCardIfEligible(state, first.id);
+    assert.equal(noneWithoutCards, null);
+    assert.equal(Array.isArray(state.hands[first.id]), false);
+  }
+);
 
 register("awardTurnCardIfEligible rimescola il discard quando il deck e vuoto", () => {
   const { state, first } = setupLobby();
@@ -2506,10 +2669,14 @@ register("awardTurnCardIfEligible rimescola il discard quando il deck e vuoto", 
     createCard({ id: "d2", type: CardType.ARTILLERY })
   ];
 
-  const awarded = awardTurnCardIfEligible(state, first.id, (() => {
-    const values = [0];
-    return () => values.shift() ?? 0;
-  })());
+  const awarded = awardTurnCardIfEligible(
+    state,
+    first.id,
+    (() => {
+      const values = [0];
+      return () => values.shift() ?? 0;
+    })()
+  );
 
   assert.equal(Boolean(awarded), true);
   assert.equal(state.hands[first.id].length, 1);
@@ -2552,38 +2719,53 @@ register("awardTurnCardIfEligible continua ad assegnare carte su molti turni di 
   }
 
   assert.equal(state.hands[first.id].length, 4);
-  assert.deepEqual(state.hands[first.id].map((card: any) => card.id).sort(), ["deck-1", "discard-1", "discard-2", "discard-3"]);
+  assert.deepEqual(state.hands[first.id].map((card: any) => card.id).sort(), [
+    "deck-1",
+    "discard-1",
+    "discard-2",
+    "discard-3"
+  ]);
 });
 
 register("getMapTerritories legge la mappa runtime con fallback legacy", () => {
   const defaultState = createInitialState();
-  assert.deepEqual(getMapTerritories(defaultState).map((territory: any) => territory.id), classicMiniMap.territories.map((territory: any) => territory.id));
+  assert.deepEqual(
+    getMapTerritories(defaultState).map((territory: any) => territory.id),
+    classicMiniMap.territories.map((territory: any) => territory.id)
+  );
 
   const customState = createInitialState();
-  customState.mapTerritories = [
-    { id: "alpha", name: "Alpha", neighbors: [], continentId: "x" }
-  ];
+  customState.mapTerritories = [{ id: "alpha", name: "Alpha", neighbors: [], continentId: "x" }];
   assert.deepEqual(getMapTerritories(customState), customState.mapTerritories);
 });
 
-register("createInitialState inizializza deck, discard pile, hands e progressione carte standard", () => {
-  const state = createInitialState();
-  assert.equal(state.mapId, "classic-mini");
-  assert.equal(state.mapName, "Classic Mini");
-  assert.deepEqual(state.mapTerritories.map((territory: any) => territory.id), classicMiniMap.territories.map((territory: any) => territory.id));
-  assert.deepEqual(state.continents.map((continent: any) => continent.id), classicMiniMap.continents.map((continent: any) => continent.id));
-  assert.equal(state.cardRuleSetId, "standard");
-  assert.equal(Array.isArray(state.deck), true);
-  assert.equal(state.deck.length, 11);
-  assert.deepEqual(state.discardPile, []);
-  assert.deepEqual(state.hands, {});
-  assert.equal(state.tradeCount, 0);
-  assert.equal(state.deck.filter((card: any) => card.type === CardType.WILD).length, 2);
-  assert.equal(state.deck.filter((card: any) => card.territoryId).length, 9);
+register(
+  "createInitialState inizializza deck, discard pile, hands e progressione carte standard",
+  () => {
+    const state = createInitialState();
+    assert.equal(state.mapId, "classic-mini");
+    assert.equal(state.mapName, "Classic Mini");
+    assert.deepEqual(
+      state.mapTerritories.map((territory: any) => territory.id),
+      classicMiniMap.territories.map((territory: any) => territory.id)
+    );
+    assert.deepEqual(
+      state.continents.map((continent: any) => continent.id),
+      classicMiniMap.continents.map((continent: any) => continent.id)
+    );
+    assert.equal(state.cardRuleSetId, "standard");
+    assert.equal(Array.isArray(state.deck), true);
+    assert.equal(state.deck.length, 11);
+    assert.deepEqual(state.discardPile, []);
+    assert.deepEqual(state.hands, {});
+    assert.equal(state.tradeCount, 0);
+    assert.equal(state.deck.filter((card: any) => card.type === CardType.WILD).length, 2);
+    assert.equal(state.deck.filter((card: any) => card.territoryId).length, 9);
 
-  const rebuiltDeck = createStandardDeck(Object.keys(state.territories));
-  assert.equal(rebuiltDeck.length, state.deck.length);
-});
+    const rebuiltDeck = createStandardDeck(Object.keys(state.territories));
+    assert.equal(rebuiltDeck.length, state.deck.length);
+  }
+);
 
 register("publicState espone i metadati carte senza rivelare deck e discard pile completi", () => {
   const { state, first, second } = setupLobby();
@@ -2681,8 +2863,14 @@ register("createInitialState supporta Middle-earth con coordinate e immagine", (
   assert.equal(state.mapTerritories.length, middleEarthMap.territories.length);
   assert.equal(snapshot.mapVisual.imageUrl, "/assets/maps/middle-earth.jpg");
   assert.equal(snapshot.mapVisual.aspectRatio.width, 463);
-  assert.equal(snapshot.map.find((territory: any) => territory.id === "gondor").x, middleEarthMap.positions.gondor.x);
-  assert.equal(snapshot.map.find((territory: any) => territory.id === "the_shire").name, "The Shire");
+  assert.equal(
+    snapshot.map.find((territory: any) => territory.id === "gondor").x,
+    middleEarthMap.positions.gondor.x
+  );
+  assert.equal(
+    snapshot.map.find((territory: any) => territory.id === "the_shire").name,
+    "The Shire"
+  );
 });
 
 register("createInitialState supporta World Classic con i territori standard Risk", () => {
@@ -2710,7 +2898,10 @@ register("createInitialState supporta World Classic con i territori standard Ris
   assert.equal(worldClassicMap.positions.western_australia.x, 0.85);
   assert.equal(worldClassicMap.positions.western_australia.y, 0.87);
   assert.equal(snapshot.map.find((territory: any) => territory.id === "ukraine").name, "Ukraine");
-  assert.equal(snapshot.map.find((territory: any) => territory.id === "eastern_australia").y, worldClassicMap.positions.eastern_australia.y);
+  assert.equal(
+    snapshot.map.find((territory: any) => territory.id === "eastern_australia").y,
+    worldClassicMap.positions.eastern_australia.y
+  );
 });
 
 register("createConfiguredInitialState usa la mappa shared selezionata", () => {
@@ -2723,7 +2914,10 @@ register("createConfiguredInitialState usa la mappa shared selezionata", () => {
   assert.equal(config.selectedMap.id, "classic-mini");
   assert.equal(state.mapId, "classic-mini");
   assert.equal(state.mapName, "Classic Mini");
-  assert.deepEqual(state.mapTerritories.map((territory: any) => territory.id), classicMiniMap.territories.map((territory: any) => territory.id));
+  assert.deepEqual(
+    state.mapTerritories.map((territory: any) => territory.id),
+    classicMiniMap.territories.map((territory: any) => territory.id)
+  );
   assert.equal(state.gameConfig.mapId, "classic-mini");
 });
 
@@ -2775,18 +2969,24 @@ register("validateNewGameConfig defaulta e valida diceRuleSetId", () => {
 });
 
 register("validateNewGameConfig accetta solo 24, 48 o 72 ore per il timeout turno", () => {
-  assert.equal(validateNewGameConfig({
-    mapId: "classic-mini",
-    turnTimeoutHours: 24,
-    totalPlayers: 2,
-    players: [{ type: "human" }, { type: "human" }]
-  }).turnTimeoutHours, 24);
+  assert.equal(
+    validateNewGameConfig({
+      mapId: "classic-mini",
+      turnTimeoutHours: 24,
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }).turnTimeoutHours,
+    24
+  );
 
-  assert.equal(validateNewGameConfig({
-    mapId: "classic-mini",
-    totalPlayers: 2,
-    players: [{ type: "human" }, { type: "human" }]
-  }).turnTimeoutHours, null);
+  assert.equal(
+    validateNewGameConfig({
+      mapId: "classic-mini",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    }).turnTimeoutHours,
+    null
+  );
 
   assert.throws(() => {
     validateNewGameConfig({
@@ -2799,21 +2999,24 @@ register("validateNewGameConfig accetta solo 24, 48 o 72 ore per il timeout turn
 });
 
 register("validateNewGameConfig assegna i nomi AI dal server e ignora quelli umani", () => {
-  const config = validateNewGameConfig({
-    mapId: "classic-mini",
-    totalPlayers: 4,
-    players: [
-      { type: "human", name: "Nome client 1" },
-      { type: "ai", name: "Nome client AI" },
-      { type: "human", name: "Nome client 2" },
-      { type: "ai" }
-    ]
-  }, {
-    random: (() => {
-      const values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-      return () => values.shift() ?? 0;
-    })()
-  });
+  const config = validateNewGameConfig(
+    {
+      mapId: "classic-mini",
+      totalPlayers: 4,
+      players: [
+        { type: "human", name: "Nome client 1" },
+        { type: "ai", name: "Nome client AI" },
+        { type: "human", name: "Nome client 2" },
+        { type: "ai" }
+      ]
+    },
+    {
+      random: (() => {
+        const values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        return () => values.shift() ?? 0;
+      })()
+    }
+  );
 
   assert.equal(config.players[0].name, null);
   assert.equal(config.players[2].name, null);
@@ -2828,10 +3031,7 @@ register("validateNewGameConfig rifiuta player 1 come AI", () => {
     validateNewGameConfig({
       mapId: "classic-mini",
       totalPlayers: 2,
-      players: [
-        { type: "ai" },
-        { type: "human" }
-      ]
+      players: [{ type: "ai" }, { type: "human" }]
     });
   }, /giocatore 1 deve essere sempre il creatore umano/i);
 });
@@ -2877,35 +3077,38 @@ register("scheduled jobs route richiede un bearer token valido", async () => {
   }
 });
 
-register("scheduled jobs route fallisce in modo esplicito se CRON_SECRET non e configurato", async () => {
-  const previousSecret = process.env.CRON_SECRET;
-  delete process.env.CRON_SECRET;
+register(
+  "scheduled jobs route fallisce in modo esplicito se CRON_SECRET non e configurato",
+  async () => {
+    const previousSecret = process.env.CRON_SECRET;
+    delete process.env.CRON_SECRET;
 
-  try {
-    const response = makeMockResponse();
-    let executed = false;
-    await handleScheduledJobsRoute(
-      { headers: { authorization: "Bearer anything" } },
-      response,
-      async () => {
-        executed = true;
-        return { ok: true, jobs: [] };
-      },
-      sendJson,
-      sendLocalizedError
-    );
+    try {
+      const response = makeMockResponse();
+      let executed = false;
+      await handleScheduledJobsRoute(
+        { headers: { authorization: "Bearer anything" } },
+        response,
+        async () => {
+          executed = true;
+          return { ok: true, jobs: [] };
+        },
+        sendJson,
+        sendLocalizedError
+      );
 
-    assert.equal(response.statusCode, 500);
-    assert.equal(executed, false);
-    assert.equal(JSON.parse(response.body).code, "CRON_NOT_CONFIGURED");
-  } finally {
-    if (previousSecret == null) {
-      delete process.env.CRON_SECRET;
-    } else {
-      process.env.CRON_SECRET = previousSecret;
+      assert.equal(response.statusCode, 500);
+      assert.equal(executed, false);
+      assert.equal(JSON.parse(response.body).code, "CRON_NOT_CONFIGURED");
+    } finally {
+      if (previousSecret == null) {
+        delete process.env.CRON_SECRET;
+      } else {
+        process.env.CRON_SECRET = previousSecret;
+      }
     }
   }
-});
+);
 
 register("AI turn recovery service forza un turno bloccato e resta idempotente", async () => {
   const state = createInitialState();
@@ -2940,9 +3143,7 @@ register("AI turn recovery batch job intercetta errori e salta i version conflic
   startGame(state, () => 0, new Date("2026-04-10T08:00:00.000Z"));
 
   const result = await recoverStuckAiTurns({
-    listGames: () => [
-      { id: "ai-stuck", name: "AI Stuck", version: 4, state }
-    ],
+    listGames: () => [{ id: "ai-stuck", name: "AI Stuck", version: 4, state }],
     saveGame: () => {
       const error = new Error("stale save");
       (error as Error & { code?: string }).code = "VERSION_CONFLICT";
@@ -2962,93 +3163,102 @@ register("AI turn recovery batch job intercetta errori e salta i version conflic
   assert.equal(result.skippedConflicts, 1);
 });
 
-register("turn timeout service ignora partite legacy senza timeout e turni non scaduti", async () => {
-  const legacyState = createInitialState();
-  legacyState.players = [
-    { id: "p1", name: "Alice", color: "#111111", connected: true },
-    { id: "p2", name: "Bob", color: "#222222", connected: true }
-  ];
-  startGame(legacyState, () => 0);
-  legacyState.gameConfig = { mapId: "classic-mini" };
-  legacyState.turnStartedAt = new Date("2026-04-10T08:00:00.000Z").toISOString();
+register(
+  "turn timeout service ignora partite legacy senza timeout e turni non scaduti",
+  async () => {
+    const legacyState = createInitialState();
+    legacyState.players = [
+      { id: "p1", name: "Alice", color: "#111111", connected: true },
+      { id: "p2", name: "Bob", color: "#222222", connected: true }
+    ];
+    startGame(legacyState, () => 0);
+    legacyState.gameConfig = { mapId: "classic-mini" };
+    legacyState.turnStartedAt = new Date("2026-04-10T08:00:00.000Z").toISOString();
 
-  const freshState = createInitialState();
-  freshState.players = [
-    { id: "p1", name: "Alice", color: "#111111", connected: true },
-    { id: "p2", name: "Bob", color: "#222222", connected: true }
-  ];
-  startGame(freshState, () => 0);
-  freshState.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
-  freshState.turnStartedAt = new Date("2026-04-13T12:30:00.000Z").toISOString();
+    const freshState = createInitialState();
+    freshState.players = [
+      { id: "p1", name: "Alice", color: "#111111", connected: true },
+      { id: "p2", name: "Bob", color: "#222222", connected: true }
+    ];
+    startGame(freshState, () => 0);
+    freshState.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
+    freshState.turnStartedAt = new Date("2026-04-13T12:30:00.000Z").toISOString();
 
-  let saveCalls = 0;
-  const result = await enforceTurnTimeouts({
-    listGames: () => [
-      { id: "legacy", name: "Legacy", version: 1, state: legacyState },
-      { id: "fresh", name: "Fresh", version: 1, state: freshState }
-    ],
-    saveGame: () => {
-      saveCalls += 1;
-      return { version: 2 };
-    },
-    forceEndTurn,
-    now: new Date("2026-04-14T08:00:00.000Z")
-  });
+    let saveCalls = 0;
+    const result = await enforceTurnTimeouts({
+      listGames: () => [
+        { id: "legacy", name: "Legacy", version: 1, state: legacyState },
+        { id: "fresh", name: "Fresh", version: 1, state: freshState }
+      ],
+      saveGame: () => {
+        saveCalls += 1;
+        return { version: 2 };
+      },
+      forceEndTurn,
+      now: new Date("2026-04-14T08:00:00.000Z")
+    });
 
-  assert.equal(result.scannedGames, 2);
-  assert.equal(result.expiredGames, 0);
-  assert.equal(result.forcedTurns, 0);
-  assert.equal(saveCalls, 0);
-});
+    assert.equal(result.scannedGames, 2);
+    assert.equal(result.expiredGames, 0);
+    assert.equal(result.forcedTurns, 0);
+    assert.equal(saveCalls, 0);
+  }
+);
 
-register("turn timeout service forza il turno scaduto una sola volta e passa al giocatore successivo", async () => {
-  const state = createInitialState();
-  state.players = [
-    { id: "p1", name: "Alice", color: "#111111", connected: true },
-    { id: "p2", name: "Bob", color: "#222222", connected: true }
-  ];
-  state.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
-  startGame(state, () => 0);
-  state.turnStartedAt = new Date("2026-04-12T07:00:00.000Z").toISOString();
+register(
+  "turn timeout service forza il turno scaduto una sola volta e passa al giocatore successivo",
+  async () => {
+    const state = createInitialState();
+    state.players = [
+      { id: "p1", name: "Alice", color: "#111111", connected: true },
+      { id: "p2", name: "Bob", color: "#222222", connected: true }
+    ];
+    state.gameConfig = { mapId: "classic-mini", turnTimeoutHours: 24 };
+    startGame(state, () => 0);
+    state.turnStartedAt = new Date("2026-04-12T07:00:00.000Z").toISOString();
 
-  let version = 1;
-  let saveCalls = 0;
-  const runJob = () => enforceTurnTimeouts({
-    listGames: () => [
-      { id: "timeout-game", name: "Timeout", version, state }
-    ],
-    saveGame: (_gameId: string, _state: Record<string, unknown>, expectedVersion?: number | null) => {
-      assert.equal(expectedVersion, version);
-      saveCalls += 1;
-      version += 1;
-      return { version };
-    },
-    forceEndTurn,
-    recoverAiTurnState: async () => ({
-      eligible: false,
-      attempted: false,
-      advanced: false,
-      forcedTurn: false,
-      interceptedError: false,
-      shouldPersist: false,
-      reports: []
-    }),
-    now: new Date("2026-04-14T08:00:00.000Z")
-  });
+    let version = 1;
+    let saveCalls = 0;
+    const runJob = () =>
+      enforceTurnTimeouts({
+        listGames: () => [{ id: "timeout-game", name: "Timeout", version, state }],
+        saveGame: (
+          _gameId: string,
+          _state: Record<string, unknown>,
+          expectedVersion?: number | null
+        ) => {
+          assert.equal(expectedVersion, version);
+          saveCalls += 1;
+          version += 1;
+          return { version };
+        },
+        forceEndTurn,
+        recoverAiTurnState: async () => ({
+          eligible: false,
+          attempted: false,
+          advanced: false,
+          forcedTurn: false,
+          interceptedError: false,
+          shouldPersist: false,
+          reports: []
+        }),
+        now: new Date("2026-04-14T08:00:00.000Z")
+      });
 
-  const firstRun = await runJob();
-  assert.equal(firstRun.expiredGames, 1);
-  assert.equal(firstRun.forcedTurns, 1);
-  assert.equal(state.players[state.currentTurnIndex].id, "p2");
-  assert.equal(state.turnPhase, "reinforcement");
-  assert.equal(state.lastAction.summaryKey, "game.log.turnTimedOut");
-  assert.equal(state.turnStartedAt, "2026-04-14T08:00:00.000Z");
+    const firstRun = await runJob();
+    assert.equal(firstRun.expiredGames, 1);
+    assert.equal(firstRun.forcedTurns, 1);
+    assert.equal(state.players[state.currentTurnIndex].id, "p2");
+    assert.equal(state.turnPhase, "reinforcement");
+    assert.equal(state.lastAction.summaryKey, "game.log.turnTimedOut");
+    assert.equal(state.turnStartedAt, "2026-04-14T08:00:00.000Z");
 
-  const secondRun = await runJob();
-  assert.equal(secondRun.expiredGames, 0);
-  assert.equal(secondRun.forcedTurns, 0);
-  assert.equal(saveCalls, 1);
-});
+    const secondRun = await runJob();
+    assert.equal(secondRun.expiredGames, 0);
+    assert.equal(secondRun.forcedTurns, 0);
+    assert.equal(saveCalls, 1);
+  }
+);
 
 register("scheduler entrypoint espone anche il job di recovery AI", async () => {
   const payload = await runScheduledJobs({
@@ -3067,10 +3277,10 @@ register("scheduler entrypoint espone anche il job di recovery AI", async () => 
   });
 
   assert.equal(payload.ok, true);
-  assert.deepEqual(payload.jobs.map((job: any) => job.name), [
-    "turn-timeout-enforcement",
-    "ai-turn-recovery"
-  ]);
+  assert.deepEqual(
+    payload.jobs.map((job: any) => job.name),
+    ["turn-timeout-enforcement", "ai-turn-recovery"]
+  );
 });
 
 register("API games richiede autenticazione per creare una partita", async () => {
@@ -3092,7 +3302,10 @@ register("game session store salva il creator user id", () => {
   const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
 
   try {
-    const created = store.createGame(createInitialState(), { name: "Con owner", creatorUserId: "user-123" });
+    const created = store.createGame(createInitialState(), {
+      name: "Con owner",
+      creatorUserId: "user-123"
+    });
     assert.equal(created.game.name, "Con owner");
     const saved = store.datastore.findGameById(created.game.id);
     assert.equal(saved.creatorUserId, "user-123");
@@ -3111,18 +3324,28 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
   const legacyState = createInitialState();
   legacyState.log.push("Migrata da json");
 
-  fs.writeFileSync(tempGames, JSON.stringify({
-    games: [{
-      id: "legacy-game",
-      name: "Legacy match",
-      version: 3,
-      creatorUserId: "legacy-user",
-      state: legacyState,
-      createdAt: "2026-04-01T10:00:00.000Z",
-      updatedAt: "2026-04-01T10:05:00.000Z"
-    }],
-    activeGameId: "legacy-game"
-  }, null, 2) + "\n", "utf8");
+  fs.writeFileSync(
+    tempGames,
+    JSON.stringify(
+      {
+        games: [
+          {
+            id: "legacy-game",
+            name: "Legacy match",
+            version: 3,
+            creatorUserId: "legacy-user",
+            state: legacyState,
+            createdAt: "2026-04-01T10:00:00.000Z",
+            updatedAt: "2026-04-01T10:05:00.000Z"
+          }
+        ],
+        activeGameId: "legacy-game"
+      },
+      null,
+      2
+    ) + "\n",
+    "utf8"
+  );
 
   const store = createGameSessionStore({ dataFile: tempGames, dbFile: tempDbFile });
 
@@ -3188,20 +3411,23 @@ register("API games open richiede autenticazione", async () => {
   });
 });
 
-register("API state restituisce GAME_NOT_FOUND per un gameId inesistente senza crashare il server", async () => {
-  await withServer(async (baseUrl) => {
-    const owner = await createAuthenticatedSession(baseUrl, uniqueName("missing_game_owner"));
-    const response = await fetch(baseUrl + "/api/state?gameId=missing-game-id", {
-      headers: authHeaders(owner.sessionToken)
-    });
-    assert.equal(response.status, 404);
-    const payload: any = await readJson(response);
-    assert.equal(payload.code, "GAME_NOT_FOUND");
+register(
+  "API state restituisce GAME_NOT_FOUND per un gameId inesistente senza crashare il server",
+  async () => {
+    await withServer(async (baseUrl) => {
+      const owner = await createAuthenticatedSession(baseUrl, uniqueName("missing_game_owner"));
+      const response = await fetch(baseUrl + "/api/state?gameId=missing-game-id", {
+        headers: authHeaders(owner.sessionToken)
+      });
+      assert.equal(response.status, 404);
+      const payload: any = await readJson(response);
+      assert.equal(payload.code, "GAME_NOT_FOUND");
 
-    const health = await fetch(baseUrl + "/api/health");
-    assert.equal(health.status, 200);
-  });
-});
+      const health = await fetch(baseUrl + "/api/health");
+      assert.equal(health.status, 200);
+    });
+  }
+);
 
 register("API games open consente al creatore di riaprire la propria partita", async () => {
   await withServer(async (baseUrl) => {
@@ -3258,17 +3484,23 @@ register("API state e mutazioni restano isolate tra partite diverse tramite game
     });
     assert.equal(openB.status, 200);
 
-    const stateA = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(payloadA.game.id)}`, {
-      headers: authHeaders(ownerA.sessionToken)
-    });
+    const stateA = await fetch(
+      baseUrl + `/api/state?gameId=${encodeURIComponent(payloadA.game.id)}`,
+      {
+        headers: authHeaders(ownerA.sessionToken)
+      }
+    );
     assert.equal(stateA.status, 200);
     const stateAPayload: any = await readJson(stateA);
     assert.equal(stateAPayload.gameId, payloadA.game.id);
     assert.equal(stateAPayload.players.length, 2);
 
-    const stateB = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(payloadB.game.id)}`, {
-      headers: authHeaders(ownerB.sessionToken)
-    });
+    const stateB = await fetch(
+      baseUrl + `/api/state?gameId=${encodeURIComponent(payloadB.game.id)}`,
+      {
+        headers: authHeaders(ownerB.sessionToken)
+      }
+    );
     assert.equal(stateB.status, 200);
     const stateBPayload: any = await readJson(stateB);
     assert.equal(stateBPayload.gameId, payloadB.game.id);
@@ -3305,7 +3537,10 @@ register("API start consente solo al creatore di avviare la partita", async () =
     const forbiddenStart = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(guest.sessionToken),
-      body: JSON.stringify({ sessionToken: guest.sessionToken, playerId: joinGuestPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: guest.sessionToken,
+        playerId: joinGuestPayload.playerId
+      })
     });
     assert.equal(forbiddenStart.status, 403);
     const forbiddenPayload: any = await readJson(forbiddenStart);
@@ -3314,7 +3549,10 @@ register("API start consente solo al creatore di avviare la partita", async () =
     const ownerStart = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
-      body: JSON.stringify({ sessionToken: owner.sessionToken, playerId: joinOwnerPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: owner.sessionToken,
+        playerId: joinOwnerPayload.playerId
+      })
     });
     assert.equal(ownerStart.status, 200);
   });
@@ -3326,16 +3564,40 @@ register("API game options espone setup base per nuova partita", async () => {
     const payload: any = await readJson(response);
     assert.deepEqual(payload.maps, listSupportedMaps());
     assert.equal(Array.isArray(payload.ruleSets), true);
-    assert.equal(payload.ruleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_NEW_GAME_RULE_SET_ID), true);
+    assert.equal(
+      payload.ruleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_NEW_GAME_RULE_SET_ID),
+      true
+    );
     assert.equal(Array.isArray(payload.diceRuleSets), true);
     assert.equal(payload.diceRuleSets[0].id, "standard");
-    assert.equal(payload.diceRuleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID), true);
-    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"), true);
-    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"), true);
-    assert.equal(payload.themes.some((theme: any) => theme.id === "command"), true);
-    assert.equal(payload.themes.some((theme: any) => theme.id === "midnight"), true);
-    assert.equal(payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "classic-color"), true);
-    assert.equal(payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "command-ring"), true);
+    assert.equal(
+      payload.diceRuleSets.some((ruleSet: any) => ruleSet.id === DEFENSE_THREE_DICE_RULE_SET_ID),
+      true
+    );
+    assert.equal(
+      payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"),
+      true
+    );
+    assert.equal(
+      payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"),
+      true
+    );
+    assert.equal(
+      payload.themes.some((theme: any) => theme.id === "command"),
+      true
+    );
+    assert.equal(
+      payload.themes.some((theme: any) => theme.id === "midnight"),
+      true
+    );
+    assert.equal(
+      payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "classic-color"),
+      true
+    );
+    assert.equal(
+      payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "command-ring"),
+      true
+    );
     assert.deepEqual(payload.turnTimeoutHoursOptions, listTurnTimeoutHoursOptions());
     assert.equal(payload.playerRange.min, 2);
     assert.equal(payload.playerRange.max, 4);
@@ -3353,17 +3615,28 @@ register("API game options alias espone le capability modulari dal backend", asy
     assert.equal(Array.isArray(payload.victoryRuleSets), true);
     assert.equal(Array.isArray(payload.themes), true);
     assert.equal(Array.isArray(payload.pieceSkins), true);
-    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"), true);
-    assert.equal(payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"), true);
-    assert.equal(payload.themes.some((theme: any) => theme.id === "ember"), true);
-    assert.equal(payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "command-ring"), true);
+    assert.equal(
+      payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "conquest"),
+      true
+    );
+    assert.equal(
+      payload.victoryRuleSets.some((ruleSet: any) => ruleSet.id === "majority-control"),
+      true
+    );
+    assert.equal(
+      payload.themes.some((theme: any) => theme.id === "ember"),
+      true
+    );
+    assert.equal(
+      payload.pieceSkins.some((pieceSkin: any) => pieceSkin.id === "command-ring"),
+      true
+    );
   });
 });
 
 register("API games crea una sessione da configurazione strutturata", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       uniqueName("creator")
-    );
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("creator"));
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(session.sessionToken),
@@ -3376,11 +3649,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
         pieceSkinId: "command-ring",
         turnTimeoutHours: 72,
         totalPlayers: 3,
-        players: [
-          { type: "human" },
-          { type: "ai" },
-          { type: "ai" }
-        ]
+        players: [{ type: "human" }, { type: "ai" }, { type: "ai" }]
       })
     });
     assert.equal(response.status, 201);
@@ -3404,105 +3673,118 @@ register("API games crea una sessione da configurazione strutturata", async () =
     assert.equal(Boolean(payload.config.players[1].name), true);
     assert.equal(payload.state.players.length, 3);
     assert.equal(payload.playerId != null, true);
-    assert.equal(payload.state.players.some((player: any) => player.id === payload.playerId && player.name === session.user.username && player.isAi === false), true);
+    assert.equal(
+      payload.state.players.some(
+        (player: any) =>
+          player.id === payload.playerId &&
+          player.name === session.user.username &&
+          player.isAi === false
+      ),
+      true
+    );
     assert.equal(payload.state.players.filter((player: any) => player.isAi).length, 2);
   });
 });
 
-register("API cron scheduled jobs forza il turno scaduto e sincronizza lo stato attivo", async () => {
-  const previousSecret = process.env.CRON_SECRET;
-  process.env.CRON_SECRET = "integration-cron-secret";
+register(
+  "API cron scheduled jobs forza il turno scaduto e sincronizza lo stato attivo",
+  async () => {
+    const previousSecret = process.env.CRON_SECRET;
+    process.env.CRON_SECRET = "integration-cron-secret";
 
-  try {
-    await withServer(async (baseUrl, context) => {
-      const owner = await createAuthenticatedSession(baseUrl, uniqueName("cron_owner"));
-      const opponent = await createAuthenticatedSession(baseUrl, uniqueName("cron_opp"));
-      const created = await fetch(baseUrl + "/api/games", {
-        method: "POST",
-        headers: authHeaders(owner.sessionToken),
-        body: JSON.stringify({
-          name: "Cron Timeout Match",
-          turnTimeoutHours: 24,
-          totalPlayers: 2,
-          players: [
-            { type: "human" },
-            { type: "human" }
-          ]
-        })
+    try {
+      await withServer(async (baseUrl, context) => {
+        const owner = await createAuthenticatedSession(baseUrl, uniqueName("cron_owner"));
+        const opponent = await createAuthenticatedSession(baseUrl, uniqueName("cron_opp"));
+        const created = await fetch(baseUrl + "/api/games", {
+          method: "POST",
+          headers: authHeaders(owner.sessionToken),
+          body: JSON.stringify({
+            name: "Cron Timeout Match",
+            turnTimeoutHours: 24,
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          })
+        });
+        assert.equal(created.status, 201);
+        const createdPayload: any = await readJson(created);
+
+        const ownerJoin = await fetch(baseUrl + "/api/join", {
+          method: "POST",
+          headers: authHeaders(owner.sessionToken),
+          body: JSON.stringify({ sessionToken: owner.sessionToken, gameId: createdPayload.game.id })
+        });
+        assert.equal(ownerJoin.status, 200);
+        const ownerJoinPayload: any = await readJson(ownerJoin);
+
+        const opponentJoin = await fetch(baseUrl + "/api/join", {
+          method: "POST",
+          headers: authHeaders(opponent.sessionToken),
+          body: JSON.stringify({
+            sessionToken: opponent.sessionToken,
+            gameId: createdPayload.game.id
+          })
+        });
+        assert.equal(opponentJoin.status, 201);
+        const opponentJoinPayload: any = await readJson(opponentJoin);
+
+        const startResponse = await fetch(baseUrl + "/api/start", {
+          method: "POST",
+          headers: authHeaders(owner.sessionToken),
+          body: JSON.stringify({
+            sessionToken: owner.sessionToken,
+            gameId: createdPayload.game.id,
+            playerId: ownerJoinPayload.playerId
+          })
+        });
+        assert.equal(startResponse.status, 200);
+
+        const storedGame = await context.app.datastore.findGameById(createdPayload.game.id);
+        storedGame.state.gameConfig = {
+          ...(storedGame.state.gameConfig || {}),
+          turnTimeoutHours: 24
+        };
+        storedGame.state.turnStartedAt = "2000-01-01T00:00:00.000Z";
+        storedGame.updatedAt = new Date().toISOString();
+        await context.app.datastore.updateGame(storedGame);
+
+        const cronResponse = await fetch(baseUrl + "/api/cron/scheduled-jobs", {
+          headers: {
+            authorization: "Bearer integration-cron-secret"
+          }
+        });
+        assert.equal(cronResponse.status, 200);
+        const cronPayload: any = await readJson(cronResponse);
+        assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
+        assert.deepEqual(
+          cronPayload.jobs.map((job: any) => job.name),
+          ["turn-timeout-enforcement", "ai-turn-recovery"]
+        );
+
+        const stateResponse = await fetch(
+          baseUrl + `/api/state?gameId=${encodeURIComponent(createdPayload.game.id)}`,
+          {
+            headers: authHeaders(owner.sessionToken)
+          }
+        );
+        assert.equal(stateResponse.status, 200);
+        const statePayload: any = await readJson(stateResponse);
+        assert.equal(statePayload.currentPlayerId, opponentJoinPayload.playerId);
+        assert.equal(statePayload.turnPhase, "reinforcement");
       });
-      assert.equal(created.status, 201);
-      const createdPayload: any = await readJson(created);
-
-      const ownerJoin = await fetch(baseUrl + "/api/join", {
-        method: "POST",
-        headers: authHeaders(owner.sessionToken),
-        body: JSON.stringify({ sessionToken: owner.sessionToken, gameId: createdPayload.game.id })
-      });
-      assert.equal(ownerJoin.status, 200);
-      const ownerJoinPayload: any = await readJson(ownerJoin);
-
-      const opponentJoin = await fetch(baseUrl + "/api/join", {
-        method: "POST",
-        headers: authHeaders(opponent.sessionToken),
-        body: JSON.stringify({ sessionToken: opponent.sessionToken, gameId: createdPayload.game.id })
-      });
-      assert.equal(opponentJoin.status, 201);
-      const opponentJoinPayload: any = await readJson(opponentJoin);
-
-      const startResponse = await fetch(baseUrl + "/api/start", {
-        method: "POST",
-        headers: authHeaders(owner.sessionToken),
-        body: JSON.stringify({
-          sessionToken: owner.sessionToken,
-          gameId: createdPayload.game.id,
-          playerId: ownerJoinPayload.playerId
-        })
-      });
-      assert.equal(startResponse.status, 200);
-
-      const storedGame = await context.app.datastore.findGameById(createdPayload.game.id);
-      storedGame.state.gameConfig = {
-        ...(storedGame.state.gameConfig || {}),
-        turnTimeoutHours: 24
-      };
-      storedGame.state.turnStartedAt = "2000-01-01T00:00:00.000Z";
-      storedGame.updatedAt = new Date().toISOString();
-      await context.app.datastore.updateGame(storedGame);
-
-      const cronResponse = await fetch(baseUrl + "/api/cron/scheduled-jobs", {
-        headers: {
-          authorization: "Bearer integration-cron-secret"
-        }
-      });
-      assert.equal(cronResponse.status, 200);
-      const cronPayload: any = await readJson(cronResponse);
-      assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
-      assert.deepEqual(cronPayload.jobs.map((job: any) => job.name), [
-        "turn-timeout-enforcement",
-        "ai-turn-recovery"
-      ]);
-
-      const stateResponse = await fetch(baseUrl + `/api/state?gameId=${encodeURIComponent(createdPayload.game.id)}`, {
-        headers: authHeaders(owner.sessionToken)
-      });
-      assert.equal(stateResponse.status, 200);
-      const statePayload: any = await readJson(stateResponse);
-      assert.equal(statePayload.currentPlayerId, opponentJoinPayload.playerId);
-      assert.equal(statePayload.turnPhase, "reinforcement");
-    });
-  } finally {
-    if (previousSecret == null) {
-      delete process.env.CRON_SECRET;
-    } else {
-      process.env.CRON_SECRET = previousSecret;
+    } finally {
+      if (previousSecret == null) {
+        delete process.env.CRON_SECRET;
+      } else {
+        process.env.CRON_SECRET = previousSecret;
+      }
     }
   }
-});
+);
 
 register("API games summary espone metadati configurazione", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       uniqueName("summary")
-    );
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("summary"));
     const createResponse = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(session.sessionToken),
@@ -3511,12 +3793,7 @@ register("API games summary espone metadati configurazione", async () => {
         mapId: "classic-mini",
         diceRuleSetId: "standard",
         totalPlayers: 4,
-        players: [
-          { type: "human" },
-          { type: "human" },
-          { type: "ai" },
-          { type: "ai" }
-        ]
+        players: [{ type: "human" }, { type: "human" }, { type: "ai" }, { type: "ai" }]
       })
     });
     assert.equal(createResponse.status, 201);
@@ -3536,8 +3813,7 @@ register("API games summary espone metadati configurazione", async () => {
 
 register("API games rifiuta configurazioni incomplete", async () => {
   await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl,       uniqueName("invalid")
-    );
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("invalid"));
     const response = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(session.sessionToken),
@@ -3576,7 +3852,10 @@ register("API games create + list + open persiste e riapre una sessione", async 
 
     const listed = await fetch(baseUrl + "/api/games");
     const listedPayload: any = await readJson(listed);
-    assert.equal(listedPayload.games.some((game: any) => game.id === createdPayload.game.id), true);
+    assert.equal(
+      listedPayload.games.some((game: any) => game.id === createdPayload.game.id),
+      true
+    );
 
     const opened = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
@@ -3643,12 +3922,17 @@ register("API game session persists mutations across reopen", async () => {
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(firstAuth.sessionToken),
-      body: JSON.stringify({ sessionToken: firstAuth.sessionToken, playerId: firstJoinPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: firstAuth.sessionToken,
+        playerId: firstJoinPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
     const startedPayload: any = await readJson(startResponse);
 
-    const ownedTerritoryId = startedPayload.state.map.find((territory: any) => territory.ownerId === firstJoinPayload.playerId).id;
+    const ownedTerritoryId = startedPayload.state.map.find(
+      (territory: any) => territory.ownerId === firstJoinPayload.playerId
+    ).id;
 
     const reinforceResponse = await fetch(baseUrl + "/api/action", {
       method: "POST",
@@ -3670,7 +3954,9 @@ register("API game session persists mutations across reopen", async () => {
     assert.equal(reopenedResponse.status, 200);
     const reopenedPayload: any = await readJson(reopenedResponse);
 
-    const reopenedTerritory = reopenedPayload.state.map.find((territory: any) => territory.id === ownedTerritoryId);
+    const reopenedTerritory = reopenedPayload.state.map.find(
+      (territory: any) => territory.id === ownedTerritoryId
+    );
     assert.equal(reopenedPayload.state.gameId, gameId);
     assert.equal(reopenedPayload.state.phase, "active");
     assert.equal(reopenedTerritory.ownerId, firstJoinPayload.playerId);
@@ -3683,33 +3969,64 @@ register("API game session restores active game across app recreation", async ()
   const tempGames = path.join(__dirname, `tmp-games-${Date.now()}-restore.json`);
   const tempSessions = path.join(__dirname, `tmp-sessions-${Date.now()}-restore.json`);
   const tempDbFile = path.join(__dirname, `tmp-games-${Date.now()}-restore.sqlite`);
-  let app = createApp({ dataFile: tempUsers, gamesFile: tempGames, sessionsFile: tempSessions, dbFile: tempDbFile });
+  let app = createApp({
+    dataFile: tempUsers,
+    gamesFile: tempGames,
+    sessionsFile: tempSessions,
+    dbFile: tempDbFile
+  });
 
   try {
     const firstSession = await createAuthenticatedAppSession(app, uniqueName("restore"));
-    const created = await fetchGame(app, "/api/games", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { name: "Sessione persistita" } });
+    const created = await fetchGame(app, "/api/games", {
+      method: "POST",
+      headers: authHeaders(firstSession.sessionToken),
+      body: { name: "Sessione persistita" }
+    });
     const createdGameId = created.game.id;
 
-    const second = await fetchGame(app, "/api/games", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { name: "Altra sessione" } });
+    const second = await fetchGame(app, "/api/games", {
+      method: "POST",
+      headers: authHeaders(firstSession.sessionToken),
+      body: { name: "Altra sessione" }
+    });
     const secondGameId = second.game.id;
 
-    await fetchGame(app, "/api/games/open", { method: "POST", headers: authHeaders(firstSession.sessionToken), body: { gameId: createdGameId } });
+    await fetchGame(app, "/api/games/open", {
+      method: "POST",
+      headers: authHeaders(firstSession.sessionToken),
+      body: { gameId: createdGameId }
+    });
 
     app.datastore.close();
     await new Promise<void>((resolve) => app.server.close(resolve));
-    app = createApp({ dataFile: tempUsers, gamesFile: tempGames, sessionsFile: tempSessions, dbFile: tempDbFile });
+    app = createApp({
+      dataFile: tempUsers,
+      gamesFile: tempGames,
+      sessionsFile: tempSessions,
+      dbFile: tempDbFile
+    });
 
     const relogin = await app.auth.loginWithPassword(firstSession.user.username, TEST_PASSWORD);
     assert.equal(relogin.ok, true);
 
-    const stateResponse = await callApp(app, "GET", "/api/state", undefined, authHeaders(relogin.sessionToken));
+    const stateResponse = await callApp(
+      app,
+      "GET",
+      "/api/state",
+      undefined,
+      authHeaders(relogin.sessionToken)
+    );
     assert.equal(stateResponse.statusCode, 200);
     assert.equal(stateResponse.payload.gameId, createdGameId);
 
     const listResponse = await callApp(app, "GET", "/api/games");
     assert.equal(listResponse.statusCode, 200);
     assert.equal(listResponse.payload.activeGameId, createdGameId);
-    assert.equal(listResponse.payload.games.some((game: any) => game.id === secondGameId), true);
+    assert.equal(
+      listResponse.payload.games.some((game: any) => game.id === secondGameId),
+      true
+    );
   } finally {
     app.datastore.close();
     if (app.server.listening) {
@@ -3736,9 +4053,12 @@ register("game session store versiona i salvataggi e rifiuta versioni stale", ()
     const saved = store.saveGame(created.game.id, nextState, 1);
     assert.equal(saved.version, 2);
 
-    assert.throws(() => {
-      store.saveGame(created.game.id, nextState, 1);
-    }, (error: any) => error && error.code === "VERSION_CONFLICT" && error.currentVersion === 2);
+    assert.throws(
+      () => {
+        store.saveGame(created.game.id, nextState, 1);
+      },
+      (error: any) => error && error.code === "VERSION_CONFLICT" && error.currentVersion === 2
+    );
   } finally {
     store.datastore.close();
     if (fs.existsSync(tempGames)) fs.unlinkSync(tempGames);
@@ -3830,13 +4150,20 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(firstLoginPayload.sessionToken),
-      body: JSON.stringify({ sessionToken: firstLoginPayload.sessionToken, playerId: firstJoinPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: firstLoginPayload.sessionToken,
+        playerId: firstJoinPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
 
-    const stateResponse = await fetch(baseUrl + "/api/state", { headers: authHeaders(firstLoginPayload.sessionToken) });
+    const stateResponse = await fetch(baseUrl + "/api/state", {
+      headers: authHeaders(firstLoginPayload.sessionToken)
+    });
     const statePayload: any = await readJson(stateResponse);
-    const ownedTerritory = statePayload.map.find((territory: any) => territory.ownerId === firstJoinPayload.playerId);
+    const ownedTerritory = statePayload.map.find(
+      (territory: any) => territory.ownerId === firstJoinPayload.playerId
+    );
 
     const actionResponse = await fetch(baseUrl + "/api/action", {
       method: "POST",
@@ -3872,83 +4199,91 @@ register("API action incrementa la version e rifiuta expectedVersion stale", asy
   });
 });
 
-register("API games open ricollega il player umano corretto dopo logout e nuovo login", async () => {
-  await withServer(async (baseUrl) => {
-    const username = uniqueName("rebind");
-    const ownerSession = await createAuthenticatedSession(baseUrl, username);
-    const created = await fetch(baseUrl + "/api/games", {
-      method: "POST",
-      headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ name: "Rebind Match" })
-    });
-    assert.equal(created.status, 201);
-    const createdPayload: any = await readJson(created);
+register(
+  "API games open ricollega il player umano corretto dopo logout e nuovo login",
+  async () => {
+    await withServer(async (baseUrl) => {
+      const username = uniqueName("rebind");
+      const ownerSession = await createAuthenticatedSession(baseUrl, username);
+      const created = await fetch(baseUrl + "/api/games", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ name: "Rebind Match" })
+      });
+      assert.equal(created.status, 201);
+      const createdPayload: any = await readJson(created);
 
-    const joinHuman = await fetch(baseUrl + "/api/join", {
-      method: "POST",
-      headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
-    });
-    assert.equal(joinHuman.status, 200);
-    const humanJoinPayload: any = await readJson(joinHuman);
+      const joinHuman = await fetch(baseUrl + "/api/join", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+      });
+      assert.equal(joinHuman.status, 200);
+      const humanJoinPayload: any = await readJson(joinHuman);
 
-    const joinAi = await fetch(baseUrl + "/api/ai/join", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "CPU Rebind" })
-    });
-    assert.equal(joinAi.status, 201);
+      const joinAi = await fetch(baseUrl + "/api/ai/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "CPU Rebind" })
+      });
+      assert.equal(joinAi.status, 201);
 
-    const startResponse = await fetch(baseUrl + "/api/start", {
-      method: "POST",
-      headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
-    });
-    assert.equal(startResponse.status, 200);
+      const startResponse = await fetch(baseUrl + "/api/start", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({
+          sessionToken: ownerSession.sessionToken,
+          playerId: humanJoinPayload.playerId
+        })
+      });
+      assert.equal(startResponse.status, 200);
 
-    const logoutResponse = await fetch(baseUrl + "/api/auth/logout", {
-      method: "POST",
-      headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
-    });
-    assert.equal(logoutResponse.status, 200);
+      const logoutResponse = await fetch(baseUrl + "/api/auth/logout", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ sessionToken: ownerSession.sessionToken })
+      });
+      assert.equal(logoutResponse.status, 200);
 
-    const reloginResponse = await fetch(baseUrl + "/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password: TEST_PASSWORD })
-    });
-    assert.equal(reloginResponse.status, 200);
-    const reloginBody: any = await readJson(reloginResponse);
-    const reloginPayload = {
-      ...reloginBody,
-      sessionToken: sessionTokenFromSetCookie(reloginResponse.headers.get("set-cookie"))
-    };
+      const reloginResponse = await fetch(baseUrl + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password: TEST_PASSWORD })
+      });
+      assert.equal(reloginResponse.status, 200);
+      const reloginBody: any = await readJson(reloginResponse);
+      const reloginPayload = {
+        ...reloginBody,
+        sessionToken: sessionTokenFromSetCookie(reloginResponse.headers.get("set-cookie"))
+      };
 
-    const reopened = await fetch(baseUrl + "/api/games/open", {
-      method: "POST",
-      headers: authHeaders(reloginPayload.sessionToken),
-      body: JSON.stringify({ gameId: createdPayload.game.id })
-    });
-    assert.equal(reopened.status, 200);
-    const reopenedPayload: any = await readJson(reopened);
-    assert.equal(reopenedPayload.playerId, humanJoinPayload.playerId);
+      const reopened = await fetch(baseUrl + "/api/games/open", {
+        method: "POST",
+        headers: authHeaders(reloginPayload.sessionToken),
+        body: JSON.stringify({ gameId: createdPayload.game.id })
+      });
+      assert.equal(reopened.status, 200);
+      const reopenedPayload: any = await readJson(reopened);
+      assert.equal(reopenedPayload.playerId, humanJoinPayload.playerId);
 
-    const ownedTerritory = reopenedPayload.state.map.find((territory: any) => territory.ownerId === humanJoinPayload.playerId);
-    const reinforceResponse = await fetch(baseUrl + "/api/action", {
-      method: "POST",
-      headers: authHeaders(reloginPayload.sessionToken),
-      body: JSON.stringify({
-        sessionToken: reloginPayload.sessionToken,
-        playerId: reopenedPayload.playerId,
-        type: "reinforce",
-        territoryId: ownedTerritory.id,
-        expectedVersion: reopenedPayload.state.version
-      })
+      const ownedTerritory = reopenedPayload.state.map.find(
+        (territory: any) => territory.ownerId === humanJoinPayload.playerId
+      );
+      const reinforceResponse = await fetch(baseUrl + "/api/action", {
+        method: "POST",
+        headers: authHeaders(reloginPayload.sessionToken),
+        body: JSON.stringify({
+          sessionToken: reloginPayload.sessionToken,
+          playerId: reopenedPayload.playerId,
+          type: "reinforce",
+          territoryId: ownedTerritory.id,
+          expectedVersion: reopenedPayload.state.version
+        })
+      });
+      assert.equal(reinforceResponse.status, 200);
     });
-    assert.equal(reinforceResponse.status, 200);
-  });
-});
+  }
+);
 register("API cards trade applica un set valido e persiste lo stato aggiornato", async () => {
   await withServer(async (baseUrl, context) => {
     const login = await createAuthenticatedAppSession(context.app, uniqueName("trade_api"));
@@ -3968,19 +4303,31 @@ register("API cards trade applica un set valido e persiste lo stato aggiornato",
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await callApp(context.app, "POST", "/api/cards/trade", {
-      sessionToken: login.sessionToken,
-      playerId: first.id,
-      cardIds: ["api-t1", "api-t2", "api-t3"]
-    }, authHeaders(login.sessionToken));
+    const response = await callApp(
+      context.app,
+      "POST",
+      "/api/cards/trade",
+      {
+        sessionToken: login.sessionToken,
+        playerId: first.id,
+        cardIds: ["api-t1", "api-t2", "api-t3"]
+      },
+      authHeaders(login.sessionToken)
+    );
 
     assert.equal(response.statusCode, 200);
     assert.equal(response.payload.ok, true);
     assert.equal(response.payload.bonus, 4);
     assert.equal(response.payload.state.reinforcementPool, 7);
     assert.equal(response.payload.state.cardState.discardCount, 3);
-    assert.equal(response.payload.state.players.find((player: any) => player.id === first.id).cardCount, 0);
-    assert.deepEqual(context.app.state.discardPile.map((card: any) => card.id), ["api-t1", "api-t2", "api-t3"]);
+    assert.equal(
+      response.payload.state.players.find((player: any) => player.id === first.id).cardCount,
+      0
+    );
+    assert.deepEqual(
+      context.app.state.discardPile.map((card: any) => card.id),
+      ["api-t1", "api-t2", "api-t3"]
+    );
   });
 });
 
@@ -3989,9 +4336,9 @@ register("API card flow rimescola il discard e continua l'award a fine turno", a
     const login = await createAuthenticatedAppSession(context.app, uniqueName("card_flow"));
     const state = createInitialState();
     const first = addPlayer(state, login.user.username, { linkedUserId: login.user.id }).player;
-    addPlayer(state, 'CPU Card', { isAi: true });
-    state.phase = 'active';
-    state.turnPhase = 'reinforcement';
+    addPlayer(state, "CPU Card", { isAi: true });
+    state.phase = "active";
+    state.turnPhase = "reinforcement";
     state.currentTurnIndex = 0;
     state.reinforcementPool = 3;
     state.territories.aurora = { ownerId: first.id, armies: 2 };
@@ -4000,39 +4347,57 @@ register("API card flow rimescola il discard e continua l'award a fine turno", a
     state.territories.cinder = { ownerId: cpu.id, armies: 2 };
     state.territories.delta = { ownerId: cpu.id, armies: 1 };
     state.hands[first.id] = [
-      createCard({ id: 'flow-t1', type: CardType.INFANTRY }),
-      createCard({ id: 'flow-t2', type: CardType.INFANTRY }),
-      createCard({ id: 'flow-t3', type: CardType.INFANTRY })
+      createCard({ id: "flow-t1", type: CardType.INFANTRY }),
+      createCard({ id: "flow-t2", type: CardType.INFANTRY }),
+      createCard({ id: "flow-t3", type: CardType.INFANTRY })
     ];
 
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const tradeResponse = await callApp(context.app, 'POST', '/api/cards/trade', {
-      sessionToken: login.sessionToken,
-      playerId: first.id,
-      cardIds: ['flow-t1', 'flow-t2', 'flow-t3']
-    }, authHeaders(login.sessionToken));
+    const tradeResponse = await callApp(
+      context.app,
+      "POST",
+      "/api/cards/trade",
+      {
+        sessionToken: login.sessionToken,
+        playerId: first.id,
+        cardIds: ["flow-t1", "flow-t2", "flow-t3"]
+      },
+      authHeaders(login.sessionToken)
+    );
 
     assert.equal(tradeResponse.statusCode, 200);
-    assert.deepEqual(context.app.state.discardPile.map((card: any) => card.id), ['flow-t1', 'flow-t2', 'flow-t3']);
+    assert.deepEqual(
+      context.app.state.discardPile.map((card: any) => card.id),
+      ["flow-t1", "flow-t2", "flow-t3"]
+    );
 
     context.app.state.reinforcementPool = 0;
-    context.app.state.turnPhase = 'fortify';
+    context.app.state.turnPhase = "fortify";
     context.app.state.conqueredTerritoryThisTurn = true;
     context.app.state.deck = [];
 
-    const endTurnResponse = await callApp(context.app, 'POST', '/api/action', {
-      sessionToken: login.sessionToken,
-      playerId: first.id,
-      type: 'endTurn'
-    }, authHeaders(login.sessionToken));
+    const endTurnResponse = await callApp(
+      context.app,
+      "POST",
+      "/api/action",
+      {
+        sessionToken: login.sessionToken,
+        playerId: first.id,
+        type: "endTurn"
+      },
+      authHeaders(login.sessionToken)
+    );
 
     assert.equal(endTurnResponse.statusCode, 200);
     assert.equal(endTurnResponse.payload.state.cardState.discardCount, 0);
     assert.equal(endTurnResponse.payload.state.cardState.deckCount >= 1, true);
     assert.equal(context.app.state.hands[first.id].length, 1);
-    assert.equal(['flow-t1', 'flow-t2', 'flow-t3'].includes(context.app.state.hands[first.id][0].id), true);
+    assert.equal(
+      ["flow-t1", "flow-t2", "flow-t3"].includes(context.app.state.hands[first.id][0].id),
+      true
+    );
     assert.equal(context.app.state.discardPile.length, 0);
     assert.equal(context.app.state.deck.length >= 1, true);
     assert.equal(context.app.state.conqueredTerritoryThisTurn, false);
@@ -4058,11 +4423,17 @@ register("API cards trade rifiuta set invalidi senza mutare lo stato", async () 
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await callApp(context.app, "POST", "/api/cards/trade", {
-      sessionToken: login.sessionToken,
-      playerId: first.id,
-      cardIds: ["bad-t1", "bad-t2", "bad-t3"]
-    }, authHeaders(login.sessionToken));
+    const response = await callApp(
+      context.app,
+      "POST",
+      "/api/cards/trade",
+      {
+        sessionToken: login.sessionToken,
+        playerId: first.id,
+        cardIds: ["bad-t1", "bad-t2", "bad-t3"]
+      },
+      authHeaders(login.sessionToken)
+    );
 
     assert.equal(response.statusCode, 400);
     assert.equal(response.payload.error, "Card set does not match a valid standard trade.");
@@ -4107,13 +4478,21 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(humanSession.sessionToken),
-      body: JSON.stringify({ sessionToken: humanSession.sessionToken, playerId: humanJoinPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: humanSession.sessionToken,
+        playerId: humanJoinPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
     const started: any = await readJson(startResponse);
-    assert.equal(started.state.players.some((player: any) => player.isAi), true);
+    assert.equal(
+      started.state.players.some((player: any) => player.isAi),
+      true
+    );
 
-    const ownedTerritoryId = started.state.map.find((territory: any) => territory.ownerId === humanJoinPayload.playerId).id;
+    const ownedTerritoryId = started.state.map.find(
+      (territory: any) => territory.ownerId === humanJoinPayload.playerId
+    ).id;
     let currentState = started.state;
 
     while (currentState.reinforcementPool > 0) {
@@ -4157,7 +4536,10 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     assert.equal(finishedPayload.state.currentPlayerId, humanJoinPayload.playerId);
     assert.equal(finishedPayload.state.turnPhase, "reinforcement");
     assert.equal(finishedPayload.state.reinforcementPool >= 3, true);
-    assert.equal(finishedPayload.state.log.some((line: any) => line.indexOf("CPU Basic") !== -1), true);
+    assert.equal(
+      finishedPayload.state.log.some((line: any) => line.indexOf("CPU Basic") !== -1),
+      true
+    );
   });
 });
 
@@ -4189,12 +4571,17 @@ register("API games open riprende automaticamente una partita salvata sul turno 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: humanJoinPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: ownerSession.sessionToken,
+        playerId: humanJoinPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
     let currentState: any = (await readJson(startResponse)).state;
 
-    const ownedTerritoryId = currentState.map.find((territory: any) => territory.ownerId === humanJoinPayload.playerId).id;
+    const ownedTerritoryId = currentState.map.find(
+      (territory: any) => territory.ownerId === humanJoinPayload.playerId
+    ).id;
 
     while (currentState.reinforcementPool > 0) {
       const reinforceResponse = await fetch(baseUrl + "/api/action", {
@@ -4242,7 +4629,10 @@ register("API games open riprende automaticamente una partita salvata sul turno 
     assert.equal(resumedPayload.currentPlayerId, humanJoinPayload.playerId);
     assert.equal(resumedPayload.turnPhase, "reinforcement");
     assert.equal(resumedPayload.reinforcementPool >= 3, true);
-    assert.equal(resumedPayload.log.some((line: any) => line.indexOf("CPU Resume") !== -1), true);
+    assert.equal(
+      resumedPayload.log.some((line: any) => line.indexOf("CPU Resume") !== -1),
+      true
+    );
 
     const reopenResponse = await fetch(baseUrl + "/api/games/open", {
       method: "POST",
@@ -4322,7 +4712,10 @@ register("API start consente all'admin di avviare una partita protetta altrui", 
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(adminSession.sessionToken),
-      body: JSON.stringify({ sessionToken: adminSession.sessionToken, playerId: adminJoinPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: adminSession.sessionToken,
+        playerId: adminJoinPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
     const startPayload: any = await readJson(startResponse);
@@ -4379,7 +4772,10 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(userSession.sessionToken),
-      body: JSON.stringify({ sessionToken: userSession.sessionToken, playerId: joinUserPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: userSession.sessionToken,
+        playerId: joinUserPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
 
@@ -4491,51 +4887,63 @@ register("datastore supabase espone healthSummary async quando configurato via e
   });
 });
 
-register("app usa Supabase per auth/session e non crea sqlite locale quando il driver e remoto", async () => {
-  await withMockSupabase(async (mock) => {
-    const unique = `${Date.now()}-${uniqueSuffix()}`;
-    const tempFile = path.join(__dirname, `tmp-supabase-users-${unique}.json`);
-    const tempGamesFile = path.join(__dirname, `tmp-supabase-games-${unique}.json`);
-    const tempSessionsFile = path.join(__dirname, `tmp-supabase-sessions-${unique}.json`);
-    const tempDbFile = path.join(__dirname, `tmp-supabase-store-${unique}.sqlite`);
-    const app = createApp({
-      dataFile: tempFile,
-      gamesFile: tempGamesFile,
-      sessionsFile: tempSessionsFile,
-      dbFile: tempDbFile
-    });
-
-    try {
-      const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
-      assert.equal(registered.ok, true);
-
-      const login = await app.auth.loginWithPassword("supa_tester", "secret");
-      assert.equal(login.ok, true);
-      assert.equal(typeof login.sessionToken, "string");
-
-      const sessionResponse = await callApp(app, "GET", "/api/auth/session", undefined, authHeaders(login.sessionToken));
-      assert.equal(sessionResponse.statusCode, 200);
-      assert.equal(sessionResponse.payload.user.username, "supa_tester");
-
-      const healthResponse = await callApp(app, "GET", "/api/health");
-      assert.equal(healthResponse.statusCode, 200);
-      assert.equal(healthResponse.payload.storage.storage, "supabase");
-
-      assert.equal(mock.tables.users.length, 1);
-      assert.equal(mock.tables.sessions.length, 1);
-      assert.equal(typeof JSON.parse(mock.tables.users[0].credentials_json).password.hash, "string");
-      assert.equal(fs.existsSync(tempDbFile), false);
-    } finally {
-      app.datastore.close();
-      [tempFile, tempGamesFile, tempSessionsFile].forEach((target) => {
-        if (fs.existsSync(target)) {
-          fs.unlinkSync(target);
-        }
+register(
+  "app usa Supabase per auth/session e non crea sqlite locale quando il driver e remoto",
+  async () => {
+    await withMockSupabase(async (mock) => {
+      const unique = `${Date.now()}-${uniqueSuffix()}`;
+      const tempFile = path.join(__dirname, `tmp-supabase-users-${unique}.json`);
+      const tempGamesFile = path.join(__dirname, `tmp-supabase-games-${unique}.json`);
+      const tempSessionsFile = path.join(__dirname, `tmp-supabase-sessions-${unique}.json`);
+      const tempDbFile = path.join(__dirname, `tmp-supabase-store-${unique}.sqlite`);
+      const app = createApp({
+        dataFile: tempFile,
+        gamesFile: tempGamesFile,
+        sessionsFile: tempSessionsFile,
+        dbFile: tempDbFile
       });
-      cleanupSqliteFiles(tempDbFile);
-    }
-  });
-});
+
+      try {
+        const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
+        assert.equal(registered.ok, true);
+
+        const login = await app.auth.loginWithPassword("supa_tester", "secret");
+        assert.equal(login.ok, true);
+        assert.equal(typeof login.sessionToken, "string");
+
+        const sessionResponse = await callApp(
+          app,
+          "GET",
+          "/api/auth/session",
+          undefined,
+          authHeaders(login.sessionToken)
+        );
+        assert.equal(sessionResponse.statusCode, 200);
+        assert.equal(sessionResponse.payload.user.username, "supa_tester");
+
+        const healthResponse = await callApp(app, "GET", "/api/health");
+        assert.equal(healthResponse.statusCode, 200);
+        assert.equal(healthResponse.payload.storage.storage, "supabase");
+
+        assert.equal(mock.tables.users.length, 1);
+        assert.equal(mock.tables.sessions.length, 1);
+        assert.equal(
+          typeof JSON.parse(mock.tables.users[0].credentials_json).password.hash,
+          "string"
+        );
+        assert.equal(fs.existsSync(tempDbFile), false);
+      } finally {
+        app.datastore.close();
+        [tempFile, tempGamesFile, tempSessionsFile].forEach((target) => {
+          if (fs.existsSync(target)) {
+            fs.unlinkSync(target);
+          }
+        });
+        cleanupSqliteFiles(tempDbFile);
+      }
+    });
+  }
+);
 
 register("GET /api/state espone lastCombat dopo un attacco", async () => {
   await withServer(async (baseUrl, context) => {
@@ -4586,12 +4994,24 @@ register("API state espone solo la mano del player autenticato risolto", async (
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await callApp(context.app, "GET", "/api/state", undefined, authHeaders(login.sessionToken));
+    const response = await callApp(
+      context.app,
+      "GET",
+      "/api/state",
+      undefined,
+      authHeaders(login.sessionToken)
+    );
     assert.equal(response.statusCode, 200);
     assert.equal(response.payload.playerId, first.id);
     assert.equal(Array.isArray(response.payload.playerHand), true);
-    assert.deepEqual(response.payload.playerHand.map((card: any) => card.id), ["hand-1", "hand-2", "hand-3"]);
-    assert.equal(response.payload.players.find((player: any) => player.id === first.id).cardCount, 3);
+    assert.deepEqual(
+      response.payload.playerHand.map((card: any) => card.id),
+      ["hand-1", "hand-2", "hand-3"]
+    );
+    assert.equal(
+      response.payload.players.find((player: any) => player.id === first.id).cardCount,
+      3
+    );
     assert.equal(Object.prototype.hasOwnProperty.call(response.payload.players[0], "hand"), false);
   });
 });
@@ -4625,7 +5045,10 @@ register("API surrender mantiene lo snapshot per-user anche dopo la resa", async
     const startResponse = await fetch(baseUrl + "/api/start", {
       method: "POST",
       headers: authHeaders(ownerSession.sessionToken),
-      body: JSON.stringify({ sessionToken: ownerSession.sessionToken, playerId: ownerPayload.playerId })
+      body: JSON.stringify({
+        sessionToken: ownerSession.sessionToken,
+        playerId: ownerPayload.playerId
+      })
     });
     assert.equal(startResponse.status, 200);
 
@@ -4642,14 +5065,17 @@ register("API surrender mantiene lo snapshot per-user anche dopo la resa", async
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.equal(payload.state.playerId, ownerPayload.playerId);
-    assert.equal(payload.state.players.find((player: any) => player.id === ownerPayload.playerId).surrendered, true);
+    assert.equal(
+      payload.state.players.find((player: any) => player.id === ownerPayload.playerId).surrendered,
+      true
+    );
     assert.equal(Object.prototype.hasOwnProperty.call(payload, "rounds"), false);
   });
 });
 
 register("API register + login + join completa il flusso di accesso", async () => {
   await withServer(async (baseUrl) => {
-  const unique = `api_${Date.now()}_${uniqueSuffix()}`;
+    const unique = `api_${Date.now()}_${uniqueSuffix()}`;
     const registerResponse = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

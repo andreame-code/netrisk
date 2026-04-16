@@ -30,36 +30,38 @@ export const standardCombatRuleSet: Readonly<CombatRuleSet> = Object.freeze({
   name: "Standard",
   description: "Each dice comparison removes exactly one army from the losing side.",
   resolveOutcome(comparisons: readonly CombatComparisonLike[]) {
-    return comparisons.reduce<CombatOutcome>((outcome, comparison) => {
-      if (comparison.winner === "attacker") {
-        outcome.defenderLosses += 1;
-      } else {
-        outcome.attackerLosses += 1;
-      }
+    return comparisons.reduce<CombatOutcome>(
+      (outcome, comparison) => {
+        if (comparison.winner === "attacker") {
+          outcome.defenderLosses += 1;
+        } else {
+          outcome.attackerLosses += 1;
+        }
 
-      return outcome;
-    }, { attackerLosses: 0, defenderLosses: 0 });
+        return outcome;
+      },
+      { attackerLosses: 0, defenderLosses: 0 }
+    );
   }
 });
 
-const combatRuleSetRegistry = createModuleRegistry<CombatRuleSet>(
-  [standardCombatRuleSet],
-  {
-    onMissing(ruleSetId) {
-      throw createLocalizedError(
-        "Unsupported combat rule set.",
-        "game.combat.unsupportedRuleSet",
-        { ruleSetId }
-      );
-    }
+const combatRuleSetRegistry = createModuleRegistry<CombatRuleSet>([standardCombatRuleSet], {
+  onMissing(ruleSetId) {
+    throw createLocalizedError("Unsupported combat rule set.", "game.combat.unsupportedRuleSet", {
+      ruleSetId
+    });
   }
-);
+});
 
-export function findCombatRuleSet(ruleSetId: string | null | undefined): Readonly<CombatRuleSet> | null {
+export function findCombatRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<CombatRuleSet> | null {
   return combatRuleSetRegistry.find(ruleSetId);
 }
 
-export function getCombatRuleSet(ruleSetId: string = STANDARD_COMBAT_RULE_SET_ID): Readonly<CombatRuleSet> {
+export function getCombatRuleSet(
+  ruleSetId: string = STANDARD_COMBAT_RULE_SET_ID
+): Readonly<CombatRuleSet> {
   return combatRuleSetRegistry.get(ruleSetId, STANDARD_COMBAT_RULE_SET_ID);
 }
 

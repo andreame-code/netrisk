@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -17,7 +22,11 @@ type AuthContext = {
   };
 };
 
-type RequireAuth = (req: unknown, res: unknown, body: Record<string, any>) => Promise<AuthContext | null>;
+type RequireAuth = (
+  req: unknown,
+  res: unknown,
+  body: Record<string, any>
+) => Promise<AuthContext | null>;
 type Authorize = (action: string, context: Record<string, unknown>) => any;
 type CreateConfiguredInitialState = (body: Record<string, any>) => any;
 type AddPlayer = (state: any, name: string, options?: Record<string, unknown>) => any;
@@ -28,7 +37,12 @@ type OpenGame = (gameId: string) => Promise<any>;
 type ReplaceState = (state: any) => void;
 type BroadcastGame = (gameContext: any) => void;
 type Snapshot = () => unknown;
-type SnapshotForState = (state: any, gameId: string | null, version: number | null, gameName: string | null) => unknown;
+type SnapshotForState = (
+  state: any,
+  gameId: string | null,
+  version: number | null,
+  gameName: string | null
+) => unknown;
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
 
@@ -56,7 +70,9 @@ async function handleCreateGameRoute(
   try {
     const policy = authorize("game:create", { user: authContext.user });
     const configured = await createConfiguredInitialState(body);
-    const creatorJoin = addPlayer(configured.state, authContext.user.username, { linkedUserId: policy.actor.id });
+    const creatorJoin = addPlayer(configured.state, authContext.user.username, {
+      linkedUserId: policy.actor.id
+    });
     if (!creatorJoin.ok) {
       throw Object.assign(
         new Error(creatorJoin.error || "Impossibile collegare il creatore alla nuova partita."),
@@ -90,7 +106,13 @@ async function handleCreateGameRoute(
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
-    sendLocalizedError(res, statusCode, error, "Creazione partita non riuscita.", "server.game.createFailed");
+    sendLocalizedError(
+      res,
+      statusCode,
+      error,
+      "Creazione partita non riuscita.",
+      "server.game.createFailed"
+    );
   }
 }
 
@@ -116,7 +138,11 @@ async function handleOpenGameRoute(
 
   try {
     const gameRecord = await getGame(body.gameId);
-    authorize("game:open", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
+    authorize("game:open", {
+      user: authContext.user,
+      game: gameRecord.game,
+      state: gameRecord.state
+    });
     const opened = await openGame(body.gameId);
     await resumeAiTurnsForRead(opened);
     const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
@@ -130,7 +156,13 @@ async function handleOpenGameRoute(
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
-    sendLocalizedError(res, statusCode, error, "Apertura partita non riuscita.", "server.game.openFailed");
+    sendLocalizedError(
+      res,
+      statusCode,
+      error,
+      "Apertura partita non riuscita.",
+      "server.game.openFailed"
+    );
   }
 }
 

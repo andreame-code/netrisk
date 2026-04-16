@@ -5,24 +5,23 @@ import type { PlayerPieceSet, PlayerPieceSetSummary } from "./types.cjs";
 
 export const DEFAULT_PLAYER_PIECE_SET_ID = "classic";
 
-const playerPieceSetRegistry = createModuleRegistry<PlayerPieceSet>(
-  [classicPlayerPieceSet],
-  {
-    onMissing(pieceSetId) {
-      throw createLocalizedError(
-        "Unsupported player piece set.",
-        "game.pieces.unsupportedSet",
-        { pieceSetId }
-      );
-    }
+const playerPieceSetRegistry = createModuleRegistry<PlayerPieceSet>([classicPlayerPieceSet], {
+  onMissing(pieceSetId) {
+    throw createLocalizedError("Unsupported player piece set.", "game.pieces.unsupportedSet", {
+      pieceSetId
+    });
   }
-);
+});
 
-export function findPlayerPieceSet(pieceSetId: string | null | undefined): Readonly<PlayerPieceSet> | null {
+export function findPlayerPieceSet(
+  pieceSetId: string | null | undefined
+): Readonly<PlayerPieceSet> | null {
   return playerPieceSetRegistry.find(pieceSetId);
 }
 
-export function getPlayerPieceSet(pieceSetId: string = DEFAULT_PLAYER_PIECE_SET_ID): Readonly<PlayerPieceSet> {
+export function getPlayerPieceSet(
+  pieceSetId: string = DEFAULT_PLAYER_PIECE_SET_ID
+): Readonly<PlayerPieceSet> {
   return playerPieceSetRegistry.get(pieceSetId, DEFAULT_PLAYER_PIECE_SET_ID);
 }
 
@@ -34,11 +33,6 @@ export function listPlayerPieceSets(): PlayerPieceSetSummary[] {
   }));
 }
 
-export {
-  classicPlayerPieceSet
-};
+export { classicPlayerPieceSet };
 
-export type {
-  PlayerPieceSet,
-  PlayerPieceSetSummary
-};
+export type { PlayerPieceSet, PlayerPieceSetSummary };

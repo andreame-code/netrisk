@@ -1,6 +1,11 @@
 const assert = require("node:assert/strict");
 const { placeReinforcement } = require("../../../backend/engine/reinforcement-placement.cjs");
-const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makePlayers,
+  makeState,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 

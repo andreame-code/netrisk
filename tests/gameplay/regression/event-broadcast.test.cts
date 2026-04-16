@@ -27,7 +27,10 @@ register("broadcastEventPayload drops dead clients and keeps writable ones", () 
   };
   const clients = new Set([healthyClient, staleClient]);
 
-  broadcastEventPayload(clients, (client: { user?: { id?: string } }) => `payload:${client.user?.id || "unknown"}`);
+  broadcastEventPayload(
+    clients,
+    (client: { user?: { id?: string } }) => `payload:${client.user?.id || "unknown"}`
+  );
 
   assert.deepEqual(deliveredPayloads, ["payload:u1"]);
   assert.equal(clients.has(healthyClient), true);
@@ -39,8 +42,7 @@ register("broadcastEventPayload removes clients whose writes throw", () => {
     res: {
       destroyed: false,
       writableEnded: false,
-      write() {
-      }
+      write() {}
     }
   };
   const throwingClient = {
