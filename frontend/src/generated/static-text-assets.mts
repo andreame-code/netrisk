@@ -3664,12 +3664,17 @@ h1 {
 }
 
 .territory-node {
+  --territory-node-size: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
   position: absolute;
-  width: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
-  height: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
+  width: var(--territory-node-size);
+  height: var(--territory-node-size);
+  min-width: var(--territory-node-size);
+  min-height: var(--territory-node-size);
   margin: 0;
   transform: translate(-50%, -50%);
+  transform-origin: center center;
   padding: 0;
+  aspect-ratio: 1 / 1;
   border-radius: 999px;
   background: var(--owner-color, var(--owner-color-default));
   color: var(--owner-text-color, var(--owner-text-default));
@@ -3699,8 +3704,8 @@ h1 {
 }
 
 .territory-node.piece-skin-style-ring-core .territory-armies {
-  font-size: calc(0.8rem * var(--map-territory-node-scale, 1));
-  letter-spacing: calc(0.02em * var(--map-territory-node-scale, 1));
+  font-size: clamp(0.7rem, calc(0.8rem * var(--map-territory-node-scale, 1)), 0.8rem);
+  letter-spacing: 0.02em;
 }
 
 .territory-node.is-source,
@@ -3721,8 +3726,9 @@ h1 {
 .territory-armies {
   display: inline-block;
   font-weight: 700;
-  font-size: calc(0.92rem * var(--map-territory-node-scale, 1));
+  font-size: clamp(0.78rem, calc(0.92rem * var(--map-territory-node-scale, 1)), 0.92rem);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 1px var(--overlay);
 }
 
