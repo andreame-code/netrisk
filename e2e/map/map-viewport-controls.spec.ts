@@ -47,7 +47,7 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
     .toBeGreaterThan(1.05);
   await expect
     .poll(async () => Number(await surface.getAttribute("data-map-node-scale")))
-    .toBeLessThan(1);
+    .toBeCloseTo(1, 4);
   await expect(page.locator('[data-map-control="reset"]')).toBeEnabled();
 
   const zoomedTerritorySize = await firstTerritory.boundingBox();
