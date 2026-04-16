@@ -3699,8 +3699,8 @@ h1 {
 }
 
 .territory-node.piece-skin-style-ring-core .territory-armies {
-  font-size: 0.8rem;
-  letter-spacing: 0.02em;
+  font-size: calc(0.8rem * var(--map-territory-node-scale, 1));
+  letter-spacing: calc(0.02em * var(--map-territory-node-scale, 1));
 }
 
 .territory-node.is-source,
@@ -3721,7 +3721,7 @@ h1 {
 .territory-armies {
   display: inline-block;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: calc(0.92rem * var(--map-territory-node-scale, 1));
   line-height: 1;
   text-shadow: 0 1px 1px var(--overlay);
 }
