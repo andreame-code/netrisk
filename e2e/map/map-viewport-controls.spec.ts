@@ -19,12 +19,13 @@ async function openWorldClassicGame(page, suffix) {
   return owner;
 }
 
-test("map viewport supports zoom, drag, and reset", async ({ page }) => {
+test("map viewport supports zoom, drag, and returns to fit with zoom out", async ({ page }) => {
   test.slow();
   await page.setViewportSize({ width: 1440, height: 960 });
   await openWorldClassicGame(page, "interactions");
   const surface = page.locator("[data-map-surface]");
   const firstTerritory = page.locator("[data-territory-id]").first();
+  const zoomOutButton = page.locator('[data-map-control="zoom-out"]');
 
   const initialViewport = await surface.evaluate((node) => ({
     scale: Number(node.getAttribute("data-map-scale") || "0"),
@@ -37,7 +38,7 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
   expect(initialViewport.translateX).toBeCloseTo(0, 1);
   expect(initialViewport.translateY).toBeCloseTo(0, 1);
   expect(initialTerritorySize).not.toBeNull();
-  await expect(page.locator('[data-map-control="reset"]')).toBeDisabled();
+  await expect(zoomOutButton).toBeDisabled();
 
   await surface.hover();
   await page.mouse.wheel(0, -500);
@@ -48,7 +49,7 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
   await expect
     .poll(async () => Number(await surface.getAttribute("data-map-node-scale")))
     .toBeCloseTo(1, 4);
-  await expect(page.locator('[data-map-control="reset"]')).toBeEnabled();
+  await expect(zoomOutButton).toBeEnabled();
 
   const zoomedTerritorySize = await firstTerritory.boundingBox();
   expect(zoomedTerritorySize).not.toBeNull();
@@ -76,11 +77,11 @@ test("map viewport supports zoom, drag, and reset", async ({ page }) => {
     return Math.hypot(x - beforeDrag.x, y - beforeDrag.y);
   }).toBeGreaterThan(25);
 
-  await page.locator('[data-map-control="reset"]').click();
+  await zoomOutButton.click();
   await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeCloseTo(1, 2);
   await expect.poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-x")))).toBeLessThan(1);
   await expect.poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-y")))).toBeLessThan(1);
-  await expect(page.locator('[data-map-control="reset"]')).toBeDisabled();
+  await expect(zoomOutButton).toBeDisabled();
 });
 
 test("map viewport control buttons zoom in and out coherently", async ({ page }) => {
@@ -90,20 +91,19 @@ test("map viewport control buttons zoom in and out coherently", async ({ page })
   const surface = page.locator("[data-map-surface]");
   const zoomInButton = page.locator('[data-map-control="zoom-in"]');
   const zoomOutButton = page.locator('[data-map-control="zoom-out"]');
-  const resetButton = page.locator('[data-map-control="reset"]');
 
   await zoomInButton.click();
   await expect
     .poll(async () => Number(await surface.getAttribute("data-map-scale")))
     .toBeGreaterThan(1.1);
-  await expect(resetButton).toBeEnabled();
+  await expect(zoomOutButton).toBeEnabled();
 
   const zoomedScale = Number(await surface.getAttribute("data-map-scale"));
   await zoomOutButton.click();
 
   await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeLessThan(zoomedScale);
   await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeCloseTo(1, 2);
-  await expect(resetButton).toBeDisabled();
+  await expect(zoomOutButton).toBeDisabled();
 });
 
 test("dragging a zoomed map does not select a territory until an explicit click", async ({ browser }) => {

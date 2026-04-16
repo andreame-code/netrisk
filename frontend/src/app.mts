@@ -1282,15 +1282,6 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
         >
           <span aria-hidden="true">-</span>
         </button>
-        <button
-          type="button"
-          class="map-control-button map-control-button-reset"
-          data-map-control="reset"
-          aria-label="${escapeHtml(t("game.map.reset"))}"
-          title="${escapeHtml(t("game.map.reset"))}"
-        >
-          ${escapeHtml(t("game.map.reset"))}
-        </button>
       </div>
       <div class="map-board-surface" data-map-surface>
         <div class="map-board-anchor" data-map-anchor>
