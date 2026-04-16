@@ -121,7 +121,7 @@ npm run test:all:e2e
 - `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
-- `npm run test:e2e:update`: intentionally updates Playwright visual baselines
+- `npm run test:e2e:update`: intentionally updates Playwright visual baselines after an approved UI change
 - `npm run test:all`: repository + gameplay tests
 - `npm run test:all:e2e`: repository + gameplay + e2e tests
 
@@ -134,6 +134,8 @@ ESLint and Prettier are configured as a TypeScript-first quality baseline for `b
   correctness issues.
 - `npm run format:check` is enforced in CI to keep formatting drift out of follow-up migration work.
 - `npm run lint:fix` and `npm run format` are safe local helpers before opening a PR.
+- GitHub Actions now includes a dedicated `quality` workflow for `lint` and `format:check`, separate from
+  coverage and other validation jobs.
 
 ## Testing
 
@@ -159,9 +161,10 @@ The `e2e` suite currently covers:
 - main gameplay flows
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
-- visual baselines for main screen and secondary pages
+- visual baselines for the main battlefield, mobile lobby shell, and World Classic board layouts
 
 The E2E runner starts an isolated local server, chooses a free port if the default one is unavailable, and uses a temporary SQLite database per run.
+For a full local gate before pushing, use `npm run test:all:e2e`.
 
 ## Architecture
 
