@@ -3527,6 +3527,12 @@ h1 {
   user-select: none;
 }
 
+.map-markers-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
 .map-board-surface.is-zoomed {
   cursor: grab;
 }
@@ -3686,6 +3692,8 @@ h1 {
   align-items: center;
   justify-content: center;
   text-align: center;
+  backface-visibility: hidden;
+  will-change: left, top;
 }
 
 .territory-node:hover {

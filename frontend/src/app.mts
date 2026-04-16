@@ -384,6 +384,7 @@ function mapViewportElements() {
   const anchor = elements.map.querySelector("[data-map-anchor]") as HTMLElement | null;
   const transform = elements.map.querySelector("[data-map-transform]") as HTMLElement | null;
   const board = elements.map.querySelector(".map-board") as HTMLElement | null;
+  const markers = elements.map.querySelector("[data-map-markers]") as HTMLElement | null;
   const zoomInButton = elements.map.querySelector('[data-map-control="zoom-in"]') as HTMLButtonElement | null;
   const zoomOutButton = elements.map.querySelector('[data-map-control="zoom-out"]') as HTMLButtonElement | null;
   const resetButton = elements.map.querySelector('[data-map-control="reset"]') as HTMLButtonElement | null;
@@ -393,6 +394,7 @@ function mapViewportElements() {
     anchor,
     transform,
     board,
+    markers,
     zoomInButton,
     zoomOutButton,
     resetButton
@@ -426,6 +428,27 @@ function clampMapViewportTranslation(
   };
 }
 
+function positionMapMarkers(): void {
+  const { surface, board, markers } = mapViewportElements();
+  if (!surface || !board || !markers) {
+    return;
+  }
+
+  const boardWidth = board.offsetWidth;
+  const boardHeight = board.offsetHeight;
+  const centerX = surface.clientWidth / 2 + mapViewportState.translateX;
+  const centerY = surface.clientHeight / 2 + mapViewportState.translateY;
+
+  markers.querySelectorAll<HTMLElement>("[data-territory-id]").forEach((node) => {
+    const positionX = Number(node.dataset.mapPositionX || "0");
+    const positionY = Number(node.dataset.mapPositionY || "0");
+    const left = centerX + (positionX / 100 - 0.5) * boardWidth * mapViewportState.scale;
+    const top = centerY + (positionY / 100 - 0.5) * boardHeight * mapViewportState.scale;
+    node.style.left = `${left}px`;
+    node.style.top = `${top}px`;
+  });
+}
+
 function applyMapViewport(): void {
   const { surface, anchor, transform, zoomInButton, zoomOutButton, resetButton } = mapViewportElements();
   if (!surface || !anchor || !transform) {
@@ -454,6 +477,7 @@ function applyMapViewport(): void {
   surface.dataset.mapTranslateX = mapViewportState.translateX.toFixed(2);
   surface.dataset.mapTranslateY = mapViewportState.translateY.toFixed(2);
   surface.style.setProperty("--map-territory-node-scale", territoryNodeScale.toFixed(4));
+  positionMapMarkers();
 
   if (zoomInButton) {
     zoomInButton.disabled = mapViewportState.scale >= mapViewportState.maxScale - 0.001;
@@ -1172,9 +1196,11 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
           type="button"
           class="${classes}"
           data-territory-id="${territory.id}"
+          data-map-position-x="${position.x}"
+          data-map-position-y="${position.y}"
           title="${escapeHtml(territory.name)}"
           aria-label="${escapeHtml(`${territory.name}: ${territory.armies} armate`)}"
-          style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
+          style="--owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
         >
           <span class="territory-armies">${territory.armies}</span>
           <span class="visually-hidden">${escapeHtml(owner?.name || "neutrale")}</span>
@@ -1247,10 +1273,12 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
             <div class="${boardClasses.join(" ")}"${boardStyles.length ? ` style="${boardStyles.join("; ")}"` : ""}>
               <div class="map-board-stage">
                 <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
-                ${nodes}
               </div>
             </div>
           </div>
+        </div>
+        <div class="map-markers-layer" data-map-markers>
+          ${nodes}
         </div>
       </div>
     </div>
