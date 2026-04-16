@@ -535,11 +535,11 @@ function createApp(options: CreateAppOptions = {}) {
       return false;
     }
 
-    if (!player.linkedUserId) {
-      return false;
+    if (player.linkedUserId) {
+      return player.linkedUserId === user.id;
     }
 
-    return player.linkedUserId === user.id;
+    return player.name === user.username;
   }
 
   function visibleHandForPlayer(nextState: any, player: any): any[] {
