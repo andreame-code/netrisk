@@ -97,6 +97,7 @@ type MapViewportState = {
 const MAP_VIEWPORT_MIN_SCALE = 1;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
 const MAP_VIEWPORT_BUTTON_STEP = 0.2;
+const MAP_TERRITORY_NODE_SCALE_EXPONENT = 0.6;
 const mapViewportState: MapViewportState = {
   scale: MAP_VIEWPORT_MIN_SCALE,
   translateX: 0,
@@ -448,10 +449,11 @@ function applyMapViewport(): void {
   surface.classList.toggle("is-zoomed", mapViewportState.scale > MAP_VIEWPORT_MIN_SCALE + 0.001);
   surface.classList.toggle("is-dragging", mapViewportState.isDragging);
   surface.dataset.mapScale = mapViewportState.scale.toFixed(3);
-  surface.dataset.mapNodeScale = (1 / mapViewportState.scale).toFixed(4);
+  const territoryNodeScale = Math.pow(1 / mapViewportState.scale, MAP_TERRITORY_NODE_SCALE_EXPONENT);
+  surface.dataset.mapNodeScale = territoryNodeScale.toFixed(4);
   surface.dataset.mapTranslateX = mapViewportState.translateX.toFixed(2);
   surface.dataset.mapTranslateY = mapViewportState.translateY.toFixed(2);
-  surface.style.setProperty("--map-territory-node-scale", (1 / mapViewportState.scale).toFixed(4));
+  surface.style.setProperty("--map-territory-node-scale", territoryNodeScale.toFixed(4));
 
   if (zoomInButton) {
     zoomInButton.disabled = mapViewportState.scale >= mapViewportState.maxScale - 0.001;
