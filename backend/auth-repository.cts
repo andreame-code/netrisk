@@ -139,13 +139,13 @@ function createLocalAuthRepository(options: AuthRepositoryOptions = {}) {
         : null;
     },
     async createSession(token: string, userId: string, createdAt: number) {
-      datastore.createSession(token, userId, createdAt);
+      await datastore.createSession(token, userId, createdAt);
     },
     async findSession(token: string) {
       return normalizeSession(await datastore.findSession(token));
     },
     async deleteSession(token: string) {
-      datastore.deleteSession(token);
+      await datastore.deleteSession(token);
     },
     close() {
       if (typeof datastore.close === "function") {
