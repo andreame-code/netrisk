@@ -2473,7 +2473,7 @@ elements.map.addEventListener("click", (event: Event) => {
   }
 
   const button = closestElement<HTMLElement>(event.target, "[data-territory-id]");
-  if (!button) {
+  if (!button || (event as MouseEvent).detail !== 0) {
     return;
   }
 
@@ -2607,6 +2607,14 @@ elements.map.addEventListener("pointermove", (event: PointerEvent) => {
 });
 
 const finishMapPointerInteraction = (event: PointerEvent): void => {
+  const hadSinglePointer = mapViewportState.activePointers.size === 1;
+  const shouldSelectTerritory =
+    event.type === "pointerup" &&
+    hadSinglePointer &&
+    !mapViewportState.isDragging &&
+    mapViewportState.pinchStartDistance == null &&
+    !mapViewportState.suppressClick;
+
   const { surface } = mapViewportElements();
   if (surface?.hasPointerCapture(event.pointerId)) {
     try {
@@ -2641,6 +2649,18 @@ const finishMapPointerInteraction = (event: PointerEvent): void => {
   }
 
   applyMapViewport();
+
+  if (!shouldSelectTerritory) {
+    return;
+  }
+
+  const releaseTarget = document.elementFromPoint(event.clientX, event.clientY);
+  const territoryButton = closestElement<HTMLElement>(releaseTarget, "[data-territory-id]");
+  if (!territoryButton) {
+    return;
+  }
+
+  handleTerritoryClick(territoryButton.dataset.territoryId);
 };
 
 elements.map.addEventListener("pointerup", finishMapPointerInteraction);
