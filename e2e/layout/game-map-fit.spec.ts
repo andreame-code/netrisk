@@ -107,3 +107,62 @@ for (const viewport of viewports) {
   });
 }
 
+test("map controls stay inside the map frame and the actions rail keeps a stable compact layout", async ({ page }) => {
+  test.slow();
+  await page.setViewportSize({ width: 1180, height: 760 });
+  await openWorldClassicGame(page, "compact-controls");
+  const joinAiResponse = await page.request.post("/api/ai/join", {
+    data: { name: "CPU Compact" }
+  });
+  await expect(joinAiResponse.ok()).toBeTruthy();
+  await page.getByRole("button", { name: "Avvia partita" }).click();
+  await expect(page.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
+  await expect(page.locator("#reinforce-group")).toBeVisible();
+
+  const metrics = await page.evaluate(() => {
+    const battlefield = document.querySelector('[data-testid="battlefield-layout"]');
+    const mapRegion = document.querySelector('[data-testid="map-region"]');
+    const controls = document.querySelector("[data-map-controls]");
+    const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+    const reinforceGroup = document.querySelector("#reinforce-group");
+    const reinforceSelect = document.querySelector("#reinforce-select");
+    const reinforceAmount = document.querySelector("#reinforce-amount");
+    const reinforceButton = document.querySelector("#reinforce-multi-button");
+    if (!battlefield || !mapRegion || !controls || !actionsPanel || !reinforceGroup ||
+      !reinforceSelect || !reinforceAmount || !reinforceButton) {
+      return null;
+    }
+
+    const battlefieldRect = battlefield.getBoundingClientRect();
+    const mapRect = mapRegion.getBoundingClientRect();
+    const controlsRect = controls.getBoundingClientRect();
+    const actionsRect = actionsPanel.getBoundingClientRect();
+    const reinforceRect = reinforceGroup.getBoundingClientRect();
+    const reinforceSelectRect = reinforceSelect.getBoundingClientRect();
+    const reinforceAmountRect = reinforceAmount.getBoundingClientRect();
+    const reinforceButtonRect = reinforceButton.getBoundingClientRect();
+
+    return {
+      controlsInsideMapTop: controlsRect.top >= mapRect.top - 1,
+      controlsInsideMapRight: controlsRect.right <= mapRect.right + 1,
+      controlsInsideMapLeft: controlsRect.left >= mapRect.left - 1,
+      actionsInsideBattlefieldTop: actionsRect.top >= battlefieldRect.top - 1,
+      actionsInsideBattlefieldRight: actionsRect.right <= battlefieldRect.right + 1,
+      reinforceGroupInsideActionsRail: reinforceRect.right <= actionsRect.right + 1,
+      reinforceSelectInsideActionsRail: reinforceSelectRect.right <= actionsRect.right + 1,
+      reinforceAmountInsideActionsRail: reinforceAmountRect.right <= actionsRect.right + 1,
+      reinforceButtonInsideActionsRail: reinforceButtonRect.right <= actionsRect.right + 1
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics.controlsInsideMapTop).toBeTruthy();
+  expect(metrics.controlsInsideMapRight).toBeTruthy();
+  expect(metrics.controlsInsideMapLeft).toBeTruthy();
+  expect(metrics.actionsInsideBattlefieldTop).toBeTruthy();
+  expect(metrics.actionsInsideBattlefieldRight).toBeTruthy();
+  expect(metrics.reinforceGroupInsideActionsRail).toBeTruthy();
+  expect(metrics.reinforceSelectInsideActionsRail).toBeTruthy();
+  expect(metrics.reinforceAmountInsideActionsRail).toBeTruthy();
+  expect(metrics.reinforceButtonInsideActionsRail).toBeTruthy();
+});

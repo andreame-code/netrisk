@@ -69,6 +69,57 @@ let snapshotPollTimer: ReturnType<typeof setInterval> | null = null;
 let snapshotPollInFlight = false;
 let privateStateRefreshInFlight = false;
 let renderedMapSignature: string | null = null;
+type MapViewportPointer = {
+  clientX: number;
+  clientY: number;
+};
+type MapViewportState = {
+  scale: number;
+  translateX: number;
+  translateY: number;
+  maxScale: number;
+  dragThreshold: number;
+  activePointers: Map<number, MapViewportPointer>;
+  dragPointerId: number | null;
+  dragStartClientX: number;
+  dragStartClientY: number;
+  dragStartTranslateX: number;
+  dragStartTranslateY: number;
+  isDragging: boolean;
+  suppressClick: boolean;
+  pinchStartDistance: number | null;
+  pinchStartScale: number;
+  pinchStartTranslateX: number;
+  pinchStartTranslateY: number;
+  pinchStartCenterClientX: number;
+  pinchStartCenterClientY: number;
+};
+const MAP_VIEWPORT_MIN_SCALE = 1;
+const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
+const MAP_VIEWPORT_BUTTON_STEP = 0.2;
+const MAP_TERRITORY_NODE_SCALE_EXPONENT = 0;
+const MAP_TERRITORY_NODE_MIN_SCALE = 1;
+const mapViewportState: MapViewportState = {
+  scale: MAP_VIEWPORT_MIN_SCALE,
+  translateX: 0,
+  translateY: 0,
+  maxScale: 3,
+  dragThreshold: 8,
+  activePointers: new Map(),
+  dragPointerId: null,
+  dragStartClientX: 0,
+  dragStartClientY: 0,
+  dragStartTranslateX: 0,
+  dragStartTranslateY: 0,
+  isDragging: false,
+  suppressClick: false,
+  pinchStartDistance: null,
+  pinchStartScale: MAP_VIEWPORT_MIN_SCALE,
+  pinchStartTranslateX: 0,
+  pinchStartTranslateY: 0,
+  pinchStartCenterClientX: 0,
+  pinchStartCenterClientY: 0
+};
 type RenderSectionKey =
   | "auth"
   | "sessionBrowser"
@@ -325,9 +376,227 @@ function renderNavAvatar(username: string | null | undefined): void {
 
 let pendingMapFitFrame: number | null = null;
 
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function mapViewportElements() {
+  const surface = elements.map.querySelector("[data-map-surface]") as HTMLElement | null;
+  const anchor = elements.map.querySelector("[data-map-anchor]") as HTMLElement | null;
+  const transform = elements.map.querySelector("[data-map-transform]") as HTMLElement | null;
+  const board = elements.map.querySelector(".map-board") as HTMLElement | null;
+  const markers = elements.map.querySelector("[data-map-markers]") as HTMLElement | null;
+  const zoomInButton = elements.map.querySelector('[data-map-control="zoom-in"]') as HTMLButtonElement | null;
+  const zoomOutButton = elements.map.querySelector('[data-map-control="zoom-out"]') as HTMLButtonElement | null;
+  const resetButton = elements.map.querySelector('[data-map-control="reset"]') as HTMLButtonElement | null;
+
+  return {
+    surface,
+    anchor,
+    transform,
+    board,
+    markers,
+    zoomInButton,
+    zoomOutButton,
+    resetButton
+  };
+}
+
+function mapViewportLocalPoint(surface: HTMLElement, clientX: number, clientY: number): { x: number; y: number } {
+  const surfaceRect = surface.getBoundingClientRect();
+  return {
+    x: clientX - surfaceRect.left,
+    y: clientY - surfaceRect.top
+  };
+}
+
+function clampMapViewportTranslation(
+  translateX: number,
+  translateY: number,
+  scale = mapViewportState.scale
+): { x: number; y: number } {
+  const { surface, board } = mapViewportElements();
+  if (!surface || !board) {
+    return { x: translateX, y: translateY };
+  }
+
+  const overflowX = Math.max(0, (board.offsetWidth * scale - surface.clientWidth) / 2);
+  const overflowY = Math.max(0, (board.offsetHeight * scale - surface.clientHeight) / 2);
+
+  return {
+    x: clampNumber(translateX, -overflowX, overflowX),
+    y: clampNumber(translateY, -overflowY, overflowY)
+  };
+}
+
+function positionMapMarkers(): void {
+  const { surface, board, markers } = mapViewportElements();
+  if (!surface || !board || !markers) {
+    return;
+  }
+
+  const boardWidth = board.offsetWidth;
+  const boardHeight = board.offsetHeight;
+  const centerX = surface.clientWidth / 2 + mapViewportState.translateX;
+  const centerY = surface.clientHeight / 2 + mapViewportState.translateY;
+
+  markers.querySelectorAll<HTMLElement>("[data-territory-id]").forEach((node) => {
+    const positionX = Number(node.dataset.mapPositionX || "0");
+    const positionY = Number(node.dataset.mapPositionY || "0");
+    const left = centerX + (positionX / 100 - 0.5) * boardWidth * mapViewportState.scale;
+    const top = centerY + (positionY / 100 - 0.5) * boardHeight * mapViewportState.scale;
+    node.style.left = `${left}px`;
+    node.style.top = `${top}px`;
+  });
+}
+
+function applyMapViewport(): void {
+  const { surface, anchor, transform, zoomInButton, zoomOutButton, resetButton } = mapViewportElements();
+  if (!surface || !anchor || !transform) {
+    return;
+  }
+
+  const nextScale = clampNumber(mapViewportState.scale, MAP_VIEWPORT_MIN_SCALE, mapViewportState.maxScale);
+  const clampedTranslation = clampMapViewportTranslation(
+    mapViewportState.translateX,
+    mapViewportState.translateY,
+    nextScale
+  );
+
+  mapViewportState.scale = nextScale;
+  mapViewportState.translateX = clampedTranslation.x;
+  mapViewportState.translateY = clampedTranslation.y;
+
+  anchor.style.transform = `translate(-50%, -50%) translate(${mapViewportState.translateX}px, ${mapViewportState.translateY}px)`;
+  transform.style.transform = `scale(${mapViewportState.scale})`;
+
+  surface.classList.toggle("is-zoomed", mapViewportState.scale > MAP_VIEWPORT_MIN_SCALE + 0.001);
+  surface.classList.toggle("is-dragging", mapViewportState.isDragging);
+  surface.dataset.mapScale = mapViewportState.scale.toFixed(3);
+  const territoryNodeScale = Math.max(
+    MAP_TERRITORY_NODE_MIN_SCALE,
+    Math.pow(1 / mapViewportState.scale, MAP_TERRITORY_NODE_SCALE_EXPONENT)
+  );
+  surface.dataset.mapNodeScale = territoryNodeScale.toFixed(4);
+  surface.dataset.mapTranslateX = mapViewportState.translateX.toFixed(2);
+  surface.dataset.mapTranslateY = mapViewportState.translateY.toFixed(2);
+  surface.style.setProperty("--map-territory-node-scale", territoryNodeScale.toFixed(4));
+  positionMapMarkers();
+
+  if (zoomInButton) {
+    zoomInButton.disabled = mapViewportState.scale >= mapViewportState.maxScale - 0.001;
+  }
+  if (zoomOutButton) {
+    zoomOutButton.disabled = mapViewportState.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001;
+  }
+  if (resetButton) {
+    resetButton.disabled =
+      mapViewportState.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 &&
+      Math.abs(mapViewportState.translateX) < 0.5 &&
+      Math.abs(mapViewportState.translateY) < 0.5;
+  }
+}
+
+function setMapViewport(scale: number, translateX: number, translateY: number): void {
+  const nextScale = clampNumber(scale, MAP_VIEWPORT_MIN_SCALE, mapViewportState.maxScale);
+  const clampedTranslation = clampMapViewportTranslation(translateX, translateY, nextScale);
+  mapViewportState.scale = nextScale;
+  mapViewportState.translateX = clampedTranslation.x;
+  mapViewportState.translateY = clampedTranslation.y;
+  applyMapViewport();
+}
+
+function clearMapViewportInteraction(): void {
+  mapViewportState.activePointers.clear();
+  mapViewportState.dragPointerId = null;
+  mapViewportState.isDragging = false;
+  mapViewportState.pinchStartDistance = null;
+}
+
+function resetMapViewport(): void {
+  clearMapViewportInteraction();
+  mapViewportState.suppressClick = false;
+  setMapViewport(MAP_VIEWPORT_MIN_SCALE, 0, 0);
+}
+
+function zoomMapViewportTo(scale: number, clientX: number, clientY: number): void {
+  const { surface } = mapViewportElements();
+  if (!surface) {
+    return;
+  }
+
+  const nextScale = clampNumber(scale, MAP_VIEWPORT_MIN_SCALE, mapViewportState.maxScale);
+  if (Math.abs(nextScale - mapViewportState.scale) < 0.001) {
+    return;
+  }
+
+  const localPoint = mapViewportLocalPoint(surface, clientX, clientY);
+  const currentCenterX = surface.clientWidth / 2 + mapViewportState.translateX;
+  const currentCenterY = surface.clientHeight / 2 + mapViewportState.translateY;
+  const contentX = (localPoint.x - currentCenterX) / mapViewportState.scale;
+  const contentY = (localPoint.y - currentCenterY) / mapViewportState.scale;
+  const nextTranslateX = localPoint.x - surface.clientWidth / 2 - contentX * nextScale;
+  const nextTranslateY = localPoint.y - surface.clientHeight / 2 - contentY * nextScale;
+
+  setMapViewport(nextScale, nextTranslateX, nextTranslateY);
+}
+
+function zoomMapViewportByStep(direction: 1 | -1): void {
+  const { surface } = mapViewportElements();
+  if (!surface) {
+    return;
+  }
+
+  const nextScale = clampNumber(
+    mapViewportState.scale + direction * MAP_VIEWPORT_BUTTON_STEP,
+    MAP_VIEWPORT_MIN_SCALE,
+    mapViewportState.maxScale
+  );
+  const surfaceRect = surface.getBoundingClientRect();
+  zoomMapViewportTo(nextScale, surfaceRect.left + surface.clientWidth / 2, surfaceRect.top + surface.clientHeight / 2);
+}
+
+function activeMapViewportPointers(): Array<[number, MapViewportPointer]> {
+  return Array.from(mapViewportState.activePointers.entries());
+}
+
+function beginMapViewportPinch(): void {
+  const pointers = activeMapViewportPointers();
+  if (pointers.length < 2) {
+    return;
+  }
+
+  const first = pointers[0][1];
+  const second = pointers[1][1];
+  mapViewportState.pinchStartDistance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  mapViewportState.pinchStartScale = mapViewportState.scale;
+  mapViewportState.pinchStartTranslateX = mapViewportState.translateX;
+  mapViewportState.pinchStartTranslateY = mapViewportState.translateY;
+  mapViewportState.pinchStartCenterClientX = (first.clientX + second.clientX) / 2;
+  mapViewportState.pinchStartCenterClientY = (first.clientY + second.clientY) / 2;
+  mapViewportState.isDragging = false;
+  mapViewportState.dragPointerId = null;
+  applyMapViewport();
+}
+
+function handleMapViewportControl(action: string | null | undefined): void {
+  if (action === "zoom-in") {
+    zoomMapViewportByStep(1);
+    return;
+  }
+  if (action === "zoom-out") {
+    zoomMapViewportByStep(-1);
+    return;
+  }
+  if (action === "reset") {
+    resetMapViewport();
+  }
+}
+
 function fitMapBoardToViewport() {
   const mapStage = document.querySelector(".game-map-stage") as HTMLElement | null;
   const mapContainer = document.querySelector(".game-map-stage .map") as HTMLElement | null;
+  const mapSurface = document.querySelector(".game-map-stage [data-map-surface]") as HTMLElement | null;
   const mapBoard = document.querySelector(".game-map-stage .map-board") as HTMLElement | null;
   if (!mapStage || !mapContainer || !mapBoard) {
     return;
@@ -357,6 +626,10 @@ function fitMapBoardToViewport() {
   mapBoard.style.width = `${Math.floor(width)}px`;
   mapBoard.style.height = `${Math.floor(height)}px`;
   mapContainer.style.height = `${Math.ceil(height)}px`;
+  if (mapSurface) {
+    mapSurface.style.height = `${Math.ceil(height)}px`;
+  }
+  applyMapViewport();
 }
 
 function queueMapBoardFit() {
@@ -420,6 +693,13 @@ function territoryById(territoryId: string | null | undefined): SnapshotTerritor
 function resolveCurrentPlayer() {
   if (!state.snapshot?.players?.length) {
     return null;
+  }
+
+  if (state.snapshot.playerId) {
+    const bySnapshotPlayerId = state.snapshot.players.find((player) => player.id === state.snapshot?.playerId) || null;
+    if (bySnapshotPlayerId) {
+      return bySnapshotPlayerId;
+    }
   }
 
   if (state.playerId) {
@@ -576,6 +856,20 @@ function setPlayerIdentity(playerId: string): void {
   localStorage.setItem("frontline-player-id", playerId);
 }
 
+function currentActionPlayerId(): string | null {
+  const snapshotPlayerId = state.snapshot?.playerId || null;
+  if (snapshotPlayerId && snapshotPlayerId !== state.playerId) {
+    setPlayerIdentity(snapshotPlayerId);
+  }
+
+  const resolvedPlayerId = resolveCurrentPlayer()?.id || null;
+  if (resolvedPlayerId && resolvedPlayerId !== state.playerId) {
+    setPlayerIdentity(resolvedPlayerId);
+  }
+
+  return snapshotPlayerId || resolvedPlayerId || state.playerId || null;
+}
+
 function territoryOptionLabel(territory: SnapshotTerritory): string {
   return `${territory.name} (${territory.armies})`;
 }
@@ -651,7 +945,7 @@ async function applyReinforcements(times: number): Promise<void> {
   const total = Math.max(1, Math.floor(Number(times) || 1));
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "reinforce",
     territoryId: elements.reinforceSelect.value,
     amount: total,
@@ -664,7 +958,7 @@ async function applyReinforcements(times: number): Promise<void> {
 async function executeAttack(fromId: string, toId: string, attackDice: number): Promise<GameSnapshot | undefined> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "attack",
     fromId,
     toId,
@@ -683,7 +977,7 @@ async function executeAttack(fromId: string, toId: string, attackDice: number): 
 async function moveAfterConquest(armies: number): Promise<void> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
-    playerId: state.playerId,
+    playerId: currentActionPlayerId(),
     type: "moveAfterConquest",
     armies: Math.max(1, Math.floor(Number(armies) || 1)),
     expectedVersion: currentExpectedVersion()
@@ -712,7 +1006,7 @@ async function runBanzaiAttack() {
 
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "attackBanzai",
       fromId: initialContext.fromId,
       toId: initialContext.toId,
@@ -927,9 +1221,11 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
           type="button"
           class="${classes}"
           data-territory-id="${territory.id}"
+          data-map-position-x="${position.x}"
+          data-map-position-y="${position.y}"
           title="${escapeHtml(territory.name)}"
           aria-label="${escapeHtml(`${territory.name}: ${territory.armies} armate`)}"
-          style="left:${position.x}%; top:${position.y}%; --owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
+          style="--owner-color:${owner?.color || "#9aa6b2"}; --owner-text-color:${textColorForBackground(owner?.color || "#9aa6b2")};"
         >
           <span class="territory-armies">${territory.armies}</span>
           <span class="visually-hidden">${escapeHtml(owner?.name || "neutrale")}</span>
@@ -966,10 +1262,40 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
   }
 
   return `
-    <div class="${boardClasses.join(" ")}"${boardStyles.length ? ` style="${boardStyles.join("; ")}"` : ""}>
-      <div class="map-board-stage">
-        <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
-        ${nodes}
+    <div class="map-viewport" data-map-viewport>
+      <div class="map-controls" data-map-controls>
+        <button
+          type="button"
+          class="map-control-button"
+          data-map-control="zoom-in"
+          aria-label="${escapeHtml(t("game.map.zoomIn"))}"
+          title="${escapeHtml(t("game.map.zoomIn"))}"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+        <button
+          type="button"
+          class="map-control-button"
+          data-map-control="zoom-out"
+          aria-label="${escapeHtml(t("game.map.zoomOut"))}"
+          title="${escapeHtml(t("game.map.zoomOut"))}"
+        >
+          <span aria-hidden="true">-</span>
+        </button>
+      </div>
+      <div class="map-board-surface" data-map-surface>
+        <div class="map-board-anchor" data-map-anchor>
+          <div class="map-board-transform" data-map-transform>
+            <div class="${boardClasses.join(" ")}"${boardStyles.length ? ` style="${boardStyles.join("; ")}"` : ""}>
+              <div class="map-board-stage">
+                <svg class="map-lines" viewBox="0 0 100 100" aria-hidden="true">${links.join("")}</svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="map-markers-layer" data-map-markers>
+          ${nodes}
+        </div>
       </div>
     </div>
     <div class="map-legend">${details}</div>
@@ -1392,6 +1718,7 @@ function renderMapSection(snapshot: GameSnapshot | null): void {
   if (nextMapSignature !== renderedMapSignature) {
     setMarkup(elements.map, snapshot ? buildGraphMarkup(snapshot) : "");
     renderedMapSignature = nextMapSignature;
+    resetMapViewport();
     fitMapBoardToViewport();
     queueMapBoardFit();
     return;
@@ -2048,7 +2375,7 @@ elements.startButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/start", {
       ...currentGamePayload(),
-      playerId: state.playerId
+      playerId: currentActionPlayerId()
     });
     state.snapshot = data.state || state.snapshot;
     render();
@@ -2180,12 +2507,218 @@ if (elements.cardTradeList) {
   });
 }
 elements.map.addEventListener("click", (event: Event) => {
+  const control = closestElement<HTMLElement>(event.target, "[data-map-control]");
+  if (control) {
+    event.preventDefault();
+    handleMapViewportControl(control.dataset.mapControl);
+    return;
+  }
+
+  if (mapViewportState.suppressClick) {
+    event.preventDefault();
+    mapViewportState.suppressClick = false;
+    return;
+  }
+
   const button = closestElement<HTMLElement>(event.target, "[data-territory-id]");
-  if (!button) {
+  if (!button || (event as MouseEvent).detail !== 0) {
     return;
   }
 
   handleTerritoryClick(button.dataset.territoryId);
+});
+
+elements.map.addEventListener(
+  "wheel",
+  (event: WheelEvent) => {
+    const control = closestElement<HTMLElement>(event.target, "[data-map-control]");
+    const surface = closestElement<HTMLElement>(event.target, "[data-map-surface]");
+    if (control || !surface) {
+      return;
+    }
+
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? MAP_VIEWPORT_WHEEL_FACTOR : 1 / MAP_VIEWPORT_WHEEL_FACTOR;
+    zoomMapViewportTo(mapViewportState.scale * factor, event.clientX, event.clientY);
+  },
+  { passive: false }
+);
+
+elements.map.addEventListener("pointerdown", (event: PointerEvent) => {
+  const control = closestElement<HTMLElement>(event.target, "[data-map-control]");
+  const surface = closestElement<HTMLElement>(event.target, "[data-map-surface]");
+  if (control || !surface) {
+    return;
+  }
+  if (event.pointerType === "mouse" && event.button !== 0) {
+    return;
+  }
+
+  mapViewportState.activePointers.set(event.pointerId, {
+    clientX: event.clientX,
+    clientY: event.clientY
+  });
+
+  try {
+    surface.setPointerCapture(event.pointerId);
+  } catch {
+  }
+
+  if (mapViewportState.activePointers.size >= 2) {
+    beginMapViewportPinch();
+    return;
+  }
+
+  mapViewportState.dragPointerId = event.pointerId;
+  mapViewportState.dragStartClientX = event.clientX;
+  mapViewportState.dragStartClientY = event.clientY;
+  mapViewportState.dragStartTranslateX = mapViewportState.translateX;
+  mapViewportState.dragStartTranslateY = mapViewportState.translateY;
+  mapViewportState.isDragging = false;
+  applyMapViewport();
+});
+
+elements.map.addEventListener("pointermove", (event: PointerEvent) => {
+  const surface = closestElement<HTMLElement>(event.target, "[data-map-surface]") || mapViewportElements().surface;
+  if (!surface || !mapViewportState.activePointers.has(event.pointerId)) {
+    return;
+  }
+
+  mapViewportState.activePointers.set(event.pointerId, {
+    clientX: event.clientX,
+    clientY: event.clientY
+  });
+
+  if (mapViewportState.activePointers.size >= 2) {
+    const pointers = activeMapViewportPointers();
+    const first = pointers[0]?.[1];
+    const second = pointers[1]?.[1];
+    if (!first || !second) {
+      return;
+    }
+
+    if (!mapViewportState.pinchStartDistance || mapViewportState.pinchStartDistance <= 0) {
+      beginMapViewportPinch();
+      return;
+    }
+
+    const currentDistance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+    const currentCenterClientX = (first.clientX + second.clientX) / 2;
+    const currentCenterClientY = (first.clientY + second.clientY) / 2;
+    const nextScale = clampNumber(
+      mapViewportState.pinchStartScale * (currentDistance / mapViewportState.pinchStartDistance),
+      MAP_VIEWPORT_MIN_SCALE,
+      mapViewportState.maxScale
+    );
+    const startCenter = mapViewportLocalPoint(
+      surface,
+      mapViewportState.pinchStartCenterClientX,
+      mapViewportState.pinchStartCenterClientY
+    );
+    const currentCenter = mapViewportLocalPoint(surface, currentCenterClientX, currentCenterClientY);
+    const contentX =
+      (startCenter.x - surface.clientWidth / 2 - mapViewportState.pinchStartTranslateX) /
+      mapViewportState.pinchStartScale;
+    const contentY =
+      (startCenter.y - surface.clientHeight / 2 - mapViewportState.pinchStartTranslateY) /
+      mapViewportState.pinchStartScale;
+    const nextTranslateX = currentCenter.x - surface.clientWidth / 2 - contentX * nextScale;
+    const nextTranslateY = currentCenter.y - surface.clientHeight / 2 - contentY * nextScale;
+
+    mapViewportState.suppressClick = true;
+    setMapViewport(nextScale, nextTranslateX, nextTranslateY);
+    event.preventDefault();
+    return;
+  }
+
+  if (mapViewportState.dragPointerId !== event.pointerId || mapViewportState.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001) {
+    return;
+  }
+
+  const deltaX = event.clientX - mapViewportState.dragStartClientX;
+  const deltaY = event.clientY - mapViewportState.dragStartClientY;
+  if (!mapViewportState.isDragging) {
+    const movedEnough = Math.hypot(deltaX, deltaY) >= mapViewportState.dragThreshold;
+    if (!movedEnough) {
+      return;
+    }
+    mapViewportState.isDragging = true;
+    mapViewportState.suppressClick = true;
+  }
+
+  setMapViewport(
+    mapViewportState.scale,
+    mapViewportState.dragStartTranslateX + deltaX,
+    mapViewportState.dragStartTranslateY + deltaY
+  );
+  event.preventDefault();
+});
+
+const finishMapPointerInteraction = (event: PointerEvent): void => {
+  const hadSinglePointer = mapViewportState.activePointers.size === 1;
+  const shouldSelectTerritory =
+    event.type === "pointerup" &&
+    hadSinglePointer &&
+    !mapViewportState.isDragging &&
+    mapViewportState.pinchStartDistance == null &&
+    !mapViewportState.suppressClick;
+
+  const { surface } = mapViewportElements();
+  if (surface?.hasPointerCapture(event.pointerId)) {
+    try {
+      surface.releasePointerCapture(event.pointerId);
+    } catch {
+    }
+  }
+
+  if (!mapViewportState.activePointers.has(event.pointerId)) {
+    return;
+  }
+
+  mapViewportState.activePointers.delete(event.pointerId);
+
+  if (mapViewportState.activePointers.size >= 2) {
+    beginMapViewportPinch();
+    return;
+  }
+
+  mapViewportState.pinchStartDistance = null;
+  mapViewportState.isDragging = false;
+
+  const [remainingPointerId, remainingPointer] = activeMapViewportPointers()[0] || [];
+  if (remainingPointerId != null && remainingPointer) {
+    mapViewportState.dragPointerId = remainingPointerId;
+    mapViewportState.dragStartClientX = remainingPointer.clientX;
+    mapViewportState.dragStartClientY = remainingPointer.clientY;
+    mapViewportState.dragStartTranslateX = mapViewportState.translateX;
+    mapViewportState.dragStartTranslateY = mapViewportState.translateY;
+  } else {
+    mapViewportState.dragPointerId = null;
+  }
+
+  applyMapViewport();
+
+  if (!shouldSelectTerritory) {
+    return;
+  }
+
+  const releaseTarget = document.elementFromPoint(event.clientX, event.clientY);
+  const territoryButton = closestElement<HTMLElement>(releaseTarget, "[data-territory-id]");
+  if (!territoryButton) {
+    return;
+  }
+
+  handleTerritoryClick(territoryButton.dataset.territoryId);
+};
+
+elements.map.addEventListener("pointerup", finishMapPointerInteraction);
+elements.map.addEventListener("pointercancel", finishMapPointerInteraction);
+elements.map.addEventListener("pointerleave", (event: PointerEvent) => {
+  if (event.pointerType !== "mouse" || !mapViewportState.activePointers.has(event.pointerId)) {
+    return;
+  }
+
+  finishMapPointerInteraction(event);
 });
 
 elements.attackButton.addEventListener("click", async () => {
@@ -2248,7 +2781,7 @@ elements.fortifyButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "fortify",
       fromId: elements.fortifyFrom.value,
       toId: elements.fortifyTo.value,
@@ -2266,7 +2799,7 @@ elements.endTurnButton.addEventListener("click", async () => {
   try {
     const data = await send("/api/action", {
       ...currentGamePayload(),
-      playerId: state.playerId,
+      playerId: currentActionPlayerId(),
       type: "endTurn",
       expectedVersion: currentExpectedVersion()
     });
@@ -2290,7 +2823,7 @@ if (elements.surrenderButton) {
     try {
       const data = await send("/api/action", {
         ...currentGamePayload(),
-        playerId: state.playerId,
+        playerId: currentActionPlayerId(),
         type: "surrender",
         expectedVersion: currentExpectedVersion()
       });
@@ -2307,7 +2840,7 @@ if (elements.cardTradeButton) {
     try {
       const data = await send("/api/cards/trade", {
         ...currentGamePayload(),
-        playerId: state.playerId,
+        playerId: currentActionPlayerId(),
         cardIds: state.selectedTradeCardIds,
         expectedVersion: currentExpectedVersion()
       });
@@ -2343,3 +2876,7 @@ void mountModuleSlotSection({
 });
 
 window.addEventListener("resize", queueMapBoardFit);
+window.addEventListener("blur", () => {
+  clearMapViewportInteraction();
+  applyMapViewport();
+});

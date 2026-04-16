@@ -3502,9 +3502,56 @@ h1 {
 }
 
 .tactical-map {
+  position: relative;
   display: grid;
   gap: 12px;
   height: 100%;
+}
+
+.map-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.map-board-surface {
+  position: relative;
+  --map-territory-node-scale: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-markers-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.map-board-surface.is-zoomed {
+  cursor: grab;
+}
+
+.map-board-surface.is-dragging {
+  cursor: grabbing;
+}
+
+.map-board-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.map-board-transform {
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .map-board {
@@ -3584,13 +3631,53 @@ h1 {
   stroke-linecap: round;
 }
 
-.territory-node {
+.map-controls {
   position: absolute;
-  width: clamp(34px, 4.5vw, 42px);
-  height: clamp(34px, 4.5vw, 42px);
+  top: 84px;
+  right: 14px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.map-control-button {
+  pointer-events: auto;
+  min-width: 42px;
+  min-height: 42px;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--heading);
+  box-shadow: var(--shadow-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+}
+
+.map-control-button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.territory-node {
+  --territory-node-size: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
+  position: absolute;
+  width: var(--territory-node-size);
+  height: var(--territory-node-size);
+  min-width: var(--territory-node-size);
+  min-height: var(--territory-node-size);
   margin: 0;
   transform: translate(-50%, -50%);
+  transform-origin: center center;
   padding: 0;
+  aspect-ratio: 1 / 1;
   border-radius: 999px;
   background: var(--owner-color, var(--owner-color-default));
   color: var(--owner-text-color, var(--owner-text-default));
@@ -3602,10 +3689,15 @@ h1 {
   align-items: center;
   justify-content: center;
   text-align: center;
+  backface-visibility: hidden;
+  will-change: left, top;
 }
 
 .territory-node:hover {
-  transform: translate(-50%, -50%) translateY(-2px) scale(1.05);
+  transform:
+    translate(-50%, -50%)
+    translateY(calc(-2px * var(--map-territory-node-scale, 1)))
+    scale(1.05);
 }
 
 .territory-node.piece-skin-style-ring-core {
@@ -3617,7 +3709,7 @@ h1 {
 }
 
 .territory-node.piece-skin-style-ring-core .territory-armies {
-  font-size: 0.8rem;
+  font-size: clamp(0.7rem, calc(0.8rem * var(--map-territory-node-scale, 1)), 0.8rem);
   letter-spacing: 0.02em;
 }
 
@@ -3639,8 +3731,9 @@ h1 {
 .territory-armies {
   display: inline-block;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: clamp(0.78rem, calc(0.92rem * var(--map-territory-node-scale, 1)), 0.92rem);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 1px var(--overlay);
 }
 
@@ -5109,18 +5202,23 @@ body[data-app-section="game"] .board-shell {
 }
 
 .game-map-stage .map {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 0;
-    height: auto;
-    width: 100%;
-    overflow: hidden;
-  }
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  overflow: hidden;
+}
+
+.game-map-stage .map-viewport,
+.game-map-stage .map-board-surface {
+  height: 100%;
+}
 
 .game-map-stage .map-board {
   aspect-ratio: auto;
-  width: 100%;
+  width: auto;
   height: auto;
   max-height: none;
   margin: 0;
