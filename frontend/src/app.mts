@@ -97,8 +97,8 @@ type MapViewportState = {
 const MAP_VIEWPORT_MIN_SCALE = 1;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
 const MAP_VIEWPORT_BUTTON_STEP = 0.2;
-const MAP_TERRITORY_NODE_SCALE_EXPONENT = 0.08;
-const MAP_TERRITORY_NODE_MIN_SCALE = 0.94;
+const MAP_TERRITORY_NODE_SCALE_EXPONENT = 0;
+const MAP_TERRITORY_NODE_MIN_SCALE = 1;
 const mapViewportState: MapViewportState = {
   scale: MAP_VIEWPORT_MIN_SCALE,
   translateX: 0,
