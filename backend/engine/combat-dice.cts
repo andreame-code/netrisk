@@ -47,7 +47,10 @@ export function compareCombatDice(
   for (let index = 0; index < pairCount; index += 1) {
     const attackDie = sortedAttackerRolls[index] as number;
     const defendDie = sortedDefenderRolls[index] as number;
-    const winner = attackDie > defendDie || (!defenderWinsTies && attackDie === defendDie) ? "attacker" : "defender";
+    const winner =
+      attackDie > defendDie || (!defenderWinsTies && attackDie === defendDie)
+        ? "attacker"
+        : "defender";
 
     comparisons.push({
       pair: index + 1,

@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -21,9 +26,20 @@ type SnapshotForUser = (
 ) => unknown;
 type HandleVersionConflict = (error: unknown) => boolean;
 type IsValidTerritoryId = (id: string) => boolean;
-type ApplyReinforcement = (state: any, playerId: string, territoryId: string, amount: unknown) => any;
+type ApplyReinforcement = (
+  state: any,
+  playerId: string,
+  territoryId: string,
+  amount: unknown
+) => any;
 type MoveAfterConquest = (state: any, playerId: string, armies: unknown) => any;
-type ApplyFortify = (state: any, playerId: string, fromId: string, toId: string, armies: unknown) => any;
+type ApplyFortify = (
+  state: any,
+  playerId: string,
+  fromId: string,
+  toId: string,
+  armies: unknown
+) => any;
 
 async function handleBasicGameActionRoute(
   type: string,
@@ -67,7 +83,13 @@ async function handleBasicGameActionRoute(
     broadcastGame(gameContext);
     sendJson(res, 200, {
       ok: true,
-      state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user)
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        user
+      )
     });
     return true;
   }
@@ -90,7 +112,13 @@ async function handleBasicGameActionRoute(
     broadcastGame(gameContext);
     sendJson(res, 200, {
       ok: true,
-      state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user)
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        user
+      )
     });
     return true;
   }
@@ -102,7 +130,13 @@ async function handleBasicGameActionRoute(
       sendLocalizedError(res, 400, null, "Territorio non valido.", "game.invalidTerritory");
       return true;
     }
-    const result = applyFortify(gameContext.state, playerId, fortifyFromId, fortifyToId, body.armies);
+    const result = applyFortify(
+      gameContext.state,
+      playerId,
+      fortifyFromId,
+      fortifyToId,
+      body.armies
+    );
     if (!result.ok) {
       sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
       return true;
@@ -119,7 +153,13 @@ async function handleBasicGameActionRoute(
     broadcastGame(gameContext);
     sendJson(res, 200, {
       ok: true,
-      state: snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, user)
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        user
+      )
     });
     return true;
   }

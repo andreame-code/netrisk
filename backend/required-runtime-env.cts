@@ -5,9 +5,7 @@ const REQUIRED_DEPLOY_ENV_KEYS = [
   "DATASTORE_DRIVER"
 ];
 
-const REQUIRED_CRON_ENV_KEYS = [
-  "CRON_SECRET"
-];
+const REQUIRED_CRON_ENV_KEYS = ["CRON_SECRET"];
 
 function hasValue(value: unknown): boolean {
   return typeof value === "string" ? value.trim() !== "" : Boolean(value);

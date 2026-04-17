@@ -1,5 +1,11 @@
 const { secureRandom } = require("../random.cjs");
-import { TurnPhase, validateStandardCardSet, type Card, type GameState, type Territory } from "../../shared/models.cjs";
+import {
+  TurnPhase,
+  validateStandardCardSet,
+  type Card,
+  type GameState,
+  type Territory
+} from "../../shared/models.cjs";
 
 interface PendingConquest {
   fromId: string;
@@ -66,51 +72,80 @@ type EngineState = GameState & {
 };
 
 function resolveFortifyMinimumArmies(state: EngineState, maxMove: number): number {
-  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
-    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).fortifyMinimumArmies
-    : null;
+  const moduleMinimum =
+    state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+      ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).fortifyMinimumArmies
+      : null;
   const desiredMinimum = Math.max(1, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 1);
   return Math.max(1, Math.min(maxMove, desiredMinimum));
 }
 
 function resolveAttackMinimumArmies(state: EngineState): number {
-  const moduleMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
-    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackMinimumArmies
-    : null;
+  const moduleMinimum =
+    state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+      ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackMinimumArmies
+      : null;
   return Math.max(2, Number.isInteger(moduleMinimum) ? Number(moduleMinimum) : 2);
 }
 
 function resolveAttackLimitPerTurn(state: EngineState): number | null {
-  const configuredLimit = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
-    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackLimitPerTurn
-    : null;
+  const configuredLimit =
+    state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+      ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).attackLimitPerTurn
+      : null;
   return Number.isInteger(configuredLimit) ? Math.max(1, Number(configuredLimit)) : null;
 }
 
 function resolveMinimumAttacksPerTurn(state: EngineState): number | null {
-  const configuredMinimum = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
-    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).minimumAttacksPerTurn
-    : null;
+  const configuredMinimum =
+    state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+      ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).minimumAttacksPerTurn
+      : null;
   return Number.isInteger(configuredMinimum) ? Math.max(1, Number(configuredMinimum)) : null;
 }
 
 function resolveRequiredFortifyWhenAvailable(state: EngineState): boolean {
-  const configuredValue = state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
-    ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).requiredFortifyWhenAvailable
-    : null;
+  const configuredValue =
+    state.gameConfig?.gameplayEffects && typeof state.gameConfig.gameplayEffects === "object"
+      ? (state.gameConfig.gameplayEffects as GameplayEffectsLike).requiredFortifyWhenAvailable
+      : null;
   return configuredValue === true;
 }
 
 type EngineModule = {
-  applyFortify: (state: EngineState, playerId: string, fromId: string, toId: string, armies: number) => ActionFailure | ActionSuccess;
-  applyReinforcement: (state: EngineState, playerId: string, territoryId: string) => ActionFailure | ActionSuccess;
+  applyFortify: (
+    state: EngineState,
+    playerId: string,
+    fromId: string,
+    toId: string,
+    armies: number
+  ) => ActionFailure | ActionSuccess;
+  applyReinforcement: (
+    state: EngineState,
+    playerId: string,
+    territoryId: string
+  ) => ActionFailure | ActionSuccess;
   endTurn: (state: EngineState, playerId: string) => ActionFailure | ActionSuccess;
   getCurrentPlayer: (state: EngineState) => EnginePlayer | null;
   getMapTerritories: (state: EngineState) => Territory[];
-  moveAfterConquest: (state: EngineState, playerId: string, armiesToMove: number | null) => ActionFailure | ActionSuccess;
+  moveAfterConquest: (
+    state: EngineState,
+    playerId: string,
+    armiesToMove: number | null
+  ) => ActionFailure | ActionSuccess;
   playerMustTradeCards: (state: EngineState, playerId: string) => boolean;
-  resolveAttack: (state: EngineState, playerId: string, fromId: string, toId: string, random?: () => number) => ActionFailure | ActionSuccess;
-  tradeCardSet: (state: EngineState, playerId: string, cardIds: string[]) => ActionFailure | ActionSuccess;
+  resolveAttack: (
+    state: EngineState,
+    playerId: string,
+    fromId: string,
+    toId: string,
+    random?: () => number
+  ) => ActionFailure | ActionSuccess;
+  tradeCardSet: (
+    state: EngineState,
+    playerId: string,
+    cardIds: string[]
+  ) => ActionFailure | ActionSuccess;
   territoriesOwnedBy: (state: EngineState, playerId: string) => Territory[];
 };
 
@@ -127,7 +162,11 @@ const {
   territoriesOwnedBy
 } = require("./game-engine.cjs") as EngineModule;
 
-function listEnemyNeighbors(state: EngineState, territoryId: string, playerId: string): Array<{ territoryId: string; state: { ownerId: string | null; armies: number } }> {
+function listEnemyNeighbors(
+  state: EngineState,
+  territoryId: string,
+  playerId: string
+): Array<{ territoryId: string; state: { ownerId: string | null; armies: number } }> {
   const territory = getMapTerritories(state).find((item) => item.id === territoryId);
   if (!territory) {
     return [];
@@ -135,7 +174,9 @@ function listEnemyNeighbors(state: EngineState, territoryId: string, playerId: s
 
   return territory.neighbors
     .map((neighborId) => ({ territoryId: neighborId, state: state.territories[neighborId] }))
-    .filter((entry) => entry.state && entry.state.ownerId && entry.state.ownerId !== playerId) as Array<{ territoryId: string; state: { ownerId: string | null; armies: number } }>;
+    .filter(
+      (entry) => entry.state && entry.state.ownerId && entry.state.ownerId !== playerId
+    ) as Array<{ territoryId: string; state: { ownerId: string | null; armies: number } }>;
 }
 
 export function chooseReinforcementTarget(state: EngineState, playerId: string): string | null {
@@ -149,9 +190,12 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
     .map((territory) => {
       const enemyNeighbors = listEnemyNeighbors(state, territory.id, playerId);
       const armies = state.territories[territory.id]?.armies || 0;
-      const strongestEnemy = enemyNeighbors.reduce((max, entry) => Math.max(max, entry.state.armies), 0);
+      const strongestEnemy = enemyNeighbors.reduce(
+        (max, entry) => Math.max(max, entry.state.armies),
+        0
+      );
       const score = enemyNeighbors.length
-        ? (armies - strongestEnemy) + enemyNeighbors.length * 2
+        ? armies - strongestEnemy + enemyNeighbors.length * 2
         : -100 + armies;
 
       return {
@@ -161,7 +205,12 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
         armies
       };
     })
-    .sort((left, right) => right.score - left.score || right.armies - left.armies || left.territoryId.localeCompare(right.territoryId));
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.armies - left.armies ||
+        left.territoryId.localeCompare(right.territoryId)
+    );
 
   return ranked[0] ? ranked[0].territoryId : null;
 }
@@ -174,9 +223,10 @@ export function chooseAttack(
   const candidates: AttackChoice[] = [];
   const minimumAttackArmies = resolveAttackMinimumArmies(state);
   const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
-  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
-    ? state.attacksThisTurn
-    : 0;
+  const attacksThisTurn =
+    typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+      ? state.attacksThisTurn
+      : 0;
   if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
     return null;
   }
@@ -203,11 +253,20 @@ export function chooseAttack(
       });
     });
 
-  candidates.sort((left, right) => right.score - left.score || left.fromId.localeCompare(right.fromId) || left.toId.localeCompare(right.toId));
+  candidates.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.fromId.localeCompare(right.fromId) ||
+      left.toId.localeCompare(right.toId)
+  );
   return candidates[0] || null;
 }
 
-export function chooseConquestMove(state: EngineState, playerId: string, pending: PendingConquest | null | undefined): number | null {
+export function chooseConquestMove(
+  state: EngineState,
+  playerId: string,
+  pending: PendingConquest | null | undefined
+): number | null {
   if (!pending) {
     return null;
   }
@@ -217,10 +276,7 @@ export function chooseConquestMove(state: EngineState, playerId: string, pending
     return pending.minArmies;
   }
 
-  return Math.max(
-    pending.minArmies,
-    Math.min(pending.maxArmies, 2)
-  );
+  return Math.max(pending.minArmies, Math.min(pending.maxArmies, 2));
 }
 
 export function chooseFortify(
@@ -286,7 +342,13 @@ export function chooseFortify(
       });
     });
 
-  candidates.sort((left, right) => right.score - left.score || right.armies - left.armies || left.fromId.localeCompare(right.fromId) || left.toId.localeCompare(right.toId));
+  candidates.sort(
+    (left, right) =>
+      right.score - left.score ||
+      right.armies - left.armies ||
+      left.fromId.localeCompare(right.fromId) ||
+      left.toId.localeCompare(right.toId)
+  );
   return candidates[0] || null;
 }
 
@@ -362,11 +424,19 @@ export function runAiTurn(
       if (!move.ok) {
         return { ok: false, error: move.message, report };
       }
-      report.conquestMoves.push({ fromId: pending.fromId, toId: pending.toId, armies: armiesToMove });
+      report.conquestMoves.push({
+        fromId: pending.fromId,
+        toId: pending.toId,
+        armies: armiesToMove
+      });
       continue;
     }
 
-    if (state.turnPhase === TurnPhase.REINFORCEMENT && player.id && playerMustTradeCards(state, player.id)) {
+    if (
+      state.turnPhase === TurnPhase.REINFORCEMENT &&
+      player.id &&
+      playerMustTradeCards(state, player.id)
+    ) {
       const cardIds = chooseTradeSet(state, player.id);
       if (!cardIds) {
         return { ok: false, error: "AI senza un set di carte valido da scambiare.", report };
@@ -398,9 +468,10 @@ export function runAiTurn(
 
     if (state.turnPhase === TurnPhase.ATTACK) {
       const minimumAttacksPerTurn = resolveMinimumAttacksPerTurn(state);
-      const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
-        ? state.attacksThisTurn
-        : 0;
+      const attacksThisTurn =
+        typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+          ? state.attacksThisTurn
+          : 0;
       const attack = chooseAttack(state, player.id || "", {
         forceLegalAttack: minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn
       });

@@ -73,7 +73,10 @@ function buildContinentRecord(record: Record<string, string>): ContinentRecord {
   };
 }
 
-function validateTerritoryReferences(continents: Continent[], validTerritoryIds: string[] = []): void {
+function validateTerritoryReferences(
+  continents: Continent[],
+  validTerritoryIds: string[] = []
+): void {
   if (!validTerritoryIds.length) {
     return;
   }
@@ -82,13 +85,18 @@ function validateTerritoryReferences(continents: Continent[], validTerritoryIds:
   continents.forEach((continent) => {
     continent.territoryIds.forEach((territoryId) => {
       if (!territoryIdSet.has(territoryId)) {
-        throw new Error(`Continent "${continent.id}" references unknown territory "${territoryId}".`);
+        throw new Error(
+          `Continent "${continent.id}" references unknown territory "${territoryId}".`
+        );
       }
     });
   });
 }
 
-export function loadContinentsFromCsv(csvPath: string, options: LoadContinentsOptions = {}): ContinentDefinition {
+export function loadContinentsFromCsv(
+  csvPath: string,
+  options: LoadContinentsOptions = {}
+): ContinentDefinition {
   const absolutePath = path.resolve(csvPath);
   const csv = fs.readFileSync(absolutePath, "utf8");
   const lines = csv

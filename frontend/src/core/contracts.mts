@@ -26,6 +26,9 @@ export function listThemeIds(): string[] {
   return registeredThemes.map((theme) => theme.id);
 }
 
-export function normalizeTheme(theme: string | null | undefined, supportedThemes: readonly string[] = SUPPORTED_THEMES): ThemeName {
+export function normalizeTheme(
+  theme: string | null | undefined,
+  supportedThemes: readonly string[] = SUPPORTED_THEMES
+): ThemeName {
   return supportedThemes.includes(String(theme || "")) ? String(theme) : DEFAULT_THEME;
 }

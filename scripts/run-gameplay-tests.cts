@@ -9,9 +9,11 @@ process.env.TEST = "true";
 
 const tests: GameplayTest[] = [];
 
-(global as typeof globalThis & {
-  register?: (name: string, fn: GameplayTest["fn"]) => void;
-}).register = function register(name: string, fn: GameplayTest["fn"]) {
+(
+  global as typeof globalThis & {
+    register?: (name: string, fn: GameplayTest["fn"]) => void;
+  }
+).register = function register(name: string, fn: GameplayTest["fn"]) {
   tests.push({ name, fn });
 };
 
@@ -43,7 +45,7 @@ gameplayTestModules.forEach((relativePath) => {
   require(path.join(__dirname, relativePath));
 });
 
-(async function run() {
+void (async function run() {
   let failures = 0;
 
   for (const entry of tests) {

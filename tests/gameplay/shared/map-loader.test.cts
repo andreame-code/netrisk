@@ -18,61 +18,55 @@ function withCsvFile(content: string, run: (filePath: string) => void) {
   }
 }
 
-register("loadMapDefinitionFromCsv parses a valid CSV with trimming, comments, and empty neighbors", () => {
-  withCsvFile(
-    [
-      "# comment",
-      " id , name , continentId , x , y , neighbors ",
-      " alpha , Alpha , north , 0.10 , 0.20 , beta | gamma ",
-      " beta , Beta , north , 0.30 , 0.40 , alpha ",
-      " gamma , Gamma , south , 0.50 , 0.60 , "
-    ].join("\n"),
-    (filePath) => {
-      const map = loadMapDefinitionFromCsv(filePath);
+register(
+  "loadMapDefinitionFromCsv parses a valid CSV with trimming, comments, and empty neighbors",
+  () => {
+    withCsvFile(
+      [
+        "# comment",
+        " id , name , continentId , x , y , neighbors ",
+        " alpha , Alpha , north , 0.10 , 0.20 , beta | gamma ",
+        " beta , Beta , north , 0.30 , 0.40 , alpha ",
+        " gamma , Gamma , south , 0.50 , 0.60 , "
+      ].join("\n"),
+      (filePath) => {
+        const map = loadMapDefinitionFromCsv(filePath);
 
-      assert.equal(map.source, path.resolve(filePath));
-      assert.deepEqual(
-        map.territories.map((entry: any) => entry.territory.id),
-        ["alpha", "beta", "gamma"]
-      );
-      assert.deepEqual(map.territories[0].territory.neighbors, ["beta", "gamma"]);
-      assert.deepEqual(map.territories[2].territory.neighbors, []);
-      assert.deepEqual(map.positions.alpha, { x: 0.1, y: 0.2 });
-      assert.deepEqual(map.positions.gamma, { x: 0.5, y: 0.6 });
-    }
-  );
-});
+        assert.equal(map.source, path.resolve(filePath));
+        assert.deepEqual(
+          map.territories.map((entry: any) => entry.territory.id),
+          ["alpha", "beta", "gamma"]
+        );
+        assert.deepEqual(map.territories[0].territory.neighbors, ["beta", "gamma"]);
+        assert.deepEqual(map.territories[2].territory.neighbors, []);
+        assert.deepEqual(map.positions.alpha, { x: 0.1, y: 0.2 });
+        assert.deepEqual(map.positions.gamma, { x: 0.5, y: 0.6 });
+      }
+    );
+  }
+);
 
 register("loadMapDefinitionFromCsv rejects CSV files with missing headers", () => {
-  withCsvFile(
-    [
-      "id,name,continentId,x,y",
-      "alpha,Alpha,north,0.1,0.2"
-    ].join("\n"),
-    (filePath) => {
-      assert.throws(() => loadMapDefinitionFromCsv(filePath), /missing required headers: neighbors/i);
-    }
-  );
+  withCsvFile(["id,name,continentId,x,y", "alpha,Alpha,north,0.1,0.2"].join("\n"), (filePath) => {
+    assert.throws(() => loadMapDefinitionFromCsv(filePath), /missing required headers: neighbors/i);
+  });
 });
 
 register("loadMapDefinitionFromCsv rejects rows that do not match header length", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      "alpha,Alpha,north,0.1,0.2"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,0.1,0.2"].join("\n"),
     (filePath) => {
-      assert.throws(() => loadMapDefinitionFromCsv(filePath), /does not match the CSV header length/i);
+      assert.throws(
+        () => loadMapDefinitionFromCsv(filePath),
+        /does not match the CSV header length/i
+      );
     }
   );
 });
 
 register("loadMapDefinitionFromCsv rejects non-numeric coordinates", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      "alpha,Alpha,north,nope,0.2,"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,nope,0.2,"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /invalid x coordinate/i);
     }
@@ -81,10 +75,7 @@ register("loadMapDefinitionFromCsv rejects non-numeric coordinates", () => {
 
 register("loadMapDefinitionFromCsv rejects out-of-range coordinates", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      "alpha,Alpha,north,1.2,0.2,"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,1.2,0.2,"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /between 0 and 1/i);
     }
@@ -93,10 +84,7 @@ register("loadMapDefinitionFromCsv rejects out-of-range coordinates", () => {
 
 register("loadMapDefinitionFromCsv rejects rows without territory id", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      ",Alpha,north,0.1,0.2,"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", ",Alpha,north,0.1,0.2,"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /missing territory id/i);
     }
@@ -105,10 +93,7 @@ register("loadMapDefinitionFromCsv rejects rows without territory id", () => {
 
 register("loadMapDefinitionFromCsv rejects rows without territory name", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      "alpha,,north,0.1,0.2,"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", "alpha,,north,0.1,0.2,"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /missing a name/i);
     }
@@ -130,10 +115,7 @@ register("loadMapDefinitionFromCsv rejects duplicate territory ids", () => {
 
 register("loadMapDefinitionFromCsv rejects unknown neighbors", () => {
   withCsvFile(
-    [
-      "id,name,continentId,x,y,neighbors",
-      "alpha,Alpha,north,0.1,0.2,missing"
-    ].join("\n"),
+    ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,0.1,0.2,missing"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /unknown neighbor "missing"/i);
     }

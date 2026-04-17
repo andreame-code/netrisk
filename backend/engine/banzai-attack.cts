@@ -71,7 +71,11 @@ function buildBanzaiRound(roundIndex: number, combat: CombatPayload): BanzaiRoun
   };
 }
 
-function normalizeRequestedAttackDice(state: GameState, fromId: string, requestedAttackDice: number | null): number | null {
+function normalizeRequestedAttackDice(
+  state: GameState,
+  fromId: string,
+  requestedAttackDice: number | null
+): number | null {
   if (requestedAttackDice == null) {
     return null;
   }
@@ -83,7 +87,10 @@ function normalizeRequestedAttackDice(state: GameState, fromId: string, requeste
 
   const diceRuleSet = resolveDiceRuleSetFromState(state);
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
-  const maxAttackDice = Math.max(0, Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve));
+  const maxAttackDice = Math.max(
+    0,
+    Math.min(diceRuleSet.attackerMaxDice, from.armies - attackerReserve)
+  );
   if (maxAttackDice < 1) {
     return requestedAttackDice;
   }
@@ -92,18 +99,21 @@ function normalizeRequestedAttackDice(state: GameState, fromId: string, requeste
 }
 
 function resolveDiceRuleSetFromState(state: GameState): DiceRuleSet {
-  const diceRuleSetId = typeof state.diceRuleSetId === "string" && state.diceRuleSetId
-    ? state.diceRuleSetId
-    : "standard";
+  const diceRuleSetId =
+    typeof state.diceRuleSetId === "string" && state.diceRuleSetId
+      ? state.diceRuleSetId
+      : "standard";
   const gameConfig = state.gameConfig as Record<string, unknown> | null | undefined;
 
-  if (gameConfig
-    && typeof gameConfig.diceRuleSetName === "string"
-    && gameConfig.diceRuleSetName.trim().length
-    && Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice)
-    && Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice)
-    && typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
-    && typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean") {
+  if (
+    gameConfig &&
+    typeof gameConfig.diceRuleSetName === "string" &&
+    gameConfig.diceRuleSetName.trim().length &&
+    Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice) &&
+    Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice) &&
+    typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean" &&
+    typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean"
+  ) {
     return {
       id: diceRuleSetId,
       name: gameConfig.diceRuleSetName,
@@ -117,7 +127,12 @@ function resolveDiceRuleSetFromState(state: GameState): DiceRuleSet {
   return getDiceRuleSet(diceRuleSetId);
 }
 
-function canContinueBanzai(state: GameState, playerId: string, fromId: string, toId: string): boolean {
+function canContinueBanzai(
+  state: GameState,
+  playerId: string,
+  fromId: string,
+  toId: string
+): boolean {
   const from = state?.territories?.[fromId];
   const to = state?.territories?.[toId];
   if (!from || !to) {

@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -17,14 +22,23 @@ type AuthContext = {
   };
 };
 
-type RequireAuth = (req: unknown, res: unknown, body: Record<string, any>) => Promise<AuthContext | null>;
+type RequireAuth = (
+  req: unknown,
+  res: unknown,
+  body: Record<string, any>
+) => Promise<AuthContext | null>;
 type LoadGameContext = (gameId: string | null) => Promise<any>;
 type PersistGameContext = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
 type PersistWithAiTurns = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
 type BroadcastGame = (gameContext: any) => void;
 type GetTargetGameId = (body?: Record<string, unknown>, url?: URL | null) => string | null;
 type AddPlayer = (state: any, name: string, options?: Record<string, unknown>) => any;
-type SnapshotForState = (state: any, gameId: string | null, version: number | null, gameName: string | null) => unknown;
+type SnapshotForState = (
+  state: any,
+  gameId: string | null,
+  version: number | null,
+  gameName: string | null
+) => unknown;
 type Authorize = (action: string, context: Record<string, unknown>) => void;
 type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
@@ -47,7 +61,14 @@ async function handleAiJoinRoute(
   const gameContext = await loadGameContext(getTargetGameId(body, url));
   const result = addPlayer(gameContext.state, body.name, { isAi: true });
   if (!result.ok) {
-    sendLocalizedError(res, 400, result, result.error, result.errorKey || "server.aiJoin.failed", result.errorParams);
+    sendLocalizedError(
+      res,
+      400,
+      result,
+      result.error,
+      result.errorKey || "server.aiJoin.failed",
+      result.errorParams
+    );
     return;
   }
 
@@ -55,7 +76,12 @@ async function handleAiJoinRoute(
   broadcastGame(gameContext);
   sendJson(res, result.rejoined ? 200 : 201, {
     playerId: result.player.id,
-    state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
+    state: snapshotForState(
+      gameContext.state,
+      gameContext.gameId,
+      gameContext.version,
+      gameContext.gameName
+    ),
     player: result.player
   });
 }
@@ -82,9 +108,18 @@ async function handleJoinRoute(
   }
 
   const gameContext = await loadGameContext(getTargetGameId(body, url));
-  const result = addPlayer(gameContext.state, authContext.user.username, { linkedUserId: authContext.user.id });
+  const result = addPlayer(gameContext.state, authContext.user.username, {
+    linkedUserId: authContext.user.id
+  });
   if (!result.ok) {
-    sendLocalizedError(res, 400, result, result.error, result.errorKey || "server.join.failed", result.errorParams);
+    sendLocalizedError(
+      res,
+      400,
+      result,
+      result.error,
+      result.errorKey || "server.join.failed",
+      result.errorParams
+    );
     return;
   }
 
@@ -92,7 +127,12 @@ async function handleJoinRoute(
   broadcastGame(gameContext);
   sendJson(res, result.rejoined ? 200 : 201, {
     playerId: result.player.id,
-    state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName),
+    state: snapshotForState(
+      gameContext.state,
+      gameContext.gameId,
+      gameContext.version,
+      gameContext.gameName
+    ),
     user: publicUser(authContext.user)
   });
 }
@@ -132,12 +172,24 @@ async function handleStartRoute(
     authorize("game:start", { user: authContext.user, game: activeGame.game });
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
-    sendLocalizedError(res, statusCode, error, "Avvio partita non autorizzato.", "server.game.startUnauthorized");
+    sendLocalizedError(
+      res,
+      statusCode,
+      error,
+      "Avvio partita non autorizzato.",
+      "server.game.startUnauthorized"
+    );
     return;
   }
 
   if (gameContext.state.players.length < 2) {
-    sendLocalizedError(res, 400, null, "Servono almeno 2 giocatori.", "server.game.notEnoughPlayers");
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "Servono almeno 2 giocatori.",
+      "server.game.notEnoughPlayers"
+    );
     return;
   }
 
@@ -152,7 +204,12 @@ async function handleStartRoute(
   broadcastGame(gameContext);
   sendJson(res, 200, {
     ok: true,
-    state: snapshotForState(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName)
+    state: snapshotForState(
+      gameContext.state,
+      gameContext.gameId,
+      gameContext.version,
+      gameContext.gameName
+    )
   });
 }
 

@@ -1,7 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { REQUIRED_CRON_ENV_KEYS, REQUIRED_DEPLOY_ENV_KEYS } = require("../backend/required-runtime-env.cjs");
+const {
+  REQUIRED_CRON_ENV_KEYS,
+  REQUIRED_DEPLOY_ENV_KEYS
+} = require("../backend/required-runtime-env.cjs");
 
 interface RunOptions {
   cwd?: string;
@@ -22,7 +25,9 @@ function run(command: string, args: string[], options: RunOptions = {}): string 
   });
 
   if (result.status !== 0) {
-    const error = new Error((result.stderr || result.stdout || "").trim() || `${command} ${args.join(" ")} failed`) as SpawnError;
+    const error = new Error(
+      (result.stderr || result.stdout || "").trim() || `${command} ${args.join(" ")} failed`
+    ) as SpawnError;
     error.status = result.status;
     throw error;
   }
@@ -54,7 +59,11 @@ function currentBranch(): string {
   return run("git", ["branch", "--show-current"]).trim();
 }
 
-function pullEnv(outputFile: string, environment: string, branch: string | null = null): Record<string, string> {
+function pullEnv(
+  outputFile: string,
+  environment: string,
+  branch: string | null = null
+): Record<string, string> {
   const args = ["env", "pull", outputFile, `--environment=${environment}`, "--yes"];
   if (branch) {
     args.push(`--git-branch=${branch}`);
@@ -63,7 +72,11 @@ function pullEnv(outputFile: string, environment: string, branch: string | null 
   return parseEnvFile(outputFile);
 }
 
-function summarizeMissing(keys: string[], source: Record<string, string>, target: Record<string, string>): string[] {
+function summarizeMissing(
+  keys: string[],
+  source: Record<string, string>,
+  target: Record<string, string>
+): string[] {
   return keys.filter((key) => source[key] && !target[key]);
 }
 
@@ -78,10 +91,20 @@ function main(): void {
 
     const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !production[key]);
     const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !preview[key]);
-    const missingFromPreviewComparedToProduction = summarizeMissing(REQUIRED_DEPLOY_ENV_KEYS, production, preview);
-    const missingCronInProduction = REQUIRED_CRON_ENV_KEYS.filter((key: string) => !production[key]);
+    const missingFromPreviewComparedToProduction = summarizeMissing(
+      REQUIRED_DEPLOY_ENV_KEYS,
+      production,
+      preview
+    );
+    const missingCronInProduction = REQUIRED_CRON_ENV_KEYS.filter(
+      (key: string) => !production[key]
+    );
     const missingCronInPreview = REQUIRED_CRON_ENV_KEYS.filter((key: string) => !preview[key]);
-    const missingCronFromPreviewComparedToProduction = summarizeMissing(REQUIRED_CRON_ENV_KEYS, production, preview);
+    const missingCronFromPreviewComparedToProduction = summarizeMissing(
+      REQUIRED_CRON_ENV_KEYS,
+      production,
+      preview
+    );
 
     if (
       !missingInProduction.length &&
@@ -99,19 +122,27 @@ function main(): void {
       console.error(`Missing required production env vars: ${missingInProduction.join(", ")}`);
     }
     if (missingInPreview.length) {
-      console.error(`Missing required preview env vars for branch ${branch}: ${missingInPreview.join(", ")}`);
+      console.error(
+        `Missing required preview env vars for branch ${branch}: ${missingInPreview.join(", ")}`
+      );
     }
     if (missingFromPreviewComparedToProduction.length) {
-      console.error(`Preview branch ${branch} is missing vars present in production: ${missingFromPreviewComparedToProduction.join(", ")}`);
+      console.error(
+        `Preview branch ${branch} is missing vars present in production: ${missingFromPreviewComparedToProduction.join(", ")}`
+      );
     }
     if (missingCronInProduction.length) {
       console.error(`Missing cron env vars in production: ${missingCronInProduction.join(", ")}`);
     }
     if (missingCronInPreview.length) {
-      console.error(`Missing cron env vars in preview for branch ${branch}: ${missingCronInPreview.join(", ")}`);
+      console.error(
+        `Missing cron env vars in preview for branch ${branch}: ${missingCronInPreview.join(", ")}`
+      );
     }
     if (missingCronFromPreviewComparedToProduction.length) {
-      console.error(`Preview branch ${branch} is missing cron vars present in production: ${missingCronFromPreviewComparedToProduction.join(", ")}`);
+      console.error(
+        `Preview branch ${branch} is missing cron vars present in production: ${missingCronFromPreviewComparedToProduction.join(", ")}`
+      );
     }
 
     process.exitCode = 1;
@@ -119,8 +150,7 @@ function main(): void {
     [productionFile, previewFile].forEach((filePath: string) => {
       try {
         fs.rmSync(filePath, { force: true });
-      } catch (error) {
-      }
+      } catch (error) {}
     });
   }
 }

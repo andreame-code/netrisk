@@ -6,7 +6,4 @@ export {
   listContentPacks
 } from "./content/content-packs/index.cjs";
 
-export type {
-  ContentPack,
-  ContentPackSummary
-} from "./content/content-packs/index.cjs";
+export type { ContentPack, ContentPackSummary } from "./content/content-packs/index.cjs";

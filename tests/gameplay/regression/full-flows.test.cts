@@ -6,19 +6,34 @@ const { resolveSingleAttackRoll } = require("../../../backend/engine/combat-reso
 const { resolveConquest } = require("../../../backend/engine/conquest-resolution.cjs");
 const { moveFortifyArmies } = require("../../../backend/engine/fortify-movement.cjs");
 const { createFixedRandom, rollsToRandomValues } = require("../helpers/random.cjs");
-const { makeGraph, makeMapDefinition, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makeGraph,
+  makeMapDefinition,
+  makePlayers,
+  makeState,
+  makeTerritory,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("regression: setup to reinforcement placement keeps state coherent", () => {
   const players = makePlayers(["Alice", "Bob"]);
-  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"]), makeTerritory("c", []), makeTerritory("d", [])];
+  const territories = [
+    makeTerritory("a", ["b"]),
+    makeTerritory("b", ["a"]),
+    makeTerritory("c", []),
+    makeTerritory("d", [])
+  ];
   const state = createInitialGameState(makeMapDefinition(territories), players);
   const currentPlayer = state.players[state.currentTurnIndex];
   const reinforcements = calculateReinforcements(state, currentPlayer.id);
   state.reinforcementPool = reinforcements.totalReinforcements;
 
-  const owned = Object.keys(state.territories).find((territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id);
+  const owned = Object.keys(state.territories).find(
+    (territoryId: string) => state.territories[territoryId].ownerId === currentPlayer.id
+  );
   if (!owned) {
     throw new Error("Expected the current player to own at least one territory.");
   }
@@ -29,7 +44,7 @@ register("regression: setup to reinforcement placement keeps state coherent", ()
 });
 
 register("regression: attack to combat to conquest updates ownership and armies", () => {
-  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"] )];
+  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])];
   const graph = makeGraph(territories);
   const state = makeState({
     players: makePlayers(["Alice", "Bob"]),

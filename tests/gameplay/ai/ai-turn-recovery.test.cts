@@ -1,8 +1,5 @@
 const assert = require("node:assert/strict");
-const {
-  createInitialState,
-  startGame
-} = require("../../../backend/engine/game-engine.cjs");
+const { createInitialState, startGame } = require("../../../backend/engine/game-engine.cjs");
 const { recoverAiTurnState } = require("../../../backend/services/ai-turn-recovery.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;

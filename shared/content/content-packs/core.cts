@@ -8,7 +8,8 @@ import type { ContentPack } from "./types.cjs";
 export const coreContentPack: Readonly<ContentPack> = Object.freeze({
   id: "core",
   name: "Core",
-  description: "Baseline NetRisk module pack with the default map, rules, theme, and player pieces.",
+  description:
+    "Baseline NetRisk module pack with the default map, rules, theme, and player pieces.",
   defaultSiteThemeId: DEFAULT_SITE_THEME_ID,
   defaultMapId: "classic-mini",
   defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID,

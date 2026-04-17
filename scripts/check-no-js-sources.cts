@@ -8,7 +8,10 @@ const allowedPathPatterns = [
   /^\.gitignore$/,
   /^\.githooks\/.+$/,
   /^\.github\/.+\.yml$/,
+  /^\.prettierignore$/,
+  /^\.prettierrc\.json$/,
   /^LICENSE$/,
+  /^eslint\.config\.mjs$/,
   /^package(?:-lock)?\.json$/,
   /^tsconfig(?:\.[^/]+)?\.json$/,
   /^vercel\.json$/,
@@ -34,7 +37,9 @@ const trackedFiles = execFileSync("git", ["ls-files"], {
   .map((filePath) => filePath.trim())
   .filter(Boolean);
 
-const violations = trackedFiles.filter((filePath) => !isTypeScriptSource(filePath) && !isAllowlisted(filePath));
+const violations = trackedFiles.filter(
+  (filePath) => !isTypeScriptSource(filePath) && !isAllowlisted(filePath)
+);
 
 if (violations.length > 0) {
   console.error("Found tracked files outside the TS-complete allowlist:");
