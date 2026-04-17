@@ -1,5 +1,11 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
-import { readValidatedJson } from "./core/validated-json.mjs";
+import {
+  getProfile,
+  getSession,
+  login,
+  logout,
+  updateThemePreference
+} from "./core/api/client.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type {
   GameOptionsResponse,
@@ -10,19 +16,9 @@ import type {
   ModulesCatalogResponse,
   NetRiskUiSlotContribution
 } from "./core/types.mjs";
-import {
-  authSessionResponseSchema,
-  loginResponseSchema,
-  profileResponseSchema,
-  themePreferenceResponseSchema
-} from "./generated/shared-runtime-validation.mjs";
 import type {
-  AuthSessionResponse,
-  LoginResponse,
   ProfileContract as ProfileSummary,
-  ProfileResponse,
-  PublicUser,
-  ThemePreferenceResponse
+  PublicUser
 } from "./generated/shared-runtime-validation.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
@@ -209,67 +205,11 @@ function isNavigationAbort(error: unknown): boolean {
   return typeof error === "object" && "name" in error && error.name === "AbortError";
 }
 
-async function persistThemePreference(theme: string): Promise<ThemePreferenceResponse> {
-  const response = await fetch("/api/profile/preferences/theme", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ theme })
+async function persistThemePreference(theme: string) {
+  return updateThemePreference(theme, {
+    errorMessage: t("errors.requestFailed"),
+    fallbackMessage: t("profile.preferences.status.saveFailed", { theme: themeLabel(theme) })
   });
-  if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(translateServerMessage(payload, t("errors.requestFailed")));
-  }
-
-  return readValidatedJson(
-    response,
-    themePreferenceResponseSchema,
-    t("profile.preferences.status.saveFailed", { theme: themeLabel(theme) }),
-    "ThemePreferenceResponse"
-  );
-}
-
-function normalizeSessionUser(session: AuthSessionResponse): PublicUser {
-  return session.user;
-}
-
-function normalizeLoginUser(response: LoginResponse): PublicUser {
-  return response.user;
-}
-
-async function readSessionResponse(response: Response): Promise<AuthSessionResponse> {
-  if (!response.ok) {
-    throw new Error(t("profile.errors.loginRequired"));
-  }
-
-  return readValidatedJson(
-    response,
-    authSessionResponseSchema,
-    t("profile.errors.loadFailed"),
-    "AuthSessionResponse"
-  );
-}
-
-async function readProfileResponse(response: Response): Promise<ProfileResponse> {
-  if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
-  }
-
-  return readValidatedJson(
-    response,
-    profileResponseSchema,
-    t("profile.errors.loadFailed"),
-    "ProfileResponse"
-  );
-}
-
-async function readLoginResponse(response: Response): Promise<LoginResponse> {
-  if (!response.ok) {
-    const payload = await response.json();
-    throw new Error(translateServerMessage(payload, t("errors.loginFailed")));
-  }
-
-  return readValidatedJson(response, loginResponseSchema, t("errors.loginFailed"), "LoginResponse");
 }
 
 function renderAuthArea(user: PublicUser | null): void {
@@ -881,12 +821,14 @@ async function loadProfile() {
   let sessionUser: PublicUser | null = null;
 
   try {
-    const sessionResponse = await fetch("/api/auth/session");
-    const session = await readSessionResponse(sessionResponse);
+    const session = await getSession({
+      errorMessage: t("profile.errors.loginRequired"),
+      fallbackMessage: t("profile.errors.loadFailed")
+    });
     if (requestId !== profileRequestId) {
       return;
     }
-    sessionUser = normalizeSessionUser(session);
+    sessionUser = session.user;
     currentSessionUser = sessionUser;
     themeManager.applyUserTheme(sessionUser);
     elements.authStatus.textContent = t("profile.auth.loggedIn", {
@@ -897,8 +839,10 @@ async function loadProfile() {
     showThemePreferences(true);
     syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(sessionUser) });
     await loadModuleCatalog(sessionUser);
-    const profileResponse = await fetch("/api/profile");
-    const payload = await readProfileResponse(profileResponse);
+    const payload = await getProfile({
+      errorMessage: t("profile.errors.unavailable"),
+      fallbackMessage: t("profile.errors.loadFailed")
+    });
     if (requestId !== profileRequestId) {
       return;
     }
@@ -954,17 +898,18 @@ if (elements.headerLoginForm) {
 
     try {
       setHeaderAuthFeedback("");
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await readLoginResponse(response);
+      const data = await login(
+        { username, password },
+        {
+          errorMessage: t("errors.loginFailed"),
+          fallbackMessage: t("errors.loginFailed")
+        }
+      );
 
       if (elements.headerAuthPassword) {
         elements.headerAuthPassword.value = "";
       }
-      currentSessionUser = normalizeLoginUser(data);
+      currentSessionUser = data.user;
       await loadProfile();
     } catch (error: unknown) {
       setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
@@ -990,12 +935,9 @@ elements.logoutButton.addEventListener("click", async () => {
   }
 
   try {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({})
+    await logout({
+      errorMessage: t("errors.requestFailed"),
+      fallbackMessage: t("errors.requestFailed")
     });
   } catch (_error: unknown) {}
 });
