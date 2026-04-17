@@ -1,4 +1,9 @@
-import { createLocalizedError, createValidationFailure, type MessageParams, type ValidationFailure } from "./messages.cjs";
+import {
+  createLocalizedError,
+  createValidationFailure,
+  type MessageParams,
+  type ValidationFailure
+} from "./messages.cjs";
 import { createModuleRegistry } from "./module-registry.cjs";
 
 export const CardType = Object.freeze({
@@ -76,7 +81,11 @@ function countTypes(cards: Card[]): Partial<Record<CardTypeValue, number>> {
   }, {});
 }
 
-function buildInvalidResult(reason: string, reasonKey: string, reasonParams: MessageParams = {}): ValidationFailure {
+function buildInvalidResult(
+  reason: string,
+  reasonKey: string,
+  reasonParams: MessageParams = {}
+): ValidationFailure {
   return createValidationFailure(reason, reasonKey, reasonParams);
 }
 
@@ -86,12 +95,18 @@ function isCardType(value: unknown): value is CardTypeValue {
 
 export function validateStandardCardSet(cards: Card[]): CardSetValidationResult {
   if (!Array.isArray(cards) || cards.length !== 3) {
-    return buildInvalidResult("Card sets must contain exactly three cards.", "cards.invalidSetLength");
+    return buildInvalidResult(
+      "Card sets must contain exactly three cards.",
+      "cards.invalidSetLength"
+    );
   }
 
   const invalidCard = cards.find((card) => !card || !isCardType(card.type));
   if (invalidCard) {
-    return buildInvalidResult("Card set contains an unsupported card type.", "cards.unsupportedType");
+    return buildInvalidResult(
+      "Card set contains an unsupported card type.",
+      "cards.unsupportedType"
+    );
   }
 
   const counts = countTypes(cards);
@@ -116,34 +131,53 @@ export function validateStandardCardSet(cards: Card[]): CardSetValidationResult 
     };
   }
 
-  return buildInvalidResult("Card set does not match a valid standard trade.", "cards.invalidTrade");
+  return buildInvalidResult(
+    "Card set does not match a valid standard trade.",
+    "cards.invalidTrade"
+  );
 }
 
 export function standardTradeBonusForIndex(tradeIndex: number): number {
   if (!Number.isInteger(tradeIndex) || tradeIndex < 0) {
-    throw createLocalizedError("Trade index must be a non-negative integer.", "cards.invalidTradeIndex");
+    throw createLocalizedError(
+      "Trade index must be a non-negative integer.",
+      "cards.invalidTradeIndex"
+    );
   }
 
   if (tradeIndex < STANDARD_TRADE_VALUES.length) {
     return STANDARD_TRADE_VALUES[tradeIndex];
   }
 
-  return STANDARD_TRADE_VALUES[STANDARD_TRADE_VALUES.length - 1] + ((tradeIndex - STANDARD_TRADE_VALUES.length + 1) * 5);
+  return (
+    STANDARD_TRADE_VALUES[STANDARD_TRADE_VALUES.length - 1] +
+    (tradeIndex - STANDARD_TRADE_VALUES.length + 1) * 5
+  );
 }
 
-export function createStandardDeck(territoryIds: string[] = [], options: CreateDeckOptions = {}): Card[] {
+export function createStandardDeck(
+  territoryIds: string[] = [],
+  options: CreateDeckOptions = {}
+): Card[] {
   const ids = Array.isArray(territoryIds) ? territoryIds.filter(Boolean) : [];
-  const wildCount = typeof options.wildCount === "number" && Number.isInteger(options.wildCount) ? options.wildCount : 2;
-  const typedCards = ids.map((territoryId, index) => createCard({
-    id: "card-" + territoryId,
-    territoryId,
-    type: STANDARD_NON_WILD_TYPES[index % STANDARD_NON_WILD_TYPES.length]
-  }));
-  const wildCards = Array.from({ length: Math.max(0, wildCount) }, (_, index) => createCard({
-    id: "card-wild-" + (index + 1),
-    type: CardType.WILD,
-    territoryId: null
-  }));
+  const wildCount =
+    typeof options.wildCount === "number" && Number.isInteger(options.wildCount)
+      ? options.wildCount
+      : 2;
+  const typedCards = ids.map((territoryId, index) =>
+    createCard({
+      id: "card-" + territoryId,
+      territoryId,
+      type: STANDARD_NON_WILD_TYPES[index % STANDARD_NON_WILD_TYPES.length]
+    })
+  );
+  const wildCards = Array.from({ length: Math.max(0, wildCount) }, (_, index) =>
+    createCard({
+      id: "card-wild-" + (index + 1),
+      type: CardType.WILD,
+      territoryId: null
+    })
+  );
   return [...typedCards, ...wildCards];
 }
 
@@ -157,20 +191,23 @@ export const standardCardRuleSet: Readonly<CardRuleSet> = Object.freeze({
   maxHandBeforeForcedTrade: STANDARD_MAX_HAND_BEFORE_FORCED_TRADE
 });
 
-const cardRuleSetRegistry = createModuleRegistry<CardRuleSet>(
-  [standardCardRuleSet],
-  {
-    onMissing(ruleSetId) {
-      throw createLocalizedError("Unsupported card rule set.", "cards.unsupportedRuleSet", { ruleSetId });
-    }
+const cardRuleSetRegistry = createModuleRegistry<CardRuleSet>([standardCardRuleSet], {
+  onMissing(ruleSetId) {
+    throw createLocalizedError("Unsupported card rule set.", "cards.unsupportedRuleSet", {
+      ruleSetId
+    });
   }
-);
+});
 
-export function findCardRuleSet(ruleSetId: string | null | undefined): Readonly<CardRuleSet> | null {
+export function findCardRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<CardRuleSet> | null {
   return cardRuleSetRegistry.find(ruleSetId);
 }
 
-export function getCardRuleSet(ruleSetId: string = STANDARD_CARD_RULE_SET_ID): Readonly<CardRuleSet> {
+export function getCardRuleSet(
+  ruleSetId: string = STANDARD_CARD_RULE_SET_ID
+): Readonly<CardRuleSet> {
   return cardRuleSetRegistry.get(ruleSetId, STANDARD_CARD_RULE_SET_ID);
 }
 

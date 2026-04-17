@@ -22,16 +22,23 @@ export interface TurnTimeoutEnforcementResult {
   skippedConflicts: number;
 }
 
-export async function enforceTurnTimeouts(
-  options: {
-    listGames: () => Promise<GameEntry[]> | GameEntry[];
-    saveGame: (gameId: string, state: Record<string, unknown>, expectedVersion?: number | null) => Promise<unknown> | unknown;
-    forceEndTurn: ForceEndTurn;
-    recoverAiTurnState?: RecoverAiTurnState;
-    afterSave?: (payload: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => Promise<void> | void;
-    now?: Date;
-  }
-): Promise<TurnTimeoutEnforcementResult> {
+export async function enforceTurnTimeouts(options: {
+  listGames: () => Promise<GameEntry[]> | GameEntry[];
+  saveGame: (
+    gameId: string,
+    state: Record<string, unknown>,
+    expectedVersion?: number | null
+  ) => Promise<unknown> | unknown;
+  forceEndTurn: ForceEndTurn;
+  recoverAiTurnState?: RecoverAiTurnState;
+  afterSave?: (payload: {
+    gameId: string;
+    gameName: string;
+    state: Record<string, unknown>;
+    version: number | null;
+  }) => Promise<void> | void;
+  now?: Date;
+}): Promise<TurnTimeoutEnforcementResult> {
   const entries = await options.listGames();
   const result: TurnTimeoutEnforcementResult = {
     scannedGames: entries.length,
@@ -42,7 +49,10 @@ export async function enforceTurnTimeouts(
   };
 
   for (const entry of entries) {
-    const expiredTurn = findExpiredTurn(entry.state as unknown as Parameters<typeof findExpiredTurn>[0], options.now);
+    const expiredTurn = findExpiredTurn(
+      entry.state as unknown as Parameters<typeof findExpiredTurn>[0],
+      options.now
+    );
     if (!expiredTurn) {
       continue;
     }
@@ -50,17 +60,26 @@ export async function enforceTurnTimeouts(
     result.eligibleGames += 1;
     result.expiredGames += 1;
 
-    const forceResult = options.forceEndTurn(entry.state as unknown as Parameters<ForceEndTurn>[0], expiredTurn.currentPlayerId, {
-      reason: "timeout",
-      turnTimeoutHours: expiredTurn.turnTimeoutHours,
-      now: options.now
-    });
+    const forceResult = options.forceEndTurn(
+      entry.state as unknown as Parameters<ForceEndTurn>[0],
+      expiredTurn.currentPlayerId,
+      {
+        reason: "timeout",
+        turnTimeoutHours: expiredTurn.turnTimeoutHours,
+        now: options.now
+      }
+    );
     if (forceResult.ok !== true) {
-      throw new Error((forceResult as { message?: string }).message || `Impossibile forzare il turno della partita ${entry.id}.`);
+      throw new Error(
+        (forceResult as { message?: string }).message ||
+          `Impossibile forzare il turno della partita ${entry.id}.`
+      );
     }
 
     try {
-      const savedGame = await options.saveGame(entry.id, entry.state, entry.version ?? null) as { version?: number | null } | null;
+      const savedGame = (await options.saveGame(entry.id, entry.state, entry.version ?? null)) as {
+        version?: number | null;
+      } | null;
       let finalVersion = savedGame?.version ?? entry.version ?? null;
       result.forcedTurns += 1;
 
@@ -71,7 +90,8 @@ export async function enforceTurnTimeouts(
         });
         if (aiRecovery.shouldPersist) {
           const postAiSave = await options.saveGame(entry.id, entry.state, finalVersion);
-          finalVersion = (postAiSave as { version?: number | null } | null)?.version ?? finalVersion;
+          finalVersion =
+            (postAiSave as { version?: number | null } | null)?.version ?? finalVersion;
         }
       }
 

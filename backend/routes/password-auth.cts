@@ -1,4 +1,9 @@
-type SendJson = (res: unknown, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
 type SendLocalizedError = (
   res: unknown,
   statusCode: number,
@@ -11,7 +16,11 @@ type SendLocalizedError = (
 ) => void;
 
 type AuthStore = {
-  registerPasswordUser(input: { username?: string; password?: string; email?: string }): Promise<any>;
+  registerPasswordUser(input: {
+    username?: string;
+    password?: string;
+    email?: string;
+  }): Promise<any>;
   loginWithPassword(username?: string, password?: string): Promise<any>;
   logout(sessionToken: string | null): Promise<void> | void;
 };
@@ -34,7 +43,14 @@ async function handleRegisterRoute(
     email: body.email
   });
   if (!result.ok) {
-    sendLocalizedError(res, 400, result, result.error, result.errorKey || "register.errors.submitFailed", result.errorParams);
+    sendLocalizedError(
+      res,
+      400,
+      result,
+      result.error,
+      result.errorKey || "register.errors.submitFailed",
+      result.errorParams
+    );
     return;
   }
 
@@ -56,17 +72,29 @@ async function handleLoginRoute(
 ): Promise<void> {
   const result = await auth.loginWithPassword(body.username, body.password);
   if (!result.ok) {
-    sendLocalizedError(res, 401, result, result.error, result.errorKey || "errors.loginFailed", result.errorParams);
+    sendLocalizedError(
+      res,
+      401,
+      result,
+      result.error,
+      result.errorKey || "errors.loginFailed",
+      result.errorParams
+    );
     return;
   }
 
-  sendJson(res, 200, {
-    ok: true,
-    user: result.user,
-    availableAuthProviders: ["password", "email", "google", "discord"]
-  }, {
-    "Set-Cookie": buildSessionCookie(req, result.sessionToken)
-  });
+  sendJson(
+    res,
+    200,
+    {
+      ok: true,
+      user: result.user,
+      availableAuthProviders: ["password", "email", "google", "discord"]
+    },
+    {
+      "Set-Cookie": buildSessionCookie(req, result.sessionToken)
+    }
+  );
 }
 
 async function handleLogoutRoute(
@@ -79,9 +107,14 @@ async function handleLogoutRoute(
   clearSessionCookie: ClearSessionCookie
 ): Promise<void> {
   await auth.logout(extractSessionToken(req, body));
-  sendJson(res, 200, { ok: true }, {
-    "Set-Cookie": clearSessionCookie(req)
-  });
+  sendJson(
+    res,
+    200,
+    { ok: true },
+    {
+      "Set-Cookie": clearSessionCookie(req)
+    }
+  );
 }
 
 module.exports = {

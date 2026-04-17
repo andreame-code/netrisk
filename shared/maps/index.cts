@@ -18,11 +18,7 @@ export interface MapSummary {
 
 export type SupportedMap = (typeof registeredMaps)[number];
 
-const mapRegistry = createModuleRegistry([
-  classicMiniMap,
-  middleEarthMap,
-  worldClassicMap
-]);
+const mapRegistry = createModuleRegistry([classicMiniMap, middleEarthMap, worldClassicMap]);
 
 export const registeredMaps = mapRegistry.entries;
 

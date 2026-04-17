@@ -56,18 +56,21 @@ function invalidFromValidation(validation: AttackValidationResult): FailedCombat
 }
 
 function resolveDiceRuleSetFromState(state: GameState): DiceRuleSet {
-  const diceRuleSetId = typeof state.diceRuleSetId === "string" && state.diceRuleSetId
-    ? state.diceRuleSetId
-    : "standard";
+  const diceRuleSetId =
+    typeof state.diceRuleSetId === "string" && state.diceRuleSetId
+      ? state.diceRuleSetId
+      : "standard";
   const gameConfig = state.gameConfig as Record<string, unknown> | null | undefined;
 
-  if (gameConfig
-    && typeof gameConfig.diceRuleSetName === "string"
-    && gameConfig.diceRuleSetName.trim().length
-    && Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice)
-    && Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice)
-    && typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
-    && typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean") {
+  if (
+    gameConfig &&
+    typeof gameConfig.diceRuleSetName === "string" &&
+    gameConfig.diceRuleSetName.trim().length &&
+    Number.isInteger(gameConfig.diceRuleSetAttackerMaxDice) &&
+    Number.isInteger(gameConfig.diceRuleSetDefenderMaxDice) &&
+    typeof gameConfig.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean" &&
+    typeof gameConfig.diceRuleSetDefenderWinsTies === "boolean"
+  ) {
     return {
       id: diceRuleSetId,
       name: gameConfig.diceRuleSetName,
@@ -101,21 +104,35 @@ export function resolveSingleAttackRoll(
   }
 
   const random = typeof options.random === "function" ? options.random : secureRandom;
-  const diceRuleSet = options.diceRuleSet
-    || (options.diceRuleSetId ? getDiceRuleSet(options.diceRuleSetId) : resolveDiceRuleSetFromState(state));
+  const diceRuleSet =
+    options.diceRuleSet ||
+    (options.diceRuleSetId
+      ? getDiceRuleSet(options.diceRuleSetId)
+      : resolveDiceRuleSetFromState(state));
   const attackerReserve = diceRuleSet.attackerMustLeaveOneArmyBehind ? 1 : 0;
 
-  const maxAttackDice = Math.min(diceRuleSet.attackerMaxDice, attackerState.armies - attackerReserve);
+  const maxAttackDice = Math.min(
+    diceRuleSet.attackerMaxDice,
+    attackerState.armies - attackerReserve
+  );
   const maxDefendDice = Math.min(diceRuleSet.defenderMaxDice, defenderState.armies);
 
   const attackDiceCount = options.attackDice == null ? maxAttackDice : Number(options.attackDice);
   const defendDiceCount = options.defendDice == null ? maxDefendDice : Number(options.defendDice);
 
-  if (!Number.isInteger(attackDiceCount) || attackDiceCount < 1 || attackDiceCount > maxAttackDice) {
+  if (
+    !Number.isInteger(attackDiceCount) ||
+    attackDiceCount < 1 ||
+    attackDiceCount > maxAttackDice
+  ) {
     throw new Error(`Attacker dice must be between 1 and ${maxAttackDice}.`);
   }
 
-  if (!Number.isInteger(defendDiceCount) || defendDiceCount < 1 || defendDiceCount > maxDefendDice) {
+  if (
+    !Number.isInteger(defendDiceCount) ||
+    defendDiceCount < 1 ||
+    defendDiceCount > maxDefendDice
+  ) {
     throw new Error(`Defender dice must be between 1 and ${maxDefendDice}.`);
   }
 

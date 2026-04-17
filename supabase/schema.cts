@@ -1,4 +1,5 @@
-export const supabaseSchemaSql = `
+export const supabaseSchemaSql =
+  `
 create table if not exists public.users (
   id text primary key,
   username text not null unique,

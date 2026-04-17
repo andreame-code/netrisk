@@ -97,20 +97,24 @@ function safeClone<T>(value: T): T {
 
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId);
-  return map ? map.name : (mapId || null);
+  return map ? map.name : mapId || null;
 }
 
 function normalizeStateRecord<T extends GameStateRecord>(state: T): T {
   return migrateGameStateExtensions(state) as T;
 }
 
-function normalizeActiveModules(activeModules: GameModuleReference[] | null | undefined): Array<{ id: string; version: string }> {
+function normalizeActiveModules(
+  activeModules: GameModuleReference[] | null | undefined
+): Array<{ id: string; version: string }> {
   if (!Array.isArray(activeModules)) {
     return [];
   }
 
   return activeModules
-    .filter((entry): entry is GameModuleReference => Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string"))
+    .filter((entry): entry is GameModuleReference =>
+      Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string")
+    )
     .map((entry) => ({
       id: String(entry.id),
       version: String(entry.version)
@@ -137,9 +141,14 @@ function normalizeGameName(name: unknown, fallbackIndex: number): string {
 function summarizeGame(entry: GameEntry): GameSummary {
   const state = normalizeStateRecord(entry.state || {});
   const config = state.gameConfig || null;
-  const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players) ? config.players : [];
-  const totalPlayers = Number.isInteger(config?.totalPlayers) ? Number(config?.totalPlayers) : configuredPlayers.length;
-  const version = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
+  const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players)
+    ? config.players
+    : [];
+  const totalPlayers = Number.isInteger(config?.totalPlayers)
+    ? Number(config?.totalPlayers)
+    : configuredPlayers.length;
+  const version =
+    Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
   const activeModules = normalizeActiveModules(config?.activeModules);
 
   return {
@@ -151,14 +160,15 @@ function summarizeGame(entry: GameEntry): GameSummary {
     playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     contentPackId: config?.contentPackId || null,
     mapId: config?.mapId || null,
-    mapName: config ? (config.mapName || readableMapName(config.mapId)) : null,
+    mapName: config ? config.mapName || readableMapName(config.mapId) : null,
     diceRuleSetId: config?.diceRuleSetId || null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
     activeModules,
     gamePresetId: typeof config?.gamePresetId === "string" ? config.gamePresetId : null,
     contentProfileId: typeof config?.contentProfileId === "string" ? config.contentProfileId : null,
-    gameplayProfileId: typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
+    gameplayProfileId:
+      typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
     uiProfileId: typeof config?.uiProfileId === "string" ? config.uiProfileId : null,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt
@@ -166,21 +176,31 @@ function summarizeGame(entry: GameEntry): GameSummary {
 }
 
 function createGameSessionStore(options: GameSessionStoreOptions = {}) {
-  const datastore = (options.datastore || createDatastore({
-    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
-    legacyGamesFile: options.dataFile || path.join(__dirname, "..", "data", "games.json"),
-    legacyUsersFile: options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
-    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
-  })) as NonNullable<GameSessionStoreOptions["datastore"]>;
+  const datastore = (options.datastore ||
+    createDatastore({
+      dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+      legacyGamesFile: options.dataFile || path.join(__dirname, "..", "data", "games.json"),
+      legacyUsersFile:
+        options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+      legacySessionsFile:
+        options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
+    })) as NonNullable<GameSessionStoreOptions["datastore"]>;
 
   function listGames() {
-    return mapMaybe(datastore.listGames(), (games: GameEntry[]) => games
-      .slice()
-      .sort((left: GameEntry, right: GameEntry) => String(right.updatedAt).localeCompare(String(left.updatedAt)))
-      .map(summarizeGame));
+    return mapMaybe(datastore.listGames(), (games: GameEntry[]) =>
+      games
+        .slice()
+        .sort((left: GameEntry, right: GameEntry) =>
+          String(right.updatedAt).localeCompare(String(left.updatedAt))
+        )
+        .map(summarizeGame)
+    );
   }
 
-  function createGame(initialState: GameStateRecord, input: { name?: unknown; creatorUserId?: string | null } = {}) {
+  function createGame(
+    initialState: GameStateRecord,
+    input: { name?: unknown; creatorUserId?: string | null } = {}
+  ) {
     if (!initialState || typeof initialState !== "object") {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
@@ -202,7 +222,8 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         mapMaybe(datastore.setActiveGameId(created.id), () => ({
           game: summarizeGame(created),
           state: normalizeStateRecord(safeClone(created.state))
-        })));
+        }))
+      );
     });
   }
 
@@ -275,11 +296,14 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
 
-      const currentVersion = Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
+      const currentVersion =
+        Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
       entry.version = currentVersion;
 
       if (expectedVersion != null && expectedVersion !== currentVersion) {
-        const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.") as VersionConflictError;
+        const conflict = new Error(
+          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente."
+        ) as VersionConflictError;
         conflict.code = "VERSION_CONFLICT";
         conflict.currentVersion = currentVersion;
         conflict.currentState = safeClone(entry.state);
@@ -297,9 +321,8 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
   function ensureActiveGame(createInitialState: () => GameStateRecord) {
     return chainMaybe(datastore.listGames(), (games: GameEntry[]) =>
       chainMaybe(datastore.getActiveGameId(), (activeGameId: string | null) => {
-        const preferredId = activeGameId && games.some((game) => game.id === activeGameId)
-          ? activeGameId
-          : null;
+        const preferredId =
+          activeGameId && games.some((game) => game.id === activeGameId) ? activeGameId : null;
 
         if (preferredId) {
           return openGame(preferredId);
@@ -310,7 +333,8 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         }
 
         return createGame(createInitialState(), { name: "Partita 1" });
-      }));
+      })
+    );
   }
 
   return {

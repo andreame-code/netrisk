@@ -39,7 +39,11 @@ function validateState(state: GameState): void {
     throw new Error("Game state must contain territories for reinforcement placement.");
   }
 
-  if (!Number.isInteger(state.currentTurnIndex) || state.currentTurnIndex < 0 || state.currentTurnIndex >= state.players.length) {
+  if (
+    !Number.isInteger(state.currentTurnIndex) ||
+    state.currentTurnIndex < 0 ||
+    state.currentTurnIndex >= state.players.length
+  ) {
     throw new Error("Game state has an invalid currentTurnIndex for reinforcement placement.");
   }
 
@@ -48,7 +52,11 @@ function validateState(state: GameState): void {
   }
 }
 
-export function placeReinforcement(state: GameState, playerId: string, territoryId: string): ReinforcementPlacementResult {
+export function placeReinforcement(
+  state: GameState,
+  playerId: string,
+  territoryId: string
+): ReinforcementPlacementResult {
   validateState(state);
 
   if (!playerId) {

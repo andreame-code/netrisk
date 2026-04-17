@@ -35,7 +35,11 @@ async function findAvailablePort(startPort: number, attempts: number = 20): Prom
   throw new Error(`Nessuna porta libera trovata a partire da ${startPort}.`);
 }
 
-async function removeIfExists(filePath: string, attempts: number = 10, options: CleanupOptions = {}): Promise<void> {
+async function removeIfExists(
+  filePath: string,
+  attempts: number = 10,
+  options: CleanupOptions = {}
+): Promise<void> {
   const strict = options.strict !== false;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -67,11 +71,17 @@ async function cleanupSqliteFiles(dbFile: string): Promise<void> {
   await removeIfExists(dbFile);
 }
 
-async function cleanupStaleE2eDatabases(dataDir: string, staleAgeMs: number = 10 * 60 * 1000): Promise<void> {
+async function cleanupStaleE2eDatabases(
+  dataDir: string,
+  staleAgeMs: number = 10 * 60 * 1000
+): Promise<void> {
   const entries = await fs.promises.readdir(dataDir, { withFileTypes: true });
   const now = Date.now();
   const candidates = entries
-    .filter((entry: import("node:fs").Dirent) => entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name))
+    .filter(
+      (entry: import("node:fs").Dirent) =>
+        entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name)
+    )
     .map((entry: import("node:fs").Dirent) => path.join(dataDir, entry.name));
 
   for (const target of candidates) {
@@ -90,10 +100,13 @@ function wait(ms: number): Promise<void> {
 
 function isServerHealthy(baseURL: string): Promise<boolean> {
   return new Promise((resolve: (value: boolean) => void) => {
-    const request = http.get(`${baseURL}/api/health`, (response: import("node:http").IncomingMessage) => {
-      response.resume();
-      resolve(response.statusCode === 200);
-    });
+    const request = http.get(
+      `${baseURL}/api/health`,
+      (response: import("node:http").IncomingMessage) => {
+        response.resume();
+        resolve(response.statusCode === 200);
+      }
+    );
 
     request.on("error", () => resolve(false));
     request.setTimeout(2000, () => {
@@ -138,11 +151,15 @@ async function main(): Promise<void> {
   };
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
-  const serverChild = spawn(process.execPath, [path.join(repoRoot, ".tsbuild", "scripts", "start-e2e.cjs")], {
-    cwd: repoRoot,
-    stdio: "inherit",
-    env: runnerEnv
-  });
+  const serverChild = spawn(
+    process.execPath,
+    [path.join(repoRoot, ".tsbuild", "scripts", "start-e2e.cjs")],
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: runnerEnv
+    }
+  );
 
   try {
     await waitForServer(baseURL);
@@ -152,11 +169,15 @@ async function main(): Promise<void> {
     throw error;
   }
 
-  const child = spawn(process.execPath, [playwrightCli, "test", "--config", playwrightConfigPath, ...args], {
-    cwd: repoRoot,
-    stdio: "inherit",
-    env: runnerEnv
-  });
+  const child = spawn(
+    process.execPath,
+    [playwrightCli, "test", "--config", playwrightConfigPath, ...args],
+    {
+      cwd: repoRoot,
+      stdio: "inherit",
+      env: runnerEnv
+    }
+  );
 
   const result = await new Promise<ExitResult>((resolve) => {
     child.on("exit", (code: number | null, signal: NodeJS.Signals | null) => {

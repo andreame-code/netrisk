@@ -38,7 +38,7 @@ type PlayerProfileStore = {
 
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId);
-  return map ? map.name : (mapId || null);
+  return map ? map.name : mapId || null;
 }
 
 function normalizeEntry(entry: GameEntry): GameEntry {
@@ -53,10 +53,16 @@ function territoriesOwnedBy(entry: GameEntry, playerId: string | null | undefine
     return 0;
   }
 
-  return Object.values(entry.state.territories).filter((territory) => territory?.ownerId === playerId).length;
+  return Object.values(entry.state.territories).filter(
+    (territory) => territory?.ownerId === playerId
+  ).length;
 }
 
-function statusLabelForPlayer(entry: GameEntry, player: Player | null, territoryCount: number): string {
+function statusLabelForPlayer(
+  entry: GameEntry,
+  player: Player | null,
+  territoryCount: number
+): string {
   if (!player) {
     return "Profilo non collegato";
   }
@@ -81,7 +87,9 @@ function focusLabelForPlayer(entry: GameEntry, player: Player | null): string {
     return "Lobby";
   }
 
-  return entry.state.players[entry.state.currentTurnIndex]?.id === player.id ? "Tocca a te" : "In attesa";
+  return entry.state.players[entry.state.currentTurnIndex]?.id === player.id
+    ? "Tocca a te"
+    : "In attesa";
 }
 
 function turnPhaseLabel(turnPhase: TurnPhaseValue | string | null | undefined): string {
@@ -97,13 +105,17 @@ function turnPhaseLabel(turnPhase: TurnPhaseValue | string | null | undefined): 
   return "Lobby";
 }
 
-function normalizeActiveModules(activeModules: Array<{ id?: string; version?: string }> | null | undefined): Array<{ id: string; version: string }> {
+function normalizeActiveModules(
+  activeModules: Array<{ id?: string; version?: string }> | null | undefined
+): Array<{ id: string; version: string }> {
   if (!Array.isArray(activeModules)) {
     return [];
   }
 
   return activeModules
-    .filter((entry): entry is { id: string; version: string } => Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string"))
+    .filter((entry): entry is { id: string; version: string } =>
+      Boolean(entry && typeof entry.id === "string" && typeof entry.version === "string")
+    )
     .map((entry) => ({
       id: String(entry.id),
       version: String(entry.version)
@@ -114,13 +126,18 @@ function summarizeParticipatingGame(entry: GameEntry, username: string): Partici
   const config = entry?.state?.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
   const configuredTotalPlayers = config?.totalPlayers;
-  const totalPlayers = Number.isInteger(configuredTotalPlayers) ? configuredTotalPlayers : configuredPlayers.length;
+  const totalPlayers = Number.isInteger(configuredTotalPlayers)
+    ? configuredTotalPlayers
+    : configuredPlayers.length;
   const activeModules = normalizeActiveModules(config?.activeModules);
   const player = Array.isArray(entry?.state?.players)
     ? entry.state.players.find((candidate) => candidate?.name === username)
     : null;
   const territoryCount = territoriesOwnedBy(entry, player?.id);
-  const cardCount = player?.id && Array.isArray(entry?.state?.hands?.[player.id]) ? entry.state.hands[player.id].length : 0;
+  const cardCount =
+    player?.id && Array.isArray(entry?.state?.hands?.[player.id])
+      ? entry.state.hands[player.id].length
+      : 0;
 
   return {
     id: entry.id,
@@ -128,12 +145,13 @@ function summarizeParticipatingGame(entry: GameEntry, username: string): Partici
     phase: entry?.state?.phase || "lobby",
     playerCount: Array.isArray(entry?.state?.players) ? entry.state.players.length : 0,
     totalPlayers: totalPlayers || null,
-    mapName: config ? (config.mapName || readableMapName(config?.mapId)) : null,
+    mapName: config ? config.mapName || readableMapName(config?.mapId) : null,
     updatedAt: entry.updatedAt,
     activeModules,
     gamePresetId: typeof config?.gamePresetId === "string" ? config.gamePresetId : null,
     contentProfileId: typeof config?.contentProfileId === "string" ? config.contentProfileId : null,
-    gameplayProfileId: typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
+    gameplayProfileId:
+      typeof config?.gameplayProfileId === "string" ? config.gameplayProfileId : null,
     uiProfileId: typeof config?.uiProfileId === "string" ? config.uiProfileId : null,
     myLobby: {
       playerName: player?.name || username,
@@ -147,12 +165,16 @@ function summarizeParticipatingGame(entry: GameEntry, username: string): Partici
 }
 
 function createPlayerProfileStore(options: Record<string, unknown> = {}): PlayerProfileStore {
-  const datastore = options.datastore || createDatastore({
-    dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
-    legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
-    legacyUsersFile: options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
-    legacySessionsFile: options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
-  });
+  const datastore =
+    options.datastore ||
+    createDatastore({
+      dbFile: options.dbFile || path.join(__dirname, "..", "data", "netrisk.sqlite"),
+      legacyGamesFile: options.gamesFile || path.join(__dirname, "..", "data", "games.json"),
+      legacyUsersFile:
+        options.usersFile || options.dataFile || path.join(__dirname, "..", "data", "users.json"),
+      legacySessionsFile:
+        options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
+    });
 
   function getPlayerProfile(username: string): ProfileContract | Promise<ProfileContract> {
     const normalizedUsername = String(username || "").trim();
@@ -163,13 +185,16 @@ function createPlayerProfileStore(options: Record<string, unknown> = {}): Player
     return mapMaybe(datastore.listGames(), (games: GameEntry[]) => {
       const relevantGames = games
         .map(normalizeEntry)
-        .filter((entry) =>
-        Array.isArray(entry?.state?.players) &&
-        entry.state.players.some((player) => player.name === normalizedUsername)
-      );
+        .filter(
+          (entry) =>
+            Array.isArray(entry?.state?.players) &&
+            entry.state.players.some((player) => player.name === normalizedUsername)
+        );
 
       const completedGames = relevantGames.filter((entry) => entry?.state?.phase === "finished");
-      const gamesInProgress = relevantGames.filter((entry) => entry?.state?.phase === "active" || entry?.state?.phase === "lobby");
+      const gamesInProgress = relevantGames.filter(
+        (entry) => entry?.state?.phase === "active" || entry?.state?.phase === "lobby"
+      );
       const wins = completedGames.filter((entry) => {
         const winner = entry.state.players.find((player) => player.id === entry.state.winnerId);
         return winner && winner.name === normalizedUsername;
@@ -186,7 +211,9 @@ function createPlayerProfileStore(options: Record<string, unknown> = {}): Player
         gamesInProgress: gamesInProgress.length,
         participatingGames: gamesInProgress
           .slice()
-          .sort((left, right) => String(right?.updatedAt || "").localeCompare(String(left?.updatedAt || "")))
+          .sort((left, right) =>
+            String(right?.updatedAt || "").localeCompare(String(left?.updatedAt || ""))
+          )
           .map((entry) => summarizeParticipatingGame(entry, normalizedUsername)),
         winRate,
         hasHistory: relevantGames.length > 0,

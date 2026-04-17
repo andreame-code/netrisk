@@ -69,8 +69,8 @@ const themeManager = window.netriskTheme || {
   setThemes(themes) {
     return Array.isArray(themes)
       ? themes
-        .map((theme) => typeof theme === "string" ? theme : String(theme?.id || ""))
-        .filter(Boolean)
+          .map((theme) => (typeof theme === "string" ? theme : String(theme?.id || "")))
+          .filter(Boolean)
       : ["command"];
   },
   getCurrentTheme() {
@@ -133,7 +133,7 @@ async function loadThemeOptions(): Promise<void> {
 
   try {
     const response = await fetch("/api/game/options");
-    const data = await response.json() as GameOptionsResponse;
+    const data = (await response.json()) as GameOptionsResponse;
     if (response.ok && Array.isArray(data.themes)) {
       themeManager.setThemes(data.themes.map((theme) => theme.id));
       renderThemeOptions(true);
@@ -171,7 +171,10 @@ function resetModuleControls(): void {
   setDisabled(elements.profileModulesRescan, false);
 }
 
-function syncThemePreference({ announce = false, preferredTheme = null }: { announce?: boolean; preferredTheme?: string | null } = {}): void {
+function syncThemePreference({
+  announce = false,
+  preferredTheme = null
+}: { announce?: boolean; preferredTheme?: string | null } = {}): void {
   renderThemeOptions();
 
   const currentTheme = preferredTheme || themeManager.getCurrentTheme();
@@ -192,9 +195,7 @@ function isNavigationAbort(error: unknown): boolean {
     return true;
   }
 
-  return typeof error === "object"
-    && "name" in error
-    && error.name === "AbortError";
+  return typeof error === "object" && "name" in error && error.name === "AbortError";
 }
 
 async function persistThemePreference(theme: string): Promise<SessionResponse> {
@@ -203,7 +204,7 @@ async function persistThemePreference(theme: string): Promise<SessionResponse> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ theme })
   });
-  const data = await response.json() as SessionResponse;
+  const data = (await response.json()) as SessionResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.requestFailed")));
   }
@@ -288,12 +289,12 @@ function moduleIssuesLabel(moduleEntry: InstalledModuleSummary): string {
 function renderBadgeList(title: string, values: string[], emptyLabel: string): string {
   return (
     `<div class="profile-mini-lobby">` +
-      `<span class="profile-mini-lobby-title">${escapeHtml(title)}</span>` +
-      `<div class="profile-game-meta-row">` +
-        (values.length
-          ? values.map((value) => `<span class="badge">${escapeHtml(value)}</span>`).join("")
-          : `<span class="badge">${escapeHtml(emptyLabel)}</span>`) +
-      `</div>` +
+    `<span class="profile-mini-lobby-title">${escapeHtml(title)}</span>` +
+    `<div class="profile-game-meta-row">` +
+    (values.length
+      ? values.map((value) => `<span class="badge">${escapeHtml(value)}</span>`).join("")
+      : `<span class="badge">${escapeHtml(emptyLabel)}</span>`) +
+    `</div>` +
     `</div>`
   );
 }
@@ -322,7 +323,9 @@ function moduleProfileLabels(moduleEntry: InstalledModuleSummary): string[] {
   const contentProfiles = moduleEntry.clientManifest?.profiles?.content || [];
   const gameplayProfiles = moduleEntry.clientManifest?.profiles?.gameplay || [];
   const uiProfiles = moduleEntry.clientManifest?.profiles?.ui || [];
-  return [...contentProfiles, ...gameplayProfiles, ...uiProfiles].map((profile) => profile.name || profile.id);
+  return [...contentProfiles, ...gameplayProfiles, ...uiProfiles].map(
+    (profile) => profile.name || profile.id
+  );
 }
 
 function moduleContributionLabels(moduleEntry: InstalledModuleSummary): string[] {
@@ -332,9 +335,15 @@ function moduleContributionLabels(moduleEntry: InstalledModuleSummary): string[]
   const stylesheets = moduleEntry.clientManifest?.ui?.stylesheets || [];
   const locales = moduleEntry.clientManifest?.ui?.locales || [];
 
-  presets.forEach((preset) => labels.push(`${t("profile.modules.presets")}: ${preset.name || preset.id}`));
-  slots.forEach((slot) => labels.push(`${t("profile.modules.slots")}: ${slot.title || slot.itemId}`));
-  stylesheets.forEach((stylesheet) => labels.push(`${t("profile.modules.stylesheets")}: ${stylesheet}`));
+  presets.forEach((preset) =>
+    labels.push(`${t("profile.modules.presets")}: ${preset.name || preset.id}`)
+  );
+  slots.forEach((slot) =>
+    labels.push(`${t("profile.modules.slots")}: ${slot.title || slot.itemId}`)
+  );
+  stylesheets.forEach((stylesheet) =>
+    labels.push(`${t("profile.modules.stylesheets")}: ${stylesheet}`)
+  );
   locales.forEach((locale) => labels.push(`${t("profile.modules.locales")}: ${locale}`));
 
   return labels;
@@ -359,63 +368,107 @@ function renderModuleCatalog(modules: InstalledModuleSummary[], engineVersion: s
   }
 
   setHidden(elements.profileModulesEmpty, true);
-  setMarkup(elements.profileModulesList, modules
-    .map((moduleEntry) => {
-      const actionLabel = moduleEntry.enabled
-        ? t("profile.modules.action.disable")
-        : t("profile.modules.action.enable");
-      const detailItems = [
-        { label: t("profile.modules.detail.version"), value: moduleEntry.version || t("common.notAvailable") },
-        { label: t("profile.modules.detail.status"), value: moduleStateLabel(moduleEntry.status) },
-        { label: t("profile.modules.detail.source"), value: moduleEntry.sourcePath },
-        { label: t("profile.modules.detail.capabilities"), value: String(moduleEntry.capabilities.length) },
-        { label: t("profile.modules.detail.dependencies"), value: String(moduleEntry.manifest?.dependencies?.length || 0) },
-        { label: t("profile.modules.detail.issues"), value: moduleIssuesLabel(moduleEntry) }
-      ];
-      const dependencyLabels = (moduleEntry.manifest?.dependencies || []).map(moduleDependencyLabel);
-      const conflictLabels = (moduleEntry.manifest?.conflicts || []).map((entry) => String(entry || ""));
-      const capabilityLabels = moduleEntry.capabilities.map((capability) => moduleCapabilityLabel(capability as NetRiskModuleCapability));
-      const profileLabels = moduleProfileLabels(moduleEntry);
-      const contributionLabels = moduleContributionLabels(moduleEntry);
+  setMarkup(
+    elements.profileModulesList,
+    modules
+      .map((moduleEntry) => {
+        const actionLabel = moduleEntry.enabled
+          ? t("profile.modules.action.disable")
+          : t("profile.modules.action.enable");
+        const detailItems = [
+          {
+            label: t("profile.modules.detail.version"),
+            value: moduleEntry.version || t("common.notAvailable")
+          },
+          {
+            label: t("profile.modules.detail.status"),
+            value: moduleStateLabel(moduleEntry.status)
+          },
+          { label: t("profile.modules.detail.source"), value: moduleEntry.sourcePath },
+          {
+            label: t("profile.modules.detail.capabilities"),
+            value: String(moduleEntry.capabilities.length)
+          },
+          {
+            label: t("profile.modules.detail.dependencies"),
+            value: String(moduleEntry.manifest?.dependencies?.length || 0)
+          },
+          { label: t("profile.modules.detail.issues"), value: moduleIssuesLabel(moduleEntry) }
+        ];
+        const dependencyLabels = (moduleEntry.manifest?.dependencies || []).map(
+          moduleDependencyLabel
+        );
+        const conflictLabels = (moduleEntry.manifest?.conflicts || []).map((entry) =>
+          String(entry || "")
+        );
+        const capabilityLabels = moduleEntry.capabilities.map((capability) =>
+          moduleCapabilityLabel(capability as NetRiskModuleCapability)
+        );
+        const profileLabels = moduleProfileLabels(moduleEntry);
+        const contributionLabels = moduleContributionLabels(moduleEntry);
 
-      return (
-        `<article class="profile-note-card">` +
+        return (
+          `<article class="profile-note-card">` +
           `<div class="profile-games-head">` +
-            `<div>` +
-              `<p class="eyebrow profile-section-eyebrow">${escapeHtml(moduleKindLabel(moduleEntry.kind))}</p>` +
-              `<h3>${escapeHtml(moduleEntry.displayName)}</h3>` +
-              `<p class="stage-copy">${escapeHtml(moduleEntry.description || t("profile.modules.descriptionFallback"))}</p>` +
-            `</div>` +
-            `<div class="profile-game-meta-row">` +
-              `<span class="badge">${escapeHtml(moduleStateLabel(moduleEntry.status))}</span>` +
-              `<span class="badge">${escapeHtml(moduleCompatibilityLabel(moduleEntry))}</span>` +
-              (moduleEntry.enabled
-                ? `<span class="badge">${escapeHtml(t("profile.modules.state.enabled"))}</span>`
-                : "") +
-            `</div>` +
+          `<div>` +
+          `<p class="eyebrow profile-section-eyebrow">${escapeHtml(moduleKindLabel(moduleEntry.kind))}</p>` +
+          `<h3>${escapeHtml(moduleEntry.displayName)}</h3>` +
+          `<p class="stage-copy">${escapeHtml(moduleEntry.description || t("profile.modules.descriptionFallback"))}</p>` +
+          `</div>` +
+          `<div class="profile-game-meta-row">` +
+          `<span class="badge">${escapeHtml(moduleStateLabel(moduleEntry.status))}</span>` +
+          `<span class="badge">${escapeHtml(moduleCompatibilityLabel(moduleEntry))}</span>` +
+          (moduleEntry.enabled
+            ? `<span class="badge">${escapeHtml(t("profile.modules.state.enabled"))}</span>`
+            : "") +
+          `</div>` +
           `</div>` +
           `<div class="profile-mini-lobby">` +
-            `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.details"))}</span>` +
-            `<span class="profile-mini-lobby-grid">` +
-              detailItems.map((item) => (
+          `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.details"))}</span>` +
+          `<span class="profile-mini-lobby-grid">` +
+          detailItems
+            .map(
+              (item) =>
                 `<span class="profile-mini-lobby-item"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></span>`
-              )).join("") +
-            `</span>` +
+            )
+            .join("") +
+          `</span>` +
           `</div>` +
-          renderBadgeList(t("profile.modules.dependencies"), dependencyLabels, t("profile.modules.issue.none")) +
-          renderBadgeList(t("profile.modules.conflicts"), conflictLabels, t("profile.modules.issue.none")) +
-          renderBadgeList(t("profile.modules.capabilities"), capabilityLabels, t("profile.modules.issue.none")) +
-          renderBadgeList(t("profile.modules.profiles"), profileLabels, t("profile.modules.issue.none")) +
-          renderBadgeList(t("profile.modules.contributions"), contributionLabels, t("profile.modules.issue.none")) +
+          renderBadgeList(
+            t("profile.modules.dependencies"),
+            dependencyLabels,
+            t("profile.modules.issue.none")
+          ) +
+          renderBadgeList(
+            t("profile.modules.conflicts"),
+            conflictLabels,
+            t("profile.modules.issue.none")
+          ) +
+          renderBadgeList(
+            t("profile.modules.capabilities"),
+            capabilityLabels,
+            t("profile.modules.issue.none")
+          ) +
+          renderBadgeList(
+            t("profile.modules.profiles"),
+            profileLabels,
+            t("profile.modules.issue.none")
+          ) +
+          renderBadgeList(
+            t("profile.modules.contributions"),
+            contributionLabels,
+            t("profile.modules.issue.none")
+          ) +
           `<div class="profile-game-meta-row">` +
-            (canToggleModule(moduleEntry)
-              ? `<button type="button" class="ghost-button profile-back-button" data-module-id="${escapeHtml(moduleEntry.id)}" data-module-action="${moduleEntry.enabled ? "disable" : "enable"}">${escapeHtml(actionLabel)}</button>`
-              : `<span class="badge">${escapeHtml(t("profile.modules.action.locked"))}</span>`) +
+          (canToggleModule(moduleEntry)
+            ? `<button type="button" class="ghost-button profile-back-button" data-module-id="${escapeHtml(moduleEntry.id)}" data-module-action="${moduleEntry.enabled ? "disable" : "enable"}">${escapeHtml(actionLabel)}</button>`
+            : `<span class="badge">${escapeHtml(t("profile.modules.action.locked"))}</span>`) +
           `</div>` +
-        `</article>`
-      );
-    })
-    .join(""));
+          `</article>`
+        );
+      })
+      .join("")
+  );
 }
 
 function renderAdminModuleSlots(slots: NetRiskUiSlotContribution[]): void {
@@ -426,43 +479,46 @@ function renderAdminModuleSlots(slots: NetRiskUiSlotContribution[]): void {
   }
 
   setHidden(elements.profileModuleSlotsEmpty, true);
-  setMarkup(elements.profileModuleSlotsList, slots
-    .map((slot) => {
-      const routeMarkup = slot.route
-        ? `<a class="ghost-button profile-back-button" href="${escapeHtml(slot.route)}">${escapeHtml(t("profile.modules.extensions.open"))}</a>`
-        : "";
+  setMarkup(
+    elements.profileModuleSlotsList,
+    slots
+      .map((slot) => {
+        const routeMarkup = slot.route
+          ? `<a class="ghost-button profile-back-button" href="${escapeHtml(slot.route)}">${escapeHtml(t("profile.modules.extensions.open"))}</a>`
+          : "";
 
-      return (
-        `<article class="profile-note-card">` +
+        return (
+          `<article class="profile-note-card">` +
           `<div class="profile-games-head">` +
-            `<div>` +
-              `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slot.itemId)}</p>` +
-              `<h3>${escapeHtml(slot.title)}</h3>` +
-              `<p class="stage-copy">${escapeHtml(slot.description || t("profile.modules.descriptionFallback"))}</p>` +
-            `</div>` +
-            `<div class="profile-game-meta-row">` +
-              `<span class="badge">${escapeHtml(slot.kind)}</span>` +
-              routeMarkup +
-            `</div>` +
+          `<div>` +
+          `<p class="eyebrow profile-section-eyebrow">${escapeHtml(slot.itemId)}</p>` +
+          `<h3>${escapeHtml(slot.title)}</h3>` +
+          `<p class="stage-copy">${escapeHtml(slot.description || t("profile.modules.descriptionFallback"))}</p>` +
+          `</div>` +
+          `<div class="profile-game-meta-row">` +
+          `<span class="badge">${escapeHtml(slot.kind)}</span>` +
+          routeMarkup +
+          `</div>` +
           `</div>` +
           `<div class="profile-mini-lobby">` +
-            `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.extensions.details"))}</span>` +
-            `<span class="profile-mini-lobby-grid">` +
-              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.kind"))}</span><strong>${escapeHtml(slot.kind)}</strong></span>` +
-              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.slot"))}</span><strong>${escapeHtml(slot.slotId)}</strong></span>` +
-              `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.route"))}</span><strong>${escapeHtml(slot.route || t("common.notAvailable"))}</strong></span>` +
-            `</span>` +
+          `<span class="profile-mini-lobby-title">${escapeHtml(t("profile.modules.extensions.details"))}</span>` +
+          `<span class="profile-mini-lobby-grid">` +
+          `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.kind"))}</span><strong>${escapeHtml(slot.kind)}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.slot"))}</span><strong>${escapeHtml(slot.slotId)}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${escapeHtml(t("profile.modules.extensions.route"))}</span><strong>${escapeHtml(slot.route || t("common.notAvailable"))}</strong></span>` +
+          `</span>` +
           `</div>` +
-        `</article>`
-      );
-    })
-    .join(""));
+          `</article>`
+        );
+      })
+      .join("")
+  );
 }
 
 async function loadAdminModuleSlots(): Promise<void> {
   try {
     const response = await fetch("/api/modules/options");
-    const payload = await response.json() as ModuleOptionsResponse;
+    const payload = (await response.json()) as ModuleOptionsResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
     }
@@ -477,7 +533,10 @@ async function loadAdminModuleSlots(): Promise<void> {
   }
 }
 
-async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: boolean } = {}): Promise<void> {
+async function loadModuleCatalog(
+  user: PublicUser | null,
+  options: { rescan?: boolean } = {}
+): Promise<void> {
   if (!isAdminUser(user)) {
     resetModuleControls();
     return;
@@ -487,7 +546,9 @@ async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: bo
   showModuleControls(true);
   setDisabled(elements.profileModulesRefresh, true);
   setDisabled(elements.profileModulesRescan, true);
-  setModuleStatus(t(options.rescan ? "profile.modules.status.rescanning" : "profile.modules.status.refreshing"));
+  setModuleStatus(
+    t(options.rescan ? "profile.modules.status.rescanning" : "profile.modules.status.refreshing")
+  );
 
   try {
     const response = await fetch(options.rescan ? "/api/modules/rescan" : "/api/modules", {
@@ -495,7 +556,7 @@ async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: bo
       headers: options.rescan ? { "Content-Type": "application/json" } : undefined,
       body: options.rescan ? JSON.stringify({}) : undefined
     });
-    const payload = await response.json() as ModulesCatalogResponse;
+    const payload = (await response.json()) as ModulesCatalogResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
     }
@@ -504,7 +565,10 @@ async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: bo
       return;
     }
 
-    renderModuleCatalog(Array.isArray(payload.modules) ? payload.modules : [], payload.engineVersion || "-");
+    renderModuleCatalog(
+      Array.isArray(payload.modules) ? payload.modules : [],
+      payload.engineVersion || "-"
+    );
     await loadAdminModuleSlots();
     if (options.rescan) {
       setModuleStatus(t("profile.modules.status.rescanned"));
@@ -523,7 +587,11 @@ async function loadModuleCatalog(user: PublicUser | null, options: { rescan?: bo
   }
 }
 
-async function toggleModule(moduleId: string, action: "enable" | "disable", user: PublicUser | null): Promise<void> {
+async function toggleModule(
+  moduleId: string,
+  action: "enable" | "disable",
+  user: PublicUser | null
+): Promise<void> {
   if (!isAdminUser(user)) {
     resetModuleControls();
     return;
@@ -540,7 +608,7 @@ async function toggleModule(moduleId: string, action: "enable" | "disable", user
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
     });
-    const payload = await response.json() as ModulesCatalogResponse;
+    const payload = (await response.json()) as ModulesCatalogResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
     }
@@ -549,7 +617,10 @@ async function toggleModule(moduleId: string, action: "enable" | "disable", user
       return;
     }
 
-    renderModuleCatalog(Array.isArray(payload.modules) ? payload.modules : [], payload.engineVersion || "-");
+    renderModuleCatalog(
+      Array.isArray(payload.modules) ? payload.modules : [],
+      payload.engineVersion || "-"
+    );
     await loadAdminModuleSlots();
     setModuleStatus(t("profile.modules.status.updated"));
   } catch (error: unknown) {
@@ -595,9 +666,14 @@ function formatUpdatedTime(value: string | null | undefined): string {
 }
 
 function renderParticipatingGames(profile: ProfileSummary): void {
-  const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
+  const participatingGames = Array.isArray(profile.participatingGames)
+    ? profile.participatingGames
+    : [];
   const count = participatingGames.length;
-  const label = t(count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other", { count });
+  const label = t(
+    count === 1 ? "profile.games.activeCount.one" : "profile.games.activeCount.other",
+    { count }
+  );
   elements.gamesCount.textContent = label;
 
   if (!participatingGames.length) {
@@ -609,53 +685,59 @@ function renderParticipatingGames(profile: ProfileSummary): void {
 
   setHidden(elements.gamesEmpty, true);
   setHidden(elements.gamesList, false);
-  setMarkup(elements.gamesList, participatingGames
-    .map((game) => {
-      const lobby = game.myLobby || {};
-      return (
-      `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
-        `<span class="profile-game-primary">` +
+  setMarkup(
+    elements.gamesList,
+    participatingGames
+      .map((game) => {
+        const lobby = game.myLobby || {};
+        return (
+          `<button type="button" class="profile-game-row" data-open-game-id="${escapeHtml(game.id)}">` +
+          `<span class="profile-game-primary">` +
           `<span class="profile-game-kicker">${t("profile.games.kicker")}</span>` +
           `<span class="profile-game-name">${escapeHtml(game.name)}</span>` +
           `<span class="profile-game-sub">${escapeHtml(game.mapName || game.mapId || t("common.classicMini"))}</span>` +
-        `</span>` +
-        `<span class="profile-game-meta-row">` +
+          `</span>` +
+          `<span class="profile-game-meta-row">` +
           `<span class="badge">${phaseLabel(game.phase)}</span>` +
           `<span class="profile-game-meta">${t("profile.games.playerCount", { current: game.playerCount, total: game.totalPlayers || t("common.notAvailable") })}</span>` +
           `<span class="profile-game-meta">${t("profile.games.updatedAt", { updatedAt: formatUpdatedTime(game.updatedAt) })}</span>` +
-        `</span>` +
-        `<span class="profile-mini-lobby" aria-label="${t("profile.games.personalLobbyAria")}">` +
+          `</span>` +
+          `<span class="profile-mini-lobby" aria-label="${t("profile.games.personalLobbyAria")}">` +
           `<span class="profile-mini-lobby-title">${t("profile.games.personalLobbyTitle")}</span>` +
           `<span class="profile-mini-lobby-grid">` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.commander")}</span><strong>${escapeHtml(lobby.playerName || profile.playerName)}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.status")}</span><strong>${escapeHtml(lobby.statusLabel || t("common.notAvailable"))}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.focus")}</span><strong>${escapeHtml(lobby.focusLabel || t("common.notAvailable"))}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.phase")}</span><strong>${escapeHtml(lobby.turnPhaseLabel || t("common.phase.lobby"))}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.territories")}</span><strong>${Number(lobby.territoryCount || 0)}</strong></span>` +
-            `<span class="profile-mini-lobby-item"><span>${t("profile.games.cards")}</span><strong>${Number(lobby.cardCount || 0)}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.commander")}</span><strong>${escapeHtml(lobby.playerName || profile.playerName)}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.status")}</span><strong>${escapeHtml(lobby.statusLabel || t("common.notAvailable"))}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.focus")}</span><strong>${escapeHtml(lobby.focusLabel || t("common.notAvailable"))}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.phase")}</span><strong>${escapeHtml(lobby.turnPhaseLabel || t("common.phase.lobby"))}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.territories")}</span><strong>${Number(lobby.territoryCount || 0)}</strong></span>` +
+          `<span class="profile-mini-lobby-item"><span>${t("profile.games.cards")}</span><strong>${Number(lobby.cardCount || 0)}</strong></span>` +
           `</span>` +
-        `</span>` +
-      `</button>`
-      );
-    })
-    .join(""));
+          `</span>` +
+          `</button>`
+        );
+      })
+      .join("")
+  );
 }
 
 function showProfile(profile: ProfileSummary): void {
-  const participatingGames = Array.isArray(profile.participatingGames) ? profile.participatingGames : [];
+  const participatingGames = Array.isArray(profile.participatingGames)
+    ? profile.participatingGames
+    : [];
   const focusGame = participatingGames[0] || null;
   const knownMaps = participatingGames
     .map((game) => game.mapName || game.mapId)
     .filter((value): value is string => Boolean(value));
-  const rankingTitle = profile.winRate == null
-    ? t("profile.ranks.recruit")
-    : profile.winRate >= 70
-      ? t("profile.ranks.supremeStrategist")
-      : profile.winRate >= 55
-        ? t("profile.ranks.armyCommander")
-        : profile.winRate >= 40
-          ? t("profile.ranks.lineOfficer")
-          : t("profile.ranks.recruit");
+  const rankingTitle =
+    profile.winRate == null
+      ? t("profile.ranks.recruit")
+      : profile.winRate >= 70
+        ? t("profile.ranks.supremeStrategist")
+        : profile.winRate >= 55
+          ? t("profile.ranks.armyCommander")
+          : profile.winRate >= 40
+            ? t("profile.ranks.lineOfficer")
+            : t("profile.ranks.recruit");
   const momentum = profile.wins - profile.losses;
   elements.profileName.textContent = profile.playerName;
   if (elements.profileSubtitle) {
@@ -678,26 +760,45 @@ function showProfile(profile: ProfileSummary): void {
     : t("profile.runtime.commandStatus.noHistory");
   elements.profileCommandFocus.textContent = focusGame ? focusGame.name : t("profile.front.value");
   elements.profileCommandFocusNote.textContent = focusGame
-    ? t("profile.runtime.commandFocusNote.active", { phase: phaseLabel(focusGame.phase), mapName: focusGame.mapName || focusGame.mapId || t("common.classicMini") })
+    ? t("profile.runtime.commandFocusNote.active", {
+        phase: phaseLabel(focusGame.phase),
+        mapName: focusGame.mapName || focusGame.mapId || t("common.classicMini")
+      })
     : t("profile.runtime.commandFocusNote.none");
-  elements.profileCommandDirective.textContent = profile.gamesInProgress > 0 ? t("profile.runtime.directive.resume") : t("profile.runtime.directive.plan");
-  elements.profileCommandDirectiveNote.textContent = profile.gamesInProgress > 0
-    ? t("profile.runtime.directiveNote.active", { count: profile.gamesInProgress })
-    : t("profile.runtime.directiveNote.none");
+  elements.profileCommandDirective.textContent =
+    profile.gamesInProgress > 0
+      ? t("profile.runtime.directive.resume")
+      : t("profile.runtime.directive.plan");
+  elements.profileCommandDirectiveNote.textContent =
+    profile.gamesInProgress > 0
+      ? t("profile.runtime.directiveNote.active", { count: profile.gamesInProgress })
+      : t("profile.runtime.directiveNote.none");
   elements.profileRankingTitle.textContent = rankingTitle;
-  elements.profileRankingCopy.textContent = profile.gamesPlayed > 0
-    ? t("profile.runtime.rankingCopy.withHistory", { wins: profile.wins, losses: profile.losses, winRate: profile.winRate == null ? "--" : `${profile.winRate}%` })
-    : t("profile.runtime.rankingCopy.noHistory");
+  elements.profileRankingCopy.textContent =
+    profile.gamesPlayed > 0
+      ? t("profile.runtime.rankingCopy.withHistory", {
+          wins: profile.wins,
+          losses: profile.losses,
+          winRate: profile.winRate == null ? "--" : `${profile.winRate}%`
+        })
+      : t("profile.runtime.rankingCopy.noHistory");
   elements.profileMapTitle.textContent = knownMaps[0] || t("profile.map.title");
   elements.profileMapCopy.textContent = knownMaps.length
     ? t("profile.runtime.mapCopy.withHistory", { maps: knownMaps.join(", ") })
     : t("profile.runtime.mapCopy.noHistory");
-  elements.profileAdvancedTitle.textContent = profile.gamesPlayed > 0
-    ? t("profile.runtime.advancedTitle.withHistory", { momentum: `${momentum >= 0 ? "+" : ""}${momentum}` })
-    : t("profile.advanced.title");
-  elements.profileAdvancedCopy.textContent = profile.gamesPlayed > 0
-    ? t("profile.runtime.advancedCopy.withHistory", { inProgress: profile.gamesInProgress, gamesPlayed: profile.gamesPlayed })
-    : t("profile.runtime.advancedCopy.noHistory");
+  elements.profileAdvancedTitle.textContent =
+    profile.gamesPlayed > 0
+      ? t("profile.runtime.advancedTitle.withHistory", {
+          momentum: `${momentum >= 0 ? "+" : ""}${momentum}`
+        })
+      : t("profile.advanced.title");
+  elements.profileAdvancedCopy.textContent =
+    profile.gamesPlayed > 0
+      ? t("profile.runtime.advancedCopy.withHistory", {
+          inProgress: profile.gamesInProgress,
+          gamesPlayed: profile.gamesPlayed
+        })
+      : t("profile.runtime.advancedCopy.noHistory");
   renderParticipatingGames(profile);
 
   if (!profile.hasHistory) {
@@ -722,14 +823,16 @@ async function loadProfile() {
       throw new Error(t("profile.errors.loginRequired"));
     }
 
-    const session = await sessionResponse.json() as SessionResponse;
+    const session = (await sessionResponse.json()) as SessionResponse;
     if (requestId !== profileRequestId) {
       return;
     }
     sessionUser = session.user;
     currentSessionUser = session.user;
     themeManager.applyUserTheme(session.user);
-    elements.authStatus.textContent = t("profile.auth.loggedIn", { username: session.user.username });
+    elements.authStatus.textContent = t("profile.auth.loggedIn", {
+      username: session.user.username
+    });
     renderAuthArea(session.user);
     renderNavAvatar(session.user.username);
     showThemePreferences(true);
@@ -742,7 +845,7 @@ async function loadProfile() {
       throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
     }
 
-    const payload = await profileResponse.json() as ProfileResponse;
+    const payload = (await profileResponse.json()) as ProfileResponse;
     if (requestId !== profileRequestId) {
       return;
     }
@@ -754,7 +857,9 @@ async function loadProfile() {
     }
     showFeedback(messageFromError(error, t("profile.errors.loadFailed")), "error");
     if (sessionUser) {
-      elements.authStatus.textContent = t("profile.auth.loggedIn", { username: sessionUser.username });
+      elements.authStatus.textContent = t("profile.auth.loggedIn", {
+        username: sessionUser.username
+      });
       renderAuthArea(sessionUser);
       renderNavAvatar(sessionUser.username);
       themeManager.applyUserTheme(sessionUser);
@@ -783,13 +888,12 @@ async function loadProfile() {
 
 await loadProfile();
 
-
 if (elements.headerLoginForm) {
   (elements.headerLoginForm as HTMLElement).dataset.headerLoginManaged = "true";
   elements.headerLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-      const username = elements.headerAuthUsername?.value.trim() || "";
-      const password = elements.headerAuthPassword?.value || "";
+    const username = elements.headerAuthUsername?.value.trim() || "";
+    const password = elements.headerAuthPassword?.value || "";
     if (!username || !password) {
       setHeaderAuthFeedback(t("auth.login.requiredFields"));
       return;
@@ -802,7 +906,7 @@ if (elements.headerLoginForm) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
-      const data = await response.json() as SessionResponse;
+      const data = (await response.json()) as SessionResponse;
       if (!response.ok) {
         throw new Error(translateServerMessage(data, t("errors.loginFailed")));
       }
@@ -842,8 +946,7 @@ elements.logoutButton.addEventListener("click", async () => {
       },
       body: JSON.stringify({})
     });
-  } catch (_error: unknown) {
-  }
+  } catch (_error: unknown) {}
 });
 
 elements.profileModulesRefresh.addEventListener("click", async () => {
@@ -893,7 +996,9 @@ elements.themeSelect.addEventListener("change", async () => {
 
     themeManager.applyTheme(previousTheme);
     elements.themeSelect.value = previousTheme;
-    setThemeStatus(t("profile.preferences.status.saveFailed", { theme: themeLabel(previousTheme) }));
+    setThemeStatus(
+      t("profile.preferences.status.saveFailed", { theme: themeLabel(previousTheme) })
+    );
   } finally {
     setDisabled(elements.themeSelect, false);
   }

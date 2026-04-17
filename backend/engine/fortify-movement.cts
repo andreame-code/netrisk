@@ -57,7 +57,11 @@ function getCurrentPlayer(state: GameState): Player | null {
   return state.players[state.currentTurnIndex] || null;
 }
 
-function invalid(code: string, message: string, details: Record<string, unknown> = {}): FailedFortifyResult {
+function invalid(
+  code: string,
+  message: string,
+  details: Record<string, unknown> = {}
+): FailedFortifyResult {
   return {
     ok: false,
     code,
@@ -67,7 +71,13 @@ function invalid(code: string, message: string, details: Record<string, unknown>
   };
 }
 
-function findOwnedPath(state: GameState, graph: MapGraph, ownerId: string, fromTerritoryId: string, toTerritoryId: string): string[] | null {
+function findOwnedPath(
+  state: GameState,
+  graph: MapGraph,
+  ownerId: string,
+  fromTerritoryId: string,
+  toTerritoryId: string
+): string[] | null {
   const queue: string[][] = [[fromTerritoryId]];
   const visited = new Set([fromTerritoryId]);
 
@@ -113,19 +123,29 @@ export function moveFortifyArmies(
     throw new Error("Fortify movement requires a valid game state.");
   }
 
-  if (!graph || typeof graph.hasTerritory !== "function" || typeof graph.getNeighbors !== "function") {
+  if (
+    !graph ||
+    typeof graph.hasTerritory !== "function" ||
+    typeof graph.getNeighbors !== "function"
+  ) {
     throw new Error("Fortify movement requires a valid map graph.");
   }
 
   if (!playerId || !fromTerritoryId || !toTerritoryId) {
-    throw new Error("Fortify movement requires player, source territory, and destination territory ids.");
+    throw new Error(
+      "Fortify movement requires player, source territory, and destination territory ids."
+    );
   }
 
   const requestedArmies = Number(armiesToMove);
   if (!Number.isInteger(requestedArmies) || requestedArmies < 1) {
-    return invalid("INVALID_ARMY_COUNT", "Fortify movement requires at least one whole army to move.", {
-      armiesToMove
-    });
+    return invalid(
+      "INVALID_ARMY_COUNT",
+      "Fortify movement requires at least one whole army to move.",
+      {
+        armiesToMove
+      }
+    );
   }
 
   if (state.phase !== "active") {
@@ -158,50 +178,75 @@ export function moveFortifyArmies(
   }
 
   if (fromTerritoryId === toTerritoryId) {
-    return invalid("SAME_TERRITORY", "Fortify movement requires different source and destination territories.");
+    return invalid(
+      "SAME_TERRITORY",
+      "Fortify movement requires different source and destination territories."
+    );
   }
 
   const fromState = state.territories && state.territories[fromTerritoryId];
   const toState = state.territories && state.territories[toTerritoryId];
 
   if (!fromState || !toState) {
-    return invalid("MISSING_TERRITORY_STATE", "Game state is missing source or destination territory state.");
+    return invalid(
+      "MISSING_TERRITORY_STATE",
+      "Game state is missing source or destination territory state."
+    );
   }
 
   if (fromState.ownerId !== playerId || toState.ownerId !== playerId) {
-    return invalid("TERRITORY_NOT_OWNED", "Fortify movement is only allowed between territories owned by the current player.", {
-      fromOwnerId: fromState.ownerId,
-      toOwnerId: toState.ownerId
-    });
+    return invalid(
+      "TERRITORY_NOT_OWNED",
+      "Fortify movement is only allowed between territories owned by the current player.",
+      {
+        fromOwnerId: fromState.ownerId,
+        toOwnerId: toState.ownerId
+      }
+    );
   }
 
   if (!Number.isFinite(fromState.armies) || fromState.armies <= 1) {
-    return invalid("INSUFFICIENT_SOURCE_ARMIES", "The source territory must keep at least one army after fortifying.", {
-      armies: fromState.armies
-    });
+    return invalid(
+      "INSUFFICIENT_SOURCE_ARMIES",
+      "The source territory must keep at least one army after fortifying.",
+      {
+        armies: fromState.armies
+      }
+    );
   }
 
   const maxMove = fromState.armies - 1;
   const minimumMove = resolveFortifyMinimumArmies(state, maxMove);
   if (requestedArmies < minimumMove) {
-    return invalid("MOVE_BELOW_MINIMUM", `Fortify movement requires moving at least ${minimumMove} armies.`, {
-      minimumMove,
-      requestedArmies,
-      sourceArmies: fromState.armies
-    });
+    return invalid(
+      "MOVE_BELOW_MINIMUM",
+      `Fortify movement requires moving at least ${minimumMove} armies.`,
+      {
+        minimumMove,
+        requestedArmies,
+        sourceArmies: fromState.armies
+      }
+    );
   }
 
   if (requestedArmies > maxMove) {
-    return invalid("MOVE_EXCEEDS_AVAILABLE", "The source territory must keep at least one army after fortifying.", {
-      maxMove,
-      requestedArmies,
-      sourceArmies: fromState.armies
-    });
+    return invalid(
+      "MOVE_EXCEEDS_AVAILABLE",
+      "The source territory must keep at least one army after fortifying.",
+      {
+        maxMove,
+        requestedArmies,
+        sourceArmies: fromState.armies
+      }
+    );
   }
 
   const path = findOwnedPath(state, graph, playerId, fromTerritoryId, toTerritoryId);
   if (!path) {
-    return invalid("NO_OWNED_PATH", "Fortify movement requires a connected path through owned territories.");
+    return invalid(
+      "NO_OWNED_PATH",
+      "Fortify movement requires a connected path through owned territories."
+    );
   }
 
   fromState.armies -= requestedArmies;

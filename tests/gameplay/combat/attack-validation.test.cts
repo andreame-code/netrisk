@@ -1,6 +1,13 @@
 const assert = require("node:assert/strict");
 const { validateAttackAttempt } = require("../../../backend/engine/attack-validation.cjs");
-const { makeGraph, makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makeGraph,
+  makePlayers,
+  makeState,
+  makeTerritory,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -117,14 +124,17 @@ register("validateAttackAttempt rejects missing defender territory state", () =>
   assert.equal(result.code, "MISSING_DEFENDER_STATE");
 });
 
-register("validateAttackAttempt rejects attacker territories not owned by the current player", () => {
-  const { graph, state } = setupValidationState();
-  state.territories.a.ownerId = "p2";
-  const result = validateAttackAttempt(state, graph, "p1", "a", "b");
-  assert.equal(result.ok, false);
-  assert.equal(result.code, "ATTACKER_NOT_OWNED");
-  assert.deepEqual(result.details, { ownerId: "p2" });
-});
+register(
+  "validateAttackAttempt rejects attacker territories not owned by the current player",
+  () => {
+    const { graph, state } = setupValidationState();
+    state.territories.a.ownerId = "p2";
+    const result = validateAttackAttempt(state, graph, "p1", "a", "b");
+    assert.equal(result.ok, false);
+    assert.equal(result.code, "ATTACKER_NOT_OWNED");
+    assert.deepEqual(result.details, { ownerId: "p2" });
+  }
+);
 
 register("validateAttackAttempt rejects attacker territories with fewer than two armies", () => {
   const { graph, state } = setupValidationState();

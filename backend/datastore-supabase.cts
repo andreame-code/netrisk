@@ -166,11 +166,11 @@ function normalizeSession(row: SessionRow | null): SessionRecord | null {
     return null;
   }
 
-    return {
-      token: row.token,
-      user_id: row.user_id || "",
-      created_at: Number(row.created_at) || Date.now()
-    };
+  return {
+    token: row.token,
+    user_id: row.user_id || "",
+    created_at: Number(row.created_at) || Date.now()
+  };
 }
 
 function requiredEnv(name: string): string {
@@ -200,17 +200,17 @@ function toQueryString(filters: QueryFilters = {}): string {
 function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
   const supabaseUrl = String(
     options.supabaseUrl ||
-    process.env.SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    requiredEnv("NEXT_PUBLIC_SUPABASE_URL")
+      process.env.SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      requiredEnv("NEXT_PUBLIC_SUPABASE_URL")
   ).replace(/\/$/, "");
   const supabaseKey = String(
     options.supabaseServiceRoleKey ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    ""
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      ""
   ).trim();
 
   if (!supabaseKey) {
@@ -290,7 +290,11 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     return Array.isArray(rows) ? (rows as TRow[]) : [];
   }
 
-  async function upsertRows<TRow extends JsonRecord>(tableName: string, rows: TRow[], onConflict: string): Promise<unknown> {
+  async function upsertRows<TRow extends JsonRecord>(
+    tableName: string,
+    rows: TRow[],
+    onConflict: string
+  ): Promise<unknown> {
     return request(`/${tableName}?on_conflict=${encodeURIComponent(onConflict)}`, {
       method: "POST",
       body: rows,
@@ -298,12 +302,15 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     });
   }
 
-  async function insertRow<TRow extends JsonRecord>(tableName: string, row: TRow): Promise<TRow | null> {
+  async function insertRow<TRow extends JsonRecord>(
+    tableName: string,
+    row: TRow
+  ): Promise<TRow | null> {
     const rows = await request(`/${tableName}`, {
       method: "POST",
       body: [row]
     });
-    return Array.isArray(rows) ? ((rows[0] as TRow | undefined) || null) : (rows as TRow | null);
+    return Array.isArray(rows) ? (rows[0] as TRow | undefined) || null : (rows as TRow | null);
   }
 
   async function patchRows<TRow extends JsonRecord>(
@@ -328,7 +335,11 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
   }
 
   async function countRows(tableName: string, columnName: string = "id"): Promise<number> {
-    const rows = await selectMany<JsonRecord>(tableName, {}, { select: columnName, order: `${columnName}.asc` });
+    const rows = await selectMany<JsonRecord>(
+      tableName,
+      {},
+      { select: columnName, order: `${columnName}.asc` }
+    );
     return rows.length;
   }
 
@@ -347,14 +358,18 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       return;
     }
 
-    await upsertRows("users", users.map((user) => ({
-      id: user.id,
-      username: user.username,
-      role: user.role === "admin" ? "admin" : "user",
-      profile_json: JSON.stringify(user.profile || {}),
-      credentials_json: JSON.stringify(user.credentials || {}),
-      created_at: user.createdAt || new Date().toISOString()
-    })), "id");
+    await upsertRows(
+      "users",
+      users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        role: user.role === "admin" ? "admin" : "user",
+        profile_json: JSON.stringify(user.profile || {}),
+        credentials_json: JSON.stringify(user.credentials || {}),
+        created_at: user.createdAt || new Date().toISOString()
+      })),
+      "id"
+    );
   }
 
   async function migrateLegacySessions() {
@@ -372,15 +387,26 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       return;
     }
 
-    const existingUsers = new Set((await selectMany<{ id: string }>("users", {}, { select: "id", order: "id.asc" })).map((user) => user.id));
+    const existingUsers = new Set(
+      (await selectMany<{ id: string }>("users", {}, { select: "id", order: "id.asc" })).map(
+        (user) => user.id
+      )
+    );
 
-    await upsertRows("sessions", sessions
-      .filter((session) => session && session.token && session.userId && existingUsers.has(session.userId))
-      .map((session) => ({
-        token: session.token,
-        user_id: session.userId,
-        created_at: Number(session.createdAt) || Date.now()
-      })), "token");
+    await upsertRows(
+      "sessions",
+      sessions
+        .filter(
+          (session) =>
+            session && session.token && session.userId && existingUsers.has(session.userId)
+        )
+        .map((session) => ({
+          token: session.token,
+          user_id: session.userId,
+          created_at: Number(session.createdAt) || Date.now()
+        })),
+      "token"
+    );
   }
 
   async function migrateLegacyGames() {
@@ -403,21 +429,34 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       return;
     }
 
-    await upsertRows("games", games.map((game) => ({
-      id: game.id,
-      name: game.name,
-      version: typeof game.version === "number" && Number.isInteger(game.version) && game.version > 0 ? game.version : 1,
-      creator_user_id: game.creatorUserId || null,
-      state_json: JSON.stringify(game.state || {}),
-      created_at: game.createdAt || new Date().toISOString(),
-      updated_at: game.updatedAt || game.createdAt || new Date().toISOString()
-    })), "id");
+    await upsertRows(
+      "games",
+      games.map((game) => ({
+        id: game.id,
+        name: game.name,
+        version:
+          typeof game.version === "number" && Number.isInteger(game.version) && game.version > 0
+            ? game.version
+            : 1,
+        creator_user_id: game.creatorUserId || null,
+        state_json: JSON.stringify(game.state || {}),
+        created_at: game.createdAt || new Date().toISOString(),
+        updated_at: game.updatedAt || game.createdAt || new Date().toISOString()
+      })),
+      "id"
+    );
 
     if (database.activeGameId) {
-      await upsertRows("app_state", [{
-        key: "activeGameId",
-        value_json: JSON.stringify(database.activeGameId)
-      }], "key");
+      await upsertRows(
+        "app_state",
+        [
+          {
+            key: "activeGameId",
+            value_json: JSON.stringify(database.activeGameId)
+          }
+        ],
+        "key"
+      );
     }
   }
 
@@ -467,7 +506,9 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     },
     async listUsers() {
       await ensureInitialized();
-      return (await selectMany<UserRow>("users", {}, { order: "created_at.asc" })).map((row) => normalizeUser(row));
+      return (await selectMany<UserRow>("users", {}, { order: "created_at.asc" })).map((row) =>
+        normalizeUser(row)
+      );
     },
     async createUser(user: UserRecord) {
       await ensureInitialized();
@@ -483,23 +524,35 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     },
     async updateUserCredentials(userId: string, credentials: JsonRecord) {
       await ensureInitialized();
-      await patchRows("users", { id: `eq.${userId}` }, {
-        credentials_json: JSON.stringify(credentials || {})
-      });
+      await patchRows(
+        "users",
+        { id: `eq.${userId}` },
+        {
+          credentials_json: JSON.stringify(credentials || {})
+        }
+      );
       return datastore.findUserById(userId);
     },
     async updateUserProfile(userId: string, profile: JsonRecord) {
       await ensureInitialized();
-      await patchRows("users", { id: `eq.${userId}` }, {
-        profile_json: JSON.stringify(profile || {})
-      });
+      await patchRows(
+        "users",
+        { id: `eq.${userId}` },
+        {
+          profile_json: JSON.stringify(profile || {})
+        }
+      );
       return datastore.findUserById(userId);
     },
     async updateUserRoleByUsername(username: string, role: string) {
       await ensureInitialized();
-      await patchRows("users", { username: `eq.${username}` }, {
-        role: role === "admin" ? "admin" : "user"
-      });
+      await patchRows(
+        "users",
+        { username: `eq.${username}` },
+        {
+          role: role === "admin" ? "admin" : "user"
+        }
+      );
     },
     async createSession(token: string, userId: string, createdAt: number) {
       await ensureInitialized();
@@ -519,7 +572,9 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     },
     async listGames() {
       await ensureInitialized();
-      return (await selectMany<GameRow>("games", {}, { order: "updated_at.desc" })).map((row) => normalizeGame(row));
+      return (await selectMany<GameRow>("games", {}, { order: "updated_at.desc" })).map((row) =>
+        normalizeGame(row)
+      );
     },
     async findGameById(gameId: string) {
       await ensureInitialized();
@@ -540,19 +595,25 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     },
     async updateGame(entry: GameRecord) {
       await ensureInitialized();
-      const updated = await patchRows<GameRow>("games", {
-        id: `eq.${entry.id}`,
-        version: `eq.${Number.isInteger(entry.version) && entry.version > 1 ? entry.version - 1 : 1}`
-      }, {
-        name: entry.name,
-        version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
-        creator_user_id: entry.creatorUserId || null,
-        state_json: JSON.stringify(entry.state || {}),
-        updated_at: entry.updatedAt
-      });
+      const updated = await patchRows<GameRow>(
+        "games",
+        {
+          id: `eq.${entry.id}`,
+          version: `eq.${Number.isInteger(entry.version) && entry.version > 1 ? entry.version - 1 : 1}`
+        },
+        {
+          name: entry.name,
+          version: Number.isInteger(entry.version) && entry.version > 0 ? entry.version : 1,
+          creator_user_id: entry.creatorUserId || null,
+          state_json: JSON.stringify(entry.state || {}),
+          updated_at: entry.updatedAt
+        }
+      );
 
       if (!updated.length) {
-        const conflict = new Error("La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.") as VersionConflictError;
+        const conflict = new Error(
+          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente."
+        ) as VersionConflictError;
         conflict.code = "VERSION_CONFLICT";
         const current = await datastore.findGameById(entry.id);
         conflict.currentVersion = current ? current.version : null;
@@ -574,18 +635,30 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     },
     async setAppState(key: string, value: unknown) {
       await ensureInitialized();
-      await upsertRows("app_state", [{
-        key: String(key || ""),
-        value_json: JSON.stringify(value ?? null)
-      }], "key");
+      await upsertRows(
+        "app_state",
+        [
+          {
+            key: String(key || ""),
+            value_json: JSON.stringify(value ?? null)
+          }
+        ],
+        "key"
+      );
       return datastore.getAppState(key);
     },
     async setActiveGameId(gameId: string | null) {
       await ensureInitialized();
-      await upsertRows("app_state", [{
-        key: "activeGameId",
-        value_json: JSON.stringify(gameId || null)
-      }], "key");
+      await upsertRows(
+        "app_state",
+        [
+          {
+            key: "activeGameId",
+            value_json: JSON.stringify(gameId || null)
+          }
+        ],
+        "key"
+      );
     }
   } as const;
 

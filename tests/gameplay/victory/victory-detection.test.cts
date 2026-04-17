@@ -1,7 +1,12 @@
 const assert = require("node:assert/strict");
 const { detectVictory } = require("../../../backend/engine/victory-detection.cjs");
 const { MAJORITY_CONTROL_VICTORY_RULE_SET_ID } = require("../../../shared/models.cjs");
-const { makePlayers, makeState, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makePlayers,
+  makeState,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -93,36 +98,39 @@ register("detectVictory closes the game when only AI players remain active", () 
   assert.equal(state.turnPhase, TurnPhase.FINISHED);
 });
 
-register("detectVictory majority control declares victory when a player reaches 70 percent of territories", () => {
-  const state = makeState({
-    players: makePlayers(["Alice", "Bob"]),
-    territories: territoryStates([
-      { id: "a", ownerId: "p1", armies: 1 },
-      { id: "b", ownerId: "p1", armies: 1 },
-      { id: "c", ownerId: "p1", armies: 1 },
-      { id: "d", ownerId: "p1", armies: 1 },
-      { id: "e", ownerId: "p1", armies: 1 },
-      { id: "f", ownerId: "p1", armies: 1 },
-      { id: "g", ownerId: "p1", armies: 1 },
-      { id: "h", ownerId: "p2", armies: 1 },
-      { id: "i", ownerId: "p2", armies: 1 },
-      { id: "j", ownerId: "p2", armies: 1 }
-    ]),
-    turnPhase: TurnPhase.ATTACK
-  });
-  state.gameConfig = {
-    ...(state.gameConfig || {}),
-    victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID
-  };
+register(
+  "detectVictory majority control declares victory when a player reaches 70 percent of territories",
+  () => {
+    const state = makeState({
+      players: makePlayers(["Alice", "Bob"]),
+      territories: territoryStates([
+        { id: "a", ownerId: "p1", armies: 1 },
+        { id: "b", ownerId: "p1", armies: 1 },
+        { id: "c", ownerId: "p1", armies: 1 },
+        { id: "d", ownerId: "p1", armies: 1 },
+        { id: "e", ownerId: "p1", armies: 1 },
+        { id: "f", ownerId: "p1", armies: 1 },
+        { id: "g", ownerId: "p1", armies: 1 },
+        { id: "h", ownerId: "p2", armies: 1 },
+        { id: "i", ownerId: "p2", armies: 1 },
+        { id: "j", ownerId: "p2", armies: 1 }
+      ]),
+      turnPhase: TurnPhase.ATTACK
+    });
+    state.gameConfig = {
+      ...(state.gameConfig || {}),
+      victoryRuleSetId: MAJORITY_CONTROL_VICTORY_RULE_SET_ID
+    };
 
-  const result = detectVictory(state);
+    const result = detectVictory(state);
 
-  assert.equal(result.code, "VICTORY_DECLARED");
-  assert.equal(result.victory?.winnerId, "p1");
-  assert.equal(result.victory?.summaryKey, "game.log.victoryMajorityControl");
-  assert.equal(result.victory?.summaryParams?.requiredTerritoryCount, 7);
-  assert.equal(state.phase, "finished");
-});
+    assert.equal(result.code, "VICTORY_DECLARED");
+    assert.equal(result.victory?.winnerId, "p1");
+    assert.equal(result.victory?.summaryKey, "game.log.victoryMajorityControl");
+    assert.equal(result.victory?.summaryParams?.requiredTerritoryCount, 7);
+    assert.equal(state.phase, "finished");
+  }
+);
 
 register("detectVictory majority control keeps the match active below the threshold", () => {
   const state = makeState({

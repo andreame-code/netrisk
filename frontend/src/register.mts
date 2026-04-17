@@ -59,7 +59,12 @@ function setFeedback(message = "", tone = "") {
   elements.feedback.className = `auth-feedback${tone === "error" ? " is-error" : " is-success"}`;
 }
 
-function registrationClientError(username: string, email: string, password: string, confirmPassword: string): string {
+function registrationClientError(
+  username: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+): string {
   if (!username || !password || !confirmPassword) {
     return t("register.errors.requiredFields");
   }
@@ -89,7 +94,7 @@ async function loginWithCredentials(username: string, password: string): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const data = await response.json() as LoginResponse;
+  const data = (await response.json()) as LoginResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
@@ -107,7 +112,7 @@ async function restoreSession() {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json() as SessionResponse;
+    const data = (await response.json()) as SessionResponse;
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
   } catch (_error) {
@@ -170,8 +175,7 @@ elements.logoutButton.addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({})
     });
-  } catch (_error) {
-  }
+  } catch (_error) {}
 
   state.user = null;
   render();
@@ -203,14 +207,14 @@ elements.form.addEventListener("submit", async (event) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, email, password })
     });
-    const data = await response.json() as LoginResponse;
+    const data = (await response.json()) as LoginResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(data, t("register.errors.submitFailed")));
     }
 
     await loginWithCredentials(username, password);
   } catch (error) {
-      setFeedback(messageFromError(error, t("register.errors.submitFailed")), "error");
+    setFeedback(messageFromError(error, t("register.errors.submitFailed")), "error");
   } finally {
     state.submitting = false;
     render();

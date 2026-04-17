@@ -12,7 +12,13 @@ import type {
   SnapshotPlayer,
   SnapshotTerritory
 } from "./core/types.mjs";
-import { formatDate, t, translateGameLogEntries, translateMessagePayload, translateServerMessage } from "./i18n.mjs";
+import {
+  formatDate,
+  t,
+  translateGameLogEntries,
+  translateMessagePayload,
+  translateServerMessage
+} from "./i18n.mjs";
 
 type GameListState = "loading" | "ready" | "empty" | "error";
 type FortifySelectionMode = "from" | "to";
@@ -279,14 +285,20 @@ const elements = {
   createGameButton: document.querySelector("#create-game-button") as HTMLButtonElement | null,
   gameList: document.querySelector("#game-list") as HTMLSelectElement | null,
   openGameButton: document.querySelector("#open-game-button") as HTMLButtonElement,
-  createGameButtonSecondary: document.querySelector("#create-game-button-secondary") as HTMLButtonElement | null,
-  openGameButtonSecondary: document.querySelector("#open-game-button-secondary") as HTMLButtonElement | null,
+  createGameButtonSecondary: document.querySelector(
+    "#create-game-button-secondary"
+  ) as HTMLButtonElement | null,
+  openGameButtonSecondary: document.querySelector(
+    "#open-game-button-secondary"
+  ) as HTMLButtonElement | null,
   gameStatus: document.querySelector("#game-status") as HTMLElement,
   gameMapMeta: document.querySelector("#game-map-meta") as HTMLElement,
   gameSetupMeta: document.querySelector("#game-setup-meta") as HTMLElement,
   phaseBannerValue: document.querySelector("#phase-banner-value") as HTMLElement | null,
   reinforcementBanner: document.querySelector("#reinforcement-banner") as HTMLElement | null,
-  reinforcementBannerValue: document.querySelector("#reinforcement-banner-value") as HTMLElement | null,
+  reinforcementBannerValue: document.querySelector(
+    "#reinforcement-banner-value"
+  ) as HTMLElement | null,
   gameListState: document.querySelector("#game-list-state") as HTMLElement | null,
   gameSessionList: document.querySelector("#game-session-list") as HTMLElement | null,
   gameSessionDetails: document.querySelector("#game-session-details") as HTMLElement | null,
@@ -300,7 +312,9 @@ const elements = {
   reinforceGroup: document.querySelector("#reinforce-group") as HTMLElement | null,
   reinforceSelect: document.querySelector("#reinforce-select") as HTMLSelectElement,
   reinforceAmount: document.querySelector("#reinforce-amount") as HTMLInputElement | null,
-  reinforceMultiButton: document.querySelector("#reinforce-multi-button") as HTMLButtonElement | null,
+  reinforceMultiButton: document.querySelector(
+    "#reinforce-multi-button"
+  ) as HTMLButtonElement | null,
   reinforceAllButton: document.querySelector("#reinforce-all-button") as HTMLButtonElement | null,
   attackGroup: document.querySelector("#attack-group") as HTMLElement | null,
   attackFrom: document.querySelector("#attack-from") as HTMLSelectElement,
@@ -386,9 +400,15 @@ function mapViewportElements() {
   const transform = elements.map.querySelector("[data-map-transform]") as HTMLElement | null;
   const board = elements.map.querySelector(".map-board") as HTMLElement | null;
   const markers = elements.map.querySelector("[data-map-markers]") as HTMLElement | null;
-  const zoomInButton = elements.map.querySelector('[data-map-control="zoom-in"]') as HTMLButtonElement | null;
-  const zoomOutButton = elements.map.querySelector('[data-map-control="zoom-out"]') as HTMLButtonElement | null;
-  const resetButton = elements.map.querySelector('[data-map-control="reset"]') as HTMLButtonElement | null;
+  const zoomInButton = elements.map.querySelector(
+    '[data-map-control="zoom-in"]'
+  ) as HTMLButtonElement | null;
+  const zoomOutButton = elements.map.querySelector(
+    '[data-map-control="zoom-out"]'
+  ) as HTMLButtonElement | null;
+  const resetButton = elements.map.querySelector(
+    '[data-map-control="reset"]'
+  ) as HTMLButtonElement | null;
 
   return {
     surface,
@@ -402,7 +422,11 @@ function mapViewportElements() {
   };
 }
 
-function mapViewportLocalPoint(surface: HTMLElement, clientX: number, clientY: number): { x: number; y: number } {
+function mapViewportLocalPoint(
+  surface: HTMLElement,
+  clientX: number,
+  clientY: number
+): { x: number; y: number } {
   const surfaceRect = surface.getBoundingClientRect();
   return {
     x: clientX - surfaceRect.left,
@@ -451,12 +475,17 @@ function positionMapMarkers(): void {
 }
 
 function applyMapViewport(): void {
-  const { surface, anchor, transform, zoomInButton, zoomOutButton, resetButton } = mapViewportElements();
+  const { surface, anchor, transform, zoomInButton, zoomOutButton, resetButton } =
+    mapViewportElements();
   if (!surface || !anchor || !transform) {
     return;
   }
 
-  const nextScale = clampNumber(mapViewportState.scale, MAP_VIEWPORT_MIN_SCALE, mapViewportState.maxScale);
+  const nextScale = clampNumber(
+    mapViewportState.scale,
+    MAP_VIEWPORT_MIN_SCALE,
+    mapViewportState.maxScale
+  );
   const clampedTranslation = clampMapViewportTranslation(
     mapViewportState.translateX,
     mapViewportState.translateY,
@@ -553,7 +582,11 @@ function zoomMapViewportByStep(direction: 1 | -1): void {
     mapViewportState.maxScale
   );
   const surfaceRect = surface.getBoundingClientRect();
-  zoomMapViewportTo(nextScale, surfaceRect.left + surface.clientWidth / 2, surfaceRect.top + surface.clientHeight / 2);
+  zoomMapViewportTo(
+    nextScale,
+    surfaceRect.left + surface.clientWidth / 2,
+    surfaceRect.top + surface.clientHeight / 2
+  );
 }
 
 function activeMapViewportPointers(): Array<[number, MapViewportPointer]> {
@@ -568,7 +601,10 @@ function beginMapViewportPinch(): void {
 
   const first = pointers[0][1];
   const second = pointers[1][1];
-  mapViewportState.pinchStartDistance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+  mapViewportState.pinchStartDistance = Math.hypot(
+    second.clientX - first.clientX,
+    second.clientY - first.clientY
+  );
   mapViewportState.pinchStartScale = mapViewportState.scale;
   mapViewportState.pinchStartTranslateX = mapViewportState.translateX;
   mapViewportState.pinchStartTranslateY = mapViewportState.translateY;
@@ -596,7 +632,9 @@ function handleMapViewportControl(action: string | null | undefined): void {
 function fitMapBoardToViewport() {
   const mapStage = document.querySelector(".game-map-stage") as HTMLElement | null;
   const mapContainer = document.querySelector(".game-map-stage .map") as HTMLElement | null;
-  const mapSurface = document.querySelector(".game-map-stage [data-map-surface]") as HTMLElement | null;
+  const mapSurface = document.querySelector(
+    ".game-map-stage [data-map-surface]"
+  ) as HTMLElement | null;
   const mapBoard = document.querySelector(".game-map-stage .map-board") as HTMLElement | null;
   if (!mapStage || !mapContainer || !mapBoard) {
     return;
@@ -604,17 +642,23 @@ function fitMapBoardToViewport() {
 
   const stageStyles = window.getComputedStyle(mapStage);
   const stagePaddingX =
-    Number.parseFloat(stageStyles.paddingLeft || "0") + Number.parseFloat(stageStyles.paddingRight || "0");
+    Number.parseFloat(stageStyles.paddingLeft || "0") +
+    Number.parseFloat(stageStyles.paddingRight || "0");
   const stagePaddingY =
-    Number.parseFloat(stageStyles.paddingTop || "0") + Number.parseFloat(stageStyles.paddingBottom || "0");
+    Number.parseFloat(stageStyles.paddingTop || "0") +
+    Number.parseFloat(stageStyles.paddingBottom || "0");
   const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
   const stageRect = mapStage.getBoundingClientRect();
-  const availableHeight = Math.max(0, window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0"));
+  const availableHeight = Math.max(
+    0,
+    window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0")
+  );
   if (!availableWidth || !availableHeight) {
     return;
   }
 
-  const aspectRatioValue = mapBoard.style.aspectRatio || window.getComputedStyle(mapBoard).aspectRatio || "760 / 500";
+  const aspectRatioValue =
+    mapBoard.style.aspectRatio || window.getComputedStyle(mapBoard).aspectRatio || "760 / 500";
   const aspectRatioMatch = aspectRatioValue.match(/([\d.]+)\s*\/\s*([\d.]+)/);
   const aspectRatio = aspectRatioMatch
     ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
@@ -645,7 +689,9 @@ function queueMapBoardFit() {
   });
 }
 
-function territoryPosition(territory: SnapshotTerritory | { id: string; x?: number | null; y?: number | null } | null): { x: number; y: number } | null {
+function territoryPosition(
+  territory: SnapshotTerritory | { id: string; x?: number | null; y?: number | null } | null
+): { x: number; y: number } | null {
   if (territory && Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
     const x = Number(territory.x);
     const y = Number(territory.y);
@@ -674,15 +720,12 @@ function textColorForBackground(color: string | null | undefined): string {
 
 function pieceSkinRenderStyleForSnapshot(snapshot: GameSnapshot | null | undefined): string {
   const renderStyleId = snapshot?.gameConfig?.pieceSkin?.renderStyleId;
-  return typeof renderStyleId === "string" && renderStyleId
-    ? renderStyleId
-    : "solid-fill";
+  return typeof renderStyleId === "string" && renderStyleId ? renderStyleId : "solid-fill";
 }
 
 function pieceSkinClassName(renderStyleId: string | null | undefined): string {
-  const normalized = typeof renderStyleId === "string" && renderStyleId
-    ? renderStyleId
-    : "solid-fill";
+  const normalized =
+    typeof renderStyleId === "string" && renderStyleId ? renderStyleId : "solid-fill";
   return `piece-skin-style-${normalized.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
 }
 
@@ -696,7 +739,8 @@ function resolveCurrentPlayer() {
   }
 
   if (state.snapshot.playerId) {
-    const bySnapshotPlayerId = state.snapshot.players.find((player) => player.id === state.snapshot?.playerId) || null;
+    const bySnapshotPlayerId =
+      state.snapshot.players.find((player) => player.id === state.snapshot?.playerId) || null;
     if (bySnapshotPlayerId) {
       return bySnapshotPlayerId;
     }
@@ -744,7 +788,9 @@ function ensurePrivateStateFresh(currentPlayer: SnapshotPlayer | null): void {
     return;
   }
 
-  const expectedCardCount = Number.isInteger(currentPlayer.cardCount) ? currentPlayer.cardCount : null;
+  const expectedCardCount = Number.isInteger(currentPlayer.cardCount)
+    ? currentPlayer.cardCount
+    : null;
   if (expectedCardCount == null || currentPlayerHand().length >= expectedCardCount) {
     return;
   }
@@ -768,7 +814,9 @@ async function refreshPrivateStateIfNeeded(nextState: GameSnapshot): Promise<Gam
   const currentPlayerId = state.playerId || resolveCurrentPlayer()?.id || null;
   const currentPlayer = nextState.players.find((player) => player.id === currentPlayerId) || null;
   const hand = Array.isArray(nextState.playerHand) ? nextState.playerHand : [];
-  const currentPlayerCardCount = Number.isInteger(currentPlayer?.cardCount) ? Number(currentPlayer?.cardCount) : null;
+  const currentPlayerCardCount = Number.isInteger(currentPlayer?.cardCount)
+    ? Number(currentPlayer?.cardCount)
+    : null;
   if (!currentPlayer || currentPlayerCardCount == null || hand.length >= currentPlayerCardCount) {
     return nextState;
   }
@@ -795,7 +843,11 @@ function currentDiceRuleSet() {
   return state.snapshot?.diceRuleSet || { attackerMaxDice: 3, defenderMaxDice: 2 };
 }
 
-function selectOrFallback<T extends { id: string }>(selectedId: string | null | undefined, options: T[], fallbackId = ""): string {
+function selectOrFallback<T extends { id: string }>(
+  selectedId: string | null | undefined,
+  options: T[],
+  fallbackId = ""
+): string {
   if (selectedId && options.some((option) => option.id === selectedId)) {
     return selectedId;
   }
@@ -805,12 +857,18 @@ function selectOrFallback<T extends { id: string }>(selectedId: string | null | 
 
 function attackDiceOptions(maxDice: number): string {
   if (maxDice < 1) {
-    return '<option value="">' + t("game.runtime.noDiceAvailable") + '</option>';
+    return '<option value="">' + t("game.runtime.noDiceAvailable") + "</option>";
   }
 
   return Array.from({ length: maxDice }, (_, index) => {
     const value = String(index + 1);
-    return '<option value="' + value + '">' + t("game.runtime.attackDiceOption", { count: value, suffix: value === "1" ? "" : "i" }) + '</option>';
+    return (
+      '<option value="' +
+      value +
+      '">' +
+      t("game.runtime.attackDiceOption", { count: value, suffix: value === "1" ? "" : "i" }) +
+      "</option>"
+    );
   }).join("");
 }
 
@@ -821,24 +879,32 @@ function cardTypeLabel(type: string | null | undefined): string {
     artillery: t("game.runtime.cardType.artillery"),
     wild: t("game.runtime.cardType.wild")
   };
-  return type ? (labels[type] || String(type)) : t("game.runtime.cardType.default");
+  return type ? labels[type] || String(type) : t("game.runtime.cardType.default");
 }
 
 function cardDisplayLabel(card: SnapshotCard): string {
-  const territoryName = card.territoryId ? (territoryById(card.territoryId)?.name || card.territoryId) : null;
-  return territoryName ? `${cardTypeLabel(card.type)} · ${territoryName}` : cardTypeLabel(card.type);
+  const territoryName = card.territoryId
+    ? territoryById(card.territoryId)?.name || card.territoryId
+    : null;
+  return territoryName
+    ? `${cardTypeLabel(card.type)} · ${territoryName}`
+    : cardTypeLabel(card.type);
 }
 
 function formatDiceList(rolls: number[] | null | undefined): string {
   return Array.isArray(rolls) && rolls.length ? rolls.join(" · ") : "-";
 }
 
-function formatCombatComparisons(comparisons: SnapshotCombatComparison[] | null | undefined): string {
+function formatCombatComparisons(
+  comparisons: SnapshotCombatComparison[] | null | undefined
+): string {
   if (!Array.isArray(comparisons) || !comparisons.length) {
     return "-";
   }
 
-  return comparisons.map((comparison) => comparison.winner === "attacker" ? "A" : "D").join(" · ");
+  return comparisons
+    .map((comparison) => (comparison.winner === "attacker" ? "A" : "D"))
+    .join(" · ");
 }
 
 function setSession(user: PublicUser | null | undefined): void {
@@ -955,7 +1021,11 @@ async function applyReinforcements(times: number): Promise<void> {
   render();
 }
 
-async function executeAttack(fromId: string, toId: string, attackDice: number): Promise<GameSnapshot | undefined> {
+async function executeAttack(
+  fromId: string,
+  toId: string,
+  attackDice: number
+): Promise<GameSnapshot | undefined> {
   const data = await send("/api/action", {
     ...currentGamePayload(),
     playerId: currentActionPlayerId(),
@@ -1054,11 +1124,9 @@ function phaseLabel(phase: string | null | undefined): string {
 }
 
 function selectedProfileIds(summary: GameModuleSummary | null | undefined): string[] {
-  return [
-    summary?.contentProfileId,
-    summary?.gameplayProfileId,
-    summary?.uiProfileId
-  ].filter((value): value is string => Boolean(value));
+  return [summary?.contentProfileId, summary?.gameplayProfileId, summary?.uiProfileId].filter(
+    (value): value is string => Boolean(value)
+  );
 }
 
 function gameMetaModuleSummary(summary: GameModuleSummary | null | undefined): string {
@@ -1097,7 +1165,11 @@ function updateGameSelection(gameId: string | null | undefined): void {
 }
 
 function syncCurrentGameName() {
-  state.currentGameName = state.snapshot?.gameName || (state.gameList.find((game) => game.id === state.currentGameId) || {}).name || state.currentGameName || null;
+  state.currentGameName =
+    state.snapshot?.gameName ||
+    (state.gameList.find((game) => game.id === state.currentGameId) || {}).name ||
+    state.currentGameName ||
+    null;
 }
 
 function renderGameSessionBrowser() {
@@ -1109,15 +1181,23 @@ function renderGameSessionBrowser() {
     return;
   }
 
-  setMarkup(elements.gameList, state.gameList
-    .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name)}</option>`)
-    .join("") || '<option value="">' + t("game.runtime.noGamesOption") + '</option>');
+  setMarkup(
+    elements.gameList,
+    state.gameList
+      .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name)}</option>`)
+      .join("") || '<option value="">' + t("game.runtime.noGamesOption") + "</option>"
+  );
 
   if (selectedId && state.gameList.some((game) => game.id === selectedId)) {
     elements.gameList.value = selectedId;
   }
 
-  if (!elements.gameListState || !elements.gameSessionList || !elements.gameSessionDetails || !elements.selectedGameStatus) {
+  if (
+    !elements.gameListState ||
+    !elements.gameSessionList ||
+    !elements.gameSessionDetails ||
+    !elements.selectedGameStatus
+  ) {
     elements.openGameButton.disabled = !selected;
     return;
   }
@@ -1131,8 +1211,11 @@ function renderGameSessionBrowser() {
     elements.gameListState.textContent = t("lobby.empty");
   }
 
-  setMarkup(elements.gameSessionList, state.gameList
-    .map((game) => `
+  setMarkup(
+    elements.gameSessionList,
+    state.gameList
+      .map(
+        (game) => `
       <button type="button" class="session-row session-row-button${game.id === selectedId ? " is-selected" : ""}" data-game-id="${game.id}">
         <span class="session-primary">
           <span class="session-name">${escapeHtml(game.name)}</span>
@@ -1143,12 +1226,18 @@ function renderGameSessionBrowser() {
         <span class="session-cell-muted">${game.playerCount}/4</span>
         <span class="session-cell-muted">${formatUpdatedTime(game.updatedAt)}</span>
       </button>
-    `)
-    .join(""));
+    `
+      )
+      .join("")
+  );
 
-  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : t("lobby.details.emptyBadge");
-  setMarkup(elements.gameSessionDetails, selected
-    ? `
+  elements.selectedGameStatus.textContent = selected
+    ? phaseLabel(selected.phase)
+    : t("lobby.details.emptyBadge");
+  setMarkup(
+    elements.gameSessionDetails,
+    selected
+      ? `
       <div class="session-detail-grid">
         <div class="session-detail-item"><span>${t("lobby.details.name")}</span><strong>${escapeHtml(selected.name)}</strong></div>
         <div class="session-detail-item"><span>${t("lobby.details.id")}</span><strong>${selected.id}</strong></div>
@@ -1161,7 +1250,8 @@ function renderGameSessionBrowser() {
         <button type="button" id="open-selected-inline">${t("game.runtime.openGame")}</button>
       </div>
     `
-    : '<div class="session-empty-copy">' + t("game.runtime.selectGameFromList") + '</div>');
+      : '<div class="session-empty-copy">' + t("game.runtime.selectGameFromList") + "</div>"
+  );
 
   const hasSelection = Boolean(selected);
   if (elements.openGameButton) {
@@ -1186,7 +1276,9 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
 
       renderedLinks.add(key);
       const source = territoryPosition(territory);
-      const target = territoryPosition(snapshot.map.find((entry) => entry.id === neighborId) || { id: neighborId });
+      const target = territoryPosition(
+        snapshot.map.find((entry) => entry.id === neighborId) || { id: neighborId }
+      );
       if (!source || !target) {
         return;
       }
@@ -1251,14 +1343,20 @@ function buildGraphMarkup(snapshot: GameSnapshot): string {
   const boardStyles = [];
   const boardClasses = ["map-board"];
   if (snapshot.mapId) {
-    boardClasses.push(`map-id-${String(snapshot.mapId).replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`);
+    boardClasses.push(
+      `map-id-${String(snapshot.mapId)
+        .replace(/[^a-z0-9_-]/gi, "-")
+        .toLowerCase()}`
+    );
   }
   if (snapshot.mapVisual?.imageUrl) {
     boardClasses.push("has-custom-background");
     boardStyles.push(`--map-background-image:url('${snapshot.mapVisual.imageUrl}')`);
   }
   if (snapshot.mapVisual?.aspectRatio?.width && snapshot.mapVisual?.aspectRatio?.height) {
-    boardStyles.push(`aspect-ratio:${snapshot.mapVisual.aspectRatio.width} / ${snapshot.mapVisual.aspectRatio.height}`);
+    boardStyles.push(
+      `aspect-ratio:${snapshot.mapVisual.aspectRatio.width} / ${snapshot.mapVisual.aspectRatio.height}`
+    );
   }
 
   return `
@@ -1317,7 +1415,9 @@ function currentRenderedMapSignature(snapshot: GameSnapshot | null): string {
     snapshot.mapVisual?.imageUrl || "",
     snapshot.mapVisual?.aspectRatio?.width || "",
     snapshot.mapVisual?.aspectRatio?.height || "",
-    snapshot.map.map((territory) => `${territory.id}:${territory.ownerId || ""}:${territory.armies}`).join(",")
+    snapshot.map
+      .map((territory) => `${territory.id}:${territory.ownerId || ""}:${territory.armies}`)
+      .join(",")
   ].join("|");
 }
 
@@ -1413,7 +1513,8 @@ function prepareRenderContext(): RenderContext {
     setPlayerIdentity(me.id);
   }
 
-  const currentPlayer = snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
+  const currentPlayer =
+    snapshot?.players.find((player) => player.id === snapshot.currentPlayerId) || null;
   ensurePrivateStateFresh(me);
   const winner = snapshot?.players.find((player) => player.id === snapshot.winnerId) || null;
   const inLobby = snapshot?.phase === "lobby";
@@ -1421,7 +1522,9 @@ function prepareRenderContext(): RenderContext {
   const inAttack = snapshot?.turnPhase === "attack";
   const inFortify = snapshot?.turnPhase === "fortify";
   const playerHand = currentPlayerHand();
-  state.selectedTradeCardIds = state.selectedTradeCardIds.filter((cardId) => playerHand.some((card) => card.id === cardId));
+  state.selectedTradeCardIds = state.selectedTradeCardIds.filter((cardId) =>
+    playerHand.some((card) => card.id === cardId)
+  );
   if (!playerHand.length) {
     state.tradeError = "";
     state.tradeSuccess = "";
@@ -1432,15 +1535,22 @@ function prepareRenderContext(): RenderContext {
   const aiCount = Array.isArray(snapshot?.gameConfig?.players)
     ? snapshot.gameConfig.players.filter((player) => player.type === "ai").length
     : 0;
-  const playerLabel = totalPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural");
+  const playerLabel =
+    totalPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural");
   const territories = myTerritories();
   const reinforceOptionsMarkup = territories
-    .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
+    .map(
+      (territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`
+    )
     .join("");
   const selectedReinforceId = selectOrFallback(state.selectedReinforceTerritoryId, territories);
   state.selectedReinforceTerritoryId = selectedReinforceId || null;
 
-  const selectedAttackFromId = selectOrFallback(state.selectedAttackFromId, territories, selectedReinforceId);
+  const selectedAttackFromId = selectOrFallback(
+    state.selectedAttackFromId,
+    territories,
+    selectedReinforceId
+  );
   state.selectedAttackFromId = selectedAttackFromId || null;
 
   const source = snapshot?.map.find((territory) => territory.id === selectedAttackFromId) || null;
@@ -1457,16 +1567,23 @@ function prepareRenderContext(): RenderContext {
     ? Math.max(0, Math.min(currentDiceRuleSet().attackerMaxDice || 3, source.armies - 1))
     : 0;
   if (maxAttackDice > 0) {
-    state.selectedAttackDiceCount = String(Math.min(Number(state.selectedAttackDiceCount || maxAttackDice), maxAttackDice));
+    state.selectedAttackDiceCount = String(
+      Math.min(Number(state.selectedAttackDiceCount || maxAttackDice), maxAttackDice)
+    );
   } else {
     state.selectedAttackDiceCount = "";
   }
 
-  const selectedFortifyFromId = selectOrFallback(state.selectedFortifyFromId, territories, selectedReinforceId);
+  const selectedFortifyFromId = selectOrFallback(
+    state.selectedFortifyFromId,
+    territories,
+    selectedReinforceId
+  );
   state.selectedFortifyFromId = selectedFortifyFromId || null;
   const fortifySource = territoryById(selectedFortifyFromId);
   const fortifyTargets = territories.filter(
-    (territory) => territory.id !== selectedFortifyFromId && fortifySource?.neighbors.includes(territory.id)
+    (territory) =>
+      territory.id !== selectedFortifyFromId && fortifySource?.neighbors.includes(territory.id)
   );
   const selectedFortifyToId = selectOrFallback(state.selectedFortifyToId, fortifyTargets);
   state.selectedFortifyToId = selectedFortifyToId || null;
@@ -1475,7 +1592,8 @@ function prepareRenderContext(): RenderContext {
   const canSurrender = Boolean(me && !me.eliminated) && snapshot?.phase === "active";
   const pendingConquest = snapshot?.pendingConquest || null;
   const isAuthenticated = Boolean(state.user);
-  const mustTradeCards = Boolean(me) && isCurrentPlayer() && Boolean(snapshot?.cardState?.currentPlayerMustTrade);
+  const mustTradeCards =
+    Boolean(me) && isCurrentPlayer() && Boolean(snapshot?.cardState?.currentPlayerMustTrade);
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
 
   return {
@@ -1594,7 +1712,9 @@ function renderGameMetaSection(context: RenderContext): void {
     context.snapshot?.gameConfig?.gameplayProfileId,
     context.snapshot?.gameConfig?.uiProfileId,
     Array.isArray(context.snapshot?.gameConfig?.activeModules)
-      ? context.snapshot?.gameConfig?.activeModules.map((entry) => `${entry.id}@${entry.version}`).join("|")
+      ? context.snapshot?.gameConfig?.activeModules
+          .map((entry) => `${entry.id}@${entry.version}`)
+          .join("|")
       : "",
     state.user?.id,
     context.me?.id,
@@ -1608,9 +1728,12 @@ function renderGameMetaSection(context: RenderContext): void {
   }
 
   elements.gameStatus.textContent = state.currentGameId
-    ? (state.currentGameName || state.currentGameId)
+    ? state.currentGameName || state.currentGameId
     : t("game.runtime.none");
-  elements.gameMapMeta.textContent = context.snapshot?.gameConfig?.mapName || context.snapshot?.gameConfig?.mapId || t("common.classicMini");
+  elements.gameMapMeta.textContent =
+    context.snapshot?.gameConfig?.mapName ||
+    context.snapshot?.gameConfig?.mapId ||
+    t("common.classicMini");
   const setupMeta = t("game.runtime.setupMeta", {
     totalPlayers: context.totalPlayers,
     playerLabel: context.playerLabel,
@@ -1623,16 +1746,15 @@ function renderGameMetaSection(context: RenderContext): void {
       ? context.me.name
       : t("game.runtime.unassigned")
     : t("game.runtime.notConnected");
-  elements.turnBadge.textContent =
-    !context.snapshot
+  elements.turnBadge.textContent = !context.snapshot
+    ? "Lobby"
+    : context.snapshot.phase === "lobby"
       ? "Lobby"
-      : context.snapshot.phase === "lobby"
-        ? "Lobby"
-        : context.snapshot.phase === "finished"
-          ? t("game.runtime.finished")
-          : context.currentPlayer
-            ? t("game.runtime.turnOf", { name: context.currentPlayer.name })
-            : t("game.runtime.waiting");
+      : context.snapshot.phase === "finished"
+        ? t("game.runtime.finished")
+        : context.currentPlayer
+          ? t("game.runtime.turnOf", { name: context.currentPlayer.name })
+          : t("game.runtime.waiting");
   if (elements.phaseBannerValue) {
     elements.phaseBannerValue.textContent = phaseLabel(context.snapshot?.phase);
   }
@@ -1649,23 +1771,23 @@ function renderStatusSummarySection(context: RenderContext): void {
     return;
   }
 
-  setMarkup(elements.statusSummary, context.snapshot
-    ? `
+  setMarkup(
+    elements.statusSummary,
+    context.snapshot
+      ? `
       <div>Fase: <strong>${escapeHtml(context.snapshot.phase)}</strong></div>
       <div>${t("game.reinforcementBanner")} <strong>${context.snapshot.reinforcementPool}</strong></div>
       <div>${t("game.runtime.winner")}: <strong>${escapeHtml(context.winner ? context.winner.name : t("game.runtime.noneLower"))}</strong></div>
     `
-    : "<div>" + t("game.runtime.loadingState") + "</div>");
+      : "<div>" + t("game.runtime.loadingState") + "</div>"
+  );
 }
 
 function renderPlayersSection(context: RenderContext): void {
   const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(context.snapshot));
   const players = context.snapshot?.players || [];
   const existingCards = Array.from(elements.players.querySelectorAll<HTMLElement>(".player-card"));
-  const signature = createSignature([
-    pieceSkinClass,
-    players.map((player) => [player.id])
-  ]);
+  const signature = createSignature([pieceSkinClass, players.map((player) => [player.id])]);
   if (existingCards.length === players.length && existingCards.length > 0) {
     players.forEach((player, index) => {
       const card = existingCards[index];
@@ -1699,9 +1821,11 @@ function renderPlayersSection(context: RenderContext): void {
     return;
   }
 
-  setMarkup(elements.players, players
-    .map(
-      (player) => `
+  setMarkup(
+    elements.players,
+    players
+      .map(
+        (player) => `
         <article class="player-card ${pieceSkinClass}" data-player-id="${escapeHtml(player.id)}">
           <strong>${escapeHtml(player.name)}</strong>
           <div>${t("game.runtime.territories")}: ${player.territoryCount}</div>
@@ -1709,8 +1833,9 @@ function renderPlayersSection(context: RenderContext): void {
           <div class="player-card-token" style="--player-color:${player.color};"></div>
         </article>
       `
-    )
-    .join(""));
+      )
+      .join("")
+  );
 }
 
 function renderMapSection(snapshot: GameSnapshot | null): void {
@@ -1733,24 +1858,34 @@ function renderLogSection(context: RenderContext): void {
     return;
   }
 
-  setMarkup(elements.log, context.logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join(""));
+  setMarkup(
+    elements.log,
+    context.logEntries.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")
+  );
 }
 
 function renderActionPanelsSection(context: RenderContext): void {
-  const attackTargetsMarkup = context.attackTargets
-    .map((territory) => {
-      const owner = ownerById(territory.ownerId);
-      return `<option value="${territory.id}">${escapeHtml(territory.name)} vs ${escapeHtml(owner?.name || "?")} (${territory.armies})</option>`;
-    })
-    .join("") || '<option value="">' + t("game.runtime.noTarget") + '</option>';
-  const fortifyTargetsMarkup = context.fortifyTargets
-    .map((territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`)
-    .join("") || '<option value="">' + t("game.runtime.noAdjacentTerritory") + '</option>';
+  const attackTargetsMarkup =
+    context.attackTargets
+      .map((territory) => {
+        const owner = ownerById(territory.ownerId);
+        return `<option value="${territory.id}">${escapeHtml(territory.name)} vs ${escapeHtml(owner?.name || "?")} (${territory.armies})</option>`;
+      })
+      .join("") || '<option value="">' + t("game.runtime.noTarget") + "</option>";
+  const fortifyTargetsMarkup =
+    context.fortifyTargets
+      .map(
+        (territory) => `<option value="${territory.id}">${territoryOptionLabel(territory)}</option>`
+      )
+      .join("") || '<option value="">' + t("game.runtime.noAdjacentTerritory") + "</option>";
   const cardTradeMarkup = context.playerHand.length
     ? context.playerHand
-      .map((card) => `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`)
-      .join("")
-    : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + '</p>';
+        .map(
+          (card) =>
+            `<button type="button" class="card-chip${state.selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}" data-card-id="${card.id}" aria-pressed="${state.selectedTradeCardIds.includes(card.id) ? "true" : "false"}"><span>${cardDisplayLabel(card)}</span></button>`
+        )
+        .join("")
+    : '<p class="card-trade-empty">' + t("game.runtime.noCardsAvailable") + "</p>";
   const signature = createSignature([
     state.user?.id,
     state.playerId,
@@ -1791,7 +1926,11 @@ function renderActionPanelsSection(context: RenderContext): void {
     return;
   }
 
-  setMarkup(elements.reinforceSelect, context.reinforceOptionsMarkup || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
+  setMarkup(
+    elements.reinforceSelect,
+    context.reinforceOptionsMarkup ||
+      '<option value="">' + t("game.runtime.noTerritory") + "</option>"
+  );
   if (context.selectedReinforceId) {
     elements.reinforceSelect.value = context.selectedReinforceId;
   }
@@ -1805,7 +1944,11 @@ function renderActionPanelsSection(context: RenderContext): void {
     elements.reinforceAllButton.textContent = moveAllActionLabel(maximumReinforcementAmount());
   }
 
-  setMarkup(elements.attackFrom, context.reinforceOptionsMarkup || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
+  setMarkup(
+    elements.attackFrom,
+    context.reinforceOptionsMarkup ||
+      '<option value="">' + t("game.runtime.noTerritory") + "</option>"
+  );
   if (context.selectedAttackFromId) {
     elements.attackFrom.value = context.selectedAttackFromId;
   }
@@ -1820,7 +1963,11 @@ function renderActionPanelsSection(context: RenderContext): void {
     elements.attackDice.value = "";
   }
 
-  setMarkup(elements.fortifyFrom, context.reinforceOptionsMarkup || '<option value="">' + t("game.runtime.noTerritory") + '</option>');
+  setMarkup(
+    elements.fortifyFrom,
+    context.reinforceOptionsMarkup ||
+      '<option value="">' + t("game.runtime.noTerritory") + "</option>"
+  );
   if (context.selectedFortifyFromId) {
     elements.fortifyFrom.value = context.selectedFortifyFromId;
   }
@@ -1839,7 +1986,9 @@ function renderActionPanelsSection(context: RenderContext): void {
     elements.reinforcementBanner.hidden = !context.canInteract || !context.inReinforcement;
   }
   if (elements.reinforcementBannerValue) {
-    elements.reinforcementBannerValue.textContent = String(context.snapshot?.reinforcementPool ?? 0);
+    elements.reinforcementBannerValue.textContent = String(
+      context.snapshot?.reinforcementPool ?? 0
+    );
   }
   if (elements.lobbyActionButtons) {
     elements.lobbyActionButtons.hidden = !context.inLobby;
@@ -1847,7 +1996,8 @@ function renderActionPanelsSection(context: RenderContext): void {
   elements.joinButton.hidden = !context.inLobby;
   elements.startButton.hidden = !context.inLobby;
   elements.joinButton.disabled = !state.user || Boolean(context.me) || !context.inLobby;
-  elements.startButton.disabled = !context.me || !context.inLobby || (context.snapshot?.players.length || 0) < 2;
+  elements.startButton.disabled =
+    !context.me || !context.inLobby || (context.snapshot?.players.length || 0) < 2;
   if (elements.createGameButton) {
     elements.createGameButton.disabled = false;
   }
@@ -1855,20 +2005,28 @@ function renderActionPanelsSection(context: RenderContext): void {
     elements.createGameButtonSecondary.disabled = false;
   }
   if (elements.reinforceGroup) {
-    elements.reinforceGroup.hidden = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest);
+    elements.reinforceGroup.hidden =
+      !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest);
   }
   if (elements.attackGroup) {
-    elements.attackGroup.hidden = !context.canInteract || !context.inAttack || Boolean(context.pendingConquest);
+    elements.attackGroup.hidden =
+      !context.canInteract || !context.inAttack || Boolean(context.pendingConquest);
   }
   if (elements.conquestGroup) {
     elements.conquestGroup.hidden = !context.canInteract || !context.pendingConquest;
   }
   if (elements.fortifyGroup) {
-    elements.fortifyGroup.hidden = !context.canInteract || !context.inFortify || Boolean(context.pendingConquest) || Boolean(context.snapshot?.fortifyUsed);
+    elements.fortifyGroup.hidden =
+      !context.canInteract ||
+      !context.inFortify ||
+      Boolean(context.pendingConquest) ||
+      Boolean(context.snapshot?.fortifyUsed);
   }
   if (context.pendingConquest && elements.conquestArmies) {
     elements.conquestArmies.min = String(context.pendingConquest.minArmies || 1);
-    elements.conquestArmies.max = String(context.pendingConquest.maxArmies || context.pendingConquest.minArmies || 1);
+    elements.conquestArmies.max = String(
+      context.pendingConquest.maxArmies || context.pendingConquest.minArmies || 1
+    );
     if (!elements.conquestArmies.value) {
       elements.conquestArmies.value = String(context.pendingConquest.minArmies || 1);
     }
@@ -1882,7 +2040,11 @@ function renderActionPanelsSection(context: RenderContext): void {
   if (elements.combatResultGroup) {
     elements.combatResultGroup.hidden = !lastCombat;
     if (lastCombat) {
-      const conquestText = lastCombat.conqueredTerritory ? t("game.runtime.combat.conquered") : lastCombat.defenderReducedToZero ? t("game.runtime.combat.defenseBroken") : t("game.runtime.combat.resolved");
+      const conquestText = lastCombat.conqueredTerritory
+        ? t("game.runtime.combat.conquered")
+        : lastCombat.defenderReducedToZero
+          ? t("game.runtime.combat.defenseBroken")
+          : t("game.runtime.combat.resolved");
       elements.combatResultBadge.textContent = conquestText;
       elements.combatResultSummary.textContent = `${territoryById(lastCombat.fromTerritoryId)?.name || lastCombat.fromTerritoryId} -> ${territoryById(lastCombat.toTerritoryId)?.name || lastCombat.toTerritoryId}`;
       elements.combatAttackerRolls.textContent = formatDiceList(lastCombat.attackerRolls);
@@ -1895,21 +2057,34 @@ function renderActionPanelsSection(context: RenderContext): void {
   }
   if (elements.tradeAlertText) {
     elements.tradeAlertText.textContent = context.mustTradeCards
-      ? t("game.runtime.tradeAlert.mustTradeNow", { cardCount: context.playerHand.length, limit: context.snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
+      ? t("game.runtime.tradeAlert.mustTradeNow", {
+          cardCount: context.playerHand.length,
+          limit: context.snapshot?.cardState?.maxHandBeforeForcedTrade || 5
+        })
       : t("game.tradeAlert.copy");
   }
   if (elements.cardTradeGroup) {
-    elements.cardTradeGroup.hidden = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest) || !context.showTradePanel;
+    elements.cardTradeGroup.hidden =
+      !context.canInteract ||
+      !context.inReinforcement ||
+      Boolean(context.pendingConquest) ||
+      !context.showTradePanel;
     if (elements.cardTradeAlert) {
       elements.cardTradeAlert.hidden = !context.mustTradeCards;
     }
-    elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", { count: context.playerHand.length });
-    elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", { bonus: context.snapshot?.cardState?.nextTradeBonus || 4 });
+    elements.cardTradeSummary.textContent = t("game.runtime.cardsInHand", {
+      count: context.playerHand.length
+    });
+    elements.cardTradeBonus.textContent = t("game.runtime.nextTradeBonus", {
+      bonus: context.snapshot?.cardState?.nextTradeBonus || 4
+    });
     if (elements.cardTradeList) {
       setMarkup(elements.cardTradeList, cardTradeMarkup);
     }
     elements.cardTradeHelp.textContent = context.mustTradeCards
-      ? t("game.runtime.tradeHelp.mustTrade", { limit: context.snapshot?.cardState?.maxHandBeforeForcedTrade || 5 })
+      ? t("game.runtime.tradeHelp.mustTrade", {
+          limit: context.snapshot?.cardState?.maxHandBeforeForcedTrade || 5
+        })
       : context.playerHand.length
         ? t("game.runtime.tradeHelp.selected", { selected: state.selectedTradeCardIds.length })
         : t("game.runtime.noCardsAvailable");
@@ -1918,31 +2093,79 @@ function renderActionPanelsSection(context: RenderContext): void {
     elements.cardTradeError.hidden = !state.tradeError;
     elements.cardTradeError.textContent = state.tradeError;
     if (elements.cardTradeButton) {
-      elements.cardTradeButton.disabled = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest) || state.selectedTradeCardIds.length !== 3;
+      elements.cardTradeButton.disabled =
+        !context.canInteract ||
+        !context.inReinforcement ||
+        Boolean(context.pendingConquest) ||
+        state.selectedTradeCardIds.length !== 3;
     }
   }
   if (elements.reinforceAmount) {
-    elements.reinforceAmount.disabled = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest) || (context.snapshot?.reinforcementPool || 0) <= 0 || !elements.reinforceSelect.value;
+    elements.reinforceAmount.disabled =
+      !context.canInteract ||
+      !context.inReinforcement ||
+      Boolean(context.pendingConquest) ||
+      (context.snapshot?.reinforcementPool || 0) <= 0 ||
+      !elements.reinforceSelect.value;
   }
   if (elements.reinforceMultiButton) {
-    elements.reinforceMultiButton.disabled = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest) || (context.snapshot?.reinforcementPool || 0) <= 0 || !elements.reinforceSelect.value;
+    elements.reinforceMultiButton.disabled =
+      !context.canInteract ||
+      !context.inReinforcement ||
+      Boolean(context.pendingConquest) ||
+      (context.snapshot?.reinforcementPool || 0) <= 0 ||
+      !elements.reinforceSelect.value;
   }
   if (elements.reinforceAllButton) {
-    elements.reinforceAllButton.disabled = !context.canInteract || !context.inReinforcement || Boolean(context.pendingConquest) || (context.snapshot?.reinforcementPool || 0) <= 0 || !elements.reinforceSelect.value;
+    elements.reinforceAllButton.disabled =
+      !context.canInteract ||
+      !context.inReinforcement ||
+      Boolean(context.pendingConquest) ||
+      (context.snapshot?.reinforcementPool || 0) <= 0 ||
+      !elements.reinforceSelect.value;
   }
-  elements.attackButton.disabled = !context.canInteract || !context.inAttack || Boolean(context.pendingConquest) || Boolean(state.attackBanzaiInFlight) || (context.snapshot?.reinforcementPool || 0) > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
+  elements.attackButton.disabled =
+    !context.canInteract ||
+    !context.inAttack ||
+    Boolean(context.pendingConquest) ||
+    Boolean(state.attackBanzaiInFlight) ||
+    (context.snapshot?.reinforcementPool || 0) > 0 ||
+    !elements.attackFrom.value ||
+    !elements.attackTo.value ||
+    !elements.attackDice.value;
   if (elements.attackBanzaiButton) {
-    elements.attackBanzaiButton.disabled = !context.canInteract || !context.inAttack || Boolean(context.pendingConquest) || Boolean(state.attackBanzaiInFlight) || (context.snapshot?.reinforcementPool || 0) > 0 || !elements.attackFrom.value || !elements.attackTo.value || !elements.attackDice.value;
-    elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight ? t("game.runtime.banzaiLoading") : t("game.actions.banzai");
+    elements.attackBanzaiButton.disabled =
+      !context.canInteract ||
+      !context.inAttack ||
+      Boolean(context.pendingConquest) ||
+      Boolean(state.attackBanzaiInFlight) ||
+      (context.snapshot?.reinforcementPool || 0) > 0 ||
+      !elements.attackFrom.value ||
+      !elements.attackTo.value ||
+      !elements.attackDice.value;
+    elements.attackBanzaiButton.textContent = state.attackBanzaiInFlight
+      ? t("game.runtime.banzaiLoading")
+      : t("game.actions.banzai");
   }
-  elements.conquestButton.disabled = !context.canInteract || !context.pendingConquest || !elements.conquestArmies?.value;
+  elements.conquestButton.disabled =
+    !context.canInteract || !context.pendingConquest || !elements.conquestArmies?.value;
   if (elements.conquestAllButton) {
     elements.conquestAllButton.disabled = !context.canInteract || !context.pendingConquest;
   }
-  elements.fortifyButton.disabled = !context.canInteract || !context.inFortify || Boolean(context.snapshot?.fortifyUsed) || !elements.fortifyFrom.value || !elements.fortifyTo.value || !elements.fortifyArmies.value;
-  elements.endTurnButton.hidden = !context.canInteract || context.inReinforcement || Boolean(context.pendingConquest);
-  elements.endTurnButton.disabled = !context.canInteract || context.inReinforcement || Boolean(context.pendingConquest);
-  elements.endTurnButton.textContent = context.inAttack ? t("game.runtime.goToFortify") : t("game.actions.endTurn");
+  elements.fortifyButton.disabled =
+    !context.canInteract ||
+    !context.inFortify ||
+    Boolean(context.snapshot?.fortifyUsed) ||
+    !elements.fortifyFrom.value ||
+    !elements.fortifyTo.value ||
+    !elements.fortifyArmies.value;
+  elements.endTurnButton.hidden =
+    !context.canInteract || context.inReinforcement || Boolean(context.pendingConquest);
+  elements.endTurnButton.disabled =
+    !context.canInteract || context.inReinforcement || Boolean(context.pendingConquest);
+  elements.endTurnButton.textContent = context.inAttack
+    ? t("game.runtime.goToFortify")
+    : t("game.actions.endTurn");
   if (elements.surrenderButton) {
     elements.surrenderButton.hidden = !context.canSurrender;
     elements.surrenderButton.disabled = !context.canSurrender;
@@ -1976,18 +2199,28 @@ function render() {
   renderLogSection(context);
 }
 
-async function fetchLatestStateSnapshot(options: { includeGameId?: boolean } = {}): Promise<GameSnapshot> {
+async function fetchLatestStateSnapshot(
+  options: { includeGameId?: boolean } = {}
+): Promise<GameSnapshot> {
   const includeGameId = options.includeGameId !== false;
-  const query = includeGameId && state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
+  const query =
+    includeGameId && state.currentGameId
+      ? "?gameId=" + encodeURIComponent(state.currentGameId)
+      : "";
   const response = await fetch("/api/state" + query);
-  const data = await response.json() as GameSnapshot;
+  const data = (await response.json()) as GameSnapshot;
   if (!response.ok) {
-    throw new Error(translateServerMessage(data as unknown as MessagePayload, t("game.errors.loadActiveGame")));
+    throw new Error(
+      translateServerMessage(data as unknown as MessagePayload, t("game.errors.loadActiveGame"))
+    );
   }
   return data;
 }
 
-function shouldAcceptSnapshot(nextSnapshot: GameSnapshot | null | undefined, options: { allowGameSwitch?: boolean } = {}): boolean {
+function shouldAcceptSnapshot(
+  nextSnapshot: GameSnapshot | null | undefined,
+  options: { allowGameSwitch?: boolean } = {}
+): boolean {
   if (!nextSnapshot || typeof nextSnapshot !== "object") {
     return false;
   }
@@ -2012,7 +2245,10 @@ function shouldAcceptSnapshot(nextSnapshot: GameSnapshot | null | undefined, opt
   return true;
 }
 
-function applySnapshot(nextSnapshot: GameSnapshot, options: { clearPlayerIdentity?: boolean; allowGameSwitch?: boolean } = {}): boolean {
+function applySnapshot(
+  nextSnapshot: GameSnapshot,
+  options: { clearPlayerIdentity?: boolean; allowGameSwitch?: boolean } = {}
+): boolean {
   if (!shouldAcceptSnapshot(nextSnapshot, options)) {
     return false;
   }
@@ -2030,14 +2266,18 @@ function applySnapshot(nextSnapshot: GameSnapshot, options: { clearPlayerIdentit
   return true;
 }
 
-async function send(path: string, payload: Record<string, unknown> = {}, options: { method?: string } = {}): Promise<MutationResponse> {
+async function send(
+  path: string,
+  payload: Record<string, unknown> = {},
+  options: { method?: string } = {}
+): Promise<MutationResponse> {
   const response = await fetch(path, {
     method: options.method || "POST",
     headers: { "Content-Type": "application/json" },
     body: options.method === "GET" ? undefined : JSON.stringify(payload)
   });
 
-  const data = await response.json() as MutationResponse;
+  const data = (await response.json()) as MutationResponse;
   if (!response.ok) {
     if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
       applySnapshot(data.state, { clearPlayerIdentity: false });
@@ -2087,12 +2327,16 @@ async function loadGameList() {
     const data = await response.json();
     state.gameList = data.games || [];
     const activeGame = state.gameList.find((game) => game.id === data.activeGameId) || null;
-    const canAutoSelectActiveGame = !activeGame
-      || !activeGame.creatorUserId
-      || activeGame.creatorUserId === state.user?.id;
+    const canAutoSelectActiveGame =
+      !activeGame || !activeGame.creatorUserId || activeGame.creatorUserId === state.user?.id;
     if (!requestedId) {
-      state.currentGameId = canAutoSelectActiveGame ? (data.activeGameId || state.currentGameId) : null;
-    } else if (state.currentGameId && !state.gameList.some((game) => game.id === state.currentGameId)) {
+      state.currentGameId = canAutoSelectActiveGame
+        ? data.activeGameId || state.currentGameId
+        : null;
+    } else if (
+      state.currentGameId &&
+      !state.gameList.some((game) => game.id === state.currentGameId)
+    ) {
       state.currentGameId = null;
     }
     syncCurrentGameName();
@@ -2116,7 +2360,7 @@ async function restoreSession() {
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json() as MutationResponse;
+    const data = (await response.json()) as MutationResponse;
     setSession(data.user);
   } catch (_error: unknown) {
     setSession(null);
@@ -2274,8 +2518,8 @@ async function openRequestedGameIfNeeded() {
     return;
   }
 
-  const canAutoOpenRequestedGame = !requestedGame.creatorUserId
-    || requestedGame.creatorUserId === state.user?.id;
+  const canAutoOpenRequestedGame =
+    !requestedGame.creatorUserId || requestedGame.creatorUserId === state.user?.id;
   if (!canAutoOpenRequestedGame) {
     pendingRequestedGameId = null;
     syncGameRoute(null);
@@ -2345,8 +2589,7 @@ if (elements.openGameButtonSecondary) {
 elements.logoutButton.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", {});
-  } catch (_error: unknown) {
-  }
+  } catch (_error: unknown) {}
 
   setSession(null);
   disconnectLiveUpdates();
@@ -2480,7 +2723,7 @@ if (elements.gameSessionDetails) {
       return;
     }
 
-    handleOpenSelectedGame();
+    void handleOpenSelectedGame();
   });
 }
 if (elements.cardTradeList) {
@@ -2561,8 +2804,7 @@ elements.map.addEventListener("pointerdown", (event: PointerEvent) => {
 
   try {
     surface.setPointerCapture(event.pointerId);
-  } catch {
-  }
+  } catch {}
 
   if (mapViewportState.activePointers.size >= 2) {
     beginMapViewportPinch();
@@ -2579,7 +2821,9 @@ elements.map.addEventListener("pointerdown", (event: PointerEvent) => {
 });
 
 elements.map.addEventListener("pointermove", (event: PointerEvent) => {
-  const surface = closestElement<HTMLElement>(event.target, "[data-map-surface]") || mapViewportElements().surface;
+  const surface =
+    closestElement<HTMLElement>(event.target, "[data-map-surface]") ||
+    mapViewportElements().surface;
   if (!surface || !mapViewportState.activePointers.has(event.pointerId)) {
     return;
   }
@@ -2602,7 +2846,10 @@ elements.map.addEventListener("pointermove", (event: PointerEvent) => {
       return;
     }
 
-    const currentDistance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+    const currentDistance = Math.hypot(
+      second.clientX - first.clientX,
+      second.clientY - first.clientY
+    );
     const currentCenterClientX = (first.clientX + second.clientX) / 2;
     const currentCenterClientY = (first.clientY + second.clientY) / 2;
     const nextScale = clampNumber(
@@ -2615,7 +2862,11 @@ elements.map.addEventListener("pointermove", (event: PointerEvent) => {
       mapViewportState.pinchStartCenterClientX,
       mapViewportState.pinchStartCenterClientY
     );
-    const currentCenter = mapViewportLocalPoint(surface, currentCenterClientX, currentCenterClientY);
+    const currentCenter = mapViewportLocalPoint(
+      surface,
+      currentCenterClientX,
+      currentCenterClientY
+    );
     const contentX =
       (startCenter.x - surface.clientWidth / 2 - mapViewportState.pinchStartTranslateX) /
       mapViewportState.pinchStartScale;
@@ -2631,7 +2882,10 @@ elements.map.addEventListener("pointermove", (event: PointerEvent) => {
     return;
   }
 
-  if (mapViewportState.dragPointerId !== event.pointerId || mapViewportState.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001) {
+  if (
+    mapViewportState.dragPointerId !== event.pointerId ||
+    mapViewportState.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001
+  ) {
     return;
   }
 
@@ -2667,8 +2921,7 @@ const finishMapPointerInteraction = (event: PointerEvent): void => {
   if (surface?.hasPointerCapture(event.pointerId)) {
     try {
       surface.releasePointerCapture(event.pointerId);
-    } catch {
-    }
+    } catch {}
   }
 
   if (!mapViewportState.activePointers.has(event.pointerId)) {
@@ -2728,11 +2981,7 @@ elements.attackButton.addEventListener("click", async () => {
       return;
     }
 
-    await executeAttack(
-      elements.attackFrom.value,
-      elements.attackTo.value,
-      attackDice
-    );
+    await executeAttack(elements.attackFrom.value, elements.attackTo.value, attackDice);
   } catch (error: unknown) {
     alert(error instanceof Error ? error.message : t("errors.requestFailed"));
   }

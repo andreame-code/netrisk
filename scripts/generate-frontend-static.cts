@@ -61,8 +61,9 @@ async function main(): Promise<void> {
   fs.mkdirSync(publicDir, { recursive: true });
   cleanGeneratedTextFiles();
 
-  const manifestUrl = pathToFileURL(path.join(publicDir, "static-site.mjs")).href + `?ts=${Date.now()}`;
-  const manifest = await import(manifestUrl) as {
+  const manifestUrl =
+    pathToFileURL(path.join(publicDir, "static-site.mjs")).href + `?ts=${Date.now()}`;
+  const manifest = (await import(manifestUrl)) as {
     frontendStylesheets: FrontendGeneratedStylesheet[];
     frontendPageDescriptors: FrontendGeneratedPageDescriptor[];
   };
@@ -76,7 +77,9 @@ async function main(): Promise<void> {
     writeTextFile(page.fileName, page.html);
   });
 
-  console.log(`Generated ${manifest.frontendPageDescriptors.length} HTML pages and ${manifest.frontendStylesheets.length} stylesheets in ${publicDir}`);
+  console.log(
+    `Generated ${manifest.frontendPageDescriptors.length} HTML pages and ${manifest.frontendStylesheets.length} stylesheets in ${publicDir}`
+  );
 }
 
 main().catch((error) => {

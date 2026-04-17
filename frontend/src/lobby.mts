@@ -1,6 +1,13 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
-import type { GameListResponse, GameSummary, LoginResponse, MutationResponse, PublicUser, SessionResponse } from "./core/types.mjs";
+import type {
+  GameListResponse,
+  GameSummary,
+  LoginResponse,
+  MutationResponse,
+  PublicUser,
+  SessionResponse
+} from "./core/types.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
@@ -105,11 +112,9 @@ function phaseLabel(phase: string): string {
 }
 
 function activeProfileIds(game: GameSummary | null | undefined): string[] {
-  return [
-    game?.contentProfileId,
-    game?.gameplayProfileId,
-    game?.uiProfileId
-  ].filter((value): value is string => Boolean(value));
+  return [game?.contentProfileId, game?.gameplayProfileId, game?.uiProfileId].filter(
+    (value): value is string => Boolean(value)
+  );
 }
 
 function summarizeIdentifiers(values: string[], limit = 3): string {
@@ -131,8 +136,8 @@ function summarizeSelectedProfiles(game: GameSummary | null | undefined): string
 function summarizeActiveModules(game: GameSummary | null | undefined): string {
   const moduleIds = Array.isArray(game?.activeModules)
     ? game.activeModules
-      .map((entry) => entry?.id)
-      .filter((value): value is string => Boolean(value))
+        .map((entry) => entry?.id)
+        .filter((value): value is string => Boolean(value))
     : [];
   return summarizeIdentifiers(moduleIds);
 }
@@ -151,7 +156,9 @@ function readinessLabel(game: GameSummary): string {
 }
 
 function sessionFocusLabel(game: GameSummary): string {
-  return game.id === state.currentGameId ? t("lobby.focus.openSession") : t("lobby.focus.available");
+  return game.id === state.currentGameId
+    ? t("lobby.focus.openSession")
+    : t("lobby.focus.available");
 }
 
 function selectedGame(): GameSummary | null {
@@ -177,18 +184,16 @@ function canJoinGame(game: GameSummary | null): boolean {
   }
 
   const configuredPlayers = Number(game.totalPlayers ?? 0);
-  const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
-    ? configuredPlayers
-    : 4;
+  const maxPlayers =
+    Number.isInteger(configuredPlayers) && configuredPlayers > 0 ? configuredPlayers : 4;
 
   return game.playerCount < maxPlayers;
 }
 
 function gameCapacityLabel(game: GameSummary | null | undefined): string {
   const configuredPlayers = Number(game?.totalPlayers ?? 0);
-  const maxPlayers = Number.isInteger(configuredPlayers) && configuredPlayers > 0
-    ? configuredPlayers
-    : 4;
+  const maxPlayers =
+    Number.isInteger(configuredPlayers) && configuredPlayers > 0 ? configuredPlayers : 4;
 
   return String(game?.playerCount ?? 0) + "/" + maxPlayers;
 }
@@ -208,7 +213,7 @@ async function loginWithCredentials(username: string, password: string): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password })
   });
-  const data = await response.json() as LoginResponse;
+  const data = (await response.json()) as LoginResponse;
   if (!response.ok) {
     throw new Error(translateServerMessage(data, t("errors.loginFailed")));
   }
@@ -219,7 +224,21 @@ async function loginWithCredentials(username: string, password: string): Promise
 }
 
 function render() {
-  if (!elements.gameListState || !elements.gameSessionList || !elements.gameSessionDetails || !elements.authStatus || !elements.logoutButton || !elements.selectedGameStatus || !elements.gameStatus || !elements.gameListLoadMoreState || !elements.lobbyTotalGames || !elements.lobbyReadyGames || !elements.lobbyActiveFocus || !elements.lobbyFocusNote || !elements.openGameButton) {
+  if (
+    !elements.gameListState ||
+    !elements.gameSessionList ||
+    !elements.gameSessionDetails ||
+    !elements.authStatus ||
+    !elements.logoutButton ||
+    !elements.selectedGameStatus ||
+    !elements.gameStatus ||
+    !elements.gameListLoadMoreState ||
+    !elements.lobbyTotalGames ||
+    !elements.lobbyReadyGames ||
+    !elements.lobbyActiveFocus ||
+    !elements.lobbyFocusNote ||
+    !elements.openGameButton
+  ) {
     return;
   }
 
@@ -227,10 +246,15 @@ function render() {
   const selected = selectedGame();
   const selectedId = state.selectedGameId || state.currentGameId;
   const hasGames = state.gameList.length > 0;
-  const readyGames = state.gameList.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
+  const readyGames = state.gameList.filter(
+    (game) => game.phase === "lobby" && game.playerCount >= 2
+  ).length;
   const activeGame = state.gameList.find((game) => game.id === state.currentGameId) || null;
 
-  elements.gameListState.className = "session-feedback" + (state.gameListState === "error" ? " is-error" : "") + (hasGames ? " is-hidden" : "");
+  elements.gameListState.className =
+    "session-feedback" +
+    (state.gameListState === "error" ? " is-error" : "") +
+    (hasGames ? " is-hidden" : "");
   if (state.gameListState === "loading") {
     elements.gameListState.textContent = t("lobby.loading");
   } else if (state.gameListState === "error") {
@@ -239,19 +263,51 @@ function render() {
     elements.gameListState.textContent = t("lobby.empty");
   }
 
-  setMarkup(elements.gameSessionList, renderedGames
-    .map((game) => 
-      '<button type="button" class="session-row session-row-button' + (game.id === selectedId ? ' is-selected' : '') + '" data-game-id="' + game.id + '">' +
-        '<span class="session-primary" data-cell-label="' + t("lobby.table.game") + '">' +
-          '<span class="session-name" data-open-game-id="' + game.id + '" role="link" tabindex="0">' + escapeHtml(game.name) + '</span>' +
-        '</span>' +
-        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.map") + '">' + escapeHtml(game.mapName || game.mapId || t("common.classicMini")) + '</span>' +
-        '<span class="badge' + (game.id === state.currentGameId ? ' accent' : '') + '" data-cell-label="' + t("lobby.table.status") + '">' + phaseLabel(game.phase) + '</span>' +
-        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.players") + '">' + gameCapacityLabel(game) + '</span>' +
-        '<span class="session-cell-muted" data-cell-label="' + t("lobby.table.updated") + '">' + formatUpdatedTime(game.updatedAt) + '</span>' +
-      '</button>'
-    )
-    .join(""));
+  setMarkup(
+    elements.gameSessionList,
+    renderedGames
+      .map(
+        (game) =>
+          '<button type="button" class="session-row session-row-button' +
+          (game.id === selectedId ? " is-selected" : "") +
+          '" data-game-id="' +
+          game.id +
+          '">' +
+          '<span class="session-primary" data-cell-label="' +
+          t("lobby.table.game") +
+          '">' +
+          '<span class="session-name" data-open-game-id="' +
+          game.id +
+          '" role="link" tabindex="0">' +
+          escapeHtml(game.name) +
+          "</span>" +
+          "</span>" +
+          '<span class="session-cell-muted" data-cell-label="' +
+          t("lobby.table.map") +
+          '">' +
+          escapeHtml(game.mapName || game.mapId || t("common.classicMini")) +
+          "</span>" +
+          '<span class="badge' +
+          (game.id === state.currentGameId ? " accent" : "") +
+          '" data-cell-label="' +
+          t("lobby.table.status") +
+          '">' +
+          phaseLabel(game.phase) +
+          "</span>" +
+          '<span class="session-cell-muted" data-cell-label="' +
+          t("lobby.table.players") +
+          '">' +
+          gameCapacityLabel(game) +
+          "</span>" +
+          '<span class="session-cell-muted" data-cell-label="' +
+          t("lobby.table.updated") +
+          '">' +
+          formatUpdatedTime(game.updatedAt) +
+          "</span>" +
+          "</button>"
+      )
+      .join("")
+  );
 
   elements.authStatus.textContent = state.user
     ? t("lobby.auth.loggedIn", { username: state.user.username })
@@ -276,54 +332,134 @@ function render() {
   elements.logoutButton.disabled = !state.user;
   renderNavAvatar(state.user?.username);
 
-  elements.selectedGameStatus.textContent = selected ? phaseLabel(selected.phase) : t("lobby.details.emptyBadge");
+  elements.selectedGameStatus.textContent = selected
+    ? phaseLabel(selected.phase)
+    : t("lobby.details.emptyBadge");
   elements.gameStatus.textContent = state.currentGameId
-    ? t("lobby.status.activeGame", { name: (((state.gameList.find((game) => game.id === state.currentGameId) || {}).name) || state.currentGameId) })
+    ? t("lobby.status.activeGame", {
+        name:
+          (state.gameList.find((game) => game.id === state.currentGameId) || {}).name ||
+          state.currentGameId
+      })
     : t("lobby.gameStatus");
   elements.lobbyTotalGames.textContent = String(renderedGames.length);
   elements.lobbyReadyGames.textContent = String(readyGames);
   elements.lobbyActiveFocus.textContent = activeGame ? activeGame.name : t("lobby.focus.value");
   elements.lobbyFocusNote.textContent = activeGame
     ? t("lobby.focus.activeNote", { phase: phaseLabel(activeGame.phase) })
-    : (state.user
+    : state.user
       ? t("lobby.focus.selectNote")
-      : t("lobby.focus.loginNote"));
+      : t("lobby.focus.loginNote");
 
-  elements.gameListLoadMoreState.className = "session-list-load-more" + (hasGames ? "" : " is-hidden");
+  elements.gameListLoadMoreState.className =
+    "session-list-load-more" + (hasGames ? "" : " is-hidden");
   if (!hasGames) {
     elements.gameListLoadMoreState.textContent = "";
   } else if (canLoadMoreGames()) {
-    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.partial", { visible: renderedGames.length, total: state.gameList.length });
+    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.partial", {
+      visible: renderedGames.length,
+      total: state.gameList.length
+    });
   } else {
-    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.complete", { total: state.gameList.length });
+    elements.gameListLoadMoreState.textContent = t("lobby.loadMore.complete", {
+      total: state.gameList.length
+    });
   }
 
-  setMarkup(elements.gameSessionDetails, selected
-    ? '<div class="session-detail-hero">' +
-        '<p class="session-detail-kicker">' + t("lobby.details.selectedKicker") + '</p>' +
-        '<h4 class="session-detail-title">' + escapeHtml(selected.name) + '</h4>' +
-        '<p class="session-detail-copy">' + t("lobby.details.summary", { readiness: readinessLabel(selected), phase: phaseLabel(selected.phase) }) + '</p>' +
-      '</div>' +
-      '<div class="session-detail-grid">' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.name") + '</span><strong>' + escapeHtml(selected.name) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.id") + '</span><strong>' + selected.id + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.status") + '</span><strong>' + phaseLabel(selected.phase) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.playersPresent") + '</span><strong>' + gameCapacityLabel(selected) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.playersConfigured") + '</span><strong>' + (selected.totalPlayers || t("common.notAvailable")) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.map") + '</span><strong>' + escapeHtml(selected.mapName || selected.mapId || t("common.classicMini")) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.ai") + '</span><strong>' + (selected.aiCount || 0) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.preset") + '</span><strong>' + escapeHtml(selected.gamePresetId || t("common.notAvailable")) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.profiles") + '</span><strong>' + escapeHtml(summarizeSelectedProfiles(selected)) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.modules") + '</span><strong>' + escapeHtml(summarizeActiveModules(selected)) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.updated") + '</span><strong>' + formatUpdatedTime(selected.updatedAt) + '</strong></div>' +
-        '<div class="session-detail-item"><span>' + t("lobby.details.focus") + '</span><strong>' + sessionFocusLabel(selected) + '</strong></div>' +
-      '</div>' +
-      '<div class="session-detail-note">' + t("lobby.details.note") + '</div>' +
-      '<div class="session-detail-actions">' +
-        '<button type="button" id="open-selected-inline">' + t("lobby.details.open") + '</button>' +
-        (canJoinGame(selected) ? '<button type="button" id="join-selected-inline" class="ghost-button">' + t("lobby.details.joinOpen") + '</button>' : '') +
-      '</div>'
-    : '<div class="session-empty-copy">' + t("lobby.details.emptyExtended") + '</div>');
+  setMarkup(
+    elements.gameSessionDetails,
+    selected
+      ? '<div class="session-detail-hero">' +
+          '<p class="session-detail-kicker">' +
+          t("lobby.details.selectedKicker") +
+          "</p>" +
+          '<h4 class="session-detail-title">' +
+          escapeHtml(selected.name) +
+          "</h4>" +
+          '<p class="session-detail-copy">' +
+          t("lobby.details.summary", {
+            readiness: readinessLabel(selected),
+            phase: phaseLabel(selected.phase)
+          }) +
+          "</p>" +
+          "</div>" +
+          '<div class="session-detail-grid">' +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.name") +
+          "</span><strong>" +
+          escapeHtml(selected.name) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.id") +
+          "</span><strong>" +
+          selected.id +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.status") +
+          "</span><strong>" +
+          phaseLabel(selected.phase) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.playersPresent") +
+          "</span><strong>" +
+          gameCapacityLabel(selected) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.playersConfigured") +
+          "</span><strong>" +
+          (selected.totalPlayers || t("common.notAvailable")) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.map") +
+          "</span><strong>" +
+          escapeHtml(selected.mapName || selected.mapId || t("common.classicMini")) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.ai") +
+          "</span><strong>" +
+          (selected.aiCount || 0) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.preset") +
+          "</span><strong>" +
+          escapeHtml(selected.gamePresetId || t("common.notAvailable")) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.profiles") +
+          "</span><strong>" +
+          escapeHtml(summarizeSelectedProfiles(selected)) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.modules") +
+          "</span><strong>" +
+          escapeHtml(summarizeActiveModules(selected)) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.updated") +
+          "</span><strong>" +
+          formatUpdatedTime(selected.updatedAt) +
+          "</strong></div>" +
+          '<div class="session-detail-item"><span>' +
+          t("lobby.details.focus") +
+          "</span><strong>" +
+          sessionFocusLabel(selected) +
+          "</strong></div>" +
+          "</div>" +
+          '<div class="session-detail-note">' +
+          t("lobby.details.note") +
+          "</div>" +
+          '<div class="session-detail-actions">' +
+          '<button type="button" id="open-selected-inline">' +
+          t("lobby.details.open") +
+          "</button>" +
+          (canJoinGame(selected)
+            ? '<button type="button" id="join-selected-inline" class="ghost-button">' +
+              t("lobby.details.joinOpen") +
+              "</button>"
+            : "") +
+          "</div>"
+      : '<div class="session-empty-copy">' + t("lobby.details.emptyExtended") + "</div>"
+  );
 
   elements.openGameButton.disabled = !selected;
 }
@@ -337,7 +473,10 @@ function loadMoreGames() {
     return false;
   }
 
-  state.visibleGameCount = Math.min(state.gameList.length, state.visibleGameCount + VISIBLE_GAMES_BATCH_SIZE);
+  state.visibleGameCount = Math.min(
+    state.gameList.length,
+    state.visibleGameCount + VISIBLE_GAMES_BATCH_SIZE
+  );
   render();
   setupInfiniteScroll();
   return true;
@@ -357,18 +496,21 @@ function setupInfiniteScroll() {
     return;
   }
 
-  gameListObserver = new IntersectionObserver((entries) => {
-    const entry = entries[0];
-    if (!entry || !entry.isIntersecting) {
-      return;
-    }
+  gameListObserver = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+      if (!entry || !entry.isIntersecting) {
+        return;
+      }
 
-    loadMoreGames();
-  }, {
-    root: null,
-    rootMargin: "0px 0px 240px 0px",
-    threshold: 0.1
-  });
+      loadMoreGames();
+    },
+    {
+      root: null,
+      rootMargin: "0px 0px 240px 0px",
+      threshold: 0.1
+    }
+  );
 
   gameListObserver.observe(elements.gameListLoadMoreState);
 }
@@ -382,9 +524,11 @@ async function send(path: string, body: unknown): Promise<MutationResponse> {
     body: JSON.stringify(body)
   });
 
-  const data = await response.json() as MutationResponse;
+  const data = (await response.json()) as MutationResponse;
   if (!response.ok) {
-    const error = new Error(translateServerMessage(data, t("errors.requestFailed"))) as Error & { code?: string | null };
+    const error = new Error(translateServerMessage(data, t("errors.requestFailed"))) as Error & {
+      code?: string | null;
+    };
     error.code = data.code || null;
     throw error;
   }
@@ -402,7 +546,7 @@ async function loadGameList(options: { renderOnChange?: boolean } = {}): Promise
 
   try {
     const response = await fetch("/api/games");
-    const data = await response.json() as GameListResponse;
+    const data = (await response.json()) as GameListResponse;
     if (!response.ok) {
       throw new Error(translateServerMessage(data, t("lobby.errors.loadGames")));
     }
@@ -509,7 +653,7 @@ elements.gameSessionList?.addEventListener("click", async (event: Event) => {
 elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
   const joinTrigger = closestElement<HTMLElement>(event.target, "#join-selected-inline");
   if (joinTrigger) {
-    handleJoinSelectedGame();
+    void handleJoinSelectedGame();
     return;
   }
 
@@ -518,7 +662,7 @@ elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
     return;
   }
 
-  handleOpenSelectedGame();
+  void handleOpenSelectedGame();
 });
 
 async function restoreSession(options: { renderOnChange?: boolean } = {}): Promise<void> {
@@ -530,7 +674,7 @@ async function restoreSession(options: { renderOnChange?: boolean } = {}): Promi
       throw new Error(t("auth.sessionExpired"));
     }
 
-    const data = await response.json() as SessionResponse;
+    const data = (await response.json()) as SessionResponse;
     setSession(data.user);
   } catch (_error: unknown) {
     setSession(null);
@@ -581,13 +725,11 @@ if (elements.headerLoginForm) {
 elements.logoutButton?.addEventListener("click", async () => {
   try {
     await send("/api/auth/logout", {});
-  } catch (_error: unknown) {
-  }
+  } catch (_error: unknown) {}
 
   setSession(null);
   render();
 });
-
 
 elements.gameSessionList?.addEventListener("keydown", (event: Event) => {
   const gameNameTrigger = closestElement<HTMLElement>(event.target, "[data-open-game-id]");
