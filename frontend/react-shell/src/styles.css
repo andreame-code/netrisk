@@ -1,0 +1,216 @@
+:root {
+  color-scheme: light;
+  font-family: Aptos, "Trebuchet MS", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(237, 120, 71, 0.28), transparent 35%),
+    radial-gradient(circle at top right, rgba(31, 92, 179, 0.22), transparent 28%),
+    linear-gradient(180deg, #f7f3ea 0%, #ece5d8 100%);
+  color: #162033;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.react-shell-page {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.hero-panel,
+.card-panel,
+.status-panel {
+  border: 1px solid rgba(22, 32, 51, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 252, 247, 0.86);
+  box-shadow: 0 24px 80px rgba(22, 32, 51, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.hero-panel {
+  padding: 2rem;
+}
+
+.eyebrow,
+.status-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ad4f1f;
+}
+
+.hero-panel h1,
+.card-panel h2,
+.status-panel h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.35rem);
+  line-height: 1;
+}
+
+.card-panel h2,
+.status-panel h2 {
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+.hero-copy,
+.status-copy,
+.metric-copy,
+.footer-note {
+  color: rgba(22, 32, 51, 0.78);
+}
+
+.hero-copy {
+  max-width: 52rem;
+  margin: 1rem 0 0;
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.chip,
+.status-pill,
+.refresh-button {
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(22, 32, 51, 0.12);
+}
+
+.chip,
+.status-pill {
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.92rem;
+}
+
+.refresh-button {
+  background: #162033;
+  color: #fef9f1;
+  cursor: pointer;
+}
+
+.refresh-button:hover {
+  background: #24324f;
+}
+
+.status-panel {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+}
+
+.status-panel-error {
+  border-color: rgba(173, 79, 31, 0.35);
+}
+
+.grid-shell {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.card-panel {
+  padding: 1.5rem;
+}
+
+.card-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-header .status-label {
+  margin: 0;
+}
+
+.status-pill.success {
+  color: #0c6b4d;
+}
+
+.status-pill.muted {
+  color: #5d6678;
+}
+
+.game-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.game-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(240, 235, 226, 0.82);
+}
+
+.game-list-item div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.game-list-item span {
+  color: rgba(22, 32, 51, 0.72);
+  font-size: 0.92rem;
+}
+
+.footer-note {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .react-shell-page {
+    width: min(100% - 1.25rem, 100%);
+    padding-top: 1.25rem;
+  }
+
+  .hero-panel,
+  .card-panel,
+  .status-panel {
+    border-radius: 20px;
+  }
+
+  .grid-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .card-panel-wide {
+    grid-column: auto;
+  }
+
+  .card-header,
+  .game-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
