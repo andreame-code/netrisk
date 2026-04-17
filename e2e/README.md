@@ -29,6 +29,10 @@ Each run also uses a temporary SQLite database dedicated to that E2E instance, a
 ## Scope today
 
 - smoke test for app load
-- main layout acceptance coverage
-- basic territory interaction coverage
-- one visual baseline for the main shell
+- layout acceptance coverage for main shell, shared headers, and map fit
+- gameplay flows for reinforcement, attack/conquest, fortify handoff, surrender, relogin binding, and version conflict
+- authorization flows for protected games, direct game routes, and spectator access
+- profile states: loading, error, empty, invalid payload fallback, participating games, and theme preference
+- new game setup happy path plus validation fallback when setup options become invalid
+- granular rendering coverage to catch unnecessary panel remounts during gameplay updates
+- visual baselines for main screen, secondary pages, mobile shells, and World Classic board layouts

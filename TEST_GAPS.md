@@ -34,6 +34,8 @@
 - World Classic board visual baselines across desktop, laptop, and tablet viewports
 - Attack UI: selected dice count is sent to the backend
 - Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
+- Shared runtime validation: auth/profile schemas, route validation failures, and controlled frontend fallback
+- Gameplay E2E: granular rendering reinforcement flow stabilized against async control population
 
 ## Missing
 
