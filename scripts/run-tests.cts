@@ -1630,82 +1630,85 @@ register("frontend API client valida sessione, profilo e lobby list al boundary"
   const client = await getFrontendApiClientModule();
   const calls: Array<{ input: string; init: Record<string, unknown> | undefined }> = [];
 
-  await withMockFetch(async (input: string, init?: Record<string, unknown>) => {
-    calls.push({ input, init });
+  await withMockFetch(
+    async (input: string, init?: Record<string, unknown>) => {
+      calls.push({ input, init });
 
-    if (input === "/api/auth/session") {
-      return {
-        ok: true,
-        async json() {
-          return {
-            user: {
-              id: "user-1",
-              username: "Alice"
-            }
-          };
-        }
-      };
-    }
-
-    if (input === "/api/profile") {
-      return {
-        ok: true,
-        async json() {
-          return {
-            profile: {
-              playerName: "Alice",
-              gamesPlayed: 3,
-              wins: 2,
-              losses: 1,
-              gamesInProgress: 1,
-              participatingGames: [],
-              winRate: 67,
-              hasHistory: true,
-              placeholders: {
-                recentGames: false,
-                ranking: false
-              }
-            }
-          };
-        }
-      };
-    }
-
-    return {
-      ok: true,
-      async json() {
+      if (input === "/api/auth/session") {
         return {
-          games: [
-            {
-              id: "game-1",
-              name: "Campaign",
-              phase: "lobby",
-              playerCount: 2,
-              updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
-            }
-          ],
-          activeGameId: "game-1"
+          ok: true,
+          async json() {
+            return {
+              user: {
+                id: "user-1",
+                username: "Alice"
+              }
+            };
+          }
         };
       }
-    };
-  }, async () => {
-    const session = await client.getSession({
-      errorMessage: "Sessione scaduta",
-      fallbackMessage: "Sessione non leggibile"
-    });
-    const profile = await client.getProfile({
-      errorMessage: "Profilo non disponibile",
-      fallbackMessage: "Profilo non valido"
-    });
-    const games = await client.listGames({
-      errorMessage: "Lobby non disponibile",
-      fallbackMessage: "Lobby non valida"
-    });
 
-    assert.equal(session.user.username, "Alice");
-    assert.equal(profile.profile.gamesPlayed, 3);
-    assert.equal(games.games[0].id, "game-1");
-  });
+      if (input === "/api/profile") {
+        return {
+          ok: true,
+          async json() {
+            return {
+              profile: {
+                playerName: "Alice",
+                gamesPlayed: 3,
+                wins: 2,
+                losses: 1,
+                gamesInProgress: 1,
+                participatingGames: [],
+                winRate: 67,
+                hasHistory: true,
+                placeholders: {
+                  recentGames: false,
+                  ranking: false
+                }
+              }
+            };
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            games: [
+              {
+                id: "game-1",
+                name: "Campaign",
+                phase: "lobby",
+                playerCount: 2,
+                updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+              }
+            ],
+            activeGameId: "game-1"
+          };
+        }
+      };
+    },
+    async () => {
+      const session = await client.getSession({
+        errorMessage: "Sessione scaduta",
+        fallbackMessage: "Sessione non leggibile"
+      });
+      const profile = await client.getProfile({
+        errorMessage: "Profilo non disponibile",
+        fallbackMessage: "Profilo non valido"
+      });
+      const games = await client.listGames({
+        errorMessage: "Lobby non disponibile",
+        fallbackMessage: "Lobby non valida"
+      });
+
+      assert.equal(session.user.username, "Alice");
+      assert.equal(profile.profile.gamesPlayed, 3);
+      assert.equal(games.games[0].id, "game-1");
+    }
+  );
 
   assert.deepEqual(
     calls.map((entry) => entry.input),
@@ -1717,111 +1720,126 @@ register("frontend API client valida sessione, profilo e lobby list al boundary"
   );
 });
 
-register("frontend API client traduce gli errori server e preserva il code per le mutazioni lobby", async () => {
-  const client = await getFrontendApiClientModule();
+register(
+  "frontend API client traduce gli errori server e preserva il code per le mutazioni lobby",
+  async () => {
+    const client = await getFrontendApiClientModule();
 
-  await withMockFetch(async () => {
-    return {
-      ok: false,
-      async json() {
+    await withMockFetch(
+      async () => {
         return {
-          error: "Conflitto versione",
-          code: "VERSION_CONFLICT"
+          ok: false,
+          async json() {
+            return {
+              error: "Conflitto versione",
+              code: "VERSION_CONFLICT"
+            };
+          }
         };
-      }
-    };
-  }, async () => {
-    await assert.rejects(
-      async () =>
-        client.openGame("game-1", {
-          errorMessage: "Richiesta fallita",
-          fallbackMessage: "Risposta non valida"
-        }),
-      (error: Error & { code?: string | null }) => {
-        assert.equal(error.message, "Conflitto versione");
-        assert.equal(error.code, "VERSION_CONFLICT");
-        return true;
+      },
+      async () => {
+        await assert.rejects(
+          async () =>
+            client.openGame("game-1", {
+              errorMessage: "Richiesta fallita",
+              fallbackMessage: "Risposta non valida"
+            }),
+          (error: Error & { code?: string | null }) => {
+            assert.equal(error.message, "Conflitto versione");
+            assert.equal(error.code, "VERSION_CONFLICT");
+            return true;
+          }
+        );
       }
     );
-  });
-});
+  }
+);
 
-register("frontend API client segnala fallback deterministico quando la risposta valida lo schema fallisce", async () => {
-  const client = await getFrontendApiClientModule();
+register(
+  "frontend API client segnala fallback deterministico quando la risposta valida lo schema fallisce",
+  async () => {
+    const client = await getFrontendApiClientModule();
 
-  await withMockFetch(async () => {
-    return {
-      ok: true,
-      async json() {
+    await withMockFetch(
+      async () => {
         return {
-          games: [
-            {
-              id: "game-1",
-              name: "Campaign",
-              phase: "lobby",
-              playerCount: "two",
-              updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
-            }
-          ]
+          ok: true,
+          async json() {
+            return {
+              games: [
+                {
+                  id: "game-1",
+                  name: "Campaign",
+                  phase: "lobby",
+                  playerCount: "two",
+                  updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+                }
+              ]
+            };
+          }
         };
-      }
-    };
-  }, async () => {
-    await assert.rejects(
-      async () =>
-        client.listGames({
-          errorMessage: "Lobby non disponibile",
-          fallbackMessage: "Lobby non valida"
-        }),
-      (error: Error) => {
-        assert.equal(error.message, "Lobby non valida");
-        return true;
+      },
+      async () => {
+        await assert.rejects(
+          async () =>
+            client.listGames({
+              errorMessage: "Lobby non disponibile",
+              fallbackMessage: "Lobby non valida"
+            }),
+          (error: Error) => {
+            assert.equal(error.message, "Lobby non valida");
+            return true;
+          }
+        );
       }
     );
-  });
-});
+  }
+);
 
 register("frontend API client invia body JSON tipizzati per join e logout", async () => {
   const client = await getFrontendApiClientModule();
   const requests: Array<{ input: string; init?: Record<string, unknown> }> = [];
 
-  await withMockFetch(async (input: string, init?: Record<string, unknown>) => {
-    requests.push({ input, init });
+  await withMockFetch(
+    async (input: string, init?: Record<string, unknown>) => {
+      requests.push({ input, init });
 
-    if (input === "/api/auth/logout") {
-      return {
-        ok: true,
-        async json() {
-          return { ok: true };
-        }
-      };
-    }
-
-    return {
-      ok: true,
-      async json() {
+      if (input === "/api/auth/logout") {
         return {
-          playerId: "player-1",
-          user: {
-            id: "user-1",
-            username: "Alice"
+          ok: true,
+          async json() {
+            return { ok: true };
           }
         };
       }
-    };
-  }, async () => {
-    const joinResponse = await client.joinGame("game-1", {
-      errorMessage: "Join fallito",
-      fallbackMessage: "Join non valido"
-    });
-    const logoutResponse = await client.logout({
-      errorMessage: "Logout fallito",
-      fallbackMessage: "Logout non valido"
-    });
 
-    assert.equal(joinResponse.playerId, "player-1");
-    assert.equal(logoutResponse.ok, true);
-  });
+      return {
+        ok: true,
+        async json() {
+          return {
+            playerId: "player-1",
+            user: {
+              id: "user-1",
+              username: "Alice"
+            }
+          };
+        }
+      };
+    },
+    async () => {
+      const joinResponse = await client.joinGame("game-1", {
+        errorMessage: "Join fallito",
+        fallbackMessage: "Join non valido"
+      });
+      const logoutResponse = await client.logout({
+        errorMessage: "Logout fallito",
+        fallbackMessage: "Logout non valido"
+      });
+
+      assert.equal(joinResponse.playerId, "player-1");
+      assert.equal(logoutResponse.ok, true);
+    }
+  );
 
   assert.equal(requests[0]?.input, "/api/join");
   assert.equal(requests[1]?.input, "/api/auth/logout");
