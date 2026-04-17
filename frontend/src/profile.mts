@@ -102,12 +102,7 @@ let themeOptionsLoaded = false;
 let currentSessionUser: PublicUser | null = null;
 
 function profileMessageFromError(error: unknown, fallback: string): string {
-  if (
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    error.code === "AUTH_REQUIRED"
-  ) {
+  if (error && typeof error === "object" && "code" in error && error.code === "AUTH_REQUIRED") {
     return t("profile.errors.loginRequired");
   }
 
