@@ -2,6 +2,16 @@ import type {
   ProfileResponseContract,
   AuthSessionResponseContract
 } from "../../shared/api-contracts.cjs";
+const {
+  authSessionResponseSchema,
+  profileResponseSchema,
+  themePreferenceRequestSchema,
+  themePreferenceResponseSchema
+} = require("../../shared/runtime-validation.cjs");
+const {
+  parseRequestOrSendError,
+  sendValidatedJson
+} = require("../route-validation.cjs");
 
 type RequireAuthFn = (
   req: import("node:http").IncomingMessage,
@@ -53,7 +63,14 @@ export async function handleAuthSessionRoute(deps: AccountRouteDeps): Promise<bo
   const payload: AuthSessionResponseContract = {
     user: deps.auth.publicUser(authContext.user) as AuthSessionResponseContract["user"]
   };
-  deps.sendJson(deps.res, 200, payload);
+  sendValidatedJson(
+    deps.res,
+    200,
+    payload,
+    authSessionResponseSchema,
+    deps.sendJson,
+    deps.sendLocalizedError
+  );
   return true;
 }
 
@@ -70,7 +87,14 @@ export async function handleProfileRoute(deps: AccountRouteDeps): Promise<boolea
         preferences: deps.extractUserPreferences(authContext.user)
       } as unknown as ProfileResponseContract["profile"]
     };
-    deps.sendJson(deps.res, 200, payload);
+    sendValidatedJson(
+      deps.res,
+      200,
+      payload,
+      profileResponseSchema,
+      deps.sendJson,
+      deps.sendLocalizedError
+    );
   } catch (error) {
     deps.sendLocalizedError(
       deps.res,
@@ -93,7 +117,17 @@ export async function handleThemePreferenceRoute(
     return true;
   }
 
-  if (typeof body.theme !== "string" || !deps.supportedSiteThemes.has(body.theme)) {
+  const parsedBody = parseRequestOrSendError(
+    deps.res,
+    body,
+    themePreferenceRequestSchema,
+    deps.sendLocalizedError
+  );
+  if (!parsedBody) {
+    return true;
+  }
+
+  if (!deps.supportedSiteThemes.has(parsedBody.theme)) {
     deps.sendLocalizedError(
       deps.res,
       400,
@@ -104,11 +138,11 @@ export async function handleThemePreferenceRoute(
     return true;
   }
 
-  const user = await deps.auth.updateUserThemePreference(authContext.user.id, body.theme);
-  deps.sendJson(deps.res, 200, {
+  const user = await deps.auth.updateUserThemePreference(authContext.user.id, parsedBody.theme);
+  sendValidatedJson(deps.res, 200, {
     ok: true,
     user,
-    preferences: user?.preferences || { theme: deps.resolveStoredTheme(body.theme) }
-  });
+    preferences: user?.preferences || { theme: deps.resolveStoredTheme(parsedBody.theme) }
+  }, themePreferenceResponseSchema, deps.sendJson, deps.sendLocalizedError);
   return true;
 }

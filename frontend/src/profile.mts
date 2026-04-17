@@ -1,4 +1,5 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
+import { readValidatedJson } from "./core/validated-json.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type {
   GameOptionsResponse,
@@ -7,12 +8,22 @@ import type {
   InstalledModuleSummary,
   ModuleOptionsResponse,
   ModulesCatalogResponse,
-  NetRiskUiSlotContribution,
-  ProfileResponse,
-  ProfileSummary,
-  PublicUser,
-  SessionResponse
+  NetRiskUiSlotContribution
 } from "./core/types.mjs";
+import {
+  authSessionResponseSchema,
+  loginResponseSchema,
+  profileResponseSchema,
+  themePreferenceResponseSchema
+} from "./generated/shared-runtime-validation.mjs";
+import type {
+  AuthSessionResponse,
+  LoginResponse,
+  ProfileContract as ProfileSummary,
+  ProfileResponse,
+  PublicUser,
+  ThemePreferenceResponse
+} from "./generated/shared-runtime-validation.mjs";
 import { formatDate, t, translateServerMessage } from "./i18n.mjs";
 
 const elements = {
@@ -198,18 +209,72 @@ function isNavigationAbort(error: unknown): boolean {
   return typeof error === "object" && "name" in error && error.name === "AbortError";
 }
 
-async function persistThemePreference(theme: string): Promise<SessionResponse> {
+async function persistThemePreference(theme: string): Promise<ThemePreferenceResponse> {
   const response = await fetch("/api/profile/preferences/theme", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ theme })
   });
-  const data = (await response.json()) as SessionResponse;
   if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
+    const payload = await response.json();
+    throw new Error(translateServerMessage(payload, t("errors.requestFailed")));
   }
 
-  return data;
+  return readValidatedJson(
+    response,
+    themePreferenceResponseSchema,
+    t("profile.preferences.status.saveFailed", { theme: themeLabel(theme) }),
+    "ThemePreferenceResponse"
+  );
+}
+
+function normalizeSessionUser(session: AuthSessionResponse): PublicUser {
+  return session.user;
+}
+
+function normalizeLoginUser(response: LoginResponse): PublicUser {
+  return response.user;
+}
+
+async function readSessionResponse(response: Response): Promise<AuthSessionResponse> {
+  if (!response.ok) {
+    throw new Error(t("profile.errors.loginRequired"));
+  }
+
+  return readValidatedJson(
+    response,
+    authSessionResponseSchema,
+    t("profile.errors.loadFailed"),
+    "AuthSessionResponse"
+  );
+}
+
+async function readProfileResponse(response: Response): Promise<ProfileResponse> {
+  if (!response.ok) {
+    const payload = await response.json();
+    throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
+  }
+
+  return readValidatedJson(
+    response,
+    profileResponseSchema,
+    t("profile.errors.loadFailed"),
+    "ProfileResponse"
+  );
+}
+
+async function readLoginResponse(response: Response): Promise<LoginResponse> {
+  if (!response.ok) {
+    const payload = await response.json();
+    throw new Error(translateServerMessage(payload, t("errors.loginFailed")));
+  }
+
+  return readValidatedJson(
+    response,
+    loginResponseSchema,
+    t("errors.loginFailed"),
+    "LoginResponse"
+  );
 }
 
 function renderAuthArea(user: PublicUser | null): void {
@@ -666,7 +731,9 @@ function formatUpdatedTime(value: string | null | undefined): string {
 }
 
 function renderParticipatingGames(profile: ProfileSummary): void {
-  const participatingGames = Array.isArray(profile.participatingGames)
+  const participatingGames: ProfileSummary["participatingGames"] = Array.isArray(
+    profile.participatingGames
+  )
     ? profile.participatingGames
     : [];
   const count = participatingGames.length;
@@ -721,7 +788,9 @@ function renderParticipatingGames(profile: ProfileSummary): void {
 }
 
 function showProfile(profile: ProfileSummary): void {
-  const participatingGames = Array.isArray(profile.participatingGames)
+  const participatingGames: ProfileSummary["participatingGames"] = Array.isArray(
+    profile.participatingGames
+  )
     ? profile.participatingGames
     : [];
   const focusGame = participatingGames[0] || null;
@@ -818,38 +887,27 @@ async function loadProfile() {
 
   try {
     const sessionResponse = await fetch("/api/auth/session");
-
-    if (!sessionResponse.ok) {
-      throw new Error(t("profile.errors.loginRequired"));
-    }
-
-    const session = (await sessionResponse.json()) as SessionResponse;
+    const session = await readSessionResponse(sessionResponse);
     if (requestId !== profileRequestId) {
       return;
     }
-    sessionUser = session.user;
-    currentSessionUser = session.user;
-    themeManager.applyUserTheme(session.user);
+    sessionUser = normalizeSessionUser(session);
+    currentSessionUser = sessionUser;
+    themeManager.applyUserTheme(sessionUser);
     elements.authStatus.textContent = t("profile.auth.loggedIn", {
-      username: session.user.username
+      username: sessionUser.username
     });
-    renderAuthArea(session.user);
-    renderNavAvatar(session.user.username);
+    renderAuthArea(sessionUser);
+    renderNavAvatar(sessionUser.username);
     showThemePreferences(true);
-    syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(session.user) });
-    await loadModuleCatalog(session.user);
+    syncThemePreference({ preferredTheme: themeManager.getThemeFromUser(sessionUser) });
+    await loadModuleCatalog(sessionUser);
     const profileResponse = await fetch("/api/profile");
-
-    if (!profileResponse.ok) {
-      const payload = await profileResponse.json();
-      throw new Error(translateServerMessage(payload, t("profile.errors.unavailable")));
-    }
-
-    const payload = (await profileResponse.json()) as ProfileResponse;
+    const payload = await readProfileResponse(profileResponse);
     if (requestId !== profileRequestId) {
       return;
     }
-    elements.profileName.textContent = session.user.username;
+    elements.profileName.textContent = sessionUser.username;
     showProfile(payload.profile);
   } catch (error: unknown) {
     if (requestId !== profileRequestId) {
@@ -906,14 +964,12 @@ if (elements.headerLoginForm) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
-      const data = (await response.json()) as SessionResponse;
-      if (!response.ok) {
-        throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-      }
+      const data = await readLoginResponse(response);
 
       if (elements.headerAuthPassword) {
         elements.headerAuthPassword.value = "";
       }
+      currentSessionUser = normalizeLoginUser(data);
       await loadProfile();
     } catch (error: unknown) {
       setHeaderAuthFeedback(messageFromError(error, t("errors.loginFailed")));
