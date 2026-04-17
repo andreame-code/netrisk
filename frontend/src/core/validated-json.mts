@@ -19,8 +19,10 @@ export async function readValidatedJson<T>(
 
   try {
     payload = await response.json();
-  } catch (_error: unknown) {
-    throw new Error(fallbackMessage);
+  } catch (error: unknown) {
+    throw new Error(fallbackMessage, {
+      cause: error
+    });
   }
 
   try {
@@ -30,7 +32,9 @@ export async function readValidatedJson<T>(
     });
   } catch (error: unknown) {
     if (error instanceof SchemaValidationError) {
-      throw new Error(fallbackMessage);
+      throw new Error(fallbackMessage, {
+        cause: error
+      });
     }
 
     throw error;
