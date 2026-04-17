@@ -1,0 +1,119 @@
+const assert = require("node:assert/strict");
+const {
+  authSessionResponseSchema,
+  loginRequestSchema,
+  parseWithSchema,
+  profileResponseSchema,
+  themePreferenceResponseSchema,
+  toValidationErrors
+} = require("../../../shared/runtime-validation.cjs");
+
+declare function register(name: string, fn: () => void | Promise<void>): void;
+
+register("shared runtime validation parses the auth/profile slice payloads", () => {
+  const loginRequest = parseWithSchema(loginRequestSchema, {
+    username: "commander",
+    password: "secret123"
+  });
+  const sessionResponse = parseWithSchema(authSessionResponseSchema, {
+    user: {
+      id: "u-1",
+      username: "commander",
+      role: "user",
+      authMethods: ["password"],
+      hasEmail: false,
+      preferences: { theme: "command" }
+    }
+  });
+  const profileResponse = parseWithSchema(profileResponseSchema, {
+    profile: {
+      playerName: "commander",
+      gamesPlayed: 3,
+      wins: 2,
+      losses: 1,
+      gamesInProgress: 1,
+      participatingGames: [
+        {
+          id: "g-1",
+          name: "Campaign",
+          phase: "lobby",
+          playerCount: 1,
+          updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString(),
+          totalPlayers: 4,
+          mapName: "World Classic",
+          myLobby: {
+            playerName: "commander",
+            statusLabel: "In attesa avvio",
+            focusLabel: "Teatro operativo",
+            turnPhaseLabel: "Lobby",
+            territoryCount: 0,
+            cardCount: 0
+          }
+        }
+      ],
+      winRate: 67,
+      hasHistory: true,
+      placeholders: {
+        recentGames: false,
+        ranking: false
+      },
+      preferences: {
+        theme: "command"
+      }
+    }
+  });
+  const themePreferenceResponse = parseWithSchema(themePreferenceResponseSchema, {
+    ok: true,
+    user: {
+      id: "u-1",
+      username: "commander"
+    },
+    preferences: {
+      theme: "midnight"
+    }
+  });
+
+  assert.equal(loginRequest.username, "commander");
+  assert.equal(sessionResponse.user.username, "commander");
+  assert.equal(profileResponse.profile.participatingGames.length, 1);
+  assert.equal(themePreferenceResponse.preferences.theme, "midnight");
+});
+
+register("shared runtime validation exposes deterministic validation issue paths", () => {
+  const invalidResponse = {
+    profile: {
+      playerName: 99,
+      gamesPlayed: "three",
+      wins: 2,
+      losses: 1,
+      gamesInProgress: 0,
+      participatingGames: [],
+      winRate: null,
+      hasHistory: true,
+      placeholders: {
+        recentGames: false,
+        ranking: false
+      }
+    }
+  };
+
+  const result = profileResponseSchema.safeParse(invalidResponse);
+  assert.equal(result.success, false);
+
+  const validationErrors = toValidationErrors(result.error);
+  assert.deepEqual(
+    validationErrors.map((entry: { code: string; path: string }) => ({
+      code: entry.code,
+      path: entry.path
+    })),
+    [
+      { code: "invalid_type", path: "profile.playerName" },
+      { code: "invalid_type", path: "profile.gamesPlayed" }
+    ]
+  );
+  assert.ok(
+    validationErrors.every(
+      (entry: { message: string }) => typeof entry.message === "string" && entry.message.length > 0
+    )
+  );
+});
