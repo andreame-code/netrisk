@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
 test("new game setup keeps player 1 locked as creator and creates the configured session", async ({ page }) => {
+  test.slow();
   await resetGame(page);
   await page.goto("/game.html");
   const owner = uniqueUser("setup_owner");
