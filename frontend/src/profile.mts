@@ -269,12 +269,7 @@ async function readLoginResponse(response: Response): Promise<LoginResponse> {
     throw new Error(translateServerMessage(payload, t("errors.loginFailed")));
   }
 
-  return readValidatedJson(
-    response,
-    loginResponseSchema,
-    t("errors.loginFailed"),
-    "LoginResponse"
-  );
+  return readValidatedJson(response, loginResponseSchema, t("errors.loginFailed"), "LoginResponse");
 }
 
 function renderAuthArea(user: PublicUser | null): void {

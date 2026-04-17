@@ -23,8 +23,8 @@ const zodPublicRoot = resolve(projectRoot, "public", "vendor", "zod");
 
 function syncSharedValidationModule() {
   const sharedSource = readFileSync(sharedSourcePath, "utf8");
-  const content = "// Generated from shared/runtime-validation.cts. Do not edit manually.\n"
-    + sharedSource;
+  const content =
+    "// Generated from shared/runtime-validation.cts. Do not edit manually.\n" + sharedSource;
 
   mkdirSync(dirname(frontendTargetPath), { recursive: true });
   writeFileSync(frontendTargetPath, content);

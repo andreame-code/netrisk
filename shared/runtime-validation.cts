@@ -13,9 +13,7 @@ type ZodLikeError = {
 };
 
 type SchemaLike<T> = {
-  safeParse(input: unknown):
-    | { success: true; data: T }
-    | { success: false; error: unknown };
+  safeParse(input: unknown): { success: true; data: T } | { success: false; error: unknown };
 };
 
 export const validationErrorSchema = z.object({
@@ -173,11 +171,13 @@ export const participatingGameLobbySchema = objectSchema({
 
 export type ParticipatingGameLobby = z.infer<typeof participatingGameLobbySchema>;
 
-export const participatingGameSchema = gameSummarySchema.extend({
-  totalPlayers: z.number().nullable(),
-  mapName: z.string().nullable(),
-  myLobby: participatingGameLobbySchema
-}).passthrough();
+export const participatingGameSchema = gameSummarySchema
+  .extend({
+    totalPlayers: z.number().nullable(),
+    mapName: z.string().nullable(),
+    myLobby: participatingGameLobbySchema
+  })
+  .passthrough();
 
 export type ParticipatingGame = z.infer<typeof participatingGameSchema>;
 
