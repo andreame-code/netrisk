@@ -11,6 +11,7 @@ In code and technical documentation, the project remains identified as `NetRisk`
 Today the project includes:
 
 - user registration, login, logout, and profile
+- shared runtime validation for auth/profile payloads at backend and frontend boundaries
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -92,6 +93,40 @@ Missing `CRON_SECRET` does not block the rest of the application from booting, b
 The current scheduled jobs enforce configured turn time limits for active games and recover stuck AI turns. They are structured so additional jobs can be added under the same scheduler entrypoint.
 When an AI recovery is intercepted server-side, the backend also emits a structured `ai_turn_recovery` log event so recovery frequency can be monitored from runtime logs.
 
+## Vercel deployment notes
+
+Preview and production deployments build through:
+
+```bash
+npm run build:ts
+```
+
+Required deploy/runtime variables are:
+
+- `AUTH_ENCRYPTION_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `DATASTORE_DRIVER`
+
+For scheduled jobs, `CRON_SECRET` is required as well.
+
+Before a Vercel deploy, you can validate environment coverage with:
+
+```bash
+npm run vercel:env:check
+```
+
+That check verifies:
+
+- required production env presence
+- required preview env presence for the current branch
+- parity between production env keys and the effective preview key set
+- cron secret presence for both production and preview
+
+The preview check accepts both globally-scoped preview variables and branch-specific preview overrides, matching the effective configuration used by Vercel deploys.
+
+Repository uploads are also filtered by `.vercelignore` so local artifacts such as temporary logs, coverage output, SQLite files, and generated local junk do not pollute preview builds.
+
 ## Useful commands
 
 ```bash
@@ -149,6 +184,7 @@ The `tests/gameplay` suite currently covers areas such as:
 - fortify
 - victory and elimination
 - card helpers and trade bonus
+- shared runtime validation schemas and deterministic validation errors
 - multi-module regression flows
 
 The `e2e` suite currently covers:
@@ -157,10 +193,12 @@ The `e2e` suite currently covers:
 - main layout
 - auth navigation between pages
 - profile states: loading, error, empty state
+- profile invalid payload fallback with controlled UI feedback
 - new game setup
 - main gameplay flows
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
+- granular rendering checks that keep stable gameplay panels mounted during updates
 - visual baselines for the main battlefield, mobile lobby shell, and World Classic board layouts
 
 The E2E runner starts an isolated local server, chooses a free port if the default one is unavailable, and uses a temporary SQLite database per run.
@@ -170,15 +208,16 @@ For a full local gate before pushing, use `npm run test:all:e2e`.
 
 The architecture follows a simple principle: frontend renders and sends actions, backend decides what is valid, shared modules define the common domain.
 
-- `frontend/public`
-  Static web interface: main screens, lobby, new game, profile, game page, style, and client-side logic.
-  This is the only frontend source served by the server; root `public/` is not part of runtime.
+- `public`
+  Static web interface output generated from the frontend sources and served by the runtime.
+- `frontend/src`
+  TypeScript frontend sources for pages, shell, i18n, fetch helpers, and generated shared imports.
 - `backend`
   HTTP server, authentication, authorization, game session persistence, new game configuration.
 - `backend/engine`
   Pure game rules: setup, reinforcement, attack validation, combat dice, conquest, cards, fortify, victory, AI.
 - `shared`
-  Shared models, primitives, and rulesets across application layers.
+  Shared models, primitives, rulesets, API contracts, and runtime validation schemas across application layers.
 - `tests/gameplay`
   Tests focused on game engine logic.
 - `e2e`
@@ -235,6 +274,8 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `listPlayerPieceSets`
 - `listContentPacks`
 - `listContentModules`
+
+For runtime contract validation shared by backend and frontend, see `shared/runtime-validation.cts`.
 
 Game state notably contains:
 

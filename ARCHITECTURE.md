@@ -9,6 +9,7 @@ NetRisk separa in modo netto presentazione, orchestrazione e regole. Il browser 
 L'applicazione include già:
 
 - autenticazione (register/login/logout), profilo utente e preferenze tema
+- validazione runtime condivisa dei payload auth/profile tra backend e frontend
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
 - ciclo turno completo (`reinforcement` -> `attack` -> `fortify` -> `finished`)
@@ -77,6 +78,7 @@ Suite Playwright per flussi end-to-end UI + API.
 - `core-domain.cts`: entità core (game state, player, territory, continent)
 - `game-actions.cts`: tipi azioni inviate dal client
 - `api-contracts.cts`: payload/contratti API condivisi
+- `runtime-validation.cts`: schemi runtime condivisi e shape uniforme degli errori di validazione
 - `module-registry.cts`: primitive comune per registry/moduli estendibili
 - `cards.cts`: deck, set validi, progressione bonus trade
 - `dice.cts`: registry ruleset dadi (incluso `defense-three-dice`)
@@ -143,11 +145,13 @@ Categorie future da trattare con lo stesso modello:
 - Runtime backend: Node.js HTTP server (`backend/server.cts`).
 - Runtime deploy: entrypoint `api/index.ts` che espone `createApp()` dal backend compilato.
 - Pipeline frontend: `frontend/src` viene compilato e materializzato in `public/` tramite gli script di build.
+- Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Datastore supportati:
   - SQLite locale (default sviluppo)
   - Supabase (quando configurato via env)
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
+- Guardrail deploy Vercel: controllo env richieste, fallback senza `.git` per i check repository e `.vercelignore` per evitare upload di artefatti locali.
 
 ## Flusso sintetico applicativo
 
