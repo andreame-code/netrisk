@@ -36,6 +36,22 @@ async function captureStableRefs(page) {
   });
 }
 
+async function waitForSelectedReinforcementTerritory(page) {
+  await expect(page.locator("#reinforce-select")).toBeVisible();
+  await page.waitForFunction(() => {
+    const select = document.querySelector("#reinforce-select");
+    if (!(select instanceof HTMLSelectElement)) {
+      return false;
+    }
+
+    return Boolean(select.value || select.options[0]?.value);
+  });
+
+  return page.locator("#reinforce-select").evaluate((select: HTMLSelectElement) => (
+    select.value || select.options[0]?.value || ""
+  ));
+}
+
 async function expectStableRefs(page) {
   const refs = await page.evaluate(() => {
     const stored = (window as any).__granularRenderRefs || {};
@@ -89,13 +105,7 @@ test("reinforcement keeps unrelated gameplay panels mounted", async ({ browser }
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
   await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:/i);
 
-  const selectedTerritory = await firstPage.locator("#reinforce-select").evaluate((select: HTMLSelectElement) => {
-    if (!select.value && select.options.length) {
-      select.value = select.options[0].value;
-    }
-
-    return select.value || select.options[0]?.value || "";
-  });
+  const selectedTerritory = await waitForSelectedReinforcementTerritory(firstPage);
   if (!selectedTerritory) {
     throw new Error("Nessun territorio disponibile per il test di rinforzo.");
   }
