@@ -182,17 +182,10 @@ export function translateMessagePayload(payload: unknown, fallback = ""): string
   const messageKey =
     messagePayload.messageKey || messagePayload.errorKey || messagePayload.reasonKey || null;
   const messageParams =
-    messagePayload.messageParams
-    || messagePayload.errorParams
-    || messagePayload.reasonParams
-    || {};
+    messagePayload.messageParams || messagePayload.errorParams || messagePayload.reasonParams || {};
   if (messageKey) {
     return t(messageKey, messageParams as TranslationParams, {
-      fallback:
-        messagePayload.error
-        || messagePayload.message
-        || messagePayload.reason
-        || fallback
+      fallback: messagePayload.error || messagePayload.message || messagePayload.reason || fallback
     });
   }
 

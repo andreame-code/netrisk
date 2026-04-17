@@ -8,10 +8,7 @@ const {
   themePreferenceRequestSchema,
   themePreferenceResponseSchema
 } = require("../../shared/runtime-validation.cjs");
-const {
-  parseRequestOrSendError,
-  sendValidatedJson
-} = require("../route-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 type RequireAuthFn = (
   req: import("node:http").IncomingMessage,
@@ -139,10 +136,17 @@ export async function handleThemePreferenceRoute(
   }
 
   const user = await deps.auth.updateUserThemePreference(authContext.user.id, parsedBody.theme);
-  sendValidatedJson(deps.res, 200, {
-    ok: true,
-    user,
-    preferences: user?.preferences || { theme: deps.resolveStoredTheme(parsedBody.theme) }
-  }, themePreferenceResponseSchema, deps.sendJson, deps.sendLocalizedError);
+  sendValidatedJson(
+    deps.res,
+    200,
+    {
+      ok: true,
+      user,
+      preferences: user?.preferences || { theme: deps.resolveStoredTheme(parsedBody.theme) }
+    },
+    themePreferenceResponseSchema,
+    deps.sendJson,
+    deps.sendLocalizedError
+  );
   return true;
 }
