@@ -1,7 +1,11 @@
 const assert = require("node:assert/strict");
 const {
   authSessionResponseSchema,
+  gameIdRequestSchema,
+  gameListResponseSchema,
+  gameMutationResponseSchema,
   loginRequestSchema,
+  logoutResponseSchema,
   parseWithSchema,
   profileResponseSchema,
   themePreferenceResponseSchema,
@@ -72,11 +76,57 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
       theme: "midnight"
     }
   });
+  const gameIdRequest = parseWithSchema(gameIdRequestSchema, {
+    gameId: "g-1"
+  });
+  const gameListResponse = parseWithSchema(gameListResponseSchema, {
+    games: [
+      {
+        id: "g-1",
+        name: "Campaign",
+        phase: "lobby",
+        playerCount: 2,
+        updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString(),
+        totalPlayers: 4,
+        mapName: "World Classic"
+      }
+    ],
+    activeGameId: "g-1"
+  });
+  const gameMutationResponse = parseWithSchema(gameMutationResponseSchema, {
+    ok: true,
+    game: {
+      id: "g-1",
+      name: "Campaign"
+    },
+    games: [
+      {
+        id: "g-1",
+        name: "Campaign",
+        phase: "lobby",
+        playerCount: 2,
+        updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+      }
+    ],
+    activeGameId: "g-1",
+    playerId: "p-1",
+    user: {
+      id: "u-1",
+      username: "commander"
+    }
+  });
+  const logoutResponse = parseWithSchema(logoutResponseSchema, {
+    ok: true
+  });
 
   assert.equal(loginRequest.username, "commander");
   assert.equal(sessionResponse.user.username, "commander");
   assert.equal(profileResponse.profile.participatingGames.length, 1);
   assert.equal(themePreferenceResponse.preferences.theme, "midnight");
+  assert.equal(gameIdRequest.gameId, "g-1");
+  assert.equal(gameListResponse.games[0].id, "g-1");
+  assert.equal(gameMutationResponse.playerId, "p-1");
+  assert.equal(logoutResponse.ok, true);
 });
 
 register("shared runtime validation exposes deterministic validation issue paths", () => {
@@ -115,5 +165,35 @@ register("shared runtime validation exposes deterministic validation issue paths
     validationErrors.every(
       (entry: { message: string }) => typeof entry.message === "string" && entry.message.length > 0
     )
+  );
+});
+
+register("shared runtime validation validates lobby route payload shapes", () => {
+  const invalidGameList = gameListResponseSchema.safeParse({
+    games: [
+      {
+        id: "g-1",
+        name: "Campaign",
+        phase: "lobby",
+        playerCount: "two",
+        updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+      }
+    ]
+  });
+  const invalidJoinResponse = gameMutationResponseSchema.safeParse({
+    user: {
+      username: "commander"
+    }
+  });
+
+  assert.equal(invalidGameList.success, false);
+  assert.equal(invalidJoinResponse.success, false);
+  assert.deepEqual(
+    toValidationErrors(invalidGameList.error).map((entry: { path: string }) => entry.path),
+    ["games.0.playerCount"]
+  );
+  assert.deepEqual(
+    toValidationErrors(invalidJoinResponse.error).map((entry: { path: string }) => entry.path),
+    ["user.id"]
   );
 });

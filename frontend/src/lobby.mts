@@ -1,14 +1,8 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { getSession, joinGame, listGames, login, logout, openGame } from "./core/api/client.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
-import type {
-  GameListResponse,
-  GameSummary,
-  LoginResponse,
-  MutationResponse,
-  PublicUser,
-  SessionResponse
-} from "./core/types.mjs";
-import { formatDate, t, translateServerMessage } from "./i18n.mjs";
+import type { GameSummary, PublicUser } from "./core/types.mjs";
+import { formatDate, t } from "./i18n.mjs";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
@@ -208,15 +202,13 @@ function setSession(user: PublicUser | null | undefined): void {
 }
 
 async function loginWithCredentials(username: string, password: string): Promise<void> {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = (await response.json()) as LoginResponse;
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-  }
+  const data = await login(
+    { username, password },
+    {
+      errorMessage: t("errors.loginFailed"),
+      fallbackMessage: t("errors.loginFailed")
+    }
+  );
 
   setSession(data.user);
   await loadGameList();
@@ -515,27 +507,6 @@ function setupInfiniteScroll() {
   gameListObserver.observe(elements.gameListLoadMoreState);
 }
 
-async function send(path: string, body: unknown): Promise<MutationResponse> {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-
-  const data = (await response.json()) as MutationResponse;
-  if (!response.ok) {
-    const error = new Error(translateServerMessage(data, t("errors.requestFailed"))) as Error & {
-      code?: string | null;
-    };
-    error.code = data.code || null;
-    throw error;
-  }
-
-  return data;
-}
-
 async function loadGameList(options: { renderOnChange?: boolean } = {}): Promise<void> {
   const renderOnChange = options.renderOnChange !== false;
   state.gameListState = "loading";
@@ -545,11 +516,10 @@ async function loadGameList(options: { renderOnChange?: boolean } = {}): Promise
   }
 
   try {
-    const response = await fetch("/api/games");
-    const data = (await response.json()) as GameListResponse;
-    if (!response.ok) {
-      throw new Error(translateServerMessage(data, t("lobby.errors.loadGames")));
-    }
+    const data = await listGames({
+      errorMessage: t("lobby.errors.loadGames"),
+      fallbackMessage: t("lobby.errors.loadGames")
+    });
 
     state.gameList = data.games || [];
     resetVisibleGameCount();
@@ -576,7 +546,10 @@ function navigateToGameRoute(gameId: string): void {
 }
 
 async function openGameById(gameId: string): Promise<void> {
-  const data = await send("/api/games/open", { gameId });
+  const data = await openGame(gameId, {
+    errorMessage: t("errors.requestFailed"),
+    fallbackMessage: t("errors.requestFailed")
+  });
   state.gameList = data.games || [];
   resetVisibleGameCount();
   state.currentGameId = data.activeGameId || null;
@@ -611,7 +584,10 @@ async function handleJoinSelectedGame() {
   }
 
   try {
-    await send("/api/join", { gameId: selected.id });
+    await joinGame(selected.id, {
+      errorMessage: t("errors.requestFailed"),
+      fallbackMessage: t("errors.requestFailed")
+    });
     await openGameById(selected.id);
   } catch (error: unknown) {
     state.gameListState = "error";
@@ -668,13 +644,10 @@ elements.gameSessionDetails?.addEventListener("click", (event: Event) => {
 async function restoreSession(options: { renderOnChange?: boolean } = {}): Promise<void> {
   const renderOnChange = options.renderOnChange !== false;
   try {
-    const response = await fetch("/api/auth/session");
-
-    if (!response.ok) {
-      throw new Error(t("auth.sessionExpired"));
-    }
-
-    const data = (await response.json()) as SessionResponse;
+    const data = await getSession({
+      errorMessage: t("auth.sessionExpired"),
+      fallbackMessage: t("auth.sessionExpired")
+    });
     setSession(data.user);
   } catch (_error: unknown) {
     setSession(null);
@@ -724,7 +697,10 @@ if (elements.headerLoginForm) {
 
 elements.logoutButton?.addEventListener("click", async () => {
   try {
-    await send("/api/auth/logout", {});
+    await logout({
+      errorMessage: t("errors.requestFailed"),
+      fallbackMessage: t("errors.requestFailed")
+    });
   } catch (_error: unknown) {}
 
   setSession(null);

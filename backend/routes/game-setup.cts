@@ -45,6 +45,12 @@ type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
 
+const {
+  gameIdRequestSchema,
+  gameMutationResponseSchema
+} = require("../../shared/runtime-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+
 async function handleAiJoinRoute(
   res: unknown,
   body: Record<string, any>,
@@ -107,7 +113,21 @@ async function handleJoinRoute(
     return;
   }
 
-  const gameContext = await loadGameContext(getTargetGameId(body, url));
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    resolvedBody,
+    gameIdRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
+  const gameContext = await loadGameContext(parsedBody.gameId);
   const result = addPlayer(gameContext.state, authContext.user.username, {
     linkedUserId: authContext.user.id
   });
@@ -125,16 +145,23 @@ async function handleJoinRoute(
 
   await persistGameContext(gameContext);
   broadcastGame(gameContext);
-  sendJson(res, result.rejoined ? 200 : 201, {
-    playerId: result.player.id,
-    state: snapshotForState(
-      gameContext.state,
-      gameContext.gameId,
-      gameContext.version,
-      gameContext.gameName
-    ),
-    user: publicUser(authContext.user)
-  });
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
+    result.rejoined ? 200 : 201,
+    {
+      playerId: result.player.id,
+      state: snapshotForState(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName
+      ),
+      user: publicUser(authContext.user)
+    },
+    gameMutationResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError as SendLocalizedError
+  );
 }
 
 async function handleStartRoute(
