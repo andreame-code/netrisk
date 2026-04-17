@@ -12,6 +12,7 @@ Today the project includes:
 
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile payloads at backend and frontend boundaries
+- typed frontend API client helpers for the migrated `profile` and `lobby` flows
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -211,7 +212,7 @@ The architecture follows a simple principle: frontend renders and sends actions,
 - `public`
   Static web interface output generated from the frontend sources and served by the runtime.
 - `frontend/src`
-  TypeScript frontend sources for pages, shell, i18n, fetch helpers, and generated shared imports.
+  TypeScript frontend sources for pages, shell, i18n, typed API client helpers, and generated shared imports.
 - `backend`
   HTTP server, authentication, authorization, game session persistence, new game configuration.
 - `backend/engine`
@@ -276,6 +277,7 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `listContentModules`
 
 For runtime contract validation shared by backend and frontend, see `shared/runtime-validation.cts`.
+For the current framework-agnostic frontend transport boundary used by the migrated `profile` and `lobby` flows, see `frontend/src/core/api/`.
 
 Game state notably contains:
 
@@ -310,6 +312,7 @@ Main frontend screens currently available:
 - `register.html`: new account creation
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
+For the migrated `profile` and `lobby` pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
 
 From a naming perspective, frontend pages currently display title `Frontline Dominion`, while the technical project domain continues to use `NetRisk`.
 
