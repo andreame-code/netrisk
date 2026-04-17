@@ -68,6 +68,14 @@ npm start
 
 Application available at `http://localhost:3000`.
 
+React shell preview:
+
+```bash
+npm run dev:react-shell
+```
+
+The parallel React + Vite shell is reachable at `http://localhost:5173/react/` in development and at `/react/` from the main server after `npm run build:ts`.
+
 ## Datastore configuration
 
 The project supports two main modes:
@@ -134,11 +142,13 @@ Repository uploads are also filtered by `.vercelignore` so local artifacts such 
 npm start
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+npm run dev:react-shell
 npm run vercel:env:check
 npm run lint
 npm run lint:fix
 npm run format
 npm run format:check
+npm run typecheck:react-shell
 npm test
 npm run test:gameplay
 npm run test:e2e
@@ -151,10 +161,12 @@ npm run test:all:e2e
 - `npm run backup:data`: creates a consistent SQLite snapshot in `data/backups/`
 - `npm run backup:check -- --file ...`: verifies that a SQLite backup is readable and complete
 - `npm run vercel:env:check`: checks parity between required deploy variables and expected configuration
+- `npm run dev:react-shell`: starts the parallel React + Vite shell with `/api` proxied to the Node backend
 - `npm run lint`: runs the warning-first ESLint baseline for repository TypeScript sources
 - `npm run lint:fix`: applies safe auto-fixes from the current ESLint baseline
 - `npm run format`: formats the scoped repository sources and docs with Prettier
 - `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
+- `npm run typecheck:react-shell`: type-checks the parallel React shell
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
 - `npm run test:e2e:update`: intentionally updates Playwright visual baselines after an approved UI change
@@ -310,6 +322,7 @@ Main frontend screens currently available:
 - `game.html`: active game
 - `profile.html`: user profile
 - `register.html`: new account creation
+- `/react/`: parallel React + Vite smoke shell
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
 For the migrated `profile` and `lobby` pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
