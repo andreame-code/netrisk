@@ -28,6 +28,8 @@ type AuthStore = {
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
+const { loginRequestSchema, loginResponseSchema } = require("../../shared/runtime-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleRegisterRoute(
   req: unknown,
@@ -70,7 +72,17 @@ async function handleLoginRoute(
   sendLocalizedError: SendLocalizedError,
   buildSessionCookie: BuildSessionCookie
 ): Promise<void> {
-  const result = await auth.loginWithPassword(body.username, body.password);
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    body,
+    loginRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
+  const result = await auth.loginWithPassword(parsedBody.username, parsedBody.password);
   if (!result.ok) {
     sendLocalizedError(
       res,
@@ -83,14 +95,17 @@ async function handleLoginRoute(
     return;
   }
 
-  sendJson(
-    res,
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
     200,
     {
       ok: true,
       user: result.user,
       availableAuthProviders: ["password", "email", "google", "discord"]
     },
+    loginResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError as SendLocalizedError,
     {
       "Set-Cookie": buildSessionCookie(req, result.sessionToken)
     }

@@ -173,29 +173,33 @@ export function listSupportedLocales() {
   return SUPPORTED_LOCALES.slice();
 }
 
-export function translateMessagePayload(
-  payload: MessagePayload | null | undefined,
-  fallback = ""
-): string {
+export function translateMessagePayload(payload: unknown, fallback = ""): string {
   if (!payload || typeof payload !== "object") {
     return fallback;
   }
 
-  const messageKey = payload.messageKey || payload.errorKey || payload.reasonKey || null;
-  const messageParams = payload.messageParams || payload.errorParams || payload.reasonParams || {};
+  const messagePayload = payload as MessagePayload;
+  const messageKey =
+    messagePayload.messageKey || messagePayload.errorKey || messagePayload.reasonKey || null;
+  const messageParams =
+    messagePayload.messageParams
+    || messagePayload.errorParams
+    || messagePayload.reasonParams
+    || {};
   if (messageKey) {
     return t(messageKey, messageParams as TranslationParams, {
-      fallback: payload.error || payload.message || payload.reason || fallback
+      fallback:
+        messagePayload.error
+        || messagePayload.message
+        || messagePayload.reason
+        || fallback
     });
   }
 
-  return payload.error || payload.message || payload.reason || fallback;
+  return messagePayload.error || messagePayload.message || messagePayload.reason || fallback;
 }
 
-export function translateServerMessage(
-  payload: MessagePayload | null | undefined,
-  fallback = ""
-): string {
+export function translateServerMessage(payload: unknown, fallback = ""): string {
   return translateMessagePayload(payload, fallback);
 }
 
