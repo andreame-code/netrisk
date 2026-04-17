@@ -8,7 +8,7 @@
     "backup:data": "node .tsbuild/scripts/backup-datastore.cjs",
     "backup:check": "node .tsbuild/scripts/check-backup.cjs",
     "build:ts": "tsc -p tsconfig.json && npm run build:frontend && node .tsbuild/scripts/generate-supabase-schema.cjs && npm run check:ts-sources",
-    "build:frontend": "tsc -p tsconfig.frontend.json && node .tsbuild/scripts/sync-frontend-imports.cjs && node .tsbuild/scripts/generate-frontend-static.cjs && node .tsbuild/scripts/sync-public-assets.cjs",
+    "build:frontend": "node .tsbuild/scripts/sync-shared-runtime-validation-frontend.cjs && tsc -p tsconfig.frontend.json && node .tsbuild/scripts/sync-frontend-imports.cjs && node .tsbuild/scripts/generate-frontend-static.cjs && node .tsbuild/scripts/sync-public-assets.cjs",
     "check:ts-sources": "node .tsbuild/scripts/check-no-js-sources.cjs",
     "lint": "eslint \"backend/**/*.{ts,cts,mts}\" \"frontend/src/**/*.{ts,cts,mts,d.ts}\" \"shared/**/*.{ts,cts,mts,d.ts}\" \"scripts/**/*.{ts,cts,mts}\" \"tests/**/*.{ts,cts,mts,d.ts}\" \"api/**/*.{ts,cts,mts,d.ts}\" \"supabase/**/*.{ts,cts,mts,d.ts}\"",
     "lint:fix": "npm run lint -- --fix",
@@ -45,6 +45,7 @@
     "typescript-eslint": "^8.58.2"
   },
   "dependencies": {
-    "@vercel/speed-insights": "^2.0.0"
+    "@vercel/speed-insights": "^2.0.0",
+    "zod": "^4.3.6"
   }
 }

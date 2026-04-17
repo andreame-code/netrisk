@@ -18,7 +18,9 @@ const rewrittenImports: string[] = [];
 
 for (const absolutePath of collectModules(frontendPublicDir)) {
   const source = readFileSync(absolutePath, "utf8");
-  const rewritten = source.replace(/\.mts(?=['"])/g, ".mjs");
+  const rewritten = source
+    .replace(/\.mts(?=['"])/g, ".mjs")
+    .replace(/from "zod"/g, 'from "../../vendor/zod/index.js"');
   if (rewritten !== source) {
     writeFileSync(absolutePath, rewritten);
     rewrittenImports.push(absolutePath.replace(frontendPublicDir + "\\", ""));

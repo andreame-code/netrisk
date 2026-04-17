@@ -40,6 +40,14 @@ The project must be safe to extend over time without rewriting existing work.
 - backend/engine: pure game rules and turn logic
 - shared: shared types, DTOs, enums, schemas
 
+## API boundary validation
+
+1. All new API boundaries should use shared runtime validation when payloads cross backend/frontend boundaries.
+2. Shared request/response schemas must live in `shared` when consumed by both backend and frontend.
+3. Frontend code must validate remote payloads at the boundary before UI consumption.
+4. Backend routes must validate inbound payloads and critical outbound responses.
+5. Validation schemas must define transport shape only and must not duplicate game-rule logic.
+
 ## Change safety rules
 
 1. Always inspect relevant files before editing.
