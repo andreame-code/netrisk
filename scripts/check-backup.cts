@@ -49,16 +49,22 @@ function inspectBackup(filePath: string | undefined) {
   const db = new DatabaseSync(resolvedFile, { readOnly: true });
 
   try {
-    const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as SqliteTableRow[]).map((row) => row.name);
+    const tables = (
+      db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as SqliteTableRow[]
+    ).map((row) => row.name);
     const missingTables = requiredTables.filter((tableName) => !tables.includes(tableName));
     if (missingTables.length > 0) {
       throw new Error(`Backup incompleto: tabelle mancanti ${missingTables.join(", ")}`);
     }
 
-    const activeGameRow = db.prepare("SELECT value_json FROM app_state WHERE key = ?").get("activeGameId") as SqliteAppStateRow | undefined;
+    const activeGameRow = db
+      .prepare("SELECT value_json FROM app_state WHERE key = ?")
+      .get("activeGameId") as SqliteAppStateRow | undefined;
     const usersCount = db.prepare("SELECT COUNT(*) AS count FROM users").get() as SqliteCountRow;
     const gamesCount = db.prepare("SELECT COUNT(*) AS count FROM games").get() as SqliteCountRow;
-    const sessionsCount = db.prepare("SELECT COUNT(*) AS count FROM sessions").get() as SqliteCountRow;
+    const sessionsCount = db
+      .prepare("SELECT COUNT(*) AS count FROM sessions")
+      .get() as SqliteCountRow;
     return {
       ok: true,
       file: resolvedFile,

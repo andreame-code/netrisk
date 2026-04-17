@@ -22,10 +22,12 @@ function safeReadJson<T>(filePath: string, fallbackValue: T): T {
   return JSON.parse(raw);
 }
 
-function readJsonFile<T>(filePath: string, fallbackValue: T, isValid?: (value: unknown) => boolean): T {
-  const validate = typeof isValid === "function"
-    ? isValid
-    : () => true;
+function readJsonFile<T>(
+  filePath: string,
+  fallbackValue: T,
+  isValid?: (value: unknown) => boolean
+): T {
+  const validate = typeof isValid === "function" ? isValid : () => true;
 
   try {
     const parsed = safeReadJson(filePath, fallbackValue);

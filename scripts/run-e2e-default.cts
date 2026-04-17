@@ -57,7 +57,11 @@ function getConfiguredShardCount(): number | null {
   return Number.isInteger(shardCount) && shardCount > 0 ? shardCount : null;
 }
 
-function pipeWithPrefix(stream: NodeJS.ReadableStream | null, target: NodeJS.WriteStream, prefix: string): Promise<void> {
+function pipeWithPrefix(
+  stream: NodeJS.ReadableStream | null,
+  target: NodeJS.WriteStream,
+  prefix: string
+): Promise<void> {
   if (!stream) {
     return Promise.resolve();
   }
@@ -87,7 +91,7 @@ function buildShardPlans(args: string[], shardCount: number): RunPlan[] {
   return Array.from({ length: shardCount }, (_, index) => ({
     label: `${index + 1}/${shardCount}`,
     args: [...args, `--shard=${index + 1}/${shardCount}`],
-    requestedPort: 3100 + (index * 20)
+    requestedPort: 3100 + index * 20
   }));
 }
 
@@ -158,9 +162,11 @@ async function main(): Promise<void> {
       ? buildShardPlans(args, explicitShardCount)
       : buildGroupedPlans();
 
-  console.log(runPlans.length > 1
-    ? `E2E default runner: avvio ${runPlans.length} processi Playwright isolati.`
-    : "E2E default runner: avvio singolo processo Playwright.");
+  console.log(
+    runPlans.length > 1
+      ? `E2E default runner: avvio ${runPlans.length} processi Playwright isolati.`
+      : "E2E default runner: avvio singolo processo Playwright."
+  );
 
   const results = await Promise.all(runPlans.map((plan) => runPlan(repoRoot, plan)));
   const failed = results.find((result) => result.signal || result.code !== 0);

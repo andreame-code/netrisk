@@ -1,11 +1,21 @@
 const fs = require("fs");
 const path = require("path");
 const { listCardRuleSets } = require("../shared/cards.cjs");
-const { findContentPack: findBuiltInContentPack, listContentPacks } = require("../shared/content-packs.cjs");
+const {
+  findContentPack: findBuiltInContentPack,
+  listContentPacks
+} = require("../shared/content-packs.cjs");
 const { findDiceRuleSet: findBuiltInDiceRuleSet, listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
-const { findSupportedMap: findBuiltInSupportedMap, listSupportedMaps, summarizeMap } = require("../shared/maps/index.cjs");
-const { findPlayerPieceSet: findBuiltInPlayerPieceSet, listPlayerPieceSets } = require("../shared/player-piece-sets.cjs");
+const {
+  findSupportedMap: findBuiltInSupportedMap,
+  listSupportedMaps,
+  summarizeMap
+} = require("../shared/maps/index.cjs");
+const {
+  findPlayerPieceSet: findBuiltInPlayerPieceSet,
+  listPlayerPieceSets
+} = require("../shared/player-piece-sets.cjs");
 const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
@@ -217,12 +227,19 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
         }))
       : [],
     positions: isObject(map.positions)
-      ? Object.entries(map.positions).reduce<Record<string, { x: number; y: number }>>((accumulator, [territoryId, position]) => {
-          if (isObject(position) && typeof position.x === "number" && typeof position.y === "number") {
-            accumulator[territoryId] = { x: position.x, y: position.y };
-          }
-          return accumulator;
-        }, {})
+      ? Object.entries(map.positions).reduce<Record<string, { x: number; y: number }>>(
+          (accumulator, [territoryId, position]) => {
+            if (
+              isObject(position) &&
+              typeof position.x === "number" &&
+              typeof position.y === "number"
+            ) {
+              accumulator[territoryId] = { x: position.x, y: position.y };
+            }
+            return accumulator;
+          },
+          {}
+        )
       : {},
     continents: Array.isArray(map.continents)
       ? map.continents.map((continent) => ({
@@ -237,14 +254,22 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
             ? map.mapDefinition.territories.map((entry) => ({
                 territory: {
                   ...entry.territory,
-                  neighbors: Array.isArray(entry.territory.neighbors) ? [...entry.territory.neighbors] : []
+                  neighbors: Array.isArray(entry.territory.neighbors)
+                    ? [...entry.territory.neighbors]
+                    : []
                 },
                 position: { ...entry.position }
               }))
             : [],
           positions: isObject(map.mapDefinition.positions)
-            ? Object.entries(map.mapDefinition.positions).reduce<Record<string, { x: number; y: number }>>((accumulator, [territoryId, position]) => {
-                if (isObject(position) && typeof position.x === "number" && typeof position.y === "number") {
+            ? Object.entries(map.mapDefinition.positions).reduce<
+                Record<string, { x: number; y: number }>
+              >((accumulator, [territoryId, position]) => {
+                if (
+                  isObject(position) &&
+                  typeof position.x === "number" &&
+                  typeof position.y === "number"
+                ) {
                   accumulator[territoryId] = { x: position.x, y: position.y };
                 }
                 return accumulator;
@@ -253,7 +278,9 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
           continents: Array.isArray(map.mapDefinition.continents)
             ? map.mapDefinition.continents.map((continent) => ({
                 ...continent,
-                territoryIds: Array.isArray(continent.territoryIds) ? [...continent.territoryIds] : []
+                territoryIds: Array.isArray(continent.territoryIds)
+                  ? [...continent.territoryIds]
+                  : []
               }))
             : []
         }
@@ -284,37 +311,45 @@ function aggregateContentContribution(
   });
 
   if (runtimeMapEntries.length) {
-    contribution.mapIds = Array.from(new Set([
-      ...(contribution.mapIds || []),
-      ...runtimeMapEntries.map((entry) => entry.map.id)
-    ]));
+    contribution.mapIds = Array.from(
+      new Set([...(contribution.mapIds || []), ...runtimeMapEntries.map((entry) => entry.map.id)])
+    );
   }
 
   if (runtimeContentPackEntries.length) {
-    contribution.contentPackIds = Array.from(new Set([
-      ...(contribution.contentPackIds || []),
-      ...runtimeContentPackEntries.map((entry) => entry.contentPack.id)
-    ]));
+    contribution.contentPackIds = Array.from(
+      new Set([
+        ...(contribution.contentPackIds || []),
+        ...runtimeContentPackEntries.map((entry) => entry.contentPack.id)
+      ])
+    );
   }
 
   if (runtimePlayerPieceSetEntries.length) {
-    contribution.playerPieceSetIds = Array.from(new Set([
-      ...(contribution.playerPieceSetIds || []),
-      ...runtimePlayerPieceSetEntries.map((entry) => entry.pieceSet.id)
-    ]));
+    contribution.playerPieceSetIds = Array.from(
+      new Set([
+        ...(contribution.playerPieceSetIds || []),
+        ...runtimePlayerPieceSetEntries.map((entry) => entry.pieceSet.id)
+      ])
+    );
   }
 
   if (runtimeDiceRuleSetEntries.length) {
-    contribution.diceRuleSetIds = Array.from(new Set([
-      ...(contribution.diceRuleSetIds || []),
-      ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
-    ]));
+    contribution.diceRuleSetIds = Array.from(
+      new Set([
+        ...(contribution.diceRuleSetIds || []),
+        ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
+      ])
+    );
   }
 
   return contribution;
 }
 
-function moduleEntriesForSelection(modules: NetRiskInstalledModule[], moduleIds: string[]): NetRiskInstalledModule[] {
+function moduleEntriesForSelection(
+  modules: NetRiskInstalledModule[],
+  moduleIds: string[]
+): NetRiskInstalledModule[] {
   const requestedIds = new Set([CORE_MODULE_ID, ...moduleIds]);
   return modules.filter((moduleEntry) => requestedIds.has(moduleEntry.id));
 }
@@ -342,7 +377,9 @@ function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInsta
           dependencies: moduleEntry.manifest.dependencies.map((dependency) => ({ ...dependency })),
           conflicts: [...moduleEntry.manifest.conflicts],
           capabilities: moduleEntry.manifest.capabilities.map((capability) => ({ ...capability })),
-          entrypoints: moduleEntry.manifest.entrypoints ? { ...moduleEntry.manifest.entrypoints } : null,
+          entrypoints: moduleEntry.manifest.entrypoints
+            ? { ...moduleEntry.manifest.entrypoints }
+            : null,
           migrations: [...(moduleEntry.manifest.migrations || [])],
           permissions: [...(moduleEntry.manifest.permissions || [])]
         }
@@ -375,20 +412,34 @@ function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInsta
                 mapIds: [...(moduleEntry.clientManifest.content.mapIds || [])],
                 siteThemeIds: [...(moduleEntry.clientManifest.content.siteThemeIds || [])],
                 pieceSkinIds: [...(moduleEntry.clientManifest.content.pieceSkinIds || [])],
-                playerPieceSetIds: [...(moduleEntry.clientManifest.content.playerPieceSetIds || [])],
+                playerPieceSetIds: [
+                  ...(moduleEntry.clientManifest.content.playerPieceSetIds || [])
+                ],
                 contentPackIds: [...(moduleEntry.clientManifest.content.contentPackIds || [])],
                 diceRuleSetIds: [...(moduleEntry.clientManifest.content.diceRuleSetIds || [])],
                 cardRuleSetIds: [...(moduleEntry.clientManifest.content.cardRuleSetIds || [])],
-                victoryRuleSetIds: [...(moduleEntry.clientManifest.content.victoryRuleSetIds || [])],
-                fortifyRuleSetIds: [...(moduleEntry.clientManifest.content.fortifyRuleSetIds || [])],
-                reinforcementRuleSetIds: [...(moduleEntry.clientManifest.content.reinforcementRuleSetIds || [])]
+                victoryRuleSetIds: [
+                  ...(moduleEntry.clientManifest.content.victoryRuleSetIds || [])
+                ],
+                fortifyRuleSetIds: [
+                  ...(moduleEntry.clientManifest.content.fortifyRuleSetIds || [])
+                ],
+                reinforcementRuleSetIds: [
+                  ...(moduleEntry.clientManifest.content.reinforcementRuleSetIds || [])
+                ]
               }
             : null,
           gamePresets: toGamePresetArray(moduleEntry.clientManifest.gamePresets, moduleEntry.id),
           profiles: moduleEntry.clientManifest.profiles
             ? {
-                content: toModuleProfileArray(moduleEntry.clientManifest.profiles.content, moduleEntry.id),
-                gameplay: toModuleProfileArray(moduleEntry.clientManifest.profiles.gameplay, moduleEntry.id),
+                content: toModuleProfileArray(
+                  moduleEntry.clientManifest.profiles.content,
+                  moduleEntry.id
+                ),
+                gameplay: toModuleProfileArray(
+                  moduleEntry.clientManifest.profiles.gameplay,
+                  moduleEntry.id
+                ),
                 ui: toModuleProfileArray(moduleEntry.clientManifest.profiles.ui, moduleEntry.id)
               }
             : null
@@ -406,14 +457,16 @@ function buildRuntimeModuleMap(
   const resolvedMapDefinition = buildMapDefinition(mapSource, mapDefinition.territoryRecords);
   const continentDefinition = buildContinentDefinition(mapSource, mapDefinition.continentRecords, {
     validTerritoryIds: resolvedMapDefinition.territories
-      .map((entry: { territory: { id?: string | null; }; }) => entry.territory.id)
+      .map((entry: { territory: { id?: string | null } }) => entry.territory.id)
       .filter((territoryId: unknown): territoryId is string => isNonEmptyString(territoryId))
   });
 
   return {
     id: mapDefinition.id,
     name: mapDefinition.name,
-    territories: resolvedMapDefinition.territories.map((entry: { territory: SupportedMap["territories"][number]; }) => entry.territory),
+    territories: resolvedMapDefinition.territories.map(
+      (entry: { territory: SupportedMap["territories"][number] }) => entry.territory
+    ),
     positions: resolvedMapDefinition.positions,
     continents: continentDefinition.continents,
     mapDefinition: {
@@ -423,7 +476,9 @@ function buildRuntimeModuleMap(
   };
 }
 
-function buildRuntimeModuleContentPack(contentPackDefinition: NetRiskModuleContentPackDefinition): ContentPackSummary {
+function buildRuntimeModuleContentPack(
+  contentPackDefinition: NetRiskModuleContentPackDefinition
+): ContentPackSummary {
   return {
     id: contentPackDefinition.id,
     name: contentPackDefinition.name,
@@ -437,7 +492,9 @@ function buildRuntimeModuleContentPack(contentPackDefinition: NetRiskModuleConte
   };
 }
 
-function buildRuntimeModulePlayerPieceSet(pieceSetDefinition: NetRiskModulePlayerPieceSetDefinition): PlayerPieceSet {
+function buildRuntimeModulePlayerPieceSet(
+  pieceSetDefinition: NetRiskModulePlayerPieceSetDefinition
+): PlayerPieceSet {
   return {
     id: pieceSetDefinition.id,
     name: pieceSetDefinition.name,
@@ -445,7 +502,9 @@ function buildRuntimeModulePlayerPieceSet(pieceSetDefinition: NetRiskModulePlaye
   };
 }
 
-function buildRuntimeModuleDiceRuleSet(ruleSetDefinition: NetRiskModuleDiceRuleSetDefinition): DiceRuleSet {
+function buildRuntimeModuleDiceRuleSet(
+  ruleSetDefinition: NetRiskModuleDiceRuleSetDefinition
+): DiceRuleSet {
   return {
     id: ruleSetDefinition.id,
     name: ruleSetDefinition.name,
@@ -462,7 +521,8 @@ function defaultCoreManifest(): NetRiskModuleManifest {
     id: CORE_MODULE_ID,
     version: CORE_MODULE_VERSION,
     displayName: "NetRisk Core Base",
-    description: "Built-in core module that exposes the default NetRisk gameplay, content and UI foundations.",
+    description:
+      "Built-in core module that exposes the default NetRisk gameplay, content and UI foundations.",
     engineVersion: NETRISK_ENGINE_VERSION,
     kind: "hybrid",
     dependencies: [],
@@ -497,7 +557,9 @@ function defaultCoreClientManifest(): NetRiskModuleClientManifest {
       cardRuleSetIds: listCardRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
       victoryRuleSetIds: listVictoryRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
       fortifyRuleSetIds: listFortifyRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
-      reinforcementRuleSetIds: listReinforcementRuleSets().map((ruleSet: { id: string }) => ruleSet.id)
+      reinforcementRuleSetIds: listReinforcementRuleSets().map(
+        (ruleSet: { id: string }) => ruleSet.id
+      )
     },
     ui: {
       slots: [
@@ -579,14 +641,17 @@ function normalizeCatalogState(raw: unknown): CatalogState {
     };
   }
 
-  const enabledById = Object.entries(raw.enabledById).reduce<Record<string, boolean>>((accumulator, [moduleId, enabled]) => {
-    if (isNonEmptyString(moduleId)) {
-      accumulator[moduleId] = Boolean(enabled);
+  const enabledById = Object.entries(raw.enabledById).reduce<Record<string, boolean>>(
+    (accumulator, [moduleId, enabled]) => {
+      if (isNonEmptyString(moduleId)) {
+        accumulator[moduleId] = Boolean(enabled);
+      }
+      return accumulator;
+    },
+    {
+      [CORE_MODULE_ID]: true
     }
-    return accumulator;
-  }, {
-    [CORE_MODULE_ID]: true
-  });
+  );
 
   return {
     enabledById,
@@ -598,7 +663,10 @@ function safeReadJson(filePath: string): unknown {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function resolveCompiledServerEntrypointPath(projectRoot: string, absoluteSourcePath: string): string | null {
+function resolveCompiledServerEntrypointPath(
+  projectRoot: string,
+  absoluteSourcePath: string
+): string | null {
   const relativePath = path.relative(projectRoot, absoluteSourcePath);
   if (!relativePath || relativePath.startsWith("..")) {
     return null;
@@ -671,7 +739,8 @@ function loadServerModule(
   try {
     delete require.cache[require.resolve(requirePath)];
     const requiredModule = require(requirePath);
-    const exported = requiredModule && requiredModule.default ? requiredModule.default : requiredModule;
+    const exported =
+      requiredModule && requiredModule.default ? requiredModule.default : requiredModule;
     return {
       serverModule: validateNetRiskServerModule(exported, requirePath),
       warnings,
@@ -687,7 +756,10 @@ function loadServerModule(
   }
 }
 
-function loadClientManifest(moduleRoot: string, manifest: NetRiskModuleManifest): {
+function loadClientManifest(
+  moduleRoot: string,
+  manifest: NetRiskModuleManifest
+): {
   clientManifest: NetRiskModuleClientManifest | null;
   clientManifestPath: string | null;
   warnings: string[];
@@ -698,7 +770,10 @@ function loadClientManifest(moduleRoot: string, manifest: NetRiskModuleManifest)
   const relativeClientManifestPath = manifest.entrypoints?.clientManifest || "client-manifest.json";
   const absoluteClientManifestPath = path.resolve(moduleRoot, relativeClientManifestPath);
 
-  if (absoluteClientManifestPath !== moduleRoot && !absoluteClientManifestPath.startsWith(moduleRoot + path.sep)) {
+  if (
+    absoluteClientManifestPath !== moduleRoot &&
+    !absoluteClientManifestPath.startsWith(moduleRoot + path.sep)
+  ) {
     errors.push(`Client manifest "${relativeClientManifestPath}" escapes the module directory.`);
     return {
       clientManifest: null,
@@ -723,7 +798,10 @@ function loadClientManifest(moduleRoot: string, manifest: NetRiskModuleManifest)
 
   try {
     return {
-      clientManifest: validateNetRiskModuleClientManifest(safeReadJson(absoluteClientManifestPath), absoluteClientManifestPath),
+      clientManifest: validateNetRiskModuleClientManifest(
+        safeReadJson(absoluteClientManifestPath),
+        absoluteClientManifestPath
+      ),
       clientManifestPath: absoluteClientManifestPath,
       warnings,
       errors
@@ -768,7 +846,10 @@ function baseInstalledModuleFromManifest(
   };
 }
 
-function summarizeProfiles(modules: NetRiskInstalledModule[], profileKind: "content" | "gameplay" | "ui"): NetRiskModuleProfile[] {
+function summarizeProfiles(
+  modules: NetRiskInstalledModule[],
+  profileKind: "content" | "gameplay" | "ui"
+): NetRiskModuleProfile[] {
   return modules.flatMap((moduleEntry) => {
     const profileGroup = moduleEntry.clientManifest?.profiles?.[profileKind];
     return toModuleProfileArray(profileGroup, moduleEntry.id);
@@ -776,12 +857,17 @@ function summarizeProfiles(modules: NetRiskInstalledModule[], profileKind: "cont
 }
 
 function summarizeGamePresets(modules: NetRiskInstalledModule[]): NetRiskGamePreset[] {
-  return modules.flatMap((moduleEntry) => toGamePresetArray(moduleEntry.clientManifest?.gamePresets, moduleEntry.id));
+  return modules.flatMap((moduleEntry) =>
+    toGamePresetArray(moduleEntry.clientManifest?.gamePresets, moduleEntry.id)
+  );
 }
 
 function enabledReferences(modules: NetRiskInstalledModule[]): NetRiskModuleReference[] {
   return modules
-    .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible && isNonEmptyString(moduleEntry.version))
+    .filter(
+      (moduleEntry) =>
+        moduleEntry.enabled && moduleEntry.compatible && isNonEmptyString(moduleEntry.version)
+    )
     .map((moduleEntry) => ({
       id: moduleEntry.id,
       version: moduleEntry.version as string
@@ -801,7 +887,10 @@ function activeGameUsesModule(moduleId: string, games: Array<Record<string, unkn
   });
 }
 
-function filterMapsByAllowedIds(entries: MapSummary[], allowedIds: string[] | null | undefined): MapSummary[] {
+function filterMapsByAllowedIds(
+  entries: MapSummary[],
+  allowedIds: string[] | null | undefined
+): MapSummary[] {
   if (!Array.isArray(allowedIds) || !allowedIds.length) {
     return entries.map(cloneMapSummary);
   }
@@ -810,7 +899,10 @@ function filterMapsByAllowedIds(entries: MapSummary[], allowedIds: string[] | nu
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneMapSummary);
 }
 
-function filterContentPacksByAllowedIds(entries: ContentPackSummary[], allowedIds: string[] | null | undefined): ContentPackSummary[] {
+function filterContentPacksByAllowedIds(
+  entries: ContentPackSummary[],
+  allowedIds: string[] | null | undefined
+): ContentPackSummary[] {
   if (!Array.isArray(allowedIds) || !allowedIds.length) {
     return entries.map(cloneContentPackSummary);
   }
@@ -819,7 +911,10 @@ function filterContentPacksByAllowedIds(entries: ContentPackSummary[], allowedId
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneContentPackSummary);
 }
 
-function filterPlayerPieceSetsByAllowedIds(entries: PlayerPieceSetSummary[], allowedIds: string[] | null | undefined): PlayerPieceSetSummary[] {
+function filterPlayerPieceSetsByAllowedIds(
+  entries: PlayerPieceSetSummary[],
+  allowedIds: string[] | null | undefined
+): PlayerPieceSetSummary[] {
   if (!Array.isArray(allowedIds) || !allowedIds.length) {
     return entries.map(clonePlayerPieceSetSummary);
   }
@@ -828,7 +923,10 @@ function filterPlayerPieceSetsByAllowedIds(entries: PlayerPieceSetSummary[], all
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(clonePlayerPieceSetSummary);
 }
 
-function filterDiceRuleSetsByAllowedIds(entries: DiceRuleSetSummary[], allowedIds: string[] | null | undefined): DiceRuleSetSummary[] {
+function filterDiceRuleSetsByAllowedIds(
+  entries: DiceRuleSetSummary[],
+  allowedIds: string[] | null | undefined
+): DiceRuleSetSummary[] {
   if (!Array.isArray(allowedIds) || !allowedIds.length) {
     return entries.map(cloneDiceRuleSetSummary);
   }
@@ -845,11 +943,21 @@ function buildModuleOptions(
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
 ): ModuleOptionsSnapshot {
   const clonedModules = modules.map(cloneInstalledModule);
-  const enabled = clonedModules.filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible);
-  const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
-  const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) => enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId));
+  const enabled = clonedModules.filter(
+    (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
+  );
+  const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
   const content = aggregateContentContribution(
     enabled,
     enabledRuntimeMapEntries,
@@ -864,32 +972,50 @@ function buildModuleOptions(
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
       .map(cloneInstalledModule),
     content,
-      maps: filterMapsByAllowedIds([
+    maps: filterMapsByAllowedIds(
+      [
         ...listSupportedMaps().map(cloneMapSummary),
         ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
-      ], content.mapIds),
-      playerPieceSets: filterPlayerPieceSetsByAllowedIds([
+      ],
+      content.mapIds
+    ),
+    playerPieceSets: filterPlayerPieceSetsByAllowedIds(
+      [
         ...listPlayerPieceSets().map(clonePlayerPieceSetSummary),
-        ...enabledRuntimePlayerPieceSetEntries.map((entry) => ({
-          id: entry.pieceSet.id,
-          name: entry.pieceSet.name,
-          paletteSize: entry.pieceSet.palette.length
-        })).map(clonePlayerPieceSetSummary)
-      ], content.playerPieceSetIds),
-      diceRuleSets: filterDiceRuleSetsByAllowedIds([
+        ...enabledRuntimePlayerPieceSetEntries
+          .map((entry) => ({
+            id: entry.pieceSet.id,
+            name: entry.pieceSet.name,
+            paletteSize: entry.pieceSet.palette.length
+          }))
+          .map(clonePlayerPieceSetSummary)
+      ],
+      content.playerPieceSetIds
+    ),
+    diceRuleSets: filterDiceRuleSetsByAllowedIds(
+      [
         ...listDiceRuleSets().map(cloneDiceRuleSetSummary),
-        ...enabledRuntimeDiceRuleSetEntries.map((entry) => ({
-          id: entry.diceRuleSet.id,
-          name: entry.diceRuleSet.name,
-          attackerMaxDice: entry.diceRuleSet.attackerMaxDice,
-          defenderMaxDice: entry.diceRuleSet.defenderMaxDice
-        })).map(cloneDiceRuleSetSummary)
-      ], content.diceRuleSetIds),
-      contentPacks: filterContentPacksByAllowedIds([
+        ...enabledRuntimeDiceRuleSetEntries
+          .map((entry) => ({
+            id: entry.diceRuleSet.id,
+            name: entry.diceRuleSet.name,
+            attackerMaxDice: entry.diceRuleSet.attackerMaxDice,
+            defenderMaxDice: entry.diceRuleSet.defenderMaxDice
+          }))
+          .map(cloneDiceRuleSetSummary)
+      ],
+      content.diceRuleSetIds
+    ),
+    contentPacks: filterContentPacksByAllowedIds(
+      [
         ...listContentPacks().map(cloneContentPackSummary),
-        ...enabledRuntimeContentPackEntries.map((entry) => cloneContentPackSummary(entry.contentPack))
-      ], content.contentPackIds),
-      gamePresets: summarizeGamePresets(enabled),
+        ...enabledRuntimeContentPackEntries.map((entry) =>
+          cloneContentPackSummary(entry.contentPack)
+        )
+      ],
+      content.contentPackIds
+    ),
+    gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
       .sort((left, right) => (left.order || 0) - (right.order || 0))
@@ -909,16 +1035,18 @@ function mergeConfigDefaults(
   }
 
   const next = { ...target };
-  ([
-    "contentPackId",
-    "ruleSetId",
-    "pieceSetId",
-    "mapId",
-    "diceRuleSetId",
-    "victoryRuleSetId",
-    "themeId",
-    "pieceSkinId"
-  ] as const).forEach((key) => {
+  (
+    [
+      "contentPackId",
+      "ruleSetId",
+      "pieceSetId",
+      "mapId",
+      "diceRuleSetId",
+      "victoryRuleSetId",
+      "themeId",
+      "pieceSkinId"
+    ] as const
+  ).forEach((key) => {
     if (!isNonEmptyString(next[key]) && isNonEmptyString(defaults[key])) {
       next[key] = defaults[key];
     }
@@ -944,7 +1072,10 @@ function mergeScenarioSetup(
   });
 
   return {
-    territoryBonuses: Array.from(nextBonuses.entries()).map(([territoryId, armies]) => ({ territoryId, armies })),
+    territoryBonuses: Array.from(nextBonuses.entries()).map(([territoryId, armies]) => ({
+      territoryId,
+      armies
+    })),
     logMessage: target.logMessage || scenarioSetup.logMessage || null
   };
 }
@@ -966,27 +1097,48 @@ function mergeGameplayEffects(
         ? gameplayEffects.reinforcementAdjustments.map((entry) => ({ ...entry }))
         : [])
     ],
-    majorityControlThresholdPercent: typeof gameplayEffects.majorityControlThresholdPercent === "number"
-      ? gameplayEffects.majorityControlThresholdPercent
-      : (typeof target.majorityControlThresholdPercent === "number" ? target.majorityControlThresholdPercent : null),
-    conquestMinimumArmies: typeof gameplayEffects.conquestMinimumArmies === "number"
-      ? gameplayEffects.conquestMinimumArmies
-      : (typeof target.conquestMinimumArmies === "number" ? target.conquestMinimumArmies : null),
-    fortifyMinimumArmies: typeof gameplayEffects.fortifyMinimumArmies === "number"
-      ? gameplayEffects.fortifyMinimumArmies
-      : (typeof target.fortifyMinimumArmies === "number" ? target.fortifyMinimumArmies : null),
-    requiredFortifyWhenAvailable: typeof gameplayEffects.requiredFortifyWhenAvailable === "boolean"
-      ? gameplayEffects.requiredFortifyWhenAvailable
-      : (typeof target.requiredFortifyWhenAvailable === "boolean" ? target.requiredFortifyWhenAvailable : null),
-    attackMinimumArmies: typeof gameplayEffects.attackMinimumArmies === "number"
-      ? gameplayEffects.attackMinimumArmies
-      : (typeof target.attackMinimumArmies === "number" ? target.attackMinimumArmies : null),
-    attackLimitPerTurn: typeof gameplayEffects.attackLimitPerTurn === "number"
-      ? gameplayEffects.attackLimitPerTurn
-      : (typeof target.attackLimitPerTurn === "number" ? target.attackLimitPerTurn : null),
-    minimumAttacksPerTurn: typeof gameplayEffects.minimumAttacksPerTurn === "number"
-      ? gameplayEffects.minimumAttacksPerTurn
-      : (typeof target.minimumAttacksPerTurn === "number" ? target.minimumAttacksPerTurn : null)
+    majorityControlThresholdPercent:
+      typeof gameplayEffects.majorityControlThresholdPercent === "number"
+        ? gameplayEffects.majorityControlThresholdPercent
+        : typeof target.majorityControlThresholdPercent === "number"
+          ? target.majorityControlThresholdPercent
+          : null,
+    conquestMinimumArmies:
+      typeof gameplayEffects.conquestMinimumArmies === "number"
+        ? gameplayEffects.conquestMinimumArmies
+        : typeof target.conquestMinimumArmies === "number"
+          ? target.conquestMinimumArmies
+          : null,
+    fortifyMinimumArmies:
+      typeof gameplayEffects.fortifyMinimumArmies === "number"
+        ? gameplayEffects.fortifyMinimumArmies
+        : typeof target.fortifyMinimumArmies === "number"
+          ? target.fortifyMinimumArmies
+          : null,
+    requiredFortifyWhenAvailable:
+      typeof gameplayEffects.requiredFortifyWhenAvailable === "boolean"
+        ? gameplayEffects.requiredFortifyWhenAvailable
+        : typeof target.requiredFortifyWhenAvailable === "boolean"
+          ? target.requiredFortifyWhenAvailable
+          : null,
+    attackMinimumArmies:
+      typeof gameplayEffects.attackMinimumArmies === "number"
+        ? gameplayEffects.attackMinimumArmies
+        : typeof target.attackMinimumArmies === "number"
+          ? target.attackMinimumArmies
+          : null,
+    attackLimitPerTurn:
+      typeof gameplayEffects.attackLimitPerTurn === "number"
+        ? gameplayEffects.attackLimitPerTurn
+        : typeof target.attackLimitPerTurn === "number"
+          ? target.attackLimitPerTurn
+          : null,
+    minimumAttacksPerTurn:
+      typeof gameplayEffects.minimumAttacksPerTurn === "number"
+        ? gameplayEffects.minimumAttacksPerTurn
+        : typeof target.minimumAttacksPerTurn === "number"
+          ? target.minimumAttacksPerTurn
+          : null
   };
 }
 
@@ -1058,41 +1210,61 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       ...listDiceRuleSets().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimeDiceRuleSetsById.keys())
     ]);
-    const knownCardRuleSetIds = new Set(listCardRuleSets().map((entry: { id: string }) => entry.id));
-    const knownVictoryRuleSetIds = new Set(listVictoryRuleSets().map((entry: { id: string }) => entry.id));
+    const knownCardRuleSetIds = new Set(
+      listCardRuleSets().map((entry: { id: string }) => entry.id)
+    );
+    const knownVictoryRuleSetIds = new Set(
+      listVictoryRuleSets().map((entry: { id: string }) => entry.id)
+    );
 
     serverModule.contentPacks.forEach((contentPackDefinition) => {
       try {
         if (findBuiltInContentPack(contentPackDefinition.id)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" conflicts with a built-in content pack.`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" conflicts with a built-in content pack.`
+          );
         }
 
         if (runtimeContentPacksById.has(contentPackDefinition.id)) {
-          throw new Error(`Duplicate runtime module content pack "${contentPackDefinition.id}" detected.`);
+          throw new Error(
+            `Duplicate runtime module content pack "${contentPackDefinition.id}" detected.`
+          );
         }
 
         if (!knownThemeIds.has(contentPackDefinition.defaultSiteThemeId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown site theme "${contentPackDefinition.defaultSiteThemeId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown site theme "${contentPackDefinition.defaultSiteThemeId}".`
+          );
         }
 
         if (!knownMapIds.has(contentPackDefinition.defaultMapId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown map "${contentPackDefinition.defaultMapId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown map "${contentPackDefinition.defaultMapId}".`
+          );
         }
 
         if (!knownDiceRuleSetIds.has(contentPackDefinition.defaultDiceRuleSetId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown dice rule set "${contentPackDefinition.defaultDiceRuleSetId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown dice rule set "${contentPackDefinition.defaultDiceRuleSetId}".`
+          );
         }
 
         if (!knownCardRuleSetIds.has(contentPackDefinition.defaultCardRuleSetId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown card rule set "${contentPackDefinition.defaultCardRuleSetId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown card rule set "${contentPackDefinition.defaultCardRuleSetId}".`
+          );
         }
 
         if (!knownVictoryRuleSetIds.has(contentPackDefinition.defaultVictoryRuleSetId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown victory rule set "${contentPackDefinition.defaultVictoryRuleSetId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown victory rule set "${contentPackDefinition.defaultVictoryRuleSetId}".`
+          );
         }
 
         if (!knownPieceSetIds.has(contentPackDefinition.defaultPieceSetId)) {
-          throw new Error(`Runtime module content pack "${contentPackDefinition.id}" references unknown player piece set "${contentPackDefinition.defaultPieceSetId}".`);
+          throw new Error(
+            `Runtime module content pack "${contentPackDefinition.id}" references unknown player piece set "${contentPackDefinition.defaultPieceSetId}".`
+          );
         }
 
         runtimeContentPacksById.set(contentPackDefinition.id, {
@@ -1120,11 +1292,15 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     serverModule.playerPieceSets.forEach((pieceSetDefinition) => {
       try {
         if (findBuiltInPlayerPieceSet(pieceSetDefinition.id)) {
-          throw new Error(`Runtime module player piece set "${pieceSetDefinition.id}" conflicts with a built-in player piece set.`);
+          throw new Error(
+            `Runtime module player piece set "${pieceSetDefinition.id}" conflicts with a built-in player piece set.`
+          );
         }
 
         if (runtimePlayerPieceSetsById.has(pieceSetDefinition.id)) {
-          throw new Error(`Duplicate runtime module player piece set "${pieceSetDefinition.id}" detected.`);
+          throw new Error(
+            `Duplicate runtime module player piece set "${pieceSetDefinition.id}" detected.`
+          );
         }
 
         runtimePlayerPieceSetsById.set(pieceSetDefinition.id, {
@@ -1152,11 +1328,15 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     serverModule.diceRuleSets.forEach((ruleSetDefinition) => {
       try {
         if (findBuiltInDiceRuleSet(ruleSetDefinition.id)) {
-          throw new Error(`Runtime module dice rule set "${ruleSetDefinition.id}" conflicts with a built-in dice rule set.`);
+          throw new Error(
+            `Runtime module dice rule set "${ruleSetDefinition.id}" conflicts with a built-in dice rule set.`
+          );
         }
 
         if (runtimeDiceRuleSetsById.has(ruleSetDefinition.id)) {
-          throw new Error(`Duplicate runtime module dice rule set "${ruleSetDefinition.id}" detected.`);
+          throw new Error(
+            `Duplicate runtime module dice rule set "${ruleSetDefinition.id}" detected.`
+          );
         }
 
         runtimeDiceRuleSetsById.set(ruleSetDefinition.id, {
@@ -1180,13 +1360,15 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     return Array.from(runtimeMapsById.values())
       .filter((entry) => enabledIds.has(entry.moduleId))
-        .map((entry) => ({
-          moduleId: entry.moduleId,
-          map: cloneSupportedMap(entry.map)
-        }));
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        map: cloneSupportedMap(entry.map)
+      }));
   }
 
-  function listEnabledRuntimeContentPacks(modules: NetRiskInstalledModule[]): RuntimeModuleContentPackEntry[] {
+  function listEnabledRuntimeContentPacks(
+    modules: NetRiskInstalledModule[]
+  ): RuntimeModuleContentPackEntry[] {
     const enabledIds = new Set(
       modules
         .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
@@ -1201,7 +1383,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }));
   }
 
-  function listEnabledRuntimePlayerPieceSets(modules: NetRiskInstalledModule[]): RuntimeModulePlayerPieceSetEntry[] {
+  function listEnabledRuntimePlayerPieceSets(
+    modules: NetRiskInstalledModule[]
+  ): RuntimeModulePlayerPieceSetEntry[] {
     const enabledIds = new Set(
       modules
         .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
@@ -1216,7 +1400,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }));
   }
 
-  function listEnabledRuntimeDiceRuleSets(modules: NetRiskInstalledModule[]): RuntimeModuleDiceRuleSetEntry[] {
+  function listEnabledRuntimeDiceRuleSets(
+    modules: NetRiskInstalledModule[]
+  ): RuntimeModuleDiceRuleSetEntry[] {
     const enabledIds = new Set(
       modules
         .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
@@ -1236,9 +1422,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       return cachedState;
     }
 
-    const rawState = typeof options.datastore.getAppState === "function"
-      ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
-      : null;
+    const rawState =
+      typeof options.datastore.getAppState === "function"
+        ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
+        : null;
     cachedState = normalizeCatalogState(rawState);
     return cachedState;
   }
@@ -1253,10 +1440,12 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   function scanFilesystemModules(enabledById: Record<string, boolean>): NetRiskInstalledModule[] {
     const discoveredModules: NetRiskInstalledModule[] = [];
     const moduleDirectories = fs.existsSync(modulesRoot)
-      ? fs.readdirSync(modulesRoot, { withFileTypes: true }).filter((entry: { isDirectory: () => boolean; }) => entry.isDirectory())
+      ? fs
+          .readdirSync(modulesRoot, { withFileTypes: true })
+          .filter((entry: { isDirectory: () => boolean }) => entry.isDirectory())
       : [];
 
-    moduleDirectories.forEach((directory: { name: string; }) => {
+    moduleDirectories.forEach((directory: { name: string }) => {
       const moduleRoot = path.join(modulesRoot, directory.name);
       const manifestPath = path.join(moduleRoot, "module.json");
       if (!fs.existsSync(manifestPath)) {
@@ -1335,7 +1524,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     if (fs.existsSync(coreManifestPath)) {
       try {
-        coreManifest = validateNetRiskModuleManifest(safeReadJson(coreManifestPath), coreManifestPath);
+        coreManifest = validateNetRiskModuleManifest(
+          safeReadJson(coreManifestPath),
+          coreManifestPath
+        );
       } catch (error: unknown) {
         coreErrors.push(error instanceof Error ? error.message : String(error));
       }
@@ -1351,16 +1543,28 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       coreErrors = coreErrors.concat(clientManifestResult.errors);
       coreClientManifestPath = clientManifestResult.clientManifestPath;
 
-      const serverModuleResult = loadServerModule(coreModuleRoot, coreManifest, options.projectRoot);
+      const serverModuleResult = loadServerModule(
+        coreModuleRoot,
+        coreManifest,
+        options.projectRoot
+      );
       if (serverModuleResult.serverModule) {
         serverModulesById.set(CORE_MODULE_ID, serverModuleResult.serverModule);
-        coreErrors = coreErrors.concat(registerServerModuleMaps(CORE_MODULE_ID, serverModuleResult.serverModule, coreManifestPath));
+        coreErrors = coreErrors.concat(
+          registerServerModuleMaps(
+            CORE_MODULE_ID,
+            serverModuleResult.serverModule,
+            coreManifestPath
+          )
+        );
       }
       coreWarnings = coreWarnings.concat(serverModuleResult.warnings);
       coreErrors = coreErrors.concat(serverModuleResult.errors);
     }
 
-    const filesystemModules = scanFilesystemModules(catalogState.enabledById).filter((moduleEntry) => moduleEntry.id !== CORE_MODULE_ID);
+    const filesystemModules = scanFilesystemModules(catalogState.enabledById).filter(
+      (moduleEntry) => moduleEntry.id !== CORE_MODULE_ID
+    );
     const modules = [
       baseInstalledModuleFromManifest(
         coreManifest,
@@ -1383,7 +1587,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return;
       }
 
-      const diceRuleSetErrors = registerServerModuleDiceRuleSets(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      const diceRuleSetErrors = registerServerModuleDiceRuleSets(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
       if (diceRuleSetErrors.length) {
         moduleEntry.errors.push(...diceRuleSetErrors);
         moduleEntry.compatible = false;
@@ -1397,7 +1605,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return;
       }
 
-      const pieceSetErrors = registerServerModulePlayerPieceSets(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      const pieceSetErrors = registerServerModulePlayerPieceSets(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
       if (pieceSetErrors.length) {
         moduleEntry.errors.push(...pieceSetErrors);
         moduleEntry.compatible = false;
@@ -1411,7 +1623,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return;
       }
 
-      const contentPackErrors = registerServerModuleContentPacks(moduleEntry.id, serverModule, moduleEntry.sourcePath);
+      const contentPackErrors = registerServerModuleContentPacks(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
       if (contentPackErrors.length) {
         moduleEntry.errors.push(...contentPackErrors);
         moduleEntry.compatible = false;
@@ -1423,7 +1639,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
       if (!isEngineVersionCompatible(NETRISK_ENGINE_VERSION, manifest.engineVersion)) {
         moduleEntry.compatible = false;
-        moduleEntry.errors.push(`Engine version mismatch: requires ${manifest.engineVersion}, current engine is ${NETRISK_ENGINE_VERSION}.`);
+        moduleEntry.errors.push(
+          `Engine version mismatch: requires ${manifest.engineVersion}, current engine is ${NETRISK_ENGINE_VERSION}.`
+        );
       }
 
       manifest.dependencies.forEach((dependency) => {
@@ -1435,24 +1653,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
 
     const enabledIds = new Set(
-      modules
-        .filter((moduleEntry) => moduleEntry.enabled)
-        .map((moduleEntry) => moduleEntry.id)
+      modules.filter((moduleEntry) => moduleEntry.enabled).map((moduleEntry) => moduleEntry.id)
     );
     enabledIds.add(CORE_MODULE_ID);
 
     manifestModules.forEach((moduleEntry) => {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
       if (moduleEntry.enabled) {
-        const blockingDependency = manifest.dependencies.find((dependency) =>
-          !dependency.optional && !enabledIds.has(dependency.id)
+        const blockingDependency = manifest.dependencies.find(
+          (dependency) => !dependency.optional && !enabledIds.has(dependency.id)
         );
         if (blockingDependency) {
           moduleEntry.compatible = false;
           moduleEntry.errors.push(`Dependency "${blockingDependency.id}" must be enabled first.`);
         }
 
-        const conflictingModuleId = manifest.conflicts.find((conflictId) => enabledIds.has(conflictId));
+        const conflictingModuleId = manifest.conflicts.find((conflictId) =>
+          enabledIds.has(conflictId)
+        );
         if (conflictingModuleId) {
           moduleEntry.compatible = false;
           moduleEntry.errors.push(`Conflicts with enabled module "${conflictingModuleId}".`);
@@ -1462,7 +1680,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       if (!moduleEntry.errors.length && moduleEntry.enabled) {
         moduleEntry.status = "enabled";
       } else if (!moduleEntry.errors.length && !moduleEntry.enabled) {
-        moduleEntry.status = catalogState.enabledById[moduleEntry.id] === false ? "disabled" : "validated";
+        moduleEntry.status =
+          catalogState.enabledById[moduleEntry.id] === false ? "disabled" : "validated";
       } else if (moduleEntry.errors.length) {
         moduleEntry.status = moduleEntry.manifest ? "incompatible" : "error";
       }
@@ -1500,7 +1719,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     );
   }
 
-    return {
+  return {
     async rescan() {
       cachedModules = [];
       return ensureCatalog();
@@ -1522,7 +1741,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return null;
       }
 
-      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
       if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
         return null;
       }
@@ -1540,7 +1761,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return null;
       }
 
-      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
       if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
         return null;
       }
@@ -1558,7 +1781,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return null;
       }
 
-      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
       if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
         return null;
       }
@@ -1576,7 +1801,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return null;
       }
 
-      const ownerModule = cachedModules.find((moduleEntry) => moduleEntry.id === runtimeEntry.moduleId);
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
       if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
         return null;
       }
@@ -1598,7 +1825,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       if (!target.compatible) {
-        throw new Error(`Module "${moduleId}" is not compatible: ${target.errors.join(" ")}`.trim());
+        throw new Error(
+          `Module "${moduleId}" is not compatible: ${target.errors.join(" ")}`.trim()
+        );
       }
 
       const catalogState = await loadCatalogState();
@@ -1645,17 +1874,22 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       cachedModules = [];
       return ensureCatalog();
     },
-    async resolveGameConfigDefaults(input: {
-      activeModuleIds?: string[];
-      contentProfileId?: string | null;
-      gameplayProfileId?: string | null;
-      uiProfileId?: string | null;
-    } = {}): Promise<NetRiskResolvedModuleSetup> {
+    async resolveGameConfigDefaults(
+      input: {
+        activeModuleIds?: string[];
+        contentProfileId?: string | null;
+        gameplayProfileId?: string | null;
+        uiProfileId?: string | null;
+      } = {}
+    ): Promise<NetRiskResolvedModuleSetup> {
       const optionsSnapshot = await getModuleOptions();
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
-      const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
+      const selectedModuleEntries = moduleEntriesForSelection(
+        optionsSnapshot.gameModules,
+        requestedIds
+      );
       const selectedModuleIds = new Set(selectedModuleEntries.map((moduleEntry) => moduleEntry.id));
       const resolvedDefaults: NetRiskModuleConfigDefaults = {};
       let resolvedGameplayEffects: NetRiskGameplayEffects = {
@@ -1676,11 +1910,22 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       if (input.contentProfileId) {
         selectedModuleEntries.forEach((moduleEntry) => {
           const serverModule = serverModulesById.get(moduleEntry.id);
-          const profile = serverModule?.profiles?.content?.find((entry) => entry.id === input.contentProfileId);
+          const profile = serverModule?.profiles?.content?.find(
+            (entry) => entry.id === input.contentProfileId
+          );
           if (profile) {
-            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
-            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
-            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
+            Object.assign(
+              resolvedDefaults,
+              mergeConfigDefaults(resolvedDefaults, profile.defaults)
+            );
+            resolvedGameplayEffects = mergeGameplayEffects(
+              resolvedGameplayEffects,
+              profile.gameplayEffects
+            );
+            resolvedScenarioSetup = mergeScenarioSetup(
+              resolvedScenarioSetup,
+              profile.scenarioSetup
+            );
           }
         });
       }
@@ -1688,11 +1933,22 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       if (input.gameplayProfileId) {
         selectedModuleEntries.forEach((moduleEntry) => {
           const serverModule = serverModulesById.get(moduleEntry.id);
-          const profile = serverModule?.profiles?.gameplay?.find((entry) => entry.id === input.gameplayProfileId);
+          const profile = serverModule?.profiles?.gameplay?.find(
+            (entry) => entry.id === input.gameplayProfileId
+          );
           if (profile) {
-            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
-            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
-            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
+            Object.assign(
+              resolvedDefaults,
+              mergeConfigDefaults(resolvedDefaults, profile.defaults)
+            );
+            resolvedGameplayEffects = mergeGameplayEffects(
+              resolvedGameplayEffects,
+              profile.gameplayEffects
+            );
+            resolvedScenarioSetup = mergeScenarioSetup(
+              resolvedScenarioSetup,
+              profile.scenarioSetup
+            );
           }
         });
       }
@@ -1700,67 +1956,112 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       if (input.uiProfileId) {
         selectedModuleEntries.forEach((moduleEntry) => {
           const serverModule = serverModulesById.get(moduleEntry.id);
-          const profile = serverModule?.profiles?.ui?.find((entry) => entry.id === input.uiProfileId);
+          const profile = serverModule?.profiles?.ui?.find(
+            (entry) => entry.id === input.uiProfileId
+          );
           if (profile) {
-            Object.assign(resolvedDefaults, mergeConfigDefaults(resolvedDefaults, profile.defaults));
-            resolvedGameplayEffects = mergeGameplayEffects(resolvedGameplayEffects, profile.gameplayEffects);
-            resolvedScenarioSetup = mergeScenarioSetup(resolvedScenarioSetup, profile.scenarioSetup);
+            Object.assign(
+              resolvedDefaults,
+              mergeConfigDefaults(resolvedDefaults, profile.defaults)
+            );
+            resolvedGameplayEffects = mergeGameplayEffects(
+              resolvedGameplayEffects,
+              profile.gameplayEffects
+            );
+            resolvedScenarioSetup = mergeScenarioSetup(
+              resolvedScenarioSetup,
+              profile.scenarioSetup
+            );
           }
         });
       }
 
-      if (input.contentProfileId && !optionsSnapshot.contentProfiles.some((profile) => profile.id === input.contentProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+      if (
+        input.contentProfileId &&
+        !optionsSnapshot.contentProfiles.some(
+          (profile) =>
+            profile.id === input.contentProfileId &&
+            (!profile.moduleId || selectedModuleIds.has(profile.moduleId))
+        )
+      ) {
         throw new Error(`Unknown content profile "${input.contentProfileId}".`);
       }
 
-      if (input.gameplayProfileId && !optionsSnapshot.gameplayProfiles.some((profile) => profile.id === input.gameplayProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+      if (
+        input.gameplayProfileId &&
+        !optionsSnapshot.gameplayProfiles.some(
+          (profile) =>
+            profile.id === input.gameplayProfileId &&
+            (!profile.moduleId || selectedModuleIds.has(profile.moduleId))
+        )
+      ) {
         throw new Error(`Unknown gameplay profile "${input.gameplayProfileId}".`);
       }
 
-      if (input.uiProfileId && !optionsSnapshot.uiProfiles.some((profile) => profile.id === input.uiProfileId && (!profile.moduleId || selectedModuleIds.has(profile.moduleId)))) {
+      if (
+        input.uiProfileId &&
+        !optionsSnapshot.uiProfiles.some(
+          (profile) =>
+            profile.id === input.uiProfileId &&
+            (!profile.moduleId || selectedModuleIds.has(profile.moduleId))
+        )
+      ) {
         throw new Error(`Unknown UI profile "${input.uiProfileId}".`);
       }
 
       return {
         defaults: resolvedDefaults,
-        gameplayEffects: resolvedGameplayEffects.reinforcementAdjustments?.length
-          || typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number"
-          || typeof resolvedGameplayEffects.conquestMinimumArmies === "number"
-          || typeof resolvedGameplayEffects.fortifyMinimumArmies === "number"
-          || typeof resolvedGameplayEffects.requiredFortifyWhenAvailable === "boolean"
-          || typeof resolvedGameplayEffects.attackMinimumArmies === "number"
-          || typeof resolvedGameplayEffects.attackLimitPerTurn === "number"
-          || typeof resolvedGameplayEffects.minimumAttacksPerTurn === "number"
-          ? resolvedGameplayEffects
-          : null,
-        scenarioSetup: (resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage)
-          ? resolvedScenarioSetup
-          : null
+        gameplayEffects:
+          resolvedGameplayEffects.reinforcementAdjustments?.length ||
+          typeof resolvedGameplayEffects.majorityControlThresholdPercent === "number" ||
+          typeof resolvedGameplayEffects.conquestMinimumArmies === "number" ||
+          typeof resolvedGameplayEffects.fortifyMinimumArmies === "number" ||
+          typeof resolvedGameplayEffects.requiredFortifyWhenAvailable === "boolean" ||
+          typeof resolvedGameplayEffects.attackMinimumArmies === "number" ||
+          typeof resolvedGameplayEffects.attackLimitPerTurn === "number" ||
+          typeof resolvedGameplayEffects.minimumAttacksPerTurn === "number"
+            ? resolvedGameplayEffects
+            : null,
+        scenarioSetup:
+          resolvedScenarioSetup.territoryBonuses?.length || resolvedScenarioSetup.logMessage
+            ? resolvedScenarioSetup
+            : null
       };
     },
-    async resolveGamePreset(input: {
-      gamePresetId?: string | null;
-      activeModuleIds?: string[];
-    } = {}): Promise<NetRiskResolvedGamePreset | null> {
+    async resolveGamePreset(
+      input: {
+        gamePresetId?: string | null;
+        activeModuleIds?: string[];
+      } = {}
+    ): Promise<NetRiskResolvedGamePreset | null> {
       if (!isNonEmptyString(input.gamePresetId)) {
         return null;
       }
 
       const optionsSnapshot = await getModuleOptions();
-      const preset = optionsSnapshot.gamePresets.find((entry) => entry.id === input.gamePresetId) || null;
+      const preset =
+        optionsSnapshot.gamePresets.find((entry) => entry.id === input.gamePresetId) || null;
       if (!preset) {
         throw new Error(`Unknown game preset "${input.gamePresetId}".`);
       }
 
-      const activeModuleIds = Array.from(new Set([
-        ...((Array.isArray(preset.activeModuleIds) ? preset.activeModuleIds : []).filter((value) => isNonEmptyString(value))),
-        ...(preset.moduleId && preset.moduleId !== CORE_MODULE_ID ? [preset.moduleId] : [])
-      ]));
+      const activeModuleIds = Array.from(
+        new Set([
+          ...(Array.isArray(preset.activeModuleIds) ? preset.activeModuleIds : []).filter((value) =>
+            isNonEmptyString(value)
+          ),
+          ...(preset.moduleId && preset.moduleId !== CORE_MODULE_ID ? [preset.moduleId] : [])
+        ])
+      );
 
       activeModuleIds.forEach((moduleId) => {
-        const match = optionsSnapshot.gameModules.find((moduleEntry) => moduleEntry.id === moduleId);
+        const match = optionsSnapshot.gameModules.find(
+          (moduleEntry) => moduleEntry.id === moduleId
+        );
         if (!match || !match.enabled || !match.compatible) {
-          throw new Error(`Game preset "${input.gamePresetId}" requires unavailable module "${moduleId}".`);
+          throw new Error(
+            `Game preset "${input.gamePresetId}" requires unavailable module "${moduleId}".`
+          );
         }
       });
 
@@ -1776,25 +2077,29 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         defaults: preset.defaults ? { ...preset.defaults } : null
       };
     },
-    async resolveGameSelection(input: {
-      activeModuleIds?: string[];
-      contentProfileId?: string | null;
-      gameplayProfileId?: string | null;
-      uiProfileId?: string | null;
-      contentPackId?: string | null;
-      pieceSetId?: string | null;
-      mapId?: string | null;
-      diceRuleSetId?: string | null;
-      victoryRuleSetId?: string | null;
-      themeId?: string | null;
-      pieceSkinId?: string | null;
-    } = {}): Promise<NetRiskGameModuleSelection> {
+    async resolveGameSelection(
+      input: {
+        activeModuleIds?: string[];
+        contentProfileId?: string | null;
+        gameplayProfileId?: string | null;
+        uiProfileId?: string | null;
+        contentPackId?: string | null;
+        pieceSetId?: string | null;
+        mapId?: string | null;
+        diceRuleSetId?: string | null;
+        victoryRuleSetId?: string | null;
+        themeId?: string | null;
+        pieceSkinId?: string | null;
+      } = {}
+    ): Promise<NetRiskGameModuleSelection> {
       const optionsSnapshot = await getModuleOptions();
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
       const selectedModuleRefs = requestedIds.map((moduleId) => {
-        const match = optionsSnapshot.gameModules.find((moduleEntry) => moduleEntry.id === moduleId);
+        const match = optionsSnapshot.gameModules.find(
+          (moduleEntry) => moduleEntry.id === moduleId
+        );
         if (!match || !match.version) {
           throw new Error(`Game module "${moduleId}" is not available.`);
         }
@@ -1804,7 +2109,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         };
       });
 
-      const selectedModuleEntries = moduleEntriesForSelection(optionsSnapshot.gameModules, requestedIds);
+      const selectedModuleEntries = moduleEntriesForSelection(
+        optionsSnapshot.gameModules,
+        requestedIds
+      );
       const selectedContentProfiles = summarizeProfiles(selectedModuleEntries, "content");
       const selectedGameplayProfiles = summarizeProfiles(selectedModuleEntries, "gameplay");
       const selectedUiProfiles = summarizeProfiles(selectedModuleEntries, "ui");
@@ -1815,8 +2123,12 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
         listEnabledRuntimeDiceRuleSets(selectedModuleEntries)
       );
-      const availableContentProfiles = new Set(selectedContentProfiles.map((profile) => profile.id));
-      const availableGameplayProfiles = new Set(selectedGameplayProfiles.map((profile) => profile.id));
+      const availableContentProfiles = new Set(
+        selectedContentProfiles.map((profile) => profile.id)
+      );
+      const availableGameplayProfiles = new Set(
+        selectedGameplayProfiles.map((profile) => profile.id)
+      );
       const availableUiProfiles = new Set(selectedUiProfiles.map((profile) => profile.id));
 
       if (input.contentProfileId && !availableContentProfiles.has(input.contentProfileId)) {
@@ -1831,11 +2143,27 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         throw new Error(`Unknown UI profile "${input.uiProfileId}".`);
       }
 
-      ensureAllowedContentId("content pack", input.contentPackId || null, selectedContent.contentPackIds);
-      ensureAllowedContentId("piece set", input.pieceSetId || null, selectedContent.playerPieceSetIds);
+      ensureAllowedContentId(
+        "content pack",
+        input.contentPackId || null,
+        selectedContent.contentPackIds
+      );
+      ensureAllowedContentId(
+        "piece set",
+        input.pieceSetId || null,
+        selectedContent.playerPieceSetIds
+      );
       ensureAllowedContentId("map", input.mapId || null, selectedContent.mapIds);
-      ensureAllowedContentId("dice rule set", input.diceRuleSetId || null, selectedContent.diceRuleSetIds);
-      ensureAllowedContentId("victory rule set", input.victoryRuleSetId || null, selectedContent.victoryRuleSetIds);
+      ensureAllowedContentId(
+        "dice rule set",
+        input.diceRuleSetId || null,
+        selectedContent.diceRuleSetIds
+      );
+      ensureAllowedContentId(
+        "victory rule set",
+        input.victoryRuleSetId || null,
+        selectedContent.victoryRuleSetIds
+      );
       ensureAllowedContentId("theme", input.themeId || null, selectedContent.siteThemeIds);
       ensureAllowedContentId("piece skin", input.pieceSkinId || null, selectedContent.pieceSkinIds);
 

@@ -1,4 +1,11 @@
-import { TurnPhase, createGameState, type Continent, type GameState, type Player, type Territory } from "../../shared/models.cjs";
+import {
+  TurnPhase,
+  createGameState,
+  type Continent,
+  type GameState,
+  type Player,
+  type Territory
+} from "../../shared/models.cjs";
 
 interface MapDefinitionEntry {
   territory: Territory;
@@ -36,7 +43,11 @@ function normalizePlayers(players: Player[]): Player[] {
 }
 
 function normalizeMapEntries(mapDefinition: LoadedMapDefinition): Territory[] {
-  if (!mapDefinition || !Array.isArray(mapDefinition.territories) || mapDefinition.territories.length === 0) {
+  if (
+    !mapDefinition ||
+    !Array.isArray(mapDefinition.territories) ||
+    mapDefinition.territories.length === 0
+  ) {
     throw new Error("Game initialization requires a loaded map with at least one territory.");
   }
 
@@ -61,11 +72,16 @@ function normalizeMapEntries(mapDefinition: LoadedMapDefinition): Territory[] {
   });
 }
 
-export function createInitialGameState(mapDefinition: LoadedMapDefinition, players: Player[]): GameState & { turnNumber: number } {
+export function createInitialGameState(
+  mapDefinition: LoadedMapDefinition,
+  players: Player[]
+): GameState & { turnNumber: number } {
   const normalizedPlayers = normalizePlayers(players);
   const territories = normalizeMapEntries(mapDefinition);
 
-  const territoryState = territories.reduce<Record<string, { ownerId: string | null; armies: number }>>((accumulator, territory, index) => {
+  const territoryState = territories.reduce<
+    Record<string, { ownerId: string | null; armies: number }>
+  >((accumulator, territory, index) => {
     if (!territory.id) {
       throw new Error(`Map territory entry at index ${index} is missing an id.`);
     }

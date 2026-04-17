@@ -1,6 +1,7 @@
 # Test Gaps
 
 ## Covered
+
 - Card system: long-game card awarding reshuffles discard back into deck
 - Visual regression expansion: Lobby, New Game, Profile
 - Admin policy coverage
@@ -18,6 +19,7 @@
 - Card system: award one card on turn end after at least one conquest
 - Card system foundation: standard rule set, deck storage, player hands metadata
 - Backend gameplay rules and regression flows
+- Code quality baseline: ESLint warning-first rollout, Prettier enforcement, and dedicated CI quality workflow
 - Core E2E gameplay flows: reinforcement, attack/conquest, fortify handoff, turn guard, version conflict
 - AI autoplay E2E
 - Authorization E2E: non-member denied on protected game open and direct game route read
@@ -28,11 +30,15 @@
 - New game setup negative validation: invalid map selection shows in-page error
 - Player profile E2E: error without session
 - Main battlefield visual baseline
+- Mobile lobby visual baseline
+- World Classic board visual baselines across desktop, laptop, and tablet viewports
 - Attack UI: selected dice count is sent to the backend
 - Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
 
 ## Missing
+
 - None currently tracked
 
 ## Next Recommended Gap
+
 - None currently tracked

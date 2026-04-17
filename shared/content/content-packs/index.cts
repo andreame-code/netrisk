@@ -13,7 +13,9 @@ export const DEFAULT_CONTENT_PACK_ID = "core";
 
 function validateContentPack(pack: ContentPack): ContentPack {
   if (!findSiteTheme(pack.defaultSiteThemeId)) {
-    throw new Error(`Content pack "${pack.id}" references unknown site theme "${pack.defaultSiteThemeId}".`);
+    throw new Error(
+      `Content pack "${pack.id}" references unknown site theme "${pack.defaultSiteThemeId}".`
+    );
   }
 
   if (!findSupportedMap(pack.defaultMapId)) {
@@ -21,19 +23,27 @@ function validateContentPack(pack: ContentPack): ContentPack {
   }
 
   if (!findDiceRuleSet(pack.defaultDiceRuleSetId)) {
-    throw new Error(`Content pack "${pack.id}" references unknown dice rule set "${pack.defaultDiceRuleSetId}".`);
+    throw new Error(
+      `Content pack "${pack.id}" references unknown dice rule set "${pack.defaultDiceRuleSetId}".`
+    );
   }
 
   if (!findCardRuleSet(pack.defaultCardRuleSetId)) {
-    throw new Error(`Content pack "${pack.id}" references unknown card rule set "${pack.defaultCardRuleSetId}".`);
+    throw new Error(
+      `Content pack "${pack.id}" references unknown card rule set "${pack.defaultCardRuleSetId}".`
+    );
   }
 
   if (!findVictoryRuleSet(pack.defaultVictoryRuleSetId)) {
-    throw new Error(`Content pack "${pack.id}" references unknown victory rule set "${pack.defaultVictoryRuleSetId}".`);
+    throw new Error(
+      `Content pack "${pack.id}" references unknown victory rule set "${pack.defaultVictoryRuleSetId}".`
+    );
   }
 
   if (!findPlayerPieceSet(pack.defaultPieceSetId)) {
-    throw new Error(`Content pack "${pack.id}" references unknown player piece set "${pack.defaultPieceSetId}".`);
+    throw new Error(
+      `Content pack "${pack.id}" references unknown player piece set "${pack.defaultPieceSetId}".`
+    );
   }
 
   return pack;
@@ -43,20 +53,22 @@ const contentPackRegistry = createModuleRegistry<ContentPack>(
   [validateContentPack(coreContentPack)],
   {
     onMissing(contentPackId) {
-      throw createLocalizedError(
-        "Unsupported content pack.",
-        "contentPack.unsupported",
-        { contentPackId }
-      );
+      throw createLocalizedError("Unsupported content pack.", "contentPack.unsupported", {
+        contentPackId
+      });
     }
   }
 );
 
-export function findContentPack(contentPackId: string | null | undefined): Readonly<ContentPack> | null {
+export function findContentPack(
+  contentPackId: string | null | undefined
+): Readonly<ContentPack> | null {
   return contentPackRegistry.find(contentPackId);
 }
 
-export function getContentPack(contentPackId: string = DEFAULT_CONTENT_PACK_ID): Readonly<ContentPack> {
+export function getContentPack(
+  contentPackId: string = DEFAULT_CONTENT_PACK_ID
+): Readonly<ContentPack> {
   return contentPackRegistry.get(contentPackId, DEFAULT_CONTENT_PACK_ID);
 }
 
@@ -74,11 +86,6 @@ export function listContentPacks(): ContentPackSummary[] {
   }));
 }
 
-export {
-  coreContentPack
-};
+export { coreContentPack };
 
-export type {
-  ContentPack,
-  ContentPackSummary
-};
+export type { ContentPack, ContentPackSummary };

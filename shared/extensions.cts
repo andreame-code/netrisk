@@ -1,4 +1,10 @@
-import { DEFENSE_THREE_DICE_RULE_SET_ID, STANDARD_DICE_RULE_SET_ID, findDiceRuleSet, getDiceRuleSet, listDiceRuleSets } from "./dice.cjs";
+import {
+  DEFENSE_THREE_DICE_RULE_SET_ID,
+  STANDARD_DICE_RULE_SET_ID,
+  findDiceRuleSet,
+  getDiceRuleSet,
+  listDiceRuleSets
+} from "./dice.cjs";
 import { findSupportedMap, listSupportedMaps } from "./maps/index.cjs";
 import {
   NETRISK_MODULE_SCHEMA_VERSION,
@@ -143,7 +149,8 @@ const pieceSkins = Object.freeze<Record<string, Readonly<PieceSkin>>>({
   "command-ring": Object.freeze({
     id: "command-ring",
     name: "Command Ring",
-    description: "Renders territory markers as command rings with a tactical core and player-color accents.",
+    description:
+      "Renders territory markers as command rings with a tactical core and player-color accents.",
     renderStyleId: "ring-core",
     usesPlayerColor: true,
     assetBaseUrl: null
@@ -195,13 +202,22 @@ function ensureKnownIds(kind: string, packId: string, ids: string[], knownIds: S
   });
 }
 
-function ensureDefaultIncluded(kind: string, packId: string, defaultId: string, ids: string[]): void {
+function ensureDefaultIncluded(
+  kind: string,
+  packId: string,
+  defaultId: string,
+  ids: string[]
+): void {
   if (!ids.includes(defaultId)) {
-    throw new Error(`Extension pack "${packId}" must include default ${kind} id "${defaultId}" in its capability list.`);
+    throw new Error(
+      `Extension pack "${packId}" must include default ${kind} id "${defaultId}" in its capability list.`
+    );
   }
 }
 
-export function validateExtensionPackCatalog(packs: ExtensionPackManifest[]): ExtensionCatalogValidationResult {
+export function validateExtensionPackCatalog(
+  packs: ExtensionPackManifest[]
+): ExtensionCatalogValidationResult {
   const knownMapIds = new Set(listSupportedMaps().map((map) => map.id));
   const knownDiceRuleSetIds = new Set(listDiceRuleSets().map((ruleSet) => ruleSet.id));
   const knownVictoryRuleSetIds = new Set(Object.keys(victoryRuleSets));
@@ -225,15 +241,35 @@ export function validateExtensionPackCatalog(packs: ExtensionPackManifest[]): Ex
 
     ensureKnownIds("map", pack.id, pack.mapIds || [], knownMapIds);
     ensureKnownIds("dice rule set", pack.id, pack.diceRuleSetIds || [], knownDiceRuleSetIds);
-    ensureKnownIds("victory rule set", pack.id, pack.victoryRuleSetIds || [], knownVictoryRuleSetIds);
+    ensureKnownIds(
+      "victory rule set",
+      pack.id,
+      pack.victoryRuleSetIds || [],
+      knownVictoryRuleSetIds
+    );
     ensureKnownIds("theme", pack.id, pack.themeIds || [], knownThemeIds);
     ensureKnownIds("piece skin", pack.id, pack.pieceSkinIds || [], knownPieceSkinIds);
 
     ensureDefaultIncluded("map", pack.id, pack.defaults.mapId, pack.mapIds || []);
-    ensureDefaultIncluded("dice rule set", pack.id, pack.defaults.diceRuleSetId, pack.diceRuleSetIds || []);
-    ensureDefaultIncluded("victory rule set", pack.id, pack.defaults.victoryRuleSetId, pack.victoryRuleSetIds || []);
+    ensureDefaultIncluded(
+      "dice rule set",
+      pack.id,
+      pack.defaults.diceRuleSetId,
+      pack.diceRuleSetIds || []
+    );
+    ensureDefaultIncluded(
+      "victory rule set",
+      pack.id,
+      pack.defaults.victoryRuleSetId,
+      pack.victoryRuleSetIds || []
+    );
     ensureDefaultIncluded("theme", pack.id, pack.defaults.themeId, pack.themeIds || []);
-    ensureDefaultIncluded("piece skin", pack.id, pack.defaults.pieceSkinId, pack.pieceSkinIds || []);
+    ensureDefaultIncluded(
+      "piece skin",
+      pack.id,
+      pack.defaults.pieceSkinId,
+      pack.pieceSkinIds || []
+    );
   });
 
   return {
@@ -251,16 +287,21 @@ export function validateExtensionPackCatalog(packs: ExtensionPackManifest[]): Ex
 
 const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManifest>>>(
   Object.fromEntries(
-    validateExtensionPackCatalog(Object.values(rawExtensionPacks)).packs.map((pack) => [pack.id, Object.freeze(pack)])
+    validateExtensionPackCatalog(Object.values(rawExtensionPacks)).packs.map((pack) => [
+      pack.id,
+      Object.freeze(pack)
+    ])
   ) as Record<string, Readonly<ExtensionPackManifest>>
 );
 
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId || "");
-  return map ? map.name : (mapId || null);
+  return map ? map.name : mapId || null;
 }
 
-export function findVictoryRuleSet(ruleSetId: string | null | undefined): Readonly<VictoryRuleSet> | null {
+export function findVictoryRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<VictoryRuleSet> | null {
   if (!ruleSetId) {
     return null;
   }
@@ -268,7 +309,9 @@ export function findVictoryRuleSet(ruleSetId: string | null | undefined): Readon
   return victoryRuleSets[String(ruleSetId)] || null;
 }
 
-export function getVictoryRuleSet(ruleSetId: string = DEFAULT_VICTORY_RULE_SET_ID): Readonly<VictoryRuleSet> {
+export function getVictoryRuleSet(
+  ruleSetId: string = DEFAULT_VICTORY_RULE_SET_ID
+): Readonly<VictoryRuleSet> {
   return findVictoryRuleSet(ruleSetId) || victoryRuleSets[DEFAULT_VICTORY_RULE_SET_ID];
 }
 
@@ -308,7 +351,9 @@ export function listPieceSkins(): PieceSkin[] {
   return Object.values(pieceSkins).map((skin) => ({ ...skin }));
 }
 
-export function findExtensionPack(packId: string | null | undefined): Readonly<ExtensionPackManifest> | null {
+export function findExtensionPack(
+  packId: string | null | undefined
+): Readonly<ExtensionPackManifest> | null {
   if (!packId) {
     return null;
   }
@@ -316,7 +361,9 @@ export function findExtensionPack(packId: string | null | undefined): Readonly<E
   return extensionPacks[String(packId)] || null;
 }
 
-export function getExtensionPack(packId: string = DEFAULT_EXTENSION_PACK_ID): Readonly<ExtensionPackManifest> {
+export function getExtensionPack(
+  packId: string = DEFAULT_EXTENSION_PACK_ID
+): Readonly<ExtensionPackManifest> {
   return findExtensionPack(packId) || extensionPacks[DEFAULT_EXTENSION_PACK_ID];
 }
 
@@ -334,18 +381,29 @@ export function normalizeExtensionSelection(
   input: Partial<Record<keyof ExtensionSelection | "ruleSetId", unknown>> = {},
   packId?: string | null
 ): ExtensionSelection {
-  const pack = getExtensionPack(packId || (typeof input.ruleSetId === "string" ? input.ruleSetId : DEFAULT_EXTENSION_PACK_ID));
+  const pack = getExtensionPack(
+    packId || (typeof input.ruleSetId === "string" ? input.ruleSetId : DEFAULT_EXTENSION_PACK_ID)
+  );
   const rawMapId = typeof input.mapId === "string" ? input.mapId : pack.defaults.mapId;
-  const rawDiceRuleSetId = typeof input.diceRuleSetId === "string" ? input.diceRuleSetId : pack.defaults.diceRuleSetId;
-  const rawVictoryRuleSetId = typeof input.victoryRuleSetId === "string" ? input.victoryRuleSetId : pack.defaults.victoryRuleSetId;
+  const rawDiceRuleSetId =
+    typeof input.diceRuleSetId === "string" ? input.diceRuleSetId : pack.defaults.diceRuleSetId;
+  const rawVictoryRuleSetId =
+    typeof input.victoryRuleSetId === "string"
+      ? input.victoryRuleSetId
+      : pack.defaults.victoryRuleSetId;
   const rawThemeId = typeof input.themeId === "string" ? input.themeId : pack.defaults.themeId;
-  const rawPieceSkinId = typeof input.pieceSkinId === "string" ? input.pieceSkinId : pack.defaults.pieceSkinId;
+  const rawPieceSkinId =
+    typeof input.pieceSkinId === "string" ? input.pieceSkinId : pack.defaults.pieceSkinId;
 
   return {
     extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
     mapId: findSupportedMap(rawMapId) ? rawMapId : pack.defaults.mapId,
-    diceRuleSetId: findDiceRuleSet(rawDiceRuleSetId) ? rawDiceRuleSetId : pack.defaults.diceRuleSetId,
-    victoryRuleSetId: findVictoryRuleSet(rawVictoryRuleSetId) ? rawVictoryRuleSetId : pack.defaults.victoryRuleSetId,
+    diceRuleSetId: findDiceRuleSet(rawDiceRuleSetId)
+      ? rawDiceRuleSetId
+      : pack.defaults.diceRuleSetId,
+    victoryRuleSetId: findVictoryRuleSet(rawVictoryRuleSetId)
+      ? rawVictoryRuleSetId
+      : pack.defaults.victoryRuleSetId,
     themeId: findVisualTheme(rawThemeId) ? rawThemeId : pack.defaults.themeId,
     pieceSkinId: findPieceSkin(rawPieceSkinId) ? rawPieceSkinId : pack.defaults.pieceSkinId
   };
@@ -353,68 +411,112 @@ export function normalizeExtensionSelection(
 
 export function migrateGameConfigExtensions(
   input: Record<string, unknown> | null | undefined,
-  fallback: Partial<Record<
-    keyof ExtensionSelection
-    | keyof NetRiskGameModuleSelection
-    | "ruleSetId"
-    | "mapName"
-    | "diceRuleSetName"
-    | "diceRuleSetAttackerMaxDice"
-    | "diceRuleSetDefenderMaxDice"
-    | "diceRuleSetAttackerMustLeaveOneArmyBehind"
-    | "diceRuleSetDefenderWinsTies",
-    unknown
-  >> = {}
+  fallback: Partial<
+    Record<
+      | keyof ExtensionSelection
+      | keyof NetRiskGameModuleSelection
+      | "ruleSetId"
+      | "mapName"
+      | "diceRuleSetName"
+      | "diceRuleSetAttackerMaxDice"
+      | "diceRuleSetDefenderMaxDice"
+      | "diceRuleSetAttackerMustLeaveOneArmyBehind"
+      | "diceRuleSetDefenderWinsTies",
+      unknown
+    >
+  > = {}
 ): ExtensionAwareGameConfig {
   const source = input && typeof input === "object" ? input : {};
-  const requestedPackId = typeof source.ruleSetId === "string"
-    ? source.ruleSetId
-    : (typeof fallback.ruleSetId === "string" ? fallback.ruleSetId : DEFAULT_EXTENSION_PACK_ID);
+  const requestedPackId =
+    typeof source.ruleSetId === "string"
+      ? source.ruleSetId
+      : typeof fallback.ruleSetId === "string"
+        ? fallback.ruleSetId
+        : DEFAULT_EXTENSION_PACK_ID;
   const pack = getExtensionPack(requestedPackId);
-  const selection = normalizeExtensionSelection({
-    mapId: typeof source.mapId === "string" ? source.mapId : fallback.mapId,
-    diceRuleSetId: typeof source.diceRuleSetId === "string" ? source.diceRuleSetId : fallback.diceRuleSetId,
-    victoryRuleSetId: typeof source.victoryRuleSetId === "string" ? source.victoryRuleSetId : fallback.victoryRuleSetId,
-    themeId: typeof source.themeId === "string" ? source.themeId : fallback.themeId,
-      pieceSkinId: typeof source.pieceSkinId === "string" ? source.pieceSkinId : fallback.pieceSkinId
-  }, requestedPackId);
-  const runtimeDiceRuleSetId = typeof source.diceRuleSetId === "string"
-    ? source.diceRuleSetId.trim()
-    : (typeof fallback.diceRuleSetId === "string" ? fallback.diceRuleSetId.trim() : "");
-  const runtimeDiceRuleSetName = typeof source.diceRuleSetName === "string"
-    ? source.diceRuleSetName.trim()
-    : (typeof fallback.diceRuleSetName === "string" ? fallback.diceRuleSetName.trim() : "");
-  const resolvedDiceRuleSetId = runtimeDiceRuleSetId && !findDiceRuleSet(runtimeDiceRuleSetId) && runtimeDiceRuleSetName
-    ? runtimeDiceRuleSetId
-    : selection.diceRuleSetId;
-  const runtimeMapId = typeof source.mapId === "string"
-    ? source.mapId.trim()
-    : (typeof fallback.mapId === "string" ? fallback.mapId.trim() : "");
-  const runtimeMapName = typeof source.mapName === "string"
-    ? source.mapName.trim()
-    : (typeof fallback.mapName === "string" ? fallback.mapName.trim() : "");
-  const resolvedMapId = runtimeMapId && !findSupportedMap(runtimeMapId) && runtimeMapName
-    ? runtimeMapId
-    : selection.mapId;
-  const mapName = typeof source.mapName === "string"
-    ? source.mapName
-    : (typeof fallback.mapName === "string" ? fallback.mapName : readableMapName(resolvedMapId));
+  const selection = normalizeExtensionSelection(
+    {
+      mapId: typeof source.mapId === "string" ? source.mapId : fallback.mapId,
+      diceRuleSetId:
+        typeof source.diceRuleSetId === "string" ? source.diceRuleSetId : fallback.diceRuleSetId,
+      victoryRuleSetId:
+        typeof source.victoryRuleSetId === "string"
+          ? source.victoryRuleSetId
+          : fallback.victoryRuleSetId,
+      themeId: typeof source.themeId === "string" ? source.themeId : fallback.themeId,
+      pieceSkinId:
+        typeof source.pieceSkinId === "string" ? source.pieceSkinId : fallback.pieceSkinId
+    },
+    requestedPackId
+  );
+  const runtimeDiceRuleSetId =
+    typeof source.diceRuleSetId === "string"
+      ? source.diceRuleSetId.trim()
+      : typeof fallback.diceRuleSetId === "string"
+        ? fallback.diceRuleSetId.trim()
+        : "";
+  const runtimeDiceRuleSetName =
+    typeof source.diceRuleSetName === "string"
+      ? source.diceRuleSetName.trim()
+      : typeof fallback.diceRuleSetName === "string"
+        ? fallback.diceRuleSetName.trim()
+        : "";
+  const resolvedDiceRuleSetId =
+    runtimeDiceRuleSetId && !findDiceRuleSet(runtimeDiceRuleSetId) && runtimeDiceRuleSetName
+      ? runtimeDiceRuleSetId
+      : selection.diceRuleSetId;
+  const runtimeMapId =
+    typeof source.mapId === "string"
+      ? source.mapId.trim()
+      : typeof fallback.mapId === "string"
+        ? fallback.mapId.trim()
+        : "";
+  const runtimeMapName =
+    typeof source.mapName === "string"
+      ? source.mapName.trim()
+      : typeof fallback.mapName === "string"
+        ? fallback.mapName.trim()
+        : "";
+  const resolvedMapId =
+    runtimeMapId && !findSupportedMap(runtimeMapId) && runtimeMapName
+      ? runtimeMapId
+      : selection.mapId;
+  const mapName =
+    typeof source.mapName === "string"
+      ? source.mapName
+      : typeof fallback.mapName === "string"
+        ? fallback.mapName
+        : readableMapName(resolvedMapId);
   const moduleSelection = normalizeNetRiskGameModuleSelection({
-    moduleSchemaVersion: typeof source.moduleSchemaVersion === "number"
-      ? source.moduleSchemaVersion
-      : (typeof fallback.moduleSchemaVersion === "number" ? fallback.moduleSchemaVersion : NETRISK_MODULE_SCHEMA_VERSION),
+    moduleSchemaVersion:
+      typeof source.moduleSchemaVersion === "number"
+        ? source.moduleSchemaVersion
+        : typeof fallback.moduleSchemaVersion === "number"
+          ? fallback.moduleSchemaVersion
+          : NETRISK_MODULE_SCHEMA_VERSION,
     activeModules: Array.isArray(source.activeModules)
-      ? source.activeModules as NetRiskModuleReference[]
-      : (Array.isArray(fallback.activeModules) ? fallback.activeModules as NetRiskModuleReference[] : undefined),
-    contentProfileId: typeof source.contentProfileId === "string"
-      ? source.contentProfileId
-      : (typeof fallback.contentProfileId === "string" ? fallback.contentProfileId : null),
-    gameplayProfileId: typeof source.gameplayProfileId === "string"
-      ? source.gameplayProfileId
-      : (typeof fallback.gameplayProfileId === "string" ? fallback.gameplayProfileId : null),
-    uiProfileId: typeof source.uiProfileId === "string"
-      ? source.uiProfileId
-      : (typeof fallback.uiProfileId === "string" ? fallback.uiProfileId : null)
+      ? (source.activeModules as NetRiskModuleReference[])
+      : Array.isArray(fallback.activeModules)
+        ? (fallback.activeModules as NetRiskModuleReference[])
+        : undefined,
+    contentProfileId:
+      typeof source.contentProfileId === "string"
+        ? source.contentProfileId
+        : typeof fallback.contentProfileId === "string"
+          ? fallback.contentProfileId
+          : null,
+    gameplayProfileId:
+      typeof source.gameplayProfileId === "string"
+        ? source.gameplayProfileId
+        : typeof fallback.gameplayProfileId === "string"
+          ? fallback.gameplayProfileId
+          : null,
+    uiProfileId:
+      typeof source.uiProfileId === "string"
+        ? source.uiProfileId
+        : typeof fallback.uiProfileId === "string"
+          ? fallback.uiProfileId
+          : null
   });
 
   return {
@@ -426,21 +528,36 @@ export function migrateGameConfigExtensions(
     mapId: resolvedMapId,
     mapName,
     diceRuleSetId: resolvedDiceRuleSetId,
-    diceRuleSetName: typeof source.diceRuleSetName === "string"
-      ? source.diceRuleSetName
-      : (typeof fallback.diceRuleSetName === "string" ? fallback.diceRuleSetName : null),
-    diceRuleSetAttackerMaxDice: typeof source.diceRuleSetAttackerMaxDice === "number"
-      ? source.diceRuleSetAttackerMaxDice
-      : (typeof fallback.diceRuleSetAttackerMaxDice === "number" ? fallback.diceRuleSetAttackerMaxDice : null),
-    diceRuleSetDefenderMaxDice: typeof source.diceRuleSetDefenderMaxDice === "number"
-      ? source.diceRuleSetDefenderMaxDice
-      : (typeof fallback.diceRuleSetDefenderMaxDice === "number" ? fallback.diceRuleSetDefenderMaxDice : null),
-    diceRuleSetAttackerMustLeaveOneArmyBehind: typeof source.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
-      ? source.diceRuleSetAttackerMustLeaveOneArmyBehind
-      : (typeof fallback.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean" ? fallback.diceRuleSetAttackerMustLeaveOneArmyBehind : null),
-    diceRuleSetDefenderWinsTies: typeof source.diceRuleSetDefenderWinsTies === "boolean"
-      ? source.diceRuleSetDefenderWinsTies
-      : (typeof fallback.diceRuleSetDefenderWinsTies === "boolean" ? fallback.diceRuleSetDefenderWinsTies : null),
+    diceRuleSetName:
+      typeof source.diceRuleSetName === "string"
+        ? source.diceRuleSetName
+        : typeof fallback.diceRuleSetName === "string"
+          ? fallback.diceRuleSetName
+          : null,
+    diceRuleSetAttackerMaxDice:
+      typeof source.diceRuleSetAttackerMaxDice === "number"
+        ? source.diceRuleSetAttackerMaxDice
+        : typeof fallback.diceRuleSetAttackerMaxDice === "number"
+          ? fallback.diceRuleSetAttackerMaxDice
+          : null,
+    diceRuleSetDefenderMaxDice:
+      typeof source.diceRuleSetDefenderMaxDice === "number"
+        ? source.diceRuleSetDefenderMaxDice
+        : typeof fallback.diceRuleSetDefenderMaxDice === "number"
+          ? fallback.diceRuleSetDefenderMaxDice
+          : null,
+    diceRuleSetAttackerMustLeaveOneArmyBehind:
+      typeof source.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
+        ? source.diceRuleSetAttackerMustLeaveOneArmyBehind
+        : typeof fallback.diceRuleSetAttackerMustLeaveOneArmyBehind === "boolean"
+          ? fallback.diceRuleSetAttackerMustLeaveOneArmyBehind
+          : null,
+    diceRuleSetDefenderWinsTies:
+      typeof source.diceRuleSetDefenderWinsTies === "boolean"
+        ? source.diceRuleSetDefenderWinsTies
+        : typeof fallback.diceRuleSetDefenderWinsTies === "boolean"
+          ? fallback.diceRuleSetDefenderWinsTies
+          : null,
     victoryRuleSetId: selection.victoryRuleSetId,
     themeId: selection.themeId,
     pieceSkinId: selection.pieceSkinId,
@@ -455,7 +572,9 @@ export function migrateGameConfigExtensions(
   };
 }
 
-export function migrateGameStateExtensions<T extends ExtensionGameStateLike>(state: T): T & { gameConfig: ExtensionAwareGameConfig } {
+export function migrateGameStateExtensions<T extends ExtensionGameStateLike>(
+  state: T
+): T & { gameConfig: ExtensionAwareGameConfig } {
   if (!state || typeof state !== "object") {
     return state as T & { gameConfig: ExtensionAwareGameConfig };
   }
@@ -473,7 +592,8 @@ export function migrateGameStateExtensions<T extends ExtensionGameStateLike>(sta
   }
 
   if (typeof state.mapName !== "string" || !state.mapName) {
-    (state as T & { mapName: string | null }).mapName = migratedConfig.mapName || readableMapName(migratedConfig.mapId);
+    (state as T & { mapName: string | null }).mapName =
+      migratedConfig.mapName || readableMapName(migratedConfig.mapId);
   }
 
   if (typeof state.diceRuleSetId !== "string" || !findDiceRuleSet(state.diceRuleSetId)) {
@@ -504,7 +624,8 @@ export function resolveVictoryRuleOptions() {
 }
 
 export function resolveMapDefinition(mapId: string | null | undefined): MapDefinition {
-  const selected = findSupportedMap(mapId || "") || findSupportedMap(getExtensionPack().defaults.mapId);
+  const selected =
+    findSupportedMap(mapId || "") || findSupportedMap(getExtensionPack().defaults.mapId);
   return {
     id: selected?.id || getExtensionPack().defaults.mapId,
     name: selected?.name || readableMapName(getExtensionPack().defaults.mapId) || "Classic Mini"

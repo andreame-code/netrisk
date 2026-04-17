@@ -23,7 +23,10 @@ export interface ReinforcementRuleSet {
   id: string;
   name: string;
   description: string;
-  resolve: (input: { territoryCount: number; controlledContinents: readonly Continent[] }) => ReinforcementResolution;
+  resolve: (input: {
+    territoryCount: number;
+    controlledContinents: readonly Continent[];
+  }) => ReinforcementResolution;
 }
 
 export interface ReinforcementRuleSetSummary {
@@ -35,7 +38,8 @@ export interface ReinforcementRuleSetSummary {
 export const standardReinforcementRuleSet: Readonly<ReinforcementRuleSet> = Object.freeze({
   id: STANDARD_REINFORCEMENT_RULE_SET_ID,
   name: "Standard",
-  description: "Base reinforcements equal territories divided by 3 with a minimum of 3, plus full continent bonuses.",
+  description:
+    "Base reinforcements equal territories divided by 3 with a minimum of 3, plus full continent bonuses.",
   resolve(input: { territoryCount: number; controlledContinents: readonly Continent[] }) {
     const rawBaseReinforcements = Math.floor(input.territoryCount / 3);
     const baseReinforcements = Math.max(3, rawBaseReinforcements);
@@ -45,7 +49,10 @@ export const standardReinforcementRuleSet: Readonly<ReinforcementRuleSet> = Obje
       bonus: Number(continent.bonus) || 0,
       territoryIds: continent.territoryIds.slice()
     }));
-    const continentBonusTotal = continentBonuses.reduce((total: number, entry: ReinforcementBonus) => total + entry.bonus, 0);
+    const continentBonusTotal = continentBonuses.reduce(
+      (total: number, entry: ReinforcementBonus) => total + entry.bonus,
+      0
+    );
 
     return {
       baseReinforcements,
@@ -70,11 +77,15 @@ const reinforcementRuleSetRegistry = createModuleRegistry<ReinforcementRuleSet>(
   }
 );
 
-export function findReinforcementRuleSet(ruleSetId: string | null | undefined): Readonly<ReinforcementRuleSet> | null {
+export function findReinforcementRuleSet(
+  ruleSetId: string | null | undefined
+): Readonly<ReinforcementRuleSet> | null {
   return reinforcementRuleSetRegistry.find(ruleSetId);
 }
 
-export function getReinforcementRuleSet(ruleSetId: string = STANDARD_REINFORCEMENT_RULE_SET_ID): Readonly<ReinforcementRuleSet> {
+export function getReinforcementRuleSet(
+  ruleSetId: string = STANDARD_REINFORCEMENT_RULE_SET_ID
+): Readonly<ReinforcementRuleSet> {
   return reinforcementRuleSetRegistry.get(ruleSetId, STANDARD_REINFORCEMENT_RULE_SET_ID);
 }
 

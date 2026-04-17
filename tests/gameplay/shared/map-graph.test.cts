@@ -40,73 +40,45 @@ register("buildMapGraph rejects entries without a territory id", () => {
 register("buildMapGraph rejects territories whose neighbors are not arrays", () => {
   assert.throws(
     () =>
-      buildMapGraph([
-        makeTerritory("a", ["b"]),
-        { territory: { id: "b", neighbors: "a" } }
-      ] as any),
+      buildMapGraph([makeTerritory("a", ["b"]), { territory: { id: "b", neighbors: "a" } }] as any),
     /neighbors as an array/i
   );
 });
 
 register("buildMapGraph rejects duplicate territory ids", () => {
   assert.throws(
-    () =>
-      buildMapGraph([
-        makeTerritory("a", ["b"]),
-        makeTerritory("a", ["b"])
-      ]),
+    () => buildMapGraph([makeTerritory("a", ["b"]), makeTerritory("a", ["b"])]),
     /Duplicate territory id "a"/i
   );
 });
 
 register("buildMapGraph rejects self links", () => {
-  assert.throws(
-    () =>
-      buildMapGraph([
-        makeTerritory("a", ["a"])
-      ]),
-    /cannot link to itself/i
-  );
+  assert.throws(() => buildMapGraph([makeTerritory("a", ["a"])]), /cannot link to itself/i);
 });
 
 register("buildMapGraph rejects unknown neighbors", () => {
   assert.throws(
-    () =>
-      buildMapGraph([
-        makeTerritory("a", ["missing"]),
-        makeTerritory("b", [])
-      ]),
+    () => buildMapGraph([makeTerritory("a", ["missing"]), makeTerritory("b", [])]),
     /unknown neighbor "missing"/i
   );
 });
 
 register("buildMapGraph rejects duplicate links declared by the same territory", () => {
   assert.throws(
-    () =>
-      buildMapGraph([
-        makeTerritory("a", ["b", "b"]),
-        makeTerritory("b", ["a"])
-      ]),
+    () => buildMapGraph([makeTerritory("a", ["b", "b"]), makeTerritory("b", ["a"])]),
     /duplicate link to "b"/i
   );
 });
 
 register("buildMapGraph rejects non-bidirectional adjacency", () => {
   assert.throws(
-    () =>
-      buildMapGraph([
-        makeTerritory("a", ["b"]),
-        makeTerritory("b", [])
-      ]),
+    () => buildMapGraph([makeTerritory("a", ["b"]), makeTerritory("b", [])]),
     /must be bidirectional/i
   );
 });
 
 register("buildMapGraph rejects unknown territories in getNeighbors and areAdjacent", () => {
-  const graph = buildMapGraph([
-    makeTerritory("a", ["b"]),
-    makeTerritory("b", ["a"])
-  ]);
+  const graph = buildMapGraph([makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]);
 
   assert.throws(() => graph.getNeighbors("missing"), /Unknown territory "missing"/i);
   assert.throws(() => graph.areAdjacent("missing", "a"), /Unknown territory "missing"/i);

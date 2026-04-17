@@ -56,15 +56,24 @@ function isActiveHumanPlayer(player: Player): boolean {
 
 function validateState(state: GameState): void {
   if (!state || typeof state !== "object") {
-    throw createLocalizedError("Victory detection requires a valid game state.", "game.victory.internal.invalidState");
+    throw createLocalizedError(
+      "Victory detection requires a valid game state.",
+      "game.victory.internal.invalidState"
+    );
   }
 
   if (!Array.isArray(state.players) || state.players.length === 0) {
-    throw createLocalizedError("Victory detection requires at least one player.", "game.victory.internal.noPlayers");
+    throw createLocalizedError(
+      "Victory detection requires at least one player.",
+      "game.victory.internal.noPlayers"
+    );
   }
 
   if (!state.territories || typeof state.territories !== "object") {
-    throw createLocalizedError("Victory detection requires territory ownership data.", "game.victory.internal.missingTerritories");
+    throw createLocalizedError(
+      "Victory detection requires territory ownership data.",
+      "game.victory.internal.missingTerritories"
+    );
   }
 
   const playerIds = new Set<string>();
@@ -185,13 +194,17 @@ function evaluateConquestVictory(context: ActiveVictoryContext): VictoryResult {
 
 function evaluateMajorityControlVictory(context: ActiveVictoryContext): VictoryResult {
   const totalTerritories = Object.keys(context.state.territories || {}).length;
-  const requiredTerritoryCount = Math.max(1, Math.ceil(totalTerritories * (context.majorityControlThresholdPercent / 100)));
-  const leadingPlayer = context.activePlayers
-    .map((player) => ({
-      player,
-      territoryCount: territoryCountByPlayer(context.state, player.id)
-    }))
-    .sort((left, right) => right.territoryCount - left.territoryCount)[0] || null;
+  const requiredTerritoryCount = Math.max(
+    1,
+    Math.ceil(totalTerritories * (context.majorityControlThresholdPercent / 100))
+  );
+  const leadingPlayer =
+    context.activePlayers
+      .map((player) => ({
+        player,
+        territoryCount: territoryCountByPlayer(context.state, player.id)
+      }))
+      .sort((left, right) => right.territoryCount - left.territoryCount)[0] || null;
 
   if (!leadingPlayer || leadingPlayer.territoryCount < requiredTerritoryCount) {
     return noVictoryResult(context.activePlayers);
@@ -211,7 +224,12 @@ function evaluateMajorityControlVictory(context: ActiveVictoryContext): VictoryR
 
 function resolveMajorityControlThresholdPercent(state: GameState): number {
   const rawThreshold = state.gameConfig?.gameplayEffects?.majorityControlThresholdPercent;
-  if (typeof rawThreshold === "number" && Number.isInteger(rawThreshold) && rawThreshold >= 50 && rawThreshold <= 100) {
+  if (
+    typeof rawThreshold === "number" &&
+    Number.isInteger(rawThreshold) &&
+    rawThreshold >= 50 &&
+    rawThreshold <= 100
+  ) {
     return rawThreshold;
   }
 

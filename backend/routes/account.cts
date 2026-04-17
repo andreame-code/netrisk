@@ -1,4 +1,7 @@
-import type { ProfileResponseContract, AuthSessionResponseContract } from "../../shared/api-contracts.cjs";
+import type {
+  ProfileResponseContract,
+  AuthSessionResponseContract
+} from "../../shared/api-contracts.cjs";
 
 type RequireAuthFn = (
   req: import("node:http").IncomingMessage,
@@ -12,12 +15,20 @@ interface AccountRouteDeps {
   requireAuth: RequireAuthFn;
   auth: {
     publicUser(user: unknown): unknown;
-    updateUserThemePreference(userId: string, theme: string): Promise<{ preferences?: { theme?: string | null } } | null>;
+    updateUserThemePreference(
+      userId: string,
+      theme: string
+    ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
-  sendJson: (res: import("node:http").ServerResponse, statusCode: number, payload: unknown, headers?: Record<string, string>) => void;
+  sendJson: (
+    res: import("node:http").ServerResponse,
+    statusCode: number,
+    payload: unknown,
+    headers?: Record<string, string>
+  ) => void;
   sendLocalizedError: (
     res: import("node:http").ServerResponse,
     statusCode: number,
@@ -54,14 +65,20 @@ export async function handleProfileRoute(deps: AccountRouteDeps): Promise<boolea
 
   try {
     const payload: ProfileResponseContract = {
-      profile: ({
+      profile: {
         ...(await deps.playerProfiles.getPlayerProfile(authContext.user.username)),
         preferences: deps.extractUserPreferences(authContext.user)
-      } as unknown as ProfileResponseContract["profile"])
+      } as unknown as ProfileResponseContract["profile"]
     };
     deps.sendJson(deps.res, 200, payload);
   } catch (error) {
-    deps.sendLocalizedError(deps.res, 400, error as Record<string, unknown>, "Profilo non disponibile.", "server.profile.unavailable");
+    deps.sendLocalizedError(
+      deps.res,
+      400,
+      error as Record<string, unknown>,
+      "Profilo non disponibile.",
+      "server.profile.unavailable"
+    );
   }
 
   return true;
@@ -77,7 +94,13 @@ export async function handleThemePreferenceRoute(
   }
 
   if (typeof body.theme !== "string" || !deps.supportedSiteThemes.has(body.theme)) {
-    deps.sendLocalizedError(deps.res, 400, null, "Tema non supportato.", "server.profile.invalidTheme");
+    deps.sendLocalizedError(
+      deps.res,
+      400,
+      null,
+      "Tema non supportato.",
+      "server.profile.invalidTheme"
+    );
     return true;
   }
 

@@ -1,5 +1,11 @@
 const assert = require("node:assert/strict");
-const { createInitialState, declareWinnerIfNeeded, getMapTerritories, publicState, surrenderPlayer } = require("../../../backend/engine/game-engine.cjs");
+const {
+  createInitialState,
+  declareWinnerIfNeeded,
+  getMapTerritories,
+  publicState,
+  surrenderPlayer
+} = require("../../../backend/engine/game-engine.cjs");
 const { MAJORITY_CONTROL_VICTORY_RULE_SET_ID } = require("../../../shared/models.cjs");
 
 type TerritoryRef = { id: string };
@@ -58,26 +64,37 @@ register("declareWinnerIfNeeded assigns victory when one active player remains",
   assert.equal(state.phase, "finished");
 });
 
-register("declareWinnerIfNeeded does not assign victory while more than one player owns territories", () => {
-  const state = setupLiveState();
-  state.territories[getMapTerritories(state)[0].id].ownerId = "p2";
-  const won = declareWinnerIfNeeded(state);
-  assert.equal(won, false);
-  assert.equal(state.winnerId, null);
-});
+register(
+  "declareWinnerIfNeeded does not assign victory while more than one player owns territories",
+  () => {
+    const state = setupLiveState();
+    state.territories[getMapTerritories(state)[0].id].ownerId = "p2";
+    const won = declareWinnerIfNeeded(state);
+    assert.equal(won, false);
+    assert.equal(state.winnerId, null);
+  }
+);
 
 register("surrenderPlayer elimina il giocatore e assegna la vittoria se resta un solo vivo", () => {
   const state = setupLiveState();
   state.territories[getMapTerritories(state)[0].id].ownerId = "p2";
-  const ownedBefore = publicState(state).players.find((entry: PublicPlayer) => entry.id === "p2").territoryCount;
+  const ownedBefore = publicState(state).players.find(
+    (entry: PublicPlayer) => entry.id === "p2"
+  ).territoryCount;
 
   const result = surrenderPlayer(state, "p2");
 
   assert.equal(result.ok, true);
   assert.equal(state.winnerId, "p1");
   assert.equal(state.phase, "finished");
-  assert.equal(publicState(state).players.find((entry: PublicPlayer) => entry.id === "p2").eliminated, true);
-  assert.equal(publicState(state).players.find((entry: PublicPlayer) => entry.id === "p2").territoryCount, ownedBefore);
+  assert.equal(
+    publicState(state).players.find((entry: PublicPlayer) => entry.id === "p2").eliminated,
+    true
+  );
+  assert.equal(
+    publicState(state).players.find((entry: PublicPlayer) => entry.id === "p2").territoryCount,
+    ownedBefore
+  );
 });
 
 register("declareWinnerIfNeeded chiude la partita quando restano solo AI attive", () => {
@@ -103,7 +120,8 @@ register("declareWinnerIfNeeded usa la regola majority control quando configurat
   const state = setupLiveState();
   const territoryIds = getMapTerritories(state).map((territory: TerritoryRef) => territory.id);
   territoryIds.forEach((territoryId: string, index: number) => {
-    state.territories[territoryId].ownerId = index < Math.ceil(territoryIds.length * 0.7) ? "p1" : "p2";
+    state.territories[territoryId].ownerId =
+      index < Math.ceil(territoryIds.length * 0.7) ? "p1" : "p2";
   });
   state.gameConfig = {
     ...(state.gameConfig || {}),
@@ -121,7 +139,8 @@ register("declareWinnerIfNeeded usa la soglia majority control modulare persisti
   const state = setupLiveState();
   const territoryIds = getMapTerritories(state).map((territory: TerritoryRef) => territory.id);
   territoryIds.forEach((territoryId: string, index: number) => {
-    state.territories[territoryId].ownerId = index < Math.ceil(territoryIds.length * 0.6) ? "p1" : "p2";
+    state.territories[territoryId].ownerId =
+      index < Math.ceil(territoryIds.length * 0.6) ? "p1" : "p2";
   });
   state.gameConfig = {
     ...(state.gameConfig || {}),

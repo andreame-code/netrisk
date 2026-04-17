@@ -1,6 +1,12 @@
 const assert = require("node:assert/strict");
 const { applyFortify } = require("../../../backend/engine/game-engine.cjs");
-const { makePlayers, makeState, makeTerritory, territoryStates, TurnPhase } = require("../helpers/state-builder.cjs");
+const {
+  makePlayers,
+  makeState,
+  makeTerritory,
+  territoryStates,
+  TurnPhase
+} = require("../helpers/state-builder.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -15,10 +21,7 @@ register("applyFortify applica il minimo modulare del motore principale", () => 
     currentTurnIndex: 0
   });
 
-  state.mapTerritories = [
-    makeTerritory("a", ["b"]),
-    makeTerritory("b", ["a"])
-  ];
+  state.mapTerritories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])];
   state.gameConfig = {
     gameplayEffects: {
       fortifyMinimumArmies: 2

@@ -1,4 +1,7 @@
-export function byId<T extends HTMLElement = HTMLElement>(id: string, scope: Document | DocumentFragment = document): T {
+export function byId<T extends HTMLElement = HTMLElement>(
+  id: string,
+  scope: Document | DocumentFragment = document
+): T {
   const element = scope.getElementById(id);
   if (!element) {
     throw new Error(`Missing required element: #${id}`);
@@ -16,7 +19,10 @@ export function query<T extends Element>(selector: string, scope: ParentNode = d
   return element as T;
 }
 
-export function maybeQuery<T extends Element>(selector: string, scope: ParentNode = document): T | null {
+export function maybeQuery<T extends Element>(
+  selector: string,
+  scope: ParentNode = document
+): T | null {
   return scope.querySelector(selector) as T | null;
 }
 
@@ -40,6 +46,9 @@ export function setHidden(element: HTMLElement, hidden: boolean): void {
   element.hidden = Boolean(hidden);
 }
 
-export function setDisabled(element: HTMLButtonElement | HTMLInputElement | HTMLSelectElement, disabled: boolean): void {
+export function setDisabled(
+  element: HTMLButtonElement | HTMLInputElement | HTMLSelectElement,
+  disabled: boolean
+): void {
   element.disabled = Boolean(disabled);
 }

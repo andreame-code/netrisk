@@ -30,7 +30,11 @@ function getCurrentPlayer(state: GameState): Player | null {
   return state.players[state.currentTurnIndex] || null;
 }
 
-function invalid(code: string, message: string, details: Record<string, unknown> = {}): ValidationResult {
+function invalid(
+  code: string,
+  message: string,
+  details: Record<string, unknown> = {}
+): ValidationResult {
   return {
     ok: false,
     code,
@@ -73,7 +77,11 @@ export function validateAttackAttempt(
     throw new Error("Attack validation requires a valid game state.");
   }
 
-  if (!graph || typeof graph.areAdjacent !== "function" || typeof graph.hasTerritory !== "function") {
+  if (
+    !graph ||
+    typeof graph.areAdjacent !== "function" ||
+    typeof graph.hasTerritory !== "function"
+  ) {
     throw new Error("Attack validation requires a valid map graph.");
   }
 
@@ -96,9 +104,10 @@ export function validateAttackAttempt(
   }
 
   const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
-  const attacksThisTurn = typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
-    ? state.attacksThisTurn
-    : 0;
+  const attacksThisTurn =
+    typeof state.attacksThisTurn === "number" && Number.isInteger(state.attacksThisTurn)
+      ? state.attacksThisTurn
+      : 0;
   if (attackLimitPerTurn !== null && attacksThisTurn >= attackLimitPerTurn) {
     return invalid("ATTACK_LIMIT_REACHED", "The turn attack limit has already been reached.", {
       attackLimitPerTurn,
@@ -114,7 +123,10 @@ export function validateAttackAttempt(
   }
 
   if (!graph.hasTerritory(fromTerritoryId)) {
-    return invalid("UNKNOWN_ATTACKER_TERRITORY", `Unknown attacker territory "${fromTerritoryId}".`);
+    return invalid(
+      "UNKNOWN_ATTACKER_TERRITORY",
+      `Unknown attacker territory "${fromTerritoryId}".`
+    );
   }
 
   if (!graph.hasTerritory(toTerritoryId)) {
@@ -125,17 +137,27 @@ export function validateAttackAttempt(
   const toState = state.territories && state.territories[toTerritoryId];
 
   if (!fromState) {
-    return invalid("MISSING_ATTACKER_STATE", `Game state is missing attacker territory state for "${fromTerritoryId}".`);
+    return invalid(
+      "MISSING_ATTACKER_STATE",
+      `Game state is missing attacker territory state for "${fromTerritoryId}".`
+    );
   }
 
   if (!toState) {
-    return invalid("MISSING_DEFENDER_STATE", `Game state is missing defender territory state for "${toTerritoryId}".`);
+    return invalid(
+      "MISSING_DEFENDER_STATE",
+      `Game state is missing defender territory state for "${toTerritoryId}".`
+    );
   }
 
   if (fromState.ownerId !== playerId) {
-    return invalid("ATTACKER_NOT_OWNED", "The attacker territory must belong to the current player.", {
-      ownerId: fromState.ownerId
-    });
+    return invalid(
+      "ATTACKER_NOT_OWNED",
+      "The attacker territory must belong to the current player.",
+      {
+        ownerId: fromState.ownerId
+      }
+    );
   }
 
   if (!toState.ownerId || toState.ownerId === playerId) {
@@ -150,10 +172,14 @@ export function validateAttackAttempt(
 
   const minimumArmies = resolveAttackMinimumArmies(state);
   if (!Number.isFinite(fromState.armies) || fromState.armies < minimumArmies) {
-    return invalid("INSUFFICIENT_ARMIES", `The attacker territory must contain at least ${minimumArmies} armies.`, {
-      armies: fromState.armies,
-      minimumArmies
-    });
+    return invalid(
+      "INSUFFICIENT_ARMIES",
+      `The attacker territory must contain at least ${minimumArmies} armies.`,
+      {
+        armies: fromState.armies,
+        minimumArmies
+      }
+    );
   }
 
   return valid({

@@ -36,7 +36,11 @@ const { runScheduledJobs } = require("./scheduler/index.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
 const { broadcastEventPayload } = require("./event-broadcast.cjs");
-const { handleAuthSessionRoute, handleProfileRoute, handleThemePreferenceRoute } = require("./routes/account.cjs");
+const {
+  handleAuthSessionRoute,
+  handleProfileRoute,
+  handleThemePreferenceRoute
+} = require("./routes/account.cjs");
 const { handleGameActionRoute } = require("./routes/game-actions.cjs");
 const { handleCardsTradeRoute } = require("./routes/game-cards.cjs");
 const { handleCreateGameRoute, handleOpenGameRoute } = require("./routes/game-management.cjs");
@@ -51,7 +55,11 @@ const {
   handleModuleOptionsRoute,
   handleRescanModulesRoute
 } = require("./routes/modules.cjs");
-const { handleLoginRoute, handleLogoutRoute, handleRegisterRoute } = require("./routes/password-auth.cjs");
+const {
+  handleLoginRoute,
+  handleLogoutRoute,
+  handleRegisterRoute
+} = require("./routes/password-auth.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
 
@@ -125,7 +133,10 @@ const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
 
-function filterCatalogByAllowedIds<T extends { id: string }>(entries: T[], allowedIds: string[] | null | undefined): T[] {
+function filterCatalogByAllowedIds<T extends { id: string }>(
+  entries: T[],
+  allowedIds: string[] | null | undefined
+): T[] {
   if (!Array.isArray(allowedIds) || !allowedIds.length) {
     return entries;
   }
@@ -234,13 +245,7 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
 }
 
 function clearSessionCookie(req: Request): string {
-  const parts = [
-    `${sessionCookieName}=`,
-    "HttpOnly",
-    "Path=/",
-    "SameSite=Lax",
-    "Max-Age=0"
-  ];
+  const parts = [`${sessionCookieName}=`, "HttpOnly", "Path=/", "SameSite=Lax", "Max-Age=0"];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
   }
@@ -273,7 +278,8 @@ function createApp(options: CreateAppOptions = {}) {
     dbFile: options.dbFile || defaultDbFile(),
     legacyUsersFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
     legacyGamesFile: options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json"),
-    legacySessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
+    legacySessionsFile:
+      options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
   const moduleRuntime = createModuleRuntime({
     projectRoot: runtimeProjectRoot,
@@ -352,7 +358,12 @@ function createApp(options: CreateAppOptions = {}) {
     return savedGame;
   }
 
-  function snapshotForState(nextState: any, gameId: string | null, version: number | null, gameName: string | null) {
+  function snapshotForState(
+    nextState: any,
+    gameId: string | null,
+    version: number | null,
+    gameName: string | null
+  ) {
     return { ...publicState(nextState), gameId, version, gameName };
   }
 
@@ -390,7 +401,11 @@ function createApp(options: CreateAppOptions = {}) {
       return null;
     }
 
-    const savedGame = await gameSessions.saveGame(gameContext.gameId, gameContext.state, expectedVersion);
+    const savedGame = await gameSessions.saveGame(
+      gameContext.gameId,
+      gameContext.state,
+      expectedVersion
+    );
     gameContext.version = savedGame.version;
     gameContext.gameName = savedGame.name;
 
@@ -415,10 +430,21 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    broadcastEventPayload(clients, (client: EventClient) =>
-      "data: " + JSON.stringify(
-        snapshotForUser(gameContext.state, gameContext.gameId, gameContext.version, gameContext.gameName, client.user)
-      ) + "\n\n");
+    broadcastEventPayload(
+      clients,
+      (client: EventClient) =>
+        "data: " +
+        JSON.stringify(
+          snapshotForUser(
+            gameContext.state,
+            gameContext.gameId,
+            gameContext.version,
+            gameContext.gameName,
+            client.user
+          )
+        ) +
+        "\n\n"
+    );
 
     if (!clients.size) {
       clientsByGameId.delete(gameContext.gameId);
@@ -464,16 +490,33 @@ function createApp(options: CreateAppOptions = {}) {
     return aiRecovery;
   }
 
-  function extractSessionToken(req: Request, body: Record<string, any> = {}, url: URL | null = null): string | null {
+  function extractSessionToken(
+    req: Request,
+    body: Record<string, any> = {},
+    url: URL | null = null
+  ): string | null {
     const cookies = parseCookies(req);
     return cookies[sessionCookieName] || null;
   }
 
-  async function requireAuth(req: Request, res: Response, body: Record<string, any>, url: URL | null = null) {
+  async function requireAuth(
+    req: Request,
+    res: Response,
+    body: Record<string, any>,
+    url: URL | null = null
+  ) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
-      sendLocalizedError(res, 401, null, "Sessione non valida.", "server.auth.invalidSession", {}, "AUTH_REQUIRED");
+      sendLocalizedError(
+        res,
+        401,
+        null,
+        "Sessione non valida.",
+        "server.auth.invalidSession",
+        {},
+        "AUTH_REQUIRED"
+      );
       return null;
     }
 
@@ -489,7 +532,15 @@ function createApp(options: CreateAppOptions = {}) {
     try {
       gameRecord = await gameSessions.getGame(gameId);
     } catch (error) {
-      sendLocalizedError(res, 404, error, "Partita non trovata.", "server.game.notFound", {}, "GAME_NOT_FOUND");
+      sendLocalizedError(
+        res,
+        404,
+        error,
+        "Partita non trovata.",
+        "server.game.notFound",
+        {},
+        "GAME_NOT_FOUND"
+      );
       return null;
     }
     if (!gameRecord.game.creatorUserId) {
@@ -502,10 +553,20 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     try {
-      authorize("game:read", { user: authContext.user, game: gameRecord.game, state: gameRecord.state });
+      authorize("game:read", {
+        user: authContext.user,
+        game: gameRecord.game,
+        state: gameRecord.state
+      });
     } catch (error: any) {
       const statusCode = error.statusCode || 400;
-      sendLocalizedError(res, statusCode, error, "Accesso partita non autorizzato.", "server.game.readUnauthorized");
+      sendLocalizedError(
+        res,
+        statusCode,
+        error,
+        "Accesso partita non autorizzato.",
+        "server.game.readUnauthorized"
+      );
       return null;
     }
 
@@ -517,17 +578,19 @@ function createApp(options: CreateAppOptions = {}) {
       return null;
     }
 
-    return nextState.players.find((player: any) => {
-      if (player.isAi) {
-        return false;
-      }
+    return (
+      nextState.players.find((player: any) => {
+        if (player.isAi) {
+          return false;
+        }
 
-      if (player.linkedUserId) {
-        return player.linkedUserId === user.id;
-      }
+        if (player.linkedUserId) {
+          return player.linkedUserId === user.id;
+        }
 
-      return player.name === user.username;
-    }) || null;
+        return player.name === user.username;
+      }) || null
+    );
   }
 
   function playerBelongsToUser(player: any, user: any): boolean {
@@ -550,7 +613,13 @@ function createApp(options: CreateAppOptions = {}) {
     return nextState.hands[player.id].map((card: any) => ({ ...card }));
   }
 
-  function snapshotForUser(nextState: any, gameId: string | null, version: number | null, gameName: string | null, user: any) {
+  function snapshotForUser(
+    nextState: any,
+    gameId: string | null,
+    version: number | null,
+    gameName: string | null,
+    user: any
+  ) {
     const baseSnapshot = snapshotForState(nextState, gameId, version, gameName);
     const resolvedPlayer = resolvePlayerForUser(nextState, user);
 
@@ -585,24 +654,48 @@ function createApp(options: CreateAppOptions = {}) {
       if (typeof datastore.resetForTests === "function") {
         await datastore.resetForTests();
       }
-      const resetGame = await gameSessions.createGame(createInitialState(), { name: "Partita test" });
+      const resetGame = await gameSessions.createGame(createInitialState(), {
+        name: "Partita test"
+      });
       activeGameId = resetGame.game.id;
       activeGameVersion = resetGame.game.version;
       activeGameName = resetGame.game.name;
       replaceState(resetGame.state);
       nextAttackRolls = null;
-      broadcastGame({ gameId: resetGame.game.id, gameName: resetGame.game.name, version: resetGame.game.version, state: resetGame.state });
+      broadcastGame({
+        gameId: resetGame.game.id,
+        gameName: resetGame.game.name,
+        version: resetGame.game.version,
+        state: resetGame.state
+      });
       sendJson(res, 200, { ok: true, state: snapshot() });
       return;
     }
 
-    if (process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/next-attack-rolls") {
+    if (
+      process.env.E2E === "true" &&
+      req.method === "POST" &&
+      url.pathname === "/api/test/next-attack-rolls"
+    ) {
       const body = await parseBody(req);
       const attackRoll = Number(body.attackRoll);
       const defendRoll = Number(body.defendRoll);
 
-      if (!Number.isInteger(attackRoll) || attackRoll < 1 || attackRoll > 6 || !Number.isInteger(defendRoll) || defendRoll < 1 || defendRoll > 6) {
-        sendLocalizedError(res, 400, null, "I lanci di test devono essere interi tra 1 e 6.", "server.test.invalidRolls");
+      if (
+        !Number.isInteger(attackRoll) ||
+        attackRoll < 1 ||
+        attackRoll > 6 ||
+        !Number.isInteger(defendRoll) ||
+        defendRoll < 1 ||
+        defendRoll > 6
+      ) {
+        sendLocalizedError(
+          res,
+          400,
+          null,
+          "I lanci di test devono essere interi tra 1 e 6.",
+          "server.test.invalidRolls"
+        );
         return;
       }
 
@@ -629,18 +722,31 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/games") {
-      await handleGamesListRoute(res, () => gameSessions.listGames(), getTargetGameId, sendJson, url);
+      await handleGamesListRoute(
+        res,
+        () => gameSessions.listGames(),
+        getTargetGameId,
+        sendJson,
+        url
+      );
       return;
     }
 
-    if (req.method === "GET" && (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")) {
+    if (
+      req.method === "GET" &&
+      (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")
+    ) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
       await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
         () => moduleOptions.maps,
         () => moduleOptions.diceRuleSets,
-        () => filterCatalogByAllowedIds(listVictoryRuleSets(), moduleOptions.content?.victoryRuleSetIds),
+        () =>
+          filterCatalogByAllowedIds(
+            listVictoryRuleSets(),
+            moduleOptions.content?.victoryRuleSetIds
+          ),
         () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
         () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
         listTurnTimeoutHoursOptions,
@@ -663,11 +769,7 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/modules/options") {
-      await handleModuleOptionsRoute(
-        res,
-        () => moduleRuntime.getModuleOptions(),
-        sendJson
-      );
+      await handleModuleOptionsRoute(res, () => moduleRuntime.getModuleOptions(), sendJson);
       return;
     }
 
@@ -701,9 +803,8 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    const enableModuleMatch = req.method === "POST"
-      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/enable$/)
-      : null;
+    const enableModuleMatch =
+      req.method === "POST" ? url.pathname.match(/^\/api\/modules\/([^/]+)\/enable$/) : null;
     if (enableModuleMatch) {
       await handleEnableModuleRoute(
         req,
@@ -720,9 +821,8 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    const disableModuleMatch = req.method === "POST"
-      ? url.pathname.match(/^\/api\/modules\/([^/]+)\/disable$/)
-      : null;
+    const disableModuleMatch =
+      req.method === "POST" ? url.pathname.match(/^\/api\/modules\/([^/]+)\/disable$/) : null;
     if (disableModuleMatch) {
       await handleDisableModuleRoute(
         req,
@@ -743,35 +843,52 @@ function createApp(options: CreateAppOptions = {}) {
       await handleScheduledJobsRoute(
         req,
         res,
-        () => runScheduledJobs({
-          listGames: () => gameSessions.datastore.listGames(),
-          saveGame: (gameId: string, nextState: Record<string, unknown>, expectedVersion?: number | null) =>
-            gameSessions.saveGame(gameId, nextState, expectedVersion),
-          forceEndTurn,
-          recoverAiTurnState: (nextState: Record<string, unknown>, recoveryOptions?: { now?: Date }) =>
-            recoverAiTurnState(nextState, {
-              ...recoveryOptions,
-              forceEndTurn,
-              runAiTurnsIfNeeded,
-              logger: logAiRecovery
-            }),
-          afterSave: ({ gameId, gameName, state: nextState, version }: { gameId: string; gameName: string; state: Record<string, unknown>; version: number | null }) => {
-            if (gameId === activeGameId) {
-              activeGameVersion = version;
-              activeGameName = gameName;
-              if (nextState !== state) {
-                replaceState(nextState);
-              }
-            }
-
-            broadcastGame({
+        () =>
+          runScheduledJobs({
+            listGames: () => gameSessions.datastore.listGames(),
+            saveGame: (
+              gameId: string,
+              nextState: Record<string, unknown>,
+              expectedVersion?: number | null
+            ) => gameSessions.saveGame(gameId, nextState, expectedVersion),
+            forceEndTurn,
+            recoverAiTurnState: (
+              nextState: Record<string, unknown>,
+              recoveryOptions?: { now?: Date }
+            ) =>
+              recoverAiTurnState(nextState, {
+                ...recoveryOptions,
+                forceEndTurn,
+                runAiTurnsIfNeeded,
+                logger: logAiRecovery
+              }),
+            afterSave: ({
               gameId,
               gameName,
-              version,
-              state: nextState
-            });
-          }
-        }),
+              state: nextState,
+              version
+            }: {
+              gameId: string;
+              gameName: string;
+              state: Record<string, unknown>;
+              version: number | null;
+            }) => {
+              if (gameId === activeGameId) {
+                activeGameVersion = version;
+                activeGameName = gameName;
+                if (nextState !== state) {
+                  replaceState(nextState);
+                }
+              }
+
+              broadcastGame({
+                gameId,
+                gameName,
+                version,
+                state: nextState
+              });
+            }
+          }),
         sendJson,
         sendLocalizedError
       );
@@ -787,35 +904,39 @@ function createApp(options: CreateAppOptions = {}) {
         body,
         requireAuth,
         authorize,
-        (body: Record<string, unknown>) => createConfiguredInitialState(body, {
-          resolveContentPack: (contentPackId: string) => moduleRuntime.findContentPack(contentPackId),
-          resolveDiceRuleSet: (diceRuleSetId: string) => moduleRuntime.findDiceRuleSet(diceRuleSetId),
-          resolvePlayerPieceSet: (pieceSetId: string) => moduleRuntime.findPlayerPieceSet(pieceSetId),
-          resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
-          resolveGamePreset: (input: {
-            gamePresetId?: string | null;
-            activeModuleIds?: string[];
-          }) => moduleRuntime.resolveGamePreset(input),
-          resolveGameModuleConfigDefaults: (input: {
-            activeModuleIds?: string[];
-            contentProfileId?: string | null;
-            gameplayProfileId?: string | null;
-            uiProfileId?: string | null;
-          }) => moduleRuntime.resolveGameConfigDefaults(input),
-          resolveGameModuleSelection: (input: {
-            activeModuleIds?: string[];
-            contentProfileId?: string | null;
-            gameplayProfileId?: string | null;
-            uiProfileId?: string | null;
-            contentPackId?: string | null;
-            pieceSetId?: string | null;
-            mapId?: string | null;
-            diceRuleSetId?: string | null;
-            victoryRuleSetId?: string | null;
-            themeId?: string | null;
-            pieceSkinId?: string | null;
-          }) => moduleRuntime.resolveGameSelection(input)
-        }),
+        (body: Record<string, unknown>) =>
+          createConfiguredInitialState(body, {
+            resolveContentPack: (contentPackId: string) =>
+              moduleRuntime.findContentPack(contentPackId),
+            resolveDiceRuleSet: (diceRuleSetId: string) =>
+              moduleRuntime.findDiceRuleSet(diceRuleSetId),
+            resolvePlayerPieceSet: (pieceSetId: string) =>
+              moduleRuntime.findPlayerPieceSet(pieceSetId),
+            resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
+            resolveGamePreset: (input: {
+              gamePresetId?: string | null;
+              activeModuleIds?: string[];
+            }) => moduleRuntime.resolveGamePreset(input),
+            resolveGameModuleConfigDefaults: (input: {
+              activeModuleIds?: string[];
+              contentProfileId?: string | null;
+              gameplayProfileId?: string | null;
+              uiProfileId?: string | null;
+            }) => moduleRuntime.resolveGameConfigDefaults(input),
+            resolveGameModuleSelection: (input: {
+              activeModuleIds?: string[];
+              contentProfileId?: string | null;
+              gameplayProfileId?: string | null;
+              uiProfileId?: string | null;
+              contentPackId?: string | null;
+              pieceSetId?: string | null;
+              mapId?: string | null;
+              diceRuleSetId?: string | null;
+              victoryRuleSetId?: string | null;
+              themeId?: string | null;
+              pieceSkinId?: string | null;
+            }) => moduleRuntime.resolveGameSelection(input)
+          }),
         addPlayer,
         async (state: any, options: Record<string, any>) => {
           const created = await gameSessions.createGame(state, options);
@@ -888,18 +1009,21 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "PUT" && url.pathname === "/api/profile/preferences/theme") {
       const body = await parseBody(req);
-      await handleThemePreferenceRoute({
-        req,
-        res,
-        requireAuth,
-        auth,
-        playerProfiles,
-        sendJson,
-        sendLocalizedError,
-        extractUserPreferences,
-        supportedSiteThemes,
-        resolveStoredTheme
-      }, body);
+      await handleThemePreferenceRoute(
+        {
+          req,
+          res,
+          requireAuth,
+          auth,
+          playerProfiles,
+          sendJson,
+          sendLocalizedError,
+          extractUserPreferences,
+          supportedSiteThemes,
+          resolveStoredTheme
+        },
+        body
+      );
       return;
     }
 
@@ -926,13 +1050,29 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseBody(req);
-      await handleLoginRoute(req, res, body, auth, sendJson, sendLocalizedError, buildSessionCookie);
+      await handleLoginRoute(
+        req,
+        res,
+        body,
+        auth,
+        sendJson,
+        sendLocalizedError,
+        buildSessionCookie
+      );
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
       const body = await parseBody(req);
-      await handleLogoutRoute(req, res, body, auth, sendJson, extractSessionToken, clearSessionCookie);
+      await handleLogoutRoute(
+        req,
+        res,
+        body,
+        auth,
+        sendJson,
+        extractSessionToken,
+        clearSessionCookie
+      );
       return;
     }
 
@@ -1024,7 +1164,11 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "POST" && url.pathname === "/api/action") {
       const body = await parseBody(req);
       function consumeQueuedAttackRandom() {
-        if (process.env.E2E !== "true" || !Array.isArray(nextAttackRolls) || nextAttackRolls.length !== 2) {
+        if (
+          process.env.E2E !== "true" ||
+          !Array.isArray(nextAttackRolls) ||
+          nextAttackRolls.length !== 2
+        ) {
           return null;
         }
 
@@ -1069,11 +1213,11 @@ function createApp(options: CreateAppOptions = {}) {
     const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
-      : (url.pathname === "/"
-          ? "/index.html"
-          : url.pathname.indexOf("/game/") === 0
-            ? "/game.html"
-            : url.pathname);
+      : url.pathname === "/"
+        ? "/index.html"
+        : url.pathname.indexOf("/game/") === 0
+          ? "/game.html"
+          : url.pathname;
     const resolvedStaticRoot = path.resolve(staticRoot);
     const filePath = path.resolve(path.join(staticRoot, relativePath));
     if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
@@ -1102,7 +1246,8 @@ function createApp(options: CreateAppOptions = {}) {
         ".woff2": "font/woff2"
       };
 
-      const contentType = contentTypes[extension as keyof typeof contentTypes] || "text/plain; charset=utf-8";
+      const contentType =
+        contentTypes[extension as keyof typeof contentTypes] || "text/plain; charset=utf-8";
       res.writeHead(200, {
         "Content-Type": contentType
       });
@@ -1114,8 +1259,10 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    res.setHeader("Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    );
   }
 
   function handleRequest(req: Request, res: Response) {

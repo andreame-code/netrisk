@@ -1,0 +1,11 @@
+.git
+.tsbuild
+.vercel
+coverage
+data
+frontend/assets
+node_modules
+playwright-report
+public
+test-results
+memory.md

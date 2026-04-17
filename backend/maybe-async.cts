@@ -10,7 +10,10 @@ function mapMaybe<T, U>(value: T | Promise<T>, mapper: (value: T) => U): U | Pro
   return mapper(value);
 }
 
-function chainMaybe<T, U>(value: T | Promise<T>, mapper: (value: T) => U | Promise<U>): U | Promise<U> {
+function chainMaybe<T, U>(
+  value: T | Promise<T>,
+  mapper: (value: T) => U | Promise<U>
+): U | Promise<U> {
   if (isPromiseLike(value)) {
     return value.then((resolved) => mapper(resolved));
   }
