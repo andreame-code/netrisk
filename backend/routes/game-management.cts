@@ -46,6 +46,12 @@ type SnapshotForState = (
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
 
+const {
+  gameIdRequestSchema,
+  gameMutationResponseSchema
+} = require("../../shared/runtime-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+
 async function handleCreateGameRoute(
   req: unknown,
   res: unknown,
@@ -136,24 +142,46 @@ async function handleOpenGameRoute(
     return;
   }
 
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    body,
+    gameIdRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
   try {
-    const gameRecord = await getGame(body.gameId);
+    const gameRecord = await getGame(parsedBody.gameId);
     authorize("game:open", {
       user: authContext.user,
       game: gameRecord.game,
       state: gameRecord.state
     });
-    const opened = await openGame(body.gameId);
+    const opened = await openGame(parsedBody.gameId);
     await resumeAiTurnsForRead(opened);
     const resolvedPlayer = resolvePlayerForUser(opened.state, authContext.user);
-    sendJson(res, 200, {
-      ok: true,
-      game: opened.game,
-      games: await listGames(),
-      activeGameId: opened.game.id,
-      state: snapshotForState(opened.state, opened.game.id, opened.game.version, opened.game.name),
-      playerId: resolvedPlayer ? resolvedPlayer.id : null
-    });
+    sendValidatedJson(
+      res as import("node:http").ServerResponse,
+      200,
+      {
+        ok: true,
+        game: opened.game,
+        games: await listGames(),
+        activeGameId: opened.game.id,
+        state: snapshotForState(
+          opened.state,
+          opened.game.id,
+          opened.game.version,
+          opened.game.name
+        ),
+        playerId: resolvedPlayer ? resolvedPlayer.id : null
+      },
+      gameMutationResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
+    );
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
     sendLocalizedError(

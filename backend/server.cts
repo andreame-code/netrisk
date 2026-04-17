@@ -727,7 +727,8 @@ function createApp(options: CreateAppOptions = {}) {
         () => gameSessions.listGames(),
         getTargetGameId,
         sendJson,
-        url
+        url,
+        sendLocalizedError
       );
       return;
     }
