@@ -19,7 +19,9 @@ type SendLocalizedError = (
 ) => void;
 
 type ValidationSchema<T> = {
-  safeParse(input: unknown):
+  safeParse(
+    input: unknown
+  ):
     | { success: true; data: T }
     | { success: false; error: { issues?: Array<Record<string, unknown>> } };
 };

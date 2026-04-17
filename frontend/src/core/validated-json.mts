@@ -1,12 +1,7 @@
-import {
-  SchemaValidationError,
-  parseWithSchema
-} from "../generated/shared-runtime-validation.mjs";
+import { SchemaValidationError, parseWithSchema } from "../generated/shared-runtime-validation.mjs";
 
 type ValidationSchema<T> = {
-  safeParse(input: unknown):
-    | { success: true; data: T }
-    | { success: false; error: unknown };
+  safeParse(input: unknown): { success: true; data: T } | { success: false; error: unknown };
 };
 
 export async function readValidatedJson<T>(

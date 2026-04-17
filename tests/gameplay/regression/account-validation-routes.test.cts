@@ -91,53 +91,62 @@ function createAccountDeps(overrides = {}) {
   };
 }
 
-register("handleLoginRoute rejects invalid inbound login payloads with mapped validation errors", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
+register(
+  "handleLoginRoute rejects invalid inbound login payloads with mapped validation errors",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
 
-  await handleLoginRoute(
-    {},
-    {},
-    { username: 99 },
-    {
-      async loginWithPassword() {
-        throw new Error("Login store should not be reached for invalid payloads.");
-      }
-    },
-    () => {
-      throw new Error("sendJson should not be called for invalid login payloads.");
-    },
-    (...args: LocalizedErrorCall) => {
-      localizedErrorCall = args;
-    },
-    (_req: unknown, _sessionToken: string) => "session-cookie"
-  );
-
-  const call = requireLocalizedErrorCall(localizedErrorCall);
-  assert.equal(call[1], 400);
-  assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
-  assert.deepEqual(
-    call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
-    ["username", "password"]
-  );
-});
-
-register("handleThemePreferenceRoute rejects invalid inbound theme payloads with mapped validation errors", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
-
-  await handleThemePreferenceRoute(
-    createAccountDeps({
-      sendLocalizedError(...args: LocalizedErrorCall) {
+    await handleLoginRoute(
+      {},
+      {},
+      { username: 99 },
+      {
+        async loginWithPassword() {
+          throw new Error("Login store should not be reached for invalid payloads.");
+        }
+      },
+      () => {
+        throw new Error("sendJson should not be called for invalid login payloads.");
+      },
+      (...args: LocalizedErrorCall) => {
         localizedErrorCall = args;
-      }
-    }),
-    { theme: 3 }
-  );
+      },
+      (_req: unknown, _sessionToken: string) => "session-cookie"
+    );
 
-  const call = requireLocalizedErrorCall(localizedErrorCall);
-  assert.equal(call[1], 400);
-  assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
-  assert.deepEqual(call[7].validationErrors.map((entry: ValidationIssue) => entry.path), ["theme"]);
-});
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 400);
+    assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
+    assert.deepEqual(
+      call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+      ["username", "password"]
+    );
+  }
+);
+
+register(
+  "handleThemePreferenceRoute rejects invalid inbound theme payloads with mapped validation errors",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
+
+    await handleThemePreferenceRoute(
+      createAccountDeps({
+        sendLocalizedError(...args: LocalizedErrorCall) {
+          localizedErrorCall = args;
+        }
+      }),
+      { theme: 3 }
+    );
+
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 400);
+    assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
+    assert.deepEqual(
+      call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+      ["theme"]
+    );
+  }
+);
 
 register("handleAuthSessionRoute traps invalid outbound auth session payloads", async () => {
   let localizedErrorCall: LocalizedErrorCall | null = null;
@@ -162,7 +171,10 @@ register("handleAuthSessionRoute traps invalid outbound auth session payloads", 
   const call = requireLocalizedErrorCall(localizedErrorCall);
   assert.equal(call[1], 500);
   assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
-  assert.deepEqual(call[7].validationErrors.map((entry: ValidationIssue) => entry.path), ["user.id"]);
+  assert.deepEqual(
+    call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+    ["user.id"]
+  );
 });
 
 register("handleProfileRoute traps invalid outbound profile payloads", async () => {
@@ -194,34 +206,40 @@ register("handleProfileRoute traps invalid outbound profile payloads", async () 
   );
 });
 
-register("handleThemePreferenceRoute traps invalid outbound theme preference payloads", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
+register(
+  "handleThemePreferenceRoute traps invalid outbound theme preference payloads",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
 
-  const handled = await handleThemePreferenceRoute(
-    createAccountDeps({
-      auth: {
-        publicUser() {
-          return null;
+    const handled = await handleThemePreferenceRoute(
+      createAccountDeps({
+        auth: {
+          publicUser() {
+            return null;
+          },
+          async updateUserThemePreference() {
+            return {
+              preferences: { theme: "midnight" }
+            };
+          }
         },
-        async updateUserThemePreference() {
-          return {
-            preferences: { theme: "midnight" }
-          };
+        sendLocalizedError(...args: LocalizedErrorCall) {
+          localizedErrorCall = args;
         }
-      },
-      sendLocalizedError(...args: LocalizedErrorCall) {
-        localizedErrorCall = args;
-      }
-    }),
-    { theme: "midnight" }
-  );
+      }),
+      { theme: "midnight" }
+    );
 
-  assert.equal(handled, true);
-  const call = requireLocalizedErrorCall(localizedErrorCall);
-  assert.equal(call[1], 500);
-  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
-  assert.deepEqual(call[7].validationErrors.map((entry: ValidationIssue) => entry.path), ["user.id"]);
-});
+    assert.equal(handled, true);
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 500);
+    assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+    assert.deepEqual(
+      call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+      ["user.id"]
+    );
+  }
+);
 
 register("handleLoginRoute traps invalid outbound login payloads", async () => {
   let localizedErrorCall: LocalizedErrorCall | null = null;
@@ -253,5 +271,8 @@ register("handleLoginRoute traps invalid outbound login payloads", async () => {
   const call = requireLocalizedErrorCall(localizedErrorCall);
   assert.equal(call[1], 500);
   assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
-  assert.deepEqual(call[7].validationErrors.map((entry: ValidationIssue) => entry.path), ["user.id"]);
+  assert.deepEqual(
+    call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+    ["user.id"]
+  );
 });
