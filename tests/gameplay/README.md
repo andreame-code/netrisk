@@ -8,6 +8,7 @@ This suite covers backend engine behavior and game rules, separately from Playwr
 
 ## Structure
 
+- `ai`: AI decision-making, turn execution, and forced behavior
 - `helpers`: builders and deterministic random utilities
 - `setup`: game initialization
 - `turn-flow`: phase and turn transitions
@@ -16,4 +17,5 @@ This suite covers backend engine behavior and game rules, separately from Playwr
 - `conquest`: conquest and army transfer
 - `fortify`: fortification movement
 - `victory`: elimination and victory
+- `shared`: shared runtime validation and cross-layer contract helpers
 - `regression`: representative multi-module flows
