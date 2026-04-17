@@ -1690,7 +1690,7 @@ register("auth store migra password legacy in hash al login riuscito", async () 
       username: "legacy",
       credentials: {
         password: {
-          secret: "secret"
+          secret: "longpassword123"
         }
       },
       role: "user",
@@ -1701,7 +1701,7 @@ register("auth store migra password legacy in hash al login riuscito", async () 
     }], null, 2) + "\n", "utf8");
 
     const auth = createAuthStore({ dataFile: tempFile, sessionsFile: tempSessionsFile, dbFile: tempDbFile });
-    const login = await auth.loginWithPassword("legacy", "secret");
+    const login = await auth.loginWithPassword("legacy", "longpassword123");
     assert.equal(login.ok, true);
 
     const storedUser = await auth.datastore.findUserByUsername("legacy");
@@ -2838,7 +2838,7 @@ register("validateNewGameConfig rifiuta player 1 come AI", () => {
 
 register("scheduled jobs route richiede un bearer token valido", async () => {
   const previousSecret = process.env.CRON_SECRET;
-  process.env.CRON_SECRET = "test-cron-secret";
+  process.env.CRON_SECRET = "test-cron-secret123";
 
   try {
     const unauthorizedResponse = makeMockResponse();
@@ -2859,7 +2859,7 @@ register("scheduled jobs route richiede un bearer token valido", async () => {
 
     const authorizedResponse = makeMockResponse();
     await handleScheduledJobsRoute(
-      { headers: { authorization: "Bearer test-cron-secret" } },
+      { headers: { authorization: "Bearer test-cron-secret123" } },
       authorizedResponse,
       async () => ({ ok: true, jobs: [] }),
       sendJson,
@@ -3411,7 +3411,7 @@ register("API games crea una sessione da configurazione strutturata", async () =
 
 register("API cron scheduled jobs forza il turno scaduto e sincronizza lo stato attivo", async () => {
   const previousSecret = process.env.CRON_SECRET;
-  process.env.CRON_SECRET = "integration-cron-secret";
+  process.env.CRON_SECRET = "integration-cron-secret123";
 
   try {
     await withServer(async (baseUrl, context) => {
@@ -3471,7 +3471,7 @@ register("API cron scheduled jobs forza il turno scaduto e sincronizza lo stato 
 
       const cronResponse = await fetch(baseUrl + "/api/cron/scheduled-jobs", {
         headers: {
-          authorization: "Bearer integration-cron-secret"
+          authorization: "Bearer integration-cron-secret123"
         }
       });
       assert.equal(cronResponse.status, 200);
@@ -4506,10 +4506,10 @@ register("app usa Supabase per auth/session e non crea sqlite locale quando il d
     });
 
     try {
-      const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
+      const registered = await app.auth.registerPasswordUser("supa_tester", "secret123123");
       assert.equal(registered.ok, true);
 
-      const login = await app.auth.loginWithPassword("supa_tester", "secret");
+      const login = await app.auth.loginWithPassword("supa_tester", "secret123123");
       assert.equal(login.ok, true);
       assert.equal(typeof login.sessionToken, "string");
 
