@@ -3,7 +3,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const rootDir = process.cwd();
-const sourceExtensions = [".d.ts", ".cts", ".mts", ".ts"];
+const sourceExtensions = [".d.ts", ".cts", ".mts", ".ts", ".tsx"];
 const ignoredDirNames = new Set([
   ".git",
   ".next",
@@ -41,6 +41,7 @@ const allowedPathPatterns = [
   /^vercel\.json$/,
   /^modules\/.+\.(json|css|png|jpg|jpeg|svg|webp)$/i,
   /^frontend\/assets\/.+\.(png|jpg|jpeg|svg|webp)$/i,
+  /^frontend\/react-shell\/.+\.(html|css)$/i,
   /^e2e\/.+-snapshots\/.+\.png$/i,
   /(^|\/)[^/]+\.md$/i
 ];
