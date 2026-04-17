@@ -66,6 +66,15 @@ Before large changes, remind the user to create a git checkpoint.
 Before heavy code changes requested by the user, automatically create and switch to a new git branch before editing files.
 After changes, summarize exactly which files were touched and why.
 
+## Execution loop and validation gate
+
+For every implementation step, run an explicit loop: modify, run relevant tests, fix, and rerun tests until the step is stable.
+Use targeted tests during inner-loop development, then run the full required local validation before updating the PR.
+Update or create the PR only when the current step passes local validation.
+After each PR update, require GitHub CI and Vercel preview/checks to pass.
+If any local or remote check fails, analyze the failure, fix the issue, rerun the necessary tests, update the PR again, and repeat until all required checks are green.
+Do not mark the task complete while required remote checks are still failing or pending, unless explicitly instructed otherwise.
+
 ## Expected workflow for every task
 
 1. Read the current structure.
