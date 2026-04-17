@@ -11,6 +11,7 @@ L'applicazione include già:
 - autenticazione (register/login/logout), profilo utente e preferenze tema
 - validazione runtime condivisa dei payload auth/profile tra backend e frontend
 - layer client API frontend tipizzato per i flussi migrati `profile` e `lobby`
+- shell React + Vite parallela servita su `/react/` senza sostituire la UI legacy
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
 - ciclo turno completo (`reinforcement` -> `attack` -> `fortify` -> `finished`)
@@ -20,6 +21,7 @@ L'applicazione include già:
 - eliminazione giocatore, vittoria e resa
 - sincronizzazione stato/eventi e controlli di autorizzazione lato route
 - gestione conflitti di versione in azioni concorrenti
+- runtime moduli con catalogo admin, enable/disable, content pack, preset e defaults server-side
 
 Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 
@@ -27,6 +29,9 @@ Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 
 `/frontend/src`  
 Sorgente TypeScript (`.mts`) della UI web, della shell condivisa, dell'i18n e della manifest static site.
+
+`/frontend/react-shell`  
+Shell React + Vite parallela, con alias verso `frontend/src/core` e `shared`, usata come percorso di migrazione incrementale.
 
 `/frontend/src/core/api`  
 Boundary HTTP frontend framework-agnostic: request helpers tipizzati, parsing/validazione condivisa ed error translation per i flussi UI migrati.
@@ -36,6 +41,9 @@ Asset sorgente frontend (mappe e media) sincronizzati nella build pubblica.
 
 `/public`  
 Output statico generato della UI (`.html`, `.css`, `.mjs`) effettivamente servito dal runtime applicativo.
+
+`/public/react`  
+Output build della shell React, servito dal backend statico su `/react` e `/react/`.
 
 `/backend`  
 Server HTTP, autenticazione, autorizzazione, datastore, sessioni di gioco e route API.
@@ -48,6 +56,9 @@ Handler route specializzati (auth/account, setup partita, azioni turno/attacco/c
 
 `/shared`  
 Tipi, modelli dominio, contratti API, mappe e regole condivise tra frontend e backend.
+
+`/modules`  
+Moduli NetRisk caricati a runtime per estendere contenuti, preset, profili setup e slot UI.
 
 `/api`  
 Entrypoint deploy/serverless che delega al backend compilato.
@@ -149,6 +160,7 @@ Categorie future da trattare con lo stesso modello:
 - Runtime backend: Node.js HTTP server (`backend/server.cts`).
 - Runtime deploy: entrypoint `api/index.ts` che espone `createApp()` dal backend compilato.
 - Pipeline frontend: `frontend/src` viene compilato e materializzato in `public/` tramite gli script di build.
+- Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling ed error translation per i flussi `profile` e `lobby`.
 - Datastore supportati:
@@ -156,12 +168,14 @@ Categorie future da trattare con lo stesso modello:
   - Supabase (quando configurato via env)
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
-- Guardrail deploy Vercel: controllo env richieste, fallback senza `.git` per i check repository e `.vercelignore` per evitare upload di artefatti locali.
+- Routing statico: `backend/server.cts` risolve `/`, `/game/*`, le pagine legacy e `/react/` senza sovrapporre i due frontend.
+- Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.
 
 ## Flusso sintetico applicativo
 
 1. Il client invia azioni o richieste via route backend.
    Per i flussi UI gia migrati (`profile` e `lobby`), il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
+   La shell React riusa lo stesso boundary tipizzato invece di introdurre una seconda logica transport.
 2. Il backend autentica/autorizza utente e valida versione stato.
 3. Le route delegano al motore (`backend/engine`) la logica di dominio.
 4. Il backend salva lo stato e notifica eventuali listener eventi.

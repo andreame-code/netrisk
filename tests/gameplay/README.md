@@ -6,6 +6,8 @@ This suite covers backend engine behavior and game rules, separately from Playwr
 
 `npm run test:gameplay`
 
+The command builds the current TypeScript sources first and then runs the gameplay harness in `scripts/run-gameplay-tests.cts`.
+
 ## Structure
 
 - `ai`: AI decision-making, turn execution, and forced behavior
@@ -18,4 +20,9 @@ This suite covers backend engine behavior and game rules, separately from Playwr
 - `fortify`: fortification movement
 - `victory`: elimination and victory
 - `shared`: shared runtime validation and cross-layer contract helpers
-- `regression`: representative multi-module flows
+- `regression`: representative multi-module flows, route regressions, and repository guardrails such as the TS source allowlist
+
+## Notes for contributors
+
+- Gameplay tests are registered explicitly by the harness, so adding a new test file also requires wiring it into `scripts/run-gameplay-tests.cts`.
+- This suite is the right place for engine rules, module-runtime regressions, and deterministic repository checks that do not need a browser.

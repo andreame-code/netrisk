@@ -36,6 +36,8 @@
 - Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
 - Shared runtime validation: auth/profile schemas, route validation failures, and controlled frontend fallback
 - Gameplay E2E: granular rendering reinforcement flow stabilized against async control population
+- React shell smoke route: `/react/` loads with controlled fallback rendering
+- TS-complete allowlist regression: React shell sources are allowed and tracked stray `.js` sources are rejected
 
 ## Missing
 

@@ -13,6 +13,7 @@ Today the project includes:
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile payloads at backend and frontend boundaries
 - typed frontend API client helpers for the migrated `profile` and `lobby` flows
+- parallel React + Vite smoke shell served at `/react/`, isolated from the legacy pages
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -32,6 +33,7 @@ Today the project includes:
 - events and state synchronization from server to frontend
 - route-level authorization checks for game pages and actions
 - optimistic concurrency handling for game version conflicts
+- modular runtime catalog with enable/disable flows, content packs, presets, and server-side module defaults
 
 Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`.
 
@@ -67,6 +69,7 @@ npm start
 ```
 
 Application available at `http://localhost:3000`.
+After `npm start`, the legacy pages are served from the same server, and the React smoke shell is also available at `http://localhost:3000/react/`.
 
 React shell preview:
 
@@ -75,6 +78,7 @@ npm run dev:react-shell
 ```
 
 The parallel React + Vite shell is reachable at `http://localhost:5173/react/` in development and at `/react/` from the main server after `npm run build:ts`.
+The Vite dev server proxies `/api` to `VITE_BACKEND_TARGET`, which defaults to `http://127.0.0.1:3000`.
 
 ## Datastore configuration
 
@@ -110,6 +114,8 @@ Preview and production deployments build through:
 npm run build:ts
 ```
 
+That build emits the legacy static site and the React shell together under `public/`, which is also the configured Vercel output directory.
+
 Required deploy/runtime variables are:
 
 - `AUTH_ENCRYPTION_KEY`
@@ -142,12 +148,17 @@ Repository uploads are also filtered by `.vercelignore` so local artifacts such 
 npm start
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
+npm run build:react-shell
+npm run check:ts-sources
+npm run coverage
 npm run dev:react-shell
 npm run vercel:env:check
 npm run lint
 npm run lint:fix
 npm run format
 npm run format:check
+npm run typecheck
+npm run typecheck:frontend
 npm run typecheck:react-shell
 npm test
 npm run test:gameplay
@@ -160,12 +171,17 @@ npm run test:all:e2e
 - `npm test`: standard repository suite
 - `npm run backup:data`: creates a consistent SQLite snapshot in `data/backups/`
 - `npm run backup:check -- --file ...`: verifies that a SQLite backup is readable and complete
+- `npm run build:react-shell`: builds only the parallel React shell into `public/react`
+- `npm run check:ts-sources`: enforces the TS-complete allowlist for tracked repository sources
+- `npm run coverage`: collects repository + gameplay coverage and writes reports
 - `npm run vercel:env:check`: checks parity between required deploy variables and expected configuration
 - `npm run dev:react-shell`: starts the parallel React + Vite shell with `/api` proxied to the Node backend
 - `npm run lint`: runs the warning-first ESLint baseline for repository TypeScript sources
 - `npm run lint:fix`: applies safe auto-fixes from the current ESLint baseline
 - `npm run format`: formats the scoped repository sources and docs with Prettier
 - `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
+- `npm run typecheck`: type-checks the backend/shared/frontend TypeScript graph
+- `npm run typecheck:frontend`: type-checks the legacy frontend sources
 - `npm run typecheck:react-shell`: type-checks the parallel React shell
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
@@ -181,6 +197,10 @@ ESLint and Prettier are configured as a TypeScript-first quality baseline for `b
 - `npm run lint` is intentionally warning-first for noisy legacy areas and fails only on higher-value
   correctness issues.
 - `npm run format:check` is enforced in CI to keep formatting drift out of follow-up migration work.
+- `npm run build:ts` is part of the quality gate, so documentation, generated static output, and the
+  React shell all stay aligned with the same build path used in deployment.
+- `npm run check:ts-sources` protects the TypeScript migration by rejecting newly tracked non-TS source
+  files outside the explicit allowlist.
 - `npm run lint:fix` and `npm run format` are safe local helpers before opening a PR.
 - GitHub Actions now includes a dedicated `quality` workflow for `lint` and `format:check`, separate from
   coverage and other validation jobs.
@@ -199,6 +219,7 @@ The `tests/gameplay` suite currently covers areas such as:
 - card helpers and trade bonus
 - shared runtime validation schemas and deterministic validation errors
 - multi-module regression flows
+- repository guardrails such as the TS-complete allowlist for tracked sources
 
 The `e2e` suite currently covers:
 
@@ -207,6 +228,7 @@ The `e2e` suite currently covers:
 - auth navigation between pages
 - profile states: loading, error, empty state
 - profile invalid payload fallback with controlled UI feedback
+- React shell smoke loading on `/react/` with controlled fallback rendering
 - new game setup
 - main gameplay flows
 - attack dice selection and combat result display
@@ -223,8 +245,12 @@ The architecture follows a simple principle: frontend renders and sends actions,
 
 - `public`
   Static web interface output generated from the frontend sources and served by the runtime.
+- `frontend/react-shell`
+  Parallel React + Vite shell used for incremental migration and typed frontend experiments without replacing the legacy UI.
 - `frontend/src`
   TypeScript frontend sources for pages, shell, i18n, typed API client helpers, and generated shared imports.
+- `modules`
+  Runtime-discoverable NetRisk modules that can extend setup defaults, content, presets, and UI slots.
 - `backend`
   HTTP server, authentication, authorization, game session persistence, new game configuration.
 - `backend/engine`
@@ -326,6 +352,7 @@ Main frontend screens currently available:
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
 For the migrated `profile` and `lobby` pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
+The React shell follows the same rule: it reuses the shared typed client and does not duplicate game rules locally.
 
 From a naming perspective, frontend pages currently display title `Frontline Dominion`, while the technical project domain continues to use `NetRisk`.
 
