@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const projectRoot = path.resolve(__dirname, "..", "..");
@@ -80,6 +81,8 @@ const {
   handleCreateGameRoute,
   handleOpenGameRoute
 } = require("../backend/routes/game-management.cjs");
+const { handleJoinRoute } = require("../backend/routes/game-setup.cjs");
+const { handleGamesListRoute } = require("../backend/routes/game-overview.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
@@ -134,6 +137,7 @@ const TEST_PASSWORD = "Secret123!";
 const frontendI18nModulePromise = import(
   pathToFileURL(path.join(projectRoot, "public", "i18n.mjs")).href
 );
+let frontendApiClientModulePromise: Promise<any> | null = null;
 
 function register(name: string, fn: TestFn) {
   tests.push({ name, fn });
@@ -207,6 +211,54 @@ async function fetchGame(app: any, pathname: string, options: FetchGameOptions =
 
 async function readJson(response: any): Promise<any> {
   return response.json();
+}
+
+async function withMockFetch<T>(
+  implementation: (input: string, init?: Record<string, unknown>) => Promise<any>,
+  fn: () => Promise<T>
+): Promise<T> {
+  const previousFetch = global.fetch;
+  global.fetch = implementation as typeof fetch;
+
+  try {
+    return await fn();
+  } finally {
+    global.fetch = previousFetch;
+  }
+}
+
+function getFrontendApiClientModule(): Promise<any> {
+  if (frontendApiClientModulePromise) {
+    return frontendApiClientModulePromise;
+  }
+
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-frontend-client-"));
+  const tempPublicRoot = path.join(tempRoot, "public");
+  fs.cpSync(path.join(projectRoot, "public", "core"), path.join(tempPublicRoot, "core"), {
+    recursive: true,
+    force: true
+  });
+  fs.cpSync(path.join(projectRoot, "public", "generated"), path.join(tempPublicRoot, "generated"), {
+    recursive: true,
+    force: true
+  });
+  fs.cpSync(path.join(projectRoot, "public", "locales"), path.join(tempPublicRoot, "locales"), {
+    recursive: true,
+    force: true
+  });
+  fs.cpSync(path.join(projectRoot, "public", "vendor"), path.join(tempRoot, "vendor"), {
+    recursive: true,
+    force: true
+  });
+  fs.copyFileSync(
+    path.join(projectRoot, "public", "i18n.mjs"),
+    path.join(tempPublicRoot, "i18n.mjs")
+  );
+
+  frontendApiClientModulePromise = import(
+    pathToFileURL(path.join(tempPublicRoot, "core", "api", "client.mjs")).href
+  );
+  return frontendApiClientModulePromise;
 }
 
 function sessionTokenFromSetCookie(rawSetCookie: string | string[] | null | undefined): string {
@@ -1434,7 +1486,15 @@ register("game management route apre una partita e risolve il player autenticato
       game: { id: gameId, name: "Nuova partita", version: 3 },
       state: { players: [{ id: "player-1", linkedUserId: "user-1" }] }
     }),
-    async () => [{ id: "game-1", name: "Nuova partita" }],
+    async () => [
+      {
+        id: "game-1",
+        name: "Nuova partita",
+        phase: "lobby",
+        playerCount: 1,
+        updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+      }
+    ],
     async (gameContext: any) => {
       gameContext.game.version = 4;
       gameContext.state.players.push({ id: "ai-2", linkedUserId: null, isAi: true });
@@ -1456,7 +1516,15 @@ register("game management route apre una partita e risolve il player autenticato
   assert.deepEqual(JSON.parse(res.body), {
     ok: true,
     game: { id: "game-1", name: "Nuova partita", version: 4 },
-    games: [{ id: "game-1", name: "Nuova partita" }],
+    games: [
+      {
+        id: "game-1",
+        name: "Nuova partita",
+        phase: "lobby",
+        playerCount: 1,
+        updatedAt: "2026-04-17T08:30:00.000Z"
+      }
+    ],
     activeGameId: "game-1",
     state: {
       gameId: "game-1",
@@ -1466,6 +1534,319 @@ register("game management route apre una partita e risolve il player autenticato
     },
     playerId: "player-1"
   });
+});
+
+register("game overview route valida la risposta lista partite prima di inviarla", async () => {
+  const res = makeMockResponse();
+
+  await handleGamesListRoute(
+    res,
+    async () => [
+      {
+        name: "Payload incompleto",
+        phase: "lobby",
+        playerCount: 2,
+        updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+      }
+    ],
+    () => null,
+    sendJson,
+    new URL("http://127.0.0.1/api/games"),
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 500);
+  assert.equal(JSON.parse(res.body).code, "RESPONSE_VALIDATION_FAILED");
+});
+
+register("game management route rifiuta gameId non valido prima di aprire la partita", async () => {
+  const res = makeMockResponse();
+
+  await handleOpenGameRoute(
+    { method: "POST", headers: {} },
+    res,
+    {},
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    () => {
+      throw new Error("authorize non dovrebbe essere chiamato per body invalido");
+    },
+    async () => {
+      throw new Error("getGame non dovrebbe essere chiamato per body invalido");
+    },
+    async () => {
+      throw new Error("openGame non dovrebbe essere chiamato per body invalido");
+    },
+    async () => [],
+    async () => ({ shouldPersist: false, forcedTurn: false }),
+    () => null,
+    () => ({}),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(JSON.parse(res.body).code, "REQUEST_VALIDATION_FAILED");
+});
+
+register("game join route valida la risposta outbound prima di inviarla", async () => {
+  const res = makeMockResponse();
+
+  await handleJoinRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1" },
+    new URL("http://127.0.0.1/api/join"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: { players: [] },
+      gameId: "game-1",
+      version: 2,
+      gameName: "Nuova partita"
+    }),
+    (_body: Record<string, unknown>) => String(_body.gameId || ""),
+    () => ({
+      ok: true,
+      player: { id: "player-1" }
+    }),
+    async () => undefined,
+    () => undefined,
+    (_state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+      gameId,
+      version,
+      gameName
+    }),
+    () => ({
+      username: "Alice"
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 500);
+  assert.equal(JSON.parse(res.body).code, "RESPONSE_VALIDATION_FAILED");
+});
+
+register("frontend API client valida sessione, profilo e lobby list al boundary", async () => {
+  const client = await getFrontendApiClientModule();
+  const calls: Array<{ input: string; init: Record<string, unknown> | undefined }> = [];
+
+  await withMockFetch(
+    async (input: string, init?: Record<string, unknown>) => {
+      calls.push({ input, init });
+
+      if (input === "/api/auth/session") {
+        return {
+          ok: true,
+          async json() {
+            return {
+              user: {
+                id: "user-1",
+                username: "Alice"
+              }
+            };
+          }
+        };
+      }
+
+      if (input === "/api/profile") {
+        return {
+          ok: true,
+          async json() {
+            return {
+              profile: {
+                playerName: "Alice",
+                gamesPlayed: 3,
+                wins: 2,
+                losses: 1,
+                gamesInProgress: 1,
+                participatingGames: [],
+                winRate: 67,
+                hasHistory: true,
+                placeholders: {
+                  recentGames: false,
+                  ranking: false
+                }
+              }
+            };
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            games: [
+              {
+                id: "game-1",
+                name: "Campaign",
+                phase: "lobby",
+                playerCount: 2,
+                updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+              }
+            ],
+            activeGameId: "game-1"
+          };
+        }
+      };
+    },
+    async () => {
+      const session = await client.getSession({
+        errorMessage: "Sessione scaduta",
+        fallbackMessage: "Sessione non leggibile"
+      });
+      const profile = await client.getProfile({
+        errorMessage: "Profilo non disponibile",
+        fallbackMessage: "Profilo non valido"
+      });
+      const games = await client.listGames({
+        errorMessage: "Lobby non disponibile",
+        fallbackMessage: "Lobby non valida"
+      });
+
+      assert.equal(session.user.username, "Alice");
+      assert.equal(profile.profile.gamesPlayed, 3);
+      assert.equal(games.games[0].id, "game-1");
+    }
+  );
+
+  assert.deepEqual(
+    calls.map((entry) => entry.input),
+    ["/api/auth/session", "/api/profile", "/api/games"]
+  );
+  assert.ok(
+    calls.every((entry) => entry.init?.credentials === "same-origin"),
+    "all client requests should use same-origin credentials"
+  );
+});
+
+register(
+  "frontend API client traduce gli errori server e preserva il code per le mutazioni lobby",
+  async () => {
+    const client = await getFrontendApiClientModule();
+
+    await withMockFetch(
+      async () => {
+        return {
+          ok: false,
+          async json() {
+            return {
+              error: "Conflitto versione",
+              code: "VERSION_CONFLICT"
+            };
+          }
+        };
+      },
+      async () => {
+        await assert.rejects(
+          async () =>
+            client.openGame("game-1", {
+              errorMessage: "Richiesta fallita",
+              fallbackMessage: "Risposta non valida"
+            }),
+          (error: Error & { code?: string | null }) => {
+            assert.equal(error.message, "Conflitto versione");
+            assert.equal(error.code, "VERSION_CONFLICT");
+            return true;
+          }
+        );
+      }
+    );
+  }
+);
+
+register(
+  "frontend API client segnala fallback deterministico quando la risposta valida lo schema fallisce",
+  async () => {
+    const client = await getFrontendApiClientModule();
+
+    await withMockFetch(
+      async () => {
+        return {
+          ok: true,
+          async json() {
+            return {
+              games: [
+                {
+                  id: "game-1",
+                  name: "Campaign",
+                  phase: "lobby",
+                  playerCount: "two",
+                  updatedAt: new Date("2026-04-17T08:30:00.000Z").toISOString()
+                }
+              ]
+            };
+          }
+        };
+      },
+      async () => {
+        await assert.rejects(
+          async () =>
+            client.listGames({
+              errorMessage: "Lobby non disponibile",
+              fallbackMessage: "Lobby non valida"
+            }),
+          (error: Error) => {
+            assert.equal(error.message, "Lobby non valida");
+            return true;
+          }
+        );
+      }
+    );
+  }
+);
+
+register("frontend API client invia body JSON tipizzati per join e logout", async () => {
+  const client = await getFrontendApiClientModule();
+  const requests: Array<{ input: string; init?: Record<string, unknown> }> = [];
+
+  await withMockFetch(
+    async (input: string, init?: Record<string, unknown>) => {
+      requests.push({ input, init });
+
+      if (input === "/api/auth/logout") {
+        return {
+          ok: true,
+          async json() {
+            return { ok: true };
+          }
+        };
+      }
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            playerId: "player-1",
+            user: {
+              id: "user-1",
+              username: "Alice"
+            }
+          };
+        }
+      };
+    },
+    async () => {
+      const joinResponse = await client.joinGame("game-1", {
+        errorMessage: "Join fallito",
+        fallbackMessage: "Join non valido"
+      });
+      const logoutResponse = await client.logout({
+        errorMessage: "Logout fallito",
+        fallbackMessage: "Logout non valido"
+      });
+
+      assert.equal(joinResponse.playerId, "player-1");
+      assert.equal(logoutResponse.ok, true);
+    }
+  );
+
+  assert.equal(requests[0]?.input, "/api/join");
+  assert.equal(requests[1]?.input, "/api/auth/logout");
+  assert.equal(requests[0]?.init?.method, "POST");
+  assert.equal(requests[1]?.init?.method, "POST");
+  assert.equal(requests[0]?.init?.body, JSON.stringify({ gameId: "game-1" }));
+  assert.equal(requests[1]?.init?.body, JSON.stringify({}));
 });
 
 register("game action route segnala il version conflict prima di eseguire mutazioni", async () => {

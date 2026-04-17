@@ -12,18 +12,39 @@ type ListTurnTimeoutHoursOptions = () => unknown;
 type ListPlayerPieceSets = () => unknown;
 type ListContentPacks = () => unknown;
 type GetExtraGameOptions = () => Record<string, unknown> | Promise<Record<string, unknown>>;
+type SendLocalizedError = (
+  res: import("node:http").ServerResponse,
+  statusCode: number,
+  input: Record<string, unknown> | null,
+  fallbackMessage: string,
+  fallbackKey: string | null,
+  fallbackParams?: Record<string, unknown>,
+  code?: string | null,
+  extra?: Record<string, unknown>
+) => void;
+
+const { gameListResponseSchema } = require("../../shared/runtime-validation.cjs");
+const { sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleGamesListRoute(
   res: unknown,
   listGames: ListGames,
   getTargetGameId: GetTargetGameId,
   sendJson: SendJson,
-  url: URL
+  url: URL,
+  sendLocalizedError: SendLocalizedError
 ): Promise<void> {
-  sendJson(res, 200, {
-    games: await listGames(),
-    activeGameId: getTargetGameId({}, url)
-  });
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
+    200,
+    {
+      games: await listGames(),
+      activeGameId: getTargetGameId({}, url)
+    },
+    gameListResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError
+  );
 }
 
 async function handleGameOptionsRoute(

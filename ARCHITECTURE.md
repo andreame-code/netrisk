@@ -10,6 +10,7 @@ L'applicazione include già:
 
 - autenticazione (register/login/logout), profilo utente e preferenze tema
 - validazione runtime condivisa dei payload auth/profile tra backend e frontend
+- layer client API frontend tipizzato per i flussi migrati `profile` e `lobby`
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
 - ciclo turno completo (`reinforcement` -> `attack` -> `fortify` -> `finished`)
@@ -26,6 +27,9 @@ Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 
 `/frontend/src`  
 Sorgente TypeScript (`.mts`) della UI web, della shell condivisa, dell'i18n e della manifest static site.
+
+`/frontend/src/core/api`  
+Boundary HTTP frontend framework-agnostic: request helpers tipizzati, parsing/validazione condivisa ed error translation per i flussi UI migrati.
 
 `/frontend/assets`  
 Asset sorgente frontend (mappe e media) sincronizzati nella build pubblica.
@@ -146,6 +150,7 @@ Categorie future da trattare con lo stesso modello:
 - Runtime deploy: entrypoint `api/index.ts` che espone `createApp()` dal backend compilato.
 - Pipeline frontend: `frontend/src` viene compilato e materializzato in `public/` tramite gli script di build.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
+- Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling ed error translation per i flussi `profile` e `lobby`.
 - Datastore supportati:
   - SQLite locale (default sviluppo)
   - Supabase (quando configurato via env)
@@ -156,6 +161,7 @@ Categorie future da trattare con lo stesso modello:
 ## Flusso sintetico applicativo
 
 1. Il client invia azioni o richieste via route backend.
+   Per i flussi UI gia migrati (`profile` e `lobby`), il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
 2. Il backend autentica/autorizza utente e valida versione stato.
 3. Le route delegano al motore (`backend/engine`) la logica di dominio.
 4. Il backend salva lo stato e notifica eventuali listener eventi.

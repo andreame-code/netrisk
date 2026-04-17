@@ -133,6 +133,12 @@ export const themePreferenceResponseSchema = objectSchema({
 
 export type ThemePreferenceResponse = z.infer<typeof themePreferenceResponseSchema>;
 
+export const logoutResponseSchema = objectSchema({
+  ok: z.literal(true)
+});
+
+export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
+
 export const netRiskModuleReferenceSchema = objectSchema({
   id: z.string().min(1),
   version: z.string().min(1)
@@ -159,6 +165,37 @@ export const gameSummarySchema = objectSchema({
 });
 
 export type GameSummary = z.infer<typeof gameSummarySchema>;
+
+export const gameIdRequestSchema = objectSchema({
+  gameId: z.string().min(1)
+});
+
+export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
+
+export const gameListResponseSchema = objectSchema({
+  games: z.array(gameSummarySchema),
+  activeGameId: z.string().min(1).nullable().optional()
+});
+
+export type GameListResponse = z.infer<typeof gameListResponseSchema>;
+
+export const gameMutationGameSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1).nullable().optional()
+});
+
+export type GameMutationGame = z.infer<typeof gameMutationGameSchema>;
+
+export const gameMutationResponseSchema = objectSchema({
+  ok: z.literal(true).optional(),
+  user: publicUserSchema.optional(),
+  playerId: z.string().min(1).nullable().optional(),
+  game: gameMutationGameSchema.optional(),
+  games: z.array(gameSummarySchema).optional(),
+  activeGameId: z.string().min(1).nullable().optional()
+});
+
+export type GameMutationResponse = z.infer<typeof gameMutationResponseSchema>;
 
 export const participatingGameLobbySchema = objectSchema({
   playerName: z.string().min(1),
