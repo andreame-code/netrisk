@@ -1216,9 +1216,11 @@ function createApp(options: CreateAppOptions = {}) {
       ? url.pathname.replace(/^\/modules\//, "")
       : url.pathname === "/"
         ? "/index.html"
-        : url.pathname.indexOf("/game/") === 0
-          ? "/game.html"
-          : url.pathname;
+        : url.pathname === "/react" || url.pathname === "/react/"
+          ? "/react/index.html"
+          : url.pathname.indexOf("/game/") === 0
+            ? "/game.html"
+            : url.pathname;
     const resolvedStaticRoot = path.resolve(staticRoot);
     const filePath = path.resolve(path.join(staticRoot, relativePath));
     if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {

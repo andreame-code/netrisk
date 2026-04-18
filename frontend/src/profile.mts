@@ -101,6 +101,14 @@ let moduleCatalogRequestId = 0;
 let themeOptionsLoaded = false;
 let currentSessionUser: PublicUser | null = null;
 
+function profileMessageFromError(error: unknown, fallback: string): string {
+  if (error && typeof error === "object" && "code" in error && error.code === "AUTH_REQUIRED") {
+    return t("profile.errors.loginRequired");
+  }
+
+  return messageFromError(error, fallback);
+}
+
 function setHeaderAuthFeedback(message = ""): void {
   if (!message) {
     window.netriskShell?.clearHeaderAuthFeedback?.();
@@ -852,7 +860,7 @@ async function loadProfile() {
     if (requestId !== profileRequestId) {
       return;
     }
-    showFeedback(messageFromError(error, t("profile.errors.loadFailed")), "error");
+    showFeedback(profileMessageFromError(error, t("profile.errors.loadFailed")), "error");
     if (sessionUser) {
       elements.authStatus.textContent = t("profile.auth.loggedIn", {
         username: sessionUser.username
