@@ -764,7 +764,8 @@ function createApp(options: CreateAppOptions = {}) {
             uiProfiles: moduleOptions.uiProfiles,
             uiSlots: moduleOptions.uiSlots
           };
-        }
+        },
+        sendLocalizedError
       );
       return;
     }

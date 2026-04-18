@@ -47,6 +47,8 @@ type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
 
 const {
+  createGameRequestSchema,
+  createGameResponseSchema,
   gameIdRequestSchema,
   gameMutationResponseSchema
 } = require("../../shared/runtime-validation.cjs");
@@ -73,9 +75,19 @@ async function handleCreateGameRoute(
     return;
   }
 
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    body,
+    createGameRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
   try {
     const policy = authorize("game:create", { user: authContext.user });
-    const configured = await createConfiguredInitialState(body);
+    const configured = await createConfiguredInitialState(parsedBody);
     const creatorJoin = addPlayer(configured.state, authContext.user.username, {
       linkedUserId: policy.actor.id
     });
@@ -101,15 +113,22 @@ async function handleCreateGameRoute(
       version: created.game.version,
       state: created.state
     });
-    sendJson(res, 201, {
-      ok: true,
-      game: created.game,
-      games: await listGames(),
-      activeGameId: created.game.id,
-      state: snapshot(),
-      config: configured.config,
-      playerId: creatorJoin.player.id
-    });
+    sendValidatedJson(
+      res as import("node:http").ServerResponse,
+      201,
+      {
+        ok: true,
+        game: created.game,
+        games: await listGames(),
+        activeGameId: created.game.id,
+        state: snapshot(),
+        config: configured.config,
+        playerId: creatorJoin.player.id
+      },
+      createGameResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
+    );
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
     sendLocalizedError(

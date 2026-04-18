@@ -1,7 +1,10 @@
 import {
   authSessionResponseSchema,
+  createGameRequestSchema,
+  createGameResponseSchema,
   gameIdRequestSchema,
   gameListResponseSchema,
+  gameOptionsResponseSchema,
   gameMutationResponseSchema,
   loginRequestSchema,
   loginResponseSchema,
@@ -12,6 +15,9 @@ import {
 } from "../../generated/shared-runtime-validation.mjs";
 import type {
   AuthSessionResponse,
+  CreateGameRequest,
+  CreateGameResponse,
+  GameOptionsResponse,
   GameListResponse,
   GameMutationResponse,
   LoginResponse,
@@ -95,6 +101,31 @@ export function listGames(messages: ClientMessages): Promise<GameListResponse> {
     path: "/api/games",
     responseSchema: gameListResponseSchema,
     responseSchemaName: "GameListResponse",
+    ...messages
+  });
+}
+
+export function getGameOptions(messages: ClientMessages): Promise<GameOptionsResponse> {
+  return requestJson({
+    path: "/api/game/options",
+    responseSchema: gameOptionsResponseSchema,
+    responseSchemaName: "GameOptionsResponse",
+    ...messages
+  });
+}
+
+export function createGame(
+  request: CreateGameRequest,
+  messages: ClientMessages
+): Promise<CreateGameResponse> {
+  return requestJson({
+    path: "/api/games",
+    method: "POST",
+    body: request,
+    requestSchema: createGameRequestSchema,
+    requestSchemaName: "CreateGameRequest",
+    responseSchema: createGameResponseSchema,
+    responseSchemaName: "CreateGameResponse",
     ...messages
   });
 }

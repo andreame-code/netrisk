@@ -23,7 +23,10 @@ type SendLocalizedError = (
   extra?: Record<string, unknown>
 ) => void;
 
-const { gameListResponseSchema } = require("../../shared/runtime-validation.cjs");
+const {
+  gameListResponseSchema,
+  gameOptionsResponseSchema
+} = require("../../shared/runtime-validation.cjs");
 const { sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleGamesListRoute(
@@ -59,9 +62,10 @@ async function handleGameOptionsRoute(
   sendJson: SendJson,
   listPlayerPieceSets?: ListPlayerPieceSets,
   listContentPacks?: ListContentPacks,
-  getExtraGameOptions?: GetExtraGameOptions
+  getExtraGameOptions?: GetExtraGameOptions,
+  sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
-  sendJson(res, 200, {
+  const payload = {
     ruleSets: listRuleSets(),
     maps: listMaps(),
     diceRuleSets: listDiceRuleSets(),
@@ -73,7 +77,21 @@ async function handleGameOptionsRoute(
     turnTimeoutHoursOptions: listTurnTimeoutHoursOptions(),
     playerRange: { min: 2, max: 4 },
     ...(typeof getExtraGameOptions === "function" ? await getExtraGameOptions() : {})
-  });
+  };
+
+  if (!sendLocalizedError) {
+    sendJson(res, 200, payload);
+    return;
+  }
+
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
+    200,
+    payload,
+    gameOptionsResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError
+  );
 }
 
 module.exports = {

@@ -87,6 +87,22 @@ test("react profile pilot shows query loading before rendering authenticated dat
   await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("command");
 });
 
+test("react profile shows the empty-history state for a new authenticated user", async ({ page }) => {
+  await resetGame(page);
+
+  const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_prof_empty"));
+  await attachSessionCookie(page, sessionToken);
+
+  await page.goto("/react/profile");
+
+  await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();
+  await expect(page.getByTestId("react-shell-profile-metrics")).toBeVisible();
+  await expect(page.getByTestId("react-shell-profile-empty")).toBeVisible();
+  await expect(page.getByTestId("react-shell-profile-empty")).toContainText(
+    /No stats available|Nessuna statistica disponibile/
+  );
+});
+
 test("react profile theme mutation keeps shell theme coherent across navigation", async ({ page }) => {
   await resetGame(page);
 
@@ -140,6 +156,46 @@ test("react profile shows controlled feedback when the query payload is invalid"
   await expect(page.getByTestId("react-shell-profile-error")).toContainText(
     /Unable to load the profile|Impossibile caricare il profilo/
   );
+});
+
+test("react profile participating games hand off to the legacy gameplay route", async ({ page }) => {
+  await resetGame(page);
+
+  const username = uniqueUser("rsh_prof_game");
+  const sessionToken = await createAuthenticatedSession(page, username);
+  const gameName = `React profile ${Date.now().toString(36).slice(-4)}`;
+
+  const createGameResponse = await page.request.post("/api/games", {
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` },
+    data: {
+      name: gameName,
+      mapId: "world-classic",
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(createGameResponse.ok()).toBeTruthy();
+  const createdGame = await createGameResponse.json();
+
+  await attachSessionCookie(page, sessionToken);
+  await page.goto("/react/profile");
+
+  const openLink = page.getByTestId(`react-shell-profile-open-${createdGame.game.id}`);
+  await expect(openLink).toBeVisible();
+  await expect(openLink).toHaveAttribute("href", new RegExp(`/game/${createdGame.game.id}$`));
+  await expect(page.getByText(gameName)).toBeVisible();
+
+  await openLink.click();
+
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(
+    new RegExp(`/game/${createdGame.game.id}$`)
+  );
+  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
+  await expect(page.locator("#players")).toContainText(username, { timeout: 15000 });
 });
 
 test("react profile restores the previous theme when the mutation fails", async ({ page }) => {

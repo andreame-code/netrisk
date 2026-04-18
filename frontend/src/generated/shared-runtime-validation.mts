@@ -140,6 +140,96 @@ export const logoutResponseSchema = objectSchema({
 
 export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 
+export const victoryRuleSetSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1)
+});
+
+export type VictoryRuleSet = z.infer<typeof victoryRuleSetSchema>;
+
+export const visualThemeSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1)
+});
+
+export type VisualTheme = z.infer<typeof visualThemeSchema>;
+
+export const pieceSkinSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  renderStyleId: z.string().min(1),
+  usesPlayerColor: z.boolean(),
+  assetBaseUrl: z.string().min(1).nullable().optional()
+});
+
+export type PieceSkin = z.infer<typeof pieceSkinSchema>;
+
+export const netRiskModuleProfileSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1).nullable().optional(),
+  moduleId: z.string().min(1).nullable().optional()
+});
+
+export type NetRiskModuleProfile = z.infer<typeof netRiskModuleProfileSchema>;
+
+export const netRiskGamePresetDefaultsSchema = objectSchema({
+  contentPackId: z.string().min(1).nullable().optional(),
+  ruleSetId: z.string().min(1).nullable().optional(),
+  pieceSetId: z.string().min(1).nullable().optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).nullable().optional(),
+  themeId: z.string().min(1).nullable().optional(),
+  pieceSkinId: z.string().min(1).nullable().optional()
+});
+
+export type NetRiskGamePresetDefaults = z.infer<typeof netRiskGamePresetDefaultsSchema>;
+
+export const netRiskGamePresetSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1).nullable().optional(),
+  moduleId: z.string().min(1).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1)).optional(),
+  contentProfileId: z.string().min(1).nullable().optional(),
+  gameplayProfileId: z.string().min(1).nullable().optional(),
+  uiProfileId: z.string().min(1).nullable().optional(),
+  defaults: netRiskGamePresetDefaultsSchema.nullable().optional()
+});
+
+export type NetRiskGamePreset = z.infer<typeof netRiskGamePresetSchema>;
+
+export const netRiskUiSlotContributionSchema = objectSchema({
+  slotId: z.string().min(1),
+  itemId: z.string().min(1),
+  title: z.string().min(1),
+  kind: z.string().min(1),
+  order: z.number().optional(),
+  description: z.string().min(1).nullable().optional(),
+  route: z.string().min(1).nullable().optional()
+});
+
+export type NetRiskUiSlotContribution = z.infer<typeof netRiskUiSlotContributionSchema>;
+
+export const netRiskContentContributionSchema = objectSchema({
+  mapIds: z.array(z.string().min(1)).optional(),
+  siteThemeIds: z.array(z.string().min(1)).optional(),
+  pieceSkinIds: z.array(z.string().min(1)).optional(),
+  playerPieceSetIds: z.array(z.string().min(1)).optional(),
+  contentPackIds: z.array(z.string().min(1)).optional(),
+  diceRuleSetIds: z.array(z.string().min(1)).optional(),
+  cardRuleSetIds: z.array(z.string().min(1)).optional(),
+  victoryRuleSetIds: z.array(z.string().min(1)).optional(),
+  fortifyRuleSetIds: z.array(z.string().min(1)).optional(),
+  reinforcementRuleSetIds: z.array(z.string().min(1)).optional()
+});
+
+export type NetRiskContentContribution = z.infer<typeof netRiskContentContributionSchema>;
+
 export const netRiskModuleReferenceSchema = objectSchema({
   id: z.string().min(1),
   version: z.string().min(1)
@@ -147,12 +237,131 @@ export const netRiskModuleReferenceSchema = objectSchema({
 
 export type NetRiskModuleReference = z.infer<typeof netRiskModuleReferenceSchema>;
 
+export const installedModuleSummarySchema = objectSchema({
+  id: z.string().min(1),
+  version: z.string().min(1).nullable(),
+  displayName: z.string().min(1),
+  description: z.string().min(1).nullable().optional(),
+  kind: z.string().min(1).nullable(),
+  sourcePath: z.string().min(1),
+  status: z.string().min(1),
+  enabled: z.boolean(),
+  compatible: z.boolean(),
+  warnings: z.array(z.string()),
+  errors: z.array(z.string()),
+  capabilities: z.array(z.record(z.string(), z.unknown()))
+});
+
+export type InstalledModuleSummary = z.infer<typeof installedModuleSummarySchema>;
+
+export const playerPieceSetSummarySchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  paletteSize: z.number()
+});
+
+export type PlayerPieceSetSummary = z.infer<typeof playerPieceSetSummarySchema>;
+
+export const contentPackSummarySchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  defaultSiteThemeId: z.string().min(1),
+  defaultMapId: z.string().min(1),
+  defaultDiceRuleSetId: z.string().min(1),
+  defaultCardRuleSetId: z.string().min(1),
+  defaultVictoryRuleSetId: z.string().min(1),
+  defaultPieceSetId: z.string().min(1)
+});
+
+export type ContentPackSummary = z.infer<typeof contentPackSummarySchema>;
+
+export const continentBonusSummarySchema = objectSchema({
+  name: z.string().min(1),
+  bonus: z.number(),
+  territoryCount: z.number()
+});
+
+export type ContinentBonusSummary = z.infer<typeof continentBonusSummarySchema>;
+
+export const mapSummarySchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  territoryCount: z.number(),
+  continentCount: z.number(),
+  continentBonuses: z.array(continentBonusSummarySchema).optional()
+});
+
+export type MapSummary = z.infer<typeof mapSummarySchema>;
+
+export const ruleSetDefaultsSchema = objectSchema({
+  extensionSchemaVersion: z.number(),
+  mapId: z.string().min(1),
+  diceRuleSetId: z.string().min(1),
+  victoryRuleSetId: z.string().min(1),
+  themeId: z.string().min(1),
+  pieceSkinId: z.string().min(1)
+});
+
+export type RuleSetDefaults = z.infer<typeof ruleSetDefaultsSchema>;
+
+export const ruleSetSummarySchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  defaults: ruleSetDefaultsSchema,
+  defaultDiceRuleSetId: z.string().min(1).optional(),
+  defaultVictoryRuleSetId: z.string().min(1).optional()
+});
+
+export type RuleSetSummary = z.infer<typeof ruleSetSummarySchema>;
+
+export const diceRuleSetSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  attackerMaxDice: z.number(),
+  defenderMaxDice: z.number()
+});
+
+export type DiceRuleSet = z.infer<typeof diceRuleSetSchema>;
+
+export const playerSlotConfigSchema = objectSchema({
+  slot: z.number().int().nullable().optional(),
+  type: z.string().min(1).nullable().optional(),
+  name: z.string().min(1).nullable().optional()
+});
+
+export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
+
+export const createGameRequestSchema = objectSchema({
+  name: z.string().min(1).nullable().optional(),
+  totalPlayers: z.number().int().nullable().optional(),
+  contentPackId: z.string().min(1).nullable().optional(),
+  ruleSetId: z.string().min(1).nullable().optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).nullable().optional(),
+  pieceSetId: z.string().min(1).nullable().optional(),
+  themeId: z.string().min(1).nullable().optional(),
+  pieceSkinId: z.string().min(1).nullable().optional(),
+  gamePresetId: z.string().min(1).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1)).nullable().optional(),
+  contentProfileId: z.string().min(1).nullable().optional(),
+  gameplayProfileId: z.string().min(1).nullable().optional(),
+  uiProfileId: z.string().min(1).nullable().optional(),
+  turnTimeoutHours: z.number().int().nullable().optional(),
+  players: z.array(playerSlotConfigSchema).nullable().optional()
+});
+
+export type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
+
 export const gameSummarySchema = objectSchema({
   id: z.string().min(1),
   name: z.string().min(1),
   phase: z.string().min(1),
   playerCount: z.number(),
   updatedAt: z.string().min(1),
+  contentPackId: z.string().nullable().optional(),
+  diceRuleSetId: z.string().nullable().optional(),
   totalPlayers: z.number().nullable().optional(),
   mapName: z.string().nullable().optional(),
   mapId: z.string().nullable().optional(),
@@ -180,6 +389,31 @@ export const gameListResponseSchema = objectSchema({
 
 export type GameListResponse = z.infer<typeof gameListResponseSchema>;
 
+export const gameOptionsResponseSchema = objectSchema({
+  ruleSets: z.array(ruleSetSummarySchema),
+  maps: z.array(mapSummarySchema),
+  diceRuleSets: z.array(diceRuleSetSchema),
+  victoryRuleSets: z.array(victoryRuleSetSchema),
+  themes: z.array(visualThemeSchema),
+  pieceSkins: z.array(pieceSkinSchema),
+  modules: z.array(installedModuleSummarySchema).optional(),
+  enabledModules: z.array(netRiskModuleReferenceSchema).optional(),
+  gamePresets: z.array(netRiskGamePresetSchema).optional(),
+  contentProfiles: z.array(netRiskModuleProfileSchema).optional(),
+  gameplayProfiles: z.array(netRiskModuleProfileSchema).optional(),
+  uiProfiles: z.array(netRiskModuleProfileSchema).optional(),
+  uiSlots: z.array(netRiskUiSlotContributionSchema).optional(),
+  playerPieceSets: z.array(playerPieceSetSummarySchema).optional(),
+  contentPacks: z.array(contentPackSummarySchema).optional(),
+  turnTimeoutHoursOptions: z.array(z.number().int()),
+  playerRange: objectSchema({
+    min: z.number().int(),
+    max: z.number().int()
+  })
+});
+
+export type GameOptionsResponse = z.infer<typeof gameOptionsResponseSchema>;
+
 export const gameMutationGameSchema = objectSchema({
   id: z.string().min(1),
   name: z.string().min(1).nullable().optional()
@@ -197,6 +431,18 @@ export const gameMutationResponseSchema = objectSchema({
 });
 
 export type GameMutationResponse = z.infer<typeof gameMutationResponseSchema>;
+
+export const createGameResponseSchema = objectSchema({
+  ok: z.literal(true),
+  playerId: z.string().min(1).nullable().optional(),
+  game: gameMutationGameSchema,
+  games: z.array(gameSummarySchema),
+  activeGameId: z.string().min(1).nullable().optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional()
+});
+
+export type CreateGameResponse = z.infer<typeof createGameResponseSchema>;
 
 export const participatingGameLobbySchema = objectSchema({
   playerName: z.string().min(1),
