@@ -1212,11 +1212,18 @@ function createApp(options: CreateAppOptions = {}) {
   function serveStatic(res: Response, url: URL) {
     const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
     const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
+    const isReactShellRoute =
+      !isModuleAssetRequest &&
+      (url.pathname === "/react" ||
+        url.pathname === "/react/" ||
+        url.pathname.indexOf("/react/") === 0);
+    const isReactShellAssetRequest =
+      isReactShellRoute && path.extname(url.pathname) !== "";
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
       : url.pathname === "/"
         ? "/index.html"
-        : url.pathname === "/react" || url.pathname === "/react/"
+        : isReactShellRoute && !isReactShellAssetRequest
           ? "/react/index.html"
           : url.pathname.indexOf("/game/") === 0
             ? "/game.html"

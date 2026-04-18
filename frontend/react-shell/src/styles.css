@@ -188,6 +188,149 @@ select {
   margin-bottom: 0;
 }
 
+.shell-layout {
+  padding-bottom: 4rem;
+}
+
+.shell-header {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.shell-brand h1 {
+  margin-bottom: 0.5rem;
+}
+
+.shell-session-box {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 20px;
+  background: rgba(240, 235, 226, 0.7);
+}
+
+.shell-session-header {
+  margin-bottom: 0;
+}
+
+.shell-session-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.shell-session-copy span {
+  color: rgba(22, 32, 51, 0.72);
+}
+
+.shell-grid {
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.shell-nav-panel,
+.shell-main {
+  min-height: 100%;
+}
+
+.main-nav-shell,
+.placeholder-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.shell-nav-link {
+  display: block;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(240, 235, 226, 0.82);
+  border: 1px solid transparent;
+}
+
+.shell-nav-link:hover,
+.shell-nav-link.is-active {
+  border-color: rgba(22, 32, 51, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.placeholder-card,
+.shell-form {
+  border-radius: 18px;
+  border: 1px solid rgba(22, 32, 51, 0.1);
+  background: rgba(240, 235, 226, 0.72);
+}
+
+.placeholder-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+}
+
+.placeholder-card span {
+  color: rgba(22, 32, 51, 0.72);
+}
+
+.shell-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+}
+
+.shell-field {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.shell-field input {
+  border: 1px solid rgba(22, 32, 51, 0.14);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.shell-field input:focus-visible {
+  outline: 2px solid rgba(31, 92, 179, 0.35);
+  outline-offset: 2px;
+}
+
+.shell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ghost-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(22, 32, 51, 0.12);
+  background: rgba(255, 255, 255, 0.68);
+  color: #162033;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ghost-action:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.status-pill.danger {
+  color: #ad4f1f;
+}
+
+.auth-feedback.is-error {
+  margin: 0;
+  color: #8f3610;
+}
+
 @media (max-width: 760px) {
   .react-shell-page {
     width: min(100% - 1.25rem, 100%);
@@ -208,8 +351,13 @@ select {
     grid-column: auto;
   }
 
+  .shell-header {
+    grid-template-columns: 1fr;
+  }
+
   .card-header,
-  .game-list-item {
+  .game-list-item,
+  .shell-actions {
     flex-direction: column;
     align-items: flex-start;
   }
