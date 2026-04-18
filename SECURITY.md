@@ -46,7 +46,9 @@ Please report issues such as:
 
 - authentication or authorization bypass
 - privilege escalation between players, lobbies, or game sessions
+- unauthorized access across legacy pages, direct game routes, or the parallel `/react/` shell
 - exposure of secrets, session data, backups, or private user information
+- deployment or environment misconfiguration that unintentionally exposes protected API or cron surfaces
 - server-side injection, remote code execution, or arbitrary file access
 - vulnerabilities that let a client bypass backend validation or corrupt authoritative game state
 

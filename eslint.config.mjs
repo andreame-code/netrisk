@@ -11,6 +11,7 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const lintedFiles = [
   "backend/**/*.{ts,cts,mts}",
   "frontend/src/**/*.{ts,cts,mts,d.ts}",
+  "frontend/react-shell/**/*.{ts,tsx,d.ts}",
   "shared/**/*.{ts,cts,mts,d.ts}",
   "scripts/**/*.{ts,cts,mts}",
   "tests/**/*.{ts,cts,mts,d.ts}",
@@ -21,6 +22,7 @@ const lintedFiles = [
 const typeCheckedFiles = [
   "backend/**/*.{ts,cts,mts}",
   "frontend/src/**/*.{ts,cts,mts}",
+  "frontend/react-shell/**/*.{ts,tsx}",
   "shared/**/*.{ts,cts,mts}",
   "scripts/**/*.{ts,cts,mts}",
   "tests/**/*.{ts,cts,mts}",
@@ -30,6 +32,7 @@ const typeCheckedFiles = [
 
 const nodeFiles = [
   "backend/**/*.{ts,cts,mts}",
+  "frontend/react-shell/vite.config.ts",
   "shared/**/*.{ts,cts,mts,d.ts}",
   "scripts/**/*.{ts,cts,mts}",
   "tests/**/*.{ts,cts,mts,d.ts}",
@@ -37,7 +40,10 @@ const nodeFiles = [
   "supabase/**/*.{ts,cts,mts,d.ts}"
 ];
 
-const browserFiles = ["frontend/src/**/*.{ts,cts,mts,d.ts}"];
+const browserFiles = [
+  "frontend/src/**/*.{ts,cts,mts,d.ts}",
+  "frontend/react-shell/src/**/*.{ts,tsx,d.ts}"
+];
 
 export default [
   {
@@ -68,7 +74,7 @@ export default [
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: ["./tsconfig.json", "./tsconfig.frontend.json"],
+        project: ["./tsconfig.json", "./tsconfig.frontend.json", "./tsconfig.react-shell.json"],
         tsconfigRootDir: rootDir
       }
     },
