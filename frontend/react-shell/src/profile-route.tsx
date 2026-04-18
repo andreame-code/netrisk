@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -10,6 +9,7 @@ import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { updateAuthenticatedUser } from "@react-shell/auth-store";
+import { buildLegacyGamePath } from "@react-shell/legacy-game-handoff";
 import { profileDetailQueryKey } from "@react-shell/react-query";
 import { applyShellTheme, shellThemes, themeLabel } from "@react-shell/theme";
 
@@ -61,6 +61,7 @@ export function ProfileRoute() {
 
   const profileQuery = useQuery({
     queryKey: profileDetailQueryKey(String(authenticatedUser?.id ?? "anonymous")),
+    enabled: Boolean(authenticatedUser),
     queryFn: () =>
       getProfile({
         errorMessage: t("profile.errors.unavailable"),
@@ -277,9 +278,13 @@ export function ProfileRoute() {
                           </span>
                         </div>
 
-                        <Link className="ghost-action" to={`/game/${encodeURIComponent(game.id)}`}>
+                        <a
+                          className="ghost-action"
+                          href={buildLegacyGamePath(game.id)}
+                          data-testid={`react-shell-profile-open-${game.id}`}
+                        >
                           {t("profile.runtime.directive.resume")}
-                        </Link>
+                        </a>
                       </article>
                     ))}
                   </div>
