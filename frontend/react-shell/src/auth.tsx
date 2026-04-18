@@ -1,35 +1,16 @@
-import {
-  createContext,
-  startTransition,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode
-} from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 
 import { getSession, login, logout } from "@frontend-core/api/client.mts";
 import type { ApiClientError } from "@frontend-core/api/http.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
-
-type SessionUser = Awaited<ReturnType<typeof getSession>>["user"];
-
-type AuthState =
-  | {
-      status: "loading";
-    }
-  | {
-      status: "authenticated";
-      user: SessionUser;
-    }
-  | {
-      status: "unauthenticated";
-      message: string;
-    }
-  | {
-      status: "error";
-      message: string;
-    };
+import {
+  initialAuthState,
+  setAuthState,
+  useAuthStore,
+  type AuthState,
+  type SessionUser
+} from "@react-shell/auth-store";
+import { applyShellTheme } from "@react-shell/theme";
 
 type AuthContextValue = {
   state: AuthState;
@@ -39,10 +20,6 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-const initialState: AuthState = {
-  status: "loading"
-};
 
 function requestMessages(scope: string) {
   return {
@@ -82,8 +59,16 @@ async function resolveSessionState(): Promise<AuthState> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(initialState);
+  const state = useAuthStore((store) => store.state);
   const requestIdRef = useRef(0);
+
+  function commitState(nextState: AuthState): void {
+    if (nextState.status === "authenticated") {
+      applyShellTheme(nextState.user.preferences?.theme || null);
+    }
+
+    setAuthState(nextState);
+  }
 
   useEffect(() => {
     let isActive = true;
@@ -92,18 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
 
-      startTransition(() => {
-        setState(initialState);
-      });
+      setAuthState(initialAuthState);
 
       const nextState = await resolveSessionState();
       if (!isActive || requestIdRef.current !== requestId) {
         return;
       }
 
-      startTransition(() => {
-        setState(nextState);
-      });
+      commitState(nextState);
     }
 
     void bootstrap();
@@ -117,28 +98,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
 
-    startTransition(() => {
-      setState(initialState);
-    });
+    setAuthState(initialAuthState);
 
     const nextState = await resolveSessionState();
     if (requestIdRef.current !== requestId) {
       return;
     }
 
-    startTransition(() => {
-      setState(nextState);
-    });
+    commitState(nextState);
   }
 
   async function signIn(credentials: { username: string; password: string }): Promise<SessionUser> {
     const response = await login(credentials, requestMessages("credentials"));
 
-    startTransition(() => {
-      setState({
-        status: "authenticated",
-        user: response.user
-      });
+    commitState({
+      status: "authenticated",
+      user: response.user
     });
 
     return response.user;
@@ -153,11 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    startTransition(() => {
-      setState({
-        status: "unauthenticated",
-        message: "Signed out."
-      });
+    setAuthState({
+      status: "unauthenticated",
+      message: "Signed out."
     });
   }
 

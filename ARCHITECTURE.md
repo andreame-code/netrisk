@@ -12,6 +12,7 @@ L'applicazione include già:
 - validazione runtime condivisa dei payload auth/profile tra backend e frontend
 - layer client API frontend tipizzato per i flussi migrati `profile` e `lobby`
 - shell React + Vite parallela servita su `/react/` senza sostituire la UI legacy
+- convenzioni React shell con TanStack Query per server state e Zustand limitato a shell/session UI
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
 - ciclo turno completo (`reinforcement` -> `attack` -> `fortify` -> `finished`)
@@ -32,6 +33,7 @@ Sorgente TypeScript (`.mts`) della UI web, della shell condivisa, dell'i18n e de
 
 `/frontend/react-shell`  
 Shell React + Vite parallela, con alias verso `frontend/src/core` e `shared`, usata come percorso di migrazione incrementale.
+Per il pilot attuale del profilo usa TanStack Query per il server state e Zustand solo per stato locale di shell/sessione.
 
 `/frontend/src/core/api`  
 Boundary HTTP frontend framework-agnostic: request helpers tipizzati, parsing/validazione condivisa ed error translation per i flussi UI migrati.
@@ -163,6 +165,7 @@ Categorie future da trattare con lo stesso modello:
 - Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling ed error translation per i flussi `profile` e `lobby`.
+- React server-state ownership: nella shell React le query remote stanno in TanStack Query; Zustand non sostituisce il backend e resta confinato a stato locale/sessione della shell.
 - Datastore supportati:
   - SQLite locale (default sviluppo)
   - Supabase (quando configurato via env)

@@ -14,6 +14,7 @@ Today the project includes:
 - shared runtime validation for auth/profile payloads at backend and frontend boundaries
 - typed frontend API client helpers for the migrated `profile` and `lobby` flows
 - parallel React + Vite smoke shell served at `/react/`, isolated from the legacy pages
+- TanStack Query + Zustand conventions in the React shell, with a minimal `/react/profile` pilot
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -79,6 +80,7 @@ npm run dev:react-shell
 
 The parallel React + Vite shell is reachable at `http://localhost:5173/react/` in development and at `/react/` from the main server after `npm run build:ts`.
 The Vite dev server proxies `/api` to `VITE_BACKEND_TARGET`, which defaults to `http://127.0.0.1:3000`.
+Within the React shell, TanStack Query now owns server state for the migrated profile pilot, while Zustand is limited to local shell/session state.
 
 ## Datastore configuration
 
@@ -353,6 +355,7 @@ Main frontend screens currently available:
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
 For the migrated `profile` and `lobby` pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
 The React shell follows the same rule: it reuses the shared typed client and does not duplicate game rules locally.
+For the current React pilot, TanStack Query is used only for remote profile state and mutations, while Zustand is reserved for shell-local session state and UI ownership.
 
 From a naming perspective, frontend pages currently display title `Frontline Dominion`, while the technical project domain continues to use `NetRisk`.
 
