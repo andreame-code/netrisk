@@ -12,4 +12,6 @@ export const queryClient = new QueryClient({
   }
 });
 
-export const profileDetailQueryKey = ["profile", "detail"] as const;
+export function profileDetailQueryKey(userId: string) {
+  return ["profile", "detail", userId] as const;
+}
