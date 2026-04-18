@@ -1217,8 +1217,7 @@ function createApp(options: CreateAppOptions = {}) {
       (url.pathname === "/react" ||
         url.pathname === "/react/" ||
         url.pathname.indexOf("/react/") === 0);
-    const isReactShellAssetRequest =
-      isReactShellRoute && path.extname(url.pathname) !== "";
+    const isReactShellAssetRequest = isReactShellRoute && path.extname(url.pathname) !== "";
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
       : url.pathname === "/"
