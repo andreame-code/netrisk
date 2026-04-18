@@ -836,7 +836,7 @@ export function GameRoute() {
                   style={{
                     left: `${(territory.x ?? 0.5) * 100}%`,
                     top: `${(territory.y ?? 0.5) * 100}%`,
-                    ["--territory-player-color" as "--territory-player-color"]:
+                    ["--territory-player-color" as const]:
                       territory.ownerId && playersById[territory.ownerId]?.color
                         ? playersById[territory.ownerId].color
                         : "rgba(22, 32, 51, 0.7)"
