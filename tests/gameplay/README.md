@@ -26,3 +26,4 @@ The command builds the current TypeScript sources first and then runs the gamepl
 
 - Gameplay tests are registered explicitly by the harness, so adding a new test file also requires wiring it into `scripts/run-gameplay-tests.cts`.
 - This suite is the right place for engine rules, module-runtime regressions, and deterministic repository checks that do not need a browser.
+- Browser-independent frontend/backend contract tests for the typed HTTP client live in `scripts/run-tests.cts`, not in this gameplay harness.

@@ -21,6 +21,8 @@
 - Backend gameplay rules and regression flows
 - Code quality baseline: ESLint warning-first rollout, Prettier enforcement, and dedicated CI quality workflow
 - Core E2E gameplay flows: reinforcement, attack/conquest, fortify handoff, turn guard, version conflict
+- React gameplay E2E: deep link, join/start, forced trade, legacy fallback, and version-conflict recovery
+- Frontend gameplay API client: typed state/start/action/trade helpers, SSE payload parsing, and version-conflict extraction
 - AI autoplay E2E
 - Authorization E2E: non-member denied on protected game open and direct game route read
 - Authorization E2E: creator can reopen a protected lobby from a direct game route
@@ -36,7 +38,7 @@
 - Vercel build pipeline: preview/prod build command compila TypeScript prima della sync asset
 - Shared runtime validation: auth/profile schemas, route validation failures, and controlled frontend fallback
 - Gameplay E2E: granular rendering reinforcement flow stabilized against async control population
-- React shell smoke route: `/react/` loads with controlled fallback rendering
+- React shell routes: bootstrap, auth redirects, lobby/profile/new game, and gameplay route rendering
 - TS-complete allowlist regression: React shell sources are allowed and tracked stray `.js` sources are rejected
 
 ## Missing

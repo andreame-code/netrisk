@@ -11,10 +11,10 @@ In code and technical documentation, the project remains identified as `NetRisk`
 Today the project includes:
 
 - user registration, login, logout, and profile
-- shared runtime validation for auth/profile payloads at backend and frontend boundaries
-- typed frontend API client helpers for the migrated `profile` and `lobby` flows
-- parallel React + Vite smoke shell served at `/react/`, isolated from the legacy pages
-- TanStack Query + Zustand conventions in the React shell, with a minimal `/react/profile` pilot
+- shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
+- typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
+- parallel React + Vite shell served at `/react/`, isolated from the legacy pages
+- TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -70,7 +70,7 @@ npm start
 ```
 
 Application available at `http://localhost:3000`.
-After `npm start`, the legacy pages are served from the same server, and the React smoke shell is also available at `http://localhost:3000/react/`.
+After `npm start`, the legacy pages are served from the same server, and the React shell is also available at `http://localhost:3000/react/`.
 
 React shell preview:
 
@@ -80,7 +80,7 @@ npm run dev:react-shell
 
 The parallel React + Vite shell is reachable at `http://localhost:5173/react/` in development and at `/react/` from the main server after `npm run build:ts`.
 The Vite dev server proxies `/api` to `VITE_BACKEND_TARGET`, which defaults to `http://127.0.0.1:3000`.
-Within the React shell, TanStack Query now owns server state for the migrated profile pilot, while Zustand is limited to local shell/session state.
+Within the React shell, TanStack Query owns route-level remote state such as gameplay snapshots and mutations, while Zustand is limited to local shell/session state.
 
 ## Datastore configuration
 
@@ -230,11 +230,12 @@ The `e2e` suite currently covers:
 - auth navigation between pages
 - profile states: loading, error, empty state
 - profile invalid payload fallback with controlled UI feedback
-- React shell smoke loading on `/react/` with controlled fallback rendering
+- React shell bootstrap, auth redirects, and protected route handling on `/react/*`
 - new game setup
-- main gameplay flows
+- legacy and React gameplay flows
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
+- React gameplay deep links, join/start, forced trade, legacy fallback, and version-conflict recovery
 - granular rendering checks that keep stable gameplay panels mounted during updates
 - visual baselines for the main battlefield, mobile lobby shell, and World Classic board layouts
 
@@ -317,7 +318,7 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `listContentModules`
 
 For runtime contract validation shared by backend and frontend, see `shared/runtime-validation.cts`.
-For the current framework-agnostic frontend transport boundary used by the migrated `profile` and `lobby` flows, see `frontend/src/core/api/`.
+For the current framework-agnostic frontend transport boundary used by the React shell and migrated legacy pages, see `frontend/src/core/api/`.
 
 Game state notably contains:
 
@@ -350,12 +351,17 @@ Main frontend screens currently available:
 - `game.html`: active game
 - `profile.html`: user profile
 - `register.html`: new account creation
-- `/react/`: parallel React + Vite smoke shell
+- `/react/`: React shell bootstrap route
+- `/react/login`: React shell sign-in route
+- `/react/lobby`: React lobby route
+- `/react/lobby/new`: React new game route
+- `/react/profile`: React profile route
+- `/react/game/:gameId`: React gameplay route with explicit legacy fallback
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
-For the migrated `profile` and `lobby` pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
+For the React shell routes and migrated legacy pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
 The React shell follows the same rule: it reuses the shared typed client and does not duplicate game rules locally.
-For the current React pilot, TanStack Query is used only for remote profile state and mutations, while Zustand is reserved for shell-local session state and UI ownership.
+In the React shell, TanStack Query is used for route-level remote state and mutations, while Zustand is reserved for shell-local session state and UI ownership.
 
 From a naming perspective, frontend pages currently display title `Frontline Dominion`, while the technical project domain continues to use `NetRisk`.
 
@@ -364,6 +370,12 @@ The game screen also includes:
 - attack dice selector with default coherent to selected territory
 - latest combat summary panel with dice and comparison
 - current player card panel with set selection and trade submission
+
+On the React gameplay route, the shell also supports:
+
+- snapshot bootstrap plus live SSE refresh from the backend state
+- join/start, trade cards, reinforce, attack, move-after-conquest, fortify, end-turn, and surrender actions
+- explicit fallback navigation to the legacy `/game/:id` route for parity gaps or recovery
 
 ## License
 
