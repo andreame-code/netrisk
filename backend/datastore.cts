@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const { DatabaseSync, backup } = require("node:sqlite");
 const { readJsonFile } = require("./json-file-store.cjs") as {
   readJsonFile: <T>(filePath: string, fallbackValue: T, isValid?: (value: unknown) => boolean) => T;
 };
@@ -85,6 +84,15 @@ type DatastoreOptions = {
   legacyUsersFile?: string;
   legacyGamesFile?: string;
   legacySessionsFile?: string;
+};
+
+type SqliteModule = {
+  DatabaseSync: new (filename: string) => {
+    exec(sql: string): void;
+    prepare<Row>(sql: string): Statement<Row>;
+    close(): void;
+  };
+  backup: (source: unknown, destination: string) => Promise<void>;
 };
 
 type LegacyUser = {
@@ -191,6 +199,7 @@ function createDatastore(options: DatastoreOptions = {}) {
     options.sessionsFile ||
     path.join(__dirname, "..", "data", "sessions.json");
 
+  const { DatabaseSync, backup } = require("node:sqlite") as SqliteModule;
   ensureDirectory(dbFile);
   const db = new DatabaseSync(dbFile);
   db.exec("PRAGMA journal_mode = WAL");
