@@ -14,6 +14,7 @@ import {
 } from "react-router-dom";
 
 import { useAuth, AuthProvider } from "@react-shell/auth";
+import { ProfileRoute } from "@react-shell/profile-route";
 import { messageFromError } from "@frontend-core/errors.mts";
 
 function normalizeNextPath(nextPath: string | null): string {
@@ -294,28 +295,6 @@ function LobbyPlaceholderPage() {
   );
 }
 
-function ProfilePlaceholderPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Profile"
-      title="React profile placeholder"
-      copy="The profile route is protected and isolated, so issue #101 can migrate the actual data flow without reshaping the shell."
-      details={
-        <>
-          <div className="placeholder-card">
-            <strong>Session-aware entry</strong>
-            <span>Protected pages no longer need ad-hoc auth checks in each screen.</span>
-          </div>
-          <div className="placeholder-card">
-            <strong>Boundary preserved</strong>
-            <span>The typed frontend API client remains the only transport layer entry point.</span>
-          </div>
-        </>
-      }
-    />
-  );
-}
-
 function GamePlaceholderPage() {
   const params = useParams();
 
@@ -504,7 +483,7 @@ export function AppRoutes() {
             <Route path="unauthorized" element={<UnauthorizedPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="lobby" element={<LobbyPlaceholderPage />} />
-              <Route path="profile" element={<ProfilePlaceholderPage />} />
+              <Route path="profile" element={<ProfileRoute />} />
               <Route path="game">
                 <Route index element={<GamePlaceholderPage />} />
                 <Route path=":gameId" element={<GamePlaceholderPage />} />
