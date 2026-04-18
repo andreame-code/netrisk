@@ -166,7 +166,11 @@ function ShellLayout() {
             <p className="status-label">Navigation</p>
             <span className="status-pill">/react</span>
           </div>
-          <nav className="main-nav-shell" aria-label="React shell sections" data-testid="react-shell-nav">
+          <nav
+            className="main-nav-shell"
+            aria-label="React shell sections"
+            data-testid="react-shell-nav"
+          >
             <NavItem to="/lobby" label="Lobby" />
             <NavItem to="/profile" label="Profile" />
             <NavItem to="/game" label="Game" />
@@ -209,11 +213,7 @@ function BootstrapRoute() {
 
   if (state.status === "error") {
     return (
-      <ErrorPanel
-        title="React shell bootstrap failed"
-        message={state.message}
-        onRetry={refresh}
-      />
+      <ErrorPanel title="React shell bootstrap failed" message={state.message} onRetry={refresh} />
     );
   }
 
@@ -235,11 +235,7 @@ function ProtectedRoute() {
 
   if (state.status === "error") {
     return (
-      <ErrorPanel
-        title="Protected route unavailable"
-        message={state.message}
-        onRetry={refresh}
-      />
+      <ErrorPanel title="Protected route unavailable" message={state.message} onRetry={refresh} />
     );
   }
 
@@ -332,11 +328,15 @@ function GamePlaceholderPage() {
         <>
           <div className="placeholder-card">
             <strong>Game route</strong>
-            <span>{params.gameId ? `Selected game id: ${params.gameId}` : "No game selected yet."}</span>
+            <span>
+              {params.gameId ? `Selected game id: ${params.gameId}` : "No game selected yet."}
+            </span>
           </div>
           <div className="placeholder-card">
             <strong>Deep links supported</strong>
-            <span>Refreshing a direct `/react/game/:gameId` URL now resolves through the SPA shell.</span>
+            <span>
+              Refreshing a direct `/react/game/:gameId` URL now resolves through the SPA shell.
+            </span>
           </div>
         </>
       }
@@ -366,7 +366,11 @@ function LoginPage() {
 
   if (state.status === "error") {
     return (
-      <ErrorPanel title="Unable to load the login route" message={state.message} onRetry={refresh} />
+      <ErrorPanel
+        title="Unable to load the login route"
+        message={state.message}
+        onRetry={refresh}
+      />
     );
   }
 
