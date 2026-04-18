@@ -46,7 +46,8 @@ type ClientMessages = {
 
 export type { GameActionRequest, GameEventPayload, GameStateResponse, StartGameRequest };
 
-export type TradeCardsRequest = import("../../generated/shared-runtime-validation.mjs").TradeCardsRequest;
+export type TradeCardsRequest =
+  import("../../generated/shared-runtime-validation.mjs").TradeCardsRequest;
 
 export function getSession(messages: ClientMessages): Promise<AuthSessionResponse> {
   return requestJson({

@@ -431,25 +431,22 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
-    broadcastEventPayload(
-      clients,
-      (client: EventClient) => {
-        const payloadResult = gameEventPayloadSchema.safeParse(
-          snapshotForUser(
-            gameContext.state,
-            gameContext.gameId,
-            gameContext.version,
-            gameContext.gameName,
-            client.user
-          )
-        );
-        if (!payloadResult.success) {
-          throw new Error("Invalid gameplay event payload.");
-        }
-
-        return "data: " + JSON.stringify(payloadResult.data) + "\n\n";
+    broadcastEventPayload(clients, (client: EventClient) => {
+      const payloadResult = gameEventPayloadSchema.safeParse(
+        snapshotForUser(
+          gameContext.state,
+          gameContext.gameId,
+          gameContext.version,
+          gameContext.gameName,
+          client.user
+        )
+      );
+      if (!payloadResult.success) {
+        throw new Error("Invalid gameplay event payload.");
       }
-    );
+
+      return "data: " + JSON.stringify(payloadResult.data) + "\n\n";
+    });
 
     if (!clients.size) {
       clientsByGameId.delete(gameContext.gameId);

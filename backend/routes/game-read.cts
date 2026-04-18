@@ -147,9 +147,7 @@ async function handleEventsRoute(
     Connection: "keep-alive",
     "Access-Control-Allow-Origin": "*"
   });
-  res.write(
-    "data: " + JSON.stringify(initialPayloadResult.data) + "\n\n"
-  );
+  res.write("data: " + JSON.stringify(initialPayloadResult.data) + "\n\n");
   const key = gameContext.gameId || "__default__";
   if (!clientsByGameId.has(key)) {
     clientsByGameId.set(key, new Set());

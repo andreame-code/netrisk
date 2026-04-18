@@ -257,7 +257,8 @@ async function handleStartRoute(
       nodeResponse,
       409,
       {
-        error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+        error:
+          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
         messageKey: "server.versionConflict",
         messageParams: {},
         code: "VERSION_CONFLICT",

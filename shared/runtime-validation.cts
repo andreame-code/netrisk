@@ -421,9 +421,7 @@ export const gameActionAttackBanzaiRequestSchema = gameplayRequestBaseSchema.ext
   attackDice: z.number().int().min(1).nullable().optional()
 });
 
-export type GameActionAttackBanzaiRequest = z.infer<
-  typeof gameActionAttackBanzaiRequestSchema
->;
+export type GameActionAttackBanzaiRequest = z.infer<typeof gameActionAttackBanzaiRequestSchema>;
 
 export const gameActionMoveAfterConquestRequestSchema = gameplayRequestBaseSchema.extend({
   type: z.literal("moveAfterConquest"),

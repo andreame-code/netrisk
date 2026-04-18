@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { GameListResponse, GameSummary } from "@frontend-generated/shared-runtime-validation.mts";
+import type {
+  GameListResponse,
+  GameSummary
+} from "@frontend-generated/shared-runtime-validation.mts";
 
 import { joinGame, listGames, openGame } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
@@ -374,13 +377,18 @@ export function LobbyRoute() {
           )}
         </section>
 
-        <section className="placeholder-card lobby-detail-panel" data-testid="react-shell-lobby-details">
+        <section
+          className="placeholder-card lobby-detail-panel"
+          data-testid="react-shell-lobby-details"
+        >
           <div className="card-header lobby-panel-header">
             <div>
               <p className="status-label">{t("lobby.details.heading")}</p>
               <h3>{selectedGame?.name || t("lobby.details.emptyBadge")}</h3>
             </div>
-            {selectedGame ? <span className="status-pill">{phaseLabel(selectedGame.phase)}</span> : null}
+            {selectedGame ? (
+              <span className="status-pill">{phaseLabel(selectedGame.phase)}</span>
+            ) : null}
           </div>
 
           {!selectedGame ? (
@@ -399,7 +407,9 @@ export function LobbyRoute() {
               <div className="lobby-detail-grid">
                 <article className="lobby-detail-item">
                   <span>{t("lobby.details.map")}</span>
-                  <strong>{selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}</strong>
+                  <strong>
+                    {selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}
+                  </strong>
                 </article>
                 <article className="lobby-detail-item">
                   <span>{t("lobby.details.playersPresent")}</span>

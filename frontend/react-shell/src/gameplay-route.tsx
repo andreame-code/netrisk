@@ -109,7 +109,10 @@ function normalizeSelectNumber(
   return String(clamp(parsed, minimum, maximum));
 }
 
-function territoryOwnerName(territory: SnapshotTerritory, playersById: Record<string, SnapshotPlayer>): string {
+function territoryOwnerName(
+  territory: SnapshotTerritory,
+  playersById: Record<string, SnapshotPlayer>
+): string {
   if (!territory.ownerId) {
     return t("game.runtime.none");
   }
@@ -171,8 +174,8 @@ function GameEmptyRoute() {
       <p className="status-label">Game</p>
       <h2>{t("game.runtime.selectGameFromList")}</h2>
       <p className="status-copy">
-        {t("game.runtime.openGame")} via lobby/profile, then return here for the live React
-        gameplay route.
+        {t("game.runtime.openGame")} via lobby/profile, then return here for the live React gameplay
+        route.
       </p>
       <div className="shell-actions">
         <Link className="refresh-button" to="/lobby">
@@ -231,11 +234,15 @@ export function GameRoute() {
   const storedPlayerId = readCurrentPlayerId();
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
-  const currentPlayer = snapshot?.currentPlayerId ? playersById[snapshot.currentPlayerId] || null : null;
+  const currentPlayer = snapshot?.currentPlayerId
+    ? playersById[snapshot.currentPlayerId] || null
+    : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const localizedLog = translateGameLogEntries(snapshot);
-  const myTerritories = (snapshot?.map || []).filter((territory) => territory.ownerId === myPlayerId);
+  const myTerritories = (snapshot?.map || []).filter(
+    (territory) => territory.ownerId === myPlayerId
+  );
   const currentVersion =
     snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
   const isMyTurn = Boolean(
@@ -247,14 +254,18 @@ export function GameRoute() {
   const showJoinLobby = snapshot?.phase === "lobby" && !myPlayerId;
   const showStartGame = snapshot?.phase === "lobby" && Boolean(myPlayerId);
   const showReinforceGroup = Boolean(
-    isMyTurn && snapshot?.turnPhase === "reinforcement" && Number(snapshot?.reinforcementPool || 0) > 0
+    isMyTurn &&
+    snapshot?.turnPhase === "reinforcement" &&
+    Number(snapshot?.reinforcementPool || 0) > 0
   );
   const showAttackGroup = Boolean(
     isMyTurn && snapshot?.turnPhase === "attack" && !snapshot?.pendingConquest
   );
   const showConquestGroup = Boolean(isMyTurn && snapshot?.pendingConquest);
   const showFortifyGroup = Boolean(isMyTurn && snapshot?.turnPhase === "fortify");
-  const showEndTurn = Boolean(isMyTurn && snapshot?.phase === "active" && !snapshot?.pendingConquest);
+  const showEndTurn = Boolean(
+    isMyTurn && snapshot?.phase === "active" && !snapshot?.pendingConquest
+  );
   const showSurrender = Boolean(myPlayerId && snapshot?.phase === "active");
   const reinforceTerritoryId = selectOrFallback(
     selectedReinforceTerritoryId,
@@ -716,7 +727,10 @@ export function GameRoute() {
       ) : null}
 
       {actionError ? (
-        <div className="profile-query-state profile-query-state-error" data-testid="react-shell-game-action-error">
+        <div
+          className="profile-query-state profile-query-state-error"
+          data-testid="react-shell-game-action-error"
+        >
           <p className="metric-copy">{actionError}</p>
         </div>
       ) : null}
@@ -790,7 +804,9 @@ export function GameRoute() {
             style={{
               aspectRatio: mapAspectRatio(snapshot),
               ...(snapshot.mapVisual?.imageUrl
-                ? { backgroundImage: `linear-gradient(rgba(15, 22, 36, 0.18), rgba(15, 22, 36, 0.18)), url(${snapshot.mapVisual.imageUrl})` }
+                ? {
+                    backgroundImage: `linear-gradient(rgba(15, 22, 36, 0.18), rgba(15, 22, 36, 0.18)), url(${snapshot.mapVisual.imageUrl})`
+                  }
                 : {})
             }}
           >
@@ -852,7 +868,9 @@ export function GameRoute() {
           </div>
 
           <div className="game-map-legend">
-            <span>Map picks drive the form selections below. Rule validation stays on the backend.</span>
+            <span>
+              Map picks drive the form selections below. Rule validation stays on the backend.
+            </span>
           </div>
         </section>
 
@@ -863,7 +881,9 @@ export function GameRoute() {
                 <p className="status-label">{t("game.command.eyebrow")}</p>
                 <h3>{t("game.command.heading")}</h3>
               </div>
-              <span className="status-pill">{currentPlayer?.name || t("game.runtime.waiting")}</span>
+              <span className="status-pill">
+                {currentPlayer?.name || t("game.runtime.waiting")}
+              </span>
             </div>
 
             {showJoinLobby ? (
@@ -960,7 +980,11 @@ export function GameRoute() {
                 </button>
               </section>
 
-              <section id="reinforce-group" className="game-action-group" hidden={!showReinforceGroup}>
+              <section
+                id="reinforce-group"
+                className="game-action-group"
+                hidden={!showReinforceGroup}
+              >
                 <div className="card-header gameplay-subsection-header">
                   <div>
                     <p className="status-label">{t("game.actions.reinforce")}</p>
@@ -1050,7 +1074,9 @@ export function GameRoute() {
                     value={attackDiceCount}
                     onChange={(event) => setSelectedAttackDiceCount(event.target.value)}
                   >
-                    {!maxAttackDice ? <option value="">{t("game.runtime.noDiceAvailable")}</option> : null}
+                    {!maxAttackDice ? (
+                      <option value="">{t("game.runtime.noDiceAvailable")}</option>
+                    ) : null}
                     {Array.from({ length: maxAttackDice }, (_, index) => index + 1).map((count) => (
                       <option key={count} value={String(count)}>
                         {t("game.runtime.attackDiceOption", {
@@ -1077,12 +1103,18 @@ export function GameRoute() {
                     onClick={() => void handleAttack("attackBanzai")}
                     disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
                   >
-                    {actionMutation.isPending ? t("game.runtime.banzaiLoading") : t("game.actions.banzai")}
+                    {actionMutation.isPending
+                      ? t("game.runtime.banzaiLoading")
+                      : t("game.actions.banzai")}
                   </button>
                 </div>
               </section>
 
-              <section id="conquest-group" className="game-action-group" hidden={!showConquestGroup}>
+              <section
+                id="conquest-group"
+                className="game-action-group"
+                hidden={!showConquestGroup}
+              >
                 <div className="card-header gameplay-subsection-header">
                   <div>
                     <p className="status-label">{t("game.actions.afterConquest")}</p>
