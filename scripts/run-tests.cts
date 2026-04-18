@@ -77,11 +77,12 @@ const { handleGameActionRoute } = require("../backend/routes/game-actions.cjs");
 const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
+const { handleCardsTradeRoute } = require("../backend/routes/game-cards.cjs");
 const {
   handleCreateGameRoute,
   handleOpenGameRoute
 } = require("../backend/routes/game-management.cjs");
-const { handleJoinRoute } = require("../backend/routes/game-setup.cjs");
+const { handleJoinRoute, handleStartRoute } = require("../backend/routes/game-setup.cjs");
 const { handleGamesListRoute } = require("../backend/routes/game-overview.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
@@ -1417,6 +1418,517 @@ register("turn game action route gestisce surrender con version conflict", async
   });
 });
 
+register("cards trade route rifiuta expectedVersion non valida", async () => {
+  const res = makeMockResponse();
+  let tradeInvoked = false;
+
+  await handleCardsTradeRoute(
+    { method: "POST", headers: {} },
+    res,
+    {
+      gameId: "game-trade",
+      playerId: "player-1",
+      cardIds: ["c1", "c2", "c3"],
+      expectedVersion: "stale"
+    },
+    new URL("http://127.0.0.1/api/cards/trade"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: { players: [{ id: "player-1" }] },
+      gameId: "game-trade",
+      version: 3,
+      gameName: "Trade Route"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    () => ({ id: "player-1" }),
+    () => true,
+    () => {
+      tradeInvoked = true;
+      return { ok: true };
+    },
+    async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    () => ({ ok: true }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(tradeInvoked, false);
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "expectedVersion non valida.",
+    messageKey: "server.invalidExpectedVersion",
+    messageParams: {},
+    code: null
+  });
+});
+
+register("cards trade route segnala il version conflict prima del trade", async () => {
+  const res = makeMockResponse();
+  let tradeInvoked = false;
+
+  await handleCardsTradeRoute(
+    { method: "POST", headers: {} },
+    res,
+    {
+      gameId: "game-trade",
+      playerId: "player-1",
+      cardIds: ["c1", "c2", "c3"],
+      expectedVersion: 2
+    },
+    new URL("http://127.0.0.1/api/cards/trade"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: { phase: "active" },
+      gameId: "game-trade",
+      version: 3,
+      gameName: "Trade Route"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    () => ({ id: "player-1" }),
+    () => true,
+    () => {
+      tradeInvoked = true;
+      return { ok: true };
+    },
+    async () => {
+      throw new Error("persistGameContext should not be called");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called");
+    },
+    (_state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+      gameId,
+      version,
+      gameName,
+      phase: "active"
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(tradeInvoked, false);
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+    messageKey: "server.versionConflict",
+    messageParams: {},
+    code: "VERSION_CONFLICT",
+    currentVersion: 3,
+    state: {
+      gameId: "game-trade",
+      version: 3,
+      gameName: "Trade Route",
+      phase: "active"
+    }
+  });
+});
+
+register(
+  "cards trade route gestisce version conflict in persistenza con snapshot corrente",
+  async () => {
+    const res = makeMockResponse();
+    const broadcasts: number[] = [];
+
+    await handleCardsTradeRoute(
+      { method: "POST", headers: {} },
+      res,
+      {
+        gameId: "game-trade",
+        playerId: "player-1",
+        cardIds: ["c1", "c2", "c3"],
+        expectedVersion: 4
+      },
+      new URL("http://127.0.0.1/api/cards/trade"),
+      async () => ({ user: { id: "user-1", username: "Alice" } }),
+      async () => ({
+        state: { phase: "active" },
+        gameId: "game-trade",
+        version: 4,
+        gameName: "Trade Route"
+      }),
+      (body: Record<string, unknown>) => String(body.gameId || ""),
+      () => ({ id: "player-1" }),
+      () => true,
+      () => ({
+        ok: true,
+        bonus: 4,
+        validation: { setType: "infantry" }
+      }),
+      async () => {
+        throw {
+          code: "VERSION_CONFLICT",
+          currentVersion: 7,
+          currentState: { phase: "reinforcement" },
+          game: { name: "Trade Route Persisted" },
+          message: "La partita e stata aggiornata durante il salvataggio.",
+          messageKey: "server.versionConflict"
+        };
+      },
+      (context: any) => {
+        broadcasts.push(context.version);
+      },
+      (_state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+        gameId,
+        version,
+        gameName,
+        phase: "reinforcement"
+      }),
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.deepEqual(broadcasts, []);
+    assert.equal(res.statusCode, 409);
+    assert.deepEqual(JSON.parse(res.body), {
+      error: "La partita e stata aggiornata durante il salvataggio.",
+      messageKey: "server.versionConflict",
+      messageParams: {},
+      code: "VERSION_CONFLICT",
+      currentVersion: 7,
+      state: {
+        gameId: "game-trade",
+        version: 7,
+        gameName: "Trade Route Persisted",
+        phase: "reinforcement"
+      }
+    });
+  }
+);
+
+register("basic game action route gestisce moveAfterConquest e persiste lo stato", async () => {
+  const res = makeMockResponse();
+  const gameContext = {
+    state: { pendingMove: true },
+    gameId: "game-basic",
+    version: 4,
+    gameName: "Basic Route"
+  };
+  const persisted: any[] = [];
+  const broadcasts: any[] = [];
+
+  const handled = await handleBasicGameActionRoute(
+    "moveAfterConquest",
+    res,
+    { armies: 3 },
+    gameContext,
+    "p1",
+    4,
+    { id: "user-1" },
+    () => {
+      throw new Error("applyReinforcement should not be called");
+    },
+    (state: any, playerId: string, armies: number) => {
+      assert.equal(playerId, "p1");
+      assert.equal(armies, 3);
+      state.movedArmies = armies;
+      return { ok: true };
+    },
+    () => {
+      throw new Error("applyFortify should not be called");
+    },
+    async (context: any, expectedVersion: number | null) => {
+      persisted.push(expectedVersion);
+      context.version = 5;
+    },
+    (context: any) => {
+      broadcasts.push(context.version);
+    },
+    (state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+      gameId,
+      version,
+      gameName,
+      movedArmies: state.movedArmies
+    }),
+    () => false,
+    () => true,
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.deepEqual(persisted, [4]);
+  assert.deepEqual(broadcasts, [5]);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    state: {
+      gameId: "game-basic",
+      version: 5,
+      gameName: "Basic Route",
+      movedArmies: 3
+    }
+  });
+});
+
+register("basic game action route gestisce fortify con territori validi", async () => {
+  const res = makeMockResponse();
+  const persisted: any[] = [];
+  const broadcasts: any[] = [];
+
+  const handled = await handleBasicGameActionRoute(
+    "fortify",
+    res,
+    { fromId: "alpha", toId: "beta", armies: 2 },
+    {
+      state: { territories: { alpha: {}, beta: {} } },
+      gameId: "game-basic",
+      version: 9,
+      gameName: "Basic Route"
+    },
+    "p1",
+    9,
+    { id: "user-1" },
+    () => {
+      throw new Error("applyReinforcement should not be called");
+    },
+    () => {
+      throw new Error("moveAfterConquest should not be called");
+    },
+    (state: any, playerId: string, fromId: string, toId: string, armies: number) => {
+      assert.equal(playerId, "p1");
+      assert.equal(fromId, "alpha");
+      assert.equal(toId, "beta");
+      assert.equal(armies, 2);
+      state.lastFortify = { fromId, toId, armies };
+      return { ok: true };
+    },
+    async (context: any, expectedVersion: number | null) => {
+      persisted.push(expectedVersion);
+      context.version = 10;
+    },
+    (context: any) => {
+      broadcasts.push(context.version);
+    },
+    (state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+      gameId,
+      version,
+      gameName,
+      lastFortify: state.lastFortify
+    }),
+    () => false,
+    (territoryId: string) => territoryId === "alpha" || territoryId === "beta",
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, true);
+  assert.deepEqual(persisted, [9]);
+  assert.deepEqual(broadcasts, [10]);
+  assert.deepEqual(JSON.parse(res.body), {
+    ok: true,
+    state: {
+      gameId: "game-basic",
+      version: 10,
+      gameName: "Basic Route",
+      lastFortify: {
+        fromId: "alpha",
+        toId: "beta",
+        armies: 2
+      }
+    }
+  });
+});
+
+register("basic game action route restituisce false per azioni non gestite", async () => {
+  const res = makeMockResponse();
+  let sideEffects = 0;
+
+  const handled = await handleBasicGameActionRoute(
+    "unsupported",
+    res,
+    {},
+    {
+      state: { territories: { alpha: {} } },
+      gameId: "game-basic",
+      version: 1,
+      gameName: "Basic Route"
+    },
+    "p1",
+    1,
+    { id: "user-1" },
+    () => {
+      sideEffects += 1;
+      return { ok: true };
+    },
+    () => {
+      sideEffects += 1;
+      return { ok: true };
+    },
+    () => {
+      sideEffects += 1;
+      return { ok: true };
+    },
+    async () => {
+      sideEffects += 1;
+    },
+    () => {
+      sideEffects += 1;
+    },
+    () => {
+      sideEffects += 1;
+      return {};
+    },
+    () => false,
+    () => true,
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, false);
+  assert.equal(sideEffects, 0);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body, "");
+});
+
+register(
+  "turn game action route propaga il rifiuto di endTurn con errore localizzato",
+  async () => {
+    const res = makeMockResponse();
+    const handled = await handleTurnGameActionRoute(
+      "endTurn",
+      res,
+      {
+        state: { phase: "active" },
+        gameId: "game-turn",
+        version: 5,
+        gameName: "Turn Route"
+      },
+      "p1",
+      5,
+      { id: "user-1" },
+      () => ({
+        ok: false,
+        message: "Il turno non puo essere chiuso.",
+        messageKey: "game.turn.blocked",
+        messageParams: { reason: "reinforcementPending" }
+      }),
+      () => {
+        throw new Error("surrenderPlayer should not be called");
+      },
+      async () => {
+        throw new Error("persistWithAiTurns should not be called");
+      },
+      () => {
+        throw new Error("broadcastGame should not be called");
+      },
+      () => {
+        throw new Error("snapshotForUser should not be called");
+      },
+      () => false,
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(handled, true);
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(JSON.parse(res.body), {
+      error: "Il turno non puo essere chiuso.",
+      messageKey: "game.turn.blocked",
+      messageParams: { reason: "reinforcementPending" },
+      code: null
+    });
+  }
+);
+
+register(
+  "turn game action route propaga il rifiuto di surrender con errore localizzato",
+  async () => {
+    const res = makeMockResponse();
+    const handled = await handleTurnGameActionRoute(
+      "surrender",
+      res,
+      {
+        state: { phase: "active" },
+        gameId: "game-turn",
+        version: 5,
+        gameName: "Turn Route"
+      },
+      "p1",
+      5,
+      { id: "user-1" },
+      () => {
+        throw new Error("endTurn should not be called");
+      },
+      () => ({
+        ok: false,
+        message: "La resa non e consentita.",
+        messageKey: "game.surrender.invalid",
+        messageParams: { reason: "alreadyWon" }
+      }),
+      async () => {
+        throw new Error("persistWithAiTurns should not be called");
+      },
+      () => {
+        throw new Error("broadcastGame should not be called");
+      },
+      () => {
+        throw new Error("snapshotForUser should not be called");
+      },
+      () => false,
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(handled, true);
+    assert.equal(res.statusCode, 400);
+    assert.deepEqual(JSON.parse(res.body), {
+      error: "La resa non e consentita.",
+      messageKey: "game.surrender.invalid",
+      messageParams: { reason: "alreadyWon" },
+      code: null
+    });
+  }
+);
+
+register("turn game action route restituisce false per azioni non gestite", async () => {
+  const res = makeMockResponse();
+  let sideEffects = 0;
+
+  const handled = await handleTurnGameActionRoute(
+    "unsupported",
+    res,
+    {
+      state: { phase: "active" },
+      gameId: "game-turn",
+      version: 5,
+      gameName: "Turn Route"
+    },
+    "p1",
+    5,
+    { id: "user-1" },
+    () => {
+      sideEffects += 1;
+      return { ok: true };
+    },
+    () => {
+      sideEffects += 1;
+      return { ok: true };
+    },
+    async () => {
+      sideEffects += 1;
+    },
+    () => {
+      sideEffects += 1;
+    },
+    () => {
+      sideEffects += 1;
+      return {};
+    },
+    () => false,
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(handled, false);
+  assert.equal(sideEffects, 0);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body, "");
+});
+
 register("game management route crea una partita e collega il creatore", async () => {
   const res = makeMockResponse();
   const broadcasts: any[] = [];
@@ -1588,6 +2100,97 @@ register("game management route rifiuta gameId non valido prima di aprire la par
   assert.equal(JSON.parse(res.body).code, "REQUEST_VALIDATION_FAILED");
 });
 
+register("game join route rifiuta body invalido prima di caricare la partita", async () => {
+  const res = makeMockResponse();
+
+  await handleJoinRoute(
+    { method: "POST", headers: {} },
+    res,
+    {},
+    new URL("http://127.0.0.1/api/join"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => {
+      throw new Error("loadGameContext should not be called for invalid body");
+    },
+    () => null,
+    () => {
+      throw new Error("addPlayer should not be called for invalid body");
+    },
+    async () => {
+      throw new Error("persistGameContext should not be called for invalid body");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called for invalid body");
+    },
+    () => {
+      throw new Error("snapshotForState should not be called for invalid body");
+    },
+    () => {
+      throw new Error("publicUser should not be called for invalid body");
+    },
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(JSON.parse(res.body).code, "REQUEST_VALIDATION_FAILED");
+});
+
+register("game join route restituisce 200 quando il giocatore rientra nella lobby", async () => {
+  const res = makeMockResponse();
+  const state = createInitialState();
+  const existing = addPlayer(state, "Alice", { linkedUserId: "user-1" });
+  const broadcasts: string[] = [];
+  const persisted: number[] = [];
+
+  assert.equal(existing.ok, true);
+
+  await handleJoinRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1" },
+    new URL("http://127.0.0.1/api/join"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state,
+      gameId: "game-1",
+      version: 2,
+      gameName: "Nuova partita"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    addPlayer,
+    async (gameContext: any) => {
+      persisted.push(gameContext.version);
+      gameContext.version = 3;
+    },
+    (gameContext: any) => {
+      broadcasts.push(gameContext.gameId);
+    },
+    (currentState: any, gameId: string | null, version: number | null, gameName: string | null) =>
+      publicState(currentState, gameId, version, gameName),
+    (user: { id: string; username: string }) => ({
+      id: user.id,
+      username: user.username,
+      role: "user",
+      authMethods: ["password"],
+      hasEmail: false,
+      preferences: { theme: "command" }
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  const payload = JSON.parse(res.body);
+  assert.deepEqual(persisted, [2]);
+  assert.deepEqual(broadcasts, ["game-1"]);
+  assert.equal(res.statusCode, 200);
+  assert.equal(payload.playerId, existing.player.id);
+  assert.equal(payload.user.id, "user-1");
+  assert.equal(payload.state.phase, "lobby");
+  assert.equal(payload.state.currentPlayerId, existing.player.id);
+  assert.equal(payload.state.players.length, 1);
+});
+
 register("game join route valida la risposta outbound prima di inviarla", async () => {
   const res = makeMockResponse();
 
@@ -1624,6 +2227,156 @@ register("game join route valida la risposta outbound prima di inviarla", async 
 
   assert.equal(res.statusCode, 500);
   assert.equal(JSON.parse(res.body).code, "RESPONSE_VALIDATION_FAILED");
+});
+
+register("game start route blocca l'avvio se la partita e gia iniziata", async () => {
+  const res = makeMockResponse();
+
+  await handleStartRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1", playerId: "player-1" },
+    new URL("http://127.0.0.1/api/start"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: { phase: "active", players: [{ id: "player-1" }, { id: "player-2" }] },
+      gameId: "game-1",
+      version: 2,
+      gameName: "Started Game"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    async () => {
+      throw new Error("getGame should not be called after phase guard");
+    },
+    () => {
+      throw new Error("authorize should not be called after phase guard");
+    },
+    () => {
+      throw new Error("getPlayer should not be called after phase guard");
+    },
+    () => false,
+    () => {
+      throw new Error("startGame should not be called after phase guard");
+    },
+    async () => {
+      throw new Error("persistWithAiTurns should not be called after phase guard");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called after phase guard");
+    },
+    () => {
+      throw new Error("snapshotForState should not be called after phase guard");
+    },
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "La partita e gia iniziata.",
+    messageKey: "server.game.alreadyStarted",
+    messageParams: {},
+    code: null
+  });
+});
+
+register("game start route richiede almeno due giocatori", async () => {
+  const res = makeMockResponse();
+
+  await handleStartRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1", playerId: "player-1" },
+    new URL("http://127.0.0.1/api/start"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: { phase: "lobby", players: [{ id: "player-1" }] },
+      gameId: "game-1",
+      version: 2,
+      gameName: "Solo Game"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    async () => ({
+      game: { id: "game-1", creatorUserId: "user-1" }
+    }),
+    () => undefined,
+    () => {
+      throw new Error("getPlayer should not be called before player-count guard");
+    },
+    () => false,
+    () => {
+      throw new Error("startGame should not be called before player-count guard");
+    },
+    async () => {
+      throw new Error("persistWithAiTurns should not be called before player-count guard");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called before player-count guard");
+    },
+    () => {
+      throw new Error("snapshotForState should not be called before player-count guard");
+    },
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Servono almeno 2 giocatori.",
+    messageKey: "server.game.notEnoughPlayers",
+    messageParams: {},
+    code: null
+  });
+});
+
+register("game start route rifiuta player non associato all'utente autenticato", async () => {
+  const res = makeMockResponse();
+
+  await handleStartRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1", playerId: "player-2" },
+    new URL("http://127.0.0.1/api/start"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: {
+        phase: "lobby",
+        players: [{ id: "player-1" }, { id: "player-2" }]
+      },
+      gameId: "game-1",
+      version: 2,
+      gameName: "Mismatch Game"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    async () => ({
+      game: { id: "game-1", creatorUserId: "user-1" }
+    }),
+    () => undefined,
+    () => ({ id: "player-2", linkedUserId: "other-user" }),
+    () => false,
+    () => {
+      throw new Error("startGame should not be called for an invalid player");
+    },
+    async () => {
+      throw new Error("persistWithAiTurns should not be called for an invalid player");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called for an invalid player");
+    },
+    () => {
+      throw new Error("snapshotForState should not be called for an invalid player");
+    },
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 403);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "Giocatore non valido.",
+    messageKey: "game.invalidPlayer",
+    messageParams: {},
+    code: null
+  });
 });
 
 register("frontend API client valida sessione, profilo e lobby list al boundary", async () => {
