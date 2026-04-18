@@ -297,3 +297,254 @@ test("react gameplay handles the forced trade flow on the React route", async ({
     /Set valido|Valid set/
   );
 });
+
+test("react gameplay recovers from VERSION_CONFLICT by refreshing the snapshot and continuing the turn", async ({
+  page
+}) => {
+  function buildGameplayState(overrides = {}) {
+    const baseState = {
+      phase: "active",
+      turnPhase: "reinforcement",
+      players: [
+        {
+          id: "p1",
+          name: "alice",
+          color: "#e85d04",
+          connected: true,
+          isAi: false,
+          territoryCount: 1,
+          eliminated: false,
+          cardCount: 0
+        },
+        {
+          id: "p2",
+          name: "CPU",
+          color: "#0f4c5c",
+          connected: true,
+          isAi: true,
+          territoryCount: 1,
+          eliminated: false,
+          cardCount: 0
+        }
+      ],
+      map: [
+        {
+          id: "aurora",
+          name: "Aurora",
+          neighbors: ["bastion"],
+          continentId: "north",
+          ownerId: "p1",
+          armies: 3,
+          x: 0.2,
+          y: 0.3
+        },
+        {
+          id: "bastion",
+          name: "Bastion",
+          neighbors: ["aurora"],
+          continentId: "north",
+          ownerId: "p2",
+          armies: 1,
+          x: 0.65,
+          y: 0.45
+        }
+      ],
+      continents: [],
+      currentPlayerId: "p1",
+      reinforcementPool: 1,
+      winnerId: null,
+      gameConfig: {
+        mapId: "classic-mini",
+        mapName: "Classic Mini",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      },
+      log: ["Version conflict recovery"],
+      lastAction: null,
+      pendingConquest: null,
+      fortifyUsed: false,
+      conqueredTerritoryThisTurn: false,
+      cardState: {
+        ruleSetId: "standard",
+        tradeCount: 0,
+        deckCount: 5,
+        discardCount: 0,
+        nextTradeBonus: 4,
+        maxHandBeforeForcedTrade: 5,
+        currentPlayerMustTrade: false
+      },
+      diceRuleSet: {
+        id: "standard",
+        attackerMaxDice: 3,
+        defenderMaxDice: 2
+      },
+      attacksThisTurn: 0,
+      gameId: "g-conflict",
+      version: 4,
+      gameName: "Conflict Match",
+      playerId: "p1",
+      playerHand: []
+    };
+
+    return {
+      ...baseState,
+      ...overrides,
+      players: overrides.players || baseState.players,
+      map: overrides.map || baseState.map,
+      gameConfig: overrides.gameConfig || baseState.gameConfig,
+      cardState: {
+        ...baseState.cardState,
+        ...(overrides.cardState || {})
+      },
+      diceRuleSet: {
+        ...baseState.diceRuleSet,
+        ...(overrides.diceRuleSet || {})
+      },
+      playerHand: Object.prototype.hasOwnProperty.call(overrides, "playerHand")
+        ? overrides.playerHand
+        : baseState.playerHand,
+      log: Object.prototype.hasOwnProperty.call(overrides, "log") ? overrides.log : baseState.log,
+      pendingConquest: Object.prototype.hasOwnProperty.call(overrides, "pendingConquest")
+        ? overrides.pendingConquest
+        : baseState.pendingConquest
+    };
+  }
+
+  let currentState = buildGameplayState();
+  let actionCalls = 0;
+
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      json: {
+        user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] }
+      }
+    });
+  });
+
+  await page.route("**/api/state**", async (route) => {
+    await route.fulfill({ json: currentState });
+  });
+
+  await page.route("**/api/events**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
+  });
+
+  await page.route("**/api/action", async (route) => {
+    const payload = route.request().postDataJSON();
+    actionCalls += 1;
+
+    if (actionCalls === 1) {
+      expect(payload.type).toBe("reinforce");
+      expect(payload.expectedVersion).toBe(4);
+      expect(payload.territoryId).toBe("aurora");
+
+      currentState = buildGameplayState({
+        version: 5,
+        turnPhase: "attack",
+        reinforcementPool: 0,
+        map: [
+          {
+            id: "aurora",
+            name: "Aurora",
+            neighbors: ["bastion"],
+            continentId: "north",
+            ownerId: "p1",
+            armies: 4,
+            x: 0.2,
+            y: 0.3
+          },
+          {
+            id: "bastion",
+            name: "Bastion",
+            neighbors: ["aurora"],
+            continentId: "north",
+            ownerId: "p2",
+            armies: 1,
+            x: 0.65,
+            y: 0.45
+          }
+        ]
+      });
+
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          code: "VERSION_CONFLICT",
+          currentVersion: 5,
+          state: { ...currentState }
+        })
+      });
+      return;
+    }
+
+    expect(payload.type).toBe("attack");
+    expect(payload.expectedVersion).toBe(5);
+    expect(payload.fromId).toBe("aurora");
+    expect(payload.toId).toBe("bastion");
+    expect(payload.attackDice).toBe(1);
+
+    currentState = buildGameplayState({
+      version: 6,
+      turnPhase: "attack",
+      reinforcementPool: 0,
+      pendingConquest: {
+        fromId: "aurora",
+        toId: "bastion",
+        minArmies: 1,
+        maxArmies: 3
+      },
+      lastCombat: {
+        fromTerritoryId: "aurora",
+        toTerritoryId: "bastion",
+        attackerPlayerId: "p1",
+        defenderPlayerId: "p2",
+        attackDiceCount: 1,
+        defendDiceCount: 1,
+        attackerRolls: [6],
+        defenderRolls: [1],
+        comparisons: [{ attackerDie: 6, defenderDie: 1, winner: "attacker" }],
+        conqueredTerritory: false,
+        defenderReducedToZero: true
+      }
+    });
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        state: { ...currentState }
+      })
+    });
+  });
+
+  await page.goto("/react/game/g-conflict");
+
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*1/i
+  );
+
+  await page.getByRole("button", { name: "Aggiungi" }).click();
+
+  await expect(page.getByTestId("react-shell-game-feedback")).toContainText(
+    /Ho ricaricato lo stato piu recente|reloaded the latest state/i
+  );
+  await expect(page.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*0/i
+  );
+  await expect(page.locator("#attack-group")).toBeVisible();
+
+  await page.locator("#attack-to").selectOption("bastion");
+  await page.locator("#attack-dice").selectOption("1");
+  await page.getByRole("button", { name: "Lancia attacco" }).click();
+
+  await expect(page.locator("#conquest-group")).toBeVisible();
+  await expect(page.locator("#conquest-armies")).toHaveAttribute("placeholder", "1");
+});

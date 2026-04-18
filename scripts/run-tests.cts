@@ -2619,6 +2619,262 @@ register("frontend API client invia body JSON tipizzati per join e logout", asyn
   assert.equal(requests[1]?.init?.body, JSON.stringify({}));
 });
 
+register(
+  "frontend API client copre i boundary gameplay e recupera i version conflict",
+  async () => {
+    const client = await getFrontendApiClientModule();
+    const requests: Array<{ input: string; init?: Record<string, unknown> }> = [];
+    const gameId = "game 1/alpha";
+    const gameplayState = {
+      gameId,
+      gameName: "React Match",
+      version: 4,
+      playerId: "player-1",
+      phase: "active",
+      turnPhase: "reinforcement",
+      currentPlayerId: "player-1",
+      winnerId: null,
+      players: [
+        {
+          id: "player-1",
+          name: "Alice",
+          color: "#e85d04",
+          connected: true,
+          isAi: false,
+          territoryCount: 1,
+          eliminated: false,
+          cardCount: 3
+        },
+        {
+          id: "player-2",
+          name: "Bob",
+          color: "#0f4c5c",
+          connected: true,
+          isAi: false,
+          territoryCount: 1,
+          eliminated: false,
+          cardCount: 0
+        }
+      ],
+      map: [
+        {
+          id: "aurora",
+          name: "Aurora",
+          neighbors: ["bastion"],
+          continentId: "north",
+          ownerId: "player-1",
+          armies: 3,
+          x: 0.2,
+          y: 0.3
+        },
+        {
+          id: "bastion",
+          name: "Bastion",
+          neighbors: ["aurora"],
+          continentId: "north",
+          ownerId: "player-2",
+          armies: 1,
+          x: 0.65,
+          y: 0.45
+        }
+      ],
+      continents: [],
+      reinforcementPool: 3,
+      playerHand: [
+        { id: "c1", type: "infantry", territoryId: "aurora" },
+        { id: "c2", type: "cavalry", territoryId: "bastion" },
+        { id: "c3", type: "wild" }
+      ],
+      pendingConquest: null,
+      lastAction: null,
+      lastCombat: null,
+      cardState: {
+        ruleSetId: "standard",
+        tradeCount: 0,
+        deckCount: 12,
+        discardCount: 0,
+        nextTradeBonus: 4,
+        maxHandBeforeForcedTrade: 5,
+        currentPlayerMustTrade: false
+      },
+      gameConfig: {
+        mapId: "classic-mini",
+        mapName: "Classic Mini",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "human" }]
+      },
+      fortifyUsed: false,
+      attacksThisTurn: 0,
+      conqueredTerritoryThisTurn: false,
+      log: ["Gameplay route ready"],
+      logEntries: [
+        {
+          message: "Gameplay route ready",
+          messageKey: "game.log.lobbyCreated",
+          messageParams: {}
+        }
+      ]
+    };
+    const mutationState = {
+      ...gameplayState,
+      version: 5,
+      turnPhase: "attack",
+      reinforcementPool: 0
+    };
+
+    await withMockFetch(
+      async (input: string, init?: Record<string, unknown>) => {
+        requests.push({ input, init });
+
+        if (input === `/api/state?gameId=${encodeURIComponent(gameId)}`) {
+          return {
+            ok: true,
+            async json() {
+              return gameplayState;
+            }
+          };
+        }
+
+        if (input === "/api/start") {
+          return {
+            ok: true,
+            async json() {
+              return {
+                ok: true,
+                playerId: "player-1",
+                state: mutationState
+              };
+            }
+          };
+        }
+
+        if (input === "/api/action") {
+          return {
+            ok: true,
+            async json() {
+              return {
+                ok: true,
+                state: mutationState
+              };
+            }
+          };
+        }
+
+        if (input === "/api/cards/trade") {
+          return {
+            ok: true,
+            async json() {
+              return {
+                ok: true,
+                bonus: 4,
+                state: mutationState
+              };
+            }
+          };
+        }
+
+        throw new Error(`Unexpected request: ${input}`);
+      },
+      async () => {
+        const state = await client.getGameState(gameId, {
+          errorMessage: "Stato partita non disponibile",
+          fallbackMessage: "Stato partita non valido"
+        });
+        const started = await client.startGame(
+          {
+            gameId,
+            playerId: "player-1",
+            expectedVersion: 4
+          },
+          {
+            errorMessage: "Avvio partita non disponibile",
+            fallbackMessage: "Avvio partita non valido"
+          }
+        );
+        const action = await client.sendGameAction(
+          {
+            gameId,
+            playerId: "player-1",
+            type: "reinforce",
+            territoryId: "aurora",
+            amount: 1,
+            expectedVersion: 5
+          },
+          {
+            errorMessage: "Azione non disponibile",
+            fallbackMessage: "Azione non valida"
+          }
+        );
+        const trade = await client.tradeCards(
+          {
+            gameId,
+            playerId: "player-1",
+            cardIds: ["c1", "c2", "c3"],
+            expectedVersion: 5
+          },
+          {
+            errorMessage: "Trade non disponibile",
+            fallbackMessage: "Trade non valido"
+          }
+        );
+        const eventPayload = client.parseGameEventPayload(gameplayState);
+        const versionConflictPayload = {
+          code: "VERSION_CONFLICT",
+          currentVersion: 5,
+          state: mutationState
+        };
+        const versionConflictError = Object.assign(new Error("Conflitto versione"), {
+          code: "VERSION_CONFLICT",
+          payload: versionConflictPayload
+        });
+
+        assert.equal(state.gameId, gameId);
+        assert.equal(started.state.version, 5);
+        assert.equal(action.state.turnPhase, "attack");
+        assert.equal(trade.bonus, 4);
+        assert.equal(eventPayload.currentPlayerId, "player-1");
+        assert.deepEqual(
+          client.extractGameVersionConflict(versionConflictError),
+          versionConflictPayload
+        );
+        assert.equal(client.extractGameVersionConflict(new Error("Other error")), null);
+      }
+    );
+
+    assert.deepEqual(
+      requests.map((entry) => entry.input),
+      [
+        `/api/state?gameId=${encodeURIComponent(gameId)}`,
+        "/api/start",
+        "/api/action",
+        "/api/cards/trade"
+      ]
+    );
+    assert.equal(requests[1]?.init?.method, "POST");
+    assert.equal(requests[2]?.init?.method, "POST");
+    assert.equal(requests[3]?.init?.method, "POST");
+    assert.deepEqual(JSON.parse(String(requests[1]?.init?.body)), {
+      gameId,
+      playerId: "player-1",
+      expectedVersion: 4
+    });
+    assert.deepEqual(JSON.parse(String(requests[2]?.init?.body)), {
+      gameId,
+      playerId: "player-1",
+      type: "reinforce",
+      territoryId: "aurora",
+      amount: 1,
+      expectedVersion: 5
+    });
+    assert.deepEqual(JSON.parse(String(requests[3]?.init?.body)), {
+      gameId,
+      playerId: "player-1",
+      cardIds: ["c1", "c2", "c3"],
+      expectedVersion: 5
+    });
+  }
+);
+
 register("game action route segnala il version conflict prima di eseguire mutazioni", async () => {
   const res = makeMockResponse();
 
