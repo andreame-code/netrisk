@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "allowJs": false,
+    "checkJs": false,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@react-shell/*": ["frontend/react-shell/src/*"],
+      "@frontend-core/*": ["frontend/src/core/*"],
+      "@frontend-generated/*": ["frontend/src/generated/*"],
+      "@frontend-i18n": ["frontend/src/i18n.mts"],
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": [
+    "frontend/react-shell/**/*.ts",
+    "frontend/react-shell/**/*.tsx",
+    "frontend/react-shell/**/*.d.ts",
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.mts",
+    "frontend/src/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", ".git", ".tsbuild", "public", "playwright-report", "test-results"]
+}
