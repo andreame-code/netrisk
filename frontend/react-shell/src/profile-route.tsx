@@ -9,7 +9,7 @@ import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { updateAuthenticatedUser } from "@react-shell/auth-store";
-import { buildLegacyGamePath } from "@react-shell/legacy-game-handoff";
+import { buildReactGamePath } from "@react-shell/legacy-game-handoff";
 import { profileDetailQueryKey } from "@react-shell/react-query";
 import { applyShellTheme, shellThemes, themeLabel } from "@react-shell/theme";
 
@@ -280,7 +280,7 @@ export function ProfileRoute() {
 
                         <a
                           className="ghost-action"
-                          href={buildLegacyGamePath(game.id)}
+                          href={buildReactGamePath(game.id)}
                           data-testid={`react-shell-profile-open-${game.id}`}
                         >
                           {t("profile.runtime.directive.resume")}

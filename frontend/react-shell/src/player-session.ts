@@ -12,3 +12,15 @@ export function storeCurrentPlayerId(playerId: string | null | undefined): void 
     // Preserve navigation behavior even if storage is unavailable.
   }
 }
+
+export function readCurrentPlayerId(): string | null {
+  try {
+    return window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearCurrentPlayerId(): void {
+  storeCurrentPlayerId(null);
+}

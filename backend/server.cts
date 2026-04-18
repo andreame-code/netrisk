@@ -62,6 +62,7 @@ const {
 } = require("./routes/password-auth.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
+const { gameEventPayloadSchema } = require("../shared/runtime-validation.cjs");
 
 type Request = import("http").IncomingMessage;
 type Response = import("http").ServerResponse;
@@ -432,9 +433,8 @@ function createApp(options: CreateAppOptions = {}) {
 
     broadcastEventPayload(
       clients,
-      (client: EventClient) =>
-        "data: " +
-        JSON.stringify(
+      (client: EventClient) => {
+        const payloadResult = gameEventPayloadSchema.safeParse(
           snapshotForUser(
             gameContext.state,
             gameContext.gameId,
@@ -442,8 +442,13 @@ function createApp(options: CreateAppOptions = {}) {
             gameContext.gameName,
             client.user
           )
-        ) +
-        "\n\n"
+        );
+        if (!payloadResult.success) {
+          throw new Error("Invalid gameplay event payload.");
+        }
+
+        return "data: " + JSON.stringify(payloadResult.data) + "\n\n";
+      }
     );
 
     if (!clients.size) {
@@ -716,7 +721,8 @@ function createApp(options: CreateAppOptions = {}) {
         auth.getUserFromSession,
         extractSessionToken,
         snapshotForUser,
-        sendJson
+        sendJson,
+        sendLocalizedError
       );
       return;
     }
@@ -1039,7 +1045,8 @@ function createApp(options: CreateAppOptions = {}) {
         loadGameContext,
         resumeAiTurnsForRead,
         snapshotForUser,
-        clientsByGameId
+        clientsByGameId,
+        sendLocalizedError
       );
       return;
     }
@@ -1132,7 +1139,7 @@ function createApp(options: CreateAppOptions = {}) {
         tradeCardSet,
         persistGameContext,
         broadcastGame,
-        snapshotForState,
+        snapshotForUser,
         sendJson,
         sendLocalizedError
       );

@@ -645,6 +645,265 @@ select {
   gap: 0.75rem;
 }
 
+.gameplay-page-header {
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
+
+.gameplay-page-header h2 {
+  margin: 0;
+}
+
+.gameplay-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+  align-items: start;
+}
+
+.gameplay-map-card,
+.gameplay-sidebar,
+.gameplay-action-card,
+.gameplay-side-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.gameplay-sidebar {
+  align-content: start;
+}
+
+.gameplay-section-header,
+.gameplay-subsection-header {
+  margin-bottom: 0;
+}
+
+.gameplay-section-header h3,
+.gameplay-subsection-header h4 {
+  margin: 0.2rem 0 0;
+  font-size: 1.1rem;
+}
+
+.game-trade-alert {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(173, 79, 31, 0.28);
+  background: rgba(255, 244, 233, 0.9);
+}
+
+.game-status-banner,
+.game-meta-grid,
+.game-action-stack,
+.game-player-list,
+.game-card-grid,
+.game-combat-panel,
+.game-log-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.game-status-banner {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.game-status-banner span,
+.game-meta-item span,
+.game-player-card span,
+.game-card-pill span,
+.game-combat-row span,
+.game-map-legend,
+.gameplay-fallback-note {
+  color: var(--shell-muted);
+}
+
+.game-meta-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.game-meta-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.game-map-board {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  border-radius: 22px;
+  border: 1px solid var(--shell-border);
+  background:
+    radial-gradient(circle at top left, rgba(237, 120, 71, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(233, 225, 214, 0.92));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.game-map-board.has-image {
+  background-size: cover;
+}
+
+.game-map-connections {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.game-map-connections line {
+  stroke: rgba(22, 32, 51, 0.18);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.territory-node {
+  --territory-player-color: rgba(22, 32, 51, 0.7);
+  position: absolute;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 6.25rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--shell-heading);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 24px rgba(22, 32, 51, 0.12);
+  cursor: pointer;
+  text-align: left;
+}
+
+.territory-node strong {
+  font-size: 0.92rem;
+}
+
+.territory-node span {
+  color: var(--shell-muted);
+  font-size: 0.78rem;
+}
+
+.territory-node .territory-armies {
+  color: var(--shell-heading);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.territory-node::before {
+  content: "";
+  position: absolute;
+  inset: auto auto 0.55rem 0.55rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--territory-player-color);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.88);
+}
+
+.territory-node:hover,
+.territory-node.is-source,
+.territory-node.is-target,
+.territory-node.is-reinforce,
+.territory-node.is-fortify-source,
+.territory-node.is-fortify-target {
+  border-color: var(--shell-accent);
+}
+
+.territory-node.is-mine {
+  background: rgba(255, 248, 241, 0.96);
+}
+
+.game-map-legend {
+  font-size: 0.9rem;
+}
+
+.game-action-group {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.game-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.game-card-pill {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  cursor: pointer;
+}
+
+.game-card-pill.is-selected {
+  border-color: var(--shell-accent);
+  background: rgba(255, 247, 240, 0.94);
+}
+
+.gameplay-primary-actions {
+  justify-content: flex-start;
+}
+
+.gameplay-fallback-note {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.game-player-card,
+.game-log-entry {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.game-player-card {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.game-player-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.game-player-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+}
+
+.game-combat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.game-log-list {
+  max-height: 320px;
+  overflow: auto;
+}
+
 @media (max-width: 760px) {
   .react-shell-page {
     width: min(100% - 1.25rem, 100%);
@@ -687,7 +946,16 @@ select {
   .new-game-advanced-grid,
   .new-game-inline-grid,
   .new-game-slot-grid,
-  .lobby-detail-grid {
+  .lobby-detail-grid,
+  .gameplay-shell,
+  .game-status-banner,
+  .game-meta-grid,
+  .game-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .territory-node {
+    min-width: 5.2rem;
+    padding: 0.45rem 0.5rem;
   }
 }

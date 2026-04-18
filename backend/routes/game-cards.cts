@@ -1,3 +1,10 @@
+const {
+  gameMutationResponseSchema,
+  gameVersionConflictResponseSchema,
+  tradeCardsRequestSchema
+} = require("../../shared/runtime-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -34,11 +41,12 @@ type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type TradeCardSet = (state: any, playerId: string, cardIds: string[]) => any;
 type PersistGameContext = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
 type BroadcastGame = (gameContext: any) => void;
-type SnapshotForState = (
+type SnapshotForUser = (
   state: any,
   gameId: string | null,
   version: number | null,
-  gameName: string | null
+  gameName: string | null,
+  user: unknown
 ) => unknown;
 
 async function handleCardsTradeRoute(
@@ -54,7 +62,7 @@ async function handleCardsTradeRoute(
   tradeCardSet: TradeCardSet,
   persistGameContext: PersistGameContext,
   broadcastGame: BroadcastGame,
-  snapshotForState: SnapshotForState,
+  snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
@@ -63,17 +71,9 @@ async function handleCardsTradeRoute(
     return;
   }
 
-  const gameContext = await loadGameContext(getTargetGameId(body, url));
-  const player = getPlayer(gameContext.state, body.playerId);
-  if (!player || !playerBelongsToUser(player, authContext.user)) {
-    sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
-    return;
-  }
-
-  const requestedVersion = body.expectedVersion == null ? null : Number(body.expectedVersion);
   if (
     body.expectedVersion != null &&
-    (!Number.isInteger(requestedVersion ?? NaN) || (requestedVersion ?? 0) < 1)
+    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
   ) {
     sendLocalizedError(
       res,
@@ -84,29 +84,56 @@ async function handleCardsTradeRoute(
     );
     return;
   }
+
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    resolvedBody,
+    tradeCardsRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
+  const nodeResponse = res as import("node:http").ServerResponse;
+  const gameContext = await loadGameContext(parsedBody.gameId ?? null);
+  const player = getPlayer(gameContext.state, parsedBody.playerId);
+  if (!player || !playerBelongsToUser(player, authContext.user)) {
+    sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
+    return;
+  }
+
+  const requestedVersion = parsedBody.expectedVersion ?? null;
   if (requestedVersion != null && requestedVersion !== gameContext.version) {
-    sendLocalizedError(
-      res,
+    sendValidatedJson(
+      nodeResponse,
       409,
-      null,
-      "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
-      "server.versionConflict",
-      {},
-      "VERSION_CONFLICT",
       {
+        error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+        messageKey: "server.versionConflict",
+        messageParams: {},
+        code: "VERSION_CONFLICT",
         currentVersion: gameContext.version,
-        state: snapshotForState(
+        state: snapshotForUser(
           gameContext.state,
           gameContext.gameId,
           gameContext.version,
-          gameContext.gameName
+          gameContext.gameName,
+          authContext.user
         )
-      }
+      },
+      gameVersionConflictResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
     );
     return;
   }
 
-  const result = tradeCardSet(gameContext.state, body.playerId, body.cardIds);
+  const result = tradeCardSet(gameContext.state, parsedBody.playerId, parsedBody.cardIds);
   if (!result.ok) {
     sendLocalizedError(res, 400, result, result.message, result.messageKey, result.messageParams);
     return;
@@ -116,23 +143,26 @@ async function handleCardsTradeRoute(
     await persistGameContext(gameContext, requestedVersion);
   } catch (error: any) {
     if (error && error.code === "VERSION_CONFLICT") {
-      sendLocalizedError(
-        res,
+      sendValidatedJson(
+        nodeResponse,
         409,
-        error,
-        error.message,
-        error.messageKey || "server.versionConflict",
-        {},
-        error.code,
         {
+          error: error.message,
+          messageKey: error.messageKey || "server.versionConflict",
+          messageParams: {},
+          code: error.code,
           currentVersion: error.currentVersion,
-          state: snapshotForState(
+          state: snapshotForUser(
             error.currentState,
             gameContext.gameId,
             error.currentVersion,
-            error.game?.name || gameContext.gameName
+            error.game?.name || gameContext.gameName,
+            authContext.user
           )
-        }
+        },
+        gameVersionConflictResponseSchema,
+        sendJson as SendJson,
+        sendLocalizedError as SendLocalizedError
       );
       return;
     }
@@ -141,17 +171,25 @@ async function handleCardsTradeRoute(
   }
 
   broadcastGame(gameContext);
-  sendJson(res, 200, {
-    ok: true,
-    bonus: result.bonus,
-    validation: result.validation,
-    state: snapshotForState(
-      gameContext.state,
-      gameContext.gameId,
-      gameContext.version,
-      gameContext.gameName
-    )
-  });
+  sendValidatedJson(
+    nodeResponse,
+    200,
+    {
+      ok: true,
+      bonus: result.bonus,
+      validation: result.validation,
+      state: snapshotForUser(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName,
+        authContext.user
+      )
+    },
+    gameMutationResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError as SendLocalizedError
+  );
 }
 
 module.exports = {

@@ -8,6 +8,8 @@ type ValidationSchema<T> = {
 
 export type ApiClientError = Error & {
   code?: string | null;
+  payload?: unknown;
+  status?: number;
 };
 
 type JsonRequestOptions<TRequest, TResponse> = {
@@ -27,6 +29,8 @@ function toApiClientError(
   options: {
     cause?: unknown;
     code?: string | null;
+    payload?: unknown;
+    status?: number;
   } = {}
 ): ApiClientError {
   const error = new Error(message, {
@@ -35,6 +39,14 @@ function toApiClientError(
 
   if (options.code !== undefined) {
     error.code = options.code;
+  }
+
+  if (options.payload !== undefined) {
+    error.payload = options.payload;
+  }
+
+  if (options.status !== undefined) {
+    error.status = options.status;
   }
 
   return error;
@@ -95,7 +107,9 @@ export async function requestJson<TRequest, TResponse>({
   if (!response.ok) {
     const payload = await tryReadJson(response);
     throw toApiClientError(translateServerMessage(payload, errorMessage), {
-      code: extractErrorCode(payload)
+      code: extractErrorCode(payload),
+      payload,
+      status: response.status
     });
   }
 

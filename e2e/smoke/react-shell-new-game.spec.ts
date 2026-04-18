@@ -21,7 +21,7 @@ async function createAuthenticatedSession(page, username, password = "secret123"
 }
 
 function currentGameId(url) {
-  return url.match(/\/game\/([^/?#]+)/)?.[1] || null;
+  return url.match(/\/(?:react\/)?game\/([^/?#]+)/)?.[1] || null;
 }
 
 async function loadGameState(page, sessionToken, gameId) {
@@ -75,7 +75,7 @@ test("react new game shows loading before creation options render", async ({ pag
   await expect(page.getByTestId("react-shell-lobby-create-page")).toBeVisible();
 });
 
-test("react new game creates a session and hands off to the legacy board", async ({ page }) => {
+test("react new game creates a session and opens the React gameplay route", async ({ page }) => {
   await resetGame(page);
 
   const commander = uniqueUser("rsh_new_game_basic");
@@ -92,8 +92,9 @@ test("react new game creates a session and hands off to the legacy board", async
   await page.getByTestId("react-shell-new-game-slot-3").selectOption("ai");
   await page.getByTestId("react-shell-new-game-submit").click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\/[^/?#]+$/);
-  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/react\/game\/[^/?#]+$/);
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByText(gameName)).toBeVisible();
 
   const gameId = currentGameId(page.url());
   expect(gameId).toBeTruthy();
@@ -176,8 +177,9 @@ test("react new game supports advanced module, profile, and option selections", 
 
   await page.getByTestId("react-shell-new-game-submit").click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\/[^/?#]+$/);
-  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/react\/game\/[^/?#]+$/);
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByText(gameName)).toBeVisible();
 
   const gameId = currentGameId(page.url());
   expect(gameId).toBeTruthy();

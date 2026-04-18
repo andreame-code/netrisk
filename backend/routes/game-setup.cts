@@ -47,7 +47,9 @@ type StartGame = (state: any) => any;
 
 const {
   gameIdRequestSchema,
-  gameMutationResponseSchema
+  gameMutationResponseSchema,
+  gameVersionConflictResponseSchema,
+  startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
@@ -110,6 +112,20 @@ async function handleJoinRoute(
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
+    return;
+  }
+
+  if (
+    body.expectedVersion != null &&
+    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
+  ) {
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "expectedVersion non valida.",
+      "server.invalidExpectedVersion"
+    );
     return;
   }
 
@@ -188,7 +204,23 @@ async function handleStartRoute(
     return;
   }
 
-  const gameContext = await loadGameContext(getTargetGameId(body, url));
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    resolvedBody,
+    startGameRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
+  const nodeResponse = res as import("node:http").ServerResponse;
+  const expectedVersion = parsedBody.expectedVersion ?? null;
+  const gameContext = await loadGameContext(parsedBody.gameId ?? null);
   if (gameContext.state.phase !== "lobby") {
     sendLocalizedError(res, 400, null, "La partita e gia iniziata.", "server.game.alreadyStarted");
     return;
@@ -220,24 +252,84 @@ async function handleStartRoute(
     return;
   }
 
-  const player = getPlayer(gameContext.state, body.playerId);
+  if (expectedVersion != null && expectedVersion !== gameContext.version) {
+    sendValidatedJson(
+      nodeResponse,
+      409,
+      {
+        error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+        messageKey: "server.versionConflict",
+        messageParams: {},
+        code: "VERSION_CONFLICT",
+        currentVersion: gameContext.version,
+        state: snapshotForState(
+          gameContext.state,
+          gameContext.gameId,
+          gameContext.version,
+          gameContext.gameName
+        )
+      },
+      gameVersionConflictResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
+    );
+    return;
+  }
+
+  const player = getPlayer(gameContext.state, parsedBody.playerId);
   if (!player || !playerBelongsToUser(player, authContext.user)) {
     sendLocalizedError(res, 403, null, "Giocatore non valido.", "game.invalidPlayer");
     return;
   }
 
   startGame(gameContext.state);
-  await persistWithAiTurns(gameContext);
+  try {
+    await persistWithAiTurns(gameContext, expectedVersion);
+  } catch (error: any) {
+    if (error && error.code === "VERSION_CONFLICT") {
+      sendValidatedJson(
+        nodeResponse,
+        409,
+        {
+          error: error.message,
+          messageKey: error.messageKey || "server.versionConflict",
+          messageParams: {},
+          code: error.code,
+          currentVersion: error.currentVersion,
+          state: snapshotForState(
+            error.currentState,
+            gameContext.gameId,
+            error.currentVersion,
+            error.game?.name || gameContext.gameName
+          )
+        },
+        gameVersionConflictResponseSchema,
+        sendJson as SendJson,
+        sendLocalizedError as SendLocalizedError
+      );
+      return;
+    }
+
+    throw error;
+  }
   broadcastGame(gameContext);
-  sendJson(res, 200, {
-    ok: true,
-    state: snapshotForState(
-      gameContext.state,
-      gameContext.gameId,
-      gameContext.version,
-      gameContext.gameName
-    )
-  });
+  sendValidatedJson(
+    nodeResponse,
+    200,
+    {
+      ok: true,
+      playerId: parsedBody.playerId,
+      state: snapshotForState(
+        gameContext.state,
+        gameContext.gameId,
+        gameContext.version,
+        gameContext.gameName
+      )
+    },
+    gameMutationResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError as SendLocalizedError
+  );
 }
 
 module.exports = {
