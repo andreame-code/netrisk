@@ -488,6 +488,163 @@ select {
   color: var(--shell-muted);
 }
 
+.lobby-summary-grid,
+.lobby-shell-grid,
+.new-game-grid,
+.new-game-advanced-grid,
+.new-game-inline-grid,
+.new-game-slot-grid,
+.lobby-detail-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.lobby-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1.5rem;
+}
+
+.lobby-summary-card,
+.lobby-list-panel,
+.lobby-detail-panel,
+.new-game-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.lobby-summary-card strong,
+.new-game-card h3,
+.lobby-panel-header h3,
+.new-game-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.lobby-summary-card span,
+.new-game-module-item small,
+.new-game-slot-copy small,
+.shell-field small {
+  color: var(--shell-muted);
+}
+
+.lobby-shell-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.lobby-panel-header,
+.new-game-card-header {
+  margin-bottom: 0;
+}
+
+.lobby-session-list,
+.new-game-modules-stack,
+.new-game-module-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.lobby-session-row,
+.new-game-module-item {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.lobby-session-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lobby-session-row.is-selected {
+  border-color: var(--shell-accent);
+}
+
+.lobby-session-row:hover {
+  border-color: var(--shell-border);
+}
+
+.lobby-session-primary,
+.lobby-session-meta {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.lobby-session-primary span,
+.lobby-session-meta span,
+.lobby-load-more-state,
+.lobby-detail-item span {
+  color: var(--shell-muted);
+}
+
+.lobby-load-more-state {
+  padding: 0.85rem 1rem 0;
+}
+
+.lobby-detail-grid,
+.new-game-inline-grid,
+.new-game-advanced-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lobby-detail-item,
+.new-game-slot-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.new-game-form {
+  margin-top: 1.5rem;
+}
+
+.new-game-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.new-game-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--shell-copy);
+}
+
+.new-game-module-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+}
+
+.new-game-module-item span,
+.new-game-slot-copy {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.new-game-slot-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.new-game-slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lobby-empty-state {
+  display: grid;
+  gap: 0.75rem;
+}
+
 @media (max-width: 760px) {
   .react-shell-page {
     width: min(100% - 1.25rem, 100%);
@@ -515,13 +672,22 @@ select {
   .card-header,
   .game-list-item,
   .shell-actions,
-  .profile-active-game-card {
+  .profile-active-game-card,
+  .lobby-session-row,
+  .new-game-slot-head {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .profile-pilot-grid,
-  .profile-metric-grid {
+  .profile-metric-grid,
+  .lobby-summary-grid,
+  .lobby-shell-grid,
+  .new-game-grid,
+  .new-game-advanced-grid,
+  .new-game-inline-grid,
+  .new-game-slot-grid,
+  .lobby-detail-grid {
     grid-template-columns: 1fr;
   }
 }
