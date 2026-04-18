@@ -145,7 +145,9 @@ function filterProfilesForSelectedModules(
     return [];
   }
 
-  return profiles.filter((profile) => !profile.moduleId || selectedModuleIds.includes(profile.moduleId));
+  return profiles.filter(
+    (profile) => !profile.moduleId || selectedModuleIds.includes(profile.moduleId)
+  );
 }
 
 function sanitizeProfiles(
@@ -239,17 +241,29 @@ function applyGamePreset(
     contentProfileId: preset.contentProfileId || "",
     gameplayProfileId: preset.gameplayProfileId || "",
     uiProfileId: preset.uiProfileId || "",
-    contentPackId: pickPresetId(preset.defaults?.contentPackId, formState.contentPackId, options.contentPacks),
+    contentPackId: pickPresetId(
+      preset.defaults?.contentPackId,
+      formState.contentPackId,
+      options.contentPacks
+    ),
     ruleSetId: pickPresetId(preset.defaults?.ruleSetId, formState.ruleSetId, options.ruleSets),
     mapId: pickPresetId(preset.defaults?.mapId, formState.mapId, options.maps),
-    diceRuleSetId: pickPresetId(preset.defaults?.diceRuleSetId, formState.diceRuleSetId, options.diceRuleSets),
+    diceRuleSetId: pickPresetId(
+      preset.defaults?.diceRuleSetId,
+      formState.diceRuleSetId,
+      options.diceRuleSets
+    ),
     victoryRuleSetId: pickPresetId(
       preset.defaults?.victoryRuleSetId,
       formState.victoryRuleSetId,
       options.victoryRuleSets
     ),
     themeId: pickPresetId(preset.defaults?.themeId, formState.themeId, options.themes),
-    pieceSkinId: pickPresetId(preset.defaults?.pieceSkinId, formState.pieceSkinId, options.pieceSkins)
+    pieceSkinId: pickPresetId(
+      preset.defaults?.pieceSkinId,
+      formState.pieceSkinId,
+      options.pieceSkins
+    )
   };
 
   return sanitizeProfiles(nextState, options);
@@ -296,7 +310,8 @@ export function LobbyCreateRoute() {
   });
 
   const options = gameOptionsQuery.data;
-  const availableModules = options?.modules?.filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
+  const availableModules =
+    options?.modules?.filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
   const contentProfiles = filterProfilesForSelectedModules(
     options?.contentProfiles,
     formState?.selectedModuleIds || []
@@ -340,7 +355,9 @@ export function LobbyCreateRoute() {
       ...(formState.themeId ? { themeId: formState.themeId } : {}),
       ...(formState.pieceSkinId ? { pieceSkinId: formState.pieceSkinId } : {}),
       ...(formState.gamePresetId ? { gamePresetId: formState.gamePresetId } : {}),
-      ...(formState.selectedModuleIds.length ? { activeModuleIds: formState.selectedModuleIds } : {}),
+      ...(formState.selectedModuleIds.length
+        ? { activeModuleIds: formState.selectedModuleIds }
+        : {}),
       ...(formState.contentProfileId ? { contentProfileId: formState.contentProfileId } : {}),
       ...(formState.gameplayProfileId ? { gameplayProfileId: formState.gameplayProfileId } : {}),
       ...(formState.uiProfileId ? { uiProfileId: formState.uiProfileId } : {}),
@@ -348,10 +365,12 @@ export function LobbyCreateRoute() {
         ? { turnTimeoutHours: Number(formState.turnTimeoutHours) }
         : {}),
       totalPlayers: formState.totalPlayers,
-      players: ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map((type, index) => ({
-        slot: index + 1,
-        type
-      }))
+      players: ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
+        (type, index) => ({
+          slot: index + 1,
+          type
+        })
+      )
     };
 
     try {
@@ -450,7 +469,11 @@ export function LobbyCreateRoute() {
               <select
                 value={formState.contentPackId}
                 onChange={(event) => {
-                  const nextState = applyContentPackDefaults(formState, options, event.target.value);
+                  const nextState = applyContentPackDefaults(
+                    formState,
+                    options,
+                    event.target.value
+                  );
                   updateFormState({
                     ...nextState,
                     gamePresetId: ""
@@ -527,7 +550,10 @@ export function LobbyCreateRoute() {
                 >
                   {Array.from(
                     {
-                      length: Math.max((options.playerRange?.max || 4) - (options.playerRange?.min || 2) + 1, 1)
+                      length: Math.max(
+                        (options.playerRange?.max || 4) - (options.playerRange?.min || 2) + 1,
+                        1
+                      )
                     },
                     (_, index) => (options.playerRange?.min || 2) + index
                   ).map((playerCount) => (
@@ -672,7 +698,11 @@ export function LobbyCreateRoute() {
               <p className="metric-copy">{t("newGame.options.copy")}</p>
             )}
 
-            {(options.gamePresets?.length || availableModules.length || contentProfiles.length || gameplayProfiles.length || uiProfiles.length) ? (
+            {options.gamePresets?.length ||
+            availableModules.length ||
+            contentProfiles.length ||
+            gameplayProfiles.length ||
+            uiProfiles.length ? (
               <div className="new-game-modules-stack">
                 {options.gamePresets?.length ? (
                   <label className="shell-field">
@@ -706,7 +736,9 @@ export function LobbyCreateRoute() {
                             onChange={(event) => {
                               const nextSelectedModuleIds = event.target.checked
                                 ? [...formState.selectedModuleIds, moduleEntry.id]
-                                : formState.selectedModuleIds.filter((entry) => entry !== moduleEntry.id);
+                                : formState.selectedModuleIds.filter(
+                                    (entry) => entry !== moduleEntry.id
+                                  );
                               updateFormState({
                                 ...formState,
                                 selectedModuleIds: nextSelectedModuleIds,
@@ -717,7 +749,9 @@ export function LobbyCreateRoute() {
                           />
                           <span>
                             <strong>{moduleEntry.displayName}</strong>
-                            <small>{moduleEntry.description || moduleEntry.kind || moduleEntry.id}</small>
+                            <small>
+                              {moduleEntry.description || moduleEntry.kind || moduleEntry.id}
+                            </small>
                           </span>
                         </label>
                       );
@@ -807,46 +841,48 @@ export function LobbyCreateRoute() {
           </div>
 
           <div className="new-game-slot-grid">
-            {ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map((playerType, index) => (
-              <article className="new-game-slot-card" key={`slot-${index + 1}`}>
-                <div className="new-game-slot-head">
-                  <strong>{t("newGame.slot.playerLabel", { number: index + 1 })}</strong>
-                  {index === 0 ? (
-                    <span className="status-pill">{t("newGame.slot.creatorBadge")}</span>
-                  ) : null}
-                </div>
-
-                {index === 0 ? (
-                  <div className="new-game-slot-copy">
-                    <span>{t("newGame.slot.humanOption")}</span>
-                    <small>{playerSlotDescription(playerType, index)}</small>
+            {ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
+              (playerType, index) => (
+                <article className="new-game-slot-card" key={`slot-${index + 1}`}>
+                  <div className="new-game-slot-head">
+                    <strong>{t("newGame.slot.playerLabel", { number: index + 1 })}</strong>
+                    {index === 0 ? (
+                      <span className="status-pill">{t("newGame.slot.creatorBadge")}</span>
+                    ) : null}
                   </div>
-                ) : (
-                  <label className="shell-field">
-                    <span>{t("newGame.slot.typeLabel")}</span>
-                    <select
-                      value={playerType}
-                      onChange={(event) => {
-                        const nextPlayerTypes = ensurePlayerTypes(
-                          formState.playerTypes,
-                          formState.totalPlayers
-                        );
-                        nextPlayerTypes[index] = event.target.value;
-                        updateFormState({
-                          ...formState,
-                          playerTypes: nextPlayerTypes
-                        });
-                      }}
-                      data-testid={`react-shell-new-game-slot-${index + 1}`}
-                    >
-                      <option value="human">{t("newGame.slot.humanOption")}</option>
-                      <option value="ai">{t("newGame.slot.aiOption")}</option>
-                    </select>
-                    <small>{playerSlotDescription(playerType, index)}</small>
-                  </label>
-                )}
-              </article>
-            ))}
+
+                  {index === 0 ? (
+                    <div className="new-game-slot-copy">
+                      <span>{t("newGame.slot.humanOption")}</span>
+                      <small>{playerSlotDescription(playerType, index)}</small>
+                    </div>
+                  ) : (
+                    <label className="shell-field">
+                      <span>{t("newGame.slot.typeLabel")}</span>
+                      <select
+                        value={playerType}
+                        onChange={(event) => {
+                          const nextPlayerTypes = ensurePlayerTypes(
+                            formState.playerTypes,
+                            formState.totalPlayers
+                          );
+                          nextPlayerTypes[index] = event.target.value;
+                          updateFormState({
+                            ...formState,
+                            playerTypes: nextPlayerTypes
+                          });
+                        }}
+                        data-testid={`react-shell-new-game-slot-${index + 1}`}
+                      >
+                        <option value="human">{t("newGame.slot.humanOption")}</option>
+                        <option value="ai">{t("newGame.slot.aiOption")}</option>
+                      </select>
+                      <small>{playerSlotDescription(playerType, index)}</small>
+                    </label>
+                  )}
+                </article>
+              )
+            )}
           </div>
 
           <div className="shell-actions">
