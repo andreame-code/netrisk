@@ -60,7 +60,7 @@ export function ProfileRoute() {
   }, [committedTheme]);
 
   const profileQuery = useQuery({
-    queryKey: profileDetailQueryKey,
+    queryKey: profileDetailQueryKey(String(authenticatedUser?.id ?? "anonymous")),
     queryFn: () =>
       getProfile({
         errorMessage: t("profile.errors.unavailable"),
@@ -111,7 +111,7 @@ export function ProfileRoute() {
       applyShellTheme(storedTheme);
       setSelectedTheme(storedTheme);
       setThemeFeedbackMode("saved");
-      await queryClient.invalidateQueries({ queryKey: profileDetailQueryKey });
+      await queryClient.invalidateQueries({ queryKey: profileDetailQueryKey(currentUser.id) });
     } catch (error) {
       applyShellTheme(previousTheme);
       setSelectedTheme(previousTheme);
