@@ -74,6 +74,7 @@ const {
   handleThemePreferenceRoute
 } = require("../backend/routes/account.cjs");
 const { handleGameActionRoute } = require("../backend/routes/game-actions.cjs");
+const { handleCardsTradeRoute } = require("../backend/routes/game-cards.cjs");
 const { handleAttackGameActionRoute } = require("../backend/routes/game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("../backend/routes/game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("../backend/routes/game-actions-turn.cjs");
@@ -84,6 +85,7 @@ const {
 const { handleJoinRoute } = require("../backend/routes/game-setup.cjs");
 const { handleGamesListRoute } = require("../backend/routes/game-overview.cjs");
 const { handleHealthRoute } = require("../backend/routes/health.cjs");
+const { authorize } = require("../backend/authorization.cjs");
 const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
@@ -1947,6 +1949,168 @@ register("game action route rifiuta player non associato all'utente", async () =
     messageParams: {},
     code: null
   });
+});
+
+register(
+  "cards trade route rifiuta expectedVersion non intero prima di mutare lo stato",
+  async () => {
+    const res = makeMockResponse();
+    let tradeCalled = false;
+
+    await handleCardsTradeRoute(
+      { method: "POST", headers: {} },
+      res,
+      { playerId: "player-1", cardIds: ["c1", "c2", "c3"], expectedVersion: "abc" },
+      new URL("http://127.0.0.1/api/cards/trade"),
+      async () => ({ user: { id: "user-1", username: "alice" } }),
+      async () => ({ state: {}, version: 4, gameId: "game-1", gameName: "G1" }),
+      () => "game-1",
+      () => ({ id: "player-1" }),
+      () => true,
+      () => {
+        tradeCalled = true;
+        return { ok: true, bonus: 4, validation: { ok: true } };
+      },
+      async () => {
+        throw new Error("persist should not be called");
+      },
+      () => {},
+      () => ({ snapshot: true }),
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(res.statusCode, 400);
+    assert.equal(tradeCalled, false);
+    const payload = JSON.parse(res.body);
+    assert.equal(payload.messageKey, "server.invalidExpectedVersion");
+  }
+);
+
+register("cards trade route restituisce 409 su expectedVersion stale", async () => {
+  const res = makeMockResponse();
+  let tradeCalled = false;
+
+  await handleCardsTradeRoute(
+    { method: "POST", headers: {} },
+    res,
+    { playerId: "player-1", cardIds: ["c1", "c2", "c3"], expectedVersion: 2 },
+    new URL("http://127.0.0.1/api/cards/trade"),
+    async () => ({ user: { id: "user-1", username: "alice" } }),
+    async () => ({ state: { turn: 3 }, version: 5, gameId: "game-1", gameName: "G1" }),
+    () => "game-1",
+    () => ({ id: "player-1" }),
+    () => true,
+    () => {
+      tradeCalled = true;
+      return { ok: true, bonus: 4, validation: { ok: true } };
+    },
+    async () => {
+      throw new Error("persist should not be called");
+    },
+    () => {},
+    (state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+      state,
+      gameId,
+      version,
+      gameName
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(tradeCalled, false);
+  const payload = JSON.parse(res.body);
+  assert.equal(payload.code, "VERSION_CONFLICT");
+  assert.equal(payload.currentVersion, 5);
+  assert.equal(payload.state.version, 5);
+});
+
+register(
+  "cards trade route mappa version conflict in persistenza e include snapshot aggiornato",
+  async () => {
+    const res = makeMockResponse();
+    let broadcastCalled = false;
+
+    await handleCardsTradeRoute(
+      { method: "POST", headers: {} },
+      res,
+      { playerId: "player-1", cardIds: ["c1", "c2", "c3"], expectedVersion: 3 },
+      new URL("http://127.0.0.1/api/cards/trade"),
+      async () => ({ user: { id: "user-1", username: "alice" } }),
+      async () => ({ state: { phase: "attack" }, version: 3, gameId: "game-1", gameName: "G1" }),
+      () => "game-1",
+      () => ({ id: "player-1" }),
+      () => true,
+      () => ({ ok: true, bonus: 6, validation: { ok: true } }),
+      async () => {
+        const error = new Error("stale") as Error & {
+          code?: string;
+          currentVersion?: number;
+          currentState?: Record<string, unknown>;
+          game?: { name?: string };
+          messageKey?: string;
+        };
+        error.code = "VERSION_CONFLICT";
+        error.currentVersion = 4;
+        error.currentState = { phase: "fortify" };
+        error.game = { name: "Updated Game" };
+        throw error;
+      },
+      () => {
+        broadcastCalled = true;
+      },
+      (state: any, gameId: string | null, version: number | null, gameName: string | null) => ({
+        state,
+        gameId,
+        version,
+        gameName
+      }),
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(res.statusCode, 409);
+    assert.equal(broadcastCalled, false);
+    const payload = JSON.parse(res.body);
+    assert.equal(payload.code, "VERSION_CONFLICT");
+    assert.equal(payload.currentVersion, 4);
+    assert.equal(payload.state.gameName, "Updated Game");
+    assert.equal(payload.state.state.phase, "fortify");
+  }
+);
+
+register("authorization consente game:read in lobby anche a spettatore autenticato", () => {
+  const result = authorize("game:read", {
+    user: { id: "user-1", username: "spectator", role: "user" },
+    game: { phase: "lobby", creatorUserId: "host-1" },
+    state: { players: [{ linkedUserId: "host-1", name: "Host" }] }
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.actor.id, "user-1");
+});
+
+register("authorization blocca game:read per utente non membro su partita avviata", () => {
+  assert.throws(
+    () =>
+      authorize("game:read", {
+        user: { id: "user-3", username: "outsider", role: "user" },
+        game: { phase: "attack", creatorUserId: "host-1" },
+        state: {
+          players: [
+            { linkedUserId: "host-1", name: "Host" },
+            { linkedUserId: "user-2", name: "Player2" }
+          ]
+        }
+      }),
+    (error: Error & { statusCode?: number; code?: string }) => {
+      assert.equal(error.statusCode, 403);
+      assert.equal(error.code, "MEMBER_ONLY");
+      return true;
+    }
+  );
 });
 
 async function createAuthenticatedAppSession(app: any, username: string): Promise<any> {
