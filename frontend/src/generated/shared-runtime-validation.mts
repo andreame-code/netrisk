@@ -325,8 +325,9 @@ export const diceRuleSetSchema = objectSchema({
 export type DiceRuleSet = z.infer<typeof diceRuleSetSchema>;
 
 export const playerSlotConfigSchema = objectSchema({
-  slot: z.number().int(),
-  type: z.string().min(1)
+  slot: z.number().int().optional(),
+  type: z.string().min(1).optional(),
+  name: z.string().min(1).nullable().optional()
 });
 
 export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
@@ -359,6 +360,8 @@ export const gameSummarySchema = objectSchema({
   phase: z.string().min(1),
   playerCount: z.number(),
   updatedAt: z.string().min(1),
+  contentPackId: z.string().nullable().optional(),
+  diceRuleSetId: z.string().nullable().optional(),
   totalPlayers: z.number().nullable().optional(),
   mapName: z.string().nullable().optional(),
   mapId: z.string().nullable().optional(),

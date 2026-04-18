@@ -1421,6 +1421,7 @@ register("game management route crea una partita e collega il creatore", async (
   const res = makeMockResponse();
   const broadcasts: any[] = [];
   let replacedState: any = null;
+  const updatedAt = new Date("2026-04-17T08:30:00.000Z").toISOString();
 
   await handleCreateGameRoute(
     { method: "POST", headers: {} },
@@ -1443,7 +1444,15 @@ register("game management route crea una partita e collega il creatore", async (
       game: { id: "game-1", name: options.name, version: 1 },
       state
     }),
-    async () => [{ id: "game-1", name: "Nuova partita" }],
+    async () => [
+      {
+        id: "game-1",
+        name: "Nuova partita",
+        phase: "lobby",
+        playerCount: 1,
+        updatedAt
+      }
+    ],
     (state: any) => {
       replacedState = state;
     },
@@ -1461,7 +1470,15 @@ register("game management route crea una partita e collega il creatore", async (
   assert.deepEqual(JSON.parse(res.body), {
     ok: true,
     game: { id: "game-1", name: "Nuova partita", version: 1 },
-    games: [{ id: "game-1", name: "Nuova partita" }],
+    games: [
+      {
+        id: "game-1",
+        name: "Nuova partita",
+        phase: "lobby",
+        playerCount: 1,
+        updatedAt
+      }
+    ],
     activeGameId: "game-1",
     state: { snapshot: true },
     config: { mapId: "classic-mini" },
