@@ -14,6 +14,8 @@ import {
 } from "react-router-dom";
 
 import { useAuth, AuthProvider } from "@react-shell/auth";
+import { LobbyCreateRoute } from "@react-shell/lobby-create-route";
+import { LobbyRoute } from "@react-shell/lobby-route";
 import { ProfileRoute } from "@react-shell/profile-route";
 import { messageFromError } from "@frontend-core/errors.mts";
 
@@ -273,28 +275,6 @@ function PlaceholderPage({
   );
 }
 
-function LobbyPlaceholderPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Lobby"
-      title="React lobby placeholder"
-      copy="This protected route now lives inside the React shell and is ready for the first migrated functional slice."
-      details={
-        <>
-          <div className="placeholder-card">
-            <strong>Route guard ready</strong>
-            <span>Unauthenticated access is redirected through the React login page.</span>
-          </div>
-          <div className="placeholder-card">
-            <strong>Stable composition</strong>
-            <span>Header, navigation, and main content are now separate layout slots.</span>
-          </div>
-        </>
-      }
-    />
-  );
-}
-
 function GamePlaceholderPage() {
   const params = useParams();
 
@@ -482,7 +462,10 @@ export function AppRoutes() {
             <Route path="login" element={<LoginPage />} />
             <Route path="unauthorized" element={<UnauthorizedPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="lobby" element={<LobbyPlaceholderPage />} />
+              <Route path="lobby">
+                <Route index element={<LobbyRoute />} />
+                <Route path="new" element={<LobbyCreateRoute />} />
+              </Route>
               <Route path="profile" element={<ProfileRoute />} />
               <Route path="game">
                 <Route index element={<GamePlaceholderPage />} />
