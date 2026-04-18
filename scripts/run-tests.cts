@@ -4084,6 +4084,50 @@ register("API games crea una sessione da configurazione strutturata", async () =
   });
 });
 
+register("API games accetta null per i campi opzionali e applica i default", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("creator"));
+    const response = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({
+        name: null,
+        totalPlayers: null,
+        contentPackId: null,
+        ruleSetId: null,
+        mapId: null,
+        diceRuleSetId: null,
+        victoryRuleSetId: null,
+        pieceSetId: null,
+        themeId: null,
+        pieceSkinId: null,
+        gamePresetId: null,
+        activeModuleIds: null,
+        contentProfileId: null,
+        gameplayProfileId: null,
+        uiProfileId: null,
+        turnTimeoutHours: null,
+        players: null
+      })
+    });
+
+    assert.equal(response.status, 201);
+    const payload: any = await readJson(response);
+    assert.equal(payload.game.name.startsWith("Partita "), true);
+    assert.equal(typeof payload.config.contentPackId, "string");
+    assert.equal(payload.config.contentPackId.length > 0, true);
+    assert.equal(typeof payload.config.ruleSetId, "string");
+    assert.equal(payload.config.ruleSetId.length > 0, true);
+    assert.equal(typeof payload.config.mapId, "string");
+    assert.equal(payload.config.mapId.length > 0, true);
+    assert.equal(payload.config.turnTimeoutHours, null);
+    assert.equal(payload.config.players.length, 2);
+    assert.equal(payload.state.players.length, 1);
+    assert.equal(payload.state.players[0].name, session.user.username);
+    assert.equal(payload.playerId != null, true);
+  });
+});
+
 register(
   "API cron scheduled jobs forza il turno scaduto e sincronizza lo stato attivo",
   async () => {

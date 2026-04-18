@@ -324,31 +324,31 @@ export const diceRuleSetSchema = objectSchema({
 export type DiceRuleSet = z.infer<typeof diceRuleSetSchema>;
 
 export const playerSlotConfigSchema = objectSchema({
-  slot: z.number().int().optional(),
-  type: z.string().min(1).optional(),
+  slot: z.number().int().nullable().optional(),
+  type: z.string().min(1).nullable().optional(),
   name: z.string().min(1).nullable().optional()
 });
 
 export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
 
 export const createGameRequestSchema = objectSchema({
-  name: z.string().min(1).optional(),
-  totalPlayers: z.number().int().optional(),
-  contentPackId: z.string().min(1).optional(),
-  ruleSetId: z.string().min(1).optional(),
-  mapId: z.string().min(1).optional(),
-  diceRuleSetId: z.string().min(1).optional(),
-  victoryRuleSetId: z.string().min(1).optional(),
-  pieceSetId: z.string().min(1).optional(),
-  themeId: z.string().min(1).optional(),
-  pieceSkinId: z.string().min(1).optional(),
-  gamePresetId: z.string().min(1).optional(),
-  activeModuleIds: z.array(z.string().min(1)).optional(),
-  contentProfileId: z.string().min(1).optional(),
-  gameplayProfileId: z.string().min(1).optional(),
-  uiProfileId: z.string().min(1).optional(),
-  turnTimeoutHours: z.number().int().optional(),
-  players: z.array(playerSlotConfigSchema).optional()
+  name: z.string().min(1).nullable().optional(),
+  totalPlayers: z.number().int().nullable().optional(),
+  contentPackId: z.string().min(1).nullable().optional(),
+  ruleSetId: z.string().min(1).nullable().optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).nullable().optional(),
+  pieceSetId: z.string().min(1).nullable().optional(),
+  themeId: z.string().min(1).nullable().optional(),
+  pieceSkinId: z.string().min(1).nullable().optional(),
+  gamePresetId: z.string().min(1).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1)).nullable().optional(),
+  contentProfileId: z.string().min(1).nullable().optional(),
+  gameplayProfileId: z.string().min(1).nullable().optional(),
+  uiProfileId: z.string().min(1).nullable().optional(),
+  turnTimeoutHours: z.number().int().nullable().optional(),
+  players: z.array(playerSlotConfigSchema).nullable().optional()
 });
 
 export type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
