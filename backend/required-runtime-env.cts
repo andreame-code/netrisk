@@ -6,6 +6,7 @@ const REQUIRED_DEPLOY_ENV_KEYS = [
 ];
 
 const REQUIRED_CRON_ENV_KEYS = ["CRON_SECRET"];
+const OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS = ["SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT"];
 
 function hasValue(value: unknown): boolean {
   return typeof value === "string" ? value.trim() !== "" : Boolean(value);
@@ -20,8 +21,17 @@ function shouldValidateDeployEnv(env: NodeJS.ProcessEnv = process.env): boolean 
   return targetEnv === "preview" || targetEnv === "production";
 }
 
+function hasObservabilityClientEnv(env: NodeJS.ProcessEnv = process.env): boolean {
+  return hasValue(env.VITE_SENTRY_DSN);
+}
+
 function missingRequiredDeployEnv(env: NodeJS.ProcessEnv = process.env): string[] {
-  return REQUIRED_DEPLOY_ENV_KEYS.filter((key) => !hasValue(env[key]));
+  const requiredKeys = REQUIRED_DEPLOY_ENV_KEYS.slice();
+  if (hasObservabilityClientEnv(env)) {
+    requiredKeys.push(...OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS);
+  }
+
+  return requiredKeys.filter((key) => !hasValue(env[key]));
 }
 
 function missingRequiredCronEnv(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -29,8 +39,10 @@ function missingRequiredCronEnv(env: NodeJS.ProcessEnv = process.env): string[] 
 }
 
 module.exports = {
+  OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS,
   REQUIRED_DEPLOY_ENV_KEYS,
   REQUIRED_CRON_ENV_KEYS,
+  hasObservabilityClientEnv,
   missingRequiredCronEnv,
   missingRequiredDeployEnv,
   shouldValidateDeployEnv
