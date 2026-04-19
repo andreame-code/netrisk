@@ -86,9 +86,9 @@ describe("React shell routing and session integration", () => {
   });
 
   it("shows bootstrap errors and retries session bootstrap from the error panel", async () => {
-    getSessionMock.mockRejectedValueOnce(new Error("Session service offline.")).mockResolvedValue(
-      createSession()
-    );
+    getSessionMock
+      .mockRejectedValueOnce(new Error("Session service offline."))
+      .mockResolvedValue(createSession());
     listGamesMock.mockResolvedValue(createLobbyGames());
 
     const { user } = renderReactShell("/react/");
