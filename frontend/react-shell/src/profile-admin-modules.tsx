@@ -383,7 +383,10 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
     nextMode: Extract<CatalogFeedbackMode, "updated" | "rescanned">
   ): Promise<void> {
     queryClient.setQueryData(profileModulesCatalogQueryKey(userId), nextCatalog);
-    await moduleOptionsQuery.refetch();
+    const moduleOptionsResult = await moduleOptionsQuery.refetch();
+    if (moduleOptionsResult.error) {
+      throw moduleOptionsResult.error;
+    }
     setStatusMode(nextMode);
     setStatusErrorMessage("");
   }
@@ -394,12 +397,15 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
     setStatusErrorMessage("");
 
     try {
-      const [catalogResult] = await Promise.all([
+      const [catalogResult, moduleOptionsResult] = await Promise.all([
         catalogQuery.refetch(),
         moduleOptionsQuery.refetch()
       ]);
       if (catalogResult.error) {
         throw catalogResult.error;
+      }
+      if (moduleOptionsResult.error) {
+        throw moduleOptionsResult.error;
       }
     } catch (error) {
       setStatusMode("error");

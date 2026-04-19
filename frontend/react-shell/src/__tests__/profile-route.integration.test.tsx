@@ -376,6 +376,29 @@ describe("ProfileRoute integration", () => {
     });
   });
 
+  it("surfaces a module options refresh error after toggling a module", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember", "admin"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+    getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
+    getModuleOptionsMock
+      .mockResolvedValueOnce(createModuleOptionsResponse())
+      .mockRejectedValueOnce(new Error("Module options unavailable."));
+    setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
+
+    const { user } = renderReactShell("/react/profile");
+
+    expect(await screen.findByTestId("react-shell-profile-modules")).toBeInTheDocument();
+    const toggle = await screen.findByTestId("react-shell-profile-module-toggle-demo.valid");
+
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-modules-status")).toHaveTextContent(
+        "Module options unavailable."
+      );
+    });
+  });
+
   it("rolls back theme selection and surfaces an error when the save fails", async () => {
     getSessionMock.mockResolvedValue(createSession("ember"));
     getProfileMock.mockResolvedValue(createProfileResponse());
