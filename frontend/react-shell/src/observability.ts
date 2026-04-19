@@ -42,11 +42,16 @@ function toError(error: unknown): Error {
   return new Error(typeof error === "string" && error ? error : "Unknown frontend error.");
 }
 
-function readBuildConstant(
-  name: "__NETRISK_APP_ENVIRONMENT__" | "__NETRISK_APP_RELEASE__"
-): string | null {
-  const globalValue = (globalThis as Record<string, unknown>)[name];
-  return typeof globalValue === "string" && globalValue ? globalValue : null;
+function readEnvironmentBuildConstant(): string | null {
+  return typeof __NETRISK_APP_ENVIRONMENT__ !== "undefined"
+    ? firstNonEmpty(__NETRISK_APP_ENVIRONMENT__)
+    : null;
+}
+
+function readReleaseBuildConstant(): string | null {
+  return typeof __NETRISK_APP_RELEASE__ !== "undefined"
+    ? firstNonEmpty(__NETRISK_APP_RELEASE__)
+    : null;
 }
 
 export function resolveReactShellObservabilityConfig(
@@ -57,10 +62,8 @@ export function resolveReactShellObservabilityConfig(
   } = {}
 ): ReactShellObservabilityConfig {
   const environment =
-    firstNonEmpty(input.environment, readBuildConstant("__NETRISK_APP_ENVIRONMENT__")) ||
-    "development";
-  const release =
-    firstNonEmpty(input.release, readBuildConstant("__NETRISK_APP_RELEASE__")) || "local-dev";
+    firstNonEmpty(input.environment, readEnvironmentBuildConstant()) || "development";
+  const release = firstNonEmpty(input.release, readReleaseBuildConstant()) || "local-dev";
   const dsn = firstNonEmpty(input.dsn, import.meta.env.VITE_SENTRY_DSN) || null;
   const enabled = Boolean(dsn) && (environment === "preview" || environment === "production");
 

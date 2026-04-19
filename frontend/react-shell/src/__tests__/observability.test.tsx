@@ -67,6 +67,19 @@ describe("react shell observability", () => {
     });
   });
 
+  it("reads Vite build constants when runtime overrides are omitted", () => {
+    expect(
+      resolveReactShellObservabilityConfig({
+        dsn: "https://public@example.ingest.sentry.io/123"
+      })
+    ).toEqual({
+      enabled: true,
+      dsn: "https://public@example.ingest.sentry.io/123",
+      environment: "preview",
+      release: "vitest-build"
+    });
+  });
+
   it("initializes Sentry only for preview and production when the DSN is configured", () => {
     const config = resolveReactShellObservabilityConfig({
       dsn: "https://public@example.ingest.sentry.io/123",
