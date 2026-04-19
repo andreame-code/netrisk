@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 
 import { DEFAULT_LOCALE, setLocale } from "@frontend-i18n";
+import { resetFrontendObservabilityReporter } from "@frontend-core/observability.mts";
 
 import { resetAuthState } from "@react-shell/auth-store";
 
@@ -11,6 +12,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 function resetBrowserState(): void {
   window.localStorage.clear();
   resetAuthState();
+  resetFrontendObservabilityReporter();
 
   document.documentElement.removeAttribute("data-theme");
   document.body?.removeAttribute("data-theme");

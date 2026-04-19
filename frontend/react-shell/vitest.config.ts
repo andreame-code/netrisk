@@ -10,6 +10,10 @@ const projectRoot = path.resolve(reactShellRoot, "..", "..");
 export default defineConfig({
   root: reactShellRoot,
   plugins: [react()],
+  define: {
+    __NETRISK_APP_ENVIRONMENT__: JSON.stringify("preview"),
+    __NETRISK_APP_RELEASE__: JSON.stringify("vitest-build")
+  },
   resolve: {
     alias: {
       "@react-shell": path.resolve(reactShellRoot, "src"),

@@ -63,6 +63,7 @@ const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const {
+  OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS,
   missingRequiredDeployEnv,
   shouldValidateDeployEnv
 } = require("../backend/required-runtime-env.cjs");
@@ -225,6 +226,37 @@ async function withMockFetch<T>(
     return await fn();
   } finally {
     global.fetch = previousFetch;
+  }
+}
+
+async function withEnvironment<T>(
+  overrides: Record<string, string | null | undefined>,
+  fn: () => Promise<T> | T
+): Promise<T> {
+  const keys = Object.keys(overrides);
+  const previousValues = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+
+  try {
+    keys.forEach((key) => {
+      const value = overrides[key];
+      if (value == null || value === "") {
+        delete process.env[key];
+        return;
+      }
+
+      process.env[key] = value;
+    });
+
+    return await fn();
+  } finally {
+    keys.forEach((key) => {
+      if (typeof previousValues[key] === "undefined") {
+        delete process.env[key];
+        return;
+      }
+
+      process.env[key] = previousValues[key];
+    });
   }
 }
 
@@ -787,6 +819,17 @@ register("required runtime env valida solo preview e production su Vercel", () =
       DATASTORE_DRIVER: "supabase"
     }),
     ["SUPABASE_SERVICE_ROLE_KEY"]
+  );
+
+  assert.deepEqual(
+    missingRequiredDeployEnv({
+      AUTH_ENCRYPTION_KEY: "enc",
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      DATASTORE_DRIVER: "supabase",
+      VITE_SENTRY_DSN: "https://public@example.ingest.sentry.io/0"
+    }),
+    OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS
   );
 });
 
@@ -6451,6 +6494,79 @@ register("GET /api/health espone lo stato del datastore sqlite", async () => {
     assert.equal(typeof payload.storage.counts.games, "number");
     assert.equal(typeof payload.storage.counts.sessions, "number");
     assert.equal(payload.hasActiveGame, true);
+  });
+});
+
+register("API responses espongono X-Request-Id per la correlazione", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/health`);
+    assert.equal(response.status, 200);
+    assert.equal(typeof response.headers.get("x-request-id"), "string");
+    assert.equal(Boolean(response.headers.get("x-request-id")), true);
+  });
+});
+
+register("API unexpected 5xx logga requestId, path e release in modo strutturato", async () => {
+  await withServer(async (baseUrl, context) => {
+    const originalConsoleError = console.error;
+    const originalGetUserFromSession = context.app.auth.getUserFromSession;
+    const errorLogs: string[] = [];
+
+    context.app.auth.getUserFromSession = async () => {
+      throw new Error("Session storage exploded.");
+    };
+    (console as any).error = (value: unknown) => {
+      errorLogs.push(String(value));
+    };
+
+    try {
+      const response = await fetch(`${baseUrl}/api/auth/session`);
+      assert.equal(response.status, 500);
+
+      const requestId = response.headers.get("x-request-id");
+      assert.equal(Boolean(requestId), true);
+      assert.equal(errorLogs.length > 0, true);
+
+      const logPayload = JSON.parse(errorLogs[0]);
+      assert.equal(logPayload.event, "api_unexpected_error");
+      assert.equal(logPayload.path, "/api/auth/session");
+      assert.equal(logPayload.statusCode, 500);
+      assert.equal(logPayload.requestId, requestId);
+      assert.equal(typeof logPayload.release, "string");
+      assert.equal(logPayload.message, "Session storage exploded.");
+    } finally {
+      context.app.auth.getUserFromSession = originalGetUserFromSession;
+      (console as any).error = originalConsoleError;
+    }
+  });
+});
+
+register("CSP aggiunge l'origin Sentry solo quando il DSN frontend e configurato", async () => {
+  await withEnvironment({ VITE_SENTRY_DSN: null }, async () => {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/health`);
+      const csp = response.headers.get("content-security-policy") || "";
+      const connectSrcDirective = csp
+        .split(";")
+        .map((directive) => directive.trim())
+        .find((directive) => directive.startsWith("connect-src "));
+      const connectSrcSources = new Set((connectSrcDirective || "").split(/\s+/).slice(1));
+      assert.equal(csp.includes("connect-src 'self'"), true);
+      assert.equal(connectSrcSources.has("https://o0.ingest.sentry.io"), false);
+    });
+  });
+
+  await withEnvironment({ VITE_SENTRY_DSN: "https://public@o0.ingest.sentry.io/0" }, async () => {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/health`);
+      const csp = response.headers.get("content-security-policy") || "";
+      const connectSrcDirective = csp
+        .split(";")
+        .map((directive) => directive.trim())
+        .find((directive) => directive.startsWith("connect-src "));
+      const connectSrcSources = new Set((connectSrcDirective || "").split(/\s+/).slice(1));
+      assert.equal(connectSrcSources.has("https://o0.ingest.sentry.io"), true);
+    });
   });
 });
 

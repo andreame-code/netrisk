@@ -15,6 +15,7 @@ Today the project includes:
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
 - parallel React + Vite shell served at `/react/`, isolated from the legacy pages
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes
+- minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
 - joining with human players and adding AI bots
@@ -137,6 +138,15 @@ Required deploy/runtime variables are:
 
 For scheduled jobs, `CRON_SECRET` is required as well.
 
+Optional React shell observability variables are:
+
+- `VITE_SENTRY_DSN`
+- `SENTRY_AUTH_TOKEN`
+- `SENTRY_ORG`
+- `SENTRY_PROJECT`
+
+When `VITE_SENTRY_DSN` is enabled for Vercel `preview` or `production`, the React shell build also requires the three `SENTRY_*` upload variables so source maps can be uploaded and removed from the final public output.
+
 Before a Vercel deploy, you can validate environment coverage with:
 
 ```bash
@@ -153,6 +163,28 @@ That check verifies:
 The preview check accepts both globally-scoped preview variables and branch-specific preview overrides, matching the effective configuration used by Vercel deploys.
 
 Repository uploads are also filtered by `.vercelignore` so local artifacts such as temporary logs, coverage output, SQLite files, and generated local junk do not pollute preview builds.
+
+## React shell observability
+
+The migrated `/react/` shell now includes a minimal, reversible production observability layer:
+
+- Sentry is initialized only when `VITE_SENTRY_DSN` is present and the resolved environment is `preview` or `production`
+- the React shell reports unexpected render crashes, network failures, backend `5xx` responses, and invalid successful payloads
+- expected business/auth `4xx` responses stay out of Sentry unless they escalate into an unhandled render error
+- API responses include `X-Request-Id` so browser errors can be correlated with backend runtime logs
+- the backend keeps release correlation internal and uses structured `api_unexpected_error` log events for unexpected `5xx` responses
+
+For local development, observability stays off by default.
+
+## Analytics / PWA gate
+
+Before opening a separate analytics or PWA issue, verify all of the following:
+
+- React shell errors are visible in both preview and production
+- uploaded source maps/debug ids resolve readable stack traces in Sentry
+- Sentry events include a release and can be correlated with backend `X-Request-Id` logs
+- no unnecessary PII is being sent from the browser integration
+- error volume is stable enough that new analytics or PWA work will not hide unresolved migration regressions
 
 ## Useful commands
 
