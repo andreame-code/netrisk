@@ -1,4 +1,5 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
+import { buildSyncedGameLocation, requestedGameIdFromLocation } from "./core/game-route-paths.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   GameListResponse,
@@ -223,12 +224,7 @@ function escapeHtml(value: unknown): string {
 }
 
 function requestedGameIdFromRoute() {
-  const pathnameMatch = window.location.pathname.match(/^\/game\/([^/]+)$/);
-  if (pathnameMatch) {
-    return decodeURIComponent(pathnameMatch[1]);
-  }
-
-  return new URLSearchParams(window.location.search).get("gameId");
+  return requestedGameIdFromLocation(window.location.pathname, window.location.search);
 }
 
 function syncGameRoute(gameId: string | null | undefined): void {
@@ -236,19 +232,7 @@ function syncGameRoute(gameId: string | null | undefined): void {
     return;
   }
 
-  const url = new URL(window.location.href);
-  if (gameId) {
-    window.history.replaceState({}, "", "/game/" + encodeURIComponent(gameId));
-    return;
-  }
-
-  if (url.pathname !== "/game.html") {
-    window.history.replaceState({}, "", "/game.html");
-    return;
-  }
-
-  url.searchParams.delete("gameId");
-  window.history.replaceState({}, "", url.pathname + url.search);
+  window.history.replaceState({}, "", buildSyncedGameLocation(window.location.href, gameId));
 }
 
 const classicMapLayout = {

@@ -55,6 +55,13 @@ function createLobbyGames(): GameListResponse {
 }
 
 describe("React shell routing and session integration", () => {
+  it("renders the landing route for the /index.html document alias", async () => {
+    renderReactShell("/index.html");
+
+    expect(await screen.findByText("Frontline Dominion")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/index.html");
+  });
+
   it("shows protected route loading while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 

@@ -482,6 +482,7 @@ export function AppRoutes() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingRoute />} />
+          <Route path="/index.html" element={<LandingRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/react" element={<BootstrapRoute />} />
             <Route path="/login" element={<LoginPage />} />

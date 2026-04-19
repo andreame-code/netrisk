@@ -1261,6 +1261,7 @@ function createApp(options: CreateAppOptions = {}) {
     const isReactShellDocumentRoute =
       !isModuleAssetRequest &&
       (url.pathname === "/" ||
+        url.pathname === "/index.html" ||
         url.pathname === "/login" ||
         url.pathname === "/register" ||
         url.pathname === "/register.html" ||
