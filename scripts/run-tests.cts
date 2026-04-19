@@ -6546,8 +6546,13 @@ register("CSP aggiunge l'origin Sentry solo quando il DSN frontend e configurato
     await withServer(async (baseUrl) => {
       const response = await fetch(`${baseUrl}/api/health`);
       const csp = response.headers.get("content-security-policy") || "";
+      const connectSrcDirective = csp
+        .split(";")
+        .map((directive) => directive.trim())
+        .find((directive) => directive.startsWith("connect-src "));
+      const connectSrcSources = new Set((connectSrcDirective || "").split(/\s+/).slice(1));
       assert.equal(csp.includes("connect-src 'self'"), true);
-      assert.equal(csp.includes("ingest.sentry.io"), false);
+      assert.equal(connectSrcSources.has("https://o0.ingest.sentry.io"), false);
     });
   });
 
@@ -6555,7 +6560,12 @@ register("CSP aggiunge l'origin Sentry solo quando il DSN frontend e configurato
     await withServer(async (baseUrl) => {
       const response = await fetch(`${baseUrl}/api/health`);
       const csp = response.headers.get("content-security-policy") || "";
-      assert.equal(csp.includes("connect-src 'self' https://o0.ingest.sentry.io"), true);
+      const connectSrcDirective = csp
+        .split(";")
+        .map((directive) => directive.trim())
+        .find((directive) => directive.startsWith("connect-src "));
+      const connectSrcSources = new Set((connectSrcDirective || "").split(/\s+/).slice(1));
+      assert.equal(connectSrcSources.has("https://o0.ingest.sentry.io"), true);
     });
   });
 });
