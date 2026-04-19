@@ -52,6 +52,20 @@ function hydrateNamespacePath(
   return isReactRelativeShellPath(pathname) ? `/react${pathname}` : pathname;
 }
 
+function normalizeCanonicalShellPath(pathname: string): string {
+  const url = new URL(pathname, "http://localhost");
+
+  if (url.pathname === "/lobby") {
+    url.pathname = "/lobby.html";
+  } else if (url.pathname === "/lobby/new") {
+    url.pathname = "/new-game.html";
+  } else if (url.pathname === "/profile") {
+    url.pathname = "/profile.html";
+  }
+
+  return url.pathname + url.search + url.hash;
+}
+
 function serializeNextPathForNamespace(
   pathname: string,
   namespace: ShellNamespace = currentShellNamespace()
@@ -131,7 +145,10 @@ export function normalizeNextPath(
     return fallback;
   }
 
-  return hydrateNamespacePath(nextPath);
+  const namespace = detectShellNamespace(fallback);
+  const hydratedPath = hydrateNamespacePath(nextPath, namespace);
+
+  return namespace === "react" ? hydratedPath : normalizeCanonicalShellPath(hydratedPath);
 }
 
 export function buildLoginHref(
