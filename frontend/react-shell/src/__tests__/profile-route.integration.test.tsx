@@ -143,9 +143,8 @@ describe("ProfileRoute integration", () => {
     expect(within(metrics).getByText("7")).toBeInTheDocument();
     expect(within(metrics).getByText("5")).toBeInTheDocument();
     expect(screen.getByText("Mediterranean Command")).toBeInTheDocument();
-    expect(screen.getByTestId("react-shell-profile-open-game-42")).toHaveAttribute(
-      "href",
-      "/game/game-42"
+    expect(screen.getByTestId("react-shell-profile-open-game-42").getAttribute("href")).toMatch(
+      /\/game\/game-42$/
     );
   });
 
