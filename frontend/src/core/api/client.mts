@@ -16,6 +16,7 @@ import {
   moduleOptionsResponseSchema,
   modulesCatalogResponseSchema,
   profileResponseSchema,
+  registerRequestSchema,
   startGameRequestSchema,
   themePreferenceRequestSchema,
   themePreferenceResponseSchema,
@@ -37,6 +38,7 @@ import type {
   ModuleOptionsResponse,
   ModulesCatalogResponse,
   ProfileResponse,
+  RegisterRequest,
   StartGameRequest,
   ThemePreferenceResponse
 } from "../../generated/shared-runtime-validation.mjs";
@@ -75,6 +77,22 @@ export function login(
     body: credentials,
     requestSchema: loginRequestSchema,
     requestSchemaName: "LoginRequest",
+    responseSchema: loginResponseSchema,
+    responseSchemaName: "LoginResponse",
+    ...messages
+  });
+}
+
+export function register(
+  request: RegisterRequest,
+  messages: ClientMessages
+): Promise<LoginResponse> {
+  return requestJson({
+    path: "/api/auth/register",
+    method: "POST",
+    body: request,
+    requestSchema: registerRequestSchema,
+    requestSchemaName: "RegisterRequest",
     responseSchema: loginResponseSchema,
     responseSchemaName: "LoginResponse",
     ...messages

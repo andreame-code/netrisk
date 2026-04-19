@@ -27,6 +27,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@frontend-core/api/client.mts", () => ({
   getSession: vi.fn(),
   login: vi.fn(),
+  register: vi.fn(),
   logout: vi.fn(),
   getProfile: vi.fn(),
   getModulesCatalog: vi.fn(),

@@ -17,23 +17,13 @@ import { GameRoute } from "@react-shell/gameplay-route";
 import { LobbyCreateRoute } from "@react-shell/lobby-create-route";
 import { LobbyRoute } from "@react-shell/lobby-route";
 import { ProfileRoute } from "@react-shell/profile-route";
+import {
+  buildLoginHref,
+  buildRegisterHref,
+  normalizeNextPath
+} from "@react-shell/public-auth-paths";
+import { RegisterRoute } from "@react-shell/register-route";
 import { messageFromError } from "@frontend-core/errors.mts";
-
-function normalizeNextPath(nextPath: string | null): string {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/lobby";
-  }
-
-  if (nextPath === "/login" || nextPath.startsWith("/login?") || nextPath === "/unauthorized") {
-    return "/lobby";
-  }
-
-  return nextPath;
-}
-
-function buildLoginHref(nextPath: string): string {
-  return `/login?next=${encodeURIComponent(nextPath)}`;
-}
 
 function LoadingPanel({ title, copy }: { title: string; copy: string }) {
   return (
@@ -371,6 +361,9 @@ function LoginPage() {
           <button type="submit" className="refresh-button" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
+          <Link className="ghost-action" to={buildRegisterHref(nextPath)}>
+            Register
+          </Link>
           <Link className="ghost-action" to="/unauthorized">
             Unauthorized route
           </Link>
@@ -432,6 +425,7 @@ export function AppRoutes() {
           <Route element={<ShellLayout />}>
             <Route index element={<BootstrapRoute />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterRoute />} />
             <Route path="unauthorized" element={<UnauthorizedPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="lobby">

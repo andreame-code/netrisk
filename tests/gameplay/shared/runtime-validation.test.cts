@@ -8,6 +8,7 @@ const {
   logoutResponseSchema,
   parseWithSchema,
   profileResponseSchema,
+  registerRequestSchema,
   themePreferenceResponseSchema,
   toValidationErrors
 } = require("../../../shared/runtime-validation.cjs");
@@ -79,6 +80,11 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
   const gameIdRequest = parseWithSchema(gameIdRequestSchema, {
     gameId: "g-1"
   });
+  const registerRequest = parseWithSchema(registerRequestSchema, {
+    username: "commander",
+    password: "secret123",
+    email: "commander@example.com"
+  });
   const gameListResponse = parseWithSchema(gameListResponseSchema, {
     games: [
       {
@@ -124,6 +130,7 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
   assert.equal(profileResponse.profile.participatingGames.length, 1);
   assert.equal(themePreferenceResponse.preferences.theme, "midnight");
   assert.equal(gameIdRequest.gameId, "g-1");
+  assert.equal(registerRequest.email, "commander@example.com");
   assert.equal(gameListResponse.games[0].id, "g-1");
   assert.equal(gameMutationResponse.playerId, "p-1");
   assert.equal(logoutResponse.ok, true);

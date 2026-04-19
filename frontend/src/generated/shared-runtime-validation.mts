@@ -111,6 +111,14 @@ export const loginRequestSchema = objectSchema({
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
+export const registerRequestSchema = objectSchema({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  email: z.string().optional()
+});
+
+export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+
 export const loginResponseSchema = objectSchema({
   ok: z.literal(true),
   user: publicUserSchema,

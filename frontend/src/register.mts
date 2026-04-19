@@ -1,5 +1,6 @@
 import { byId, maybeQuery, setDisabled, setHidden } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import { validateRegistrationInput } from "./core/register-validation.mjs";
 import type { LoginResponse, PublicUser, SessionResponse } from "./core/types.mjs";
 import { t, translateServerMessage } from "./i18n.mjs";
 
@@ -57,35 +58,6 @@ function setFeedback(message = "", tone = "") {
   setHidden(elements.feedback, false);
   elements.feedback.textContent = message;
   elements.feedback.className = `auth-feedback${tone === "error" ? " is-error" : " is-success"}`;
-}
-
-function registrationClientError(
-  username: string,
-  email: string,
-  password: string,
-  confirmPassword: string
-): string {
-  if (!username || !password || !confirmPassword) {
-    return t("register.errors.requiredFields");
-  }
-
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{2,31}$/.test(username)) {
-    return t("register.errors.invalidUsername");
-  }
-
-  if (password.length < 4) {
-    return t("register.errors.shortPassword");
-  }
-
-  if (password !== confirmPassword) {
-    return t("register.errors.passwordMismatch");
-  }
-
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return t("register.errors.invalidEmail");
-  }
-
-  return "";
 }
 
 async function loginWithCredentials(username: string, password: string): Promise<void> {
@@ -191,9 +163,14 @@ elements.form.addEventListener("submit", async (event) => {
   const email = elements.email.value.trim();
   const password = elements.password.value;
   const confirmPassword = elements.passwordConfirm.value;
-  const clientError = registrationClientError(username, email, password, confirmPassword);
-  if (clientError) {
-    setFeedback(clientError, "error");
+  const clientErrorKey = validateRegistrationInput({
+    username,
+    email,
+    password,
+    confirmPassword
+  });
+  if (clientErrorKey) {
+    setFeedback(t(clientErrorKey), "error");
     return;
   }
 

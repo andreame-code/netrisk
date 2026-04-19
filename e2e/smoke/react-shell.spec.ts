@@ -275,6 +275,25 @@ test("react login returns the user to the protected route that triggered it", as
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
 });
 
+test("react register creates an account and enters the requested protected route", async ({
+  page
+}) => {
+  await resetGame(page);
+
+  const username = uniqueUser("react_shell_register");
+
+  await page.goto("/react/register?next=%2Fprofile");
+
+  await page.getByLabel(/Username/i).fill(username);
+  await page.getByLabel(/^Password$/i).fill("secret123");
+  await page.getByLabel(/Confirm password|Conferma password/i).fill("secret123");
+  await page.getByRole("button", { name: /Register|Registrati/i }).click();
+
+  await expect(page).toHaveURL(/\/react\/profile$/);
+  await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();
+  await expect(page.getByTestId("react-shell-session-status")).toContainText(/Authenticated/i);
+});
+
 test("react shell serves direct unknown routes into the SPA not-found page", async ({ page }) => {
   await resetGame(page);
 
