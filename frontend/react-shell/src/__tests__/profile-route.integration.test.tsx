@@ -399,6 +399,39 @@ describe("ProfileRoute integration", () => {
     });
   });
 
+  it("keeps module actions disabled until the post-toggle refetch finishes", async () => {
+    const moduleOptionsRefresh = createDeferred<ModuleOptionsResponse>();
+
+    getSessionMock.mockResolvedValue(createSession("ember", "admin"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+    getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
+    getModuleOptionsMock
+      .mockResolvedValueOnce(createModuleOptionsResponse())
+      .mockImplementationOnce(() => moduleOptionsRefresh.promise);
+    setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
+
+    const { user } = renderReactShell("/react/profile");
+
+    const toggle = await screen.findByTestId("react-shell-profile-module-toggle-demo.valid");
+
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-module-toggle-demo.valid")).toBeDisabled();
+      expect(screen.getByTestId("react-shell-profile-modules-refresh")).toBeDisabled();
+      expect(screen.getByTestId("react-shell-profile-modules-rescan")).toBeDisabled();
+    });
+
+    moduleOptionsRefresh.resolve(createModuleOptionsResponse());
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-module-toggle-demo.valid")).not.toBeDisabled();
+      expect(screen.getByTestId("react-shell-profile-modules-status")).toHaveTextContent(
+        "Catalogo moduli aggiornato."
+      );
+    });
+  });
+
   it("rolls back theme selection and surfaces an error when the save fails", async () => {
     getSessionMock.mockResolvedValue(createSession("ember"));
     getProfileMock.mockResolvedValue(createProfileResponse());

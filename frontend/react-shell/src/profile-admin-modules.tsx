@@ -316,6 +316,7 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
   const [statusMode, setStatusMode] = useState<CatalogFeedbackMode>("auto");
   const [statusErrorMessage, setStatusErrorMessage] = useState("");
   const [refreshPending, setRefreshPending] = useState(false);
+  const [syncPending, setSyncPending] = useState(false);
 
   const catalogQuery = useQuery({
     queryKey: profileModulesCatalogQueryKey(userId),
@@ -355,6 +356,7 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
   const slots = adminSlots(moduleOptionsQuery.data);
   const actionPending =
     refreshPending ||
+    syncPending ||
     rescanMutation.isPending ||
     toggleMutation.isPending ||
     catalogQuery.isPending ||
@@ -382,13 +384,19 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
     nextCatalog: ModulesCatalogResponse,
     nextMode: Extract<CatalogFeedbackMode, "updated" | "rescanned">
   ): Promise<void> {
-    queryClient.setQueryData(profileModulesCatalogQueryKey(userId), nextCatalog);
-    const moduleOptionsResult = await moduleOptionsQuery.refetch();
-    if (moduleOptionsResult.error) {
-      throw moduleOptionsResult.error;
+    setSyncPending(true);
+
+    try {
+      queryClient.setQueryData(profileModulesCatalogQueryKey(userId), nextCatalog);
+      const moduleOptionsResult = await moduleOptionsQuery.refetch();
+      if (moduleOptionsResult.error) {
+        throw moduleOptionsResult.error;
+      }
+      setStatusMode(nextMode);
+      setStatusErrorMessage("");
+    } finally {
+      setSyncPending(false);
     }
-    setStatusMode(nextMode);
-    setStatusErrorMessage("");
   }
 
   async function handleRefresh(): Promise<void> {
