@@ -1,0 +1,2115 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "NetRisk Backend API",
+    "version": "0.1.0",
+    "description": "Static OpenAPI reference for the stable NetRisk JSON endpoints. Snapshot-driven and stream-based routes are documented in docs/api.md."
+  },
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth"
+    },
+    {
+      "name": "profile"
+    },
+    {
+      "name": "games"
+    },
+    {
+      "name": "modules"
+    },
+    {
+      "name": "cron"
+    }
+  ],
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "operationId": "loginWithPassword",
+        "summary": "Create a password-authenticated session",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login succeeded.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Session cookie for subsequent authenticated requests.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailure"
+          },
+          "401": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["auth"],
+        "operationId": "logout",
+        "summary": "Clear the current session cookie",
+        "responses": {
+          "200": {
+            "description": "Logout succeeded.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Clears the session cookie.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "tags": ["auth"],
+        "operationId": "getAuthSession",
+        "summary": "Read the authenticated session user",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current authenticated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "tags": ["profile"],
+        "operationId": "getProfile",
+        "summary": "Read the profile for the authenticated user",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile summary and participating games.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          }
+        }
+      }
+    },
+    "/api/profile/preferences/theme": {
+      "put": {
+        "tags": ["profile"],
+        "operationId": "updateThemePreference",
+        "summary": "Update the authenticated user's theme preference",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThemePreferenceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Theme preference persisted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThemePreferenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed or the requested theme is unsupported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationFailure"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalizedError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          }
+        }
+      }
+    },
+    "/api/games": {
+      "get": {
+        "tags": ["games"],
+        "operationId": "listGames",
+        "summary": "List known games",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "query",
+            "required": false,
+            "description": "Optional game context override used to populate activeGameId in the response.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game summaries currently known to the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["games"],
+        "operationId": "createGame",
+        "summary": "Create a new game",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Game created and initial snapshot returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateGameResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or creation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationFailure"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalizedError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          }
+        }
+      }
+    },
+    "/api/games/open": {
+      "post": {
+        "tags": ["games"],
+        "operationId": "openGame",
+        "summary": "Open an existing game and return a fresh snapshot",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Game opened successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or open failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationFailure"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalizedError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          }
+        }
+      }
+    },
+    "/api/game/options": {
+      "get": {
+        "tags": ["games"],
+        "operationId": "getGameOptions",
+        "summary": "Read the selectable setup catalog",
+        "responses": {
+          "200": {
+            "description": "Catalog used to configure new games.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game-options": {
+      "get": {
+        "tags": ["games"],
+        "operationId": "getGameOptionsLegacyAlias",
+        "summary": "Legacy alias for the game options catalog",
+        "description": "Returns the same payload as GET /api/game/options.",
+        "responses": {
+          "200": {
+            "description": "Catalog used to configure new games.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/modules/options": {
+      "get": {
+        "tags": ["modules"],
+        "operationId": "getModuleOptions",
+        "summary": "Read the runtime module option snapshot",
+        "responses": {
+          "200": {
+            "description": "Runtime module selection data and enabled content restrictions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleOptionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/modules": {
+      "get": {
+        "tags": ["modules"],
+        "operationId": "listInstalledModules",
+        "summary": "Read the installed module catalog",
+        "description": "Requires an authenticated user with module management permissions.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Installed modules and enabled references.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModulesCatalogResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    },
+    "/api/modules/rescan": {
+      "post": {
+        "tags": ["modules"],
+        "operationId": "rescanModules",
+        "summary": "Rescan the module directory and rebuild the catalog",
+        "description": "Requires an authenticated user with module management permissions.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog rescan completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleCatalogMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    },
+    "/api/modules/{moduleId}/enable": {
+      "post": {
+        "tags": ["modules"],
+        "operationId": "enableModule",
+        "summary": "Enable a runtime module",
+        "description": "Requires an authenticated user with module management permissions.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "moduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Module enabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleCatalogMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    },
+    "/api/modules/{moduleId}/disable": {
+      "post": {
+        "tags": ["modules"],
+        "operationId": "disableModule",
+        "summary": "Disable a runtime module",
+        "description": "Requires an authenticated user with module management permissions.",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "moduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Module disabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModuleCatalogMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "401": {
+            "$ref": "#/components/responses/AuthRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    },
+    "/api/cron/scheduled-jobs": {
+      "get": {
+        "tags": ["cron"],
+        "operationId": "runScheduledJobs",
+        "summary": "Run the scheduled turn timeout and AI recovery jobs",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scheduled jobs executed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduledJobsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LocalizedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/LocalizedError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "netrisk_session"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "responses": {
+      "LocalizedError": {
+        "description": "Localized backend error envelope.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LocalizedError"
+            }
+          }
+        }
+      },
+      "ValidationFailure": {
+        "description": "Request payload validation failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationFailure"
+            }
+          }
+        }
+      },
+      "AuthRequired": {
+        "description": "A valid session cookie is required.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LocalizedError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "LocalizedParams": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "ValidationErrorItem": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["code", "path", "message"],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LocalizedError": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["error", "messageKey", "messageParams", "code"],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "messageKey": {
+            "type": ["string", "null"]
+          },
+          "messageParams": {
+            "$ref": "#/components/schemas/LocalizedParams"
+          },
+          "code": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "ValidationFailure": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/LocalizedError"
+          },
+          {
+            "type": "object",
+            "required": ["validationErrors"],
+            "properties": {
+              "validationErrors": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ValidationErrorItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "GameStateSnapshot": {
+        "type": "object",
+        "description": "Opaque server-owned game snapshot.",
+        "additionalProperties": true
+      },
+      "ThemePreferences": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "theme": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "username"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "authMethods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hasEmail": {
+            "type": "boolean"
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThemePreferences"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AuthSessionResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["user"],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["username", "password"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok", "user"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          "availableAuthProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextAuthProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "ThemePreferenceRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["theme"],
+        "properties": {
+          "theme": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "ThemePreferenceResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok", "user", "preferences"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/ThemePreferences"
+          }
+        }
+      },
+      "VictoryRuleSet": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "VisualTheme": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "PieceSkin": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "description", "renderStyleId", "usesPlayerColor"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "renderStyleId": {
+            "type": "string"
+          },
+          "usesPlayerColor": {
+            "type": "boolean"
+          },
+          "assetBaseUrl": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "NetRiskModuleReference": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "version"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "NetRiskModuleProfile": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "moduleId": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "NetRiskGamePresetDefaults": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "contentPackId": {
+            "type": ["string", "null"]
+          },
+          "ruleSetId": {
+            "type": ["string", "null"]
+          },
+          "pieceSetId": {
+            "type": ["string", "null"]
+          },
+          "mapId": {
+            "type": ["string", "null"]
+          },
+          "diceRuleSetId": {
+            "type": ["string", "null"]
+          },
+          "victoryRuleSetId": {
+            "type": ["string", "null"]
+          },
+          "themeId": {
+            "type": ["string", "null"]
+          },
+          "pieceSkinId": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "NetRiskGamePreset": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "moduleId": {
+            "type": ["string", "null"]
+          },
+          "activeModuleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contentProfileId": {
+            "type": ["string", "null"]
+          },
+          "gameplayProfileId": {
+            "type": ["string", "null"]
+          },
+          "uiProfileId": {
+            "type": ["string", "null"]
+          },
+          "defaults": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NetRiskGamePresetDefaults"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "NetRiskUiSlotContribution": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["slotId", "itemId", "title", "kind"],
+        "properties": {
+          "slotId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "route": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "NetRiskContentContribution": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "mapIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "siteThemeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pieceSkinIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "playerPieceSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contentPackIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "diceRuleSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cardRuleSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "victoryRuleSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fortifyRuleSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reinforcementRuleSetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NetRiskModuleCapability": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": ["string", "null"]
+          },
+          "hook": {
+            "type": ["string", "null"]
+          },
+          "scope": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "InstalledModuleSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "version",
+          "displayName",
+          "kind",
+          "sourcePath",
+          "status",
+          "enabled",
+          "compatible",
+          "warnings",
+          "errors",
+          "capabilities"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": ["string", "null"]
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "kind": {
+            "type": ["string", "null"]
+          },
+          "sourcePath": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "compatible": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleCapability"
+            }
+          }
+        }
+      },
+      "PlayerPieceSetSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "paletteSize"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "paletteSize": {
+            "type": "number"
+          }
+        }
+      },
+      "ContentPackSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "defaultSiteThemeId",
+          "defaultMapId",
+          "defaultDiceRuleSetId",
+          "defaultCardRuleSetId",
+          "defaultVictoryRuleSetId",
+          "defaultPieceSetId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "defaultSiteThemeId": {
+            "type": "string"
+          },
+          "defaultMapId": {
+            "type": "string"
+          },
+          "defaultDiceRuleSetId": {
+            "type": "string"
+          },
+          "defaultCardRuleSetId": {
+            "type": "string"
+          },
+          "defaultVictoryRuleSetId": {
+            "type": "string"
+          },
+          "defaultPieceSetId": {
+            "type": "string"
+          }
+        }
+      },
+      "ContinentBonusSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "bonus", "territoryCount"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "bonus": {
+            "type": "number"
+          },
+          "territoryCount": {
+            "type": "number"
+          }
+        }
+      },
+      "MapSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "territoryCount", "continentCount"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "territoryCount": {
+            "type": "number"
+          },
+          "continentCount": {
+            "type": "number"
+          },
+          "continentBonuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContinentBonusSummary"
+            }
+          }
+        }
+      },
+      "RuleSetDefaults": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "extensionSchemaVersion",
+          "mapId",
+          "diceRuleSetId",
+          "victoryRuleSetId",
+          "themeId",
+          "pieceSkinId"
+        ],
+        "properties": {
+          "extensionSchemaVersion": {
+            "type": "number"
+          },
+          "mapId": {
+            "type": "string"
+          },
+          "diceRuleSetId": {
+            "type": "string"
+          },
+          "victoryRuleSetId": {
+            "type": "string"
+          },
+          "themeId": {
+            "type": "string"
+          },
+          "pieceSkinId": {
+            "type": "string"
+          }
+        }
+      },
+      "RuleSetSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "defaults"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/RuleSetDefaults"
+          },
+          "defaultDiceRuleSetId": {
+            "type": "string"
+          },
+          "defaultVictoryRuleSetId": {
+            "type": "string"
+          }
+        }
+      },
+      "DiceRuleSet": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "attackerMaxDice", "defenderMaxDice"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "attackerMaxDice": {
+            "type": "number"
+          },
+          "defenderMaxDice": {
+            "type": "number"
+          }
+        }
+      },
+      "PlayerSlotConfig": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "slot": {
+            "type": ["integer", "null"]
+          },
+          "type": {
+            "type": ["string", "null"]
+          },
+          "name": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "CreateGameRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": ["string", "null"]
+          },
+          "totalPlayers": {
+            "type": ["integer", "null"]
+          },
+          "contentPackId": {
+            "type": ["string", "null"]
+          },
+          "ruleSetId": {
+            "type": ["string", "null"]
+          },
+          "mapId": {
+            "type": ["string", "null"]
+          },
+          "diceRuleSetId": {
+            "type": ["string", "null"]
+          },
+          "victoryRuleSetId": {
+            "type": ["string", "null"]
+          },
+          "pieceSetId": {
+            "type": ["string", "null"]
+          },
+          "themeId": {
+            "type": ["string", "null"]
+          },
+          "pieceSkinId": {
+            "type": ["string", "null"]
+          },
+          "gamePresetId": {
+            "type": ["string", "null"]
+          },
+          "activeModuleIds": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            }
+          },
+          "contentProfileId": {
+            "type": ["string", "null"]
+          },
+          "gameplayProfileId": {
+            "type": ["string", "null"]
+          },
+          "uiProfileId": {
+            "type": ["string", "null"]
+          },
+          "turnTimeoutHours": {
+            "type": ["integer", "null"]
+          },
+          "players": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/PlayerSlotConfig"
+            }
+          }
+        }
+      },
+      "GameSummary": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "name", "phase", "playerCount", "updatedAt"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "playerCount": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "contentPackId": {
+            "type": ["string", "null"]
+          },
+          "diceRuleSetId": {
+            "type": ["string", "null"]
+          },
+          "totalPlayers": {
+            "type": ["number", "null"]
+          },
+          "mapName": {
+            "type": ["string", "null"]
+          },
+          "mapId": {
+            "type": ["string", "null"]
+          },
+          "aiCount": {
+            "type": "number"
+          },
+          "creatorUserId": {
+            "type": ["string", "null"]
+          },
+          "activeModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          },
+          "gamePresetId": {
+            "type": ["string", "null"]
+          },
+          "contentProfileId": {
+            "type": ["string", "null"]
+          },
+          "gameplayProfileId": {
+            "type": ["string", "null"]
+          },
+          "uiProfileId": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "GameIdRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["gameId"],
+        "properties": {
+          "gameId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "GameListResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["games"],
+        "properties": {
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            }
+          },
+          "activeGameId": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "GameOptionsResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ruleSets",
+          "maps",
+          "diceRuleSets",
+          "victoryRuleSets",
+          "themes",
+          "pieceSkins",
+          "turnTimeoutHoursOptions",
+          "playerRange"
+        ],
+        "properties": {
+          "ruleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleSetSummary"
+            }
+          },
+          "maps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapSummary"
+            }
+          },
+          "diceRuleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiceRuleSet"
+            }
+          },
+          "victoryRuleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VictoryRuleSet"
+            }
+          },
+          "themes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VisualTheme"
+            }
+          },
+          "pieceSkins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PieceSkin"
+            }
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "enabledModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          },
+          "gamePresets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskGamePreset"
+            }
+          },
+          "contentProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "gameplayProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "uiProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "uiSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskUiSlotContribution"
+            }
+          },
+          "playerPieceSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerPieceSetSummary"
+            }
+          },
+          "contentPacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentPackSummary"
+            }
+          },
+          "turnTimeoutHoursOptions": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "playerRange": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["min", "max"],
+            "properties": {
+              "min": {
+                "type": "integer"
+              },
+              "max": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "GameMutationGame": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "GameMutationResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          },
+          "playerId": {
+            "type": ["string", "null"]
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameMutationGame"
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            }
+          },
+          "activeGameId": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "CreateGameResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok", "game", "games"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "playerId": {
+            "type": ["string", "null"]
+          },
+          "game": {
+            "$ref": "#/components/schemas/GameMutationGame"
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            }
+          },
+          "activeGameId": {
+            "type": ["string", "null"]
+          },
+          "state": {
+            "$ref": "#/components/schemas/GameStateSnapshot"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ParticipatingGameLobby": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "playerName",
+          "statusLabel",
+          "focusLabel",
+          "turnPhaseLabel",
+          "territoryCount",
+          "cardCount"
+        ],
+        "properties": {
+          "playerName": {
+            "type": "string"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "focusLabel": {
+            "type": "string"
+          },
+          "turnPhaseLabel": {
+            "type": "string"
+          },
+          "territoryCount": {
+            "type": "number"
+          },
+          "cardCount": {
+            "type": "number"
+          }
+        }
+      },
+      "ParticipatingGame": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GameSummary"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["totalPlayers", "mapName", "myLobby"],
+            "properties": {
+              "totalPlayers": {
+                "type": ["number", "null"]
+              },
+              "mapName": {
+                "type": ["string", "null"]
+              },
+              "myLobby": {
+                "$ref": "#/components/schemas/ParticipatingGameLobby"
+              }
+            }
+          }
+        ]
+      },
+      "ProfileContract": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "playerName",
+          "gamesPlayed",
+          "wins",
+          "losses",
+          "gamesInProgress",
+          "participatingGames",
+          "winRate",
+          "hasHistory",
+          "placeholders"
+        ],
+        "properties": {
+          "playerName": {
+            "type": "string"
+          },
+          "gamesPlayed": {
+            "type": "number"
+          },
+          "wins": {
+            "type": "number"
+          },
+          "losses": {
+            "type": "number"
+          },
+          "gamesInProgress": {
+            "type": "number"
+          },
+          "participatingGames": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParticipatingGame"
+            }
+          },
+          "winRate": {
+            "type": ["number", "null"]
+          },
+          "hasHistory": {
+            "type": "boolean"
+          },
+          "placeholders": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["recentGames", "ranking"],
+            "properties": {
+              "recentGames": {
+                "type": "boolean"
+              },
+              "ranking": {
+                "type": "boolean"
+              }
+            }
+          },
+          "preferences": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThemePreferences"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ProfileResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["profile"],
+        "properties": {
+          "profile": {
+            "$ref": "#/components/schemas/ProfileContract"
+          }
+        }
+      },
+      "ModulesCatalogResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["modules", "engineVersion", "enabledModules"],
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "engineVersion": {
+            "type": "string"
+          },
+          "enabledModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          }
+        }
+      },
+      "ModuleOptionsResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "modules",
+          "enabledModules",
+          "gameModules",
+          "content",
+          "maps",
+          "playerPieceSets",
+          "diceRuleSets",
+          "contentPacks",
+          "gamePresets",
+          "uiSlots",
+          "contentProfiles",
+          "gameplayProfiles",
+          "uiProfiles"
+        ],
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "enabledModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          },
+          "gameModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "content": {
+            "$ref": "#/components/schemas/NetRiskContentContribution"
+          },
+          "maps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapSummary"
+            }
+          },
+          "playerPieceSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerPieceSetSummary"
+            }
+          },
+          "diceRuleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiceRuleSet"
+            }
+          },
+          "contentPacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentPackSummary"
+            }
+          },
+          "gamePresets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskGamePreset"
+            }
+          },
+          "uiSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskUiSlotContribution"
+            }
+          },
+          "contentProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "gameplayProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "uiProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          }
+        }
+      },
+      "ModuleCatalogMutationResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok", "modules", "enabledModules", "engineVersion"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "enabledModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          },
+          "engineVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "TurnTimeoutEnforcementResult": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "scannedGames",
+          "eligibleGames",
+          "expiredGames",
+          "forcedTurns",
+          "skippedConflicts"
+        ],
+        "properties": {
+          "scannedGames": {
+            "type": "number"
+          },
+          "eligibleGames": {
+            "type": "number"
+          },
+          "expiredGames": {
+            "type": "number"
+          },
+          "forcedTurns": {
+            "type": "number"
+          },
+          "skippedConflicts": {
+            "type": "number"
+          }
+        }
+      },
+      "AiTurnRecoveryJobResult": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "scannedGames",
+          "eligibleGames",
+          "recoveryAttempts",
+          "recoveredGames",
+          "forcedTurns",
+          "interceptedErrors",
+          "skippedConflicts"
+        ],
+        "properties": {
+          "scannedGames": {
+            "type": "number"
+          },
+          "eligibleGames": {
+            "type": "number"
+          },
+          "recoveryAttempts": {
+            "type": "number"
+          },
+          "recoveredGames": {
+            "type": "number"
+          },
+          "forcedTurns": {
+            "type": "number"
+          },
+          "interceptedErrors": {
+            "type": "number"
+          },
+          "skippedConflicts": {
+            "type": "number"
+          }
+        }
+      },
+      "TurnTimeoutJobReport": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "result"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "const": "turn-timeout-enforcement"
+          },
+          "result": {
+            "$ref": "#/components/schemas/TurnTimeoutEnforcementResult"
+          }
+        }
+      },
+      "AiTurnRecoveryJobReport": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "result"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "const": "ai-turn-recovery"
+          },
+          "result": {
+            "$ref": "#/components/schemas/AiTurnRecoveryJobResult"
+          }
+        }
+      },
+      "ScheduledJobsResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["ok", "jobs"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TurnTimeoutJobReport"
+                },
+                {
+                  "$ref": "#/components/schemas/AiTurnRecoveryJobReport"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

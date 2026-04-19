@@ -38,6 +38,15 @@ Today the project includes:
 
 Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`.
 
+## Documentation
+
+- [OpenAPI reference](docs/openapi.json)
+- [API transport notes](docs/api.md)
+- [Gameplay flows](docs/gameplay-flows.md)
+- [Extending NetRisk](docs/extending-netrisk.md)
+- [Contributing](CONTRIBUTING.md)
+- [Architecture background](ARCHITECTURE.md)
+
 ## Quick Start
 
 Prerequisites:
