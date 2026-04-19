@@ -1,0 +1,34 @@
+import "@testing-library/jest-dom/vitest";
+
+import { cleanup } from "@testing-library/react";
+
+import { DEFAULT_LOCALE, setLocale } from "@frontend-i18n";
+
+import { resetAuthState } from "@react-shell/auth-store";
+
+import { afterEach, beforeEach, vi } from "vitest";
+
+function resetBrowserState(): void {
+  window.localStorage.clear();
+  resetAuthState();
+
+  document.documentElement.removeAttribute("data-theme");
+  document.body?.removeAttribute("data-theme");
+
+  setLocale(DEFAULT_LOCALE, {
+    storage: window.localStorage,
+    applyDocument: true
+  });
+
+  window.history.replaceState({}, "", "/react/");
+}
+
+beforeEach(() => {
+  resetBrowserState();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  resetBrowserState();
+});

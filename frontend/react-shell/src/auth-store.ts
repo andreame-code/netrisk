@@ -59,3 +59,9 @@ export function updateAuthenticatedUser(user: SessionUser): void {
     useAuthStore.getState().updateAuthenticatedUser(user);
   });
 }
+
+export function resetAuthState(): void {
+  useAuthStore.setState({
+    state: initialAuthState
+  });
+}

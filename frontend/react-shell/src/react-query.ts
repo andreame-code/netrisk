@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-export const queryClient = new QueryClient({
+const reactQueryDefaultOptions = {
   defaultOptions: {
     queries: {
       retry: false,
@@ -10,7 +10,13 @@ export const queryClient = new QueryClient({
       retry: false
     }
   }
-});
+} as const;
+
+export function createReactQueryClient(): QueryClient {
+  return new QueryClient(reactQueryDefaultOptions);
+}
+
+export const queryClient = createReactQueryClient();
 
 export function profileDetailQueryKey(userId: string) {
   return ["profile", "detail", userId] as const;
