@@ -44,6 +44,7 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [OpenAPI reference](docs/openapi.json)
 - [API transport notes](docs/api.md)
 - [Gameplay flows](docs/gameplay-flows.md)
+- [React migration matrix](docs/react-migration-matrix.md)
 - [Extending NetRisk](docs/extending-netrisk.md)
 - [Contributing](CONTRIBUTING.md)
 - [Architecture background](ARCHITECTURE.md)
@@ -276,7 +277,7 @@ The `e2e` suite currently covers:
 - legacy and React gameplay flows
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
-- React gameplay deep links, join/start, forced trade, legacy fallback, and version-conflict recovery
+- React gameplay deep links, join/start, forced trade, and version-conflict recovery
 - granular rendering checks that keep stable gameplay panels mounted during updates
 - visual baselines for the main battlefield, mobile lobby shell, and World Classic board layouts
 
@@ -385,19 +386,20 @@ Game state notably contains:
 
 Main frontend screens currently available:
 
-- `index.html`: application entry
-- `landing.html`: public landing page
-- `lobby.html`: player join and lobby management
-- `new-game.html`: new game setup
-- `game.html`: active game
-- `profile.html`: user profile
-- `register.html`: new account creation
+- `/` and `index.html`: canonical React landing entry
+- `/lobby.html`: canonical React lobby
+- `/new-game.html`: canonical React new game setup
+- `/game/:gameId`: canonical React gameplay route
+- `/profile.html`: canonical React profile
+- `/register.html`: canonical React register route
+- `/login`: canonical React sign-in route
 - `/react/`: React shell bootstrap route
 - `/react/login`: React shell sign-in route
 - `/react/lobby`: React lobby route
 - `/react/lobby/new`: React new game route
 - `/react/profile`: React profile route
-- `/react/game/:gameId`: React gameplay route with explicit legacy fallback
+- `/react/game/:gameId`: React gameplay route aligned with the canonical game shell
+- `/legacy/*`: legacy rollback namespace kept available until final cleanup
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
 For the React shell routes and migrated legacy pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
@@ -416,7 +418,7 @@ On the React gameplay route, the shell also supports:
 
 - snapshot bootstrap plus live SSE refresh from the backend state
 - join/start, trade cards, reinforce, attack, move-after-conquest, fortify, end-turn, and surrender actions
-- explicit fallback navigation to the legacy `/game/:id` route for parity gaps or recovery
+- canonical React gameplay on `/game/:id`, with legacy retained separately under `/legacy/*` for rollback only
 
 ## License
 

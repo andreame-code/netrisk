@@ -4,7 +4,10 @@ const {
   handleProfileRoute,
   handleThemePreferenceRoute
 } = require("../../../backend/routes/account.cjs");
-const { handleLoginRoute } = require("../../../backend/routes/password-auth.cjs");
+const {
+  handleLoginRoute,
+  handleRegisterRoute
+} = require("../../../backend/routes/password-auth.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -90,6 +93,38 @@ function createAccountDeps(overrides = {}) {
     ...overrides
   };
 }
+
+register(
+  "handleRegisterRoute rejects invalid inbound registration payloads with mapped validation errors",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
+
+    await handleRegisterRoute(
+      {},
+      {},
+      { username: 99 },
+      {
+        async registerPasswordUser() {
+          throw new Error("Registration store should not be reached for invalid payloads.");
+        }
+      },
+      () => {
+        throw new Error("sendJson should not be called for invalid registration payloads.");
+      },
+      (...args: LocalizedErrorCall) => {
+        localizedErrorCall = args;
+      }
+    );
+
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 400);
+    assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
+    assert.deepEqual(
+      call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+      ["username", "password"]
+    );
+  }
+);
 
 register(
   "handleLoginRoute rejects invalid inbound login payloads with mapped validation errors",
@@ -266,6 +301,40 @@ register("handleLoginRoute traps invalid outbound login payloads", async () => {
       localizedErrorCall = args;
     },
     (_req: unknown, _sessionToken: string) => "session-cookie"
+  );
+
+  const call = requireLocalizedErrorCall(localizedErrorCall);
+  assert.equal(call[1], 500);
+  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+  assert.deepEqual(
+    call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+    ["user.id"]
+  );
+});
+
+register("handleRegisterRoute traps invalid outbound register payloads", async () => {
+  let localizedErrorCall: LocalizedErrorCall | null = null;
+
+  await handleRegisterRoute(
+    {},
+    {},
+    { username: "commander", password: "secret123" },
+    {
+      async registerPasswordUser() {
+        return {
+          ok: true,
+          user: {
+            username: "commander"
+          }
+        };
+      }
+    },
+    () => {
+      throw new Error("sendJson should not run when register response validation fails.");
+    },
+    (...args: LocalizedErrorCall) => {
+      localizedErrorCall = args;
+    }
   );
 
   const call = requireLocalizedErrorCall(localizedErrorCall);

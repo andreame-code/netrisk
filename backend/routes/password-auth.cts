@@ -28,7 +28,11 @@ type AuthStore = {
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
-const { loginRequestSchema, loginResponseSchema } = require("../../shared/runtime-validation.cjs");
+const {
+  loginRequestSchema,
+  loginResponseSchema,
+  registerRequestSchema
+} = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleRegisterRoute(
@@ -39,10 +43,20 @@ async function handleRegisterRoute(
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    body,
+    registerRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
   const result = await auth.registerPasswordUser({
-    username: body.username,
-    password: body.password,
-    email: body.email
+    username: parsedBody.username,
+    password: parsedBody.password,
+    email: parsedBody.email
   });
   if (!result.ok) {
     sendLocalizedError(
@@ -56,11 +70,18 @@ async function handleRegisterRoute(
     return;
   }
 
-  sendJson(res, 201, {
-    ok: true,
-    user: result.user,
-    nextAuthProviders: ["password", "email", "google", "discord"]
-  });
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
+    201,
+    {
+      ok: true,
+      user: result.user,
+      nextAuthProviders: ["password", "email", "google", "discord"]
+    },
+    loginResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError as SendLocalizedError
+  );
 }
 
 async function handleLoginRoute(

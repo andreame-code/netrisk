@@ -9,6 +9,8 @@ function uniqueUser(prefix) {
   return prefix + "_" + Date.now().toString(36).slice(-6) + randomHex(2);
 }
 
+let sharedLobbyGameId = null;
+
 async function resetGame(page) {
   const attempts = 3;
   let lastError = null;
@@ -37,7 +39,7 @@ async function queueNextAttackRolls(page, attackRoll, defendRoll) {
   await expect(response.ok()).toBeTruthy();
 }
 
-async function registerAndLogin(page, username, password = "secret123") {
+async function createAuthenticatedSession(page, username, password = "secret123") {
   const registerResponse = await page.request.post("/api/auth/register", {
     data: { username, password }
   });
@@ -48,14 +50,79 @@ async function registerAndLogin(page, username, password = "secret123") {
   });
   await expect(loginResponse.ok()).toBeTruthy();
 
-  await page.goto("/game.html");
-  await expect(page.locator("#auth-status")).toContainText(username, { timeout: 10000 });
+  const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
+  expect(sessionToken).toBeTruthy();
+
+  return sessionToken;
+}
+
+async function registerAndLogin(page, username, password = "secret123") {
+  const sessionToken = await createAuthenticatedSession(page, username, password);
+  await attachSessionCookie(page, sessionToken);
+  await page.goto("/lobby.html");
+  await expect(page.locator(".shell-header #auth-status")).toContainText(username, {
+    timeout: 10000
+  });
+
+  return sessionToken;
+}
+
+async function ensureSharedLobbyGame(page, sessionToken) {
+  const requestHeaders = {
+    Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
+  };
+
+  if (sharedLobbyGameId) {
+    const stateResponse = await page.request.get(
+      `/api/state?gameId=${encodeURIComponent(sharedLobbyGameId)}`,
+      {
+        headers: requestHeaders
+      }
+    );
+    if (stateResponse.ok()) {
+      return sharedLobbyGameId;
+    }
+  }
+
+  const createResponse = await page.request.post("/api/games", {
+    headers: requestHeaders,
+    data: {
+      name: uniqueUser("react_lobby"),
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "human" }
+      ]
+    }
+  });
+  await expect(createResponse.ok()).toBeTruthy();
+  const createdGame = await createResponse.json();
+  sharedLobbyGameId = createdGame.game.id;
+
+  return sharedLobbyGameId;
 }
 
 async function registerLoginAndJoin(page, username, password = "secret123") {
-  await registerAndLogin(page, username, password);
-  await page.getByRole("button", { name: "Entra nella lobby" }).click();
+  const sessionToken = await registerAndLogin(page, username, password);
+  const gameId = await ensureSharedLobbyGame(page, sessionToken);
+  const joinResponse = await page.request.post("/api/join", {
+    headers: {
+      Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
+    },
+    data: { gameId }
+  });
+
+  if (joinResponse.ok()) {
+    await joinResponse.json();
+  }
+
+  await page.goto(`/game/${encodeURIComponent(gameId)}`);
   await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
+
+  return {
+    gameId,
+    sessionToken
+  };
 }
 
 async function attachSessionCookie(page, sessionToken) {
@@ -100,6 +167,7 @@ async function findAttackPair(page, ownerName) {
 
 module.exports = {
   attachSessionCookie,
+  createAuthenticatedSession,
   findAttackPair,
   getReinforcementCount,
   getE2EBaseURL,

@@ -13,7 +13,10 @@ import {
   loginRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
+  moduleOptionsResponseSchema,
+  modulesCatalogResponseSchema,
   profileResponseSchema,
+  registerRequestSchema,
   startGameRequestSchema,
   themePreferenceRequestSchema,
   themePreferenceResponseSchema,
@@ -32,7 +35,10 @@ import type {
   GameVersionConflictResponse,
   LoginResponse,
   LogoutResponse,
+  ModuleOptionsResponse,
+  ModulesCatalogResponse,
   ProfileResponse,
+  RegisterRequest,
   StartGameRequest,
   ThemePreferenceResponse
 } from "../../generated/shared-runtime-validation.mjs";
@@ -77,6 +83,22 @@ export function login(
   });
 }
 
+export function register(
+  request: RegisterRequest,
+  messages: ClientMessages
+): Promise<LoginResponse> {
+  return requestJson({
+    path: "/api/auth/register",
+    method: "POST",
+    body: request,
+    requestSchema: registerRequestSchema,
+    requestSchemaName: "RegisterRequest",
+    responseSchema: loginResponseSchema,
+    responseSchemaName: "LoginResponse",
+    ...messages
+  });
+}
+
 export function logout(messages: ClientMessages): Promise<LogoutResponse> {
   return requestJson({
     path: "/api/auth/logout",
@@ -93,6 +115,50 @@ export function getProfile(messages: ClientMessages): Promise<ProfileResponse> {
     path: "/api/profile",
     responseSchema: profileResponseSchema,
     responseSchemaName: "ProfileResponse",
+    ...messages
+  });
+}
+
+export function getModulesCatalog(messages: ClientMessages): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: "/api/modules",
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
+    ...messages
+  });
+}
+
+export function getModuleOptions(messages: ClientMessages): Promise<ModuleOptionsResponse> {
+  return requestJson({
+    path: "/api/modules/options",
+    responseSchema: moduleOptionsResponseSchema,
+    responseSchemaName: "ModuleOptionsResponse",
+    ...messages
+  });
+}
+
+export function rescanModules(messages: ClientMessages): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: "/api/modules/rescan",
+    method: "POST",
+    body: {},
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
+    ...messages
+  });
+}
+
+export function setModuleEnabled(
+  moduleId: string,
+  enabled: boolean,
+  messages: ClientMessages
+): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: `/api/modules/${encodeURIComponent(moduleId)}/${enabled ? "enable" : "disable"}`,
+    method: "POST",
+    body: {},
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
     ...messages
   });
 }

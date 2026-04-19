@@ -1253,21 +1253,37 @@ function createApp(options: CreateAppOptions = {}) {
   function serveStatic(res: Response, url: URL) {
     const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
     const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
-    const isReactShellRoute =
+    const isLegacyRoute =
       !isModuleAssetRequest &&
-      (url.pathname === "/react" ||
+      (url.pathname === "/legacy" ||
+        url.pathname === "/legacy/" ||
+        url.pathname.indexOf("/legacy/") === 0);
+    const isReactShellDocumentRoute =
+      !isModuleAssetRequest &&
+      (url.pathname === "/" ||
+        url.pathname === "/index.html" ||
+        url.pathname === "/login" ||
+        url.pathname === "/register" ||
+        url.pathname === "/register.html" ||
+        url.pathname === "/unauthorized" ||
+        url.pathname === "/lobby.html" ||
+        url.pathname === "/new-game.html" ||
+        url.pathname === "/profile.html" ||
+        url.pathname === "/game.html" ||
+        url.pathname === "/game" ||
+        url.pathname === "/react" ||
         url.pathname === "/react/" ||
-        url.pathname.indexOf("/react/") === 0);
-    const isReactShellAssetRequest = isReactShellRoute && path.extname(url.pathname) !== "";
+        (url.pathname.indexOf("/react/") === 0 && path.extname(url.pathname) === "") ||
+        /^\/game\/[^/]+$/.test(url.pathname));
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
-      : url.pathname === "/"
-        ? "/index.html"
-        : isReactShellRoute && !isReactShellAssetRequest
+      : isLegacyRoute
+        ? url.pathname === "/legacy" || url.pathname === "/legacy/"
+          ? "/index.html"
+          : url.pathname.replace(/^\/legacy/, "")
+        : isReactShellDocumentRoute
           ? "/react/index.html"
-          : url.pathname.indexOf("/game/") === 0
-            ? "/game.html"
-            : url.pathname;
+          : url.pathname;
     const resolvedStaticRoot = path.resolve(staticRoot);
     const filePath = path.resolve(path.join(staticRoot, relativePath));
     if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
@@ -1322,6 +1338,7 @@ function createApp(options: CreateAppOptions = {}) {
 
   function handleRequest(req: Request, res: Response) {
     const url = new URL(req.url || "/", "http://" + req.headers.host);
+    const legacyGamePathMatch = url.pathname.match(/^\/legacy\/game\/([^/]+)$/);
 
     addSecurityHeaders(res);
 
@@ -1329,6 +1346,33 @@ function createApp(options: CreateAppOptions = {}) {
       .then(() => {
         if (url.pathname.indexOf("/api/") === 0) {
           return handleApi(req, res, url);
+        }
+
+        if (req.method === "GET" && url.pathname === "/landing.html") {
+          res.writeHead(302, {
+            Location: "/"
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname === "/game.html") {
+          const requestedGameId = url.searchParams.get("gameId");
+          res.writeHead(302, {
+            Location: requestedGameId
+              ? "/game/" + encodeURIComponent(requestedGameId)
+              : "/lobby.html"
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && legacyGamePathMatch) {
+          res.writeHead(302, {
+            Location: "/legacy/game.html?gameId=" + encodeURIComponent(legacyGamePathMatch[1] || "")
+          });
+          res.end();
+          return null;
         }
 
         serveStatic(res, url);

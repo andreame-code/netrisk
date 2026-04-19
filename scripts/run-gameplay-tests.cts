@@ -38,6 +38,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/full-flows.test.cjs",
   "../tests/gameplay/regression/module-runtime.test.cjs",
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
+  "../tests/gameplay/regression/vercel-routing-config.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
   "../tests/gameplay/regression/game-read-routes.test.cjs",
   "../tests/gameplay/regression/event-broadcast.test.cjs"

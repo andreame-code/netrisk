@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@frontend-core/api/client.mts", () => ({
   getSession: vi.fn(),
   login: vi.fn(),
+  register: vi.fn(),
   logout: vi.fn(),
   getProfile: vi.fn(),
   updateThemePreference: vi.fn(),
@@ -54,6 +55,13 @@ function createLobbyGames(): GameListResponse {
 }
 
 describe("React shell routing and session integration", () => {
+  it("renders the landing route for the /index.html document alias", async () => {
+    renderReactShell("/index.html");
+
+    expect(await screen.findByText("Frontline Dominion")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/index.html");
+  });
+
   it("shows protected route loading while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 

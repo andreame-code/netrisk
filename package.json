@@ -29,13 +29,15 @@
     "test": "npm run build:ts && node .tsbuild/scripts/run-tests.cjs",
     "test:e2e": "node .tsbuild/scripts/run-e2e.cjs",
     "test:e2e:headed": "node .tsbuild/scripts/run-e2e.cjs --headed",
+    "test:e2e:split": "node .tsbuild/scripts/run-e2e-default.cjs",
     "test:e2e:parallel": "node .tsbuild/scripts/run-e2e-default.cjs",
     "test:e2e:serial": "node .tsbuild/scripts/run-e2e.cjs",
     "test:e2e:smoke": "node .tsbuild/scripts/run-e2e.cjs e2e/smoke",
     "test:e2e:update": "node .tsbuild/scripts/run-e2e.cjs --update-snapshots",
     "test:gameplay": "npm run build:ts && node .tsbuild/scripts/run-gameplay-tests.cjs",
     "test:all": "npm run build:ts && npm run test:react && node .tsbuild/scripts/run-tests.cjs && node .tsbuild/scripts/run-gameplay-tests.cjs",
-    "test:all:e2e": "npm run build:ts && npm run test:react && node .tsbuild/scripts/run-tests.cjs && node .tsbuild/scripts/run-gameplay-tests.cjs && node .tsbuild/scripts/run-e2e.cjs"
+    "test:all:e2e": "npm run build:ts && npm run test:react && node .tsbuild/scripts/run-tests.cjs && node .tsbuild/scripts/run-gameplay-tests.cjs && node .tsbuild/scripts/run-e2e.cjs",
+    "test:all:e2e:split": "npm run build:ts && npm run test:react && node .tsbuild/scripts/run-tests.cjs && node .tsbuild/scripts/run-gameplay-tests.cjs && npm run test:e2e:split"
   },
   "devDependencies": {
     "@sentry/vite-plugin": "^4.5.0",

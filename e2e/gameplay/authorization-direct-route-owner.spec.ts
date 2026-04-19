@@ -27,6 +27,5 @@ test("creator can reopen a protected lobby from a direct game route", async ({ p
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i);
   await expect(page.locator("#auth-status")).not.toContainText("Accesso richiesto");
-  await expect(page.getByRole("button", { name: "Entra nella lobby" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeVisible();
 });
-

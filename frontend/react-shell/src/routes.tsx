@@ -1,4 +1,4 @@
-import { startTransition, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -14,26 +14,25 @@ import {
 
 import { useAuth, AuthProvider } from "@react-shell/auth";
 import { GameRoute } from "@react-shell/gameplay-route";
+import { LandingRoute } from "@react-shell/landing-route";
 import { LobbyCreateRoute } from "@react-shell/lobby-create-route";
 import { LobbyRoute } from "@react-shell/lobby-route";
 import { ProfileRoute } from "@react-shell/profile-route";
+import {
+  buildBootstrapPath,
+  buildGameIndexPath,
+  buildGamePath,
+  buildLobbyPath,
+  buildLoginPath,
+  buildLoginHref,
+  buildProfilePath,
+  buildRegisterHref,
+  buildUnauthorizedPath,
+  normalizeNextPath,
+  useShellNamespace
+} from "@react-shell/public-auth-paths";
+import { RegisterRoute } from "@react-shell/register-route";
 import { messageFromError } from "@frontend-core/errors.mts";
-
-function normalizeNextPath(nextPath: string | null): string {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/lobby";
-  }
-
-  if (nextPath === "/login" || nextPath.startsWith("/login?") || nextPath === "/unauthorized") {
-    return "/lobby";
-  }
-
-  return nextPath;
-}
-
-function buildLoginHref(nextPath: string): string {
-  return `/login?next=${encodeURIComponent(nextPath)}`;
-}
 
 function LoadingPanel({ title, copy }: { title: string; copy: string }) {
   return (
@@ -70,8 +69,16 @@ function ShellLayout() {
   const { state, refresh, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const namespace = useShellNamespace();
   const [logoutPending, setLogoutPending] = useState(false);
-  const nextPath = normalizeNextPath(location.pathname + location.search);
+  const nextPath = normalizeNextPath(
+    location.pathname + location.search,
+    buildLobbyPath(namespace)
+  );
+
+  useEffect(() => {
+    document.title = "NetRisk React Shell";
+  }, []);
 
   async function handleLogout(): Promise<void> {
     setLogoutPending(true);
@@ -79,7 +86,7 @@ function ShellLayout() {
     try {
       await signOut();
       startTransition(() => {
-        void navigate("/login", { replace: true });
+        void navigate(buildLoginPath(namespace), { replace: true });
       });
     } finally {
       setLogoutPending(false);
@@ -88,7 +95,7 @@ function ShellLayout() {
 
   return (
     <div className="react-shell-page shell-layout" data-testid="react-shell-layout">
-      <header className="hero-panel shell-header">
+      <header className="hero-panel shell-header top-nav-bar">
         <div className="shell-brand">
           <p className="eyebrow">NetRisk</p>
           <h1>Session-aware React shell</h1>
@@ -121,6 +128,16 @@ function ShellLayout() {
             </span>
           </div>
 
+          <p id="auth-status" className="metric-copy shell-session-copy">
+            {state.status === "authenticated"
+              ? state.user.username
+              : state.status === "loading"
+                ? "Checking the existing browser session."
+                : state.status === "error"
+                  ? state.message
+                  : "Session required. Sign in to continue."}
+          </p>
+
           {state.status === "authenticated" ? (
             <div className="shell-session-copy">
               <strong>{state.user.username}</strong>
@@ -136,18 +153,42 @@ function ShellLayout() {
             </p>
           )}
 
+          <div className="shell-form shell-header-auth">
+            <input
+              id="header-auth-username"
+              placeholder="Username"
+              autoComplete="username"
+              hidden={state.status === "authenticated"}
+              readOnly
+            />
+            <input
+              id="header-auth-password"
+              type="password"
+              placeholder="Password"
+              autoComplete="current-password"
+              hidden={state.status === "authenticated"}
+              readOnly
+            />
+          </div>
+
           <div className="shell-actions">
             {state.status === "authenticated" ? (
               <button
+                id="logout-button"
                 type="button"
-                className="refresh-button"
+                className="refresh-button top-nav-register"
                 onClick={() => void handleLogout()}
                 disabled={logoutPending}
               >
                 {logoutPending ? "Signing out..." : "Sign out"}
               </button>
             ) : (
-              <Link className="refresh-button" to={buildLoginHref(nextPath)}>
+              <Link
+                id="header-login-button"
+                className="refresh-button top-nav-register"
+                hidden={state.status === "authenticated"}
+                to={buildLoginHref(nextPath)}
+              >
                 Sign in
               </Link>
             )}
@@ -167,16 +208,16 @@ function ShellLayout() {
         <aside className="card-panel shell-nav-panel">
           <div className="card-header">
             <p className="status-label">Navigation</p>
-            <span className="status-pill">/react</span>
+            <span className="status-pill">{namespace === "react" ? "/react" : "canonical"}</span>
           </div>
           <nav
             className="main-nav-shell"
             aria-label="React shell sections"
             data-testid="react-shell-nav"
           >
-            <NavItem to="/lobby" label="Lobby" />
-            <NavItem to="/profile" label="Profile" />
-            <NavItem to="/game" label="Game" />
+            <NavItem to={buildLobbyPath(namespace)} label="Lobby" />
+            <NavItem to={buildProfilePath(namespace)} label="Profile" />
+            <NavItem to={buildGameIndexPath(namespace)} label="Game" />
           </nav>
           <p className="metric-copy">
             Protected destinations redirect to the React login route when the session is missing.
@@ -204,6 +245,7 @@ function NavItem({ to, label }: { to: string; label: string }) {
 
 function BootstrapRoute() {
   const { state, refresh } = useAuth();
+  const namespace = useShellNamespace();
 
   if (state.status === "loading") {
     return (
@@ -220,12 +262,18 @@ function BootstrapRoute() {
     );
   }
 
-  return <Navigate to={state.status === "authenticated" ? "/lobby" : "/login"} replace />;
+  return (
+    <Navigate
+      to={state.status === "authenticated" ? buildLobbyPath(namespace) : buildLoginPath(namespace)}
+      replace
+    />
+  );
 }
 
 function ProtectedRoute() {
   const { state, refresh } = useAuth();
   const location = useLocation();
+  const namespace = useShellNamespace();
 
   if (state.status === "loading") {
     return (
@@ -245,7 +293,10 @@ function ProtectedRoute() {
   if (state.status === "unauthenticated") {
     return (
       <Navigate
-        to={buildLoginHref(normalizeNextPath(location.pathname + location.search))}
+        to={buildLoginHref(
+          normalizeNextPath(location.pathname + location.search, buildLobbyPath(namespace)),
+          namespace
+        )}
         replace
       />
     );
@@ -254,24 +305,17 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
-function PlaceholderPage({
-  eyebrow,
-  title,
-  copy,
-  details
-}: {
-  eyebrow: string;
-  title: string;
-  copy: string;
-  details: ReactNode;
-}) {
+function GameHtmlBridge() {
+  const [searchParams] = useSearchParams();
+  const namespace = useShellNamespace();
+  const rawGameId = searchParams.get("gameId");
+  const gameId = typeof rawGameId === "string" ? rawGameId.trim() : "";
+
   return (
-    <section data-testid={`react-shell-${eyebrow.toLowerCase()}-page`}>
-      <p className="status-label">{eyebrow}</p>
-      <h2>{title}</h2>
-      <p className="status-copy">{copy}</p>
-      <div className="placeholder-stack">{details}</div>
-    </section>
+    <Navigate
+      to={gameId ? buildGamePath(gameId, namespace) : buildGameIndexPath(namespace)}
+      replace
+    />
   );
 }
 
@@ -279,12 +323,13 @@ function LoginPage() {
   const { state, signIn, refresh } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const namespace = useShellNamespace();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const nextPath = normalizeNextPath(searchParams.get("next"));
+  const nextPath = normalizeNextPath(searchParams.get("next"), buildLobbyPath(namespace));
 
   if (state.status === "loading") {
     return (
@@ -371,7 +416,10 @@ function LoginPage() {
           <button type="submit" className="refresh-button" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
-          <Link className="ghost-action" to="/unauthorized">
+          <Link className="ghost-action" to={buildRegisterHref(nextPath, namespace)}>
+            Register
+          </Link>
+          <Link className="ghost-action" to={buildUnauthorizedPath(namespace)}>
             Unauthorized route
           </Link>
         </div>
@@ -383,6 +431,8 @@ function LoginPage() {
 }
 
 function UnauthorizedPage() {
+  const namespace = useShellNamespace();
+
   return (
     <section data-testid="react-shell-unauthorized">
       <p className="status-label">Unauthorized</p>
@@ -392,10 +442,10 @@ function UnauthorizedPage() {
         predictable place.
       </p>
       <div className="shell-actions">
-        <Link className="refresh-button" to="/login">
+        <Link className="refresh-button" to={buildLoginPath(namespace)}>
           Go to login
         </Link>
-        <Link className="ghost-action" to="/lobby">
+        <Link className="ghost-action" to={buildLobbyPath(namespace)}>
           Try the lobby route
         </Link>
       </div>
@@ -404,6 +454,8 @@ function UnauthorizedPage() {
 }
 
 function NotFoundPage() {
+  const namespace = useShellNamespace();
+
   return (
     <section data-testid="react-shell-not-found">
       <p className="status-label">Not found</p>
@@ -413,10 +465,10 @@ function NotFoundPage() {
         404.
       </p>
       <div className="shell-actions">
-        <Link className="refresh-button" to="/">
+        <Link className="refresh-button" to={buildBootstrapPath(namespace)}>
           Restart bootstrap
         </Link>
-        <Link className="ghost-action" to="/login">
+        <Link className="ghost-action" to={buildLoginPath(namespace)}>
           Open login
         </Link>
       </div>
@@ -426,26 +478,35 @@ function NotFoundPage() {
 
 export function AppRoutes() {
   return (
-    <BrowserRouter basename="/react">
+    <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<LandingRoute />} />
+          <Route path="/index.html" element={<LandingRoute />} />
           <Route element={<ShellLayout />}>
-            <Route index element={<BootstrapRoute />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="unauthorized" element={<UnauthorizedPage />} />
+            <Route path="/react" element={<BootstrapRoute />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/react/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterRoute />} />
+            <Route path="/register.html" element={<RegisterRoute />} />
+            <Route path="/react/register" element={<RegisterRoute />} />
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+            <Route path="/react/unauthorized" element={<UnauthorizedPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="lobby">
-                <Route index element={<LobbyRoute />} />
-                <Route path="new" element={<LobbyCreateRoute />} />
-              </Route>
-              <Route path="profile" element={<ProfileRoute />} />
-              <Route path="game">
-                <Route index element={<GameRoute />} />
-                <Route path=":gameId" element={<GameRoute />} />
-              </Route>
+              <Route path="/lobby.html" element={<LobbyRoute />} />
+              <Route path="/react/lobby" element={<LobbyRoute />} />
+              <Route path="/new-game.html" element={<LobbyCreateRoute />} />
+              <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
+              <Route path="/profile.html" element={<ProfileRoute />} />
+              <Route path="/react/profile" element={<ProfileRoute />} />
+              <Route path="/game.html" element={<GameHtmlBridge />} />
+              <Route path="/game" element={<GameRoute />} />
+              <Route path="/game/:gameId" element={<GameRoute />} />
+              <Route path="/react/game" element={<GameRoute />} />
+              <Route path="/react/game/:gameId" element={<GameRoute />} />
             </Route>
-            <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route path="/react/*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -110,6 +110,14 @@ export const loginRequestSchema = objectSchema({
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
+export const registerRequestSchema = objectSchema({
+  username: z.string().min(1),
+  password: z.string().min(1),
+  email: z.string().optional()
+});
+
+export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+
 export const loginResponseSchema = objectSchema({
   ok: z.literal(true),
   user: publicUserSchema,
@@ -214,6 +222,50 @@ export const netRiskUiSlotContributionSchema = objectSchema({
 
 export type NetRiskUiSlotContribution = z.infer<typeof netRiskUiSlotContributionSchema>;
 
+export const netRiskModuleCapabilitySchema = objectSchema({
+  kind: z.string().min(1),
+  targetId: z.string().min(1).nullable().optional(),
+  hook: z.string().min(1).nullable().optional(),
+  scope: z.string().min(1).nullable().optional(),
+  description: z.string().min(1).nullable().optional()
+});
+
+export type NetRiskModuleCapability = z.infer<typeof netRiskModuleCapabilitySchema>;
+
+export const netRiskModuleDependencySchema = objectSchema({
+  id: z.string().min(1),
+  version: z.string().min(1).nullable().optional(),
+  optional: z.boolean().optional()
+});
+
+export type NetRiskModuleDependency = z.infer<typeof netRiskModuleDependencySchema>;
+
+export const netRiskModuleEntrypointsSchema = objectSchema({
+  server: z.string().min(1).nullable().optional(),
+  clientManifest: z.string().min(1).nullable().optional()
+});
+
+export type NetRiskModuleEntrypoints = z.infer<typeof netRiskModuleEntrypointsSchema>;
+
+export const netRiskModuleManifestSchema = objectSchema({
+  schemaVersion: z.number().int(),
+  id: z.string().min(1),
+  version: z.string().min(1),
+  displayName: z.string().min(1),
+  description: z.string().min(1).nullable().optional(),
+  engineVersion: z.string().min(1),
+  kind: z.string().min(1),
+  dependencies: z.array(netRiskModuleDependencySchema),
+  conflicts: z.array(z.string().min(1)),
+  capabilities: z.array(netRiskModuleCapabilitySchema),
+  entrypoints: netRiskModuleEntrypointsSchema.nullable().optional(),
+  assetsDir: z.string().min(1).nullable().optional(),
+  migrations: z.array(z.string().min(1)).optional(),
+  permissions: z.array(z.string().min(1)).optional()
+});
+
+export type NetRiskModuleManifest = z.infer<typeof netRiskModuleManifestSchema>;
+
 export const netRiskContentContributionSchema = objectSchema({
   mapIds: z.array(z.string().min(1)).optional(),
   siteThemeIds: z.array(z.string().min(1)).optional(),
@@ -228,6 +280,40 @@ export const netRiskContentContributionSchema = objectSchema({
 });
 
 export type NetRiskContentContribution = z.infer<typeof netRiskContentContributionSchema>;
+
+export const netRiskUiContributionSchema = objectSchema({
+  slots: z.array(netRiskUiSlotContributionSchema).optional(),
+  themeTokens: z.array(z.string().min(1)).optional(),
+  stylesheets: z.array(z.string().min(1)).optional(),
+  locales: z.array(z.string().min(1)).optional()
+});
+
+export type NetRiskUiContribution = z.infer<typeof netRiskUiContributionSchema>;
+
+export const netRiskGameplayContributionSchema = objectSchema({
+  hooks: z.array(z.string().min(1)).optional(),
+  profileIds: z.array(z.string().min(1)).optional()
+});
+
+export type NetRiskGameplayContribution = z.infer<typeof netRiskGameplayContributionSchema>;
+
+export const netRiskModuleProfilesSchema = objectSchema({
+  content: z.array(netRiskModuleProfileSchema).optional(),
+  gameplay: z.array(netRiskModuleProfileSchema).optional(),
+  ui: z.array(netRiskModuleProfileSchema).optional()
+});
+
+export type NetRiskModuleProfiles = z.infer<typeof netRiskModuleProfilesSchema>;
+
+export const netRiskModuleClientManifestSchema = objectSchema({
+  ui: netRiskUiContributionSchema.nullable().optional(),
+  gameplay: netRiskGameplayContributionSchema.nullable().optional(),
+  content: netRiskContentContributionSchema.nullable().optional(),
+  gamePresets: z.array(netRiskGamePresetSchema).nullable().optional(),
+  profiles: netRiskModuleProfilesSchema.nullable().optional()
+});
+
+export type NetRiskModuleClientManifest = z.infer<typeof netRiskModuleClientManifestSchema>;
 
 export const netRiskModuleReferenceSchema = objectSchema({
   id: z.string().min(1),
@@ -248,7 +334,10 @@ export const installedModuleSummarySchema = objectSchema({
   compatible: z.boolean(),
   warnings: z.array(z.string()),
   errors: z.array(z.string()),
-  capabilities: z.array(z.record(z.string(), z.unknown()))
+  capabilities: z.array(netRiskModuleCapabilitySchema),
+  manifest: netRiskModuleManifestSchema.nullable().optional(),
+  clientManifestPath: z.string().min(1).nullable().optional(),
+  clientManifest: netRiskModuleClientManifestSchema.nullable().optional()
 });
 
 export type InstalledModuleSummary = z.infer<typeof installedModuleSummarySchema>;
@@ -502,6 +591,33 @@ export const gameOptionsResponseSchema = objectSchema({
 });
 
 export type GameOptionsResponse = z.infer<typeof gameOptionsResponseSchema>;
+
+export const modulesCatalogResponseSchema = objectSchema({
+  ok: z.boolean().optional(),
+  modules: z.array(installedModuleSummarySchema),
+  enabledModules: z.array(netRiskModuleReferenceSchema),
+  engineVersion: z.string().min(1)
+});
+
+export type ModulesCatalogResponse = z.infer<typeof modulesCatalogResponseSchema>;
+
+export const moduleOptionsResponseSchema = objectSchema({
+  modules: z.array(installedModuleSummarySchema),
+  enabledModules: z.array(netRiskModuleReferenceSchema),
+  gameModules: z.array(installedModuleSummarySchema),
+  content: netRiskContentContributionSchema,
+  maps: z.array(mapSummarySchema).optional(),
+  playerPieceSets: z.array(playerPieceSetSummarySchema).optional(),
+  diceRuleSets: z.array(diceRuleSetSchema).optional(),
+  contentPacks: z.array(contentPackSummarySchema).optional(),
+  gamePresets: z.array(netRiskGamePresetSchema),
+  uiSlots: z.array(netRiskUiSlotContributionSchema),
+  contentProfiles: z.array(netRiskModuleProfileSchema),
+  gameplayProfiles: z.array(netRiskModuleProfileSchema),
+  uiProfiles: z.array(netRiskModuleProfileSchema)
+});
+
+export type ModuleOptionsResponse = z.infer<typeof moduleOptionsResponseSchema>;
 
 export const gameConfigPieceSetSchema = objectSchema({
   id: z.string().min(1),
