@@ -1,14 +1,29 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
+import { staticCssAssets } from "@frontend-generated/static-text-assets.mts";
+
 import { buildLobbyPath, buildRegisterPath } from "@react-shell/public-auth-paths";
 
-import "../../../public/landing.css";
+const LANDING_STYLE_ATTRIBUTE = "data-react-shell-landing-css";
+const landingStylesheet = staticCssAssets["landing.css"];
 
 export function LandingRoute() {
   useEffect(() => {
     const previousTitle = document.title;
     const previousShellKind = document.body.getAttribute("data-shell-kind");
+    let injectedLandingStylesheet = false;
+    let styleElement = document.head.querySelector<HTMLStyleElement>(
+      `style[${LANDING_STYLE_ATTRIBUTE}]`
+    );
+
+    if (!styleElement) {
+      styleElement = document.createElement("style");
+      styleElement.setAttribute(LANDING_STYLE_ATTRIBUTE, "true");
+      styleElement.textContent = landingStylesheet;
+      document.head.append(styleElement);
+      injectedLandingStylesheet = true;
+    }
 
     document.title = "Frontline Dominion - Conquista il Mondo";
     document.body.setAttribute("data-shell-kind", "marketing");
@@ -21,6 +36,10 @@ export function LandingRoute() {
       }
 
       document.body.removeAttribute("data-shell-kind");
+
+      if (injectedLandingStylesheet) {
+        styleElement?.remove();
+      }
     };
   }, []);
 

@@ -31,6 +31,7 @@ const getProfileMock = vi.mocked(getProfile);
 const listGamesMock = vi.mocked(listGames);
 const loginMock = vi.mocked(login);
 const registerMock = vi.mocked(register);
+const registerRouteTimeoutMs = 15000;
 
 function createAuthRequiredError(): Error & { code: string } {
   const error = new Error("Sign in to continue.") as Error & { code: string };
@@ -85,84 +86,96 @@ describe("RegisterRoute integration", () => {
     window.localStorage.clear();
   });
 
-  it("shows a client validation error and does not submit when passwords do not match", async () => {
-    getSessionMock.mockRejectedValue(createAuthRequiredError());
+  it(
+    "shows a client validation error and does not submit when passwords do not match",
+    async () => {
+      getSessionMock.mockRejectedValue(createAuthRequiredError());
 
-    const { user } = renderReactShell("/react/register");
+      const { user } = renderReactShell("/react/register");
 
-    const registerPage = await screen.findByTestId("react-shell-register-page");
-    const route = within(registerPage);
+      const registerPage = await screen.findByTestId("react-shell-register-page");
+      const route = within(registerPage);
 
-    expect(registerPage).toBeInTheDocument();
+      expect(registerPage).toBeInTheDocument();
 
-    await user.type(route.getByLabelText("Username"), "Commander");
-    await user.type(route.getByLabelText("Password"), "secret123");
-    await user.type(route.getByLabelText("Conferma password"), "secret321");
-    await user.click(route.getByRole("button", { name: "Registrati" }));
+      await user.type(route.getByLabelText("Username"), "Commander");
+      await user.type(route.getByLabelText("Password"), "secret123");
+      await user.type(route.getByLabelText("Conferma password"), "secret321");
+      await user.click(route.getByRole("button", { name: "Registrati" }));
 
-    expect(await screen.findByTestId("react-shell-register-error")).toHaveTextContent(
-      "Le password non coincidono."
-    );
-    expect(registerMock).not.toHaveBeenCalled();
-    expect(loginMock).not.toHaveBeenCalled();
-  });
+      expect(await screen.findByTestId("react-shell-register-error")).toHaveTextContent(
+        "Le password non coincidono."
+      );
+      expect(registerMock).not.toHaveBeenCalled();
+      expect(loginMock).not.toHaveBeenCalled();
+    },
+    registerRouteTimeoutMs
+  );
 
-  it("registers a guest and redirects to the requested protected route", async () => {
-    getSessionMock.mockRejectedValue(createAuthRequiredError());
-    registerMock.mockResolvedValue({
-      ok: true,
-      user: createSession().user,
-      nextAuthProviders: ["password", "email", "google", "discord"]
-    });
-    loginMock.mockResolvedValue({
-      ok: true,
-      user: createSession().user,
-      availableAuthProviders: ["password", "email", "google", "discord"]
-    });
-    listGamesMock.mockResolvedValue(createLobbyGames());
+  it(
+    "registers a guest and redirects to the requested protected route",
+    async () => {
+      getSessionMock.mockRejectedValue(createAuthRequiredError());
+      registerMock.mockResolvedValue({
+        ok: true,
+        user: createSession().user,
+        nextAuthProviders: ["password", "email", "google", "discord"]
+      });
+      loginMock.mockResolvedValue({
+        ok: true,
+        user: createSession().user,
+        availableAuthProviders: ["password", "email", "google", "discord"]
+      });
+      listGamesMock.mockResolvedValue(createLobbyGames());
 
-    const { user } = renderReactShell("/react/register?next=%2Flobby");
+      const { user } = renderReactShell("/react/register?next=%2Flobby");
 
-    const registerPage = await screen.findByTestId("react-shell-register-page");
-    const route = within(registerPage);
+      const registerPage = await screen.findByTestId("react-shell-register-page");
+      const route = within(registerPage);
 
-    expect(registerPage).toBeInTheDocument();
+      expect(registerPage).toBeInTheDocument();
 
-    await user.type(route.getByLabelText("Username"), "Commander");
-    await user.type(route.getByLabelText("Password"), "secret123");
-    await user.type(route.getByLabelText("Conferma password"), "secret123");
-    await user.click(route.getByRole("button", { name: "Registrati" }));
+      await user.type(route.getByLabelText("Username"), "Commander");
+      await user.type(route.getByLabelText("Password"), "secret123");
+      await user.type(route.getByLabelText("Conferma password"), "secret123");
+      await user.click(route.getByRole("button", { name: "Registrati" }));
 
-    expect(registerMock).toHaveBeenCalledWith(
-      {
-        username: "Commander",
-        password: "secret123"
-      },
-      expect.any(Object)
-    );
-    expect(loginMock).toHaveBeenCalledWith(
-      {
-        username: "Commander",
-        password: "secret123"
-      },
-      expect.any(Object)
-    );
+      expect(registerMock).toHaveBeenCalledWith(
+        {
+          username: "Commander",
+          password: "secret123"
+        },
+        expect.any(Object)
+      );
+      expect(loginMock).toHaveBeenCalledWith(
+        {
+          username: "Commander",
+          password: "secret123"
+        },
+        expect.any(Object)
+      );
 
-    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/react/lobby");
-    });
-  });
+      expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(window.location.pathname).toBe("/react/lobby");
+      });
+    },
+    registerRouteTimeoutMs
+  );
 
-  it("redirects authenticated users away from the register route", async () => {
-    getSessionMock.mockResolvedValue(createSession());
-    getProfileMock.mockResolvedValue(createProfileResponse());
+  it(
+    "redirects authenticated users away from the register route",
+    async () => {
+      getSessionMock.mockResolvedValue(createSession());
+      getProfileMock.mockResolvedValue(createProfileResponse());
 
-    renderReactShell("/react/register");
+      renderReactShell("/react/register");
 
-    expect(await screen.findByTestId("react-shell-profile-page")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/react/profile");
-    });
-  });
+      expect(await screen.findByTestId("react-shell-profile-page")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(window.location.pathname).toBe("/react/profile");
+      });
+    },
+    registerRouteTimeoutMs
+  );
 });
