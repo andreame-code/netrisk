@@ -2,35 +2,52 @@ import {
   authSessionResponseSchema,
   createGameRequestSchema,
   createGameResponseSchema,
+  gameActionRequestSchema,
+  gameEventPayloadSchema,
   gameIdRequestSchema,
   gameListResponseSchema,
   gameOptionsResponseSchema,
   gameMutationResponseSchema,
+  gameStateResponseSchema,
+  gameVersionConflictResponseSchema,
   loginRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
   profileResponseSchema,
+  startGameRequestSchema,
   themePreferenceRequestSchema,
-  themePreferenceResponseSchema
+  themePreferenceResponseSchema,
+  tradeCardsRequestSchema
 } from "../../generated/shared-runtime-validation.mjs";
 import type {
   AuthSessionResponse,
   CreateGameRequest,
   CreateGameResponse,
+  GameActionRequest,
+  GameEventPayload,
   GameOptionsResponse,
   GameListResponse,
   GameMutationResponse,
+  GameStateResponse,
+  GameVersionConflictResponse,
   LoginResponse,
   LogoutResponse,
   ProfileResponse,
+  StartGameRequest,
   ThemePreferenceResponse
 } from "../../generated/shared-runtime-validation.mjs";
+import type { ApiClientError } from "./http.mjs";
 import { requestJson } from "./http.mjs";
 
 type ClientMessages = {
   errorMessage: string;
   fallbackMessage?: string;
 };
+
+export type { GameActionRequest, GameEventPayload, GameStateResponse, StartGameRequest };
+
+export type TradeCardsRequest =
+  import("../../generated/shared-runtime-validation.mjs").TradeCardsRequest;
 
 export function getSession(messages: ClientMessages): Promise<AuthSessionResponse> {
   return requestJson({
@@ -154,4 +171,79 @@ export function joinGame(gameId: string, messages: ClientMessages): Promise<Game
     responseSchemaName: "GameMutationResponse",
     ...messages
   });
+}
+
+export function getGameState(gameId: string, messages: ClientMessages): Promise<GameStateResponse> {
+  return requestJson({
+    path: `/api/state?gameId=${encodeURIComponent(gameId)}`,
+    responseSchema: gameStateResponseSchema,
+    responseSchemaName: "GameStateResponse",
+    ...messages
+  });
+}
+
+export function startGame(
+  request: StartGameRequest,
+  messages: ClientMessages
+): Promise<GameMutationResponse> {
+  return requestJson({
+    path: "/api/start",
+    method: "POST",
+    body: request,
+    requestSchema: startGameRequestSchema,
+    requestSchemaName: "StartGameRequest",
+    responseSchema: gameMutationResponseSchema,
+    responseSchemaName: "GameMutationResponse",
+    ...messages
+  });
+}
+
+export function sendGameAction(
+  request: GameActionRequest,
+  messages: ClientMessages
+): Promise<GameMutationResponse> {
+  return requestJson({
+    path: "/api/action",
+    method: "POST",
+    body: request,
+    requestSchema: gameActionRequestSchema,
+    requestSchemaName: "GameActionRequest",
+    responseSchema: gameMutationResponseSchema,
+    responseSchemaName: "GameMutationResponse",
+    ...messages
+  });
+}
+
+export function tradeCards(
+  request: TradeCardsRequest,
+  messages: ClientMessages
+): Promise<GameMutationResponse> {
+  return requestJson({
+    path: "/api/cards/trade",
+    method: "POST",
+    body: request,
+    requestSchema: tradeCardsRequestSchema,
+    requestSchemaName: "TradeCardsRequest",
+    responseSchema: gameMutationResponseSchema,
+    responseSchemaName: "GameMutationResponse",
+    ...messages
+  });
+}
+
+export function parseGameEventPayload(payload: unknown): GameEventPayload {
+  return gameEventPayloadSchema.parse(payload);
+}
+
+export function extractGameVersionConflict(error: unknown): GameVersionConflictResponse | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const apiError = error as ApiClientError;
+  if (apiError.code !== "VERSION_CONFLICT" || !apiError.payload) {
+    return null;
+  }
+
+  const parsed = gameVersionConflictResponseSchema.safeParse(apiError.payload);
+  return parsed.success ? parsed.data : null;
 }

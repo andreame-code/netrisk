@@ -2,6 +2,13 @@ const { handleAttackGameActionRoute } = require("./game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./game-actions-basic.cjs");
 const { handleTurnGameActionRoute } = require("./game-actions-turn.cjs");
 const {
+  gameActionEnvelopeSchema,
+  gameActionRequestSchema,
+  gameMutationResponseSchema,
+  gameVersionConflictResponseSchema
+} = require("../../shared/runtime-validation.cjs");
+const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const {
   applyFortify,
   applyReinforcement,
   endTurn,
@@ -101,25 +108,52 @@ async function handleGameActionRoute({
     return;
   }
 
-  const currentUser = authContext.user;
-  const playerId = body.playerId;
-  const type = body.type;
-  let expectedVersion: number | null = null;
-  if (body.expectedVersion != null) {
-    expectedVersion = Number(body.expectedVersion);
-    if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-      sendLocalizedError(
-        res,
-        400,
-        null,
-        "expectedVersion non valida.",
-        "server.invalidExpectedVersion"
-      );
-      return;
-    }
+  if (
+    body.expectedVersion != null &&
+    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
+  ) {
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "expectedVersion non valida.",
+      "server.invalidExpectedVersion"
+    );
+    return;
   }
 
-  const gameContext = await loadGameContext(getTargetGameId(body, url));
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const parsedEnvelope = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    resolvedBody,
+    gameActionEnvelopeSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedEnvelope) {
+    return;
+  }
+
+  const currentUser = authContext.user;
+  const playerId = parsedEnvelope.playerId;
+  const type = parsedEnvelope.type;
+  const expectedVersion = parsedEnvelope.expectedVersion ?? null;
+  const nodeResponse = res as import("node:http").ServerResponse;
+  const sendGameplayMutationJson: SendJson = (targetRes, statusCode, payload, headers) => {
+    sendValidatedJson(
+      targetRes as import("node:http").ServerResponse,
+      statusCode,
+      payload,
+      gameMutationResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError,
+      headers
+    );
+  };
+
+  const gameContext = await loadGameContext(parsedEnvelope.gameId ?? null);
   const player = getPlayer(gameContext.state, playerId);
 
   if (!player || !playerBelongsToUser(player, currentUser)) {
@@ -132,38 +166,62 @@ async function handleGameActionRoute({
       return false;
     }
 
-    sendJson(res, 409, {
-      ...localizedPayload(error, error.message, error.messageKey || "server.versionConflict"),
-      code: error.code,
-      currentVersion: error.currentVersion,
-      state: snapshotForUser(
-        error.currentState,
-        gameContext.gameId,
-        error.currentVersion,
-        error.game?.name || gameContext.gameName,
-        currentUser
-      )
-    });
+    sendValidatedJson(
+      nodeResponse,
+      409,
+      {
+        ...localizedPayload(error, error.message, error.messageKey || "server.versionConflict"),
+        code: error.code,
+        currentVersion: error.currentVersion,
+        state: snapshotForUser(
+          error.currentState,
+          gameContext.gameId,
+          error.currentVersion,
+          error.game?.name || gameContext.gameName,
+          currentUser
+        )
+      },
+      gameVersionConflictResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
+    );
     return true;
   }
 
   if (expectedVersion != null && expectedVersion !== gameContext.version) {
-    sendJson(res, 409, {
-      ...localizedPayload(
-        null,
-        "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
-        "server.versionConflict"
-      ),
-      code: "VERSION_CONFLICT",
-      currentVersion: gameContext.version,
-      state: snapshotForUser(
-        gameContext.state,
-        gameContext.gameId,
-        gameContext.version,
-        gameContext.gameName,
-        currentUser
-      )
-    });
+    sendValidatedJson(
+      nodeResponse,
+      409,
+      {
+        ...localizedPayload(
+          null,
+          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          "server.versionConflict"
+        ),
+        code: "VERSION_CONFLICT",
+        currentVersion: gameContext.version,
+        state: snapshotForUser(
+          gameContext.state,
+          gameContext.gameId,
+          gameContext.version,
+          gameContext.gameName,
+          currentUser
+        )
+      },
+      gameVersionConflictResponseSchema,
+      sendJson as SendJson,
+      sendLocalizedError as SendLocalizedError
+    );
+    return;
+  }
+
+  const parsedBody = parseRequestOrSendError(
+    nodeResponse,
+    resolvedBody,
+    gameActionRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
     return;
   }
 
@@ -192,7 +250,7 @@ async function handleGameActionRoute({
       snapshotForUser,
       handleVersionConflict,
       isValidTerritoryId,
-      sendJson,
+      sendGameplayMutationJson,
       sendLocalizedError
     )
   ) {
@@ -216,7 +274,7 @@ async function handleGameActionRoute({
       snapshotForUser,
       handleVersionConflict,
       isValidTerritoryId,
-      sendJson,
+      sendGameplayMutationJson,
       sendLocalizedError
     )
   ) {
@@ -237,7 +295,7 @@ async function handleGameActionRoute({
       broadcastGame,
       snapshotForUser,
       handleVersionConflict,
-      sendJson,
+      sendGameplayMutationJson,
       sendLocalizedError
     )
   ) {

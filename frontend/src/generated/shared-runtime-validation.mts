@@ -382,6 +382,96 @@ export const gameIdRequestSchema = objectSchema({
 
 export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
 
+const gameplayRequestBaseSchema = objectSchema({
+  gameId: z.string().min(1).nullable().optional(),
+  playerId: z.string().min(1),
+  expectedVersion: z.number().int().min(1).nullable().optional()
+});
+
+export const startGameRequestSchema = gameplayRequestBaseSchema;
+
+export type StartGameRequest = z.infer<typeof startGameRequestSchema>;
+
+export const gameActionReinforceRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("reinforce"),
+  territoryId: z.string().min(1),
+  amount: z.number().int().min(1).nullable().optional()
+});
+
+export type GameActionReinforceRequest = z.infer<typeof gameActionReinforceRequestSchema>;
+
+export const gameActionEnvelopeSchema = gameplayRequestBaseSchema.extend({
+  type: z.string().min(1)
+});
+
+export type GameActionEnvelope = z.infer<typeof gameActionEnvelopeSchema>;
+
+export const gameActionAttackRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("attack"),
+  fromId: z.string().min(1),
+  toId: z.string().min(1),
+  attackDice: z.number().int().min(1).nullable().optional()
+});
+
+export type GameActionAttackRequest = z.infer<typeof gameActionAttackRequestSchema>;
+
+export const gameActionAttackBanzaiRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("attackBanzai"),
+  fromId: z.string().min(1),
+  toId: z.string().min(1),
+  attackDice: z.number().int().min(1).nullable().optional()
+});
+
+export type GameActionAttackBanzaiRequest = z.infer<typeof gameActionAttackBanzaiRequestSchema>;
+
+export const gameActionMoveAfterConquestRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("moveAfterConquest"),
+  armies: z.number().int().min(1)
+});
+
+export type GameActionMoveAfterConquestRequest = z.infer<
+  typeof gameActionMoveAfterConquestRequestSchema
+>;
+
+export const gameActionFortifyRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("fortify"),
+  fromId: z.string().min(1),
+  toId: z.string().min(1),
+  armies: z.number().int().min(1)
+});
+
+export type GameActionFortifyRequest = z.infer<typeof gameActionFortifyRequestSchema>;
+
+export const gameActionEndTurnRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("endTurn")
+});
+
+export type GameActionEndTurnRequest = z.infer<typeof gameActionEndTurnRequestSchema>;
+
+export const gameActionSurrenderRequestSchema = gameplayRequestBaseSchema.extend({
+  type: z.literal("surrender")
+});
+
+export type GameActionSurrenderRequest = z.infer<typeof gameActionSurrenderRequestSchema>;
+
+export const gameActionRequestSchema = z.discriminatedUnion("type", [
+  gameActionReinforceRequestSchema,
+  gameActionAttackRequestSchema,
+  gameActionAttackBanzaiRequestSchema,
+  gameActionMoveAfterConquestRequestSchema,
+  gameActionFortifyRequestSchema,
+  gameActionEndTurnRequestSchema,
+  gameActionSurrenderRequestSchema
+]);
+
+export type GameActionRequest = z.infer<typeof gameActionRequestSchema>;
+
+export const tradeCardsRequestSchema = gameplayRequestBaseSchema.extend({
+  cardIds: z.array(z.string().min(1)).length(3)
+});
+
+export type TradeCardsRequest = z.infer<typeof tradeCardsRequestSchema>;
+
 export const gameListResponseSchema = objectSchema({
   games: z.array(gameSummarySchema),
   activeGameId: z.string().min(1).nullable().optional()
@@ -414,6 +504,231 @@ export const gameOptionsResponseSchema = objectSchema({
 
 export type GameOptionsResponse = z.infer<typeof gameOptionsResponseSchema>;
 
+export const gameConfigPieceSetSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  paletteSize: z.number()
+});
+
+export type GameConfigPieceSet = z.infer<typeof gameConfigPieceSetSchema>;
+
+export const snapshotPlayerSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  color: z.string().min(1),
+  connected: z.boolean().optional(),
+  isAi: z.boolean().optional(),
+  surrendered: z.boolean().optional(),
+  territoryCount: z.number().optional(),
+  eliminated: z.boolean().optional(),
+  cardCount: z.number().optional()
+});
+
+export type SnapshotPlayer = z.infer<typeof snapshotPlayerSchema>;
+
+export const snapshotTerritorySchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  neighbors: z.array(z.string().min(1)),
+  continentId: z.string().min(1).nullable().optional(),
+  ownerId: z.string().min(1).nullable(),
+  armies: z.number(),
+  x: z.number().nullable().optional(),
+  y: z.number().nullable().optional()
+});
+
+export type SnapshotTerritory = z.infer<typeof snapshotTerritorySchema>;
+
+export const snapshotCardSchema = objectSchema({
+  id: z.string().min(1),
+  territoryId: z.string().min(1).nullable().optional(),
+  type: z.string().min(1).nullable().optional()
+});
+
+export type SnapshotCard = z.infer<typeof snapshotCardSchema>;
+
+export const snapshotCombatComparisonSchema = objectSchema({
+  winner: z.string().min(1),
+  attackDie: z.number().optional(),
+  defendDie: z.number().optional(),
+  pair: z.number().optional()
+});
+
+export type SnapshotCombatComparison = z.infer<typeof snapshotCombatComparisonSchema>;
+
+export const snapshotLastCombatSchema = objectSchema({
+  fromTerritoryId: z.string().min(1),
+  toTerritoryId: z.string().min(1),
+  attackerPlayerId: z.string().min(1).optional(),
+  defenderPlayerId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).optional(),
+  attackDiceCount: z.number().optional(),
+  defendDiceCount: z.number().optional(),
+  attackerRolls: z.array(z.number()).optional(),
+  defenderRolls: z.array(z.number()).optional(),
+  comparisons: z.array(snapshotCombatComparisonSchema).optional(),
+  attackerArmiesBefore: z.number().optional(),
+  defenderArmiesBefore: z.number().optional(),
+  attackerArmiesRemaining: z.number().optional(),
+  defenderArmiesRemaining: z.number().optional(),
+  conqueredTerritory: z.boolean().optional(),
+  defenderReducedToZero: z.boolean().optional()
+});
+
+export type SnapshotLastCombat = z.infer<typeof snapshotLastCombatSchema>;
+
+export const pendingConquestSchema = objectSchema({
+  fromId: z.string().min(1).optional(),
+  toId: z.string().min(1).optional(),
+  minArmies: z.number().optional(),
+  maxArmies: z.number().optional()
+});
+
+export type PendingConquest = z.infer<typeof pendingConquestSchema>;
+
+export const snapshotCardStateSchema = objectSchema({
+  ruleSetId: z.string().min(1).optional(),
+  tradeCount: z.number().optional(),
+  deckCount: z.number().optional(),
+  discardCount: z.number().optional(),
+  nextTradeBonus: z.number().optional(),
+  maxHandBeforeForcedTrade: z.number().optional(),
+  currentPlayerMustTrade: z.boolean().optional()
+});
+
+export type SnapshotCardState = z.infer<typeof snapshotCardStateSchema>;
+
+export const snapshotMapAspectRatioSchema = objectSchema({
+  width: z.number().optional(),
+  height: z.number().optional()
+});
+
+export type SnapshotMapAspectRatio = z.infer<typeof snapshotMapAspectRatioSchema>;
+
+export const snapshotMapVisualSchema = objectSchema({
+  imageUrl: z.string().min(1).nullable().optional(),
+  aspectRatio: snapshotMapAspectRatioSchema.nullable().optional()
+});
+
+export type SnapshotMapVisual = z.infer<typeof snapshotMapVisualSchema>;
+
+export const snapshotDiceRuleSetSchema = objectSchema({
+  id: z.string().min(1).optional(),
+  attackerMaxDice: z.number().optional(),
+  defenderMaxDice: z.number().optional()
+});
+
+export type SnapshotDiceRuleSet = z.infer<typeof snapshotDiceRuleSetSchema>;
+
+export const snapshotLogEntrySchema = objectSchema({
+  message: z.string().min(1).optional(),
+  messageKey: z.string().min(1).nullable().optional(),
+  messageParams: z.record(z.string(), z.unknown()).optional(),
+  error: z.string().min(1).optional(),
+  errorKey: z.string().min(1).nullable().optional(),
+  errorParams: z.record(z.string(), z.unknown()).optional(),
+  reason: z.string().min(1).optional(),
+  reasonKey: z.string().min(1).nullable().optional(),
+  reasonParams: z.record(z.string(), z.unknown()).optional()
+});
+
+export type SnapshotLogEntry = z.infer<typeof snapshotLogEntrySchema>;
+
+export const gameConfigSummarySchema = objectSchema({
+  contentPackId: z.string().min(1).nullable().optional(),
+  pieceSetId: z.string().min(1).nullable().optional(),
+  extensionSchemaVersion: z.number().optional(),
+  moduleSchemaVersion: z.number().optional(),
+  ruleSetId: z.string().min(1).nullable().optional(),
+  ruleSetName: z.string().min(1).nullable().optional(),
+  mapName: z.string().min(1).nullable().optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).nullable().optional(),
+  themeId: z.string().min(1).nullable().optional(),
+  pieceSkinId: z.string().min(1).nullable().optional(),
+  activeModules: z.array(netRiskModuleReferenceSchema).optional(),
+  gamePresetId: z.string().min(1).nullable().optional(),
+  contentProfileId: z.string().min(1).nullable().optional(),
+  gameplayProfileId: z.string().min(1).nullable().optional(),
+  uiProfileId: z.string().min(1).nullable().optional(),
+  pieceSet: gameConfigPieceSetSchema.nullable().optional(),
+  pieceSkin: pieceSkinSchema.nullable().optional(),
+  turnTimeoutHours: z.number().int().nullable().optional(),
+  totalPlayers: z.number().int().optional(),
+  players: z.array(playerSlotConfigSchema).optional()
+});
+
+export type GameConfigSummary = z.infer<typeof gameConfigSummarySchema>;
+
+export const gameSnapshotSchema = objectSchema({
+  gameId: z.string().min(1).nullable().optional(),
+  gameName: z.string().min(1).nullable().optional(),
+  version: z.number().int().nullable().optional(),
+  playerId: z.string().min(1).nullable().optional(),
+  phase: z.string().min(1).optional(),
+  turnPhase: z.string().min(1).optional(),
+  currentPlayerId: z.string().min(1).nullable().optional(),
+  winnerId: z.string().min(1).nullable().optional(),
+  players: z.array(snapshotPlayerSchema),
+  map: z.array(snapshotTerritorySchema),
+  continents: z.array(z.record(z.string(), z.unknown())).optional(),
+  reinforcementPool: z.number(),
+  playerHand: z.array(snapshotCardSchema).optional(),
+  pendingConquest: pendingConquestSchema.nullable().optional(),
+  lastAction: z.record(z.string(), z.unknown()).nullable().optional(),
+  lastCombat: snapshotLastCombatSchema.nullable().optional(),
+  cardState: snapshotCardStateSchema.nullable().optional(),
+  gameConfig: gameConfigSummarySchema.nullable().optional(),
+  mapVisual: snapshotMapVisualSchema.nullable().optional(),
+  diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
+  fortifyUsed: z.boolean().optional(),
+  attacksThisTurn: z.number().optional(),
+  conqueredTerritoryThisTurn: z.boolean().optional(),
+  log: z.array(z.string()).optional(),
+  logEntries: z.array(snapshotLogEntrySchema).optional()
+});
+
+export type GameSnapshot = z.infer<typeof gameSnapshotSchema>;
+
+export const gameMutationStateSchema = objectSchema({
+  gameId: z.string().min(1).nullable().optional(),
+  gameName: z.string().min(1).nullable().optional(),
+  version: z.number().int().nullable().optional(),
+  playerId: z.string().min(1).nullable().optional(),
+  phase: z.string().min(1).optional(),
+  turnPhase: z.string().min(1).optional(),
+  currentPlayerId: z.string().min(1).nullable().optional(),
+  winnerId: z.string().min(1).nullable().optional(),
+  players: z.union([z.array(snapshotPlayerSchema), z.number()]).optional(),
+  map: z.union([z.array(snapshotTerritorySchema), z.number()]).optional(),
+  continents: z.array(z.record(z.string(), z.unknown())).optional(),
+  reinforcementPool: z.number().optional(),
+  playerHand: z.array(snapshotCardSchema).optional(),
+  pendingConquest: pendingConquestSchema.nullable().optional(),
+  lastAction: z.record(z.string(), z.unknown()).nullable().optional(),
+  lastCombat: snapshotLastCombatSchema.nullable().optional(),
+  cardState: snapshotCardStateSchema.nullable().optional(),
+  gameConfig: gameConfigSummarySchema.nullable().optional(),
+  mapVisual: snapshotMapVisualSchema.nullable().optional(),
+  diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
+  fortifyUsed: z.boolean().optional(),
+  attacksThisTurn: z.number().optional(),
+  conqueredTerritoryThisTurn: z.boolean().optional(),
+  log: z.array(z.string()).optional(),
+  logEntries: z.array(snapshotLogEntrySchema).optional()
+});
+
+export type GameMutationState = z.infer<typeof gameMutationStateSchema>;
+
+export const gameStateResponseSchema = gameSnapshotSchema;
+
+export type GameStateResponse = z.infer<typeof gameStateResponseSchema>;
+
+export const gameEventPayloadSchema = gameSnapshotSchema;
+
+export type GameEventPayload = z.infer<typeof gameEventPayloadSchema>;
+
 export const gameMutationGameSchema = objectSchema({
   id: z.string().min(1),
   name: z.string().min(1).nullable().optional()
@@ -423,14 +738,27 @@ export type GameMutationGame = z.infer<typeof gameMutationGameSchema>;
 
 export const gameMutationResponseSchema = objectSchema({
   ok: z.literal(true).optional(),
+  code: z.string().min(1).nullable().optional(),
+  currentVersion: z.number().int().nullable().optional(),
   user: publicUserSchema.optional(),
   playerId: z.string().min(1).nullable().optional(),
+  bonus: z.number().optional(),
+  validation: z.record(z.string(), z.unknown()).optional(),
   game: gameMutationGameSchema.optional(),
   games: z.array(gameSummarySchema).optional(),
-  activeGameId: z.string().min(1).nullable().optional()
+  activeGameId: z.string().min(1).nullable().optional(),
+  state: gameMutationStateSchema.optional()
 });
 
 export type GameMutationResponse = z.infer<typeof gameMutationResponseSchema>;
+
+export const gameVersionConflictResponseSchema = objectSchema({
+  code: z.literal("VERSION_CONFLICT"),
+  currentVersion: z.number().int().nullable().optional(),
+  state: gameMutationStateSchema
+});
+
+export type GameVersionConflictResponse = z.infer<typeof gameVersionConflictResponseSchema>;
 
 export const createGameResponseSchema = objectSchema({
   ok: z.literal(true),
@@ -438,7 +766,7 @@ export const createGameResponseSchema = objectSchema({
   game: gameMutationGameSchema,
   games: z.array(gameSummarySchema),
   activeGameId: z.string().min(1).nullable().optional(),
-  state: z.record(z.string(), z.unknown()).optional(),
+  state: gameMutationStateSchema.optional(),
   config: z.record(z.string(), z.unknown()).optional()
 });
 

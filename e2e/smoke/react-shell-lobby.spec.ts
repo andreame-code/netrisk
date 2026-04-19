@@ -69,7 +69,7 @@ test("react lobby shows 15 sessions initially and loads more on scroll", async (
   await expect(page.getByTestId("react-shell-lobby-load-more")).toContainText(/19/);
 });
 
-test("react lobby can open a selected game and hand off to the legacy board", async ({ page }) => {
+test("react lobby can open a selected game and navigate to the React gameplay route", async ({ page }) => {
   await resetGame(page);
 
   const ownerUsername = uniqueUser("rsh_lobby_owner_open");
@@ -104,9 +104,10 @@ test("react lobby can open a selected game and hand off to the legacy board", as
   await page.getByTestId("react-shell-lobby-open-selected").click();
 
   await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(
-    new RegExp(`/game/${createdGame.game.id}$`)
+    new RegExp(`/react/game/${createdGame.game.id}$`)
   );
-  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByText(gameName)).toBeVisible();
 
   const statePayload = await loadGameState(page, ownerSession, createdGame.game.id);
   expect(
@@ -114,7 +115,7 @@ test("react lobby can open a selected game and hand off to the legacy board", as
   ).toBeTruthy();
 });
 
-test("react lobby can join an available game and hand off to the legacy board", async ({ page }) => {
+test("react lobby can join an available game and navigate to the React gameplay route", async ({ page }) => {
   await resetGame(page);
 
   const ownerSession = await createAuthenticatedSession(page, uniqueUser("rsh_lobby_owner_join"));
@@ -151,14 +152,17 @@ test("react lobby can join an available game and hand off to the legacy board", 
   await page.getByTestId("react-shell-lobby-join-selected").click();
 
   await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(
-    new RegExp(`/game/${createdGame.game.id}$`)
+    new RegExp(`/react/game/${createdGame.game.id}$`)
   );
-  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByText(gameName)).toBeVisible();
 
   const statePayload = await loadGameState(page, joinerSession, createdGame.game.id);
-  expect(
-    statePayload.players.some((player) => joinerUsername.startsWith(String(player.name || "")))
-  ).toBeTruthy();
+  const joinedPlayer =
+    statePayload.players.find((player) => player.id === statePayload.playerId) ||
+    statePayload.players.find((player) => joinerUsername.startsWith(String(player.name || "")));
+  expect(joinedPlayer).toBeTruthy();
+  await expect(page.getByTestId("current-player-indicator")).toContainText(String(joinedPlayer.name || ""));
 });
 
 test("react lobby shows controlled feedback when join fails", async ({ page }) => {

@@ -17,7 +17,7 @@ import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t } from "@frontend-i18n";
 
-import { openLegacyGame } from "@react-shell/legacy-game-handoff";
+import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
 
@@ -375,12 +375,12 @@ export function LobbyCreateRoute() {
 
     try {
       const payload = await createMutation.mutateAsync(request);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, payload.game.id);
       setLobbyGamesCache(queryClient, {
         games: payload.games || [],
         activeGameId: payload.activeGameId || payload.game.id
       });
-      openLegacyGame(payload.game.id);
+      openReactGame(payload.game.id);
     } catch (error) {
       setSubmitError(messageFromError(error, t("errors.requestFailed")));
     }

@@ -1,8 +1,25 @@
+const {
+  gameEventPayloadSchema,
+  gameStateResponseSchema,
+  toValidationErrors
+} = require("../../shared/runtime-validation.cjs");
+const { sendValidatedJson } = require("../route-validation.cjs");
+
 type SendJson = (
   res: unknown,
   statusCode: number,
   payload: unknown,
   headers?: Record<string, string>
+) => void;
+type SendLocalizedError = (
+  res: import("node:http").ServerResponse,
+  statusCode: number,
+  input: Record<string, unknown> | null,
+  fallbackMessage: string,
+  fallbackKey: string | null,
+  fallbackParams?: Record<string, unknown>,
+  code?: string | null,
+  extra?: Record<string, unknown>
 ) => void;
 type AuthorizeGameRead = (
   gameId: string | null,
@@ -38,7 +55,8 @@ async function handleStateRoute(
   getUserFromSession: GetUserFromSession,
   extractSessionToken: ExtractSessionToken,
   snapshotForUser: SnapshotForUser,
-  sendJson: SendJson
+  sendJson: SendJson,
+  sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
   const gameId = getTargetGameId({}, url);
   const access = await authorizeGameRead(gameId, req, res, url);
@@ -52,16 +70,25 @@ async function handleStateRoute(
     access && access.user
       ? access.user
       : await getUserFromSession(extractSessionToken(req, {}, url));
-  sendJson(
-    res,
+  const payload = snapshotForUser(
+    gameContext.state,
+    gameContext.gameId,
+    gameContext.version,
+    gameContext.gameName,
+    sessionUser
+  );
+  if (typeof sendLocalizedError !== "function") {
+    sendJson(res, 200, payload);
+    return;
+  }
+
+  sendValidatedJson(
+    res as import("node:http").ServerResponse,
     200,
-    snapshotForUser(
-      gameContext.state,
-      gameContext.gameId,
-      gameContext.version,
-      gameContext.gameName,
-      sessionUser
-    )
+    payload,
+    gameStateResponseSchema,
+    sendJson as SendJson,
+    sendLocalizedError
   );
 }
 
@@ -74,7 +101,8 @@ async function handleEventsRoute(
   loadGameContext: LoadGameContext,
   resumeAiTurnsForRead: ResumeAiTurnsForRead,
   snapshotForUser: SnapshotForUser,
-  clientsByGameId: Map<string, Set<{ res: any; user: unknown }>>
+  clientsByGameId: Map<string, Set<{ res: any; user: unknown }>>,
+  sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
   const gameId = getTargetGameId({}, url);
   const access = await authorizeGameRead(gameId, req, res, url);
@@ -84,25 +112,42 @@ async function handleEventsRoute(
 
   const gameContext = await loadGameContext(gameId);
   // Keep the event stream read-only. AI advancement already happens on open/state routes.
+  const initialPayload = snapshotForUser(
+    gameContext.state,
+    gameContext.gameId,
+    gameContext.version,
+    gameContext.gameName,
+    access.user || null
+  );
+  const initialPayloadResult =
+    typeof sendLocalizedError === "function"
+      ? gameEventPayloadSchema.safeParse(initialPayload)
+      : { success: true, data: initialPayload };
+  if (!initialPayloadResult.success) {
+    if (typeof sendLocalizedError !== "function") {
+      return;
+    }
+
+    sendLocalizedError(
+      res as import("node:http").ServerResponse,
+      500,
+      null,
+      "Risposta server non valida.",
+      "server.response.invalid",
+      {},
+      "RESPONSE_VALIDATION_FAILED",
+      { validationErrors: toValidationErrors(initialPayloadResult.error) }
+    );
+    return;
+  }
+
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
     "Access-Control-Allow-Origin": "*"
   });
-  res.write(
-    "data: " +
-      JSON.stringify(
-        snapshotForUser(
-          gameContext.state,
-          gameContext.gameId,
-          gameContext.version,
-          gameContext.gameName,
-          access.user || null
-        )
-      ) +
-      "\n\n"
-  );
+  res.write("data: " + JSON.stringify(initialPayloadResult.data) + "\n\n");
   const key = gameContext.gameId || "__default__";
   if (!clientsByGameId.has(key)) {
     clientsByGameId.set(key, new Set());

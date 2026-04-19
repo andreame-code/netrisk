@@ -23,3 +23,7 @@ export function lobbyGamesQueryKey() {
 export function gameOptionsQueryKey() {
   return ["lobby", "game-options"] as const;
 }
+
+export function gameplayStateQueryKey(gameId: string) {
+  return ["gameplay", "state", gameId] as const;
+}

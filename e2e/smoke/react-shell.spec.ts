@@ -158,7 +158,7 @@ test("react profile shows controlled feedback when the query payload is invalid"
   );
 });
 
-test("react profile participating games hand off to the legacy gameplay route", async ({ page }) => {
+test("react profile participating games open the React gameplay route", async ({ page }) => {
   await resetGame(page);
 
   const username = uniqueUser("rsh_prof_game");
@@ -185,16 +185,16 @@ test("react profile participating games hand off to the legacy gameplay route", 
 
   const openLink = page.getByTestId(`react-shell-profile-open-${createdGame.game.id}`);
   await expect(openLink).toBeVisible();
-  await expect(openLink).toHaveAttribute("href", new RegExp(`/game/${createdGame.game.id}$`));
+  await expect(openLink).toHaveAttribute("href", new RegExp(`/react/game/${createdGame.game.id}$`));
   await expect(page.getByText(gameName)).toBeVisible();
 
   await openLink.click();
 
   await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(
-    new RegExp(`/game/${createdGame.game.id}$`)
+    new RegExp(`/react/game/${createdGame.game.id}$`)
   );
-  await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
-  await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByText(gameName)).toBeVisible();
   await expect(page.locator("#players")).toContainText(username, { timeout: 15000 });
 });
 
@@ -238,16 +238,41 @@ test("react login returns the user to the protected route that triggered it", as
   });
   await expect(registerResponse.ok()).toBeTruthy();
 
-  await page.goto("/react/game/game-99");
-  await expect(page).toHaveURL(/\/react\/login\?next=%2Fgame%2Fgame-99$/);
+  const loginResponse = await page.request.post("/api/auth/login", {
+    data: { username, password }
+  });
+  await expect(loginResponse.ok()).toBeTruthy();
+
+  const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
+  expect(sessionToken).toBeTruthy();
+
+  const createGameResponse = await page.request.post("/api/games", {
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` },
+    data: {
+      name: `React login ${Date.now().toString(36).slice(-4)}`,
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(createGameResponse.ok()).toBeTruthy();
+  const createdGame = await createGameResponse.json();
+
+  await page.context().clearCookies();
+
+  await page.goto(`/react/game/${createdGame.game.id}`);
+  await expect(page).toHaveURL(
+    new RegExp(`/react/login\\?next=%2Fgame%2F${createdGame.game.id}$`)
+  );
 
   await page.getByLabel("Username").fill(username);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL(/\/react\/game\/game-99$/);
+  await expect(page).toHaveURL(new RegExp(`/react/game/${createdGame.game.id}$`));
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
-  await expect(page.getByText("Selected game id: game-99")).toBeVisible();
 });
 
 test("react shell serves direct unknown routes into the SPA not-found page", async ({ page }) => {

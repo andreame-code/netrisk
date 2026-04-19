@@ -9,11 +9,11 @@ import {
   Routes,
   useLocation,
   useNavigate,
-  useParams,
   useSearchParams
 } from "react-router-dom";
 
 import { useAuth, AuthProvider } from "@react-shell/auth";
+import { GameRoute } from "@react-shell/gameplay-route";
 import { LobbyCreateRoute } from "@react-shell/lobby-create-route";
 import { LobbyRoute } from "@react-shell/lobby-route";
 import { ProfileRoute } from "@react-shell/profile-route";
@@ -93,8 +93,8 @@ function ShellLayout() {
           <p className="eyebrow">NetRisk</p>
           <h1>Session-aware React shell</h1>
           <p className="hero-copy">
-            Client routing, route guards, and session bootstrap are now centralized under the
-            parallel React app without replacing the existing legacy flows yet.
+            Client routing, protected access, lobby flows, and the core gameplay turn loop now run
+            inside the React shell while the backend engine stays authoritative.
           </p>
         </div>
 
@@ -275,34 +275,6 @@ function PlaceholderPage({
   );
 }
 
-function GamePlaceholderPage() {
-  const params = useParams();
-
-  return (
-    <PlaceholderPage
-      eyebrow="Game"
-      title="React gameplay shell placeholder"
-      copy="This protected route reserves the shape for the future gameplay migration while keeping backend engine authority unchanged."
-      details={
-        <>
-          <div className="placeholder-card">
-            <strong>Game route</strong>
-            <span>
-              {params.gameId ? `Selected game id: ${params.gameId}` : "No game selected yet."}
-            </span>
-          </div>
-          <div className="placeholder-card">
-            <strong>Deep links supported</strong>
-            <span>
-              Refreshing a direct `/react/game/:gameId` URL now resolves through the SPA shell.
-            </span>
-          </div>
-        </>
-      }
-    />
-  );
-}
-
 function LoginPage() {
   const { state, signIn, refresh } = useAuth();
   const navigate = useNavigate();
@@ -468,8 +440,8 @@ export function AppRoutes() {
               </Route>
               <Route path="profile" element={<ProfileRoute />} />
               <Route path="game">
-                <Route index element={<GamePlaceholderPage />} />
-                <Route path=":gameId" element={<GamePlaceholderPage />} />
+                <Route index element={<GameRoute />} />
+                <Route path=":gameId" element={<GameRoute />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFoundPage />} />

@@ -12,7 +12,7 @@ import { joinGame, listGames, openGame } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
-import { openLegacyGame } from "@react-shell/legacy-game-handoff";
+import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 
@@ -223,14 +223,14 @@ export function LobbyRoute() {
 
     try {
       const payload = await openMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, selectedGame.id);
       if (payload.games) {
         setLobbyGamesCache(queryClient, {
           games: payload.games,
           activeGameId: payload.activeGameId || selectedGame.id
         });
       }
-      openLegacyGame(selectedGame.id);
+      openReactGame(selectedGame.id);
     } catch (error) {
       setActionError(messageFromError(error, t("errors.requestFailed")));
     }
@@ -245,9 +245,9 @@ export function LobbyRoute() {
 
     try {
       const payload = await joinMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, selectedGame.id);
       await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
-      openLegacyGame(selectedGame.id);
+      openReactGame(selectedGame.id);
     } catch (error) {
       setActionError(messageFromError(error, t("errors.requestFailed")));
     }
