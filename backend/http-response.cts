@@ -12,6 +12,84 @@ interface LocalizedPayloadInput {
   code?: string | null;
 }
 
+type ResponseRequestContext = {
+  requestId: string;
+  method: string;
+  path: string;
+  release: string;
+  errorLogged?: boolean;
+};
+
+type ObservedResponse = import("node:http").ServerResponse & {
+  __netriskRequestContext?: ResponseRequestContext;
+  headers?: Record<string, string>;
+  setHeader?: (name: string, value: string) => void;
+};
+
+function setResponseHeader(res: ObservedResponse, name: string, value: string): void {
+  if (typeof res.setHeader === "function") {
+    res.setHeader(name, value);
+    return;
+  }
+
+  if (res.headers && typeof res.headers === "object") {
+    res.headers[name] = value;
+  }
+}
+
+export function setResponseRequestContext(
+  res: import("node:http").ServerResponse,
+  context: ResponseRequestContext
+): void {
+  const observedResponse = res as ObservedResponse;
+  observedResponse.__netriskRequestContext = context;
+  setResponseHeader(observedResponse, "X-Request-Id", context.requestId);
+}
+
+function getResponseRequestContext(
+  res: import("node:http").ServerResponse
+): ResponseRequestContext | null {
+  const observedResponse = res as ObservedResponse;
+  return observedResponse.__netriskRequestContext || null;
+}
+
+function logUnexpectedServerError(
+  res: import("node:http").ServerResponse,
+  statusCode: number,
+  payload: {
+    error: string;
+  },
+  code: string | null,
+  input: LocalizedPayloadInput | null | undefined
+): void {
+  if (statusCode < 500) {
+    return;
+  }
+
+  const context = getResponseRequestContext(res);
+  if (!context || context.errorLogged) {
+    return;
+  }
+
+  context.errorLogged = true;
+
+  const inputError = input instanceof Error ? input : null;
+  console.error(
+    JSON.stringify({
+      event: "api_unexpected_error",
+      requestId: context.requestId,
+      method: context.method,
+      path: context.path,
+      release: context.release,
+      statusCode,
+      code,
+      message: payload.error,
+      errorName: inputError?.name || null,
+      stack: inputError?.stack || null
+    })
+  );
+}
+
 export function sendJson(
   res: import("node:http").ServerResponse,
   statusCode: number,
@@ -68,9 +146,11 @@ export function sendLocalizedError(
   extra: Record<string, unknown> = {}
 ): void {
   const payload = localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams);
+  const resolvedCode = code || input?.code || null;
+  logUnexpectedServerError(res, statusCode, payload, resolvedCode, input);
   sendJson(res, statusCode, {
     ...payload,
-    code: code || input?.code || null,
+    code: resolvedCode,
     ...extra
   });
 }

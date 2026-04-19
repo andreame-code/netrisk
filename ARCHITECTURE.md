@@ -12,8 +12,9 @@ L'applicazione include già:
 - validazione runtime condivisa dei payload auth/profile, lobby e gameplay tra backend e frontend
 - layer client API frontend tipizzato per auth, profile, lobby, setup e gameplay
 - shell React + Vite parallela servita su `/react/` senza sostituire la UI legacy
-- convenzioni React shell con TanStack Query per route state remoto e Zustand limitato a shell/session UI
+- convenzioni React shell con TanStack Query per route/server state remoto e Zustand limitato a shell/session UI
 - route React protette per login, lobby, new game, profile e gameplay core-playable su `/react/game/:gameId`
+- osservabilita minima della React shell con Sentry lato browser, release tagging e correlazione request-id verso il backend
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
 - ciclo turno completo (`reinforcement` -> `attack` -> `fortify` -> `finished`)
@@ -166,12 +167,14 @@ Categorie future da trattare con lo stesso modello:
 - Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling, SSE payload parsing ed error translation per auth, profile, lobby, setup e gameplay.
+- Frontend observability boundary: il transport layer puo segnalare solo errori inattesi (`network`, `5xx`, payload validi ma fuori schema) tramite il reporter registrato dalla React shell, senza trasformare il frontend legacy in source of truth del monitoraggio.
 - React server-state ownership: nella shell React le query remote e le mutazioni stanno in TanStack Query; Zustand non sostituisce il backend e resta confinato a stato locale/sessione della shell.
 - Datastore supportati:
   - SQLite locale (default sviluppo)
   - Supabase (quando configurato via env)
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
+- Correlazione runtime: le risposte `/api/*` espongono `X-Request-Id`; gli errori backend inattesi vengono loggati con `requestId`, route e `release` per facilitare la diagnosi dei problemi emersi dalla shell React.
 - Routing statico: `backend/server.cts` risolve `/`, `/game/*`, le pagine legacy e `/react/` senza sovrapporre i due frontend.
 - Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.
 

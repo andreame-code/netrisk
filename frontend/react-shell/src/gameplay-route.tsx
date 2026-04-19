@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import {
   startGame,
   tradeCards
 } from "@frontend-core/api/client.mts";
+import type { GameActionRequest, TradeCardsRequest } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i18n";
 
@@ -414,14 +415,19 @@ export function GameRoute() {
     onError: handleMutationError
   });
 
+  const actionClientMessages = {
+    errorMessage: t("errors.requestFailed"),
+    fallbackMessage: t("errors.requestFailed")
+  };
+
   const actionMutation = useMutation({
-    mutationFn: sendGameAction,
+    mutationFn: (request: GameActionRequest) => sendGameAction(request, actionClientMessages),
     onSuccess: (payload) => applyMutationPayload(payload),
     onError: handleMutationError
   });
 
   const tradeMutation = useMutation({
-    mutationFn: tradeCards,
+    mutationFn: (request: TradeCardsRequest) => tradeCards(request, actionClientMessages),
     onSuccess: (payload) =>
       applyMutationPayload(payload, {
         feedback:
@@ -814,28 +820,32 @@ export function GameRoute() {
             }}
           >
             <svg className="game-map-connections" viewBox="0 0 1000 1000" aria-hidden="true">
-              {(snapshot.map || []).flatMap((territory) =>
-                territory.x == null || territory.y == null
-                  ? []
-                  : territory.neighbors
-                      .filter((neighborId) => territory.id < neighborId)
-                      .map((neighborId) => {
-                        const target = territoriesById[neighborId];
-                        if (!target || target.x == null || target.y == null) {
-                          return null;
-                        }
+              {(snapshot.map || []).flatMap((territory) => {
+                const territoryX = territory.x;
+                const territoryY = territory.y;
+                if (territoryX == null || territoryY == null) {
+                  return [];
+                }
 
-                        return (
-                          <line
-                            key={`${territory.id}-${neighborId}`}
-                            x1={territory.x * 1000}
-                            y1={territory.y * 1000}
-                            x2={target.x * 1000}
-                            y2={target.y * 1000}
-                          />
-                        );
-                      })
-              )}
+                return territory.neighbors
+                  .filter((neighborId) => territory.id < neighborId)
+                  .map((neighborId) => {
+                    const target = territoriesById[neighborId];
+                    if (!target || target.x == null || target.y == null) {
+                      return null;
+                    }
+
+                    return (
+                      <line
+                        key={`${territory.id}-${neighborId}`}
+                        x1={territoryX * 1000}
+                        y1={territoryY * 1000}
+                        x2={target.x * 1000}
+                        y2={target.y * 1000}
+                      />
+                    );
+                  });
+              })}
             </svg>
 
             {(snapshot.map || []).map((territory) => {
@@ -845,6 +855,16 @@ export function GameRoute() {
               const isReinforceTarget = territory.id === reinforceTerritoryId;
               const isFortifySource = territory.id === fortifyFromId;
               const isFortifyTarget = territory.id === fortifyToId;
+              const territoryStyle: CSSProperties & {
+                "--territory-player-color": string;
+              } = {
+                left: `${(territory.x ?? 0.5) * 100}%`,
+                top: `${(territory.y ?? 0.5) * 100}%`,
+                "--territory-player-color":
+                  territory.ownerId && playersById[territory.ownerId]?.color
+                    ? playersById[territory.ownerId].color
+                    : "rgba(22, 32, 51, 0.7)"
+              };
 
               return (
                 <button
@@ -852,14 +872,7 @@ export function GameRoute() {
                   type="button"
                   className={`territory-node${isMine ? " is-mine" : ""}${isAttackSource ? " is-source" : ""}${isAttackTarget ? " is-target" : ""}${isReinforceTarget ? " is-reinforce" : ""}${isFortifySource ? " is-fortify-source" : ""}${isFortifyTarget ? " is-fortify-target" : ""}`}
                   data-territory-id={territory.id}
-                  style={{
-                    left: `${(territory.x ?? 0.5) * 100}%`,
-                    top: `${(territory.y ?? 0.5) * 100}%`,
-                    ["--territory-player-color" as const]:
-                      territory.ownerId && playersById[territory.ownerId]?.color
-                        ? playersById[territory.ownerId].color
-                        : "rgba(22, 32, 51, 0.7)"
-                  }}
+                  style={territoryStyle}
                   onClick={() => handleTerritorySelect(territory.id)}
                 >
                   <strong>{territory.name}</strong>

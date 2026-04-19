@@ -1,8 +1,11 @@
+import "./instrument";
+
 import ReactDOM from "react-dom/client";
 
 import { resolveLocale, setLocale } from "@frontend-i18n";
 
 import { App } from "@react-shell/App";
+import { createReactShellRootOptions } from "@react-shell/observability";
 import { applyShellTheme } from "@react-shell/theme";
 
 import "./styles.css";
@@ -15,4 +18,4 @@ if (!rootElement) {
   throw new Error("React shell root element not found.");
 }
 
-ReactDOM.createRoot(rootElement).render(<App />);
+ReactDOM.createRoot(rootElement, createReactShellRootOptions()).render(<App />);

@@ -1,5 +1,6 @@
 const { spawnSync } = require("child_process");
 const {
+  OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS,
   REQUIRED_CRON_ENV_KEYS,
   REQUIRED_DEPLOY_ENV_KEYS
 } = require("../backend/required-runtime-env.cjs");
@@ -74,15 +75,36 @@ function summarizeMissing(
   return keys.filter((key) => source[key] && !target[key]);
 }
 
+function requiredDeployKeysFor(envKeys: Record<string, unknown>): string[] {
+  const keys = REQUIRED_DEPLOY_ENV_KEYS.slice();
+  if (envKeys.VITE_SENTRY_DSN) {
+    keys.push(...OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS);
+  }
+  return keys;
+}
+
+function parityDeployKeys(source: Record<string, unknown>): string[] {
+  const keys = REQUIRED_DEPLOY_ENV_KEYS.slice();
+  if (source.VITE_SENTRY_DSN) {
+    keys.push("VITE_SENTRY_DSN", ...OPTIONAL_OBSERVABILITY_BUILD_ENV_KEYS);
+  }
+  return keys;
+}
+
 function main(): void {
   const branch = process.env.VERCEL_ENV_CHECK_BRANCH || currentBranch();
   const production = listEnvKeys("production");
   const preview = mergeEnvKeys(listEnvKeys("preview"), listEnvKeys("preview", branch));
+  const requiredProductionDeployKeys = requiredDeployKeysFor(production);
+  const requiredPreviewDeployKeys = requiredDeployKeysFor(preview);
+  const deployParityKeys = parityDeployKeys(production);
 
-  const missingInProduction = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !production[key]);
-  const missingInPreview = REQUIRED_DEPLOY_ENV_KEYS.filter((key: string) => !preview[key]);
+  const missingInProduction = requiredProductionDeployKeys.filter(
+    (key: string) => !production[key]
+  );
+  const missingInPreview = requiredPreviewDeployKeys.filter((key: string) => !preview[key]);
   const missingFromPreviewComparedToProduction = summarizeMissing(
-    REQUIRED_DEPLOY_ENV_KEYS,
+    deployParityKeys,
     production,
     preview
   );

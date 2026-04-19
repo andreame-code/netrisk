@@ -1,5 +1,5 @@
 import { setMarkup } from "./core/dom.mjs";
-import type { GameSnapshot, MessagePayload, TranslationParams } from "./core/types.mjs";
+import type { MessagePayload, TranslationParams } from "./core/types.mjs";
 import { it } from "./locales/it.mjs";
 import { en } from "./locales/en.mjs";
 
@@ -196,21 +196,20 @@ export function translateServerMessage(payload: unknown, fallback = ""): string 
   return translateMessagePayload(payload, fallback);
 }
 
-export function translateGameLogEntries(
-  snapshot:
-    | (Pick<GameSnapshot, "playerHand"> & {
-        logEntries?: MessagePayload[];
-        log?: string[];
-      })
-    | null
-    | undefined
-): string[] {
-  const localizedEntries = Array.isArray(snapshot?.logEntries)
-    ? snapshot.logEntries
+export function translateGameLogEntries(snapshot: unknown): string[] {
+  const snapshotRecord =
+    snapshot && typeof snapshot === "object" ? (snapshot as Record<string, unknown>) : null;
+  const logEntries = snapshotRecord?.logEntries;
+  const legacyLog = snapshotRecord?.log;
+
+  const localizedEntries = Array.isArray(logEntries)
+    ? logEntries
         .map((entry) => translateMessagePayload(entry, entry?.message || ""))
         .filter(Boolean)
     : [];
-  const legacyEntries = Array.isArray(snapshot?.log) ? snapshot.log.filter(Boolean) : [];
+  const legacyEntries = Array.isArray(legacyLog)
+    ? legacyLog.filter((entry): entry is string => typeof entry === "string" && Boolean(entry))
+    : [];
 
   if (!localizedEntries.length) {
     return legacyEntries;

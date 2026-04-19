@@ -1,4 +1,5 @@
 const http = require("http");
+const crypto = require("node:crypto");
 const fs = require("fs");
 const path = require("path");
 const { loadLocalEnv } = require("./load-local-env.cjs");
@@ -19,6 +20,7 @@ const {
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
 const { missingRequiredDeployEnv, shouldValidateDeployEnv } = require("./required-runtime-env.cjs");
+const { parseSentryOrigin, resolveObservabilityRelease } = require("./observability.cjs");
 const {
   addPlayer,
   createInitialState,
@@ -34,7 +36,12 @@ const { runAiTurnsIfNeeded } = require("./engine/ai-turn-resume.cjs");
 const { recoverAiTurnState } = require("./services/ai-turn-recovery.cjs");
 const { runScheduledJobs } = require("./scheduler/index.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
-const { sendJson, sendLocalizedError, localizedPayload } = require("./http-response.cjs");
+const {
+  localizedPayload,
+  sendJson,
+  sendLocalizedError,
+  setResponseRequestContext
+} = require("./http-response.cjs");
 const { broadcastEventPayload } = require("./event-broadcast.cjs");
 const {
   handleAuthSessionRoute,
@@ -95,6 +102,9 @@ type GameContext = {
 type EventClient = {
   res: Response;
   user: unknown;
+};
+type RequestWithId = Request & {
+  __netriskRequestId?: string;
 };
 
 loadLocalEnv();
@@ -257,6 +267,8 @@ function createApp(options: CreateAppOptions = {}) {
   const runtimeProjectRoot = options.projectRoot || projectRoot;
   const runtimePublicDir = path.join(runtimeProjectRoot, "public");
   const runtimeModulesDir = path.join(runtimeProjectRoot, "modules");
+  const runtimeRelease = resolveObservabilityRelease(process.env);
+  const sentryConnectOrigin = parseSentryOrigin(process.env.VITE_SENTRY_DSN);
 
   if (shouldValidateDeployEnv(process.env)) {
     const missingEnvKeys = missingRequiredDeployEnv(process.env);
@@ -644,7 +656,31 @@ function createApp(options: CreateAppOptions = {}) {
     };
   }
 
+  function ensureApiRequestContext(req: Request, res: Response, url: URL): { requestId: string } {
+    const requestWithId = req as RequestWithId;
+    const existingRequestId = requestWithId.__netriskRequestId;
+    if (existingRequestId) {
+      return {
+        requestId: existingRequestId
+      };
+    }
+
+    const requestId = crypto.randomUUID();
+    requestWithId.__netriskRequestId = requestId;
+    setResponseRequestContext(res, {
+      requestId,
+      method: String(req.method || "GET").toUpperCase(),
+      path: url.pathname,
+      release: runtimeRelease
+    });
+
+    return {
+      requestId
+    };
+  }
+
   async function handleApi(req: Request, res: Response, url: URL) {
+    ensureApiRequestContext(req, res, url);
     await initializeActiveGame();
 
     if (req.method === "GET" && url.pathname === "/api/health") {
@@ -1270,12 +1306,17 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function addSecurityHeaders(res: Response) {
+    const connectSources = ["'self'"];
+    if (sentryConnectOrigin) {
+      connectSources.push(sentryConnectOrigin);
+    }
+
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ${connectSources.join(" ")}`
     );
   }
 
