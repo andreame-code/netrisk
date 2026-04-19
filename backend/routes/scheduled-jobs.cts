@@ -21,6 +21,7 @@ type RequestLike = {
 
 type RunScheduledJobs = () => Promise<unknown>;
 
+const crypto = require("node:crypto");
 const { missingRequiredCronEnv } = require("../required-runtime-env.cjs");
 
 function readAuthorizationHeader(req: RequestLike): string {
@@ -50,7 +51,15 @@ async function handleScheduledJobsRoute(
   }
 
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
-  if (readAuthorizationHeader(req) !== `Bearer ${cronSecret}`) {
+  const providedAuth = readAuthorizationHeader(req);
+  const expectedAuth = `Bearer ${cronSecret}`;
+
+  // Use timing-safe comparison to prevent timing attacks on the cron secret.
+  // We hash the values first to ensure both buffers have the same length for timingSafeEqual.
+  const expectedHash = crypto.createHash("sha256").update(expectedAuth).digest();
+  const providedHash = crypto.createHash("sha256").update(providedAuth).digest();
+
+  if (!crypto.timingSafeEqual(expectedHash, providedHash)) {
     sendLocalizedError(
       res,
       401,
