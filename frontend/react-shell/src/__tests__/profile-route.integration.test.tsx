@@ -358,7 +358,9 @@ describe("ProfileRoute integration", () => {
 
     expect(await screen.findByTestId("react-shell-profile-modules")).toBeInTheDocument();
     expect(await screen.findByTestId("react-shell-profile-module-demo.valid")).toBeInTheDocument();
-    expect(await screen.findByTestId("react-shell-profile-module-slot-demo-card")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("react-shell-profile-module-slot-demo-card")
+    ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("react-shell-profile-module-toggle-demo.valid"));
 

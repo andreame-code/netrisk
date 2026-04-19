@@ -366,7 +366,8 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
       : statusMode === "rescanned"
         ? t("profile.modules.status.rescanned")
         : statusMode === "error"
-          ? statusErrorMessage || messageFromError(catalogQuery.error, t("profile.modules.status.error"))
+          ? statusErrorMessage ||
+            messageFromError(catalogQuery.error, t("profile.modules.status.error"))
           : rescanMutation.isPending
             ? t("profile.modules.status.rescanning")
             : refreshPending || toggleMutation.isPending
@@ -393,7 +394,10 @@ export function ProfileAdminModules({ userId }: { userId: string }) {
     setStatusErrorMessage("");
 
     try {
-      const [catalogResult] = await Promise.all([catalogQuery.refetch(), moduleOptionsQuery.refetch()]);
+      const [catalogResult] = await Promise.all([
+        catalogQuery.refetch(),
+        moduleOptionsQuery.refetch()
+      ]);
       if (catalogResult.error) {
         throw catalogResult.error;
       }
