@@ -375,7 +375,7 @@ export function LobbyCreateRoute() {
 
     try {
       const payload = await createMutation.mutateAsync(request);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, payload.game.id);
       setLobbyGamesCache(queryClient, {
         games: payload.games || [],
         activeGameId: payload.activeGameId || payload.game.id

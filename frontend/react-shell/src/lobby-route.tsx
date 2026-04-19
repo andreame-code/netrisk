@@ -223,7 +223,7 @@ export function LobbyRoute() {
 
     try {
       const payload = await openMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, selectedGame.id);
       if (payload.games) {
         setLobbyGamesCache(queryClient, {
           games: payload.games,
@@ -245,7 +245,7 @@ export function LobbyRoute() {
 
     try {
       const payload = await joinMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId);
+      storeCurrentPlayerId(payload.playerId, selectedGame.id);
       await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
       openReactGame(selectedGame.id);
     } catch (error) {

@@ -1,9 +1,22 @@
 const PLAYER_ID_STORAGE_KEY = "frontline-player-id";
+type StoredPlayerSession = {
+  gameId: string;
+  playerId: string;
+};
 
-export function storeCurrentPlayerId(playerId: string | null | undefined): void {
+export function storeCurrentPlayerId(
+  playerId: string | null | undefined,
+  gameId?: string | null
+): void {
   try {
-    if (playerId) {
-      window.localStorage.setItem(PLAYER_ID_STORAGE_KEY, playerId);
+    if (playerId && gameId) {
+      window.localStorage.setItem(
+        PLAYER_ID_STORAGE_KEY,
+        JSON.stringify({
+          gameId,
+          playerId
+        } satisfies StoredPlayerSession)
+      );
       return;
     }
 
@@ -13,9 +26,27 @@ export function storeCurrentPlayerId(playerId: string | null | undefined): void 
   }
 }
 
-export function readCurrentPlayerId(): string | null {
+export function readCurrentPlayerId(gameId?: string | null): string | null {
   try {
-    return window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+    const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSession> | null;
+    if (
+      !parsedValue ||
+      typeof parsedValue.playerId !== "string" ||
+      typeof parsedValue.gameId !== "string"
+    ) {
+      return null;
+    }
+
+    if (gameId && parsedValue.gameId !== gameId) {
+      return null;
+    }
+
+    return parsedValue.playerId;
   } catch {
     return null;
   }

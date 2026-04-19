@@ -220,14 +220,9 @@ async function handleStartRoute(
 
   const nodeResponse = res as import("node:http").ServerResponse;
   const expectedVersion = parsedBody.expectedVersion ?? null;
-  const gameContext = await loadGameContext(parsedBody.gameId ?? null);
-  if (gameContext.state.phase !== "lobby") {
-    sendLocalizedError(res, 400, null, "La partita e gia iniziata.", "server.game.alreadyStarted");
-    return;
-  }
 
   try {
-    const activeGame = await getGame(gameContext.gameId);
+    const activeGame = await getGame(parsedBody.gameId ?? null);
     authorize("game:start", { user: authContext.user, game: activeGame.game });
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
@@ -238,6 +233,12 @@ async function handleStartRoute(
       "Avvio partita non autorizzato.",
       "server.game.startUnauthorized"
     );
+    return;
+  }
+
+  const gameContext = await loadGameContext(parsedBody.gameId ?? null);
+  if (gameContext.state.phase !== "lobby") {
+    sendLocalizedError(res, 400, null, "La partita e gia iniziata.", "server.game.alreadyStarted");
     return;
   }
 
@@ -283,6 +284,7 @@ async function handleStartRoute(
     return;
   }
 
+  gameContext.state = structuredClone(gameContext.state);
   startGame(gameContext.state);
   try {
     await persistWithAiTurns(gameContext, expectedVersion);

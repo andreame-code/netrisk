@@ -231,7 +231,7 @@ export function GameRoute() {
     territoriesById[territory.id] = territory;
   }
 
-  const storedPlayerId = readCurrentPlayerId();
+  const storedPlayerId = readCurrentPlayerId(gameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
   const currentPlayer = snapshot?.currentPlayerId
@@ -315,10 +315,10 @@ export function GameRoute() {
     snapshot?.turnPhase === "fortify" ? t("game.actions.endTurn") : t("game.runtime.goToFortify");
 
   useEffect(() => {
-    if (snapshot?.playerId) {
-      storeCurrentPlayerId(snapshot.playerId);
+    if (snapshot?.playerId && gameId) {
+      storeCurrentPlayerId(snapshot.playerId, gameId);
     }
-  }, [snapshot?.playerId]);
+  }, [gameId, snapshot?.playerId]);
 
   useEffect(() => {
     setSelectedTradeCardIds((current) =>
@@ -329,9 +329,9 @@ export function GameRoute() {
   const applyMutationPayload = useEffectEvent(
     (payload: GameMutationResponse, options: { feedback?: string } = {}) => {
       if (payload.playerId) {
-        storeCurrentPlayerId(payload.playerId);
+        storeCurrentPlayerId(payload.playerId, gameId || payload.state?.gameId || null);
       } else if (payload.state?.playerId) {
-        storeCurrentPlayerId(payload.state.playerId);
+        storeCurrentPlayerId(payload.state.playerId, payload.state.gameId || gameId || null);
       }
 
       if (payload.state) {
@@ -355,7 +355,10 @@ export function GameRoute() {
     if (versionConflict) {
       queryClient.setQueryData(queryKey, versionConflict.state);
       if (versionConflict.state.playerId) {
-        storeCurrentPlayerId(versionConflict.state.playerId);
+        storeCurrentPlayerId(
+          versionConflict.state.playerId,
+          versionConflict.state.gameId || gameId || null
+        );
       }
       setActionError("");
       setFeedbackMessage(t("game.errors.versionConflict"));
@@ -374,7 +377,7 @@ export function GameRoute() {
     const nextPayload = parseGameEventPayload(JSON.parse(event.data));
     queryClient.setQueryData(gameplayStateQueryKey(gameId), nextPayload);
     if (nextPayload.playerId) {
-      storeCurrentPlayerId(nextPayload.playerId);
+      storeCurrentPlayerId(nextPayload.playerId, nextPayload.gameId || gameId);
     }
     setStreamStatus("live");
   });

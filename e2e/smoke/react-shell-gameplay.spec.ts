@@ -298,6 +298,148 @@ test("react gameplay handles the forced trade flow on the React route", async ({
   );
 });
 
+test("react gameplay ignores stale cached player ids from a different game", async ({ page }) => {
+  const lobbyState = {
+    phase: "lobby",
+    turnPhase: "reinforcement",
+    players: [
+      {
+        id: "host-player",
+        name: "host",
+        color: "#e85d04",
+        connected: true,
+        isAi: false,
+        territoryCount: 0,
+        eliminated: false,
+        cardCount: 0
+      }
+    ],
+    map: [
+      {
+        id: "aurora",
+        name: "Aurora",
+        neighbors: ["bastion"],
+        continentId: "north",
+        ownerId: null,
+        armies: 0,
+        x: 0.2,
+        y: 0.3
+      },
+      {
+        id: "bastion",
+        name: "Bastion",
+        neighbors: ["aurora"],
+        continentId: "north",
+        ownerId: null,
+        armies: 0,
+        x: 0.65,
+        y: 0.45
+      }
+    ],
+    continents: [],
+    currentPlayerId: null,
+    reinforcementPool: 0,
+    winnerId: null,
+    gameConfig: {
+      mapId: "classic-mini",
+      mapName: "Classic Mini",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "human" }]
+    },
+    log: ["Stale player id regression"],
+    lastAction: null,
+    pendingConquest: null,
+    fortifyUsed: false,
+    conqueredTerritoryThisTurn: false,
+    attacksThisTurn: 0,
+    cardState: {
+      ruleSetId: "standard",
+      tradeCount: 0,
+      deckCount: 5,
+      discardCount: 0,
+      nextTradeBonus: 4,
+      maxHandBeforeForcedTrade: 5,
+      currentPlayerMustTrade: false
+    },
+    gameId: "g-fresh",
+    version: 4,
+    gameName: "Fresh Lobby",
+    playerId: null,
+    playerHand: []
+  };
+
+  let currentState = lobbyState;
+
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "frontline-player-id",
+      JSON.stringify({
+        gameId: "g-stale",
+        playerId: "stale-player"
+      })
+    );
+  });
+
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      json: {
+        user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] }
+      }
+    });
+  });
+
+  await page.route("**/api/state**", async (route) => {
+    await route.fulfill({ json: currentState });
+  });
+
+  await page.route("**/api/events**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
+  });
+
+  await page.route("**/api/join", async (route) => {
+    currentState = {
+      ...lobbyState,
+      playerId: "joined-player",
+      players: [
+        ...lobbyState.players,
+        {
+          id: "joined-player",
+          name: "alice",
+          color: "#0f4c5c",
+          connected: true,
+          isAi: false,
+          territoryCount: 0,
+          eliminated: false,
+          cardCount: 0
+        }
+      ],
+      version: 5
+    };
+
+    await route.fulfill({
+      json: {
+        ok: true,
+        playerId: "joined-player",
+        state: currentState
+      }
+    });
+  });
+
+  await page.goto("/react/game/g-fresh");
+
+  await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+  await expect(page.getByRole("button", { name: /join|entra nella lobby|unisciti/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeHidden();
+
+  await page.getByRole("button", { name: /join|entra nella lobby|unisciti/i }).click();
+
+  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeVisible();
+});
+
 test("react gameplay recovers from VERSION_CONFLICT by refreshing the snapshot and continuing the turn", async ({
   page
 }) => {

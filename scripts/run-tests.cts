@@ -2262,12 +2262,10 @@ register("game start route blocca l'avvio se la partita e gia iniziata", async (
       gameName: "Started Game"
     }),
     (body: Record<string, unknown>) => String(body.gameId || ""),
-    async () => {
-      throw new Error("getGame should not be called after phase guard");
-    },
-    () => {
-      throw new Error("authorize should not be called after phase guard");
-    },
+    async () => ({
+      game: { id: "game-1", creatorUserId: "user-1" }
+    }),
+    () => undefined,
     () => {
       throw new Error("getPlayer should not be called after phase guard");
     },
@@ -2296,6 +2294,144 @@ register("game start route blocca l'avvio se la partita e gia iniziata", async (
     code: null
   });
 });
+
+register("game start route rilegge la versione aggiornata dopo l'autorizzazione", async () => {
+  const res = makeMockResponse();
+
+  await handleStartRoute(
+    { method: "POST", headers: {} },
+    res,
+    { gameId: "game-1", playerId: "player-1", expectedVersion: 2 },
+    new URL("http://127.0.0.1/api/start"),
+    async () => ({ user: { id: "user-1", username: "Alice" } }),
+    async () => ({
+      state: {
+        phase: "lobby",
+        players: [{ id: "player-1" }, { id: "player-2" }, { id: "player-3" }]
+      },
+      gameId: "game-1",
+      version: 3,
+      gameName: "Reloaded Start Game"
+    }),
+    (body: Record<string, unknown>) => String(body.gameId || ""),
+    async () => ({
+      game: { id: "game-1", creatorUserId: "user-1" }
+    }),
+    () => undefined,
+    () => {
+      throw new Error("getPlayer should not be called on version conflict");
+    },
+    () => false,
+    () => {
+      throw new Error("startGame should not be called on version conflict");
+    },
+    async () => {
+      throw new Error("persistWithAiTurns should not be called on version conflict");
+    },
+    () => {
+      throw new Error("broadcastGame should not be called on version conflict");
+    },
+    (state: any, gameId: string, version: number, gameName: string) => ({
+      gameId,
+      version,
+      gameName,
+      playerCount: state.players.length
+    }),
+    sendJson,
+    sendLocalizedError
+  );
+
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(JSON.parse(res.body), {
+    error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+    messageKey: "server.versionConflict",
+    messageParams: {},
+    code: "VERSION_CONFLICT",
+    currentVersion: 3,
+    state: {
+      gameId: "game-1",
+      version: 3,
+      gameName: "Reloaded Start Game",
+      playerCount: 3
+    }
+  });
+});
+
+register(
+  "game start route non muta lo stato condiviso se il salvataggio va in version conflict",
+  async () => {
+    const res = makeMockResponse();
+    const sharedState = {
+      phase: "lobby",
+      players: [{ id: "player-1" }, { id: "player-2" }]
+    };
+
+    await handleStartRoute(
+      { method: "POST", headers: {} },
+      res,
+      { gameId: "game-1", playerId: "player-1", expectedVersion: 2 },
+      new URL("http://127.0.0.1/api/start"),
+      async () => ({ user: { id: "user-1", username: "Alice" } }),
+      async () => ({
+        state: sharedState,
+        gameId: "game-1",
+        version: 2,
+        gameName: "Conflict Start Game"
+      }),
+      (body: Record<string, unknown>) => String(body.gameId || ""),
+      async () => ({
+        game: { id: "game-1", creatorUserId: "user-1" }
+      }),
+      () => undefined,
+      () => ({ id: "player-1", linkedUserId: "user-1" }),
+      () => true,
+      (state: any) => {
+        state.phase = "active";
+      },
+      async () => {
+        const error = new Error("Conflitto salvataggio");
+        Object.assign(error, {
+          code: "VERSION_CONFLICT",
+          currentVersion: 3,
+          currentState: {
+            phase: "lobby",
+            players: [{ id: "player-1" }, { id: "player-2" }]
+          },
+          game: { name: "Conflict Start Game" },
+          messageKey: "server.versionConflict"
+        });
+        throw error;
+      },
+      () => {
+        throw new Error("broadcastGame should not be called after persist conflict");
+      },
+      (state: any, gameId: string, version: number, gameName: string) => ({
+        phase: state.phase,
+        gameId,
+        version,
+        gameName
+      }),
+      sendJson,
+      sendLocalizedError
+    );
+
+    assert.equal(sharedState.phase, "lobby");
+    assert.equal(res.statusCode, 409);
+    assert.deepEqual(JSON.parse(res.body), {
+      error: "Conflitto salvataggio",
+      messageKey: "server.versionConflict",
+      messageParams: {},
+      code: "VERSION_CONFLICT",
+      currentVersion: 3,
+      state: {
+        phase: "lobby",
+        gameId: "game-1",
+        version: 3,
+        gameName: "Conflict Start Game"
+      }
+    });
+  }
+);
 
 register("game start route richiede almeno due giocatori", async () => {
   const res = makeMockResponse();
