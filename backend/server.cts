@@ -1268,6 +1268,7 @@ function createApp(options: CreateAppOptions = {}) {
         url.pathname === "/lobby.html" ||
         url.pathname === "/new-game.html" ||
         url.pathname === "/profile.html" ||
+        url.pathname === "/game.html" ||
         url.pathname === "/game" ||
         url.pathname === "/react" ||
         url.pathname === "/react/" ||

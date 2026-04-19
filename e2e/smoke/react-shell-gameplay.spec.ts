@@ -172,21 +172,15 @@ test("react gameplay deep links support the core turn flow on the React route", 
   const reinforceButton = ownerPage.getByRole("button", { name: "Aggiungi" });
 
   await ownerPage.locator("#reinforce-select").selectOption(attackPair.fromId);
-
-  for (;;) {
-    const reinforcementCount = await getReinforcementCount(ownerPage);
-    if (reinforcementCount <= 0) {
-      break;
-    }
-
-    await expect(reinforceButton).toBeVisible();
-    await reinforceButton.click();
-    await expect
-      .poll(() => getReinforcementCount(ownerPage), {
-        timeout: 15000
-      })
-      .toBeLessThan(reinforcementCount);
-  }
+  const reinforcementCount = await getReinforcementCount(ownerPage);
+  await ownerPage.locator("#reinforce-amount").fill(String(reinforcementCount));
+  await expect(reinforceButton).toBeVisible();
+  await reinforceButton.click();
+  await expect
+    .poll(() => getReinforcementCount(ownerPage), {
+      timeout: 15000
+    })
+    .toBe(0);
 
   await expect(ownerPage.getByTestId("status-summary")).toContainText(
     /Rinforzi disponibili:\s*0/i
@@ -205,15 +199,28 @@ test("react gameplay deep links support the core turn flow on the React route", 
   await expect(ownerPage.locator("#fortify-group")).toBeVisible();
   await expect(ownerPage.locator("#end-turn-button")).toHaveText("Termina turno");
 
-  await ownerPage.locator("#fortify-from").selectOption(attackPair.fromId);
-  await ownerPage.locator("#fortify-to").selectOption(attackPair.toId);
+  const fortifyTargetOptions = ownerPage.locator("#fortify-to option");
+  const fortifyTargetCount = await fortifyTargetOptions.count();
+  let fortifyToId = null;
+  for (let optionIndex = 0; optionIndex < fortifyTargetCount; optionIndex += 1) {
+    const value = await fortifyTargetOptions.nth(optionIndex).getAttribute("value");
+    if (value) {
+      fortifyToId = value;
+      break;
+    }
+  }
+
+  expect(fortifyToId).toBeTruthy();
+  const fortifyTargetArmies = ownerPage.locator(
+    `[data-territory-id="${fortifyToId}"] .territory-armies`
+  );
+  const fortifyTargetArmiesBefore = Number(await fortifyTargetArmies.innerText());
+  await ownerPage.locator("#fortify-to").selectOption(fortifyToId);
   await ownerPage.locator("#fortify-armies").fill("1");
   await ownerPage.locator("#fortify-button").click();
 
   await expect(ownerPage.locator("#fortify-button")).toBeDisabled();
-  await expect(
-    ownerPage.locator(`[data-territory-id="${attackPair.toId}"] .territory-armies`)
-  ).toHaveText("2");
+  await expect(fortifyTargetArmies).toHaveText(String(fortifyTargetArmiesBefore + 1));
 
   await ownerPage.locator("#end-turn-button").click();
 

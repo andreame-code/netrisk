@@ -21,6 +21,7 @@ import { ProfileRoute } from "@react-shell/profile-route";
 import {
   buildBootstrapPath,
   buildGameIndexPath,
+  buildGamePath,
   buildLobbyPath,
   buildLoginPath,
   buildLoginHref,
@@ -304,6 +305,20 @@ function ProtectedRoute() {
   return <Outlet />;
 }
 
+function GameHtmlBridge() {
+  const [searchParams] = useSearchParams();
+  const namespace = useShellNamespace();
+  const rawGameId = searchParams.get("gameId");
+  const gameId = typeof rawGameId === "string" ? rawGameId.trim() : "";
+
+  return (
+    <Navigate
+      to={gameId ? buildGamePath(gameId, namespace) : buildGameIndexPath(namespace)}
+      replace
+    />
+  );
+}
+
 function LoginPage() {
   const { state, signIn, refresh } = useAuth();
   const navigate = useNavigate();
@@ -483,6 +498,7 @@ export function AppRoutes() {
               <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
               <Route path="/profile.html" element={<ProfileRoute />} />
               <Route path="/react/profile" element={<ProfileRoute />} />
+              <Route path="/game.html" element={<GameHtmlBridge />} />
               <Route path="/game" element={<GameRoute />} />
               <Route path="/game/:gameId" element={<GameRoute />} />
               <Route path="/react/game" element={<GameRoute />} />

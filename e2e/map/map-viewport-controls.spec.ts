@@ -127,11 +127,11 @@ test("dragging a zoomed map does not select a territory until an explicit click"
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
 
   const surface = firstPage.locator("[data-map-surface]");
+  const zoomInButton = firstPage.locator('[data-map-control="zoom-in"]');
   const myTerritory = firstPage.locator('[data-territory-id]').filter({ hasText: firstUser }).first();
   await expect(myTerritory).toBeVisible();
 
-  await surface.hover();
-  await firstPage.mouse.wheel(0, -500);
+  await zoomInButton.click();
   await expect
     .poll(async () => Number(await surface.getAttribute("data-map-scale")))
     .toBeGreaterThan(1.05);
