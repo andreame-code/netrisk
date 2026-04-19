@@ -196,9 +196,7 @@ export function translateServerMessage(payload: unknown, fallback = ""): string 
   return translateMessagePayload(payload, fallback);
 }
 
-export function translateGameLogEntries(
-  snapshot: unknown
-): string[] {
+export function translateGameLogEntries(snapshot: unknown): string[] {
   const snapshotRecord =
     snapshot && typeof snapshot === "object" ? (snapshot as Record<string, unknown>) : null;
   const logEntries = snapshotRecord?.logEntries;
