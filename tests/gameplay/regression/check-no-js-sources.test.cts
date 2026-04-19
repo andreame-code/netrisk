@@ -60,6 +60,36 @@ register("check-no-js-sources consente la react shell e i file tsx nel repo trac
   });
 });
 
+register("check-no-js-sources consente docs/openapi.json nel repo tracciato", () => {
+  withTrackedTempRepo((repoDir) => {
+    writeFile(
+      repoDir,
+      "package.json",
+      JSON.stringify({
+        name: "allowlist-openapi",
+        private: true
+      })
+    );
+    writeFile(
+      repoDir,
+      "docs/openapi.json",
+      JSON.stringify({
+        openapi: "3.1.0",
+        info: { title: "NetRisk", version: "0.1.0" },
+        paths: {}
+      })
+    );
+    runGit(["add", "."], repoDir);
+
+    const output = execFileSync(process.execPath, [builtScriptPath], {
+      cwd: repoDir,
+      encoding: "utf8"
+    });
+
+    assert.match(output, /Tracked repository sources satisfy the TS-complete allowlist\./);
+  });
+});
+
 register("check-no-js-sources rifiuta file js tracciati fuori allowlist", () => {
   withTrackedTempRepo((repoDir) => {
     writeFile(
