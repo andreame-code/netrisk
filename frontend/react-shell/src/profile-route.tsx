@@ -10,6 +10,7 @@ import { formatDate, t } from "@frontend-i18n";
 import { useAuth } from "@react-shell/auth";
 import { updateAuthenticatedUser } from "@react-shell/auth-store";
 import { buildReactGamePath } from "@react-shell/legacy-game-handoff";
+import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import { profileDetailQueryKey } from "@react-shell/react-query";
 import { applyShellTheme, shellThemes, themeLabel } from "@react-shell/theme";
 
@@ -294,6 +295,8 @@ export function ProfileRoute() {
           ) : null}
         </section>
       </div>
+
+      {currentUser.role === "admin" ? <ProfileAdminModules userId={currentUser.id} /> : null}
     </section>
   );
 }

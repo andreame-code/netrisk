@@ -13,6 +13,8 @@ import {
   loginRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
+  moduleOptionsResponseSchema,
+  modulesCatalogResponseSchema,
   profileResponseSchema,
   startGameRequestSchema,
   themePreferenceRequestSchema,
@@ -32,6 +34,8 @@ import type {
   GameVersionConflictResponse,
   LoginResponse,
   LogoutResponse,
+  ModuleOptionsResponse,
+  ModulesCatalogResponse,
   ProfileResponse,
   StartGameRequest,
   ThemePreferenceResponse
@@ -93,6 +97,50 @@ export function getProfile(messages: ClientMessages): Promise<ProfileResponse> {
     path: "/api/profile",
     responseSchema: profileResponseSchema,
     responseSchemaName: "ProfileResponse",
+    ...messages
+  });
+}
+
+export function getModulesCatalog(messages: ClientMessages): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: "/api/modules",
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
+    ...messages
+  });
+}
+
+export function getModuleOptions(messages: ClientMessages): Promise<ModuleOptionsResponse> {
+  return requestJson({
+    path: "/api/modules/options",
+    responseSchema: moduleOptionsResponseSchema,
+    responseSchemaName: "ModuleOptionsResponse",
+    ...messages
+  });
+}
+
+export function rescanModules(messages: ClientMessages): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: "/api/modules/rescan",
+    method: "POST",
+    body: {},
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
+    ...messages
+  });
+}
+
+export function setModuleEnabled(
+  moduleId: string,
+  enabled: boolean,
+  messages: ClientMessages
+): Promise<ModulesCatalogResponse> {
+  return requestJson({
+    path: `/api/modules/${encodeURIComponent(moduleId)}/${enabled ? "enable" : "disable"}`,
+    method: "POST",
+    body: {},
+    responseSchema: modulesCatalogResponseSchema,
+    responseSchemaName: "ModulesCatalogResponse",
     ...messages
   });
 }

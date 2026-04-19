@@ -2,11 +2,20 @@ import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
+  ModuleOptionsResponse,
+  ModulesCatalogResponse,
   ProfileResponse,
   ThemePreferenceResponse
 } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { getProfile, getSession, updateThemePreference } from "@frontend-core/api/client.mts";
+import {
+  getModuleOptions,
+  getModulesCatalog,
+  getProfile,
+  getSession,
+  setModuleEnabled,
+  updateThemePreference
+} from "@frontend-core/api/client.mts";
 
 import { useAuthStore } from "@react-shell/auth-store";
 
@@ -20,6 +29,10 @@ vi.mock("@frontend-core/api/client.mts", () => ({
   login: vi.fn(),
   logout: vi.fn(),
   getProfile: vi.fn(),
+  getModulesCatalog: vi.fn(),
+  getModuleOptions: vi.fn(),
+  rescanModules: vi.fn(),
+  setModuleEnabled: vi.fn(),
   updateThemePreference: vi.fn(),
   listGames: vi.fn(),
   getGameOptions: vi.fn(),
@@ -30,13 +43,17 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 
 const getSessionMock = vi.mocked(getSession);
 const getProfileMock = vi.mocked(getProfile);
+const getModulesCatalogMock = vi.mocked(getModulesCatalog);
+const getModuleOptionsMock = vi.mocked(getModuleOptions);
+const setModuleEnabledMock = vi.mocked(setModuleEnabled);
 const updateThemePreferenceMock = vi.mocked(updateThemePreference);
 
-function createSession(theme = "ember"): AuthSessionResponse {
+function createSession(theme = "ember", role?: string): AuthSessionResponse {
   return {
     user: {
       id: "user-1",
       username: "Commander",
+      ...(role ? { role } : {}),
       preferences: {
         theme
       }
@@ -98,6 +115,156 @@ function createThemePreferenceResponse(theme: string): ThemePreferenceResponse {
     preferences: {
       theme
     }
+  };
+}
+
+function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
+  return {
+    modules: [
+      {
+        id: "core.base",
+        version: "1.0.0",
+        displayName: "Core",
+        description: "Base runtime",
+        kind: "hybrid",
+        sourcePath: "modules/core.base",
+        status: "enabled",
+        enabled: true,
+        compatible: true,
+        warnings: [],
+        errors: [],
+        capabilities: []
+      },
+      {
+        id: "demo.valid",
+        version: "1.2.0",
+        displayName: "Demo Module",
+        description: "Adds admin controls.",
+        kind: "ui",
+        sourcePath: "modules/demo.valid",
+        status: enabled ? "enabled" : "validated",
+        enabled,
+        compatible: true,
+        warnings: [],
+        errors: [],
+        capabilities: [
+          {
+            kind: "ui",
+            scope: "global",
+            hook: "profile",
+            targetId: "admin-modules-page"
+          }
+        ],
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.valid",
+          version: "1.2.0",
+          displayName: "Demo Module",
+          description: "Adds admin controls.",
+          engineVersion: "1.0.0",
+          kind: "ui",
+          dependencies: [
+            {
+              id: "core.base"
+            }
+          ],
+          conflicts: [],
+          capabilities: [
+            {
+              kind: "ui",
+              scope: "global",
+              hook: "profile",
+              targetId: "admin-modules-page"
+            }
+          ],
+          permissions: []
+        },
+        clientManifest: {
+          ui: {
+            slots: [
+              {
+                slotId: "admin-modules-page",
+                itemId: "demo-card",
+                title: "Demo admin card",
+                kind: "admin-card",
+                route: "/modules/demo.valid"
+              }
+            ],
+            stylesheets: ["demo.css"],
+            locales: ["it"]
+          },
+          profiles: {
+            ui: [
+              {
+                id: "demo.ui",
+                name: "Demo UI profile"
+              }
+            ]
+          },
+          gamePresets: [
+            {
+              id: "demo.preset",
+              name: "Demo preset"
+            }
+          ]
+        }
+      }
+    ],
+    enabledModules: enabled
+      ? [
+          {
+            id: "core.base",
+            version: "1.0.0"
+          },
+          {
+            id: "demo.valid",
+            version: "1.2.0"
+          }
+        ]
+      : [
+          {
+            id: "core.base",
+            version: "1.0.0"
+          }
+        ],
+    engineVersion: "1.0.0"
+  };
+}
+
+function createModuleOptionsResponse(): ModuleOptionsResponse {
+  return {
+    modules: createModuleCatalogResponse().modules,
+    enabledModules: [
+      {
+        id: "core.base",
+        version: "1.0.0"
+      }
+    ],
+    gameModules: [],
+    content: {},
+    gamePresets: [
+      {
+        id: "demo.preset",
+        name: "Demo preset"
+      }
+    ],
+    uiSlots: [
+      {
+        slotId: "admin-modules-page",
+        itemId: "demo-card",
+        title: "Demo admin card",
+        kind: "admin-card",
+        route: "/modules/demo.valid"
+      }
+    ],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [
+      {
+        id: "demo.ui",
+        name: "Demo UI profile"
+      }
+    ]
   };
 }
 
@@ -177,6 +344,33 @@ describe("ProfileRoute integration", () => {
           }
         }
       });
+    });
+  });
+
+  it("renders admin module controls and toggles a module from the React profile", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember", "admin"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+    getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse());
+    setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
+
+    const { user } = renderReactShell("/react/profile");
+
+    expect(await screen.findByTestId("react-shell-profile-modules")).toBeInTheDocument();
+    expect(await screen.findByTestId("react-shell-profile-module-demo.valid")).toBeInTheDocument();
+    expect(await screen.findByTestId("react-shell-profile-module-slot-demo-card")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("react-shell-profile-module-toggle-demo.valid"));
+
+    expect(setModuleEnabledMock).toHaveBeenCalledWith("demo.valid", true, expect.any(Object));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-modules-status")).toHaveTextContent(
+        "Catalogo moduli aggiornato."
+      );
+      expect(screen.getByTestId("react-shell-profile-module-toggle-demo.valid")).toHaveTextContent(
+        "Disabilita"
+      );
     });
   });
 

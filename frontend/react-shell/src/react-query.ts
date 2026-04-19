@@ -22,6 +22,14 @@ export function profileDetailQueryKey(userId: string) {
   return ["profile", "detail", userId] as const;
 }
 
+export function profileModulesCatalogQueryKey(userId: string) {
+  return ["profile", "modules", "catalog", userId] as const;
+}
+
+export function profileModuleOptionsQueryKey(userId: string) {
+  return ["profile", "modules", "options", userId] as const;
+}
+
 export function lobbyGamesQueryKey() {
   return ["lobby", "games"] as const;
 }

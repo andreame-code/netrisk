@@ -43,6 +43,7 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [OpenAPI reference](docs/openapi.json)
 - [API transport notes](docs/api.md)
 - [Gameplay flows](docs/gameplay-flows.md)
+- [React migration matrix](docs/react-migration-matrix.md)
 - [Extending NetRisk](docs/extending-netrisk.md)
 - [Contributing](CONTRIBUTING.md)
 - [Architecture background](ARCHITECTURE.md)
