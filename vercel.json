@@ -8,8 +8,28 @@
       "destination": "/api/index.ts"
     },
     {
-      "source": "/game/(.*)",
-      "destination": "/game.html"
+      "source": "/react/:path*",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/unauthorized",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/game",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/game/:path*",
+      "destination": "/react/index.html"
     }
   ],
   "crons": [
