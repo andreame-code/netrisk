@@ -1,169 +1,55 @@
-:root {
-  --shell-bg:
-    radial-gradient(circle at top left, rgba(237, 120, 71, 0.28), transparent 35%),
-    radial-gradient(circle at top right, rgba(31, 92, 179, 0.22), transparent 28%),
-    linear-gradient(180deg, #f7f3ea 0%, #ece5d8 100%);
-  --shell-panel-bg: rgba(255, 252, 247, 0.86);
-  --shell-panel-soft: rgba(240, 235, 226, 0.72);
-  --shell-card-bg: rgba(240, 235, 226, 0.82);
-  --shell-border: rgba(22, 32, 51, 0.12);
-  --shell-copy: rgba(22, 32, 51, 0.78);
-  --shell-muted: rgba(22, 32, 51, 0.72);
-  --shell-heading: #162033;
-  --shell-accent: #ad4f1f;
-  --shell-button-bg: #162033;
-  --shell-button-hover: #24324f;
-  --shell-button-copy: #fef9f1;
-  --accent: #ad4f1f;
-  --text-muted: rgba(22, 32, 51, 0.72);
-  --text-inverse: #fef9f1;
-  --gold: #ad4f1f;
-  --gold-hi: #162033;
-  --gold-dim: rgba(173, 79, 31, 0.4);
-  --border: rgba(22, 32, 51, 0.12);
-  --border-hi: rgba(22, 32, 51, 0.22);
-  --overlay: rgba(22, 32, 51, 0.12);
-  --hero-overlay: rgba(173, 79, 31, 0.16);
-  --parchment: #162033;
-  --parchment-dim: rgba(22, 32, 51, 0.78);
-  --shadow: 0 24px 80px rgba(22, 32, 51, 0.12);
-  --shadow-soft: 0 16px 48px rgba(22, 32, 51, 0.12);
-  --bevel: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  --button-ghost-bg: rgba(255, 255, 255, 0.72);
-  --button-primary-bg: #162033;
-  --button-primary-shadow: 0 18px 42px rgba(22, 32, 51, 0.16);
-  --nav-surface: rgba(255, 252, 247, 0.86);
-  --nav-hover-bg: rgba(22, 32, 51, 0.08);
-  --status-surface: rgba(255, 255, 255, 0.7);
-  --hero-text-shadow: 0 18px 42px rgba(22, 32, 51, 0.18);
-  --landing-header-bg:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.94) 0%, rgba(244, 236, 224, 0.92) 100%);
-  --landing-hero-overlay:
-    radial-gradient(circle at 50% 35%, rgba(173, 79, 31, 0.14) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(247, 243, 234, 0.24) 0%, rgba(247, 243, 234, 0.82) 100%);
-  --landing-panel-bg:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.94) 0%, rgba(244, 236, 224, 0.92) 100%);
-  --landing-section-bg:
-    radial-gradient(circle at top center, rgba(173, 79, 31, 0.08) 0%, transparent 38%),
-    linear-gradient(180deg, rgba(247, 243, 234, 0.92) 0%, rgba(236, 229, 216, 0.94) 100%);
-  --landing-map-section-bg:
-    linear-gradient(180deg, rgba(244, 236, 224, 0.94) 0%, rgba(247, 243, 234, 0.92) 100%);
-  --landing-howto-bg:
-    radial-gradient(circle at bottom center, rgba(31, 92, 179, 0.08) 0%, transparent 40%),
-    linear-gradient(180deg, rgba(247, 243, 234, 0.92) 0%, rgba(236, 229, 216, 0.94) 100%);
-  --landing-final-overlay:
-    linear-gradient(180deg, rgba(247, 243, 234, 0.12) 0%, rgba(236, 229, 216, 0.78) 100%);
-  --radius: 24px;
-  color-scheme: light;
-  font-family: Aptos, "Trebuchet MS", "Segoe UI", sans-serif;
+@import "../../../public/shell.css";
+
+:root,
+html[data-theme="command"],
+html[data-theme="midnight"],
+html[data-theme="ember"] {
+  --shell-bg: var(--app-shell-bg);
+  --shell-panel-bg: var(--shell-surface-bg);
+  --shell-panel-soft: var(--card-bg);
+  --shell-card-bg: var(--control-bg);
+  --shell-card-bg-hover: var(--card-bg-hover);
+  --shell-border: var(--border);
+  --shell-border-hi: var(--border-hi);
+  --shell-copy: var(--text);
+  --shell-muted: var(--text-muted);
+  --shell-heading: var(--heading);
+  --shell-accent: var(--accent);
+  --shell-button-bg: var(--button-primary-bg);
+  --shell-button-hover: var(--button-primary-bg-hover);
+  --shell-button-copy: var(--button-primary-text);
+  --shell-button-copy-hover: var(--button-primary-text-hover);
+  --shell-button-border: var(--button-primary-border);
+  --shell-button-border-hover: var(--button-primary-border-hover);
+  --shell-ghost-bg: var(--button-ghost-bg);
+  --shell-ghost-hover: var(--button-ghost-bg-hover);
+  --shell-ghost-copy: var(--text-muted);
+  --shell-ghost-copy-hover: var(--text);
+  --shell-status-surface: var(--status-surface);
+  --shell-field-bg: var(--field-bg);
+  --shell-field-text: var(--field-text);
+  --shell-field-placeholder: var(--field-placeholder);
+  --shell-focus-ring: var(--focus-ring);
+  --shell-warning: var(--warning);
+  --shell-warning-bg: var(--warning-bg);
+  --shell-warning-border: var(--warning-border);
+  --shell-success: var(--success);
+  --shell-success-bg: var(--success-bg);
+  --shell-success-border: var(--success-border);
+  --shell-danger: var(--danger);
+  --shell-danger-bg: var(--danger-bg);
+  --shell-danger-border: var(--danger-border);
+  --shell-map-bg: var(--focus-card-bg);
+  --shell-map-link: var(--line);
+  --shell-node-bg: var(--control-bg);
+  --shell-node-bg-mine: var(--feature-card-accent-bg);
+  --shell-node-border: var(--border);
+  --shell-node-ring: var(--text-inverse);
+  --shell-player-swatch-ring: var(--text-inverse);
+  color-scheme: dark;
+  font-family: Georgia, "Trebuchet MS", serif;
   background: var(--shell-bg);
   color: var(--shell-heading);
-}
-
-:root[data-theme="midnight"] {
-  --shell-bg:
-    radial-gradient(circle at top left, rgba(76, 77, 192, 0.24), transparent 35%),
-    radial-gradient(circle at top right, rgba(59, 155, 255, 0.16), transparent 28%),
-    linear-gradient(180deg, #101426 0%, #1a223d 100%);
-  --shell-panel-bg: rgba(24, 32, 56, 0.88);
-  --shell-panel-soft: rgba(19, 26, 48, 0.78);
-  --shell-card-bg: rgba(28, 38, 66, 0.82);
-  --shell-border: rgba(146, 169, 255, 0.22);
-  --shell-copy: rgba(232, 238, 255, 0.82);
-  --shell-muted: rgba(216, 225, 255, 0.72);
-  --shell-heading: #edf2ff;
-  --shell-accent: #9cb3ff;
-  --shell-button-bg: #dbe5ff;
-  --shell-button-hover: #ffffff;
-  --shell-button-copy: #162033;
-  --accent: #9cb3ff;
-  --text-muted: rgba(216, 225, 255, 0.72);
-  --text-inverse: #162033;
-  --gold: #dbe5ff;
-  --gold-hi: #ffffff;
-  --gold-dim: rgba(156, 179, 255, 0.45);
-  --border: rgba(146, 169, 255, 0.22);
-  --border-hi: rgba(219, 229, 255, 0.4);
-  --overlay: rgba(16, 20, 38, 0.36);
-  --hero-overlay: rgba(156, 179, 255, 0.18);
-  --parchment: #edf2ff;
-  --parchment-dim: rgba(232, 238, 255, 0.82);
-  --shadow: 0 24px 80px rgba(3, 6, 18, 0.35);
-  --shadow-soft: 0 16px 48px rgba(3, 6, 18, 0.28);
-  --button-primary-bg: #dbe5ff;
-  --nav-surface: rgba(24, 32, 56, 0.88);
-  --nav-hover-bg: rgba(156, 179, 255, 0.14);
-  --status-surface: rgba(24, 32, 56, 0.78);
-  --landing-header-bg:
-    linear-gradient(180deg, rgba(24, 32, 56, 0.94) 0%, rgba(16, 20, 38, 0.94) 100%);
-  --landing-hero-overlay:
-    radial-gradient(circle at 50% 35%, rgba(156, 179, 255, 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(16, 20, 38, 0.22) 0%, rgba(16, 20, 38, 0.86) 100%);
-  --landing-panel-bg:
-    linear-gradient(180deg, rgba(24, 32, 56, 0.94) 0%, rgba(16, 20, 38, 0.92) 100%);
-  --landing-section-bg:
-    radial-gradient(circle at top center, rgba(156, 179, 255, 0.12) 0%, transparent 38%),
-    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(26, 34, 61, 0.94) 100%);
-  --landing-map-section-bg:
-    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(24, 32, 56, 0.94) 100%);
-  --landing-howto-bg:
-    radial-gradient(circle at bottom center, rgba(59, 155, 255, 0.1) 0%, transparent 40%),
-    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(26, 34, 61, 0.94) 100%);
-  --landing-final-overlay:
-    linear-gradient(180deg, rgba(16, 20, 38, 0.18) 0%, rgba(16, 20, 38, 0.82) 100%);
-}
-
-:root[data-theme="ember"] {
-  --shell-bg:
-    radial-gradient(circle at top left, rgba(255, 149, 92, 0.32), transparent 30%),
-    radial-gradient(circle at top right, rgba(145, 37, 21, 0.22), transparent 30%),
-    linear-gradient(180deg, #221915 0%, #3d241d 100%);
-  --shell-panel-bg: rgba(58, 35, 29, 0.86);
-  --shell-panel-soft: rgba(77, 43, 34, 0.78);
-  --shell-card-bg: rgba(97, 57, 42, 0.78);
-  --shell-border: rgba(255, 191, 152, 0.22);
-  --shell-copy: rgba(255, 232, 218, 0.84);
-  --shell-muted: rgba(255, 223, 204, 0.74);
-  --shell-heading: #fff2e6;
-  --shell-accent: #ffb17e;
-  --shell-button-bg: #fff2e6;
-  --shell-button-hover: #ffffff;
-  --shell-button-copy: #162033;
-  --accent: #ffb17e;
-  --text-muted: rgba(255, 223, 204, 0.74);
-  --text-inverse: #162033;
-  --gold: #fff2e6;
-  --gold-hi: #ffffff;
-  --gold-dim: rgba(255, 177, 126, 0.46);
-  --border: rgba(255, 191, 152, 0.22);
-  --border-hi: rgba(255, 242, 230, 0.38);
-  --overlay: rgba(34, 25, 21, 0.32);
-  --hero-overlay: rgba(255, 177, 126, 0.18);
-  --parchment: #fff2e6;
-  --parchment-dim: rgba(255, 232, 218, 0.84);
-  --shadow: 0 24px 80px rgba(34, 25, 21, 0.34);
-  --shadow-soft: 0 16px 48px rgba(34, 25, 21, 0.28);
-  --button-primary-bg: #fff2e6;
-  --nav-surface: rgba(58, 35, 29, 0.86);
-  --nav-hover-bg: rgba(255, 177, 126, 0.14);
-  --status-surface: rgba(58, 35, 29, 0.76);
-  --landing-header-bg:
-    linear-gradient(180deg, rgba(58, 35, 29, 0.94) 0%, rgba(34, 25, 21, 0.94) 100%);
-  --landing-hero-overlay:
-    radial-gradient(circle at 50% 35%, rgba(255, 177, 126, 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(34, 25, 21, 0.22) 0%, rgba(34, 25, 21, 0.86) 100%);
-  --landing-panel-bg:
-    linear-gradient(180deg, rgba(58, 35, 29, 0.94) 0%, rgba(34, 25, 21, 0.92) 100%);
-  --landing-section-bg:
-    radial-gradient(circle at top center, rgba(255, 177, 126, 0.12) 0%, transparent 38%),
-    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(61, 36, 29, 0.94) 100%);
-  --landing-map-section-bg:
-    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(58, 35, 29, 0.94) 100%);
-  --landing-howto-bg:
-    radial-gradient(circle at bottom center, rgba(255, 149, 92, 0.1) 0%, transparent 40%),
-    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(61, 36, 29, 0.94) 100%);
-  --landing-final-overlay:
-    linear-gradient(180deg, rgba(34, 25, 21, 0.18) 0%, rgba(34, 25, 21, 0.82) 100%);
 }
 
 * {
@@ -179,6 +65,7 @@ body {
   min-height: 100vh;
   background: var(--shell-bg);
   color: var(--shell-heading);
+  font-family: inherit;
 }
 
 button,
@@ -201,20 +88,23 @@ a {
 .hero-panel,
 .card-panel,
 .status-panel {
-  border: 1px solid var(--shell-border);
-  border-radius: 24px;
+  border: 1px solid var(--shell-border-hi);
+  border-radius: var(--campaign-shell-radius);
   background: var(--shell-panel-bg);
-  box-shadow: 0 24px 80px rgba(22, 32, 51, 0.08);
-  backdrop-filter: blur(12px);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .profile-shell,
 .top-nav-bar {
-  background-image: var(--nav-surface);
+  border: 1px solid var(--shell-border-hi);
+  background: var(--nav-surface);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .top-nav-register {
-  background-image: var(--button-primary-bg);
+  border-color: var(--shell-button-border);
+  background: var(--shell-button-bg);
+  color: var(--shell-button-copy);
   box-shadow: var(--button-primary-shadow);
 }
 
@@ -229,17 +119,18 @@ a {
 }
 
 .hero-panel {
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .eyebrow,
 .status-label {
   margin: 0 0 0.75rem;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--shell-accent);
+  font-variant: small-caps;
+  color: var(--gold);
 }
 
 .hero-panel h1,
@@ -247,13 +138,19 @@ a {
 .status-panel h2 {
   margin: 0;
   font-size: clamp(2rem, 4vw, 3.35rem);
-  line-height: 1;
+  line-height: 0.96;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
 }
 
 .card-panel h2,
 .status-panel h2 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   line-height: 1.15;
+}
+
+.hero-panel h1 {
+  text-shadow: var(--hero-text-shadow);
 }
 
 .hero-copy,
@@ -280,25 +177,47 @@ a {
 .chip,
 .status-pill,
 .refresh-button {
-  border-radius: 999px;
-  padding: 0.7rem 1rem;
   border: 1px solid var(--shell-border);
 }
 
 .chip,
 .status-pill {
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  background: var(--shell-status-surface);
+  box-shadow: var(--bevel);
   font-size: 0.92rem;
+  color: var(--shell-heading);
 }
 
 .refresh-button {
+  min-height: 38px;
+  padding: 0 20px;
+  border-radius: var(--campaign-control-radius);
+  border-color: var(--shell-button-border);
   background: var(--shell-button-bg);
   color: var(--shell-button-copy);
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+  text-shadow: 0 1px 3px var(--overlay);
+  box-shadow: var(--button-primary-shadow);
   cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .refresh-button:hover {
+  border-color: var(--shell-button-border-hover);
   background: var(--shell-button-hover);
+  color: var(--shell-button-copy-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--button-primary-shadow-hover);
 }
 
 .status-panel {
@@ -307,7 +226,7 @@ a {
 }
 
 .status-panel-error {
-  border-color: rgba(173, 79, 31, 0.35);
+  border-color: var(--shell-danger-border);
 }
 
 .grid-shell {
@@ -318,7 +237,7 @@ a {
 }
 
 .card-panel {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .card-panel-wide {
@@ -338,11 +257,11 @@ a {
 }
 
 .status-pill.success {
-  color: #0c6b4d;
+  color: var(--shell-success);
 }
 
 .status-pill.muted {
-  color: #5d6678;
+  color: var(--shell-muted);
 }
 
 .game-list {
@@ -354,12 +273,14 @@ a {
 }
 
 .game-list-item {
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.95rem 1rem;
-  border-radius: 18px;
   background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .game-list-item div {
@@ -394,9 +315,11 @@ a {
 .shell-session-box {
   display: grid;
   gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 20px;
-  background: var(--shell-panel-soft);
+  padding: 1rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .shell-session-header {
@@ -430,25 +353,38 @@ a {
 
 .shell-nav-link {
   display: block;
-  border-radius: 16px;
+  border-radius: var(--campaign-card-radius);
   padding: 0.9rem 1rem;
   text-decoration: none;
   color: inherit;
   background: var(--shell-card-bg);
-  border: 1px solid transparent;
+  border: 1px solid var(--shell-border);
+  box-shadow: var(--bevel);
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .shell-nav-link:hover,
 .shell-nav-link.is-active {
-  border-color: var(--shell-border);
-  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--shell-border-hi);
+  background: var(--shell-card-bg-hover);
+  color: var(--gold-hi);
+  transform: translateY(-1px);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .placeholder-card,
 .shell-form {
-  border-radius: 18px;
+  border-radius: var(--campaign-card-radius);
   border: 1px solid var(--shell-border);
-  background: var(--shell-panel-soft);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .placeholder-card {
@@ -476,22 +412,27 @@ a {
 
 .shell-field input {
   border: 1px solid var(--shell-border);
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--shell-heading);
+  border-radius: var(--campaign-control-radius);
+  padding: 0.8rem 0.95rem;
+  background: var(--shell-field-bg);
+  color: var(--shell-field-text);
 }
 
 .shell-field select {
   border: 1px solid var(--shell-border);
-  border-radius: 14px;
-  padding: 0.9rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  color: var(--shell-heading);
+  border-radius: var(--campaign-control-radius);
+  padding: 0.8rem 0.95rem;
+  background: var(--shell-field-bg);
+  color: var(--shell-field-text);
 }
 
-.shell-field input:focus-visible {
-  outline: 2px solid rgba(31, 92, 179, 0.35);
+.shell-field input::placeholder {
+  color: var(--shell-field-placeholder);
+}
+
+.shell-field input:focus-visible,
+.shell-field select:focus-visible {
+  outline: 2px solid var(--shell-focus-ring);
   outline-offset: 2px;
 }
 
@@ -506,26 +447,42 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  padding: 0.7rem 1rem;
+  min-height: 38px;
+  padding: 0 20px;
+  border-radius: var(--campaign-control-radius);
   border: 1px solid var(--shell-border);
-  background: rgba(255, 255, 255, 0.68);
-  color: var(--shell-heading);
+  background: var(--shell-ghost-bg);
+  color: var(--shell-ghost-copy);
   text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.07em;
+  box-shadow: var(--bevel), var(--shadow-soft);
   cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .ghost-action:hover {
-  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--shell-border-hi);
+  background: var(--shell-ghost-hover);
+  color: var(--shell-ghost-copy-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--bevel), var(--shadow);
 }
 
 .status-pill.danger {
-  color: #ad4f1f;
+  color: var(--shell-danger);
 }
 
 .auth-feedback.is-error {
   margin: 0;
-  color: #8f3610;
+  color: var(--shell-danger);
 }
 
 .profile-pilot-grid {
@@ -559,19 +516,21 @@ a {
 }
 
 .profile-theme-status.is-error {
-  color: #8f3610;
+  color: var(--shell-danger);
 }
 
 .profile-query-state {
   display: grid;
   gap: 0.75rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .profile-query-state-error {
-  border: 1px solid rgba(173, 79, 31, 0.22);
+  border-color: var(--shell-danger-border);
 }
 
 .profile-metric-grid {
@@ -584,8 +543,10 @@ a {
   display: grid;
   gap: 0.35rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--metric-neutral-bg);
+  box-shadow: var(--bevel);
 }
 
 .profile-metric-card span {
@@ -613,8 +574,10 @@ a {
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .profile-active-game-copy {
@@ -649,8 +612,10 @@ a {
   display: grid;
   gap: 0.9rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .profile-module-badges {
@@ -751,9 +716,10 @@ a {
 
 .lobby-session-row,
 .new-game-module-item {
-  border: 1px solid transparent;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .lobby-session-row {
@@ -767,11 +733,13 @@ a {
 }
 
 .lobby-session-row.is-selected {
-  border-color: var(--shell-accent);
+  border-color: var(--shell-border-hi);
+  background: var(--feature-card-accent-bg);
 }
 
 .lobby-session-row:hover {
-  border-color: var(--shell-border);
+  border-color: var(--shell-border-hi);
+  background: var(--shell-card-bg-hover);
 }
 
 .lobby-session-primary,
@@ -802,8 +770,10 @@ a {
   display: grid;
   gap: 0.35rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .new-game-form {
@@ -894,9 +864,11 @@ a {
   gap: 0.35rem;
   margin-top: 1rem;
   padding: 1rem 1.1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(173, 79, 31, 0.28);
-  background: rgba(255, 244, 233, 0.9);
+  border-radius: var(--campaign-card-radius);
+  border: 1px solid var(--shell-warning-border);
+  background: var(--shell-warning-bg);
+  color: var(--shell-warning);
+  box-shadow: var(--bevel);
 }
 
 .game-status-banner,
@@ -913,8 +885,10 @@ a {
 .game-status-banner {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .game-status-banner span,
@@ -935,8 +909,10 @@ a {
   display: grid;
   gap: 0.35rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .game-map-stage {
@@ -962,9 +938,9 @@ a {
   min-height: 2.625rem;
   border: 1px solid var(--shell-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--shell-heading);
-  box-shadow: 0 10px 24px rgba(22, 32, 51, 0.12);
+  background: var(--shell-ghost-bg);
+  color: var(--shell-ghost-copy-hover);
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .map-control-button:disabled {
@@ -977,7 +953,7 @@ a {
   position: relative;
   overflow: hidden;
   min-height: 360px;
-  border-radius: 22px;
+  border-radius: var(--campaign-card-radius);
   touch-action: none;
   user-select: none;
 }
@@ -1005,14 +981,13 @@ a {
   overflow: hidden;
   width: 100%;
   height: 100%;
-  border-radius: 22px;
-  border: 1px solid var(--shell-border);
-  background:
-    radial-gradient(circle at top left, rgba(237, 120, 71, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(233, 225, 214, 0.92));
+  border-radius: var(--campaign-card-radius);
+  border: 1px solid var(--shell-border-hi);
+  background: var(--shell-map-bg);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  box-shadow: var(--bevel), var(--shadow-soft);
 }
 
 .game-map-board.has-image {
@@ -1027,13 +1002,13 @@ a {
 }
 
 .game-map-connections line {
-  stroke: rgba(22, 32, 51, 0.18);
+  stroke: var(--shell-map-link);
   stroke-width: 6;
   stroke-linecap: round;
 }
 
 .territory-node {
-  --territory-player-color: rgba(22, 32, 51, 0.7);
+  --territory-player-color: var(--shell-heading);
   position: absolute;
   display: grid;
   gap: 0.1rem;
@@ -1041,12 +1016,12 @@ a {
   padding:
     calc(0.55rem * var(--map-territory-node-scale, 1))
     calc(0.65rem * var(--map-territory-node-scale, 1));
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.64);
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--shell-heading);
+  border-radius: var(--campaign-card-radius);
+  border: 1px solid var(--shell-node-border);
+  background: var(--shell-node-bg);
+  color: var(--shell-field-text);
   transform: translate(-50%, -50%);
-  box-shadow: 0 10px 24px rgba(22, 32, 51, 0.12);
+  box-shadow: var(--bevel), var(--shadow-soft);
   cursor: pointer;
   text-align: left;
 }
@@ -1078,7 +1053,7 @@ a {
   height: calc(0.7rem * var(--map-territory-node-scale, 1));
   border-radius: 999px;
   background: var(--territory-player-color);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 0 2px var(--shell-node-ring);
 }
 
 .territory-node:hover,
@@ -1091,7 +1066,7 @@ a {
 }
 
 .territory-node.is-mine {
-  background: rgba(255, 248, 241, 0.96);
+  background: var(--shell-node-bg-mine);
 }
 
 .game-map-legend {
@@ -1102,8 +1077,10 @@ a {
   display: grid;
   gap: 0.8rem;
   padding: 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-panel-soft);
+  box-shadow: var(--bevel);
 }
 
 .game-card-grid {
@@ -1114,16 +1091,17 @@ a {
   display: grid;
   gap: 0.25rem;
   padding: 0.85rem;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.72);
+  border-radius: var(--campaign-card-radius);
+  border: 1px solid var(--shell-border);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
   text-align: left;
   cursor: pointer;
 }
 
 .game-card-pill.is-selected {
-  border-color: var(--shell-accent);
-  background: rgba(255, 247, 240, 0.94);
+  border-color: var(--shell-border-hi);
+  background: var(--feature-card-accent-bg);
 }
 
 .gameplay-primary-actions {
@@ -1137,9 +1115,11 @@ a {
 
 .game-player-card,
 .game-log-entry {
+  border: 1px solid var(--shell-border);
   padding: 0.95rem 1rem;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.52);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .game-player-card {
@@ -1158,7 +1138,7 @@ a {
   width: 0.9rem;
   height: 0.9rem;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.82);
+  border: 2px solid var(--shell-player-swatch-ring);
 }
 
 .game-combat-row {
@@ -1167,8 +1147,10 @@ a {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.85rem 0.95rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
 }
 
 .game-log-list {
@@ -1185,7 +1167,7 @@ a {
   .hero-panel,
   .card-panel,
   .status-panel {
-    border-radius: 20px;
+    border-radius: var(--campaign-card-radius);
   }
 
   .grid-shell {
