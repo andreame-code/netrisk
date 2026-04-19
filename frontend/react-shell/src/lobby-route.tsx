@@ -14,6 +14,7 @@ import { formatDate, t } from "@frontend-i18n";
 
 import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
@@ -324,7 +325,7 @@ export function LobbyRoute() {
               <p className="status-label">{t("lobby.availableSessions.heading")}</p>
               <h3>{t("lobby.availableSessions.copy")}</h3>
             </div>
-            <Link className="refresh-button" to="/lobby/new">
+            <Link id="create-game-button" className="refresh-button" to={buildNewGamePath()}>
               {t("lobby.createGame")}
             </Link>
           </div>
@@ -333,19 +334,25 @@ export function LobbyRoute() {
             <div className="lobby-empty-state" data-testid="react-shell-lobby-empty">
               <p className="metric-copy">{t("lobby.empty")}</p>
               <div className="shell-actions">
-                <Link className="ghost-action" to="/lobby/new">
+                <Link className="ghost-action" to={buildNewGamePath()}>
                   {t("lobby.createGame")}
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="lobby-session-list" data-testid="react-shell-lobby-list">
+            <div
+              id="game-session-list"
+              className="lobby-session-list"
+              data-testid="react-shell-lobby-list"
+            >
               {visibleGames.map((game) => (
                 <button
                   key={game.id}
                   type="button"
                   className={`lobby-session-row${selectedGame?.id === game.id ? " is-selected" : ""}`}
                   onClick={() => setSelectedGameId(game.id)}
+                  data-game-id={game.id}
+                  data-open-game-id={game.id}
                   data-testid={`react-shell-lobby-row-${game.id}`}
                 >
                   <div className="lobby-session-primary">
@@ -362,6 +369,7 @@ export function LobbyRoute() {
               ))}
 
               <div
+                id="game-list-load-more-state"
                 ref={loadMoreRef}
                 className="lobby-load-more-state"
                 data-testid="react-shell-lobby-load-more"
@@ -379,6 +387,7 @@ export function LobbyRoute() {
 
         <section
           className="placeholder-card lobby-detail-panel"
+          id="game-session-details"
           data-testid="react-shell-lobby-details"
         >
           <div className="card-header lobby-panel-header">
@@ -387,7 +396,9 @@ export function LobbyRoute() {
               <h3>{selectedGame?.name || t("lobby.details.emptyBadge")}</h3>
             </div>
             {selectedGame ? (
-              <span className="status-pill">{phaseLabel(selectedGame.phase)}</span>
+              <span id="selected-game-status" className="status-pill">
+                {phaseLabel(selectedGame.phase)}
+              </span>
             ) : null}
           </div>
 
@@ -437,6 +448,7 @@ export function LobbyRoute() {
 
               <div className="shell-actions">
                 <button
+                  id="open-game-button"
                   type="button"
                   className="refresh-button"
                   onClick={() => void handleOpenSelectedGame()}

@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
@@ -10,7 +10,7 @@ import { getProfile, getSession, listGames, login, register } from "@frontend-co
 
 import { renderReactShell } from "../../test/render-react-shell";
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@frontend-core/api/client.mts", () => ({
   getSession: vi.fn(),
@@ -80,17 +80,25 @@ function createLobbyGames(): GameListResponse {
 }
 
 describe("RegisterRoute integration", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    window.localStorage.clear();
+  });
+
   it("shows a client validation error and does not submit when passwords do not match", async () => {
     getSessionMock.mockRejectedValue(createAuthRequiredError());
 
     const { user } = renderReactShell("/react/register");
 
-    expect(await screen.findByTestId("react-shell-register-page")).toBeInTheDocument();
+    const registerPage = await screen.findByTestId("react-shell-register-page");
+    const route = within(registerPage);
 
-    await user.type(screen.getByLabelText("Username"), "Commander");
-    await user.type(screen.getByLabelText("Password"), "secret123");
-    await user.type(screen.getByLabelText("Conferma password"), "secret321");
-    await user.click(screen.getByRole("button", { name: "Registrati" }));
+    expect(registerPage).toBeInTheDocument();
+
+    await user.type(route.getByLabelText("Username"), "Commander");
+    await user.type(route.getByLabelText("Password"), "secret123");
+    await user.type(route.getByLabelText("Conferma password"), "secret321");
+    await user.click(route.getByRole("button", { name: "Registrati" }));
 
     expect(await screen.findByTestId("react-shell-register-error")).toHaveTextContent(
       "Le password non coincidono."
@@ -115,12 +123,15 @@ describe("RegisterRoute integration", () => {
 
     const { user } = renderReactShell("/react/register?next=%2Flobby");
 
-    expect(await screen.findByTestId("react-shell-register-page")).toBeInTheDocument();
+    const registerPage = await screen.findByTestId("react-shell-register-page");
+    const route = within(registerPage);
 
-    await user.type(screen.getByLabelText("Username"), "Commander");
-    await user.type(screen.getByLabelText("Password"), "secret123");
-    await user.type(screen.getByLabelText("Conferma password"), "secret123");
-    await user.click(screen.getByRole("button", { name: "Registrati" }));
+    expect(registerPage).toBeInTheDocument();
+
+    await user.type(route.getByLabelText("Username"), "Commander");
+    await user.type(route.getByLabelText("Password"), "secret123");
+    await user.type(route.getByLabelText("Conferma password"), "secret123");
+    await user.click(route.getByRole("button", { name: "Registrati" }));
 
     expect(registerMock).toHaveBeenCalledWith(
       {

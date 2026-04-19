@@ -19,6 +19,7 @@ import { t } from "@frontend-i18n";
 
 import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { buildLobbyPath } from "@react-shell/public-auth-paths";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
 
 type NewGameFormState = {
@@ -324,6 +325,24 @@ export function LobbyCreateRoute() {
     options?.uiProfiles,
     formState?.selectedModuleIds || []
   );
+  const selectedRuleSetName =
+    options?.ruleSets.find((entry) => entry.id === formState?.ruleSetId)?.name || "";
+  const selectedDiceRuleSetName =
+    options?.diceRuleSets.find((entry) => entry.id === formState?.diceRuleSetId)?.name || "";
+  const selectedVictoryRuleSetName =
+    options?.victoryRuleSets.find((entry) => entry.id === formState?.victoryRuleSetId)?.name || "";
+  const selectedThemeName =
+    options?.themes.find((entry) => entry.id === formState?.themeId)?.name || "";
+  const selectedPieceSkinName =
+    options?.pieceSkins.find((entry) => entry.id === formState?.pieceSkinId)?.name || "";
+  const setupSummary = [
+    selectedDiceRuleSetName || selectedRuleSetName,
+    selectedVictoryRuleSetName,
+    selectedThemeName,
+    selectedPieceSkinName
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   useEffect(() => {
     if (!options || formState) {
@@ -429,6 +448,7 @@ export function LobbyCreateRoute() {
 
       {submitError ? (
         <div
+          id="new-game-feedback"
           className="profile-query-state profile-query-state-error"
           data-testid="react-shell-new-game-submit-error"
         >
@@ -436,7 +456,11 @@ export function LobbyCreateRoute() {
         </div>
       ) : null}
 
-      <form className="shell-form new-game-form" onSubmit={(event) => void handleSubmit(event)}>
+      <form
+        className="shell-form new-game-form"
+        data-testid="new-game-shell"
+        onSubmit={(event) => void handleSubmit(event)}
+      >
         <div className="new-game-grid">
           <section className="placeholder-card new-game-card">
             <div className="card-header new-game-card-header">
@@ -444,7 +468,7 @@ export function LobbyCreateRoute() {
                 <p className="status-label">{t("newGame.settings.heading")}</p>
                 <h3>{t("newGame.settings.copy")}</h3>
               </div>
-              <Link className="ghost-action" to="/lobby">
+              <Link className="ghost-action" to={buildLobbyPath()}>
                 {t("lobby.heading")}
               </Link>
             </div>
@@ -452,6 +476,7 @@ export function LobbyCreateRoute() {
             <label className="shell-field">
               <span>{t("newGame.name.label")}</span>
               <input
+                id="setup-game-name"
                 value={formState.name}
                 placeholder={t("newGame.name.placeholder")}
                 onChange={(event) =>
@@ -492,6 +517,7 @@ export function LobbyCreateRoute() {
             <label className="shell-field">
               <span>{t("newGame.ruleset.label")}</span>
               <select
+                id="setup-ruleset"
                 value={formState.ruleSetId}
                 onChange={(event) => {
                   const nextState = applyRuleSetDefaults(formState, options, event.target.value);
@@ -513,6 +539,7 @@ export function LobbyCreateRoute() {
             <label className="shell-field">
               <span>{t("newGame.map.label")}</span>
               <select
+                id="setup-map"
                 value={formState.mapId}
                 onChange={(event) =>
                   updateFormState({
@@ -535,6 +562,7 @@ export function LobbyCreateRoute() {
               <label className="shell-field">
                 <span>{t("newGame.totalPlayers.label")}</span>
                 <select
+                  id="setup-total-players"
                   value={String(formState.totalPlayers)}
                   onChange={(event) =>
                     updateFormState({
@@ -594,6 +622,7 @@ export function LobbyCreateRoute() {
               </div>
               <label className="new-game-toggle">
                 <input
+                  id="setup-customize-options"
                   type="checkbox"
                   checked={formState.customizeOptions}
                   onChange={(event) =>
@@ -613,6 +642,7 @@ export function LobbyCreateRoute() {
                 <label className="shell-field">
                   <span>{t("newGame.dice.label")}</span>
                   <select
+                    id="setup-dice-ruleset"
                     value={formState.diceRuleSetId}
                     onChange={(event) =>
                       updateFormState({
@@ -634,6 +664,7 @@ export function LobbyCreateRoute() {
                 <label className="shell-field">
                   <span>{t("newGame.victory.label")}</span>
                   <select
+                    id="setup-victory-ruleset"
                     value={formState.victoryRuleSetId}
                     onChange={(event) =>
                       updateFormState({
@@ -655,6 +686,7 @@ export function LobbyCreateRoute() {
                 <label className="shell-field">
                   <span>{t("newGame.theme.label")}</span>
                   <select
+                    id="setup-theme"
                     value={formState.themeId}
                     onChange={(event) =>
                       updateFormState({
@@ -676,6 +708,7 @@ export function LobbyCreateRoute() {
                 <label className="shell-field">
                   <span>{t("newGame.pieceSkin.label")}</span>
                   <select
+                    id="setup-piece-skin"
                     value={formState.pieceSkinId}
                     onChange={(event) =>
                       updateFormState({
@@ -697,6 +730,10 @@ export function LobbyCreateRoute() {
             ) : (
               <p className="metric-copy">{t("newGame.options.copy")}</p>
             )}
+
+            <p id="setup-ruleset-summary" className="metric-copy">
+              {setupSummary || t("newGame.options.copy")}
+            </p>
 
             {options.gamePresets?.length ||
             availableModules.length ||
@@ -843,7 +880,11 @@ export function LobbyCreateRoute() {
           <div className="new-game-slot-grid">
             {ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
               (playerType, index) => (
-                <article className="new-game-slot-card" key={`slot-${index + 1}`}>
+                <article
+                  className="new-game-slot-card"
+                  data-slot-index={index}
+                  key={`slot-${index + 1}`}
+                >
                   <div className="new-game-slot-head">
                     <strong>{t("newGame.slot.playerLabel", { number: index + 1 })}</strong>
                     {index === 0 ? (
@@ -860,6 +901,7 @@ export function LobbyCreateRoute() {
                     <label className="shell-field">
                       <span>{t("newGame.slot.typeLabel")}</span>
                       <select
+                        data-role="type"
                         value={playerType}
                         onChange={(event) => {
                           const nextPlayerTypes = ensurePlayerTypes(
@@ -887,6 +929,7 @@ export function LobbyCreateRoute() {
 
           <div className="shell-actions">
             <button
+              id="submit-new-game"
               type="submit"
               className="refresh-button"
               disabled={createMutation.isPending}
@@ -894,7 +937,7 @@ export function LobbyCreateRoute() {
             >
               {createMutation.isPending ? t("newGame.feedback.creating") : t("newGame.createOpen")}
             </button>
-            <Link className="ghost-action" to="/lobby">
+            <Link className="ghost-action" to={buildLobbyPath()}>
               {t("lobby.heading")}
             </Link>
           </div>

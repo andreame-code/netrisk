@@ -1,5 +1,7 @@
+import { buildGamePath, currentShellNamespace } from "@react-shell/public-auth-paths";
+
 export function buildLegacyGamePath(gameId: string): string {
-  return `/game/${encodeURIComponent(gameId)}`;
+  return `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
 }
 
 export function openLegacyGame(gameId: string): void {
@@ -7,7 +9,7 @@ export function openLegacyGame(gameId: string): void {
 }
 
 export function buildReactGamePath(gameId: string): string {
-  return `/react/game/${encodeURIComponent(gameId)}`;
+  return buildGamePath(gameId, currentShellNamespace());
 }
 
 export function openReactGame(gameId: string): void {

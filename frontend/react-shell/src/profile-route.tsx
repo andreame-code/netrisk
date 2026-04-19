@@ -147,156 +147,172 @@ export function ProfileRoute() {
 
   return (
     <section data-testid="react-shell-profile-page">
-      <p className="status-label">{t("profile.eyebrow")}</p>
-      <h2>{currentUser.username}</h2>
-      <p className="status-copy">{t("profile.subtitle")}</p>
+      <div className="profile-shell" data-testid="player-profile-shell">
+        <p className="status-label">{t("profile.eyebrow")}</p>
+        <h2 id="profile-name">{currentUser.username}</h2>
+        <p className="status-copy">{t("profile.subtitle")}</p>
 
-      <div className="profile-pilot-grid">
-        <section className="placeholder-card profile-pilot-card">
-          <div className="card-header profile-pilot-card-header">
-            <div>
-              <p className="status-label">{t("profile.preferences.eyebrow")}</p>
-              <h3>{t("profile.preferences.heading")}</h3>
+        <div className="profile-pilot-grid">
+          <section className="placeholder-card profile-pilot-card">
+            <div id="profile-preferences" className="card-header profile-pilot-card-header">
+              <div>
+                <p className="status-label">{t("profile.preferences.eyebrow")}</p>
+                <h3>{t("profile.preferences.heading")}</h3>
+              </div>
+              <span className="status-pill">{themeLabel(selectedTheme)}</span>
             </div>
-            <span className="status-pill">{themeLabel(selectedTheme)}</span>
-          </div>
 
-          <p className="metric-copy">{t("profile.preferences.copy")}</p>
+            <p className="metric-copy">{t("profile.preferences.copy")}</p>
 
-          <label className="shell-field">
-            <span>{t("profile.preferences.label")}</span>
-            <select
-              value={selectedTheme}
-              disabled={themeMutation.isPending}
-              onChange={(event) => void handleThemeChange(event.target.value)}
-              data-testid="react-shell-profile-theme-select"
+            <label className="shell-field">
+              <span>{t("profile.preferences.label")}</span>
+              <select
+                id="profile-theme-select"
+                value={selectedTheme}
+                disabled={themeMutation.isPending}
+                onChange={(event) => void handleThemeChange(event.target.value)}
+                data-testid="react-shell-profile-theme-select"
+              >
+                {shellThemes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>
+                    {themeLabel(theme.id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <p
+              id="profile-theme-status"
+              className={`profile-theme-status${themeFeedbackMode === "error" ? " is-error" : ""}`}
+              data-testid="react-shell-profile-theme-status"
             >
-              {shellThemes.map((theme) => (
-                <option key={theme.id} value={theme.id}>
-                  {themeLabel(theme.id)}
-                </option>
-              ))}
-            </select>
-          </label>
+              {themeStatusMessage}
+            </p>
+          </section>
 
-          <p
-            className={`profile-theme-status${themeFeedbackMode === "error" ? " is-error" : ""}`}
-            data-testid="react-shell-profile-theme-status"
-          >
-            {themeStatusMessage}
-          </p>
-        </section>
-
-        <section className="placeholder-card profile-pilot-card profile-pilot-card-wide">
-          <div className="card-header profile-pilot-card-header">
-            <div>
-              <p className="status-label">{t("profile.heading")}</p>
-              <h3>{profile?.playerName || currentUser.username}</h3>
+          <section className="placeholder-card profile-pilot-card profile-pilot-card-wide">
+            <div className="card-header profile-pilot-card-header">
+              <div>
+                <p className="status-label">{t("profile.heading")}</p>
+                <h3>{profile?.playerName || currentUser.username}</h3>
+              </div>
+              <span id="profile-games-count" className="status-pill">
+                {activeGamesLabel}
+              </span>
             </div>
-            <span className="status-pill">{activeGamesLabel}</span>
-          </div>
 
-          {profileQuery.isLoading ? (
-            <div className="profile-query-state" data-testid="react-shell-profile-loading">
-              <p className="metric-copy">{t("profile.feedback")}</p>
-            </div>
-          ) : profileQuery.isError ? (
             <div
-              className="profile-query-state profile-query-state-error"
-              data-testid="react-shell-profile-error"
+              id="profile-feedback"
+              className={`profile-query-state${profileQuery.isError ? " profile-query-state-error" : ""}`}
+              data-testid={
+                profileQuery.isLoading
+                  ? "react-shell-profile-loading"
+                  : profileQuery.isError
+                    ? "react-shell-profile-error"
+                    : undefined
+              }
+              hidden={!profileQuery.isLoading && !profileQuery.isError}
             >
               <p className="metric-copy">
-                {messageFromError(profileQuery.error, t("profile.errors.loadFailed"))}
+                {profileQuery.isError
+                  ? messageFromError(profileQuery.error, t("profile.errors.loadFailed"))
+                  : t("profile.feedback")}
               </p>
-              <div className="shell-actions">
-                <button
-                  type="button"
-                  className="refresh-button"
-                  onClick={() => void handleProfileRetry()}
-                >
-                  Retry profile
-                </button>
-              </div>
-            </div>
-          ) : profile ? (
-            <>
-              <div className="profile-metric-grid" data-testid="react-shell-profile-metrics">
-                <article className="profile-metric-card">
-                  <span>{t("profile.metrics.gamesPlayed")}</span>
-                  <strong>{profile.gamesPlayed}</strong>
-                </article>
-                <article className="profile-metric-card">
-                  <span>{t("profile.metrics.wins")}</span>
-                  <strong>{profile.wins}</strong>
-                </article>
-                <article className="profile-metric-card">
-                  <span>{t("profile.metrics.losses")}</span>
-                  <strong>{profile.losses}</strong>
-                </article>
-                <article className="profile-metric-card">
-                  <span>{t("profile.metrics.inProgress")}</span>
-                  <strong>{profile.gamesInProgress}</strong>
-                </article>
-                <article className="profile-metric-card">
-                  <span>{t("profile.metrics.winRate")}</span>
-                  <strong>{profile.winRate == null ? "--" : `${profile.winRate}%`}</strong>
-                </article>
-              </div>
-
-              {!profile.hasHistory ? (
-                <div className="profile-query-state" data-testid="react-shell-profile-empty">
-                  <p className="metric-copy">{t("profile.runtime.noStats")}</p>
+              {profileQuery.isError ? (
+                <div className="shell-actions">
+                  <button
+                    type="button"
+                    className="refresh-button"
+                    onClick={() => void handleProfileRetry()}
+                  >
+                    Retry profile
+                  </button>
                 </div>
               ) : null}
+            </div>
 
-              <div className="profile-active-games">
-                <div className="card-header profile-pilot-card-header">
-                  <div>
-                    <p className="status-label">{t("profile.games.kicker")}</p>
-                    <h3>{activeGamesLabel}</h3>
-                  </div>
-                  {profileQuery.isFetching ? (
-                    <span className="status-pill muted">Syncing</span>
-                  ) : null}
+            {profile ? (
+              <div id="profile-content" hidden={profileQuery.isLoading || profileQuery.isError}>
+                <div className="profile-metric-grid" data-testid="react-shell-profile-metrics">
+                  <article className="profile-metric-card">
+                    <span>{t("profile.metrics.gamesPlayed")}</span>
+                    <strong>{profile.gamesPlayed}</strong>
+                  </article>
+                  <article className="profile-metric-card">
+                    <span>{t("profile.metrics.wins")}</span>
+                    <strong>{profile.wins}</strong>
+                  </article>
+                  <article className="profile-metric-card">
+                    <span>{t("profile.metrics.losses")}</span>
+                    <strong>{profile.losses}</strong>
+                  </article>
+                  <article className="profile-metric-card">
+                    <span>{t("profile.metrics.inProgress")}</span>
+                    <strong id="metric-in-progress">{profile.gamesInProgress}</strong>
+                  </article>
+                  <article className="profile-metric-card">
+                    <span>{t("profile.metrics.winRate")}</span>
+                    <strong>{profile.winRate == null ? "--" : `${profile.winRate}%`}</strong>
+                  </article>
                 </div>
 
-                {!activeGames.length ? (
-                  <p className="metric-copy">{t("profile.runtime.directiveNote.none")}</p>
-                ) : (
-                  <div className="profile-active-games-list">
-                    {activeGames.map((game) => (
-                      <article className="profile-active-game-card" key={game.id}>
-                        <div className="profile-active-game-copy">
-                          <strong>{game.name}</strong>
-                          <span>
-                            {game.mapName || game.mapId || t("common.notAvailable")} ·{" "}
-                            {phaseLabel(game.phase)}
-                          </span>
-                          <span>
-                            {t("profile.games.updatedAt", {
-                              updatedAt: formatUpdatedAt(game.updatedAt)
-                            })}
-                          </span>
-                        </div>
-
-                        <a
-                          className="ghost-action"
-                          href={buildReactGamePath(game.id)}
-                          data-testid={`react-shell-profile-open-${game.id}`}
-                        >
-                          {t("profile.runtime.directive.resume")}
-                        </a>
-                      </article>
-                    ))}
+                {!profile.hasHistory ? (
+                  <div className="profile-query-state" data-testid="react-shell-profile-empty">
+                    <p className="metric-copy">{t("profile.runtime.noStats")}</p>
                   </div>
-                )}
-              </div>
-            </>
-          ) : null}
-        </section>
-      </div>
+                ) : null}
 
-      {currentUser.role === "admin" ? <ProfileAdminModules userId={currentUser.id} /> : null}
+                <div className="profile-active-games">
+                  <div className="card-header profile-pilot-card-header">
+                    <div>
+                      <p className="status-label">{t("profile.games.kicker")}</p>
+                      <h3>{activeGamesLabel}</h3>
+                    </div>
+                    {profileQuery.isFetching ? (
+                      <span className="status-pill muted">Syncing</span>
+                    ) : null}
+                  </div>
+
+                  {!activeGames.length ? (
+                    <p className="metric-copy">{t("profile.runtime.directiveNote.none")}</p>
+                  ) : (
+                    <div className="profile-active-games-list">
+                      {activeGames.map((game) => (
+                        <a
+                          className="profile-active-game-card"
+                          data-open-game-id={game.id}
+                          data-testid={`react-shell-profile-open-${game.id}`}
+                          href={buildReactGamePath(game.id)}
+                          key={game.id}
+                        >
+                          <div className="profile-active-game-copy">
+                            <strong>{game.name}</strong>
+                            <span>
+                              {game.mapName || game.mapId || t("common.notAvailable")} ·{" "}
+                              {phaseLabel(game.phase)}
+                            </span>
+                            <span>
+                              {t("profile.games.updatedAt", {
+                                updatedAt: formatUpdatedAt(game.updatedAt)
+                              })}
+                            </span>
+                          </div>
+
+                          <span className="ghost-action">
+                            {t("profile.runtime.directive.resume")}
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </div>
+
+        {currentUser.role === "admin" ? <ProfileAdminModules userId={currentUser.id} /> : null}
+      </div>
     </section>
   );
 }

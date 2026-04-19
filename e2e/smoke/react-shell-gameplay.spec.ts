@@ -124,7 +124,7 @@ function mockTradeState({ playerHand, reinforcementPool = 3, mustTrade = false }
   };
 }
 
-test("react gameplay deep links support the core turn flow and the legacy fallback", async ({
+test("react gameplay deep links support the core turn flow on the React route", async ({
   browser
 }) => {
   test.slow();
@@ -171,13 +171,21 @@ test("react gameplay deep links support the core turn flow and the legacy fallba
   const attackPair = await findAttackPair(ownerPage, displayedOwnerName);
   const reinforceButton = ownerPage.getByRole("button", { name: "Aggiungi" });
 
+  await ownerPage.locator("#reinforce-select").selectOption(attackPair.fromId);
+
   for (;;) {
     const reinforcementCount = await getReinforcementCount(ownerPage);
     if (reinforcementCount <= 0) {
       break;
     }
 
+    await expect(reinforceButton).toBeVisible();
     await reinforceButton.click();
+    await expect
+      .poll(() => getReinforcementCount(ownerPage), {
+        timeout: 15000
+      })
+      .toBeLessThan(reinforcementCount);
   }
 
   await expect(ownerPage.getByTestId("status-summary")).toContainText(
@@ -215,14 +223,6 @@ test("react gameplay deep links support the core turn flow and the legacy fallba
   );
   await expect(joinerPage.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
   await expect(ownerPage.locator("#end-turn-button")).toBeHidden({ timeout: 15000 });
-
-  await ownerPage.getByRole("link", { name: "Legacy fallback" }).click();
-  await expect.poll(() => ownerPage.url(), { timeout: 15000 }).toMatch(
-    new RegExp(`/game/${createdGame.game.id}$`)
-  );
-  await expect(ownerPage.locator("#game-status")).toContainText(createdGame.game.name, {
-    timeout: 15000
-  });
 
   await ownerContext.close();
   await joinerContext.close();

@@ -26,8 +26,8 @@ import { messageFromError } from "@frontend-core/errors.mts";
 import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { buildLegacyGamePath } from "@react-shell/legacy-game-handoff";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
+import { buildLobbyPath, buildProfilePath } from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 
 type StreamStatus = "connecting" | "live" | "reconnecting";
@@ -158,6 +158,17 @@ function cardTypeLabel(card: SnapshotCard): string {
   return t("game.runtime.cardType.default");
 }
 
+function pieceSkinRenderStyleForSnapshot(snapshot: GameSnapshot | null): string {
+  const renderStyleId = snapshot?.gameConfig?.pieceSkin?.renderStyleId;
+  return typeof renderStyleId === "string" && renderStyleId ? renderStyleId : "solid-fill";
+}
+
+function pieceSkinClassName(renderStyleId: string | null | undefined): string {
+  const normalized =
+    typeof renderStyleId === "string" && renderStyleId ? renderStyleId : "solid-fill";
+  return `piece-skin-style-${normalized.replace(/[^a-z0-9_-]/gi, "-").toLowerCase()}`;
+}
+
 function translateGameplayError(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     return translateServerMessage(
@@ -179,10 +190,10 @@ function GameEmptyRoute() {
         route.
       </p>
       <div className="shell-actions">
-        <Link className="refresh-button" to="/lobby">
+        <Link className="refresh-button" to={buildLobbyPath()}>
           {t("lobby.heading")}
         </Link>
-        <Link className="ghost-action" to="/profile">
+        <Link className="ghost-action" to={buildProfilePath()}>
           {t("profile.heading")}
         </Link>
       </div>
@@ -314,6 +325,26 @@ export function GameRoute() {
   );
   const endTurnLabel =
     snapshot?.turnPhase === "fortify" ? t("game.actions.endTurn") : t("game.runtime.goToFortify");
+  const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
+  const combatSummary = snapshot?.lastCombat
+    ? `${snapshot.lastCombat.fromTerritoryId} -> ${snapshot.lastCombat.toTerritoryId}`
+    : "";
+  const attackerRollsText = snapshot?.lastCombat?.attackerRolls?.length
+    ? snapshot.lastCombat.attackerRolls.join(" · ")
+    : t("game.runtime.none");
+  const defenderRollsText = snapshot?.lastCombat?.defenderRolls?.length
+    ? snapshot.lastCombat.defenderRolls.join(" · ")
+    : t("game.runtime.none");
+  const comparisonSummary = snapshot?.lastCombat?.comparisons?.length
+    ? snapshot.lastCombat.comparisons
+        .map((comparison) => (comparison.winner === "attacker" ? "A" : "D"))
+        .join(" · ")
+    : t("game.runtime.none");
+  const combatBadgeLabel = snapshot?.lastCombat?.conqueredTerritory
+    ? t("game.runtime.combat.conquered")
+    : snapshot?.lastCombat?.defenderReducedToZero
+      ? t("game.runtime.combat.defenseBroken")
+      : t("game.runtime.combat.resolved");
 
   useEffect(() => {
     if (snapshot?.playerId && gameId) {
@@ -586,6 +617,9 @@ export function GameRoute() {
   }
 
   function toggleTradeCard(cardId: string): void {
+    setActionError("");
+    setFeedbackMessage("");
+
     setSelectedTradeCardIds((current) => {
       if (current.includes(cardId)) {
         return current.filter((entry) => entry !== cardId);
@@ -606,6 +640,7 @@ export function GameRoute() {
     }
 
     if (
+      showFortifyGroup &&
       territory.ownerId === myPlayerId &&
       fortifySource &&
       territory.id !== fortifySource.id &&
@@ -633,6 +668,7 @@ export function GameRoute() {
     }
 
     if (
+      showFortifyGroup &&
       territory.ownerId === myPlayerId &&
       fortifySource &&
       territory.id !== fortifySource.id &&
@@ -672,9 +708,6 @@ export function GameRoute() {
           >
             Retry game
           </button>
-          <a className="ghost-action" href={buildLegacyGamePath(gameId)}>
-            Legacy fallback
-          </a>
         </div>
       </section>
     );
@@ -702,9 +735,12 @@ export function GameRoute() {
       <p className="status-label">{t("game.command.eyebrow")}</p>
       <div className="card-header gameplay-page-header">
         <div>
-          <h2>{snapshot.gameName || t("game.title")}</h2>
+          <h2 id="game-status">{snapshot.gameName || t("game.title")}</h2>
           <p className="status-copy">
-            {snapshot.gameId || gameId} · {snapshot.gameConfig?.mapName || t("common.classicMini")}
+            {snapshot.gameId || gameId} ·{" "}
+            <span id="game-map-meta">
+              {snapshot.gameConfig?.mapName || t("common.classicMini")}
+            </span>
           </p>
         </div>
         <div className="shell-actions">
@@ -713,9 +749,6 @@ export function GameRoute() {
           >
             {connectionBadge}
           </span>
-          <a className="ghost-action" href={buildLegacyGamePath(gameId)}>
-            Legacy fallback
-          </a>
         </div>
       </div>
 
@@ -778,7 +811,7 @@ export function GameRoute() {
           <div className="game-meta-grid">
             <article className="game-meta-item">
               <span>{t("game.meta.player")}</span>
-              <strong data-testid="current-player-indicator">
+              <strong id="identity-status" data-testid="current-player-indicator">
                 {me?.name || authenticatedUser?.username || t("game.runtime.accessRequired")}
               </strong>
             </article>
@@ -794,7 +827,7 @@ export function GameRoute() {
             </article>
             <article className="game-meta-item">
               <span>{t("game.meta.setup")}</span>
-              <strong>
+              <strong id="game-setup-meta">
                 {t("game.runtime.setupMeta", {
                   totalPlayers: snapshot.gameConfig?.totalPlayers || snapshot.players.length,
                   playerLabel:
@@ -805,11 +838,17 @@ export function GameRoute() {
                 })}
               </strong>
             </article>
+            <article className="game-meta-item">
+              <span>{t("game.meta.access")}</span>
+              <strong id="auth-status">
+                {me?.name || authenticatedUser?.username || t("game.runtime.accessRequired")}
+              </strong>
+            </article>
           </div>
 
           <div
             id="map"
-            className={`game-map-board${snapshot.mapVisual?.imageUrl ? " has-image" : ""}`}
+            className={`game-map-board map-board ${pieceSkinClass}${snapshot.mapVisual?.imageUrl ? " has-image has-custom-background" : ""}`}
             style={{
               aspectRatio: mapAspectRatio(snapshot),
               ...(snapshot.mapVisual?.imageUrl
@@ -870,9 +909,10 @@ export function GameRoute() {
                 <button
                   key={territory.id}
                   type="button"
-                  className={`territory-node${isMine ? " is-mine" : ""}${isAttackSource ? " is-source" : ""}${isAttackTarget ? " is-target" : ""}${isReinforceTarget ? " is-reinforce" : ""}${isFortifySource ? " is-fortify-source" : ""}${isFortifyTarget ? " is-fortify-target" : ""}`}
+                  className={`territory-node ${pieceSkinClass}${isMine ? " is-mine" : ""}${isAttackSource ? " is-source" : ""}${isAttackTarget ? " is-target" : ""}${isReinforceTarget ? " is-reinforce" : ""}${isFortifySource ? " is-fortify-source" : ""}${isFortifyTarget ? " is-fortify-target" : ""}`}
                   data-territory-id={territory.id}
                   style={territoryStyle}
+                  title={territory.name}
                   onClick={() => handleTerritorySelect(territory.id)}
                 >
                   <strong>{territory.name}</strong>
@@ -902,19 +942,18 @@ export function GameRoute() {
               </span>
             </div>
 
-            {showJoinLobby ? (
-              <div className="game-action-group">
-                <p className="metric-copy">{t("game.meta.accessCopy")}</p>
-                <button
-                  type="button"
-                  className="refresh-button"
-                  onClick={() => void handleJoinLobby()}
-                  disabled={actionPending}
-                >
-                  {joinMutation.isPending ? "Joining..." : t("game.join")}
-                </button>
-              </div>
-            ) : null}
+            <div className="game-action-group" hidden={!showJoinLobby}>
+              <p className="metric-copy">{t("game.meta.accessCopy")}</p>
+              <button
+                id="join-button"
+                type="button"
+                className="refresh-button"
+                onClick={() => void handleJoinLobby()}
+                disabled={!showJoinLobby || actionPending}
+              >
+                {joinMutation.isPending ? "Joining..." : t("game.join")}
+              </button>
+            </div>
 
             {showStartGame ? (
               <div className="game-action-group">
@@ -924,6 +963,7 @@ export function GameRoute() {
                     : "The lobby is ready to be promoted into the active turn flow."}
                 </p>
                 <button
+                  id="start-button"
                   type="button"
                   className="refresh-button"
                   onClick={() => void handleStartGame()}
@@ -942,7 +982,9 @@ export function GameRoute() {
                     <h4>{t("game.cards.summary")}</h4>
                   </div>
                   {snapshot.cardState?.nextTradeBonus != null ? (
-                    <span className="status-pill">+{snapshot.cardState.nextTradeBonus}</span>
+                    <span id="card-trade-bonus" className="status-pill">
+                      +{snapshot.cardState.nextTradeBonus}
+                    </span>
                   ) : null}
                 </div>
 
@@ -985,6 +1027,14 @@ export function GameRoute() {
                       })}
                 </p>
 
+                <p id="card-trade-success" className="metric-copy" hidden={!feedbackMessage}>
+                  {feedbackMessage}
+                </p>
+
+                <p id="card-trade-error" className="metric-copy" hidden={!actionError}>
+                  {actionError}
+                </p>
+
                 <button
                   id="card-trade-button"
                   type="button"
@@ -1012,7 +1062,7 @@ export function GameRoute() {
                 <label className="shell-field">
                   <span>{t("game.actions.reinforce")}</span>
                   <select
-                    id="reinforce-territory"
+                    id="reinforce-select"
                     value={reinforceTerritoryId}
                     onChange={(event) => setSelectedReinforceTerritoryId(event.target.value)}
                   >
@@ -1106,6 +1156,7 @@ export function GameRoute() {
 
                 <div className="shell-actions">
                   <button
+                    id="attack-button"
                     type="button"
                     className="refresh-button"
                     onClick={() => void handleAttack("attack")}
@@ -1254,11 +1305,6 @@ export function GameRoute() {
                 </button>
               ) : null}
             </div>
-
-            <p className="metric-copy gameplay-fallback-note">
-              Advanced sidebars and secondary legacy affordances still fall back to the legacy
-              gameplay route when needed.
-            </p>
           </section>
 
           <section className="placeholder-card gameplay-side-card">
@@ -1271,7 +1317,11 @@ export function GameRoute() {
 
             <div className="game-player-list" id="players">
               {snapshot.players.map((player) => (
-                <article className="game-player-card" key={player.id}>
+                <article
+                  className={`game-player-card player-card ${pieceSkinClass}`}
+                  data-player-id={player.id}
+                  key={player.id}
+                >
                   <div className="game-player-head">
                     <strong>{player.name}</strong>
                     <span
@@ -1308,28 +1358,26 @@ export function GameRoute() {
             </div>
 
             {snapshot.lastCombat ? (
-              <div className="game-combat-panel">
+              <div id="combat-result-group" className="game-combat-panel">
+                <div className="game-combat-row">
+                  <span>{t("game.runtime.combat.resolved")}</span>
+                  <strong id="combat-result-summary">{combatSummary}</strong>
+                </div>
                 <div className="game-combat-row">
                   <span>{t("game.combat.attacker")}</span>
-                  <strong>{snapshot.lastCombat.fromTerritoryId}</strong>
+                  <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
                 </div>
                 <div className="game-combat-row">
                   <span>{t("game.combat.defender")}</span>
-                  <strong>{snapshot.lastCombat.toTerritoryId}</strong>
+                  <strong id="combat-defender-rolls">{defenderRollsText}</strong>
                 </div>
                 <div className="game-combat-row">
                   <span>{t("game.combat.comparisons")}</span>
-                  <strong>{snapshot.lastCombat.comparisons?.length || 0}</strong>
+                  <strong id="combat-comparisons">{comparisonSummary}</strong>
                 </div>
                 <div className="game-combat-row">
                   <span>{t("game.runtime.combat.resolved")}</span>
-                  <strong>
-                    {snapshot.lastCombat.conqueredTerritory
-                      ? t("game.runtime.combat.conquered")
-                      : snapshot.lastCombat.defenderReducedToZero
-                        ? t("game.runtime.combat.defenseBroken")
-                        : t("game.runtime.combat.resolved")}
-                  </strong>
+                  <strong id="combat-result-badge">{combatBadgeLabel}</strong>
                 </div>
               </div>
             ) : (

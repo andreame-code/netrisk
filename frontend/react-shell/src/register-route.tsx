@@ -7,7 +7,12 @@ import { validateRegistrationInput } from "@frontend-core/register-validation.mt
 import { t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { buildLoginHref, normalizeNextPath } from "@react-shell/public-auth-paths";
+import {
+  buildLoginHref,
+  buildProfilePath,
+  normalizeNextPath,
+  useShellNamespace
+} from "@react-shell/public-auth-paths";
 
 function requestMessages() {
   return {
@@ -20,6 +25,7 @@ export function RegisterRoute() {
   const { state, refresh, signIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const namespace = useShellNamespace();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +33,7 @@ export function RegisterRoute() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const nextPath = normalizeNextPath(searchParams.get("next"), "/profile");
+  const nextPath = normalizeNextPath(searchParams.get("next"), buildProfilePath(namespace));
 
   if (state.status === "loading") {
     return (
@@ -177,7 +183,7 @@ export function RegisterRoute() {
           <button type="submit" className="refresh-button" disabled={isSubmitting}>
             {t("register.submit")}
           </button>
-          <Link className="ghost-action" to={buildLoginHref(nextPath)}>
+          <Link className="ghost-action" to={buildLoginHref(nextPath, namespace)}>
             {t("auth.login")}
           </Link>
         </div>

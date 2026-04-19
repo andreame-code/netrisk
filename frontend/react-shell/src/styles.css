@@ -14,6 +14,46 @@
   --shell-button-bg: #162033;
   --shell-button-hover: #24324f;
   --shell-button-copy: #fef9f1;
+  --accent: #ad4f1f;
+  --text-muted: rgba(22, 32, 51, 0.72);
+  --text-inverse: #fef9f1;
+  --gold: #ad4f1f;
+  --gold-hi: #162033;
+  --gold-dim: rgba(173, 79, 31, 0.4);
+  --border: rgba(22, 32, 51, 0.12);
+  --border-hi: rgba(22, 32, 51, 0.22);
+  --overlay: rgba(22, 32, 51, 0.12);
+  --hero-overlay: rgba(173, 79, 31, 0.16);
+  --parchment: #162033;
+  --parchment-dim: rgba(22, 32, 51, 0.78);
+  --shadow: 0 24px 80px rgba(22, 32, 51, 0.12);
+  --shadow-soft: 0 16px 48px rgba(22, 32, 51, 0.12);
+  --bevel: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --button-ghost-bg: rgba(255, 255, 255, 0.72);
+  --button-primary-bg: #162033;
+  --button-primary-shadow: 0 18px 42px rgba(22, 32, 51, 0.16);
+  --nav-surface: rgba(255, 252, 247, 0.86);
+  --nav-hover-bg: rgba(22, 32, 51, 0.08);
+  --status-surface: rgba(255, 255, 255, 0.7);
+  --hero-text-shadow: 0 18px 42px rgba(22, 32, 51, 0.18);
+  --landing-header-bg:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.94) 0%, rgba(244, 236, 224, 0.92) 100%);
+  --landing-hero-overlay:
+    radial-gradient(circle at 50% 35%, rgba(173, 79, 31, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(247, 243, 234, 0.24) 0%, rgba(247, 243, 234, 0.82) 100%);
+  --landing-panel-bg:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.94) 0%, rgba(244, 236, 224, 0.92) 100%);
+  --landing-section-bg:
+    radial-gradient(circle at top center, rgba(173, 79, 31, 0.08) 0%, transparent 38%),
+    linear-gradient(180deg, rgba(247, 243, 234, 0.92) 0%, rgba(236, 229, 216, 0.94) 100%);
+  --landing-map-section-bg:
+    linear-gradient(180deg, rgba(244, 236, 224, 0.94) 0%, rgba(247, 243, 234, 0.92) 100%);
+  --landing-howto-bg:
+    radial-gradient(circle at bottom center, rgba(31, 92, 179, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, rgba(247, 243, 234, 0.92) 0%, rgba(236, 229, 216, 0.94) 100%);
+  --landing-final-overlay:
+    linear-gradient(180deg, rgba(247, 243, 234, 0.12) 0%, rgba(236, 229, 216, 0.78) 100%);
+  --radius: 24px;
   color-scheme: light;
   font-family: Aptos, "Trebuchet MS", "Segoe UI", sans-serif;
   background: var(--shell-bg);
@@ -36,6 +76,41 @@
   --shell-button-bg: #dbe5ff;
   --shell-button-hover: #ffffff;
   --shell-button-copy: #162033;
+  --accent: #9cb3ff;
+  --text-muted: rgba(216, 225, 255, 0.72);
+  --text-inverse: #162033;
+  --gold: #dbe5ff;
+  --gold-hi: #ffffff;
+  --gold-dim: rgba(156, 179, 255, 0.45);
+  --border: rgba(146, 169, 255, 0.22);
+  --border-hi: rgba(219, 229, 255, 0.4);
+  --overlay: rgba(16, 20, 38, 0.36);
+  --hero-overlay: rgba(156, 179, 255, 0.18);
+  --parchment: #edf2ff;
+  --parchment-dim: rgba(232, 238, 255, 0.82);
+  --shadow: 0 24px 80px rgba(3, 6, 18, 0.35);
+  --shadow-soft: 0 16px 48px rgba(3, 6, 18, 0.28);
+  --button-primary-bg: #dbe5ff;
+  --nav-surface: rgba(24, 32, 56, 0.88);
+  --nav-hover-bg: rgba(156, 179, 255, 0.14);
+  --status-surface: rgba(24, 32, 56, 0.78);
+  --landing-header-bg:
+    linear-gradient(180deg, rgba(24, 32, 56, 0.94) 0%, rgba(16, 20, 38, 0.94) 100%);
+  --landing-hero-overlay:
+    radial-gradient(circle at 50% 35%, rgba(156, 179, 255, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(16, 20, 38, 0.22) 0%, rgba(16, 20, 38, 0.86) 100%);
+  --landing-panel-bg:
+    linear-gradient(180deg, rgba(24, 32, 56, 0.94) 0%, rgba(16, 20, 38, 0.92) 100%);
+  --landing-section-bg:
+    radial-gradient(circle at top center, rgba(156, 179, 255, 0.12) 0%, transparent 38%),
+    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(26, 34, 61, 0.94) 100%);
+  --landing-map-section-bg:
+    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(24, 32, 56, 0.94) 100%);
+  --landing-howto-bg:
+    radial-gradient(circle at bottom center, rgba(59, 155, 255, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, rgba(16, 20, 38, 0.94) 0%, rgba(26, 34, 61, 0.94) 100%);
+  --landing-final-overlay:
+    linear-gradient(180deg, rgba(16, 20, 38, 0.18) 0%, rgba(16, 20, 38, 0.82) 100%);
 }
 
 :root[data-theme="ember"] {
@@ -54,10 +129,49 @@
   --shell-button-bg: #fff2e6;
   --shell-button-hover: #ffffff;
   --shell-button-copy: #162033;
+  --accent: #ffb17e;
+  --text-muted: rgba(255, 223, 204, 0.74);
+  --text-inverse: #162033;
+  --gold: #fff2e6;
+  --gold-hi: #ffffff;
+  --gold-dim: rgba(255, 177, 126, 0.46);
+  --border: rgba(255, 191, 152, 0.22);
+  --border-hi: rgba(255, 242, 230, 0.38);
+  --overlay: rgba(34, 25, 21, 0.32);
+  --hero-overlay: rgba(255, 177, 126, 0.18);
+  --parchment: #fff2e6;
+  --parchment-dim: rgba(255, 232, 218, 0.84);
+  --shadow: 0 24px 80px rgba(34, 25, 21, 0.34);
+  --shadow-soft: 0 16px 48px rgba(34, 25, 21, 0.28);
+  --button-primary-bg: #fff2e6;
+  --nav-surface: rgba(58, 35, 29, 0.86);
+  --nav-hover-bg: rgba(255, 177, 126, 0.14);
+  --status-surface: rgba(58, 35, 29, 0.76);
+  --landing-header-bg:
+    linear-gradient(180deg, rgba(58, 35, 29, 0.94) 0%, rgba(34, 25, 21, 0.94) 100%);
+  --landing-hero-overlay:
+    radial-gradient(circle at 50% 35%, rgba(255, 177, 126, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(34, 25, 21, 0.22) 0%, rgba(34, 25, 21, 0.86) 100%);
+  --landing-panel-bg:
+    linear-gradient(180deg, rgba(58, 35, 29, 0.94) 0%, rgba(34, 25, 21, 0.92) 100%);
+  --landing-section-bg:
+    radial-gradient(circle at top center, rgba(255, 177, 126, 0.12) 0%, transparent 38%),
+    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(61, 36, 29, 0.94) 100%);
+  --landing-map-section-bg:
+    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(58, 35, 29, 0.94) 100%);
+  --landing-howto-bg:
+    radial-gradient(circle at bottom center, rgba(255, 149, 92, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, rgba(34, 25, 21, 0.94) 0%, rgba(61, 36, 29, 0.94) 100%);
+  --landing-final-overlay:
+    linear-gradient(180deg, rgba(34, 25, 21, 0.18) 0%, rgba(34, 25, 21, 0.82) 100%);
 }
 
 * {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 body {
@@ -74,6 +188,10 @@ select {
   font: inherit;
 }
 
+a {
+  color: inherit;
+}
+
 .react-shell-page {
   width: min(1100px, calc(100% - 2rem));
   margin: 0 auto;
@@ -88,6 +206,26 @@ select {
   background: var(--shell-panel-bg);
   box-shadow: 0 24px 80px rgba(22, 32, 51, 0.08);
   backdrop-filter: blur(12px);
+}
+
+.profile-shell,
+.top-nav-bar {
+  background-image: var(--nav-surface);
+}
+
+.top-nav-register {
+  background-image: var(--button-primary-bg);
+  box-shadow: var(--button-primary-shadow);
+}
+
+.shell-header-auth {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.shell-header-auth input[hidden],
+.top-nav-register[hidden] {
+  display: none;
 }
 
 .hero-panel {

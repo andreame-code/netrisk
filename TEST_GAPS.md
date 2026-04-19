@@ -21,7 +21,7 @@
 - Backend gameplay rules and regression flows
 - Code quality baseline: ESLint warning-first rollout, Prettier enforcement, and dedicated CI quality workflow
 - Core E2E gameplay flows: reinforcement, attack/conquest, fortify handoff, turn guard, version conflict
-- React gameplay E2E: deep link, join/start, forced trade, legacy fallback, and version-conflict recovery
+- React gameplay E2E: deep link, join/start, forced trade, and version-conflict recovery
 - Frontend gameplay API client: typed state/start/action/trade helpers, SSE payload parsing, and version-conflict extraction
 - AI autoplay E2E
 - Authorization E2E: non-member denied on protected game open and direct game route read
