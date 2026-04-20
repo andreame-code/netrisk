@@ -1,5 +1,9 @@
 # NetRisk
 
+[![Quality](https://github.com/andreame-code/netrisk/actions/workflows/quality.yml/badge.svg)](https://github.com/andreame-code/netrisk/actions/workflows/quality.yml)
+[![Coverage](https://github.com/andreame-code/netrisk/actions/workflows/coverage.yml/badge.svg)](https://github.com/andreame-code/netrisk/actions/workflows/coverage.yml)
+[![License](https://img.shields.io/github/license/andreame-code/netrisk)](LICENSE)
+
 NetRisk is a turn-based strategy game inspired by Risk/Risiko, built to grow incrementally without mixing interface concerns, backend orchestration, and pure game rules.
 
 This repository is not just a simple graphical demo: it is a full application foundation for building an extensible version of NetRisk with lobby, profiles, AI, turn flow, combat, cards, and automated tests.
