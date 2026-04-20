@@ -262,9 +262,6 @@ export function GameRoute() {
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
-  const currentPlayer = snapshot?.currentPlayerId
-    ? playersById[snapshot.currentPlayerId] || null
-    : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const localizedLog = translateGameLogEntries(snapshot);

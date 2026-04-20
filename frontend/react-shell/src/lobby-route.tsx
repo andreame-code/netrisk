@@ -217,11 +217,6 @@ export function LobbyRoute() {
     return () => observer.disconnect();
   }, [canLoadMoreGames, games.length]);
 
-  async function handleRetry(): Promise<void> {
-    setActionError("");
-    await lobbyQuery.refetch();
-  }
-
   async function handleOpenSelectedGame(): Promise<void> {
     if (!selectedGame) {
       return;

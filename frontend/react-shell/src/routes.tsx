@@ -1,4 +1,4 @@
-import { startTransition, useState } from "react";
+import { Suspense, lazy, startTransition, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -12,11 +12,7 @@ import {
 
 import { LegacyAppShell } from "@react-shell/legacy-app-shell";
 import { useAuth, AuthProvider } from "@react-shell/auth";
-import { GameRoute } from "@react-shell/gameplay-route";
 import { LandingRoute } from "@react-shell/landing-route";
-import { LobbyCreateRoute } from "@react-shell/lobby-create-route";
-import { LobbyRoute } from "@react-shell/lobby-route";
-import { ProfileRoute } from "@react-shell/profile-route";
 import {
   buildBootstrapPath,
   buildGameIndexPath,
@@ -27,9 +23,24 @@ import {
   normalizeNextPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
-import { RegisterRoute } from "@react-shell/register-route";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t } from "@frontend-i18n";
+
+const RegisterRoute = lazy(async () => ({
+  default: (await import("@react-shell/register-route")).RegisterRoute
+}));
+const LobbyRoute = lazy(async () => ({
+  default: (await import("@react-shell/lobby-route")).LobbyRoute
+}));
+const LobbyCreateRoute = lazy(async () => ({
+  default: (await import("@react-shell/lobby-create-route")).LobbyCreateRoute
+}));
+const ProfileRoute = lazy(async () => ({
+  default: (await import("@react-shell/profile-route")).ProfileRoute
+}));
+const GameRoute = lazy(async () => ({
+  default: (await import("@react-shell/gameplay-route")).GameRoute
+}));
 
 function LoadingPanel({ title, copy }: { title: string; copy: string }) {
   return (
@@ -65,7 +76,16 @@ function ErrorPanel({
 function ShellLayout() {
   return (
     <LegacyAppShell>
-      <Outlet />
+      <Suspense
+        fallback={
+          <LoadingPanel
+            title="Loading the requested route"
+            copy="Preparing the React shell view and keeping the shared legacy layout contract intact."
+          />
+        }
+      >
+        <Outlet />
+      </Suspense>
     </LegacyAppShell>
   );
 }
@@ -143,7 +163,7 @@ function LoginPage() {
     return <Navigate to={nextPath} replace />;
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setErrorMessage("");
     setIsSubmitting(true);

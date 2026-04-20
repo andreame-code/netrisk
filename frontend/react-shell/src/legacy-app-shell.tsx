@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
@@ -248,11 +248,15 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
         <div className="top-nav-zone top-nav-module-slots" id="top-nav-module-slots">
           {visibleTopNavSlots.map((slot, index) =>
             slot.route ? (
-              <a key={index} href={slot.route} className="badge">
+              <a
+                key={`${slot.slotId}:${slot.route || slot.title}:${slot.order || index}`}
+                href={slot.route}
+                className="badge"
+              >
                 {slot.title}
               </a>
             ) : (
-              <span key={index} className="badge">
+              <span key={`${slot.slotId}:${slot.title}:${slot.order || index}`} className="badge">
                 {slot.title}
               </span>
             )
