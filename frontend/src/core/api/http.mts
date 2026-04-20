@@ -147,11 +147,11 @@ function categorizeHttpError(statusCode: number, code: string | null): ApiErrorC
     return "version_conflict";
   }
 
-  if (
-    code === "REQUEST_VALIDATION_FAILED" ||
-    code === "RESPONSE_VALIDATION_FAILED" ||
-    statusCode === 422
-  ) {
+  if (code === "RESPONSE_VALIDATION_FAILED") {
+    return statusCode >= 500 ? "unexpected_5xx" : "validation";
+  }
+
+  if (code === "REQUEST_VALIDATION_FAILED" || statusCode === 422) {
     return "validation";
   }
 

@@ -375,9 +375,10 @@ export function subscribeToGameEvents({
   }
 
   eventSource.onmessage = (event) => {
+    let payload: GameEventPayload;
+
     try {
-      const payload = parseGameEventPayload(JSON.parse(event.data));
-      onMessage(payload);
+      payload = parseGameEventPayload(JSON.parse(event.data));
     } catch (error: unknown) {
       const streamError =
         error instanceof Error ? error : new Error("Unable to validate game event payload.");
@@ -389,7 +390,10 @@ export function subscribeToGameEvents({
         schemaName: "GameEventPayload"
       });
       onInvalidPayload?.(streamError);
+      return;
     }
+
+    onMessage(payload);
   };
 
   eventSource.onerror = (error) => {

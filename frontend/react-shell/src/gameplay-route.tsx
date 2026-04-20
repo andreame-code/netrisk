@@ -458,6 +458,7 @@ export function GameRoute() {
   });
 
   const handleEventMessage = useEffectEvent((nextPayload: GameStateResponse) => {
+    setStreamStatus("live");
     queryClient.setQueryData(queryKey, nextPayload);
     if (nextPayload.playerId) {
       storeCurrentPlayerId(nextPayload.playerId, nextPayload.gameId || resolvedGameId || null);

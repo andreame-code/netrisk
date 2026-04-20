@@ -142,6 +142,71 @@ describe("frontend API observability boundary", () => {
     );
   });
 
+  it("captures backend response validation failures as unexpected 5xx errors", async () => {
+    const reporter = vi.fn();
+    registerFrontendObservabilityReporter(reporter);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "Response payload invalid.",
+            code: "RESPONSE_VALIDATION_FAILED",
+            validationErrors: [
+              {
+                code: "invalid_type",
+                path: "state.players",
+                message: "Expected array."
+              }
+            ]
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Request-Id": "req-response-validation"
+            }
+          }
+        )
+      )
+    );
+
+    await expect(
+      requestJson({
+        path: "/api/state",
+        responseSchema: okResponseSchema,
+        responseSchemaName: "OkResponse",
+        errorMessage: "Unable to load game."
+      })
+    ).rejects.toMatchObject({
+      category: "unexpected_5xx",
+      kind: "http",
+      statusCode: 500,
+      requestId: "req-response-validation",
+      code: "RESPONSE_VALIDATION_FAILED",
+      validationErrors: [
+        expect.objectContaining({
+          path: "state.players"
+        })
+      ]
+    });
+
+    expect(reporter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "unexpected_5xx",
+        requestId: "req-response-validation",
+        code: "RESPONSE_VALIDATION_FAILED"
+      }),
+      expect.objectContaining({
+        category: "unexpected_5xx",
+        kind: "http",
+        requestId: "req-response-validation",
+        code: "RESPONSE_VALIDATION_FAILED"
+      })
+    );
+  });
+
   it("does not capture expected HTTP 401 responses", async () => {
     const reporter = vi.fn();
     registerFrontendObservabilityReporter(reporter);

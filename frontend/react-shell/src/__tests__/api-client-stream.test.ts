@@ -115,4 +115,35 @@ describe("game event subscription boundary", () => {
       })
     );
   });
+
+  it("does not swallow subscriber exceptions as payload validation errors", () => {
+    vi.stubGlobal("EventSource", FakeEventSource as unknown as typeof EventSource);
+
+    const reporter = vi.fn();
+    registerFrontendObservabilityReporter(reporter);
+
+    const onInvalidPayload = vi.fn();
+
+    subscribeToGameEvents({
+      gameId: "g-1",
+      onMessage: () => {
+        throw new Error("Subscriber exploded.");
+      },
+      onInvalidPayload
+    });
+
+    const eventSource = FakeEventSource.instances[0];
+
+    expect(() => {
+      eventSource.emitMessage({
+        gameId: "g-1",
+        players: [],
+        map: [],
+        reinforcementPool: 3
+      });
+    }).toThrow("Subscriber exploded.");
+
+    expect(onInvalidPayload).not.toHaveBeenCalled();
+    expect(reporter).not.toHaveBeenCalled();
+  });
 });
