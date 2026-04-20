@@ -41,28 +41,26 @@ jobs:
         continue-on-error: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name != github.repository || github.event.pull_request.user.login == 'dependabot[bot]') }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_PROJECT_ID: prj_R61andzsXOZjOAfvj9GSOjS35aLv
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
             echo "VERCEL_TOKEN is not configured."
             exit 1
           fi
-          vercel whoami
+          vercel whoami --token "$VERCEL_TOKEN"
 
       - name: Note skipped Vercel env parity check
         if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name != github.repository || github.event.pull_request.user.login == 'dependabot[bot]') && steps.vercel_auth.outcome != 'success' }}
         run: |
           echo "Skipping Vercel env parity check because forked and Dependabot pull requests do not get VERCEL_TOKEN." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Prepare Vercel project link
-        if: ${{ steps.vercel_auth.outcome == 'success' }}
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npm run vercel:link:ci
-
       - name: Run Vercel env parity check
         if: ${{ steps.vercel_auth.outcome == 'success' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_PROJECT_ID: prj_R61andzsXOZjOAfvj9GSOjS35aLv
           VERCEL_ENV_CHECK_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
         run: npm run vercel:env:check
 
