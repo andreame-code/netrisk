@@ -1,6 +1,7 @@
 export type FrontendObservabilityContext = {
   area?: string;
   kind?: string;
+  category?: string;
   path?: string;
   requestId?: string | null;
   statusCode?: number | null;

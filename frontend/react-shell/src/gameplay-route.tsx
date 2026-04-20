@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameMutationResponse,
   GameSnapshot,
+  GameStateResponse,
   SnapshotCard,
   SnapshotPlayer,
   SnapshotTerritory
@@ -16,9 +17,9 @@ import {
   extractGameVersionConflict,
   getGameState,
   joinGame,
-  parseGameEventPayload,
   sendGameAction,
   startGame,
+  subscribeToGameEvents,
   tradeCards
 } from "@frontend-core/api/client.mts";
 import type { GameActionRequest, TradeCardsRequest } from "@frontend-core/api/client.mts";
@@ -456,8 +457,7 @@ export function GameRoute() {
     setActionError(translateGameplayError(error, t("errors.requestFailed")));
   });
 
-  const handleEventMessage = useEffectEvent((event: MessageEvent<string>) => {
-    const nextPayload = parseGameEventPayload(JSON.parse(event.data));
+  const handleEventMessage = useEffectEvent((nextPayload: GameStateResponse) => {
     queryClient.setQueryData(queryKey, nextPayload);
     if (nextPayload.playerId) {
       storeCurrentPlayerId(nextPayload.playerId, nextPayload.gameId || resolvedGameId || null);
@@ -526,20 +526,19 @@ export function GameRoute() {
     }
 
     setStreamStatus("connecting");
-    const eventSource = new EventSource(
-      `/api/events?gameId=${encodeURIComponent(resolvedGameId)}`,
-      {
-        withCredentials: true
+    const eventSource = subscribeToGameEvents({
+      gameId: resolvedGameId,
+      onOpen: () => {
+        setStreamStatus("live");
+      },
+      onMessage: handleEventMessage,
+      onInvalidPayload: () => {
+        setStreamStatus("reconnecting");
+      },
+      onError: () => {
+        setStreamStatus((current) => (current === "live" ? "reconnecting" : current));
       }
-    );
-
-    eventSource.onopen = () => {
-      setStreamStatus("live");
-    };
-    eventSource.onmessage = handleEventMessage;
-    eventSource.onerror = () => {
-      setStreamStatus((current) => (current === "live" ? "reconnecting" : current));
-    };
+    });
 
     return () => {
       eventSource.close();

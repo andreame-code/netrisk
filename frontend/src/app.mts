@@ -1,9 +1,22 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
 import { buildSyncedGameLocation, requestedGameIdFromLocation } from "./core/game-route-paths.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
+import {
+  createGame,
+  extractGameVersionConflict,
+  getGameState,
+  getSession,
+  joinGame,
+  listGames,
+  login,
+  logout,
+  openGame,
+  sendGameAction,
+  startGame,
+  subscribeToGameEvents,
+  tradeCards
+} from "./core/api/client.mjs";
 import type {
-  GameListResponse,
-  MessagePayload,
   GameSnapshot,
   GameSummary,
   MutationResponse,
@@ -13,13 +26,7 @@ import type {
   SnapshotPlayer,
   SnapshotTerritory
 } from "./core/types.mjs";
-import {
-  formatDate,
-  t,
-  translateGameLogEntries,
-  translateMessagePayload,
-  translateServerMessage
-} from "./i18n.mjs";
+import { formatDate, t, translateGameLogEntries } from "./i18n.mjs";
 
 type GameListState = "loading" | "ready" | "empty" | "error";
 type FortifySelectionMode = "from" | "to";
@@ -783,7 +790,7 @@ function ensurePrivateStateFresh(currentPlayer: SnapshotPlayer | null): void {
   setTimeout(async () => {
     try {
       await loadState();
-    } catch (error) {
+    } catch (_error) {
     } finally {
       privateStateRefreshInFlight = false;
     }
@@ -813,7 +820,7 @@ async function refreshPrivateStateIfNeeded(nextState: GameSnapshot): Promise<Gam
       if (latestHand.length >= currentPlayerCardCount) {
         return latestState;
       }
-    } catch (error) {
+    } catch (_error) {
       return latestState;
     }
 
@@ -2187,18 +2194,10 @@ async function fetchLatestStateSnapshot(
   options: { includeGameId?: boolean } = {}
 ): Promise<GameSnapshot> {
   const includeGameId = options.includeGameId !== false;
-  const query =
-    includeGameId && state.currentGameId
-      ? "?gameId=" + encodeURIComponent(state.currentGameId)
-      : "";
-  const response = await fetch("/api/state" + query);
-  const data = (await response.json()) as GameSnapshot;
-  if (!response.ok) {
-    throw new Error(
-      translateServerMessage(data as unknown as MessagePayload, t("game.errors.loadActiveGame"))
-    );
-  }
-  return data;
+  return (await getGameState(includeGameId ? state.currentGameId : null, {
+    errorMessage: t("game.errors.loadActiveGame"),
+    fallbackMessage: t("game.errors.loadActiveGame")
+  })) as unknown as GameSnapshot;
 }
 
 function shouldAcceptSnapshot(
@@ -2252,26 +2251,73 @@ function applySnapshot(
 
 async function send(
   path: string,
-  payload: Record<string, unknown> = {},
-  options: { method?: string } = {}
+  payload: Record<string, unknown> = {}
 ): Promise<MutationResponse> {
-  const response = await fetch(path, {
-    method: options.method || "POST",
-    headers: { "Content-Type": "application/json" },
-    body: options.method === "GET" ? undefined : JSON.stringify(payload)
-  });
+  const mutationMessages = {
+    errorMessage: path === "/api/auth/login" ? t("errors.loginFailed") : t("errors.requestFailed"),
+    fallbackMessage:
+      path === "/api/auth/login" ? t("errors.loginFailed") : t("errors.requestFailed")
+  };
 
-  const data = (await response.json()) as MutationResponse;
-  if (!response.ok) {
-    if (response.status === 409 && data.code === "VERSION_CONFLICT" && data.state) {
-      applySnapshot(data.state, { clearPlayerIdentity: false });
-      await loadGameList();
-      throw new Error(translateServerMessage(data, t("game.errors.versionConflict")));
+  try {
+    switch (path) {
+      case "/api/games":
+        return (await createGame(
+          payload as Parameters<typeof createGame>[0],
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/games/open":
+        return (await openGame(
+          String(payload.gameId || ""),
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/auth/login":
+        return (await login(
+          {
+            username: String(payload.username || ""),
+            password: String(payload.password || "")
+          },
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/auth/logout":
+        return (await logout(mutationMessages)) as unknown as MutationResponse;
+      case "/api/join":
+        return (await joinGame(
+          String(payload.gameId || ""),
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/start":
+        return (await startGame(
+          payload as Parameters<typeof startGame>[0],
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/action":
+        return (await sendGameAction(
+          payload as Parameters<typeof sendGameAction>[0],
+          mutationMessages
+        )) as unknown as MutationResponse;
+      case "/api/cards/trade":
+        return (await tradeCards(
+          payload as Parameters<typeof tradeCards>[0],
+          mutationMessages
+        )) as unknown as MutationResponse;
+      default:
+        throw new Error(`Unsupported legacy mutation path: ${path}`);
     }
-    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
-  }
+  } catch (error: unknown) {
+    const versionConflict = extractGameVersionConflict(error);
+    if (versionConflict?.state) {
+      applySnapshot(versionConflict.state as unknown as GameSnapshot, {
+        clearPlayerIdentity: false
+      });
+      await loadGameList();
+      throw new Error(t("game.errors.versionConflict"), {
+        cause: error
+      });
+    }
 
-  return data;
+    throw error;
+  }
 }
 
 async function loadState() {
@@ -2301,14 +2347,15 @@ async function loadGameList() {
 
   try {
     const requestedId = pendingRequestedGameId || requestedGameIdFromRoute();
-    const query = state.currentGameId ? "?gameId=" + encodeURIComponent(state.currentGameId) : "";
-    const response = await fetch("/api/games" + query);
-    if (!response.ok) {
-      const payload = await response.json();
-      throw new Error(translateServerMessage(payload, t("lobby.errors.loadGames")));
-    }
-
-    const data = await response.json();
+    const data = await listGames(
+      {
+        errorMessage: t("lobby.errors.loadGames"),
+        fallbackMessage: t("lobby.errors.loadGames")
+      },
+      {
+        gameId: state.currentGameId
+      }
+    );
     state.gameList = data.games || [];
     const activeGame = state.gameList.find((game) => game.id === data.activeGameId) || null;
     const canAutoSelectActiveGame =
@@ -2339,12 +2386,10 @@ async function loadGameList() {
 
 async function restoreSession() {
   try {
-    const response = await fetch("/api/auth/session");
-    if (!response.ok) {
-      throw new Error(t("auth.sessionExpired"));
-    }
-
-    const data = (await response.json()) as MutationResponse;
+    const data = await getSession({
+      errorMessage: t("auth.sessionExpired"),
+      fallbackMessage: t("auth.sessionExpired")
+    });
     setSession(data.user);
   } catch (_error: unknown) {
     setSession(null);
@@ -2381,7 +2426,7 @@ function startSnapshotPolling() {
       const data = await fetchLatestStateSnapshot();
       applySnapshot(data);
       render();
-    } catch (error) {
+    } catch (_error) {
     } finally {
       snapshotPollInFlight = false;
     }
@@ -2391,23 +2436,25 @@ function startSnapshotPolling() {
 function connectEvents() {
   disconnectLiveUpdates();
   eventsGameId = state.currentGameId || null;
-  const params = new URLSearchParams();
-  if (state.currentGameId) {
-    params.set("gameId", state.currentGameId);
-  }
-  const query = params.toString() ? "?" + params.toString() : "";
   eventsMode = "sse";
-  const events = new EventSource("/api/events" + query);
-  eventsConnection = events;
-  events.onmessage = (event) => {
-    applySnapshot(JSON.parse(event.data));
-    render();
-  };
-  events.onerror = () => {
-    if (eventsConnection === events) {
+  const events = subscribeToGameEvents({
+    gameId: state.currentGameId,
+    onMessage: (payload) => {
+      applySnapshot(payload as unknown as GameSnapshot);
+      render();
+    },
+    onInvalidPayload: () => {
       disconnectLiveUpdates();
+      startSnapshotPolling();
+    },
+    onError: () => {
+      if (eventsConnection === events) {
+        disconnectLiveUpdates();
+        startSnapshotPolling();
+      }
     }
-  };
+  });
+  eventsConnection = events;
 }
 
 function ensureEventConnection() {

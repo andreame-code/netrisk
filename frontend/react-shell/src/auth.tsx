@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 
 import { getSession, login, logout } from "@frontend-core/api/client.mts";
-import type { ApiClientError } from "@frontend-core/api/http.mts";
+import { isAuthApiError } from "@frontend-core/api/http.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import {
   initialAuthState,
@@ -28,12 +28,8 @@ function requestMessages(scope: string) {
   };
 }
 
-function isApiClientError(error: unknown): error is ApiClientError {
-  return error instanceof Error;
-}
-
 function isAuthRequired(error: unknown): boolean {
-  return isApiClientError(error) && error.code === "AUTH_REQUIRED";
+  return isAuthApiError(error);
 }
 
 async function resolveSessionState(): Promise<AuthState> {

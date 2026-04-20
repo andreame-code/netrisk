@@ -40,20 +40,36 @@ import type {
   ProfileResponse,
   RegisterRequest,
   StartGameRequest,
+  TradeCardsRequest,
   ThemePreferenceResponse
 } from "../../generated/shared-runtime-validation.mjs";
 import type { ApiClientError } from "./http.mjs";
 import { requestJson } from "./http.mjs";
+import { reportFrontendException } from "../observability.mjs";
 
 type ClientMessages = {
   errorMessage: string;
   fallbackMessage?: string;
 };
 
-export type { GameActionRequest, GameEventPayload, GameStateResponse, StartGameRequest };
+type GameListRequestOptions = {
+  gameId?: string | null;
+};
 
-export type TradeCardsRequest =
-  import("../../generated/shared-runtime-validation.mjs").TradeCardsRequest;
+type GameStateRequestOptions = {
+  gameId?: string | null;
+};
+
+type GameEventSubscriptionOptions = {
+  gameId?: string | null;
+  onMessage(payload: GameEventPayload): void;
+  onOpen?(): void;
+  onError?(error: Event): void;
+  onInvalidPayload?(error: Error): void;
+};
+
+export type { GameActionRequest, GameEventPayload, GameStateResponse, StartGameRequest };
+export type { TradeCardsRequest };
 
 export function getSession(messages: ClientMessages): Promise<AuthSessionResponse> {
   return requestJson({
@@ -137,6 +153,16 @@ export function getModuleOptions(messages: ClientMessages): Promise<ModuleOption
   });
 }
 
+export async function getModuleOptionsOrNull(
+  messages: ClientMessages
+): Promise<ModuleOptionsResponse | null> {
+  try {
+    return await getModuleOptions(messages);
+  } catch {
+    return null;
+  }
+}
+
 export function rescanModules(messages: ClientMessages): Promise<ModulesCatalogResponse> {
   return requestJson({
     path: "/api/modules/rescan",
@@ -179,9 +205,20 @@ export function updateThemePreference(
   });
 }
 
-export function listGames(messages: ClientMessages): Promise<GameListResponse> {
+function buildGameListPath(options: GameListRequestOptions = {}): string {
+  if (!options.gameId) {
+    return "/api/games";
+  }
+
+  return `/api/games?gameId=${encodeURIComponent(options.gameId)}`;
+}
+
+export function listGames(
+  messages: ClientMessages,
+  options: GameListRequestOptions = {}
+): Promise<GameListResponse> {
   return requestJson({
-    path: "/api/games",
+    path: buildGameListPath(options),
     responseSchema: gameListResponseSchema,
     responseSchemaName: "GameListResponse",
     ...messages
@@ -239,9 +276,30 @@ export function joinGame(gameId: string, messages: ClientMessages): Promise<Game
   });
 }
 
-export function getGameState(gameId: string, messages: ClientMessages): Promise<GameStateResponse> {
+function buildGameStatePath(options: GameStateRequestOptions = {}): string {
+  if (!options.gameId) {
+    return "/api/state";
+  }
+
+  return `/api/state?gameId=${encodeURIComponent(options.gameId)}`;
+}
+
+function buildGameEventsPath(gameId: string | null | undefined): string {
+  if (!gameId) {
+    return "/api/events";
+  }
+
+  return `/api/events?gameId=${encodeURIComponent(gameId)}`;
+}
+
+export function getGameState(
+  gameId: string | null | undefined,
+  messages: ClientMessages
+): Promise<GameStateResponse> {
   return requestJson({
-    path: `/api/state?gameId=${encodeURIComponent(gameId)}`,
+    path: buildGameStatePath({
+      gameId
+    }),
     responseSchema: gameStateResponseSchema,
     responseSchemaName: "GameStateResponse",
     ...messages
@@ -298,6 +356,47 @@ export function tradeCards(
 
 export function parseGameEventPayload(payload: unknown): GameEventPayload {
   return gameEventPayloadSchema.parse(payload);
+}
+
+export function subscribeToGameEvents({
+  gameId,
+  onMessage,
+  onOpen,
+  onError,
+  onInvalidPayload
+}: GameEventSubscriptionOptions): EventSource {
+  const path = buildGameEventsPath(gameId);
+  const eventSource = new EventSource(path, {
+    withCredentials: true
+  });
+
+  if (typeof onOpen === "function") {
+    eventSource.onopen = onOpen;
+  }
+
+  eventSource.onmessage = (event) => {
+    try {
+      const payload = parseGameEventPayload(JSON.parse(event.data));
+      onMessage(payload);
+    } catch (error: unknown) {
+      const streamError =
+        error instanceof Error ? error : new Error("Unable to validate game event payload.");
+      reportFrontendException(streamError, {
+        area: "react-shell",
+        kind: "response_validation",
+        category: "validation",
+        path,
+        schemaName: "GameEventPayload"
+      });
+      onInvalidPayload?.(streamError);
+    }
+  };
+
+  eventSource.onerror = (error) => {
+    onError?.(error);
+  };
+
+  return eventSource;
 }
 
 export function extractGameVersionConflict(error: unknown): GameVersionConflictResponse | null {

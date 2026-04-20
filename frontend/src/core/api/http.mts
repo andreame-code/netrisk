@@ -1,4 +1,11 @@
-import { parseWithSchema } from "../../generated/shared-runtime-validation.mjs";
+import {
+  parseWithSchema,
+  transportErrorPayloadSchema
+} from "../../generated/shared-runtime-validation.mjs";
+import type {
+  TransportErrorPayload,
+  ValidationError
+} from "../../generated/shared-runtime-validation.mjs";
 import { translateServerMessage } from "../../i18n.mjs";
 import { reportFrontendException } from "../observability.mjs";
 import { readValidatedJson } from "../validated-json.mjs";
@@ -7,6 +14,15 @@ type ValidationSchema<T> = {
   safeParse(input: unknown): { success: true; data: T } | { success: false; error: unknown };
 };
 
+export type ApiClientKind = "network" | "http" | "request_validation" | "response_validation";
+export type ApiErrorCategory =
+  | "network"
+  | "auth"
+  | "business"
+  | "validation"
+  | "version_conflict"
+  | "unexpected_5xx";
+
 export type ApiClientError = Error & {
   code?: string | null;
   payload?: unknown;
@@ -14,7 +30,9 @@ export type ApiClientError = Error & {
   path?: string;
   requestId?: string | null;
   statusCode?: number | null;
-  kind?: "network" | "http" | "response_validation";
+  kind?: ApiClientKind;
+  category?: ApiErrorCategory;
+  validationErrors?: ValidationError[];
 };
 
 type JsonRequestOptions<TRequest, TResponse> = {
@@ -39,7 +57,9 @@ function toApiClientError(
     path?: string;
     requestId?: string | null;
     statusCode?: number | null;
-    kind?: "network" | "http" | "response_validation";
+    kind?: ApiClientKind;
+    category?: ApiErrorCategory;
+    validationErrors?: ValidationError[];
   } = {}
 ): ApiClientError {
   const error = new Error(message, {
@@ -74,7 +94,38 @@ function toApiClientError(
     error.kind = options.kind;
   }
 
+  if (options.category !== undefined) {
+    error.category = options.category;
+  }
+
+  if (Array.isArray(options.validationErrors)) {
+    error.validationErrors = options.validationErrors;
+  }
+
   return error;
+}
+
+function extractValidationErrors(error: unknown): ValidationError[] {
+  const queue = [error];
+  while (queue.length) {
+    const current = queue.shift();
+    if (!current || typeof current !== "object") {
+      continue;
+    }
+
+    if (
+      "validationErrors" in current &&
+      Array.isArray((current as { validationErrors?: unknown }).validationErrors)
+    ) {
+      return (current as { validationErrors: ValidationError[] }).validationErrors;
+    }
+
+    if ("cause" in current) {
+      queue.push((current as { cause?: unknown }).cause);
+    }
+  }
+
+  return [];
 }
 
 function extractErrorCode(payload: unknown): string | null {
@@ -84,6 +135,52 @@ function extractErrorCode(payload: unknown): string | null {
 
   const code = payload.code;
   return typeof code === "string" && code ? code : null;
+}
+
+function extractTransportErrorPayload(payload: unknown): TransportErrorPayload | null {
+  const parsed = transportErrorPayloadSchema.safeParse(payload);
+  return parsed.success ? parsed.data : null;
+}
+
+function categorizeHttpError(statusCode: number, code: string | null): ApiErrorCategory {
+  if (code === "VERSION_CONFLICT" || statusCode === 409) {
+    return "version_conflict";
+  }
+
+  if (
+    code === "REQUEST_VALIDATION_FAILED" ||
+    code === "RESPONSE_VALIDATION_FAILED" ||
+    statusCode === 422
+  ) {
+    return "validation";
+  }
+
+  if (code === "AUTH_REQUIRED" || statusCode === 401 || statusCode === 403) {
+    return "auth";
+  }
+
+  if (statusCode >= 500) {
+    return "unexpected_5xx";
+  }
+
+  return "business";
+}
+
+function shouldReportUnexpectedClientError(error: ApiClientError): boolean {
+  return (
+    error.category === "network" ||
+    error.category === "unexpected_5xx" ||
+    error.kind === "request_validation" ||
+    error.kind === "response_validation"
+  );
+}
+
+export function isApiClientError(error: unknown): error is ApiClientError {
+  return error instanceof Error;
+}
+
+export function isAuthApiError(error: unknown): error is ApiClientError {
+  return isApiClientError(error) && (error.category === "auth" || error.code === "AUTH_REQUIRED");
 }
 
 function extractRequestId(response: Response): string | null {
@@ -112,18 +209,25 @@ function extractRequestId(response: Response): string | null {
 function reportUnexpectedClientError(
   error: ApiClientError,
   context: {
-    kind: "network" | "http" | "response_validation";
+    kind: ApiClientKind;
+    category: ApiErrorCategory;
     schemaName?: string;
   }
 ): void {
   reportFrontendException(error, {
     area: "react-shell",
     kind: context.kind,
+    category: context.category,
     path: error.path,
     requestId: error.requestId,
     statusCode: error.statusCode,
     code: error.code,
-    schemaName: context.schemaName || null
+    schemaName: context.schemaName || null,
+    extra: error.validationErrors?.length
+      ? {
+          validationErrors: error.validationErrors
+        }
+      : undefined
   });
 }
 
@@ -153,14 +257,30 @@ export async function requestJson<TRequest, TResponse>({
 
   let payloadBody: string | undefined;
   if (body !== undefined) {
-    const parsedBody = requestSchema
-      ? parseWithSchema(requestSchema, body, {
-          schemaName: requestSchemaName || "request",
-          message: errorMessage
-        })
-      : body;
-    headers["Content-Type"] = "application/json";
-    payloadBody = JSON.stringify(parsedBody);
+    try {
+      const parsedBody = requestSchema
+        ? parseWithSchema(requestSchema, body, {
+            schemaName: requestSchemaName || "request",
+            message: errorMessage
+          })
+        : body;
+      headers["Content-Type"] = "application/json";
+      payloadBody = JSON.stringify(parsedBody);
+    } catch (error: unknown) {
+      const requestValidationError = toApiClientError(errorMessage, {
+        cause: error,
+        path,
+        kind: "request_validation",
+        category: "validation",
+        validationErrors: extractValidationErrors(error)
+      });
+      reportUnexpectedClientError(requestValidationError, {
+        kind: "request_validation",
+        category: "validation",
+        schemaName: requestSchemaName || "request"
+      });
+      throw requestValidationError;
+    }
   }
 
   let response: Response;
@@ -175,10 +295,12 @@ export async function requestJson<TRequest, TResponse>({
     const networkError = toApiClientError(resolvedFallbackMessage, {
       cause: error,
       path,
-      kind: "network"
+      kind: "network",
+      category: "network"
     });
     reportUnexpectedClientError(networkError, {
-      kind: "network"
+      kind: "network",
+      category: "network"
     });
     throw networkError;
   }
@@ -187,18 +309,23 @@ export async function requestJson<TRequest, TResponse>({
 
   if (!response.ok) {
     const payload = await tryReadJson(response);
+    const transportError = extractTransportErrorPayload(payload);
+    const code = extractErrorCode(payload);
     const clientError = toApiClientError(translateServerMessage(payload, errorMessage), {
-      code: extractErrorCode(payload),
+      code,
       payload,
       status: response.status,
       path,
       requestId,
       statusCode: response.status,
-      kind: "http"
+      kind: "http",
+      category: categorizeHttpError(response.status, code),
+      validationErrors: transportError?.validationErrors || []
     });
-    if (response.status >= 500) {
+    if (shouldReportUnexpectedClientError(clientError)) {
       reportUnexpectedClientError(clientError, {
-        kind: "http"
+        kind: "http",
+        category: clientError.category || "business"
       });
     }
     throw clientError;
@@ -218,10 +345,13 @@ export async function requestJson<TRequest, TResponse>({
       path,
       requestId,
       statusCode: response.status,
-      kind: "response_validation"
+      kind: "response_validation",
+      category: "validation",
+      validationErrors: extractValidationErrors(error)
     });
     reportUnexpectedClientError(validationError, {
       kind: "response_validation",
+      category: "validation",
       schemaName: responseSchemaName
     });
     throw validationError;

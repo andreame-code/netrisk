@@ -1,13 +1,12 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
+import { createGame, getGameOptions, getSession, login, logout } from "./core/api/client.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   ContentPackSummary,
   DiceRuleSet,
-  GameOptionsResponse,
   InstalledModuleSummary,
-  LoginResponse,
   MapSummary,
   NetRiskContentContribution,
   NetRiskGamePreset,
@@ -18,7 +17,7 @@ import type {
   VictoryRuleSet,
   VisualTheme
 } from "./core/types.mjs";
-import { t, translateServerMessage } from "./i18n.mjs";
+import { t } from "./i18n.mjs";
 
 const state: {
   contentPacks: ContentPackSummary[];
@@ -98,8 +97,6 @@ const CONTENT_CONTRIBUTION_KEYS = [
   "fortifyRuleSetIds",
   "reinforcementRuleSetIds"
 ] as const;
-
-type ContentContributionKey = (typeof CONTENT_CONTRIBUTION_KEYS)[number];
 
 function setHeaderAuthFeedback(message = ""): void {
   if (!message) {
@@ -829,28 +826,44 @@ function readConfig() {
 async function send(
   path: string,
   body: unknown
-): Promise<LoginResponse & { game?: { id: string }; playerId?: string | null }> {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  const data = (await response.json()) as LoginResponse & {
-    game?: { id: string };
-    playerId?: string | null;
+): Promise<{ user?: PublicUser; game?: { id: string }; playerId?: string | null }> {
+  const mutationMessages = {
+    errorMessage: path === "/api/auth/login" ? t("errors.loginFailed") : t("errors.requestFailed"),
+    fallbackMessage:
+      path === "/api/auth/login" ? t("errors.loginFailed") : t("errors.requestFailed")
   };
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.requestFailed")));
+
+  switch (path) {
+    case "/api/games":
+      return (await createGame(body as Parameters<typeof createGame>[0], mutationMessages)) as {
+        user?: PublicUser;
+        game?: { id: string };
+        playerId?: string | null;
+      };
+    case "/api/auth/login":
+      return (await login(
+        body as {
+          username: string;
+          password: string;
+        },
+        mutationMessages
+      )) as { user?: PublicUser; game?: { id: string }; playerId?: string | null };
+    case "/api/auth/logout":
+      return (await logout(mutationMessages)) as {
+        user?: PublicUser;
+        game?: { id: string };
+        playerId?: string | null;
+      };
+    default:
+      throw new Error(`Unsupported setup mutation path: ${path}`);
   }
-  return data;
 }
 
 async function loadOptions() {
-  const response = await fetch("/api/game/options");
-  const data = (await response.json()) as GameOptionsResponse;
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("newGame.errors.loadOptions")));
-  }
+  const data = await getGameOptions({
+    errorMessage: t("newGame.errors.loadOptions"),
+    fallbackMessage: t("newGame.errors.loadOptions")
+  });
 
   state.contentPacks = data.contentPacks || [];
   state.maps = data.maps || [];
@@ -888,13 +901,10 @@ async function loadOptions() {
 
 async function restoreSession() {
   try {
-    const response = await fetch("/api/auth/session");
-
-    if (!response.ok) {
-      throw new Error(t("auth.sessionExpired"));
-    }
-
-    const data = (await response.json()) as LoginResponse;
+    const data = await getSession({
+      errorMessage: t("auth.sessionExpired"),
+      fallbackMessage: t("auth.sessionExpired")
+    });
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
   } catch (_error: unknown) {
@@ -927,16 +937,16 @@ async function restoreSession() {
 }
 
 async function loginWithCredentials(username: string, password: string): Promise<void> {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = (await response.json()) as LoginResponse;
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-  }
-
+  const data = await login(
+    {
+      username,
+      password
+    },
+    {
+      errorMessage: t("errors.loginFailed"),
+      fallbackMessage: t("errors.loginFailed")
+    }
+  );
   state.user = data.user;
   window.netriskTheme?.applyUserTheme?.(state.user);
   if (elements.headerAuthPassword) {

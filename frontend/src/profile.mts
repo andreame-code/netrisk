@@ -1,27 +1,30 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import {
+  getGameOptions,
+  getModuleOptionsOrNull,
+  getModulesCatalog,
   getProfile,
   getSession,
   login,
   logout,
+  rescanModules,
+  setModuleEnabled,
   updateThemePreference
 } from "./core/api/client.mjs";
+import { isAuthApiError } from "./core/api/http.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import type {
-  GameOptionsResponse,
   NetRiskModuleCapability,
   NetRiskModuleDependency,
   InstalledModuleSummary,
-  ModuleOptionsResponse,
-  ModulesCatalogResponse,
   NetRiskUiSlotContribution
 } from "./core/types.mjs";
 import type {
   ProfileContract as ProfileSummary,
   PublicUser
 } from "./generated/shared-runtime-validation.mjs";
-import { formatDate, t, translateServerMessage } from "./i18n.mjs";
+import { formatDate, t } from "./i18n.mjs";
 
 const elements = {
   profileName: byId("profile-name"),
@@ -103,7 +106,7 @@ let themeOptionsLoaded = false;
 let currentSessionUser: PublicUser | null = null;
 
 function profileMessageFromError(error: unknown, fallback: string): string {
-  if (error && typeof error === "object" && "code" in error && error.code === "AUTH_REQUIRED") {
+  if (isAuthApiError(error)) {
     return t("profile.errors.loginRequired");
   }
 
@@ -148,9 +151,11 @@ async function loadThemeOptions(): Promise<void> {
   }
 
   try {
-    const response = await fetch("/api/game/options");
-    const data = (await response.json()) as GameOptionsResponse;
-    if (response.ok && Array.isArray(data.themes)) {
+    const data = await getGameOptions({
+      errorMessage: t("profile.errors.unavailable"),
+      fallbackMessage: t("profile.errors.unavailable")
+    });
+    if (Array.isArray(data.themes)) {
       themeManager.setThemes(data.themes.map((theme) => theme.id));
       renderThemeOptions(true);
     }
@@ -525,21 +530,21 @@ function renderAdminModuleSlots(slots: NetRiskUiSlotContribution[]): void {
 }
 
 async function loadAdminModuleSlots(): Promise<void> {
-  try {
-    const response = await fetch("/api/modules/options");
-    const payload = (await response.json()) as ModuleOptionsResponse;
-    if (!response.ok) {
-      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
-    }
+  const payload = await getModuleOptionsOrNull({
+    errorMessage: t("profile.modules.status.error"),
+    fallbackMessage: t("profile.modules.status.error")
+  });
 
-    const adminSlots = Array.isArray(payload.uiSlots)
-      ? payload.uiSlots.filter((slot) => slot.slotId === "admin-modules-page")
-      : [];
-    renderAdminModuleSlots(adminSlots);
-  } catch (_error: unknown) {
+  if (!payload) {
     setMarkup(elements.profileModuleSlotsList, "");
     setHidden(elements.profileModuleSlotsEmpty, false);
+    return;
   }
+
+  const adminSlots = Array.isArray(payload.uiSlots)
+    ? payload.uiSlots.filter((slot) => slot.slotId === "admin-modules-page")
+    : [];
+  renderAdminModuleSlots(adminSlots);
 }
 
 async function loadModuleCatalog(
@@ -560,15 +565,15 @@ async function loadModuleCatalog(
   );
 
   try {
-    const response = await fetch(options.rescan ? "/api/modules/rescan" : "/api/modules", {
-      method: options.rescan ? "POST" : "GET",
-      headers: options.rescan ? { "Content-Type": "application/json" } : undefined,
-      body: options.rescan ? JSON.stringify({}) : undefined
-    });
-    const payload = (await response.json()) as ModulesCatalogResponse;
-    if (!response.ok) {
-      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
-    }
+    const payload = options.rescan
+      ? await rescanModules({
+          errorMessage: t("profile.modules.status.error"),
+          fallbackMessage: t("profile.modules.status.error")
+        })
+      : await getModulesCatalog({
+          errorMessage: t("profile.modules.status.error"),
+          fallbackMessage: t("profile.modules.status.error")
+        });
 
     if (requestId !== moduleCatalogRequestId) {
       return;
@@ -612,15 +617,10 @@ async function toggleModule(
   setModuleStatus(t("profile.modules.status.refreshing"));
 
   try {
-    const response = await fetch(`/api/modules/${encodeURIComponent(moduleId)}/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({})
+    const payload = await setModuleEnabled(moduleId, action === "enable", {
+      errorMessage: t("profile.modules.status.error"),
+      fallbackMessage: t("profile.modules.status.error")
     });
-    const payload = (await response.json()) as ModulesCatalogResponse;
-    if (!response.ok) {
-      throw new Error(translateServerMessage(payload, t("profile.modules.status.error")));
-    }
 
     if (requestId !== moduleCatalogRequestId) {
       return;

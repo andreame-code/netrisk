@@ -1,16 +1,10 @@
 import { setMarkup } from "./core/dom.mjs";
+import { getModuleOptionsOrNull, login } from "./core/api/client.mjs";
 import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
 import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import type { ModuleOptionsResponse, PublicUser } from "./core/types.mjs";
-import {
-  applyTranslations,
-  listSupportedLocales,
-  resolveLocale,
-  setLocale,
-  t,
-  translateServerMessage
-} from "./i18n.mjs";
+import { applyTranslations, listSupportedLocales, resolveLocale, setLocale, t } from "./i18n.mjs";
 
 const THEME_STORAGE_KEY = "netrisk.theme";
 const routeQuery = new URLSearchParams(window.location.search);
@@ -348,19 +342,10 @@ async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
     return moduleOptionsPromise;
   }
 
-  moduleOptionsPromise = (async () => {
-    try {
-      const response = await fetch("/api/modules/options");
-      const data = (await response.json()) as ModuleOptionsResponse;
-      if (!response.ok) {
-        return null;
-      }
-
-      return data;
-    } catch {
-      return null;
-    }
-  })();
+  moduleOptionsPromise = getModuleOptionsOrNull({
+    errorMessage: "Unable to load module options.",
+    fallbackMessage: "Unable to validate module options."
+  });
 
   return moduleOptionsPromise;
 }
@@ -520,17 +505,16 @@ async function fallbackHeaderLogin(
   username: string,
   password: string
 ): Promise<{ user?: PublicUser }> {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-  }
-
-  return data;
+  return login(
+    {
+      username,
+      password
+    },
+    {
+      errorMessage: t("errors.loginFailed"),
+      fallbackMessage: t("errors.loginFailed")
+    }
+  );
 }
 
 function sanitizedCurrentUrl() {

@@ -25,6 +25,28 @@ export const validationErrorSchema = z.object({
 
 export type ValidationError = z.infer<typeof validationErrorSchema>;
 
+export const messagePayloadSchema = objectSchema({
+  message: z.string().min(1).optional(),
+  error: z.string().min(1).optional(),
+  reason: z.string().min(1).optional(),
+  messageKey: z.string().min(1).optional(),
+  errorKey: z.string().min(1).optional(),
+  reasonKey: z.string().min(1).optional(),
+  messageParams: z.record(z.string(), z.unknown()).optional(),
+  errorParams: z.record(z.string(), z.unknown()).optional(),
+  reasonParams: z.record(z.string(), z.unknown()).optional()
+});
+
+export type MessagePayload = z.infer<typeof messagePayloadSchema>;
+
+export const transportErrorPayloadSchema = messagePayloadSchema.extend({
+  code: z.string().min(1).nullable().optional(),
+  validationErrors: z.array(validationErrorSchema).optional(),
+  validation: z.record(z.string(), z.unknown()).optional()
+});
+
+export type TransportErrorPayload = z.infer<typeof transportErrorPayloadSchema>;
+
 function objectSchema<T extends z.ZodRawShape>(shape: T) {
   return z.object(shape).passthrough();
 }
