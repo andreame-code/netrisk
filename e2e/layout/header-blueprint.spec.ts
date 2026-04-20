@@ -6,6 +6,7 @@ test("game header follows the single-row blueprint", async ({ page }) => {
 
   await resetGame(page);
   await registerAndLogin(page, username);
+  await page.goto("/game.html");
 
   const header = page.locator(".top-nav-bar");
   await expect(header).toBeVisible();
@@ -27,4 +28,3 @@ test("game header follows the single-row blueprint", async ({ page }) => {
   await expect(page.getByTestId("info-panel")).toContainText(/Player/i);
   await expect(page.getByTestId("info-panel")).toContainText(/Active game/i);
 });
-

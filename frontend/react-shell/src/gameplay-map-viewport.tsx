@@ -20,6 +20,20 @@ const MAP_VIEWPORT_MAX_SCALE = 3;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
 const MAP_VIEWPORT_BUTTON_STEP = 0.2;
 const MAP_VIEWPORT_DRAG_THRESHOLD = 8;
+const MAP_TERRITORY_NODE_SCALE_EXPONENT = 0;
+const MAP_TERRITORY_NODE_MIN_SCALE = 1;
+
+const classicMapLayout = {
+  aurora: { x: 17.1, y: 18 },
+  bastion: { x: 40.8, y: 14 },
+  cinder: { x: 27.6, y: 39 },
+  delta: { x: 14.5, y: 63 },
+  ember: { x: 50.7, y: 43 },
+  forge: { x: 70.4, y: 25 },
+  grove: { x: 34.2, y: 84 },
+  harbor: { x: 61.8, y: 67 },
+  ion: { x: 86.2, y: 50 }
+} as const;
 
 type ViewportState = {
   scale: number;
@@ -60,14 +74,16 @@ function clampTranslation(
   translateY: number,
   scale: number,
   surfaceWidth: number,
-  surfaceHeight: number
+  surfaceHeight: number,
+  boardWidth: number,
+  boardHeight: number
 ): { x: number; y: number } {
-  if (surfaceWidth <= 0 || surfaceHeight <= 0) {
+  if (surfaceWidth <= 0 || surfaceHeight <= 0 || boardWidth <= 0 || boardHeight <= 0) {
     return { x: translateX, y: translateY };
   }
 
-  const overflowX = Math.max(0, (surfaceWidth * scale - surfaceWidth) / 2);
-  const overflowY = Math.max(0, (surfaceHeight * scale - surfaceHeight) / 2);
+  const overflowX = Math.max(0, (boardWidth * scale - surfaceWidth) / 2);
+  const overflowY = Math.max(0, (boardHeight * scale - surfaceHeight) / 2);
 
   return {
     x: clampNumber(translateX, -overflowX, overflowX),
@@ -78,7 +94,9 @@ function clampTranslation(
 function normalizeViewport(
   viewport: ViewportState,
   surfaceWidth: number,
-  surfaceHeight: number
+  surfaceHeight: number,
+  boardWidth: number,
+  boardHeight: number
 ): ViewportState {
   const scale = clampNumber(viewport.scale, MAP_VIEWPORT_MIN_SCALE, MAP_VIEWPORT_MAX_SCALE);
   const clampedTranslation = clampTranslation(
@@ -86,7 +104,9 @@ function normalizeViewport(
     viewport.translateY,
     scale,
     surfaceWidth,
-    surfaceHeight
+    surfaceHeight,
+    boardWidth,
+    boardHeight
   );
 
   return {
@@ -104,7 +124,7 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
     return `${width} / ${height}`;
   }
 
-  return "16 / 10";
+  return "760 / 500";
 }
 
 function territoryOwnerName(
@@ -116,6 +136,19 @@ function territoryOwnerName(
   }
 
   return playersById[territory.ownerId]?.name || territory.ownerId;
+}
+
+function territoryPosition(
+  territory: SnapshotTerritory
+): { x: number; y: number } | null {
+  if (Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
+    return {
+      x: Number(territory.x) * 100,
+      y: Number(territory.y) * 100
+    };
+  }
+
+  return classicMapLayout[territory.id as keyof typeof classicMapLayout] || null;
 }
 
 export function GameplayMapViewport({
@@ -130,6 +163,8 @@ export function GameplayMapViewport({
   snapshot,
   onTerritorySelect
 }: GameplayMapViewportProps) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const [surfaceElement, setSurfaceElement] = useState<HTMLDivElement | null>(null);
   const viewportRef = useRef<ViewportState>({
@@ -148,6 +183,9 @@ export function GameplayMapViewport({
     didDrag: false
   });
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
+  const [fittedBoardFrame, setFittedBoardFrame] = useState<{ width: number; height: number } | null>(
+    null
+  );
   const [viewport, setViewport] = useState<ViewportState>({
     scale: MAP_VIEWPORT_MIN_SCALE,
     translateX: 0,
@@ -160,6 +198,21 @@ export function GameplayMapViewport({
     return {
       width: surface?.clientWidth || surfaceSize.width,
       height: surface?.clientHeight || surfaceSize.height
+    };
+  }
+
+  function currentBoardSize(): { width: number; height: number } {
+    const board = boardRef.current;
+    if (board) {
+      return {
+        width: board.offsetWidth,
+        height: board.offsetHeight
+      };
+    }
+
+    return {
+      width: fittedBoardFrame?.width || 0,
+      height: fittedBoardFrame?.height || 0
     };
   }
 
@@ -182,10 +235,12 @@ export function GameplayMapViewport({
       return;
     }
 
+    const activeSurface = surface;
+
     function measureSurface(): void {
       setSurfaceSize({
-        width: surface.clientWidth,
-        height: surface.clientHeight
+        width: activeSurface.clientWidth,
+        height: activeSurface.clientHeight
       });
     }
 
@@ -201,7 +256,7 @@ export function GameplayMapViewport({
     const observer = new ResizeObserver(() => {
       measureSurface();
     });
-    observer.observe(surface);
+    observer.observe(activeSurface);
 
     return () => {
       observer.disconnect();
@@ -253,6 +308,7 @@ export function GameplayMapViewport({
       dragStateRef.current.didDrag = true;
       dragStateRef.current.suppressClick = true;
       const nextSurfaceSize = currentSurfaceSize();
+      const nextBoardSize = currentBoardSize();
       setViewport((currentViewport) =>
         normalizeViewport(
           {
@@ -262,7 +318,9 @@ export function GameplayMapViewport({
             isDragging: true
           },
           nextSurfaceSize.width,
-          nextSurfaceSize.height
+          nextSurfaceSize.height,
+          nextBoardSize.width,
+          nextBoardSize.height
         )
       );
     }
@@ -284,9 +342,86 @@ export function GameplayMapViewport({
 
   useEffect(() => {
     setViewport((currentViewport) =>
-      normalizeViewport(currentViewport, surfaceSize.width, surfaceSize.height)
+      normalizeViewport(
+        currentViewport,
+        surfaceSize.width,
+        surfaceSize.height,
+        currentBoardSize().width,
+        currentBoardSize().height
+      )
     );
-  }, [surfaceSize.height, surfaceSize.width]);
+  }, [fittedBoardFrame?.height, fittedBoardFrame?.width, surfaceSize.height, surfaceSize.width]);
+
+  useEffect(() => {
+    const mapContainer = mapRef.current;
+    const mapBoard = boardRef.current;
+    if (!mapContainer || !mapBoard) {
+      return;
+    }
+
+    const mapStageElement = mapContainer.closest(".game-map-stage");
+    if (!(mapStageElement instanceof HTMLElement)) {
+      return;
+    }
+    const mapStage = mapStageElement;
+    const resolvedBoard = mapBoard;
+
+    function fitBoardToViewport(): void {
+      const stageStyles = window.getComputedStyle(mapStage);
+      const stagePaddingX =
+        Number.parseFloat(stageStyles.paddingLeft || "0") +
+        Number.parseFloat(stageStyles.paddingRight || "0");
+      const stagePaddingY =
+        Number.parseFloat(stageStyles.paddingTop || "0") +
+        Number.parseFloat(stageStyles.paddingBottom || "0");
+      const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
+      const stageRect = mapStage.getBoundingClientRect();
+      const availableHeight = Math.max(
+        0,
+        window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0")
+      );
+      if (!availableWidth || !availableHeight) {
+        return;
+      }
+
+      const aspectRatioValue =
+        resolvedBoard.style.aspectRatio ||
+        window.getComputedStyle(resolvedBoard).aspectRatio ||
+        "760 / 500";
+      const aspectRatioMatch = aspectRatioValue.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+      const aspectRatio = aspectRatioMatch
+        ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
+        : 760 / 500;
+      const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
+      const width = Math.min(availableWidth, widthFromHeight);
+      const height = width / aspectRatio;
+
+      setFittedBoardFrame({
+        width: Math.floor(width),
+        height: Math.ceil(height)
+      });
+    }
+
+    fitBoardToViewport();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", fitBoardToViewport);
+      return () => {
+        window.removeEventListener("resize", fitBoardToViewport);
+      };
+    }
+
+    const observer = new ResizeObserver(() => {
+      fitBoardToViewport();
+    });
+    observer.observe(mapStage);
+    window.addEventListener("resize", fitBoardToViewport);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fitBoardToViewport);
+    };
+  }, [snapshot.mapVisual?.aspectRatio?.height, snapshot.mapVisual?.aspectRatio?.width]);
 
   useEffect(() => {
     dragStateRef.current = {
@@ -315,6 +450,7 @@ export function GameplayMapViewport({
   function zoomTo(nextScale: number, clientX: number, clientY: number): void {
     const surface = surfaceRef.current;
     const nextSurfaceSize = currentSurfaceSize();
+    const nextBoardSize = currentBoardSize();
     if (!surface || nextSurfaceSize.width <= 0 || nextSurfaceSize.height <= 0) {
       return;
     }
@@ -323,7 +459,9 @@ export function GameplayMapViewport({
       const normalizedViewport = normalizeViewport(
         currentViewport,
         nextSurfaceSize.width,
-        nextSurfaceSize.height
+        nextSurfaceSize.height,
+        nextBoardSize.width,
+        nextBoardSize.height
       );
       const clampedScale = clampNumber(nextScale, MAP_VIEWPORT_MIN_SCALE, MAP_VIEWPORT_MAX_SCALE);
       if (Math.abs(clampedScale - normalizedViewport.scale) < 0.001) {
@@ -348,7 +486,9 @@ export function GameplayMapViewport({
           isDragging: false
         },
         nextSurfaceSize.width,
-        nextSurfaceSize.height
+        nextSurfaceSize.height,
+        nextBoardSize.width,
+        nextBoardSize.height
       );
     });
   }
@@ -415,18 +555,48 @@ export function GameplayMapViewport({
         ? "map-board-surface is-zoomed is-dragging"
         : "map-board-surface is-zoomed"
       : "map-board-surface";
-  const nodeScale = viewport.scale > 0 ? 1 / viewport.scale : 1;
+  const nodeScale = Math.max(
+    MAP_TERRITORY_NODE_MIN_SCALE,
+    Math.pow(1 / Math.max(viewport.scale, 1), MAP_TERRITORY_NODE_SCALE_EXPONENT)
+  );
+  const boardClassNames = ["map-board"];
+  if (snapshot.mapId) {
+    boardClassNames.push(
+      `map-id-${String(snapshot.mapId)
+        .replace(/[^a-z0-9_-]/gi, "-")
+        .toLowerCase()}`
+    );
+  }
+  if (snapshot.mapVisual?.imageUrl) {
+    boardClassNames.push("has-custom-background");
+  }
   const boardStyle: CSSProperties = {
     aspectRatio: mapAspectRatio(snapshot),
+    ...(fittedBoardFrame
+      ? {
+          width: `${fittedBoardFrame.width}px`,
+          height: `${fittedBoardFrame.height}px`
+        }
+      : {}),
     ...(snapshot.mapVisual?.imageUrl
       ? {
-          backgroundImage: `linear-gradient(rgba(15, 22, 36, 0.18), rgba(15, 22, 36, 0.18)), url(${snapshot.mapVisual.imageUrl})`
+          "--map-background-image": `url(${snapshot.mapVisual.imageUrl})`
         }
       : {})
-  };
+  } as CSSProperties;
+  const boardSize = currentBoardSize();
+  const viewportSize = currentSurfaceSize();
+  const markerCenterX = viewportSize.width / 2 + viewport.translateX;
+  const markerCenterY = viewportSize.height / 2 + viewport.translateY;
 
   return (
-    <div className="game-map-stage" data-testid="map-region">
+    <div
+      ref={mapRef}
+      id="map"
+      className="map tactical-map"
+      data-testid="map-region"
+      style={fittedBoardFrame ? { height: `${fittedBoardFrame.height}px` } : undefined}
+    >
       <div className="map-viewport" data-map-viewport>
         <div className="map-controls" data-map-controls>
           <button
@@ -458,93 +628,115 @@ export function GameplayMapViewport({
           className={connectionBadgeClassName}
           data-map-surface=""
           data-map-scale={viewport.scale.toFixed(3)}
-          data-map-node-scale="1.0000"
+          data-map-node-scale={nodeScale.toFixed(4)}
           data-map-translate-x={viewport.translateX.toFixed(2)}
           data-map-translate-y={viewport.translateY.toFixed(2)}
           style={
             {
               aspectRatio: mapAspectRatio(snapshot),
+              ...(fittedBoardFrame ? { height: `${fittedBoardFrame.height}px` } : {}),
               "--map-territory-node-scale": nodeScale.toFixed(4)
             } as CSSProperties
           }
           onPointerDown={handlePointerDown}
         >
           <div
-            className="map-board-transform"
-            data-map-transform
+            className="map-board-anchor"
+            data-map-anchor
             style={{
-              transform: `translate(${viewport.translateX}px, ${viewport.translateY}px) scale(${viewport.scale})`
+              transform: `translate(-50%, -50%) translate(${viewport.translateX}px, ${viewport.translateY}px)`
             }}
           >
-            <div
-              id="map"
-              className={`game-map-board map-board ${pieceSkinClass}${snapshot.mapVisual?.imageUrl ? " has-image has-custom-background" : ""}`}
-              style={boardStyle}
-            >
-              <svg className="game-map-connections" viewBox="0 0 1000 1000" aria-hidden="true">
-                {(snapshot.map || []).flatMap((territory) => {
-                  const territoryX = territory.x;
-                  const territoryY = territory.y;
-                  if (territoryX == null || territoryY == null) {
-                    return [];
-                  }
+              <div
+                className="map-board-transform"
+                data-map-transform
+                style={{
+                  transform: `scale(${viewport.scale})`
+                }}
+              >
+                <div
+                  ref={boardRef}
+                  className={`${boardClassNames.join(" ")} ${pieceSkinClass}`}
+                  style={boardStyle}
+                >
+                  <div className="map-board-stage">
+                    <svg className="map-lines" viewBox="0 0 100 100" aria-hidden="true">
+                      {(snapshot.map || []).flatMap((territory) => {
+                        const sourcePosition = territoryPosition(territory);
+                        if (!sourcePosition) {
+                          return [];
+                        }
 
-                  return territory.neighbors
-                    .filter((neighborId) => territory.id < neighborId)
-                    .map((neighborId) => {
-                      const target = snapshot.map.find((entry) => entry.id === neighborId);
-                      if (!target || target.x == null || target.y == null) {
-                        return null;
-                      }
+                        return territory.neighbors
+                          .filter((neighborId) => territory.id < neighborId)
+                          .map((neighborId) => {
+                            const target = snapshot.map.find((entry) => entry.id === neighborId);
+                            const targetPosition = target ? territoryPosition(target) : null;
+                            if (!targetPosition) {
+                              return null;
+                            }
 
-                      return (
-                        <line
-                          key={`${territory.id}-${neighborId}`}
-                          x1={territoryX * 1000}
-                          y1={territoryY * 1000}
-                          x2={target.x * 1000}
-                          y2={target.y * 1000}
-                        />
-                      );
-                    });
-                })}
-              </svg>
+                            return (
+                              <line
+                                key={`${territory.id}-${neighborId}`}
+                                className="map-link"
+                                x1={sourcePosition.x}
+                                y1={sourcePosition.y}
+                                x2={targetPosition.x}
+                                y2={targetPosition.y}
+                              />
+                            );
+                          });
+                      })}
+                    </svg>
+                  </div>
+                </div>
+              </div>
+          </div>
+          <div className="map-markers-layer" data-map-markers>
+            {(snapshot.map || []).map((territory) => {
+              const isMine = territory.ownerId === myPlayerId;
+              const isAttackSource = territory.id === attackFromId;
+              const isAttackTarget = territory.id === attackToId;
+              const isReinforceTarget = territory.id === reinforceTerritoryId;
+              const isFortifySource = territory.id === fortifyFromId;
+              const isFortifyTarget = territory.id === fortifyToId;
+              const isSource = isAttackSource || isFortifySource;
+              const isTarget = isAttackTarget || isFortifyTarget;
+              const position = territoryPosition(territory);
+              const markerLeft =
+                markerCenterX +
+                ((position?.x || 50) / 100 - 0.5) * boardSize.width * viewport.scale;
+              const markerTop =
+                markerCenterY +
+                ((position?.y || 50) / 100 - 0.5) * boardSize.height * viewport.scale;
+              const territoryStyle = {
+                left: `${markerLeft}px`,
+                top: `${markerTop}px`,
+                "--owner-color":
+                  territory.ownerId && playersById[territory.ownerId]?.color
+                    ? playersById[territory.ownerId].color
+                    : "#9aa6b2"
+              } as CSSProperties;
 
-              {(snapshot.map || []).map((territory) => {
-                const isMine = territory.ownerId === myPlayerId;
-                const isAttackSource = territory.id === attackFromId;
-                const isAttackTarget = territory.id === attackToId;
-                const isReinforceTarget = territory.id === reinforceTerritoryId;
-                const isFortifySource = territory.id === fortifyFromId;
-                const isFortifyTarget = territory.id === fortifyToId;
-                const territoryStyle: CSSProperties & {
-                  "--territory-player-color": string;
-                } = {
-                  left: `${(territory.x ?? 0.5) * 100}%`,
-                  top: `${(territory.y ?? 0.5) * 100}%`,
-                  "--territory-player-color":
-                    territory.ownerId && playersById[territory.ownerId]?.color
-                      ? playersById[territory.ownerId].color
-                      : "rgba(22, 32, 51, 0.7)"
-                };
-
-                return (
-                  <button
-                    key={territory.id}
-                    type="button"
-                    className={`territory-node ${pieceSkinClass}${isMine ? " is-mine" : ""}${isAttackSource ? " is-source" : ""}${isAttackTarget ? " is-target" : ""}${isReinforceTarget ? " is-reinforce" : ""}${isFortifySource ? " is-fortify-source" : ""}${isFortifyTarget ? " is-fortify-target" : ""}`}
-                    data-territory-id={territory.id}
-                    style={territoryStyle}
-                    title={territory.name}
-                    onClick={() => handleTerritoryClick(territory.id)}
-                  >
-                    <strong>{territory.name}</strong>
-                    <span>{territoryOwnerName(territory, playersById)}</span>
-                    <span className="territory-armies">{territory.armies}</span>
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <button
+                  key={territory.id}
+                  type="button"
+                  className={`territory-node ${pieceSkinClass}${isMine ? " is-mine" : ""}${isSource ? " is-source" : ""}${isTarget ? " is-target" : ""}${isReinforceTarget ? " is-reinforce" : ""}${isFortifySource ? " is-fortify-source" : ""}${isFortifyTarget ? " is-fortify-target" : ""}`}
+                  data-territory-id={territory.id}
+                  data-map-position-x={String(position?.x || 50)}
+                  data-map-position-y={String(position?.y || 50)}
+                  style={territoryStyle}
+                  title={territory.name}
+                  aria-label={`${territory.name}: ${territory.armies} armate`}
+                  onClick={() => handleTerritoryClick(territory.id)}
+                >
+                  <span className="territory-armies">{territory.armies}</span>
+                  <span className="visually-hidden">{territoryOwnerName(territory, playersById)}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

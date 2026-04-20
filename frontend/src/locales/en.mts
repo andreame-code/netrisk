@@ -262,6 +262,7 @@ export const en = Object.freeze({
   "newGame.feedback.creating": "Creating game...",
   "newGame.errors.invalidSession": "Invalid session.",
   "newGame.errors.loadOptions": "Unable to load creation options.",
+  "newGame.errors.unsupportedMap": "The selected map is not supported.",
   "newGame.invalidRuleSet": "Selected ruleset is not supported.",
   "newGame.invalidPieceSet": "Selected piece set is not supported.",
   "newGame.invalidContentPack": "Selected content pack is not supported.",

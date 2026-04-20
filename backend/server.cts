@@ -1361,7 +1361,7 @@ function createApp(options: CreateAppOptions = {}) {
           res.writeHead(302, {
             Location: requestedGameId
               ? "/game/" + encodeURIComponent(requestedGameId)
-              : "/lobby.html"
+              : "/game"
           });
           res.end();
           return null;

@@ -440,11 +440,11 @@ test("react gameplay ignores stale cached player ids from a different game", asy
 
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
   await expect(page.getByRole("button", { name: /join|entra nella lobby|unisciti/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeDisabled();
 
   await page.getByRole("button", { name: /join|entra nella lobby|unisciti/i }).click();
 
-  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Avvia partita" })).toBeEnabled();
 });
 
 test("react gameplay recovers from VERSION_CONFLICT by refreshing the snapshot and continuing the turn", async ({

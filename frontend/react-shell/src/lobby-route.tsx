@@ -12,6 +12,7 @@ import { joinGame, listGames, openGame } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
+import { useAuth } from "@react-shell/auth";
 import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildNewGamePath } from "@react-shell/public-auth-paths";
@@ -121,6 +122,7 @@ function setLobbyGamesCache(
 }
 
 export function LobbyRoute() {
+  const { state } = useAuth();
   const queryClient = useQueryClient();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -181,6 +183,11 @@ export function LobbyRoute() {
   const readyGames = games.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
   const activeGame = games.find((game) => game.id === activeGameId) || null;
   const actionPending = openMutation.isPending || joinMutation.isPending;
+  const authenticatedUser = state.status === "authenticated" ? state.user : null;
+
+  useEffect(() => {
+    document.title = t("lobby.title");
+  }, []);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -254,226 +261,276 @@ export function LobbyRoute() {
     }
   }
 
-  if (lobbyQuery.isLoading && !lobbyQuery.data) {
-    return (
-      <section className="status-panel" data-testid="react-shell-lobby-loading">
-        <p className="status-label">{t("lobby.eyebrow")}</p>
-        <h2>{t("lobby.heading")}</h2>
-        <p className="status-copy">{t("lobby.loading")}</p>
-      </section>
-    );
-  }
-
-  if (lobbyQuery.isError && !games.length) {
-    return (
-      <section className="status-panel status-panel-error" data-testid="react-shell-lobby-error">
-        <p className="status-label">{t("lobby.eyebrow")}</p>
-        <h2>{t("lobby.heading")}</h2>
-        <p className="status-copy">
-          {messageFromError(lobbyQuery.error, t("lobby.errors.loadGames"))}
-        </p>
-        <div className="shell-actions">
-          <button type="button" className="refresh-button" onClick={() => void handleRetry()}>
-            Retry lobby
-          </button>
-        </div>
-      </section>
-    );
-  }
+  const renderedGames = visibleGames;
+  const hasGames = renderedGames.length > 0;
+  const listStateMessage = lobbyQuery.isLoading
+    ? t("lobby.loading")
+    : lobbyQuery.isError
+      ? messageFromError(lobbyQuery.error, t("lobby.errors.loadGames"))
+      : t("lobby.empty");
+  const gameStatusMessage = activeGame
+    ? t("lobby.status.activeGame", { name: activeGame.name })
+    : t("lobby.gameStatus");
+  const authStatusMessage = authenticatedUser
+    ? t("lobby.auth.loggedIn", { username: authenticatedUser.username })
+    : t("lobby.auth.loggedOut");
+  const focusNote = activeGame
+    ? t("lobby.focus.activeNote", { phase: phaseLabel(activeGame.phase) })
+    : authenticatedUser
+      ? t("lobby.focus.selectNote")
+      : t("lobby.focus.loginNote");
+  const loadMoreMessage = !games.length
+    ? ""
+    : canLoadMoreGames
+      ? t("lobby.loadMore.partial", {
+          visible: renderedGames.length,
+          total: games.length
+        })
+      : t("lobby.loadMore.complete", { total: games.length });
 
   return (
-    <section data-testid="react-shell-lobby-page">
-      <p className="status-label">{t("lobby.eyebrow")}</p>
-      <h2>{t("lobby.heading")}</h2>
-      <p className="status-copy">{t("lobby.copy")}</p>
-
-      {actionError ? (
-        <div
-          className="profile-query-state profile-query-state-error"
-          data-testid="react-shell-lobby-action-error"
-        >
-          <p className="metric-copy">{actionError}</p>
+    <div data-testid="react-shell-lobby-page">
+      <section className="session-browser panel campaign-shell" data-testid="game-lobby-shell">
+        <div className="session-browser-head campaign-hero">
+          <div className="session-browser-heading campaign-hero-copy">
+            <p className="eyebrow session-eyebrow">{t("lobby.eyebrow")}</p>
+            <h1>{t("lobby.heading")}</h1>
+            <p className="stage-copy">{t("lobby.copy")}</p>
+          </div>
         </div>
-      ) : null}
 
-      <div className="lobby-summary-grid">
-        <article className="placeholder-card lobby-summary-card">
-          <p className="status-label">{t("lobby.visibleSessions.label")}</p>
-          <strong>{games.length}</strong>
-          <span>{t("lobby.visibleSessions.copy")}</span>
-        </article>
-        <article className="placeholder-card lobby-summary-card">
-          <p className="status-label">{t("lobby.readySessions.label")}</p>
-          <strong>{readyGames}</strong>
-          <span>{t("lobby.readySessions.copy")}</span>
-        </article>
-        <article className="placeholder-card lobby-summary-card">
-          <p className="status-label">{t("lobby.focus.label")}</p>
-          <strong>{activeGame?.name || t("lobby.focus.value")}</strong>
-          <span>
-            {activeGame
-              ? t("lobby.focus.activeNote", { phase: phaseLabel(activeGame.phase) })
-              : t("lobby.focus.selectNote")}
-          </span>
-        </article>
-      </div>
+        <div className="content-meta-line lobby-meta-line campaign-status-line">
+          <span id="auth-status">{authStatusMessage}</span>
+          <span className="status-divider" aria-hidden="true" />
+          <span id="game-status">{gameStatusMessage}</span>
+        </div>
 
-      <div className="lobby-shell-grid">
-        <section className="placeholder-card lobby-list-panel">
-          <div className="card-header lobby-panel-header">
-            <div>
-              <p className="status-label">{t("lobby.availableSessions.heading")}</p>
-              <h3>{t("lobby.availableSessions.copy")}</h3>
-            </div>
-            <Link id="create-game-button" className="refresh-button" to={buildNewGamePath()}>
+        {actionError ? (
+          <div
+            className="session-feedback is-error"
+            data-testid="react-shell-lobby-action-error"
+          >
+            {actionError}
+          </div>
+        ) : null}
+
+        <div className="lobby-focus-band campaign-focus-grid">
+          <article className="lobby-focus-card campaign-focus-card">
+            <span className="lobby-command-label">{t("lobby.focus.label")}</span>
+            <strong id="lobby-active-focus">{activeGame?.name || t("lobby.focus.value")}</strong>
+            <p id="lobby-focus-note">{focusNote}</p>
+          </article>
+          <div className="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
+            <Link id="create-game-button" className="ghost-button lobby-create-button" to={buildNewGamePath()}>
               {t("lobby.createGame")}
             </Link>
+            <button
+              type="button"
+              id="open-game-button"
+              className="ghost-button"
+              onClick={() => void handleOpenSelectedGame()}
+              disabled={!selectedGame || actionPending}
+              data-testid="react-shell-lobby-open-selected"
+            >
+              {openMutation.isPending ? "Opening..." : t("lobby.openSelected")}
+            </button>
           </div>
+        </div>
 
-          {!games.length ? (
-            <div className="lobby-empty-state" data-testid="react-shell-lobby-empty">
-              <p className="metric-copy">{t("lobby.empty")}</p>
-              <div className="shell-actions">
-                <Link className="ghost-action" to={buildNewGamePath()}>
-                  {t("lobby.createGame")}
-                </Link>
+        <div className="lobby-command-strip" aria-label={t("lobby.overviewAria")}>
+          <article className="lobby-command-card lobby-command-card-accent">
+            <span className="lobby-command-label">{t("lobby.visibleSessions.label")}</span>
+            <strong id="lobby-total-games">{renderedGames.length}</strong>
+            <p>{t("lobby.visibleSessions.copy")}</p>
+          </article>
+          <article className="lobby-command-card">
+            <span className="lobby-command-label">{t("lobby.readySessions.label")}</span>
+            <strong id="lobby-ready-games">{readyGames}</strong>
+            <p>{t("lobby.readySessions.copy")}</p>
+          </article>
+          <article className="lobby-command-card">
+            <span className="lobby-command-label">{t("lobby.readiness.label")}</span>
+            <strong>{t("lobby.readiness.value")}</strong>
+            <p>{t("lobby.readiness.copy")}</p>
+          </article>
+        </div>
+
+        <div className="session-browser-grid">
+          <div className="session-list-panel">
+            <div className="section-title-row session-list-title-row">
+              <div>
+                <h3>{t("lobby.availableSessions.heading")}</h3>
+                <p className="stage-copy">{t("lobby.availableSessions.copy")}</p>
               </div>
             </div>
-          ) : (
+            <div className="session-list-header session-row session-row-head">
+              <span>{t("lobby.table.game")}</span>
+              <span>{t("lobby.table.map")}</span>
+              <span>{t("lobby.table.status")}</span>
+              <span>{t("lobby.table.players")}</span>
+              <span>{t("lobby.table.updated")}</span>
+            </div>
             <div
-              id="game-session-list"
-              className="lobby-session-list"
-              data-testid="react-shell-lobby-list"
+              id="game-list-state"
+              className={`session-feedback${hasGames ? " is-hidden" : ""}${lobbyQuery.isError ? " is-error" : ""}`}
             >
-              {visibleGames.map((game) => (
+              {listStateMessage}
+            </div>
+            <div id="game-session-list" className="session-list" data-testid="game-session-list">
+              {renderedGames.map((game) => (
                 <button
                   key={game.id}
                   type="button"
-                  className={`lobby-session-row${selectedGame?.id === game.id ? " is-selected" : ""}`}
+                  className={`session-row session-row-button${selectedGame?.id === game.id ? " is-selected" : ""}`}
                   onClick={() => setSelectedGameId(game.id)}
                   data-game-id={game.id}
-                  data-open-game-id={game.id}
                   data-testid={`react-shell-lobby-row-${game.id}`}
                 >
-                  <div className="lobby-session-primary">
-                    <strong>{game.name}</strong>
-                    <span>{game.mapName || game.mapId || t("common.classicMini")}</span>
-                  </div>
-
-                  <div className="lobby-session-meta">
-                    <span className="status-pill">{phaseLabel(game.phase)}</span>
-                    <span>{gameCapacityLabel(game)}</span>
-                    <span>{formatUpdatedTime(game.updatedAt)}</span>
-                  </div>
+                  <span className="session-primary" data-cell-label={t("lobby.table.game")}>
+                    <span className="session-name" data-open-game-id={game.id}>
+                      {game.name}
+                    </span>
+                  </span>
+                  <span className="session-cell-muted" data-cell-label={t("lobby.table.map")}>
+                    {game.mapName || game.mapId || t("common.classicMini")}
+                  </span>
+                  <span
+                    className={`badge${game.id === activeGameId ? " accent" : ""}`}
+                    data-cell-label={t("lobby.table.status")}
+                  >
+                    {phaseLabel(game.phase)}
+                  </span>
+                  <span className="session-cell-muted" data-cell-label={t("lobby.table.players")}>
+                    {gameCapacityLabel(game)}
+                  </span>
+                  <span className="session-cell-muted" data-cell-label={t("lobby.table.updated")}>
+                    {formatUpdatedTime(game.updatedAt)}
+                  </span>
                 </button>
               ))}
-
-              <div
-                id="game-list-load-more-state"
-                ref={loadMoreRef}
-                className="lobby-load-more-state"
-                data-testid="react-shell-lobby-load-more"
-              >
-                {canLoadMoreGames
-                  ? t("lobby.loadMore.partial", {
-                      visible: visibleGames.length,
-                      total: games.length
-                    })
-                  : t("lobby.loadMore.complete", { total: games.length })}
-              </div>
             </div>
-          )}
-        </section>
-
-        <section
-          className="placeholder-card lobby-detail-panel"
-          id="game-session-details"
-          data-testid="react-shell-lobby-details"
-        >
-          <div className="card-header lobby-panel-header">
-            <div>
-              <p className="status-label">{t("lobby.details.heading")}</p>
-              <h3>{selectedGame?.name || t("lobby.details.emptyBadge")}</h3>
+            <div
+              id="game-list-load-more-state"
+              ref={loadMoreRef}
+              className={`session-list-load-more${hasGames ? "" : " is-hidden"}`}
+              data-testid="react-shell-lobby-load-more"
+            >
+              {loadMoreMessage}
             </div>
-            {selectedGame ? (
-              <span id="selected-game-status" className="status-pill">
-                {phaseLabel(selectedGame.phase)}
-              </span>
-            ) : null}
           </div>
 
-          {!selectedGame ? (
-            <div className="lobby-empty-state">
-              <p className="metric-copy">{t("lobby.details.emptyExtended")}</p>
+          <aside className="session-detail-panel" data-testid="game-session-details">
+            <div className="section-title-row">
+              <div>
+                <h3>{t("lobby.details.heading")}</h3>
+                <p className="stage-copy">{t("lobby.details.copy")}</p>
+              </div>
+              <span id="selected-game-status" className="badge">
+                {selectedGame ? phaseLabel(selectedGame.phase) : t("lobby.details.emptyBadge")}
+              </span>
             </div>
-          ) : (
-            <>
-              <p className="metric-copy">
-                {t("lobby.details.summary", {
-                  readiness: readinessLabel(selectedGame),
-                  phase: phaseLabel(selectedGame.phase)
-                })}
-              </p>
-
-              <div className="lobby-detail-grid">
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.map")}</span>
-                  <strong>
-                    {selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}
-                  </strong>
-                </article>
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.playersPresent")}</span>
-                  <strong>{gameCapacityLabel(selectedGame)}</strong>
-                </article>
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.status")}</span>
-                  <strong>{readinessLabel(selectedGame)}</strong>
-                </article>
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.updated")}</span>
-                  <strong>{formatUpdatedTime(selectedGame.updatedAt)}</strong>
-                </article>
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.profiles")}</span>
-                  <strong>{summarizeSelectedProfiles(selectedGame)}</strong>
-                </article>
-                <article className="lobby-detail-item">
-                  <span>{t("lobby.details.modules")}</span>
-                  <strong>{summarizeActiveModules(selectedGame)}</strong>
-                </article>
-              </div>
-
-              <p className="metric-copy">{t("lobby.details.note")}</p>
-
-              <div className="shell-actions">
-                <button
-                  id="open-game-button"
-                  type="button"
-                  className="refresh-button"
-                  onClick={() => void handleOpenSelectedGame()}
-                  disabled={actionPending}
-                  data-testid="react-shell-lobby-open-selected"
-                >
-                  {openMutation.isPending ? "Opening..." : t("lobby.openSelected")}
-                </button>
-
-                {canJoinGame(selectedGame) ? (
-                  <button
-                    type="button"
-                    className="ghost-action"
-                    onClick={() => void handleJoinSelectedGame()}
-                    disabled={actionPending}
-                    data-testid="react-shell-lobby-join-selected"
-                  >
-                    {joinMutation.isPending ? "Joining..." : t("lobby.details.joinOpen")}
-                  </button>
-                ) : null}
-              </div>
-            </>
-          )}
-        </section>
-      </div>
-    </section>
+            <div
+              id="game-session-details"
+              className="session-details-card"
+              data-testid="react-shell-lobby-details"
+            >
+              {selectedGame ? (
+                <>
+                  <div className="session-detail-hero">
+                    <p className="session-detail-kicker">{t("lobby.details.selectedKicker")}</p>
+                    <h4 className="session-detail-title">{selectedGame.name}</h4>
+                    <p className="session-detail-copy">
+                      {t("lobby.details.summary", {
+                        readiness: readinessLabel(selectedGame),
+                        phase: phaseLabel(selectedGame.phase)
+                      })}
+                    </p>
+                  </div>
+                  <div className="session-detail-grid">
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.name")}</span>
+                      <strong>{selectedGame.name}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.id")}</span>
+                      <strong>{selectedGame.id}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.status")}</span>
+                      <strong>{phaseLabel(selectedGame.phase)}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.playersPresent")}</span>
+                      <strong>{gameCapacityLabel(selectedGame)}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.playersConfigured")}</span>
+                      <strong>{selectedGame.totalPlayers || t("common.notAvailable")}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.map")}</span>
+                      <strong>{selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.ai")}</span>
+                      <strong>{selectedGame.aiCount || 0}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.preset")}</span>
+                      <strong>{selectedGame.gamePresetId || t("common.notAvailable")}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.profiles")}</span>
+                      <strong>{summarizeSelectedProfiles(selectedGame)}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.modules")}</span>
+                      <strong>{summarizeActiveModules(selectedGame)}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.updated")}</span>
+                      <strong>{formatUpdatedTime(selectedGame.updatedAt)}</strong>
+                    </div>
+                    <div className="session-detail-item">
+                      <span>{t("lobby.details.focus")}</span>
+                      <strong>
+                        {selectedGame.id === activeGameId
+                          ? t("lobby.focus.openSession")
+                          : t("lobby.focus.available")}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="session-detail-note">{t("lobby.details.note")}</div>
+                  <div className="session-detail-actions">
+                    <button
+                      type="button"
+                      id="open-selected-inline"
+                      onClick={() => void handleOpenSelectedGame()}
+                      disabled={actionPending}
+                    >
+                      {openMutation.isPending ? "Opening..." : t("lobby.details.open")}
+                    </button>
+                    {canJoinGame(selectedGame) ? (
+                      <button
+                        type="button"
+                        id="join-selected-inline"
+                        className="ghost-button"
+                        onClick={() => void handleJoinSelectedGame()}
+                        disabled={actionPending}
+                        data-testid="react-shell-lobby-join-selected"
+                      >
+                        {joinMutation.isPending ? "Joining..." : t("lobby.details.joinOpen")}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <div className="session-empty-copy">{t("lobby.details.emptyExtended")}</div>
+              )}
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
   );
 }

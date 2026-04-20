@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,7 @@ import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t } from "@frontend-i18n";
 
+import { useAuth } from "@react-shell/auth";
 import { openReactGame } from "@react-shell/legacy-game-handoff";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildLobbyPath } from "@react-shell/public-auth-paths";
@@ -91,6 +92,44 @@ function selectedRuleSet(
   ruleSetId: string
 ): RuleSetSummary | null {
   return options?.ruleSets?.find((entry) => entry.id === ruleSetId) || null;
+}
+
+function selectedMap(options: GameOptionsResponse | undefined, mapId: string) {
+  return options?.maps?.find((entry) => entry.id === mapId) || null;
+}
+
+function selectedDiceRuleSet(options: GameOptionsResponse | undefined, ruleSetId: string) {
+  return options?.diceRuleSets?.find((entry) => entry.id === ruleSetId) || null;
+}
+
+function selectedVictoryRuleSet(options: GameOptionsResponse | undefined, ruleSetId: string) {
+  return options?.victoryRuleSets?.find((entry) => entry.id === ruleSetId) || null;
+}
+
+function selectedTheme(options: GameOptionsResponse | undefined, themeId: string) {
+  return options?.themes?.find((entry) => entry.id === themeId) || null;
+}
+
+function selectedPieceSkin(options: GameOptionsResponse | undefined, pieceSkinId: string) {
+  return options?.pieceSkins?.find((entry) => entry.id === pieceSkinId) || null;
+}
+
+function diceRuleSetLabel(
+  diceRuleSet:
+    | ReturnType<typeof selectedDiceRuleSet>
+    | ReturnType<typeof selectedDiceRuleSet>
+    | null
+    | undefined
+): string {
+  if (!diceRuleSet) {
+    return t("common.notAvailable");
+  }
+
+  return `${diceRuleSet.name} (${diceRuleSet.attackerMaxDice}/${diceRuleSet.defenderMaxDice})`;
+}
+
+function namedOptionLabel(option: { name: string } | null | undefined): string {
+  return option?.name || t("common.notAvailable");
 }
 
 function applyContentPackDefaults(
@@ -289,7 +328,9 @@ function setLobbyGamesCache(
 }
 
 export function LobbyCreateRoute() {
+  const { state } = useAuth();
   const queryClient = useQueryClient();
+  const mapSelectRef = useRef<HTMLSelectElement | null>(null);
   const [formState, setFormState] = useState<NewGameFormState | null>(null);
   const [submitError, setSubmitError] = useState("");
 
@@ -325,24 +366,55 @@ export function LobbyCreateRoute() {
     options?.uiProfiles,
     formState?.selectedModuleIds || []
   );
-  const selectedRuleSetName =
-    options?.ruleSets.find((entry) => entry.id === formState?.ruleSetId)?.name || "";
-  const selectedDiceRuleSetName =
-    options?.diceRuleSets.find((entry) => entry.id === formState?.diceRuleSetId)?.name || "";
-  const selectedVictoryRuleSetName =
-    options?.victoryRuleSets.find((entry) => entry.id === formState?.victoryRuleSetId)?.name || "";
-  const selectedThemeName =
-    options?.themes.find((entry) => entry.id === formState?.themeId)?.name || "";
-  const selectedPieceSkinName =
-    options?.pieceSkins.find((entry) => entry.id === formState?.pieceSkinId)?.name || "";
+  const currentContentPack = formState ? selectedContentPack(options, formState.contentPackId) : null;
+  const currentRuleSet = formState ? selectedRuleSet(options, formState.ruleSetId) : null;
+  const currentMap = formState ? selectedMap(options, formState.mapId) : null;
+  const currentDiceRuleSet = formState
+    ? selectedDiceRuleSet(
+        options,
+        formState.customizeOptions
+          ? formState.diceRuleSetId
+          : currentRuleSet?.defaults.diceRuleSetId || formState.diceRuleSetId
+      )
+    : null;
+  const currentVictoryRuleSet = formState
+    ? selectedVictoryRuleSet(
+        options,
+        formState.customizeOptions
+          ? formState.victoryRuleSetId
+          : currentRuleSet?.defaults.victoryRuleSetId || formState.victoryRuleSetId
+      )
+    : null;
+  const currentTheme = formState
+    ? selectedTheme(
+        options,
+        formState.customizeOptions
+          ? formState.themeId
+          : currentRuleSet?.defaults.themeId || formState.themeId
+      )
+    : null;
+  const currentPieceSkin = formState
+    ? selectedPieceSkin(
+        options,
+        formState.customizeOptions
+          ? formState.pieceSkinId
+          : currentRuleSet?.defaults.pieceSkinId || formState.pieceSkinId
+      )
+    : null;
   const setupSummary = [
-    selectedDiceRuleSetName || selectedRuleSetName,
-    selectedVictoryRuleSetName,
-    selectedThemeName,
-    selectedPieceSkinName
+    diceRuleSetLabel(currentDiceRuleSet),
+    namedOptionLabel(currentVictoryRuleSet),
+    namedOptionLabel(currentTheme),
+    namedOptionLabel(currentPieceSkin)
   ]
     .filter(Boolean)
     .join(" · ");
+  const authenticatedUser = state.status === "authenticated" ? state.user : null;
+  const submitDisabled = createMutation.isPending || !authenticatedUser;
+
+  useEffect(() => {
+    document.title = t("newGame.title");
+  }, []);
 
   useEffect(() => {
     if (!options || formState) {
@@ -362,13 +434,23 @@ export function LobbyCreateRoute() {
       return;
     }
 
+    if (!authenticatedUser) {
+      setSubmitError(t("newGame.errors.invalidSession"));
+      return;
+    }
+
     setSubmitError("");
+    const submittedMapId = mapSelectRef.current?.value || formState.mapId;
+    if (!options?.maps.some((entry) => entry.id === submittedMapId)) {
+      setSubmitError(t("newGame.errors.unsupportedMap"));
+      return;
+    }
 
     const request: CreateGameRequest = {
       ...(formState.name.trim() ? { name: formState.name.trim() } : {}),
       ...(formState.contentPackId ? { contentPackId: formState.contentPackId } : {}),
       ...(formState.ruleSetId ? { ruleSetId: formState.ruleSetId } : {}),
-      ...(formState.mapId ? { mapId: formState.mapId } : {}),
+      ...(submittedMapId ? { mapId: submittedMapId } : {}),
       ...(formState.diceRuleSetId ? { diceRuleSetId: formState.diceRuleSetId } : {}),
       ...(formState.victoryRuleSetId ? { victoryRuleSetId: formState.victoryRuleSetId } : {}),
       ...(formState.themeId ? { themeId: formState.themeId } : {}),
@@ -405,544 +487,639 @@ export function LobbyCreateRoute() {
     }
   }
 
-  if (gameOptionsQuery.isLoading && !options) {
-    return (
-      <section className="status-panel" data-testid="react-shell-new-game-loading">
-        <p className="status-label">{t("newGame.eyebrow")}</p>
-        <h2>{t("newGame.heading")}</h2>
-        <p className="status-copy">{t("newGame.errors.loadOptions")}</p>
-      </section>
-    );
-  }
-
-  if (gameOptionsQuery.isError && !options) {
-    return (
-      <section className="status-panel status-panel-error" data-testid="react-shell-new-game-error">
-        <p className="status-label">{t("newGame.eyebrow")}</p>
-        <h2>{t("newGame.heading")}</h2>
-        <p className="status-copy">
-          {messageFromError(gameOptionsQuery.error, t("newGame.errors.loadOptions"))}
-        </p>
-        <div className="shell-actions">
-          <button
-            type="button"
-            className="refresh-button"
-            onClick={() => void gameOptionsQuery.refetch()}
-          >
-            Retry setup
-          </button>
-        </div>
-      </section>
-    );
-  }
-
-  if (!options || !formState) {
-    return null;
-  }
-
   return (
     <section data-testid="react-shell-lobby-create-page">
-      <p className="status-label">{t("newGame.eyebrow")}</p>
-      <h2>{t("newGame.heading")}</h2>
-      <p className="status-copy">{t("newGame.copy")}</p>
+      <section className="panel new-game-shell campaign-shell" data-testid="new-game-shell">
+        <div className="section-title-row campaign-hero">
+          <div className="campaign-hero-copy">
+            <p className="eyebrow">{t("newGame.eyebrow")}</p>
+            <h1>{t("newGame.heading")}</h1>
+            <p className="stage-copy">{t("newGame.copy")}</p>
+          </div>
+          <div className="content-meta-line new-game-meta-line campaign-status-line">
+            <span id="setup-auth-status">
+              {authenticatedUser
+                ? t("newGame.auth.commander", { username: authenticatedUser.username })
+                : t("newGame.authStatus")}
+            </span>
+          </div>
+        </div>
 
-      {submitError ? (
+        <div className="new-game-brief campaign-focus-grid">
+          <article className="new-game-brief-card new-game-brief-card-accent campaign-focus-card">
+            <span className="lobby-command-label">{t("newGame.goal.label")}</span>
+            <strong>{t("newGame.goal.title")}</strong>
+            <p>{t("newGame.goal.copy")}</p>
+          </article>
+          <article className="new-game-brief-card">
+            <span className="lobby-command-label">{t("newGame.sequence.label")}</span>
+            <ul className="new-game-sequence">
+              <li>{t("newGame.sequence.step1")}</li>
+              <li>{t("newGame.sequence.step2")}</li>
+              <li>{t("newGame.sequence.step3")}</li>
+            </ul>
+          </article>
+        </div>
+
         <div
           id="new-game-feedback"
-          className="profile-query-state profile-query-state-error"
-          data-testid="react-shell-new-game-submit-error"
+          className={`session-feedback${submitError ? " is-error" : " is-hidden"}`}
+          data-testid={submitError ? "react-shell-new-game-submit-error" : undefined}
         >
-          <p className="metric-copy">{submitError}</p>
+          {submitError}
         </div>
-      ) : null}
 
-      <form
-        className="shell-form new-game-form"
-        data-testid="new-game-shell"
-        onSubmit={(event) => void handleSubmit(event)}
-      >
-        <div className="new-game-grid">
-          <section className="placeholder-card new-game-card">
-            <div className="card-header new-game-card-header">
+        {gameOptionsQuery.isLoading && !options ? (
+          <section className="new-game-panel" data-testid="react-shell-new-game-loading">
+            <div className="section-title-row compact-row">
               <div>
-                <p className="status-label">{t("newGame.settings.heading")}</p>
-                <h3>{t("newGame.settings.copy")}</h3>
+                <h3>{t("newGame.settings.heading")}</h3>
+                <p className="stage-copy">{t("newGame.errors.loadOptions")}</p>
               </div>
-              <Link className="ghost-action" to={buildLobbyPath()}>
-                {t("lobby.heading")}
-              </Link>
-            </div>
-
-            <label className="shell-field">
-              <span>{t("newGame.name.label")}</span>
-              <input
-                id="setup-game-name"
-                value={formState.name}
-                placeholder={t("newGame.name.placeholder")}
-                onChange={(event) =>
-                  updateFormState({
-                    ...formState,
-                    name: event.target.value
-                  })
-                }
-                data-testid="react-shell-new-game-name"
-              />
-            </label>
-
-            <label className="shell-field">
-              <span>{t("newGame.contentPack.label")}</span>
-              <select
-                value={formState.contentPackId}
-                onChange={(event) => {
-                  const nextState = applyContentPackDefaults(
-                    formState,
-                    options,
-                    event.target.value
-                  );
-                  updateFormState({
-                    ...nextState,
-                    gamePresetId: ""
-                  });
-                }}
-                data-testid="react-shell-new-game-content-pack"
-              >
-                {(options.contentPacks || []).map((contentPack) => (
-                  <option key={contentPack.id} value={contentPack.id}>
-                    {contentPack.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="shell-field">
-              <span>{t("newGame.ruleset.label")}</span>
-              <select
-                id="setup-ruleset"
-                value={formState.ruleSetId}
-                onChange={(event) => {
-                  const nextState = applyRuleSetDefaults(formState, options, event.target.value);
-                  updateFormState({
-                    ...nextState,
-                    gamePresetId: ""
-                  });
-                }}
-                data-testid="react-shell-new-game-ruleset"
-              >
-                {options.ruleSets.map((ruleSet) => (
-                  <option key={ruleSet.id} value={ruleSet.id}>
-                    {ruleSet.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="shell-field">
-              <span>{t("newGame.map.label")}</span>
-              <select
-                id="setup-map"
-                value={formState.mapId}
-                onChange={(event) =>
-                  updateFormState({
-                    ...formState,
-                    mapId: event.target.value,
-                    gamePresetId: ""
-                  })
-                }
-                data-testid="react-shell-new-game-map"
-              >
-                {options.maps.map((map) => (
-                  <option key={map.id} value={map.id}>
-                    {map.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="new-game-inline-grid">
-              <label className="shell-field">
-                <span>{t("newGame.totalPlayers.label")}</span>
-                <select
-                  id="setup-total-players"
-                  value={String(formState.totalPlayers)}
-                  onChange={(event) =>
-                    updateFormState({
-                      ...formState,
-                      totalPlayers: Number(event.target.value),
-                      playerTypes: ensurePlayerTypes(
-                        formState.playerTypes,
-                        Number(event.target.value)
-                      )
-                    })
-                  }
-                  data-testid="react-shell-new-game-total-players"
-                >
-                  {Array.from(
-                    {
-                      length: Math.max(
-                        (options.playerRange?.max || 4) - (options.playerRange?.min || 2) + 1,
-                        1
-                      )
-                    },
-                    (_, index) => (options.playerRange?.min || 2) + index
-                  ).map((playerCount) => (
-                    <option key={playerCount} value={playerCount}>
-                      {playerCount}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="shell-field">
-                <span>{t("newGame.turnTimeout.label")}</span>
-                <select
-                  value={formState.turnTimeoutHours}
-                  onChange={(event) =>
-                    updateFormState({
-                      ...formState,
-                      turnTimeoutHours: event.target.value
-                    })
-                  }
-                  data-testid="react-shell-new-game-turn-timeout"
-                >
-                  {options.turnTimeoutHoursOptions.map((hours) => (
-                    <option key={hours} value={String(hours)}>
-                      {t("newGame.turnTimeout.option", { hours })}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
           </section>
-
-          <section className="placeholder-card new-game-card">
-            <div className="card-header new-game-card-header">
+        ) : gameOptionsQuery.isError && !options ? (
+          <section className="new-game-panel" data-testid="react-shell-new-game-error">
+            <div className="section-title-row compact-row">
               <div>
-                <p className="status-label">{t("newGame.options.heading")}</p>
-                <h3>{t("newGame.options.copy")}</h3>
+                <h3>{t("newGame.settings.heading")}</h3>
+                <p className="stage-copy">
+                  {messageFromError(gameOptionsQuery.error, t("newGame.errors.loadOptions"))}
+                </p>
               </div>
-              <label className="new-game-toggle">
-                <input
-                  id="setup-customize-options"
-                  type="checkbox"
-                  checked={formState.customizeOptions}
-                  onChange={(event) =>
-                    updateFormState({
-                      ...formState,
-                      customizeOptions: event.target.checked
-                    })
-                  }
-                  data-testid="react-shell-new-game-customize-options"
-                />
-                <span>{t("newGame.options.customizeLabel")}</span>
-              </label>
             </div>
-
-            {formState.customizeOptions ? (
-              <div className="new-game-advanced-grid">
-                <label className="shell-field">
-                  <span>{t("newGame.dice.label")}</span>
-                  <select
-                    id="setup-dice-ruleset"
-                    value={formState.diceRuleSetId}
-                    onChange={(event) =>
-                      updateFormState({
-                        ...formState,
-                        diceRuleSetId: event.target.value,
-                        gamePresetId: ""
-                      })
-                    }
-                    data-testid="react-shell-new-game-dice"
-                  >
-                    {options.diceRuleSets.map((ruleSet) => (
-                      <option key={ruleSet.id} value={ruleSet.id}>
-                        {ruleSet.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="shell-field">
-                  <span>{t("newGame.victory.label")}</span>
-                  <select
-                    id="setup-victory-ruleset"
-                    value={formState.victoryRuleSetId}
-                    onChange={(event) =>
-                      updateFormState({
-                        ...formState,
-                        victoryRuleSetId: event.target.value,
-                        gamePresetId: ""
-                      })
-                    }
-                    data-testid="react-shell-new-game-victory"
-                  >
-                    {options.victoryRuleSets.map((ruleSet) => (
-                      <option key={ruleSet.id} value={ruleSet.id}>
-                        {ruleSet.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="shell-field">
-                  <span>{t("newGame.theme.label")}</span>
-                  <select
-                    id="setup-theme"
-                    value={formState.themeId}
-                    onChange={(event) =>
-                      updateFormState({
-                        ...formState,
-                        themeId: event.target.value,
-                        gamePresetId: ""
-                      })
-                    }
-                    data-testid="react-shell-new-game-theme"
-                  >
-                    {options.themes.map((theme) => (
-                      <option key={theme.id} value={theme.id}>
-                        {theme.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="shell-field">
-                  <span>{t("newGame.pieceSkin.label")}</span>
-                  <select
-                    id="setup-piece-skin"
-                    value={formState.pieceSkinId}
-                    onChange={(event) =>
-                      updateFormState({
-                        ...formState,
-                        pieceSkinId: event.target.value,
-                        gamePresetId: ""
-                      })
-                    }
-                    data-testid="react-shell-new-game-piece-skin"
-                  >
-                    {options.pieceSkins.map((pieceSkin) => (
-                      <option key={pieceSkin.id} value={pieceSkin.id}>
-                        {pieceSkin.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            ) : (
-              <p className="metric-copy">{t("newGame.options.copy")}</p>
-            )}
-
-            <p id="setup-ruleset-summary" className="metric-copy">
-              {setupSummary || t("newGame.options.copy")}
-            </p>
-
-            {options.gamePresets?.length ||
-            availableModules.length ||
-            contentProfiles.length ||
-            gameplayProfiles.length ||
-            uiProfiles.length ? (
-              <div className="new-game-modules-stack">
-                {options.gamePresets?.length ? (
-                  <label className="shell-field">
-                    <span>Preset</span>
-                    <select
-                      value={formState.gamePresetId}
-                      onChange={(event) =>
-                        updateFormState(applyGamePreset(formState, options, event.target.value))
-                      }
-                      data-testid="react-shell-new-game-preset"
-                    >
-                      <option value="">{t("common.notAvailable")}</option>
-                      {options.gamePresets.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {preset.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-
-                {availableModules.length ? (
-                  <div className="new-game-module-list" data-testid="react-shell-new-game-modules">
-                    {availableModules.map((moduleEntry) => {
-                      const isChecked = formState.selectedModuleIds.includes(moduleEntry.id);
-                      return (
-                        <label className="new-game-module-item" key={moduleEntry.id}>
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(event) => {
-                              const nextSelectedModuleIds = event.target.checked
-                                ? [...formState.selectedModuleIds, moduleEntry.id]
-                                : formState.selectedModuleIds.filter(
-                                    (entry) => entry !== moduleEntry.id
-                                  );
-                              updateFormState({
-                                ...formState,
-                                selectedModuleIds: nextSelectedModuleIds,
-                                gamePresetId: ""
-                              });
-                            }}
-                            data-testid={`react-shell-new-game-module-${moduleEntry.id}`}
-                          />
-                          <span>
-                            <strong>{moduleEntry.displayName}</strong>
-                            <small>
-                              {moduleEntry.description || moduleEntry.kind || moduleEntry.id}
-                            </small>
-                          </span>
-                        </label>
-                      );
-                    })}
+            <div className="new-game-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => void gameOptionsQuery.refetch()}
+              >
+                Retry setup
+              </button>
+            </div>
+          </section>
+        ) : options && formState ? (
+          <>
+            <form id="new-game-form" className="new-game-grid" onSubmit={(event) => void handleSubmit(event)}>
+              <section className="new-game-panel">
+                <div className="section-title-row compact-row">
+                  <div>
+                    <h3>{t("newGame.settings.heading")}</h3>
+                    <p className="stage-copy">{t("newGame.settings.copy")}</p>
                   </div>
-                ) : null}
-
-                <div className="new-game-advanced-grid">
-                  <label className="shell-field">
-                    <span>Content profile</span>
-                    <select
-                      value={formState.contentProfileId}
-                      onChange={(event) =>
-                        updateFormState({
-                          ...formState,
-                          contentProfileId: event.target.value,
-                          gamePresetId: ""
-                        })
-                      }
-                      data-testid="react-shell-new-game-content-profile"
-                    >
-                      <option value="">{t("common.notAvailable")}</option>
-                      {contentProfiles.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="shell-field">
-                    <span>Gameplay profile</span>
-                    <select
-                      value={formState.gameplayProfileId}
-                      onChange={(event) =>
-                        updateFormState({
-                          ...formState,
-                          gameplayProfileId: event.target.value,
-                          gamePresetId: ""
-                        })
-                      }
-                      data-testid="react-shell-new-game-gameplay-profile"
-                    >
-                      <option value="">{t("common.notAvailable")}</option>
-                      {gameplayProfiles.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="shell-field">
-                    <span>UI profile</span>
-                    <select
-                      value={formState.uiProfileId}
-                      onChange={(event) =>
-                        updateFormState({
-                          ...formState,
-                          uiProfileId: event.target.value,
-                          gamePresetId: ""
-                        })
-                      }
-                      data-testid="react-shell-new-game-ui-profile"
-                    >
-                      <option value="">{t("common.notAvailable")}</option>
-                      {uiProfiles.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                 </div>
-              </div>
-            ) : null}
-          </section>
-        </div>
-
-        <section className="placeholder-card new-game-card">
-          <div className="card-header new-game-card-header">
-            <div>
-              <p className="status-label">{t("newGame.playerSlots.heading")}</p>
-              <h3>{t("newGame.playerSlots.copy")}</h3>
-            </div>
-            <span className="status-pill">{formState.totalPlayers}</span>
-          </div>
-
-          <div className="new-game-slot-grid">
-            {ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
-              (playerType, index) => (
-                <article
-                  className="new-game-slot-card"
-                  data-slot-index={index}
-                  key={`slot-${index + 1}`}
-                >
-                  <div className="new-game-slot-head">
-                    <strong>{t("newGame.slot.playerLabel", { number: index + 1 })}</strong>
-                    {index === 0 ? (
-                      <span className="status-pill">{t("newGame.slot.creatorBadge")}</span>
-                    ) : null}
-                  </div>
-
-                  {index === 0 ? (
-                    <div className="new-game-slot-copy">
-                      <span>{t("newGame.slot.humanOption")}</span>
-                      <small>{playerSlotDescription(playerType, index)}</small>
-                    </div>
+                <label className="field-stack">
+                  <span>{t("newGame.name.label")}</span>
+                  <input
+                    id="setup-game-name"
+                    maxLength={80}
+                    value={formState.name}
+                    placeholder={t("newGame.name.placeholder")}
+                    onChange={(event) =>
+                      updateFormState({
+                        ...formState,
+                        name: event.target.value
+                      })
+                    }
+                    data-testid="react-shell-new-game-name"
+                  />
+                </label>
+                <label className="field-stack">
+                  <span>{t("newGame.contentPack.label")}</span>
+                  <select
+                    id="setup-content-pack"
+                    value={formState.contentPackId}
+                    onChange={(event) => {
+                      const nextState = applyContentPackDefaults(formState, options, event.target.value);
+                      updateFormState({
+                        ...nextState,
+                        gamePresetId: ""
+                      });
+                    }}
+                    data-testid="react-shell-new-game-content-pack"
+                  >
+                    {(options.contentPacks || []).map((contentPack) => (
+                      <option key={contentPack.id} value={contentPack.id}>
+                        {contentPack.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div id="setup-content-pack-summary" className="setup-ruleset-card" aria-live="polite">
+                  {currentContentPack ? (
+                    <>
+                      <div className="map-setup-card-head">
+                        <strong>{currentContentPack.name}</strong>
+                        <span className="badge">
+                          {selectedMap(options, currentContentPack.defaultMapId || "")?.name ||
+                            currentContentPack.defaultMapId ||
+                            t("common.notAvailable")}
+                        </span>
+                      </div>
+                      <p className="map-setup-copy">
+                        {t("newGame.contentPack.summary", {
+                          description: currentContentPack.description,
+                          mapName:
+                            selectedMap(options, currentContentPack.defaultMapId || "")?.name ||
+                            currentContentPack.defaultMapId ||
+                            t("common.notAvailable"),
+                          dice: diceRuleSetLabel(
+                            selectedDiceRuleSet(
+                              options,
+                              currentContentPack.defaultDiceRuleSetId || ""
+                            )
+                          )
+                        })}
+                      </p>
+                    </>
+                  ) : null}
+                </div>
+                <label className="field-stack">
+                  <span>{t("newGame.ruleset.label")}</span>
+                  <select
+                    id="setup-ruleset"
+                    value={formState.ruleSetId}
+                    onChange={(event) => {
+                      const nextState = applyRuleSetDefaults(formState, options, event.target.value);
+                      updateFormState({
+                        ...nextState,
+                        gamePresetId: ""
+                      });
+                    }}
+                    data-testid="react-shell-new-game-ruleset"
+                  >
+                    {options.ruleSets.map((ruleSet) => (
+                      <option key={ruleSet.id} value={ruleSet.id}>
+                        {ruleSet.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div id="setup-ruleset-summary" className="setup-ruleset-card" aria-live="polite">
+                  {currentRuleSet ? (
+                    <>
+                      <div className="map-setup-card-head">
+                        <strong>{currentRuleSet.name}</strong>
+                        <span className="badge">{diceRuleSetLabel(currentDiceRuleSet)}</span>
+                      </div>
+                      <p className="map-setup-copy">
+                        {t(
+                          formState.customizeOptions
+                            ? "newGame.ruleset.summary.custom"
+                            : "newGame.ruleset.summary.default",
+                          {
+                            ruleset: currentRuleSet.name,
+                            dice: diceRuleSetLabel(currentDiceRuleSet)
+                          }
+                        )}
+                      </p>
+                      <div className="session-detail-tags">
+                        <span className="badge">{namedOptionLabel(currentVictoryRuleSet)}</span>
+                        <span className="badge">{namedOptionLabel(currentTheme)}</span>
+                        <span className="badge">{namedOptionLabel(currentPieceSkin)}</span>
+                        <span className="badge">{currentMap?.name || t("common.notAvailable")}</span>
+                      </div>
+                      <p className="map-setup-copy">{setupSummary || t("newGame.options.copy")}</p>
+                    </>
                   ) : (
-                    <label className="shell-field">
-                      <span>{t("newGame.slot.typeLabel")}</span>
+                    setupSummary || t("newGame.options.copy")
+                  )}
+                </div>
+                <label className="field-stack">
+                  <span>{t("newGame.map.label")}</span>
+                  <select
+                    id="setup-map"
+                    ref={mapSelectRef}
+                    value={formState.mapId}
+                    onChange={(event) =>
+                      updateFormState({
+                        ...formState,
+                        mapId: event.target.value,
+                        gamePresetId: ""
+                      })
+                    }
+                    data-testid="react-shell-new-game-map"
+                  >
+                    {options.maps.map((map) => (
+                      <option key={map.id} value={map.id}>
+                        {map.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div id="setup-map-details" className="map-setup-card" aria-live="polite">
+                  {currentMap ? (
+                    <>
+                      <div className="map-setup-card-head">
+                        <strong>{currentMap.name}</strong>
+                        <span className="badge">
+                          {t("newGame.map.summary", {
+                            territoryCount: currentMap.territoryCount,
+                            continentCount: currentMap.continentCount
+                          })}
+                        </span>
+                      </div>
+                      <p className="map-setup-copy">{t("newGame.map.copy")}</p>
+                      <ul className="map-setup-bonus-list">
+                        {(currentMap.continentBonuses || []).map((continent) => (
+                          <li key={continent.name}>
+                            <span>{continent.name}</span>
+                            <strong>
+                              {t("newGame.map.bonusLine", {
+                                bonus: continent.bonus,
+                                territoryCount: continent.territoryCount
+                              })}
+                            </strong>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </div>
+                <section className="setup-options-stack" aria-labelledby="setup-options-heading">
+                  <div className="section-title-row compact-row">
+                    <div>
+                      <h4 id="setup-options-heading">{t("newGame.options.heading")}</h4>
+                      <p className="stage-copy">{t("newGame.options.copy")}</p>
+                    </div>
+                  </div>
+                  <label className="setup-options-toggle" htmlFor="setup-customize-options">
+                    <input
+                      id="setup-customize-options"
+                      type="checkbox"
+                      checked={formState.customizeOptions}
+                      onChange={(event) =>
+                        updateFormState({
+                          ...formState,
+                          customizeOptions: event.target.checked
+                        })
+                      }
+                      data-testid="react-shell-new-game-customize-options"
+                    />
+                    <span>{t("newGame.options.customizeLabel")}</span>
+                  </label>
+                  <div
+                    id="setup-advanced-options"
+                    className="setup-advanced-options"
+                    hidden={!formState.customizeOptions}
+                  >
+                    <label className="field-stack">
+                      <span>{t("newGame.dice.label")}</span>
                       <select
-                        data-role="type"
-                        value={playerType}
-                        onChange={(event) => {
-                          const nextPlayerTypes = ensurePlayerTypes(
-                            formState.playerTypes,
-                            formState.totalPlayers
-                          );
-                          nextPlayerTypes[index] = event.target.value;
+                        id="setup-dice-ruleset"
+                        value={formState.diceRuleSetId}
+                        onChange={(event) =>
                           updateFormState({
                             ...formState,
-                            playerTypes: nextPlayerTypes
-                          });
-                        }}
-                        data-testid={`react-shell-new-game-slot-${index + 1}`}
+                            diceRuleSetId: event.target.value,
+                            gamePresetId: ""
+                          })
+                        }
+                        data-testid="react-shell-new-game-dice"
                       >
-                        <option value="human">{t("newGame.slot.humanOption")}</option>
-                        <option value="ai">{t("newGame.slot.aiOption")}</option>
+                        {options.diceRuleSets.map((ruleSet) => (
+                          <option key={ruleSet.id} value={ruleSet.id}>
+                            {ruleSet.name}
+                          </option>
+                        ))}
                       </select>
-                      <small>{playerSlotDescription(playerType, index)}</small>
                     </label>
-                  )}
-                </article>
-              )
-            )}
-          </div>
+                    <label className="field-stack">
+                      <span>{t("newGame.victory.label")}</span>
+                      <select
+                        id="setup-victory-ruleset"
+                        value={formState.victoryRuleSetId}
+                        onChange={(event) =>
+                          updateFormState({
+                            ...formState,
+                            victoryRuleSetId: event.target.value,
+                            gamePresetId: ""
+                          })
+                        }
+                        data-testid="react-shell-new-game-victory"
+                      >
+                        {options.victoryRuleSets.map((ruleSet) => (
+                          <option key={ruleSet.id} value={ruleSet.id}>
+                            {ruleSet.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field-stack">
+                      <span>{t("newGame.theme.label")}</span>
+                      <select
+                        id="setup-theme"
+                        value={formState.themeId}
+                        onChange={(event) =>
+                          updateFormState({
+                            ...formState,
+                            themeId: event.target.value,
+                            gamePresetId: ""
+                          })
+                        }
+                        data-testid="react-shell-new-game-theme"
+                      >
+                        {options.themes.map((theme) => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field-stack">
+                      <span>{t("newGame.pieceSkin.label")}</span>
+                      <select
+                        id="setup-piece-skin"
+                        value={formState.pieceSkinId}
+                        onChange={(event) =>
+                          updateFormState({
+                            ...formState,
+                            pieceSkinId: event.target.value,
+                            gamePresetId: ""
+                          })
+                        }
+                        data-testid="react-shell-new-game-piece-skin"
+                      >
+                        {options.pieceSkins.map((pieceSkin) => (
+                          <option key={pieceSkin.id} value={pieceSkin.id}>
+                            {pieceSkin.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-          <div className="shell-actions">
-            <button
-              id="submit-new-game"
-              type="submit"
-              className="refresh-button"
-              disabled={createMutation.isPending}
-              data-testid="react-shell-new-game-submit"
-            >
-              {createMutation.isPending ? t("newGame.feedback.creating") : t("newGame.createOpen")}
-            </button>
-            <Link className="ghost-action" to={buildLobbyPath()}>
-              {t("lobby.heading")}
-            </Link>
-          </div>
-        </section>
-      </form>
+                    {options.gamePresets?.length ||
+                    availableModules.length ||
+                    contentProfiles.length ||
+                    gameplayProfiles.length ||
+                    uiProfiles.length ? (
+                      <div id="setup-module-options">
+                        {options.gamePresets?.length ? (
+                          <label className="field-stack">
+                            <span>Preset</span>
+                            <select
+                              id="setup-game-preset"
+                              value={formState.gamePresetId}
+                              onChange={(event) =>
+                                updateFormState(applyGamePreset(formState, options, event.target.value))
+                              }
+                              data-testid="react-shell-new-game-preset"
+                            >
+                              <option value="">{t("common.notAvailable")}</option>
+                              {options.gamePresets.map((preset) => (
+                                <option key={preset.id} value={preset.id}>
+                                  {preset.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ) : null}
+
+                        {availableModules.length ? (
+                          <div
+                            className="new-game-module-list"
+                            data-testid="react-shell-new-game-modules"
+                          >
+                            {availableModules.map((moduleEntry) => {
+                              const isChecked = formState.selectedModuleIds.includes(moduleEntry.id);
+                              return (
+                                <label className="new-game-module-item" key={moduleEntry.id}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(event) => {
+                                      const nextSelectedModuleIds = event.target.checked
+                                        ? [...formState.selectedModuleIds, moduleEntry.id]
+                                        : formState.selectedModuleIds.filter(
+                                            (entry) => entry !== moduleEntry.id
+                                          );
+                                      updateFormState({
+                                        ...formState,
+                                        selectedModuleIds: nextSelectedModuleIds,
+                                        gamePresetId: ""
+                                      });
+                                    }}
+                                    data-testid={`react-shell-new-game-module-${moduleEntry.id}`}
+                                  />
+                                  <span>
+                                    <strong>{moduleEntry.displayName}</strong>
+                                    <small>
+                                      {moduleEntry.description || moduleEntry.kind || moduleEntry.id}
+                                    </small>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+
+                        <div className="setup-advanced-options">
+                          <label className="field-stack">
+                            <span>Content profile</span>
+                            <select
+                              id="setup-content-profile"
+                              value={formState.contentProfileId}
+                              onChange={(event) =>
+                                updateFormState({
+                                  ...formState,
+                                  contentProfileId: event.target.value,
+                                  gamePresetId: ""
+                                })
+                              }
+                              data-testid="react-shell-new-game-content-profile"
+                            >
+                              <option value="">{t("common.notAvailable")}</option>
+                              {contentProfiles.map((profile) => (
+                                <option key={profile.id} value={profile.id}>
+                                  {profile.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="field-stack">
+                            <span>Gameplay profile</span>
+                            <select
+                              id="setup-gameplay-profile"
+                              value={formState.gameplayProfileId}
+                              onChange={(event) =>
+                                updateFormState({
+                                  ...formState,
+                                  gameplayProfileId: event.target.value,
+                                  gamePresetId: ""
+                                })
+                              }
+                              data-testid="react-shell-new-game-gameplay-profile"
+                            >
+                              <option value="">{t("common.notAvailable")}</option>
+                              {gameplayProfiles.map((profile) => (
+                                <option key={profile.id} value={profile.id}>
+                                  {profile.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="field-stack">
+                            <span>UI profile</span>
+                            <select
+                              id="setup-ui-profile"
+                              value={formState.uiProfileId}
+                              onChange={(event) =>
+                                updateFormState({
+                                  ...formState,
+                                  uiProfileId: event.target.value,
+                                  gamePresetId: ""
+                                })
+                              }
+                              data-testid="react-shell-new-game-ui-profile"
+                            >
+                              <option value="">{t("common.notAvailable")}</option>
+                              {uiProfiles.map((profile) => (
+                                <option key={profile.id} value={profile.id}>
+                                  {profile.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+                <label className="field-stack">
+                  <span>{t("newGame.totalPlayers.label")}</span>
+                  <select
+                    id="setup-total-players"
+                    value={String(formState.totalPlayers)}
+                    onChange={(event) =>
+                      updateFormState({
+                        ...formState,
+                        totalPlayers: Number(event.target.value),
+                        playerTypes: ensurePlayerTypes(formState.playerTypes, Number(event.target.value))
+                      })
+                    }
+                    data-testid="react-shell-new-game-total-players"
+                  >
+                    {Array.from(
+                      {
+                        length: Math.max(
+                          (options.playerRange?.max || 4) - (options.playerRange?.min || 2) + 1,
+                          1
+                        )
+                      },
+                      (_, index) => (options.playerRange?.min || 2) + index
+                    ).map((playerCount) => (
+                      <option key={playerCount} value={playerCount}>
+                        {playerCount}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field-stack">
+                  <span>{t("newGame.turnTimeout.label")}</span>
+                  <select
+                    id="setup-turn-timeout-hours"
+                    value={formState.turnTimeoutHours}
+                    onChange={(event) =>
+                      updateFormState({
+                        ...formState,
+                        turnTimeoutHours: event.target.value
+                      })
+                    }
+                    data-testid="react-shell-new-game-turn-timeout"
+                  >
+                    {options.turnTimeoutHoursOptions.map((hours) => (
+                      <option key={hours} value={String(hours)}>
+                        {t("newGame.turnTimeout.option", { hours })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </section>
+
+              <section className="new-game-panel">
+                <div className="section-title-row compact-row">
+                  <div>
+                    <h3>{t("newGame.playerSlots.heading")}</h3>
+                    <p className="stage-copy">{t("newGame.playerSlots.copy")}</p>
+                  </div>
+                  <span className="badge">{t("newGame.playerSlots.badge")}</span>
+                </div>
+                <div id="setup-player-slots" className="setup-player-slots">
+                  {ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
+                    (playerType, index) => (
+                      <article
+                        className={`setup-slot${index === 0 ? " is-fixed" : ""}`}
+                        data-slot-index={index}
+                        key={`slot-${index + 1}`}
+                      >
+                        <div className="setup-slot-head">
+                          <strong>{t("newGame.slot.playerLabel", { number: index + 1 })}</strong>
+                          {index === 0 ? (
+                            <span className="badge accent">{t("newGame.slot.creatorBadge")}</span>
+                          ) : null}
+                        </div>
+                        {index === 0 ? (
+                          <>
+                            <div className="field-stack">
+                              <span>{t("newGame.slot.typeLabel")}</span>
+                              <div className="setup-fixed-value">{t("newGame.slot.humanOption")}</div>
+                            </div>
+                            <p className="setup-slot-note" data-role="note">
+                              {playerSlotDescription(playerType, index)}
+                            </p>
+                          </>
+                        ) : (
+                          <label className="field-stack">
+                            <span>{t("newGame.slot.typeLabel")}</span>
+                            <select
+                              data-role="type"
+                              value={playerType}
+                              onChange={(event) => {
+                                const nextPlayerTypes = ensurePlayerTypes(
+                                  formState.playerTypes,
+                                  formState.totalPlayers
+                                );
+                                nextPlayerTypes[index] = event.target.value;
+                                updateFormState({
+                                  ...formState,
+                                  playerTypes: nextPlayerTypes
+                                });
+                              }}
+                              data-testid={`react-shell-new-game-slot-${index + 1}`}
+                            >
+                              <option value="human">{t("newGame.slot.humanOption")}</option>
+                              <option value="ai">{t("newGame.slot.aiOption")}</option>
+                            </select>
+                            <small className="setup-slot-note" data-role="note">
+                              {playerSlotDescription(playerType, index)}
+                            </small>
+                          </label>
+                        )}
+                      </article>
+                    )
+                  )}
+                </div>
+              </section>
+            </form>
+
+            <div className="new-game-actions">
+              <Link className="ghost-button" to={buildLobbyPath()}>
+                {t("common.cancel")}
+              </Link>
+              <button
+                id="submit-new-game"
+                type="submit"
+                form="new-game-form"
+                className="ghost-button"
+                disabled={submitDisabled}
+                data-testid="react-shell-new-game-submit"
+              >
+                {createMutation.isPending ? t("newGame.feedback.creating") : t("newGame.createOpen")}
+              </button>
+            </div>
+          </>
+        ) : null}
+      </section>
     </section>
   );
 }
