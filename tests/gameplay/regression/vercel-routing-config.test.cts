@@ -21,10 +21,17 @@ function hasRewriteRule(rewrites: RewriteRule[], source: string, destination: st
 register("vercel preview rewrites React shell deep links to the shell entry document", () => {
   const config = loadVercelConfig();
   const rewrites = Array.isArray(config.rewrites) ? config.rewrites : [];
+  const redirects = Array.isArray((config as { redirects?: RewriteRule[] }).redirects)
+    ? (config as { redirects?: RewriteRule[] }).redirects || []
+    : [];
 
   assert.ok(
     hasRewriteRule(rewrites, "/react/:path*", "/react/index.html"),
     "Expected /react/:path* to rewrite to /react/index.html for SPA deep links."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/", "/react/index.html"),
+    "Expected / to rewrite to /react/index.html for the canonical landing route."
   );
   assert.ok(
     hasRewriteRule(rewrites, "/game", "/react/index.html"),
@@ -43,7 +50,32 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
     "Expected /register to rewrite to /react/index.html for the React auth flow."
   );
   assert.ok(
+    hasRewriteRule(rewrites, "/lobby", "/react/index.html"),
+    "Expected /lobby to rewrite to /react/index.html for the canonical lobby route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/lobby/new", "/react/index.html"),
+    "Expected /lobby/new to rewrite to /react/index.html for the canonical new game route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/profile", "/react/index.html"),
+    "Expected /profile to rewrite to /react/index.html for the canonical profile route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/game.html", "/react/index.html"),
+    "Expected /game.html to rewrite to /react/index.html for the compatibility gameplay bridge."
+  );
+  assert.ok(
     hasRewriteRule(rewrites, "/unauthorized", "/react/index.html"),
     "Expected /unauthorized to rewrite to /react/index.html for the React auth flow."
+  );
+
+  assert.ok(
+    hasRewriteRule(redirects, "/register.html", "/register"),
+    "Expected /register.html to redirect to /register during the clean-route cutover."
+  );
+  assert.ok(
+    hasRewriteRule(redirects, "/lobby.html", "/lobby"),
+    "Expected /lobby.html to redirect to /lobby during the clean-route cutover."
   );
 });

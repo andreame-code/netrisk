@@ -153,9 +153,7 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
   const bootstrapHref = buildBootstrapPath(namespace);
   const gameHref = currentGameId
     ? buildGamePath(currentGameId, namespace)
-    : namespace === "react"
-      ? buildGameIndexPath(namespace)
-      : "/game.html";
+    : buildGameIndexPath(namespace);
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";
   const topNavSlots = ((moduleOptionsQuery.data?.uiSlots || []) as NetRiskUiSlotContribution[])

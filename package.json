@@ -8,7 +8,7 @@
     "backup:data": "node .tsbuild/scripts/backup-datastore.cjs",
     "backup:check": "node .tsbuild/scripts/check-backup.cjs",
     "build:ts": "tsc -p tsconfig.json && npm run build:frontend && npm run build:react-shell && node .tsbuild/scripts/generate-supabase-schema.cjs && npm run check:ts-sources",
-    "build:frontend": "node .tsbuild/scripts/sync-shared-runtime-validation-frontend.cjs && tsc -p tsconfig.frontend.json && node .tsbuild/scripts/sync-frontend-imports.cjs && node .tsbuild/scripts/generate-frontend-static.cjs && node .tsbuild/scripts/sync-public-assets.cjs",
+    "build:frontend": "node .tsbuild/scripts/sync-shared-runtime-validation-frontend.cjs && tsc -p tsconfig.frontend.json --incremental false && node .tsbuild/scripts/sync-frontend-imports.cjs && node .tsbuild/scripts/generate-frontend-static.cjs && node .tsbuild/scripts/sync-public-assets.cjs",
     "build:react-shell": "vite build --config frontend/react-shell/vite.config.ts",
     "check:ts-sources": "node .tsbuild/scripts/check-no-js-sources.cjs",
     "dev:react-shell": "vite --config frontend/react-shell/vite.config.ts",

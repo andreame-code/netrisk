@@ -7,6 +7,7 @@ import {
   updateThemePreference
 } from "./core/api/client.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import type {
   GameOptionsResponse,
   NetRiskModuleCapability,
@@ -1016,5 +1017,5 @@ elements.gamesList.addEventListener("click", async (event) => {
     return;
   }
 
-  window.location.href = "/game/" + encodeURIComponent(gameId);
+  window.location.href = buildSyncedGameLocation(window.location.href, gameId);
 });

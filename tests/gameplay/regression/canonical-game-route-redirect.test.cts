@@ -95,3 +95,22 @@ register("GET /game.html with gameId preserves the canonical React deep link", a
     assert.equal(response.headers.Location, "/game/g-123");
   });
 });
+
+register("GET /register.html redirects to the clean React register route", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/register.html?next=%2Fprofile");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/register?next=%2Fprofile");
+  });
+});
+
+register("GET /legacy/lobby.html serves the rollback legacy document", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/lobby.html");
+
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
+    assert.match(response.body, /game-session-list/i);
+  });
+});

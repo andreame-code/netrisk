@@ -14,10 +14,10 @@ test("non-member user cannot open a protected game from a direct game route", as
 
   await resetGame(ownerPage);
 
-  await ownerPage.goto("/game.html");
+  await ownerPage.goto("/game");
   await registerAndLogin(ownerPage, ownerUser);
-  await ownerPage.goto("/new-game.html");
-  await expect(ownerPage).toHaveURL(/\/new-game\.html$/);
+  await ownerPage.goto("/lobby/new");
+  await expect(ownerPage).toHaveURL(/\/lobby\/new$/);
   await ownerPage.locator("#setup-game-name").fill(gameName);
   await ownerPage.getByRole("button", { name: "Crea e apri" }).click();
   await expect(ownerPage).toHaveURL(/\/game(\/|\.html\?gameId=)/);
@@ -26,9 +26,9 @@ test("non-member user cannot open a protected game from a direct game route", as
   expect(gameMatch).toBeTruthy();
   const protectedGameId = decodeURIComponent(gameMatch[1]);
 
-  await outsiderPage.goto("/game.html");
+  await outsiderPage.goto("/game");
   await registerAndLogin(outsiderPage, outsiderUser);
-  await outsiderPage.goto("/lobby.html");
+  await outsiderPage.goto("/lobby");
   await outsiderPage.goto("/game.html?gameId=" + encodeURIComponent(protectedGameId));
 
   await expect(outsiderPage.locator("#game-status")).toContainText(gameName);
@@ -41,4 +41,3 @@ test("non-member user cannot open a protected game from a direct game route", as
   await ownerContext.close();
   await outsiderContext.close();
 });
-

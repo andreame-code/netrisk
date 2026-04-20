@@ -24,6 +24,7 @@ const currentGameId = pathGameMatch
 const activeLocale = setLocale(resolveLocale());
 let availableThemes = [...SUPPORTED_THEMES] as string[];
 let moduleOptionsPromise: Promise<ModuleOptionsResponse | null> | null = null;
+const legacyBasePath = window.location.pathname.startsWith("/legacy/") ? "/legacy" : "";
 
 type ShellKind = "app" | "marketing";
 type NavSection = "lobby" | "game" | "profile";
@@ -142,8 +143,23 @@ window.netriskShell = Object.freeze({
   }
 });
 
+function legacyDocumentPath(fileName: string): string {
+  return `${legacyBasePath}/${fileName}`;
+}
+
+function gameDocumentHref(gameId = currentGameId): string {
+  const nextUrl = new URL(legacyDocumentPath("game.html"), window.location.origin);
+  if (gameId) {
+    nextUrl.searchParams.set("gameId", gameId);
+  } else {
+    nextUrl.searchParams.delete("gameId");
+  }
+
+  return nextUrl.pathname + nextUrl.search + nextUrl.hash;
+}
+
 function gameHref() {
-  return currentGameId ? "/game/" + encodeURIComponent(currentGameId) : "/game.html";
+  return gameDocumentHref(currentGameId);
 }
 
 function buildLocaleControl({
@@ -266,15 +282,15 @@ function sharedNavMarkup() {
   };
 
   return `
-    <a href="/lobby.html" class="top-nav-zone top-nav-brand brand-link">
+    <a href="${legacyDocumentPath("lobby.html")}" class="top-nav-zone top-nav-brand brand-link">
       <p class="eyebrow" data-i18n="app.brand">${t("app.brand")}</p>
       <span class="top-nav-title" data-i18n="app.title">${t("app.title")}</span>
     </a>
 
     <nav class="top-nav-zone top-nav-links" aria-label="${navAriaLabel}" data-i18n-aria-label="nav.aria.primary">
-      <a href="/lobby.html" class="nav-link" data-nav-section="lobby">${navLabels.lobby}</a>
+      <a href="${legacyDocumentPath("lobby.html")}" class="nav-link" data-nav-section="lobby">${navLabels.lobby}</a>
       <a href="${gameHref()}" class="nav-link" data-nav-section="game">${navLabels.game}</a>
-      <a href="/profile.html" class="nav-link" data-nav-section="profile">${navLabels.profile}</a>
+      <a href="${legacyDocumentPath("profile.html")}" class="nav-link" data-nav-section="profile">${navLabels.profile}</a>
     </nav>
 
     <div class="top-nav-zone top-nav-module-slots" id="top-nav-module-slots"></div>
@@ -290,7 +306,7 @@ function sharedNavMarkup() {
           <input id="header-auth-password" name="header-password" type="password" placeholder="${t("auth.passwordPlaceholder")}" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" data-i18n-placeholder="auth.passwordPlaceholder" />
         </label>
         <button type="submit" id="header-login-button" class="ghost-button top-nav-login" data-i18n="auth.login">${t("auth.login")}</button>
-        <a href="/register.html" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">${t("auth.register")}</a>
+        <a href="${legacyDocumentPath("register.html")}" id="header-register-link" class="ghost-button top-nav-register" data-i18n="auth.register">${t("auth.register")}</a>
       </form>
       <p id="top-nav-auth-feedback" class="auth-feedback top-nav-auth-feedback" aria-live="polite" hidden></p>
       <button type="button" id="logout-button" class="ghost-button top-nav-logout" hidden data-i18n="auth.logout">${t("auth.logout")}</button>
@@ -447,9 +463,9 @@ function sharedFooterMarkup() {
       <p class="shared-footer-note">${activeLabel}</p>
     </div>
     <nav class="shared-footer-links" aria-label="${navAriaLabel}">
-      <a href="/lobby.html" class="nav-link" data-nav-section="lobby">${navLabels.lobby}</a>
+      <a href="${legacyDocumentPath("lobby.html")}" class="nav-link" data-nav-section="lobby">${navLabels.lobby}</a>
       <a href="${gameHref()}" class="nav-link" data-nav-section="game">${navLabels.game}</a>
-      <a href="/profile.html" class="nav-link" data-nav-section="profile">${navLabels.profile}</a>
+      <a href="${legacyDocumentPath("profile.html")}" class="nav-link" data-nav-section="profile">${navLabels.profile}</a>
     </nav>
   `;
 }
@@ -570,8 +586,8 @@ function initAppShell() {
         setHeaderAuthFeedback("");
         await fallbackHeaderLogin(username, password);
         const nextUrl = sanitizedCurrentUrl();
-        if (nextUrl.pathname === "/register.html") {
-          window.location.href = "/profile.html";
+        if (nextUrl.pathname === legacyDocumentPath("register.html")) {
+          window.location.href = legacyDocumentPath("profile.html");
           return;
         }
 

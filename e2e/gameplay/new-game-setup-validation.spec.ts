@@ -21,9 +21,8 @@ test("new game setup shows a clear error when the selected map becomes invalid",
 
   await page.getByRole('button', { name: 'Crea e apri' }).click();
 
-  await expect(page).toHaveURL(/\/new-game\.html$/);
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await expect(page.locator('#new-game-feedback')).toBeVisible();
   await expect(page.locator('#new-game-feedback')).toContainText('La mappa selezionata non e supportata.');
   await expect(page.locator('#submit-new-game')).toBeEnabled();
 });
-

@@ -2,10 +2,56 @@
   "version": 2,
   "buildCommand": "npm run build:ts",
   "outputDirectory": "public",
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/landing.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/register.html",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/lobby.html",
+      "destination": "/lobby",
+      "permanent": false
+    },
+    {
+      "source": "/new-game.html",
+      "destination": "/lobby/new",
+      "permanent": false
+    },
+    {
+      "source": "/profile.html",
+      "destination": "/profile",
+      "permanent": false
+    },
+    {
+      "source": "/legacy",
+      "destination": "/legacy/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/",
+      "destination": "/legacy/index.html",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
+    },
+    {
+      "source": "/",
+      "destination": "/react/index.html"
     },
     {
       "source": "/react/:path*",
@@ -20,7 +66,23 @@
       "destination": "/react/index.html"
     },
     {
+      "source": "/lobby",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/lobby/new",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/react/index.html"
+    },
+    {
       "source": "/unauthorized",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/game.html",
       "destination": "/react/index.html"
     },
     {

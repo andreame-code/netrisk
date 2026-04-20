@@ -59,7 +59,7 @@ async function createAuthenticatedSession(page, username, password = "secret123"
 async function registerAndLogin(page, username, password = "secret123") {
   const sessionToken = await createAuthenticatedSession(page, username, password);
   await attachSessionCookie(page, sessionToken);
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await expect(page.locator(".shell-header #auth-status")).toContainText(username, {
     timeout: 10000
   });
