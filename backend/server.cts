@@ -12,10 +12,7 @@ const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
   listNewGameRuleSets,
-  listPieceSkins,
-  listTurnTimeoutHoursOptions,
-  listVictoryRuleSets,
-  listVisualThemes
+  listTurnTimeoutHoursOptions
 } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
@@ -143,18 +140,6 @@ const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
-
-function filterCatalogByAllowedIds<T extends { id: string }>(
-  entries: T[],
-  allowedIds: string[] | null | undefined
-): T[] {
-  if (!Array.isArray(allowedIds) || !allowedIds.length) {
-    return entries;
-  }
-
-  const allowedIdSet = new Set(allowedIds);
-  return entries.filter((entry) => allowedIdSet.has(entry.id));
-}
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -777,31 +762,29 @@ function createApp(options: CreateAppOptions = {}) {
       (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")
     ) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
+      const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
       await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
-        () => moduleOptions.maps,
-        () => moduleOptions.diceRuleSets,
-        () =>
-          filterCatalogByAllowedIds(
-            listVictoryRuleSets(),
-            moduleOptions.content?.victoryRuleSetIds
-          ),
-        () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
-        () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
+        () => resolvedCatalog.maps,
+        () => resolvedCatalog.diceRuleSets,
+        () => resolvedCatalog.victoryRuleSets,
+        () => resolvedCatalog.themes,
+        () => resolvedCatalog.pieceSkins,
         listTurnTimeoutHoursOptions,
         sendJson,
-        () => moduleOptions.playerPieceSets,
-        () => moduleOptions.contentPacks,
+        () => resolvedCatalog.playerPieceSets,
+        () => resolvedCatalog.contentPacks,
         async () => {
           return {
-            modules: moduleOptions.gameModules,
-            enabledModules: moduleOptions.enabledModules,
-            gamePresets: moduleOptions.gamePresets,
-            contentProfiles: moduleOptions.contentProfiles,
-            gameplayProfiles: moduleOptions.gameplayProfiles,
-            uiProfiles: moduleOptions.uiProfiles,
-            uiSlots: moduleOptions.uiSlots
+            modules: resolvedCatalog.gameModules,
+            enabledModules: resolvedCatalog.enabledModules,
+            gamePresets: resolvedCatalog.gamePresets,
+            contentProfiles: resolvedCatalog.contentProfiles,
+            gameplayProfiles: resolvedCatalog.gameplayProfiles,
+            uiProfiles: resolvedCatalog.uiProfiles,
+            uiSlots: resolvedCatalog.uiSlots,
+            resolvedCatalog
           };
         },
         sendLocalizedError

@@ -327,10 +327,169 @@ register(
           ),
           true
         );
+
+        assert.equal(Boolean(optionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          optionsResponse.payload.resolvedCatalog.uiSlots.some(
+            (entry: any) => entry.itemId === "demo.valid.briefing"
+          ),
+          true
+        );
+        assert.equal(
+          optionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "demo.valid"
+          ),
+          true
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.victoryRuleSets), true);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.themes), true);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.pieceSkins), true);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+            (entry: any) => entry.itemId === "demo.valid.briefing"
+          ),
+          true
+        );
       }
     );
   }
 );
+
+register(
+  "module runtime isola capability kinds non supportati senza rompere gli endpoint options",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "unsupported.capability",
+          manifest: {
+            schemaVersion: 1,
+            id: "unsupported.capability",
+            version: "1.0.0",
+            displayName: "Unsupported Capability",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            capabilities: [{ kind: "totally-new-capability", scope: "game" }]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const catalogResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(catalogResponse.statusCode, 200);
+        const unsupportedModule = catalogResponse.payload.modules.find(
+          (entry: any) => entry.id === "unsupported.capability"
+        );
+        assert.equal(Boolean(unsupportedModule), true);
+        assert.equal(unsupportedModule.status, "error");
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+      }
+    );
+  }
+);
+
+register("module runtime non espone slot UI con slotId non supportati", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "unsupported.slot",
+        manifest: {
+          schemaVersion: 1,
+          id: "unsupported.slot",
+          version: "1.0.0",
+          displayName: "Unsupported Slot",
+          engineVersion: "1.0.0",
+          kind: "ui",
+          capabilities: [{ kind: "ui-slot", scope: "global", description: "Unsupported slot" }],
+          entrypoints: {
+            clientManifest: "client-manifest.json"
+          }
+        },
+        clientManifest: {
+          ui: {
+            slots: [
+              {
+                slotId: "unsupported.slot-id",
+                itemId: "unsupported.slot.item",
+                title: "Unsupported Slot",
+                kind: "panel"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const catalogResponse = await callApp(
+        app,
+        "GET",
+        "/api/modules",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(catalogResponse.statusCode, 200);
+      const unsupportedModule = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "unsupported.slot"
+      );
+      assert.equal(Boolean(unsupportedModule), true);
+      assert.equal(
+        unsupportedModule.errors.some((entry: string) =>
+          entry.includes("Invalid UI slot contribution")
+        ),
+        true
+      );
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.uiSlots.some(
+          (entry: any) => entry.itemId === "unsupported.slot.item"
+        ),
+        false
+      );
+      assert.equal(Boolean(moduleOptionsResponse.payload.resolvedCatalog), true);
+      assert.equal(
+        moduleOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+          (entry: any) => entry.itemId === "unsupported.slot.item"
+        ),
+        false
+      );
+    }
+  );
+});
 
 register(
   "module runtime rifiuta client manifest che escono dalla directory del modulo",

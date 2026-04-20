@@ -101,6 +101,26 @@ export interface ModuleOptionsResponseContract {
   contentProfiles: NetRiskModuleProfileContract[];
   gameplayProfiles: NetRiskModuleProfileContract[];
   uiProfiles: NetRiskModuleProfileContract[];
+  resolvedCatalog?: NetRiskResolvedModuleCatalogContract;
+}
+
+export interface NetRiskResolvedModuleCatalogContract {
+  modules: NetRiskInstalledModuleContract[];
+  enabledModules: NetRiskModuleReferenceContract[];
+  gameModules: NetRiskInstalledModuleContract[];
+  content: NetRiskContentContributionContract;
+  maps: Array<Record<string, unknown>>;
+  playerPieceSets: Array<Record<string, unknown>>;
+  diceRuleSets: Array<Record<string, unknown>>;
+  contentPacks: Array<Record<string, unknown>>;
+  victoryRuleSets: VictoryRuleSetContract[];
+  themes: VisualThemeContract[];
+  pieceSkins: PieceSkinContract[];
+  gamePresets: NetRiskGamePresetContract[];
+  uiSlots: NetRiskUiSlotContributionContract[];
+  contentProfiles: NetRiskModuleProfileContract[];
+  gameplayProfiles: NetRiskModuleProfileContract[];
+  uiProfiles: NetRiskModuleProfileContract[];
 }
 
 export interface PublicUserContract {
@@ -141,6 +161,7 @@ export interface GameOptionsResponseContract {
   uiSlots?: NetRiskUiSlotContributionContract[];
   playerPieceSets?: Array<Record<string, unknown>>;
   contentPacks?: Array<Record<string, unknown>>;
+  resolvedCatalog?: NetRiskResolvedModuleCatalogContract;
   turnTimeoutHoursOptions: number[];
   playerRange: {
     min: number;

@@ -1,5 +1,26 @@
 import { z } from "zod";
 
+const NETRISK_MODULE_CAPABILITY_KIND_VALUES = [
+  "card-rule-set",
+  "content-pack",
+  "dice-rule-set",
+  "fortify-rule-set",
+  "gameplay-hook",
+  "map",
+  "player-piece-set",
+  "reinforcement-rule-set",
+  "site-theme",
+  "ui-slot",
+  "victory-rule-set"
+] as const;
+const NETRISK_UI_SLOT_ID_VALUES = [
+  "admin-modules-page",
+  "game.sidebar",
+  "lobby.page",
+  "new-game.sidebar",
+  "top-nav-bar"
+] as const;
+
 type IssuePathSegment = string | number;
 
 type ZodLikeIssue = {
@@ -233,7 +254,7 @@ export const netRiskGamePresetSchema = objectSchema({
 export type NetRiskGamePreset = z.infer<typeof netRiskGamePresetSchema>;
 
 export const netRiskUiSlotContributionSchema = objectSchema({
-  slotId: z.string().min(1),
+  slotId: z.enum(NETRISK_UI_SLOT_ID_VALUES),
   itemId: z.string().min(1),
   title: z.string().min(1),
   kind: z.string().min(1),
@@ -245,7 +266,7 @@ export const netRiskUiSlotContributionSchema = objectSchema({
 export type NetRiskUiSlotContribution = z.infer<typeof netRiskUiSlotContributionSchema>;
 
 export const netRiskModuleCapabilitySchema = objectSchema({
-  kind: z.string().min(1),
+  kind: z.enum(NETRISK_MODULE_CAPABILITY_KIND_VALUES),
   targetId: z.string().min(1).nullable().optional(),
   hook: z.string().min(1).nullable().optional(),
   scope: z.string().min(1).nullable().optional(),
@@ -434,6 +455,27 @@ export const diceRuleSetSchema = objectSchema({
 
 export type DiceRuleSet = z.infer<typeof diceRuleSetSchema>;
 
+export const resolvedModuleCatalogSchema = objectSchema({
+  modules: z.array(installedModuleSummarySchema),
+  enabledModules: z.array(netRiskModuleReferenceSchema),
+  gameModules: z.array(installedModuleSummarySchema),
+  content: netRiskContentContributionSchema,
+  maps: z.array(mapSummarySchema),
+  playerPieceSets: z.array(playerPieceSetSummarySchema),
+  diceRuleSets: z.array(diceRuleSetSchema),
+  contentPacks: z.array(contentPackSummarySchema),
+  victoryRuleSets: z.array(victoryRuleSetSchema),
+  themes: z.array(visualThemeSchema),
+  pieceSkins: z.array(pieceSkinSchema),
+  gamePresets: z.array(netRiskGamePresetSchema),
+  uiSlots: z.array(netRiskUiSlotContributionSchema),
+  contentProfiles: z.array(netRiskModuleProfileSchema),
+  gameplayProfiles: z.array(netRiskModuleProfileSchema),
+  uiProfiles: z.array(netRiskModuleProfileSchema)
+});
+
+export type ResolvedModuleCatalog = z.infer<typeof resolvedModuleCatalogSchema>;
+
 export const playerSlotConfigSchema = objectSchema({
   slot: z.number().int().nullable().optional(),
   type: z.string().min(1).nullable().optional(),
@@ -605,6 +647,7 @@ export const gameOptionsResponseSchema = objectSchema({
   uiSlots: z.array(netRiskUiSlotContributionSchema).optional(),
   playerPieceSets: z.array(playerPieceSetSummarySchema).optional(),
   contentPacks: z.array(contentPackSummarySchema).optional(),
+  resolvedCatalog: resolvedModuleCatalogSchema.optional(),
   turnTimeoutHoursOptions: z.array(z.number().int()),
   playerRange: objectSchema({
     min: z.number().int(),
@@ -636,7 +679,8 @@ export const moduleOptionsResponseSchema = objectSchema({
   uiSlots: z.array(netRiskUiSlotContributionSchema),
   contentProfiles: z.array(netRiskModuleProfileSchema),
   gameplayProfiles: z.array(netRiskModuleProfileSchema),
-  uiProfiles: z.array(netRiskModuleProfileSchema)
+  uiProfiles: z.array(netRiskModuleProfileSchema),
+  resolvedCatalog: resolvedModuleCatalogSchema.optional()
 });
 
 export type ModuleOptionsResponse = z.infer<typeof moduleOptionsResponseSchema>;

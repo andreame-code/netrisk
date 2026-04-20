@@ -227,6 +227,25 @@ export type MapSummary = {
   continentBonuses?: ContinentBonusSummary[];
 };
 
+export type ResolvedModuleCatalog = {
+  modules: InstalledModuleSummary[];
+  enabledModules: NetRiskModuleReference[];
+  gameModules: InstalledModuleSummary[];
+  content: NetRiskContentContribution;
+  maps: MapSummary[];
+  playerPieceSets: PlayerPieceSetSummary[];
+  diceRuleSets: DiceRuleSet[];
+  contentPacks: ContentPackSummary[];
+  victoryRuleSets: VictoryRuleSet[];
+  themes: VisualTheme[];
+  pieceSkins: PieceSkin[];
+  gamePresets: NetRiskGamePreset[];
+  uiSlots: NetRiskUiSlotContribution[];
+  contentProfiles: NetRiskModuleProfile[];
+  gameplayProfiles: NetRiskModuleProfile[];
+  uiProfiles: NetRiskModuleProfile[];
+};
+
 export type GameOptionsResponse = MessagePayload & {
   ruleSets: RuleSetSummary[];
   maps: MapSummary[];
@@ -243,6 +262,7 @@ export type GameOptionsResponse = MessagePayload & {
   uiSlots?: NetRiskUiSlotContribution[];
   playerPieceSets?: PlayerPieceSetSummary[];
   contentPacks?: ContentPackSummary[];
+  resolvedCatalog?: ResolvedModuleCatalog;
   turnTimeoutHoursOptions: number[];
 };
 
@@ -256,6 +276,7 @@ export type ModuleOptionsResponse = MessagePayload & {
   contentProfiles: NetRiskModuleProfile[];
   gameplayProfiles: NetRiskModuleProfile[];
   uiProfiles: NetRiskModuleProfile[];
+  resolvedCatalog?: ResolvedModuleCatalog;
 };
 
 export type ModulesCatalogResponse = MessagePayload & {

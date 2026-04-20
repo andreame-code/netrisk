@@ -19,7 +19,11 @@ const {
 const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
-const { listPieceSkins, listVictoryRuleSets } = require("../shared/extensions.cjs");
+const {
+  listPieceSkins,
+  listVictoryRuleSets,
+  listVisualThemes
+} = require("../shared/extensions.cjs");
 const {
   CORE_MODULE_ID,
   CORE_MODULE_VERSION,
@@ -47,14 +51,15 @@ import type {
   NetRiskModuleProfile,
   NetRiskModulePlayerPieceSetDefinition,
   NetRiskModuleReference,
+  NetRiskResolvedModuleCatalog,
   NetRiskResolvedGamePreset,
   NetRiskResolvedModuleSetup,
   NetRiskScenarioSetup,
-  NetRiskServerModule,
-  NetRiskUiSlotContribution
+  NetRiskServerModule
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
+import type { PieceSkin, VictoryRuleSet, VisualTheme } from "../shared/extensions.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
 
@@ -72,20 +77,8 @@ type ModuleRuntimeOptions = {
   };
 };
 
-type ModuleOptionsSnapshot = {
-  modules: NetRiskInstalledModule[];
-  enabledModules: NetRiskModuleReference[];
-  gameModules: NetRiskInstalledModule[];
-  content: NetRiskContentContribution;
-  maps: MapSummary[];
-  playerPieceSets: PlayerPieceSetSummary[];
-  diceRuleSets: DiceRuleSetSummary[];
-  contentPacks: ContentPackSummary[];
-  gamePresets: NetRiskGamePreset[];
-  uiSlots: NetRiskUiSlotContribution[];
-  contentProfiles: NetRiskModuleProfile[];
-  gameplayProfiles: NetRiskModuleProfile[];
-  uiProfiles: NetRiskModuleProfile[];
+type ModuleOptionsSnapshot = NetRiskResolvedModuleCatalog & {
+  resolvedCatalog: NetRiskResolvedModuleCatalog;
 };
 
 type RuntimeModuleMapEntry = {
@@ -121,8 +114,6 @@ const CONTENT_CONTRIBUTION_KEYS = [
   "fortifyRuleSetIds",
   "reinforcementRuleSetIds"
 ] as const;
-
-type ContentContributionKey = (typeof CONTENT_CONTRIBUTION_KEYS)[number];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -214,6 +205,24 @@ function cloneDiceRuleSetSummary(ruleSet: DiceRuleSetSummary): DiceRuleSetSummar
 function cloneDiceRuleSet(ruleSet: DiceRuleSet): DiceRuleSet {
   return {
     ...ruleSet
+  };
+}
+
+function cloneVictoryRuleSet(ruleSet: VictoryRuleSet): VictoryRuleSet {
+  return {
+    ...ruleSet
+  };
+}
+
+function cloneVisualTheme(theme: VisualTheme): VisualTheme {
+  return {
+    ...theme
+  };
+}
+
+function clonePieceSkin(pieceSkin: PieceSkin): PieceSkin {
+  return {
+    ...pieceSkin
   };
 }
 
@@ -935,13 +944,49 @@ function filterDiceRuleSetsByAllowedIds(
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneDiceRuleSetSummary);
 }
 
-function buildModuleOptions(
+function filterVictoryRuleSetsByAllowedIds(
+  entries: VictoryRuleSet[],
+  allowedIds: string[] | null | undefined
+): VictoryRuleSet[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneVictoryRuleSet);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneVictoryRuleSet);
+}
+
+function filterThemesByAllowedIds(
+  entries: VisualTheme[],
+  allowedIds: string[] | null | undefined
+): VisualTheme[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneVisualTheme);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneVisualTheme);
+}
+
+function filterPieceSkinsByAllowedIds(
+  entries: PieceSkin[],
+  allowedIds: string[] | null | undefined
+): PieceSkin[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(clonePieceSkin);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(clonePieceSkin);
+}
+
+function buildResolvedModuleCatalog(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
-): ModuleOptionsSnapshot {
+): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter(
     (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
@@ -965,6 +1010,7 @@ function buildModuleOptions(
     enabledRuntimePlayerPieceSetEntries,
     enabledRuntimeDiceRuleSetEntries
   );
+
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
@@ -1015,6 +1061,18 @@ function buildModuleOptions(
       ],
       content.contentPackIds
     ),
+    victoryRuleSets: filterVictoryRuleSetsByAllowedIds(
+      listVictoryRuleSets().map(cloneVictoryRuleSet),
+      content.victoryRuleSetIds
+    ),
+    themes: filterThemesByAllowedIds(
+      listVisualThemes().map(cloneVisualTheme),
+      content.siteThemeIds
+    ),
+    pieceSkins: filterPieceSkinsByAllowedIds(
+      listPieceSkins().map(clonePieceSkin),
+      content.pieceSkinIds
+    ),
     gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
@@ -1023,6 +1081,27 @@ function buildModuleOptions(
     contentProfiles: summarizeProfiles(enabled, "content"),
     gameplayProfiles: summarizeProfiles(enabled, "gameplay"),
     uiProfiles: summarizeProfiles(enabled, "ui")
+  };
+}
+
+function buildModuleOptions(
+  modules: NetRiskInstalledModule[],
+  runtimeMapEntries: RuntimeModuleMapEntry[],
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
+): ModuleOptionsSnapshot {
+  const resolvedCatalog = buildResolvedModuleCatalog(
+    modules,
+    runtimeMapEntries,
+    runtimeContentPackEntries,
+    runtimePlayerPieceSetEntries,
+    runtimeDiceRuleSetEntries
+  );
+
+  return {
+    ...resolvedCatalog,
+    resolvedCatalog
   };
 }
 

@@ -150,7 +150,7 @@ function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
         errors: [],
         capabilities: [
           {
-            kind: "ui",
+            kind: "ui-slot",
             scope: "global",
             hook: "profile",
             targetId: "admin-modules-page"
@@ -172,7 +172,7 @@ function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
           conflicts: [],
           capabilities: [
             {
-              kind: "ui",
+              kind: "ui-slot",
               scope: "global",
               hook: "profile",
               targetId: "admin-modules-page"

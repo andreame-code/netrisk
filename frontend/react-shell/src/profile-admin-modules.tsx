@@ -61,7 +61,7 @@ function moduleDependencyLabel(
 }
 
 function moduleCapabilityLabel(capability: NetRiskModuleCapability): string {
-  const parts = [capability.kind];
+  const parts: string[] = [capability.kind];
   if (capability.scope) {
     parts.push(capability.scope);
   }
