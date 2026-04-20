@@ -103,7 +103,9 @@ describe("React shell routing and session integration", () => {
     expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/react/profile");
     expect(new URLSearchParams(window.location.search).get("tab")).toBe("stats");
-    expect(screen.getByText("Accedi prima di consultare il profilo giocatore.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Accedi prima di consultare il profilo giocatore.")
+    ).toBeInTheDocument();
     expect(screen.getByText("Sessione non disponibile.")).toBeInTheDocument();
   });
 

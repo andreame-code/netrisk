@@ -13,8 +13,8 @@ Today the project includes:
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
-- parallel React + Vite shell served at `/react/`, isolated from the legacy pages
-- TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes
+- canonical React + Vite UI served on `/`, `/login`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`, and `/game/:gameId`, with `/react/*` kept as a supported alias and `/legacy/*` kept for rollback only
+- TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
 - creation of a new game with supported map, selectable dice ruleset, and configurable turn time limit
@@ -81,7 +81,7 @@ npm start
 ```
 
 Application available at `http://localhost:3000`.
-After `npm start`, the legacy pages are served from the same server, and the React shell is also available at `http://localhost:3000/react/`.
+After `npm start`, the same built React shell serves the canonical user-facing routes and the supported `/react/*` aliases from `http://localhost:3000`, while `/legacy/*` remains available only for rollback.
 
 React shell preview:
 
@@ -89,7 +89,7 @@ React shell preview:
 npm run dev:react-shell
 ```
 
-The parallel React + Vite shell is reachable at `http://localhost:5173/react/` in development and at `/react/` from the main server after `npm run build:ts`.
+The React + Vite shell is reachable at `http://localhost:5173/react/` in development. After `npm run build:ts`, the main server serves the same shell on the canonical routes and keeps `/react/*` as an alias namespace.
 The Vite dev server proxies `/api` to `VITE_BACKEND_TARGET`, which defaults to `http://127.0.0.1:3000`.
 Within the React shell, TanStack Query owns route-level remote state such as gameplay snapshots and mutations, while Zustand is limited to local shell/session state.
 
@@ -166,7 +166,7 @@ Repository uploads are also filtered by `.vercelignore` so local artifacts such 
 
 ## React shell observability
 
-The migrated `/react/` shell now includes a minimal, reversible production observability layer:
+The canonical React shell, also mirrored under `/react/*`, now includes a minimal, reversible production observability layer:
 
 - Sentry is initialized only when `VITE_SENTRY_DSN` is present and the resolved environment is `preview` or `production`
 - the React shell reports unexpected render crashes, network failures, backend `5xx` responses, and invalid successful payloads
@@ -215,18 +215,18 @@ npm run test:all:e2e
 - `npm test`: standard repository suite
 - `npm run backup:data`: creates a consistent SQLite snapshot in `data/backups/`
 - `npm run backup:check -- --file ...`: verifies that a SQLite backup is readable and complete
-- `npm run build:react-shell`: builds only the parallel React shell into `public/react`
+- `npm run build:react-shell`: builds the React shell bundle into `public/react` for the canonical routes and `/react/*` aliases
 - `npm run check:ts-sources`: enforces the TS-complete allowlist for tracked repository sources
 - `npm run coverage`: collects repository + gameplay coverage and writes reports
 - `npm run vercel:env:check`: checks parity between required deploy variables and expected configuration
-- `npm run dev:react-shell`: starts the parallel React + Vite shell with `/api` proxied to the Node backend
+- `npm run dev:react-shell`: starts the React + Vite shell dev server with `/api` proxied to the Node backend
 - `npm run lint`: runs the warning-first ESLint baseline for repository TypeScript sources
 - `npm run lint:fix`: applies safe auto-fixes from the current ESLint baseline
 - `npm run format`: formats the scoped repository sources and docs with Prettier
 - `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
 - `npm run typecheck`: type-checks the backend/shared/frontend TypeScript graph
 - `npm run typecheck:frontend`: type-checks the legacy frontend sources
-- `npm run typecheck:react-shell`: type-checks the parallel React shell
+- `npm run typecheck:react-shell`: type-checks the React shell sources that back both canonical and `/react/*` routes
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
 - `npm run test:e2e:update`: intentionally updates Playwright visual baselines after an approved UI change
@@ -291,7 +291,7 @@ The architecture follows a simple principle: frontend renders and sends actions,
 - `public`
   Static web interface output generated from the frontend sources and served by the runtime.
 - `frontend/react-shell`
-  Parallel React + Vite shell used for incremental migration and typed frontend experiments without replacing the legacy UI.
+  React + Vite shell sources that power the canonical user-facing routes and the supported `/react/*` alias namespace.
 - `frontend/src`
   TypeScript frontend sources for pages, shell, i18n, typed API client helpers, and generated shared imports.
 - `modules`
@@ -389,20 +389,24 @@ Main frontend screens currently available:
 - `/` and `index.html`: canonical React landing entry
 - `/lobby.html`: canonical React lobby
 - `/new-game.html`: canonical React new game setup
+- `/game.html`: compatibility bridge that resolves to `/game` or `/game/:gameId`
+- `/game`: canonical React gameplay index/start shell
 - `/game/:gameId`: canonical React gameplay route
 - `/profile.html`: canonical React profile
 - `/register.html`: canonical React register route
 - `/login`: canonical React sign-in route
-- `/react/`: React shell bootstrap route
-- `/react/login`: React shell sign-in route
-- `/react/lobby`: React lobby route
-- `/react/lobby/new`: React new game route
-- `/react/profile`: React profile route
-- `/react/game/:gameId`: React gameplay route aligned with the canonical game shell
+- `/react/`: supported alias for the React landing/bootstrap route
+- `/react/login`: supported alias for the React sign-in route
+- `/react/register`: supported alias for the React register route
+- `/react/lobby`: supported alias for the React lobby route
+- `/react/lobby/new`: supported alias for the React new game route
+- `/react/profile`: supported alias for the React profile route
+- `/react/game`: supported alias for the React gameplay index/start shell
+- `/react/game/:gameId`: supported alias for the React gameplay route
 - `/legacy/*`: legacy rollback namespace kept available until final cleanup
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
-For the React shell routes and migrated legacy pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
+For the canonical React routes, their `/react/*` aliases, and the remaining rollback legacy pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
 The React shell follows the same rule: it reuses the shared typed client and does not duplicate game rules locally.
 In the React shell, TanStack Query is used for route-level remote state and mutations, while Zustand is reserved for shell-local session state and UI ownership.
 
@@ -414,7 +418,7 @@ The game screen also includes:
 - latest combat summary panel with dice and comparison
 - current player card panel with set selection and trade submission
 
-On the React gameplay route, the shell also supports:
+On the canonical React gameplay routes, with `/react/game/*` kept as an alias, the shell also supports:
 
 - snapshot bootstrap plus live SSE refresh from the backend state
 - join/start, trade cards, reinforce, attack, move-after-conquest, fortify, end-turn, and surrender actions

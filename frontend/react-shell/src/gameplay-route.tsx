@@ -176,11 +176,12 @@ function translateGameplayError(error: unknown, fallback: string): string {
   return messageFromError(error, fallback);
 }
 
-function selectedProfileIds(
-  gameConfig: GameSnapshot["gameConfig"] | null | undefined
-): string[] {
-  return [gameConfig?.contentProfileId, gameConfig?.gameplayProfileId, gameConfig?.uiProfileId]
-    .filter((value): value is string => Boolean(value));
+function selectedProfileIds(gameConfig: GameSnapshot["gameConfig"] | null | undefined): string[] {
+  return [
+    gameConfig?.contentProfileId,
+    gameConfig?.gameplayProfileId,
+    gameConfig?.uiProfileId
+  ].filter((value): value is string => Boolean(value));
 }
 
 function gameMetaModuleSummary(gameConfig: GameSnapshot["gameConfig"] | null | undefined): string {
@@ -347,8 +348,9 @@ export function GameRoute() {
   const accessStatusLabel = authenticatedUser
     ? t("game.runtime.loggedIn", { username: authenticatedUser.username })
     : t("game.runtime.accessRequired");
-  const gameStatusLabel =
-    String(snapshot?.gameName || snapshot?.gameId || resolvedGameId || t("game.meta.noActiveGame"));
+  const gameStatusLabel = String(
+    snapshot?.gameName || snapshot?.gameId || resolvedGameId || t("game.meta.noActiveGame")
+  );
   const mapMetaLabel = String(
     snapshot?.gameConfig?.mapName || snapshot?.mapId || t("common.classicMini")
   );
@@ -359,9 +361,7 @@ export function GameRoute() {
   const setupMetaLabel = t("game.runtime.setupMeta", {
     totalPlayers: configuredPlayers,
     playerLabel:
-      configuredPlayers === 1
-        ? t("game.runtime.playerSingle")
-        : t("game.runtime.playerPlural"),
+      configuredPlayers === 1 ? t("game.runtime.playerSingle") : t("game.runtime.playerPlural"),
     aiCount
   })
     .concat(gameMetaModuleSummary(snapshot?.gameConfig || null) ? " · " : "")
@@ -416,7 +416,10 @@ export function GameRoute() {
       if (payload.playerId) {
         storeCurrentPlayerId(payload.playerId, payload.state?.gameId || resolvedGameId || null);
       } else if (payload.state?.playerId) {
-        storeCurrentPlayerId(payload.state.playerId, payload.state.gameId || resolvedGameId || null);
+        storeCurrentPlayerId(
+          payload.state.playerId,
+          payload.state.gameId || resolvedGameId || null
+        );
       }
 
       if (payload.state) {
@@ -526,9 +529,12 @@ export function GameRoute() {
     }
 
     setStreamStatus("connecting");
-    const eventSource = new EventSource(`/api/events?gameId=${encodeURIComponent(resolvedGameId)}`, {
-      withCredentials: true
-    });
+    const eventSource = new EventSource(
+      `/api/events?gameId=${encodeURIComponent(resolvedGameId)}`,
+      {
+        withCredentials: true
+      }
+    );
 
     eventSource.onopen = () => {
       setStreamStatus("live");
@@ -710,9 +716,7 @@ export function GameRoute() {
       );
     } catch (error) {
       setInlineAuthError(
-        error instanceof Error && error.message
-          ? error.message
-          : t("auth.login.invalidCredentials")
+        error instanceof Error && error.message ? error.message : t("auth.login.invalidCredentials")
       );
     } finally {
       setInlineAuthPending(false);
@@ -794,7 +798,6 @@ export function GameRoute() {
       setSelectedAttackToId(territoryId);
       return;
     }
-
   }
 
   if (gameplayQuery.isLoading && !snapshot) {
@@ -1012,7 +1015,12 @@ export function GameRoute() {
                   disabled={inlineAuthPending}
                 />
               </label>
-              <p id="auth-feedback" className="auth-feedback" aria-live="polite" hidden={!inlineAuthError}>
+              <p
+                id="auth-feedback"
+                className="auth-feedback"
+                aria-live="polite"
+                hidden={!inlineAuthError}
+              >
                 {inlineAuthError}
               </p>
               <button
@@ -1137,7 +1145,9 @@ export function GameRoute() {
                   value={attackDiceCount}
                   onChange={(event) => setSelectedAttackDiceCount(event.target.value)}
                 >
-                  {!maxAttackDice ? <option value="">{t("game.runtime.noDiceAvailable")}</option> : null}
+                  {!maxAttackDice ? (
+                    <option value="">{t("game.runtime.noDiceAvailable")}</option>
+                  ) : null}
                   {Array.from({ length: maxAttackDice }, (_, index) => index + 1).map((count) => (
                     <option key={count} value={String(count)}>
                       {t("game.runtime.attackDiceOption", {
@@ -1337,7 +1347,6 @@ export function GameRoute() {
             >
               {actionMutation.isPending ? "Updating..." : endTurnLabel}
             </button>
-
           </div>
 
           <div

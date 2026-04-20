@@ -215,7 +215,10 @@ export function ProfileRoute() {
                 : t("profile.runtime.noStats");
   const showFeedback = Boolean(feedbackMessage);
   const feedbackIsError =
-    state.status === "error" || signedOut || (!currentUser && state.status !== "loading") || profileQuery.isError;
+    state.status === "error" ||
+    signedOut ||
+    (!currentUser && state.status !== "loading") ||
+    profileQuery.isError;
   const commanderStatus = profile
     ? hasProfileHistory
       ? t("profile.runtime.commandStatus.withHistory", {
@@ -452,10 +455,18 @@ export function ProfileRoute() {
                   {activeGamesLabel}
                 </span>
               </div>
-              <div id="profile-games-empty" className="profile-games-empty" hidden={activeGames.length > 0}>
+              <div
+                id="profile-games-empty"
+                className="profile-games-empty"
+                hidden={activeGames.length > 0}
+              >
                 {t("profile.games.empty")}
               </div>
-              <div id="profile-games-list" className="profile-games-list" hidden={!activeGames.length}>
+              <div
+                id="profile-games-list"
+                className="profile-games-list"
+                hidden={!activeGames.length}
+              >
                 {activeGames.map((game) => (
                   <a
                     className="profile-game-row"

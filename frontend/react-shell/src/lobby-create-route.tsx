@@ -362,7 +362,9 @@ export function LobbyCreateRoute() {
     options?.uiProfiles,
     formState?.selectedModuleIds || []
   );
-  const currentContentPack = formState ? selectedContentPack(options, formState.contentPackId) : null;
+  const currentContentPack = formState
+    ? selectedContentPack(options, formState.contentPackId)
+    : null;
   const currentRuleSet = formState ? selectedRuleSet(options, formState.ruleSetId) : null;
   const currentMap = formState ? selectedMap(options, formState.mapId) : null;
   const currentDiceRuleSet = formState
@@ -556,7 +558,11 @@ export function LobbyCreateRoute() {
           </section>
         ) : options && formState ? (
           <>
-            <form id="new-game-form" className="new-game-grid" onSubmit={(event) => void handleSubmit(event)}>
+            <form
+              id="new-game-form"
+              className="new-game-grid"
+              onSubmit={(event) => void handleSubmit(event)}
+            >
               <section className="new-game-panel">
                 <div className="section-title-row compact-row">
                   <div>
@@ -586,7 +592,11 @@ export function LobbyCreateRoute() {
                     id="setup-content-pack"
                     value={formState.contentPackId}
                     onChange={(event) => {
-                      const nextState = applyContentPackDefaults(formState, options, event.target.value);
+                      const nextState = applyContentPackDefaults(
+                        formState,
+                        options,
+                        event.target.value
+                      );
                       updateFormState({
                         ...nextState,
                         gamePresetId: ""
@@ -601,7 +611,11 @@ export function LobbyCreateRoute() {
                     ))}
                   </select>
                 </label>
-                <div id="setup-content-pack-summary" className="setup-ruleset-card" aria-live="polite">
+                <div
+                  id="setup-content-pack-summary"
+                  className="setup-ruleset-card"
+                  aria-live="polite"
+                >
                   {currentContentPack ? (
                     <>
                       <div className="map-setup-card-head">
@@ -636,7 +650,11 @@ export function LobbyCreateRoute() {
                     id="setup-ruleset"
                     value={formState.ruleSetId}
                     onChange={(event) => {
-                      const nextState = applyRuleSetDefaults(formState, options, event.target.value);
+                      const nextState = applyRuleSetDefaults(
+                        formState,
+                        options,
+                        event.target.value
+                      );
                       updateFormState({
                         ...nextState,
                         gamePresetId: ""
@@ -673,7 +691,9 @@ export function LobbyCreateRoute() {
                         <span className="badge">{namedOptionLabel(currentVictoryRuleSet)}</span>
                         <span className="badge">{namedOptionLabel(currentTheme)}</span>
                         <span className="badge">{namedOptionLabel(currentPieceSkin)}</span>
-                        <span className="badge">{currentMap?.name || t("common.notAvailable")}</span>
+                        <span className="badge">
+                          {currentMap?.name || t("common.notAvailable")}
+                        </span>
                       </div>
                       <p className="map-setup-copy">{setupSummary || t("newGame.options.copy")}</p>
                     </>
@@ -857,7 +877,9 @@ export function LobbyCreateRoute() {
                               id="setup-game-preset"
                               value={formState.gamePresetId}
                               onChange={(event) =>
-                                updateFormState(applyGamePreset(formState, options, event.target.value))
+                                updateFormState(
+                                  applyGamePreset(formState, options, event.target.value)
+                                )
                               }
                               data-testid="react-shell-new-game-preset"
                             >
@@ -877,7 +899,9 @@ export function LobbyCreateRoute() {
                             data-testid="react-shell-new-game-modules"
                           >
                             {availableModules.map((moduleEntry) => {
-                              const isChecked = formState.selectedModuleIds.includes(moduleEntry.id);
+                              const isChecked = formState.selectedModuleIds.includes(
+                                moduleEntry.id
+                              );
                               return (
                                 <label className="new-game-module-item" key={moduleEntry.id}>
                                   <input
@@ -900,7 +924,9 @@ export function LobbyCreateRoute() {
                                   <span>
                                     <strong>{moduleEntry.displayName}</strong>
                                     <small>
-                                      {moduleEntry.description || moduleEntry.kind || moduleEntry.id}
+                                      {moduleEntry.description ||
+                                        moduleEntry.kind ||
+                                        moduleEntry.id}
                                     </small>
                                   </span>
                                 </label>
@@ -990,7 +1016,10 @@ export function LobbyCreateRoute() {
                       updateFormState({
                         ...formState,
                         totalPlayers: Number(event.target.value),
-                        playerTypes: ensurePlayerTypes(formState.playerTypes, Number(event.target.value))
+                        playerTypes: ensurePlayerTypes(
+                          formState.playerTypes,
+                          Number(event.target.value)
+                        )
                       })
                     }
                     data-testid="react-shell-new-game-total-players"
@@ -1058,7 +1087,9 @@ export function LobbyCreateRoute() {
                           <>
                             <div className="field-stack">
                               <span>{t("newGame.slot.typeLabel")}</span>
-                              <div className="setup-fixed-value">{t("newGame.slot.humanOption")}</div>
+                              <div className="setup-fixed-value">
+                                {t("newGame.slot.humanOption")}
+                              </div>
                             </div>
                             <p className="setup-slot-note" data-role="note">
                               {playerSlotDescription(playerType, index)}
@@ -1110,7 +1141,9 @@ export function LobbyCreateRoute() {
                 disabled={submitDisabled}
                 data-testid="react-shell-new-game-submit"
               >
-                {createMutation.isPending ? t("newGame.feedback.creating") : t("newGame.createOpen")}
+                {createMutation.isPending
+                  ? t("newGame.feedback.creating")
+                  : t("newGame.createOpen")}
               </button>
             </div>
           </>

@@ -1359,9 +1359,7 @@ function createApp(options: CreateAppOptions = {}) {
         if (req.method === "GET" && url.pathname === "/game.html") {
           const requestedGameId = url.searchParams.get("gameId");
           res.writeHead(302, {
-            Location: requestedGameId
-              ? "/game/" + encodeURIComponent(requestedGameId)
-              : "/game"
+            Location: requestedGameId ? "/game/" + encodeURIComponent(requestedGameId) : "/game"
           });
           res.end();
           return null;

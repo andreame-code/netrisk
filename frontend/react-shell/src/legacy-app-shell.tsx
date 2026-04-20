@@ -30,19 +30,11 @@ function resolveAppSection(pathname: string): AppSection {
     return "login";
   }
 
-  if (
-    pathname === "/register" ||
-    pathname === "/register.html" ||
-    pathname === "/react/register"
-  ) {
+  if (pathname === "/register" || pathname === "/register.html" || pathname === "/react/register") {
     return "register";
   }
 
-  if (
-    pathname === "/profile" ||
-    pathname === "/profile.html" ||
-    pathname === "/react/profile"
-  ) {
+  if (pathname === "/profile" || pathname === "/profile.html" || pathname === "/react/profile") {
     return "profile";
   }
 
@@ -217,7 +209,9 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
       ? "page-shell game-page-shell campaign-page-shell"
       : "page-shell top-nav-page-shell campaign-page-shell";
   const footerClassName =
-    section === "game" ? "panel shared-bottom-shell game-bottom-shell" : "panel shared-bottom-shell";
+    section === "game"
+      ? "panel shared-bottom-shell game-bottom-shell"
+      : "panel shared-bottom-shell";
   const content = (
     <div className="shell-header" style={{ display: "contents" }}>
       <header className="panel top-nav-bar campaign-nav">

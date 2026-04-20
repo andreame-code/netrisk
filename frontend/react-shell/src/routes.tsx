@@ -126,7 +126,7 @@ function LoginPage() {
         title="Preparing the login route"
         copy="Resolving any active browser session before the sign-in form is shown."
       />
-      );
+    );
   }
 
   if (state.status === "error") {

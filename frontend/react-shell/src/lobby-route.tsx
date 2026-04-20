@@ -306,10 +306,7 @@ export function LobbyRoute() {
         </div>
 
         {actionError ? (
-          <div
-            className="session-feedback is-error"
-            data-testid="react-shell-lobby-action-error"
-          >
+          <div className="session-feedback is-error" data-testid="react-shell-lobby-action-error">
             {actionError}
           </div>
         ) : null}
@@ -321,7 +318,11 @@ export function LobbyRoute() {
             <p id="lobby-focus-note">{focusNote}</p>
           </article>
           <div className="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
-            <Link id="create-game-button" className="ghost-button lobby-create-button" to={buildNewGamePath()}>
+            <Link
+              id="create-game-button"
+              className="ghost-button lobby-create-button"
+              to={buildNewGamePath()}
+            >
               {t("lobby.createGame")}
             </Link>
             <button
@@ -469,7 +470,9 @@ export function LobbyRoute() {
                     </div>
                     <div className="session-detail-item">
                       <span>{t("lobby.details.map")}</span>
-                      <strong>{selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}</strong>
+                      <strong>
+                        {selectedGame.mapName || selectedGame.mapId || t("common.classicMini")}
+                      </strong>
                     </div>
                     <div className="session-detail-item">
                       <span>{t("lobby.details.ai")}</span>

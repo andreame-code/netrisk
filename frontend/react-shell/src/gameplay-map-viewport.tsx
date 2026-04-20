@@ -138,9 +138,7 @@ function territoryOwnerName(
   return playersById[territory.ownerId]?.name || territory.ownerId;
 }
 
-function territoryPosition(
-  territory: SnapshotTerritory
-): { x: number; y: number } | null {
+function territoryPosition(territory: SnapshotTerritory): { x: number; y: number } | null {
   if (Number.isFinite(territory.x) && Number.isFinite(territory.y)) {
     return {
       x: Number(territory.x) * 100,
@@ -183,9 +181,10 @@ export function GameplayMapViewport({
     didDrag: false
   });
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
-  const [fittedBoardFrame, setFittedBoardFrame] = useState<{ width: number; height: number } | null>(
-    null
-  );
+  const [fittedBoardFrame, setFittedBoardFrame] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({
     scale: MAP_VIEWPORT_MIN_SCALE,
     translateX: 0,
@@ -647,51 +646,51 @@ export function GameplayMapViewport({
               transform: `translate(-50%, -50%) translate(${viewport.translateX}px, ${viewport.translateY}px)`
             }}
           >
+            <div
+              className="map-board-transform"
+              data-map-transform
+              style={{
+                transform: `scale(${viewport.scale})`
+              }}
+            >
               <div
-                className="map-board-transform"
-                data-map-transform
-                style={{
-                  transform: `scale(${viewport.scale})`
-                }}
+                ref={boardRef}
+                className={`${boardClassNames.join(" ")} ${pieceSkinClass}`}
+                style={boardStyle}
               >
-                <div
-                  ref={boardRef}
-                  className={`${boardClassNames.join(" ")} ${pieceSkinClass}`}
-                  style={boardStyle}
-                >
-                  <div className="map-board-stage">
-                    <svg className="map-lines" viewBox="0 0 100 100" aria-hidden="true">
-                      {(snapshot.map || []).flatMap((territory) => {
-                        const sourcePosition = territoryPosition(territory);
-                        if (!sourcePosition) {
-                          return [];
-                        }
+                <div className="map-board-stage">
+                  <svg className="map-lines" viewBox="0 0 100 100" aria-hidden="true">
+                    {(snapshot.map || []).flatMap((territory) => {
+                      const sourcePosition = territoryPosition(territory);
+                      if (!sourcePosition) {
+                        return [];
+                      }
 
-                        return territory.neighbors
-                          .filter((neighborId) => territory.id < neighborId)
-                          .map((neighborId) => {
-                            const target = snapshot.map.find((entry) => entry.id === neighborId);
-                            const targetPosition = target ? territoryPosition(target) : null;
-                            if (!targetPosition) {
-                              return null;
-                            }
+                      return territory.neighbors
+                        .filter((neighborId) => territory.id < neighborId)
+                        .map((neighborId) => {
+                          const target = snapshot.map.find((entry) => entry.id === neighborId);
+                          const targetPosition = target ? territoryPosition(target) : null;
+                          if (!targetPosition) {
+                            return null;
+                          }
 
-                            return (
-                              <line
-                                key={`${territory.id}-${neighborId}`}
-                                className="map-link"
-                                x1={sourcePosition.x}
-                                y1={sourcePosition.y}
-                                x2={targetPosition.x}
-                                y2={targetPosition.y}
-                              />
-                            );
-                          });
-                      })}
-                    </svg>
-                  </div>
+                          return (
+                            <line
+                              key={`${territory.id}-${neighborId}`}
+                              className="map-link"
+                              x1={sourcePosition.x}
+                              y1={sourcePosition.y}
+                              x2={targetPosition.x}
+                              y2={targetPosition.y}
+                            />
+                          );
+                        });
+                    })}
+                  </svg>
                 </div>
               </div>
+            </div>
           </div>
           <div className="map-markers-layer" data-map-markers>
             {(snapshot.map || []).map((territory) => {
@@ -733,7 +732,9 @@ export function GameplayMapViewport({
                   onClick={() => handleTerritoryClick(territory.id)}
                 >
                   <span className="territory-armies">{territory.armies}</span>
-                  <span className="visually-hidden">{territoryOwnerName(territory, playersById)}</span>
+                  <span className="visually-hidden">
+                    {territoryOwnerName(territory, playersById)}
+                  </span>
                 </button>
               );
             })}
