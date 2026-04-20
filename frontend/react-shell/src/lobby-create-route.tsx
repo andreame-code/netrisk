@@ -115,11 +115,7 @@ function selectedPieceSkin(options: GameOptionsResponse | undefined, pieceSkinId
 }
 
 function diceRuleSetLabel(
-  diceRuleSet:
-    | ReturnType<typeof selectedDiceRuleSet>
-    | ReturnType<typeof selectedDiceRuleSet>
-    | null
-    | undefined
+  diceRuleSet: ReturnType<typeof selectedDiceRuleSet> | null | undefined
 ): string {
   if (!diceRuleSet) {
     return t("common.notAvailable");
