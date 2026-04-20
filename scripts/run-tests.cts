@@ -2182,7 +2182,7 @@ register("auth store migra password legacy in hash al login riuscito", async () 
             username: "legacy",
             credentials: {
               password: {
-                secret: "secret"
+                secret: "legacy-secret"
               }
             },
             role: "user",
@@ -2203,7 +2203,7 @@ register("auth store migra password legacy in hash al login riuscito", async () 
       sessionsFile: tempSessionsFile,
       dbFile: tempDbFile
     });
-    const login = await auth.loginWithPassword("legacy", "secret");
+    const login = await auth.loginWithPassword("legacy", "legacy-secret");
     assert.equal(login.ok, true);
 
     const storedUser = await auth.datastore.findUserByUsername("legacy");
@@ -2242,7 +2242,7 @@ register("auth store accetta email opzionale ma rifiuta password debole", async 
 
     const weak = await auth.registerPasswordUser({
       username: "weak-user",
-      password: "123",
+      password: "short12",
       email: "weak@example.com"
     });
     assert.equal(weak.ok, false);
@@ -5285,10 +5285,10 @@ register(
       });
 
       try {
-        const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
+        const registered = await app.auth.registerPasswordUser("supa_tester", TEST_PASSWORD);
         assert.equal(registered.ok, true);
 
-        const login = await app.auth.loginWithPassword("supa_tester", "secret");
+        const login = await app.auth.loginWithPassword("supa_tester", TEST_PASSWORD);
         assert.equal(login.ok, true);
         assert.equal(typeof login.sessionToken, "string");
 

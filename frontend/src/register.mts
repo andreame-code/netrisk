@@ -73,7 +73,7 @@ function registrationClientError(
     return t("register.errors.invalidUsername");
   }
 
-  if (password.length < 4) {
+  if (password.length < 8 || password.length > 128) {
     return t("register.errors.shortPassword");
   }
 
