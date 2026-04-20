@@ -57,6 +57,22 @@ function createLobbyGames(): GameListResponse {
   };
 }
 
+function createActiveLobbyGames(activeGameId = "game-42"): GameListResponse {
+  return {
+    games: [
+      {
+        id: activeGameId,
+        name: "Bridge Match",
+        phase: "active",
+        playerCount: 2,
+        updatedAt: "2026-04-20T06:00:00.000Z",
+        totalPlayers: 2
+      }
+    ],
+    activeGameId
+  };
+}
+
 function emptyModuleOptions(): ModuleOptionsResponse {
   return {
     modules: [],
@@ -136,6 +152,29 @@ describe("React shell routing and session integration", () => {
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     await waitFor(() => {
       expect(getSessionMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("resolves /game.html without gameId to the authenticated user's active game route", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createActiveLobbyGames());
+
+    renderReactShell("/game.html");
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/game/game-42");
+    });
+  });
+
+  it("falls back to the canonical lobby when /game.html has no user-scoped active game", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderReactShell("/game.html");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/lobby.html");
     });
   });
 });

@@ -55,7 +55,21 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   });
 
   await page.route("**/api/games**", async (route) => {
-    await route.fulfill({ json: { games: [{ id: "g-1", name: "Trade Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
+    await route.fulfill({
+      json: {
+        games: [
+          {
+            id: "g-1",
+            name: "Trade Match",
+            updatedAt: "2026-03-19T10:00:00.000Z",
+            phase: "active",
+            playerCount: 2,
+            totalPlayers: 2
+          }
+        ],
+        activeGameId: "g-1"
+      }
+    });
   });
 
   await page.route("**/api/state**", async (route) => {
@@ -103,6 +117,5 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);
   await expect(page.locator("#card-trade-help")).toContainText("0/3 carte selezionate");
 });
-
 
 

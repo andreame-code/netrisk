@@ -43,6 +43,11 @@ type NewGameFormState = {
   uiProfileId: string;
 };
 
+type SetupOptionIds = Pick<
+  NewGameFormState,
+  "diceRuleSetId" | "victoryRuleSetId" | "themeId" | "pieceSkinId"
+>;
+
 function firstId<T extends { id: string }>(entries: T[] | null | undefined): string {
   return entries?.[0]?.id || "";
 }
@@ -112,6 +117,27 @@ function selectedTheme(options: GameOptionsResponse | undefined, themeId: string
 
 function selectedPieceSkin(options: GameOptionsResponse | undefined, pieceSkinId: string) {
   return options?.pieceSkins?.find((entry) => entry.id === pieceSkinId) || null;
+}
+
+function resolveSetupOptionIds(
+  formState: NewGameFormState,
+  ruleSet: ReturnType<typeof selectedRuleSet>
+): SetupOptionIds {
+  if (formState.customizeOptions || !ruleSet) {
+    return {
+      diceRuleSetId: formState.diceRuleSetId,
+      victoryRuleSetId: formState.victoryRuleSetId,
+      themeId: formState.themeId,
+      pieceSkinId: formState.pieceSkinId
+    };
+  }
+
+  return {
+    diceRuleSetId: ruleSet.defaults.diceRuleSetId,
+    victoryRuleSetId: ruleSet.defaults.victoryRuleSetId,
+    themeId: ruleSet.defaults.themeId,
+    pieceSkinId: ruleSet.defaults.pieceSkinId
+  };
 }
 
 function diceRuleSetLabel(
@@ -366,38 +392,19 @@ export function LobbyCreateRoute() {
     ? selectedContentPack(options, formState.contentPackId)
     : null;
   const currentRuleSet = formState ? selectedRuleSet(options, formState.ruleSetId) : null;
+  const resolvedSetupOptions = formState ? resolveSetupOptionIds(formState, currentRuleSet) : null;
   const currentMap = formState ? selectedMap(options, formState.mapId) : null;
-  const currentDiceRuleSet = formState
-    ? selectedDiceRuleSet(
-        options,
-        formState.customizeOptions
-          ? formState.diceRuleSetId
-          : currentRuleSet?.defaults.diceRuleSetId || formState.diceRuleSetId
-      )
+  const currentDiceRuleSet = resolvedSetupOptions
+    ? selectedDiceRuleSet(options, resolvedSetupOptions.diceRuleSetId)
     : null;
-  const currentVictoryRuleSet = formState
-    ? selectedVictoryRuleSet(
-        options,
-        formState.customizeOptions
-          ? formState.victoryRuleSetId
-          : currentRuleSet?.defaults.victoryRuleSetId || formState.victoryRuleSetId
-      )
+  const currentVictoryRuleSet = resolvedSetupOptions
+    ? selectedVictoryRuleSet(options, resolvedSetupOptions.victoryRuleSetId)
     : null;
-  const currentTheme = formState
-    ? selectedTheme(
-        options,
-        formState.customizeOptions
-          ? formState.themeId
-          : currentRuleSet?.defaults.themeId || formState.themeId
-      )
+  const currentTheme = resolvedSetupOptions
+    ? selectedTheme(options, resolvedSetupOptions.themeId)
     : null;
-  const currentPieceSkin = formState
-    ? selectedPieceSkin(
-        options,
-        formState.customizeOptions
-          ? formState.pieceSkinId
-          : currentRuleSet?.defaults.pieceSkinId || formState.pieceSkinId
-      )
+  const currentPieceSkin = resolvedSetupOptions
+    ? selectedPieceSkin(options, resolvedSetupOptions.pieceSkinId)
     : null;
   const setupSummary = [
     diceRuleSetLabel(currentDiceRuleSet),
@@ -439,6 +446,7 @@ export function LobbyCreateRoute() {
 
     setSubmitError("");
     const submittedMapId = mapSelectRef.current?.value || formState.mapId;
+    const submittedSetupOptions = resolveSetupOptionIds(formState, currentRuleSet);
     if (!options?.maps.some((entry) => entry.id === submittedMapId)) {
       setSubmitError(t("newGame.errors.unsupportedMap"));
       return;
@@ -449,10 +457,16 @@ export function LobbyCreateRoute() {
       ...(formState.contentPackId ? { contentPackId: formState.contentPackId } : {}),
       ...(formState.ruleSetId ? { ruleSetId: formState.ruleSetId } : {}),
       ...(submittedMapId ? { mapId: submittedMapId } : {}),
-      ...(formState.diceRuleSetId ? { diceRuleSetId: formState.diceRuleSetId } : {}),
-      ...(formState.victoryRuleSetId ? { victoryRuleSetId: formState.victoryRuleSetId } : {}),
-      ...(formState.themeId ? { themeId: formState.themeId } : {}),
-      ...(formState.pieceSkinId ? { pieceSkinId: formState.pieceSkinId } : {}),
+      ...(submittedSetupOptions.diceRuleSetId
+        ? { diceRuleSetId: submittedSetupOptions.diceRuleSetId }
+        : {}),
+      ...(submittedSetupOptions.victoryRuleSetId
+        ? { victoryRuleSetId: submittedSetupOptions.victoryRuleSetId }
+        : {}),
+      ...(submittedSetupOptions.themeId ? { themeId: submittedSetupOptions.themeId } : {}),
+      ...(submittedSetupOptions.pieceSkinId
+        ? { pieceSkinId: submittedSetupOptions.pieceSkinId }
+        : {}),
       ...(formState.gamePresetId ? { gamePresetId: formState.gamePresetId } : {}),
       ...(formState.selectedModuleIds.length
         ? { activeModuleIds: formState.selectedModuleIds }

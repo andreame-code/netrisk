@@ -297,7 +297,8 @@ describe("ProfileRoute integration", () => {
 
     renderReactShell("/react/profile");
 
-    expect(await screen.findByTestId("react-shell-profile-loading")).toBeInTheDocument();
+    expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
+    expect(screen.getByText("Caricamento dati giocatore...")).toBeInTheDocument();
     expect(screen.queryByTestId("react-shell-profile-metrics")).not.toBeInTheDocument();
   });
 

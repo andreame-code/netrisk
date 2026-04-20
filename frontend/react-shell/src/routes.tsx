@@ -10,12 +10,14 @@ import {
   useSearchParams
 } from "react-router-dom";
 
+import { useQuery } from "@tanstack/react-query";
+
+import { listGames } from "@frontend-core/api/client.mts";
 import { LegacyAppShell } from "@react-shell/legacy-app-shell";
 import { useAuth, AuthProvider } from "@react-shell/auth";
 import { LandingRoute } from "@react-shell/landing-route";
 import {
   buildBootstrapPath,
-  buildGameIndexPath,
   buildGamePath,
   buildLobbyPath,
   buildLoginPath,
@@ -117,12 +119,74 @@ function BootstrapRoute() {
 function GameHtmlBridge() {
   const [searchParams] = useSearchParams();
   const namespace = useShellNamespace();
+  const { state, refresh } = useAuth();
   const rawGameId = searchParams.get("gameId");
   const gameId = typeof rawGameId === "string" ? rawGameId.trim() : "";
+  const lobbyQuery = useQuery({
+    queryKey: ["game-html-bridge", "active-game-target"],
+    enabled: !gameId && state.status === "authenticated",
+    retry: false,
+    queryFn: () =>
+      listGames({
+        errorMessage: t("lobby.errors.loadFailed"),
+        fallbackMessage: t("lobby.errors.loadFailed")
+      })
+  });
+
+  if (gameId) {
+    return <Navigate to={buildGamePath(gameId, namespace)} replace />;
+  }
+
+  if (state.status === "loading") {
+    return (
+      <LoadingPanel
+        title="Resolving the active game route"
+        copy="Checking the current browser session before deciding whether to reopen a game or send you back to the lobby."
+      />
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <ErrorPanel
+        title="Unable to resolve the active game route"
+        message={state.message}
+        onRetry={refresh}
+      />
+    );
+  }
+
+  if (state.status !== "authenticated") {
+    return <Navigate to={buildLobbyPath(namespace)} replace />;
+  }
+
+  if (lobbyQuery.isLoading) {
+    return (
+      <LoadingPanel
+        title="Resolving the active game route"
+        copy="Looking up the current session's active game before opening the gameplay route."
+      />
+    );
+  }
+
+  if (lobbyQuery.isError) {
+    return (
+      <ErrorPanel
+        title="Unable to resolve the active game route"
+        message={messageFromError(lobbyQuery.error, t("lobby.errors.loadFailed"))}
+        onRetry={async () => {
+          await refresh();
+          await lobbyQuery.refetch();
+        }}
+      />
+    );
+  }
+
+  const activeGameId = lobbyQuery.data?.activeGameId || null;
 
   return (
     <Navigate
-      to={gameId ? buildGamePath(gameId, namespace) : buildGameIndexPath(namespace)}
+      to={activeGameId ? buildGamePath(activeGameId, namespace) : buildLobbyPath(namespace)}
       replace
     />
   );

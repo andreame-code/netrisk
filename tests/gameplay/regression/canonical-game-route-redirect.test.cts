@@ -77,12 +77,13 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
   }
 }
 
-register("GET /game.html redirects to the canonical React gameplay entry", async () => {
+register("GET /game.html without gameId serves the React shell bridge document", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/game.html");
 
-    assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.Location, "/game");
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
+    assert.match(response.body, /<div id="root"><\/div>/i);
   });
 });
 

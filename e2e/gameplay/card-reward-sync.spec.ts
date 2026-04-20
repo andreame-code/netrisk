@@ -47,7 +47,7 @@ test("game page refreshes player hand after an action updates card rewards", asy
     reinforcementPool: 1,
     version: 5
   });
-  let stateCalls = 0;
+  let currentState = initialState;
 
   await page.addInitScript(() => {
     window.localStorage.setItem("frontline-player-id", "p1");
@@ -58,12 +58,25 @@ test("game page refreshes player hand after an action updates card rewards", asy
   });
 
   await page.route("**/api/games**", async (route) => {
-    await route.fulfill({ json: { games: [{ id: "g-1", name: "Reward Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
+    await route.fulfill({
+      json: {
+        games: [
+          {
+            id: "g-1",
+            name: "Reward Match",
+            updatedAt: "2026-03-19T10:00:00.000Z",
+            phase: "active",
+            playerCount: 2,
+            totalPlayers: 2
+          }
+        ],
+        activeGameId: "g-1"
+      }
+    });
   });
 
   await page.route("**/api/state**", async (route) => {
-    stateCalls += 1;
-    await route.fulfill({ json: stateCalls === 1 ? initialState : refreshedState });
+    await route.fulfill({ json: currentState });
   });
 
   await page.route("**/api/events**", async (route) => {
@@ -71,6 +84,7 @@ test("game page refreshes player hand after an action updates card rewards", asy
   });
 
   await page.route("**/api/action", async (route) => {
+    currentState = refreshedState;
     await route.fulfill({ json: { ok: true, state: { ...refreshedState, playerHand: [] } } });
   });
 
@@ -84,4 +98,3 @@ test("game page refreshes player hand after an action updates card rewards", asy
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);
   await expect(page.locator("#card-trade-list")).toContainText("Artiglieria");
 });
-
