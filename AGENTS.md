@@ -74,6 +74,9 @@ For every implementation step, run an explicit loop: modify, run relevant tests,
 Use targeted tests during inner-loop development, then run the full required local validation before updating the PR.
 Update or create the PR only when the current step passes local validation.
 If local validation passes and the user asked for implementation rather than planning only, proceed immediately to the PR update flow without waiting for an extra confirmation.
+After each PR update, explicitly request a Codex review on the PR.
+Treat the Codex PR review as an additional validation loop separate from automated tests: Codex comments on the PR, fix the actionable feedback, rerun the necessary tests, push the update, and request Codex review again.
+Do not consider the PR step complete until the latest Codex review has no unresolved actionable comments, unless the user explicitly instructs otherwise.
 After each PR update, require GitHub CI and Vercel preview/checks to pass.
 If any local or remote check fails, analyze the failure, fix the issue, rerun the necessary tests, update the PR again, and repeat until all required checks are green.
 Do not mark the task complete while required remote checks are still failing or pending, unless explicitly instructed otherwise.
