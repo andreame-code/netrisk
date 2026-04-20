@@ -926,8 +926,6 @@ html[data-theme="ember"] {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 100%;
-  height: 100%;
   transform: translate(-50%, -50%);
   will-change: transform;
 }
@@ -935,8 +933,6 @@ html[data-theme="ember"] {
 .map-board-transform {
   transform-origin: center center;
   will-change: transform;
-  width: 100%;
-  height: 100%;
 }
 
 .map-lines {
