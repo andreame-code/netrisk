@@ -51,10 +51,16 @@ function resolveAppSection(pathname: string): AppSection {
   return "lobby";
 }
 
-function resolveCurrentGameId(pathname: string, search: string): string | null {
+export function resolveCurrentGameId(pathname: string, search: string): string | null {
   const pathMatch = pathname.match(/^\/(?:react\/)?game\/([^/?#]+)$/);
   if (pathMatch) {
-    return decodeURIComponent(pathMatch[1] || "");
+    const rawGameId = pathMatch[1] || "";
+
+    try {
+      return decodeURIComponent(rawGameId);
+    } catch {
+      return rawGameId;
+    }
   }
 
   const searchParams = new URLSearchParams(search);
