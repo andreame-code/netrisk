@@ -49,6 +49,7 @@ const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
 const openReactGameMock = vi.mocked(openReactGame);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
+const lobbyCreateRouteTimeoutMs = 15_000;
 
 function createSession(theme = "command"): AuthSessionResponse {
   return {
@@ -186,6 +187,35 @@ function createGameOptionsResponse(): GameOptionsResponse {
   };
 }
 
+async function renderLobbyCreateRoute() {
+  const rendered = renderReactShell("/react/lobby/new");
+  const createPage = await screen.findByTestId("react-shell-lobby-create-page");
+  const route = within(createPage);
+  const customizeOptionsToggle = (await route.findByTestId(
+    "react-shell-new-game-customize-options"
+  )) as HTMLInputElement;
+  const submitButton = (await route.findByTestId(
+    "react-shell-new-game-submit"
+  )) as HTMLButtonElement;
+
+  await waitFor(() => {
+    expect(submitButton).toBeEnabled();
+  });
+
+  return {
+    ...rendered,
+    route,
+    customizeOptionsToggle,
+    submitButton,
+    diceSelect: (await route.findByTestId("react-shell-new-game-dice")) as HTMLSelectElement,
+    victorySelect: (await route.findByTestId("react-shell-new-game-victory")) as HTMLSelectElement,
+    themeSelect: (await route.findByTestId("react-shell-new-game-theme")) as HTMLSelectElement,
+    pieceSkinSelect: (await route.findByTestId(
+      "react-shell-new-game-piece-skin"
+    )) as HTMLSelectElement
+  };
+}
+
 describe("LobbyCreateRoute integration", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -205,39 +235,65 @@ describe("LobbyCreateRoute integration", () => {
     } as Awaited<ReturnType<typeof createGame>>);
   });
 
-  it("submits the displayed default advanced options when customization is turned back off", async () => {
-    const { user } = renderReactShell("/react/lobby/new");
+  it(
+    "submits the displayed default advanced options when customization is turned back off",
+    async () => {
+      const {
+        user,
+        route,
+        customizeOptionsToggle,
+        submitButton,
+        diceSelect,
+        victorySelect,
+        themeSelect,
+        pieceSkinSelect
+      } = await renderLobbyCreateRoute();
 
-    const customizeOptionsToggle = await screen.findByTestId(
-      "react-shell-new-game-customize-options"
-    );
-    const createPage = await screen.findByTestId("react-shell-lobby-create-page");
-    const route = within(createPage);
+      await user.click(customizeOptionsToggle);
 
-    await user.click(customizeOptionsToggle);
-    await user.selectOptions(route.getByTestId("react-shell-new-game-dice"), "dice-alt");
-    await user.selectOptions(route.getByTestId("react-shell-new-game-victory"), "victory-alt");
-    await user.selectOptions(route.getByTestId("react-shell-new-game-theme"), "theme-alt");
-    await user.selectOptions(route.getByTestId("react-shell-new-game-piece-skin"), "skin-alt");
-    await user.click(route.getByTestId("react-shell-new-game-customize-options"));
-    await user.click(route.getByTestId("react-shell-new-game-submit"));
+      await waitFor(() => {
+        expect(customizeOptionsToggle).toBeChecked();
+      });
 
-    await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
-    });
+      await user.selectOptions(diceSelect, "dice-alt");
+      await user.selectOptions(victorySelect, "victory-alt");
+      await user.selectOptions(themeSelect, "theme-alt");
+      await user.selectOptions(pieceSkinSelect, "skin-alt");
 
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ruleSetId: "rules-default",
-        mapId: "map-default",
-        diceRuleSetId: "dice-default",
-        victoryRuleSetId: "victory-default",
-        themeId: "theme-default",
-        pieceSkinId: "skin-default"
-      }),
-      expect.any(Object)
-    );
-    expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "game-99");
-    expect(openReactGameMock).toHaveBeenCalledWith("game-99");
-  });
+      await waitFor(() => {
+        expect(diceSelect).toHaveValue("dice-alt");
+        expect(victorySelect).toHaveValue("victory-alt");
+        expect(themeSelect).toHaveValue("theme-alt");
+        expect(pieceSkinSelect).toHaveValue("skin-alt");
+      });
+
+      await user.click(route.getByTestId("react-shell-new-game-customize-options"));
+
+      await waitFor(() => {
+        expect(customizeOptionsToggle).not.toBeChecked();
+        expect(submitButton).toBeEnabled();
+      });
+
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ruleSetId: "rules-default",
+          mapId: "map-default",
+          diceRuleSetId: "dice-default",
+          victoryRuleSetId: "victory-default",
+          themeId: "theme-default",
+          pieceSkinId: "skin-default"
+        }),
+        expect.any(Object)
+      );
+      expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "game-99");
+      expect(openReactGameMock).toHaveBeenCalledWith("game-99");
+    },
+    lobbyCreateRouteTimeoutMs
+  );
 });
