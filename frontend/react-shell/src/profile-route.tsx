@@ -470,12 +470,12 @@ export function ProfileRoute() {
                 hidden={!activeGames.length}
               >
                 {activeGames.map((game) => (
-                  <a
+                  <Link
                     className="profile-game-row"
                     data-open-game-id={game.id}
                     data-testid={`react-shell-profile-open-${game.id}`}
-                    href={buildReactGamePath(game.id)}
                     key={game.id}
+                    to={buildReactGamePath(game.id)}
                   >
                     <span className="profile-game-primary">
                       <span className="profile-game-kicker">{t("profile.games.kicker")}</span>
@@ -493,7 +493,7 @@ export function ProfileRoute() {
                       </span>
                     </span>
                     <span className="ghost-button">{t("profile.runtime.directive.resume")}</span>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </article>

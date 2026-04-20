@@ -31,7 +31,7 @@ const legacyRuntimeFiles = [
   "shell.mjs",
   "speed-insights.mjs"
 ] as const;
-const legacyRuntimeDirectories = ["core", "locales"] as const;
+const legacyRuntimeDirectories = ["core", "generated", "locales"] as const;
 
 function writeTextFile(fileName: string, content: string): void {
   const absolutePath = path.join(publicDir, fileName);
