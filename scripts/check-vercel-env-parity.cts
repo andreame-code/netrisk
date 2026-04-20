@@ -21,13 +21,20 @@ function normalizedVercelToken(): string | null {
 function run(command: string, args: string[]): string {
   const token = normalizedVercelToken();
   const commandArgs = command === "vercel" && token ? args.concat(["--token", token]) : args;
-  const executable = process.platform === "win32" && command === "vercel" ? "vercel.cmd" : command;
-  const result = spawnSync(executable, commandArgs, {
-    encoding: "utf8",
-    stdio: "pipe",
-    cwd: process.cwd(),
-    env: process.env
-  });
+  const result =
+    process.platform === "win32" && command === "vercel"
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "vercel"].concat(commandArgs), {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        })
+      : spawnSync(command, commandArgs, {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        });
 
   if (result.status !== 0) {
     const error = new Error(

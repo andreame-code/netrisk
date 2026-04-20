@@ -153,6 +153,23 @@ function findProjectInScope(
   };
 }
 
+function findProjectsInScopes(
+  projectName: string,
+  candidates: VercelScopeCandidate[]
+): Array<{ projectId: string; candidate: VercelScopeCandidate }> {
+  return candidates.reduce<Array<{ projectId: string; candidate: VercelScopeCandidate }>>(
+    (matches, candidate) => {
+      const project = findProjectInScope(projectName, candidate);
+      if (project) {
+        matches.push(project);
+      }
+
+      return matches;
+    },
+    []
+  );
+}
+
 async function main(): Promise<void> {
   const projectFilePath = path.join(process.cwd(), ".vercel", "project.json");
   if (fs.existsSync(projectFilePath)) {
@@ -188,23 +205,23 @@ async function main(): Promise<void> {
   if (normalizedRequestedScope && !scopeCandidates.length) {
     throw new Error(`Unable to resolve requested Vercel scope ${normalizedRequestedScope}.`);
   }
-  const resolvedProject = scopeCandidates.reduce<{
-    projectId: string;
-    candidate: VercelScopeCandidate;
-  } | null>((found, candidate) => {
-    if (found) {
-      return found;
-    }
+  const resolvedProjects = findProjectsInScopes(projectName, scopeCandidates);
 
-    return findProjectInScope(projectName, candidate);
-  }, null);
-
-  if (!resolvedProject) {
+  if (!resolvedProjects.length) {
     const searchedScopes = scopeCandidates.map((candidate) => candidate.label).join(", ");
     throw new Error(
       `Unable to resolve Vercel project id for project ${projectName} in scopes ${searchedScopes}`
     );
   }
+
+  if (resolvedProjects.length > 1) {
+    const matchedScopes = resolvedProjects.map((project) => project.candidate.label).join(", ");
+    throw new Error(
+      `Found multiple Vercel projects named ${projectName} in scopes ${matchedScopes}. Set VERCEL_TEAM_SLUG to disambiguate the target scope.`
+    );
+  }
+
+  const [resolvedProject] = resolvedProjects;
 
   fs.mkdirSync(path.dirname(projectFilePath), { recursive: true });
   fs.writeFileSync(
