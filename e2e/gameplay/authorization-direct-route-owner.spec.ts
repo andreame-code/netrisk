@@ -8,10 +8,10 @@ test("creator can reopen a protected lobby from a direct game route", async ({ p
 
   await resetGame(page);
 
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, ownerUser);
-  await page.goto("/new-game.html");
-  await expect(page).toHaveURL(/\/new-game\.html$/);
+  await page.goto("/lobby/new");
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
   await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
@@ -20,7 +20,7 @@ test("creator can reopen a protected lobby from a direct game route", async ({ p
   expect(gameMatch).toBeTruthy();
   const protectedGameId = decodeURIComponent(gameMatch[1]);
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await page.goto("/game.html?gameId=" + encodeURIComponent(protectedGameId));
 
   await expect(page).toHaveURL(new RegExp("/game/" + protectedGameId + "$"));

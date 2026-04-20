@@ -6,6 +6,7 @@ import {
   Outlet,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useSearchParams
 } from "react-router-dom";
@@ -52,6 +53,11 @@ function LoadingPanel({ title, copy }: { title: string; copy: string }) {
       <p className="status-copy">{copy}</p>
     </section>
   );
+}
+
+function LegacyDocumentRedirect({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
 }
 
 function ErrorPanel({
@@ -350,21 +356,25 @@ export function AppRoutes() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingRoute />} />
-          <Route path="/index.html" element={<LandingRoute />} />
+          <Route path="/index.html" element={<LegacyDocumentRedirect to="/" />} />
+          <Route path="/landing.html" element={<LegacyDocumentRedirect to="/" />} />
           <Route path="/react" element={<BootstrapRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/react/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterRoute />} />
-            <Route path="/register.html" element={<RegisterRoute />} />
+            <Route path="/register.html" element={<LegacyDocumentRedirect to="/register" />} />
             <Route path="/react/register" element={<RegisterRoute />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             <Route path="/react/unauthorized" element={<UnauthorizedPage />} />
-            <Route path="/lobby.html" element={<LobbyRoute />} />
+            <Route path="/lobby" element={<LobbyRoute />} />
+            <Route path="/lobby.html" element={<LegacyDocumentRedirect to="/lobby" />} />
             <Route path="/react/lobby" element={<LobbyRoute />} />
-            <Route path="/new-game.html" element={<LobbyCreateRoute />} />
+            <Route path="/lobby/new" element={<LobbyCreateRoute />} />
+            <Route path="/new-game.html" element={<LegacyDocumentRedirect to="/lobby/new" />} />
             <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
-            <Route path="/profile.html" element={<ProfileRoute />} />
+            <Route path="/profile" element={<ProfileRoute />} />
+            <Route path="/profile.html" element={<LegacyDocumentRedirect to="/profile" />} />
             <Route path="/react/profile" element={<ProfileRoute />} />
             <Route path="/game.html" element={<GameHtmlBridge />} />
             <Route path="/game" element={<GameRoute />} />

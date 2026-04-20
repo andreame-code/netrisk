@@ -18,7 +18,7 @@ test("user can join an available lobby game directly from the lobby list", async
   await registerAndLogin(ownerPage, ownerUser);
   await ownerPage.goto("/lobby.html");
   await ownerPage.locator("#create-game-button").click();
-  await expect(ownerPage).toHaveURL(/\/new-game\.html$/);
+  await expect(ownerPage).toHaveURL(/\/lobby\/new$/);
   await ownerPage.locator("#setup-game-name").fill(gameName);
   await ownerPage.getByRole("button", { name: "Crea e apri" }).click();
   await expect(ownerPage.locator("#game-status")).toContainText(gameName);
@@ -48,4 +48,3 @@ test("user can join an available lobby game directly from the lobby list", async
   await ownerContext.close();
   await joinerContext.close();
 });
-

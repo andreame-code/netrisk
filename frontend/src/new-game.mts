@@ -1,5 +1,6 @@
 import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./core/dom.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   ContentPackSummary,
@@ -1045,7 +1046,7 @@ elements.form.addEventListener("submit", async (event) => {
       throw new Error(t("newGame.errors.submitFailed"));
     }
 
-    window.location.href = "/game.html?gameId=" + encodeURIComponent(data.game.id);
+    window.location.href = buildSyncedGameLocation(window.location.href, data.game.id);
   } catch (error: unknown) {
     setFeedback(messageFromError(error, t("newGame.errors.submitFailed")), "error");
   } finally {

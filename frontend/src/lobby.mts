@@ -1,5 +1,6 @@
 import { closest as closestElement, maybeQuery, setMarkup } from "./core/dom.mjs";
 import { getSession, joinGame, listGames, login, logout, openGame } from "./core/api/client.mjs";
+import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type { GameSummary, PublicUser } from "./core/types.mjs";
 import { formatDate, t } from "./i18n.mjs";
@@ -542,7 +543,7 @@ async function loadGameList(options: { renderOnChange?: boolean } = {}): Promise
 }
 
 function navigateToGameRoute(gameId: string): void {
-  window.location.href = "/game/" + encodeURIComponent(gameId);
+  window.location.href = buildSyncedGameLocation(window.location.href, gameId);
 }
 
 async function openGameById(gameId: string): Promise<void> {
@@ -725,5 +726,5 @@ elements.gameSessionList?.addEventListener("keydown", (event: Event) => {
     return;
   }
 
-  window.location.href = "/game/" + encodeURIComponent(gameId);
+  window.location.href = buildSyncedGameLocation(window.location.href, gameId);
 });

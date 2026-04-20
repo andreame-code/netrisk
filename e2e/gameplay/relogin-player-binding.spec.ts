@@ -13,7 +13,7 @@ test("existing game keeps the same player binding after logout and login again",
 
   await page.goto("/lobby.html");
   await page.locator("#create-game-button").click();
-  await expect(page).toHaveURL(/\/new-game\.html$/);
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.locator("#setup-game-name").fill(gameName);
@@ -50,5 +50,4 @@ test("existing game keeps the same player binding after logout and login again",
   await page.getByRole("button", { name: "Aggiungi" }).click();
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 });
-
 

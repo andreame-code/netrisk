@@ -7,7 +7,7 @@ test.describe("secondary pages mobile baselines", () => {
   test("lobby mobile layout matches the baseline", async ({ page }) => {
     test.slow();
     await resetGame(page);
-    await page.goto("/lobby.html");
+    await page.goto("/lobby");
     await expect(page.getByTestId("game-lobby-shell")).toBeVisible();
     await expect(page.locator("#game-list-state")).toContainText("Nessuna partita disponibile.");
     await expect(page.locator("#auth-status")).toContainText("Accedi per aprire e gestire le tue sessioni.");
@@ -19,7 +19,7 @@ test.describe("secondary pages mobile baselines", () => {
 
   test("profile mobile layout matches the baseline without a session", async ({ page }) => {
     test.slow();
-    await page.goto("/profile.html");
+    await page.goto("/profile");
     await expect(page.getByTestId("player-profile-shell")).toBeVisible();
     await expect(page.locator("#profile-feedback")).toContainText("Accedi prima di consultare il profilo giocatore.");
     await expect(page.getByTestId("player-profile-shell")).toHaveScreenshot("profile-layout-mobile.png", {
@@ -28,4 +28,3 @@ test.describe("secondary pages mobile baselines", () => {
     });
   });
 });
-

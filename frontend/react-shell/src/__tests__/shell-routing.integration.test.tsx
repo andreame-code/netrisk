@@ -92,11 +92,11 @@ beforeEach(() => {
 });
 
 describe("React shell routing and session integration", () => {
-  it("renders the landing route for the /index.html document alias", async () => {
+  it("redirects the /index.html compatibility document to the canonical landing route", async () => {
     renderReactShell("/index.html");
 
     expect(await screen.findByText("Frontline Dominion")).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/index.html");
+    expect(window.location.pathname).toBe("/");
   });
 
   it("shows the legacy profile loading state while the session request is pending", async () => {
@@ -174,7 +174,20 @@ describe("React shell routing and session integration", () => {
 
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     await waitFor(() => {
-      expect(window.location.pathname).toBe("/lobby.html");
+      expect(window.location.pathname).toBe("/lobby");
+    });
+  });
+
+  it("redirects compatibility lobby documents to the clean canonical route", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderReactShell("/lobby.html?tab=active");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/lobby");
+      expect(new URLSearchParams(window.location.search).get("tab")).toBe("active");
     });
   });
 });

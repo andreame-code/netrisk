@@ -18,6 +18,20 @@ type FrontendGeneratedPageDescriptor = {
 
 const projectRoot = process.cwd();
 const publicDir = path.join(projectRoot, "public");
+const legacyDir = path.join(publicDir, "legacy");
+const legacyRuntimeFiles = [
+  "app.mjs",
+  "i18n.mjs",
+  "landing.mjs",
+  "layout.mjs",
+  "lobby.mjs",
+  "new-game.mjs",
+  "profile.mjs",
+  "register.mjs",
+  "shell.mjs",
+  "speed-insights.mjs"
+] as const;
+const legacyRuntimeDirectories = ["core", "locales"] as const;
 
 function writeTextFile(fileName: string, content: string): void {
   const absolutePath = path.join(publicDir, fileName);
@@ -30,16 +44,48 @@ function cleanGeneratedTextFiles(): void {
     return;
   }
 
-  fs.readdirSync(publicDir, { withFileTypes: true }).forEach((entry) => {
-    if (!entry.isFile()) {
+  [
+    "index.html",
+    "landing.html",
+    "game.html",
+    "lobby.html",
+    "new-game.html",
+    "profile.html",
+    "register.html",
+    "landing.css",
+    "shell.css",
+    "style.css"
+  ].forEach((fileName) => {
+    fs.rmSync(path.join(publicDir, fileName), { force: true });
+  });
+
+  fs.rmSync(legacyDir, { recursive: true, force: true });
+}
+
+function copyLegacyRuntimeOutputs(): void {
+  fs.mkdirSync(legacyDir, { recursive: true });
+
+  legacyRuntimeFiles.forEach((fileName) => {
+    const sourcePath = path.join(publicDir, fileName);
+    if (!fs.existsSync(sourcePath)) {
       return;
     }
 
-    if (!entry.name.endsWith(".html") && !entry.name.endsWith(".css")) {
+    const targetPath = path.join(legacyDir, fileName);
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.rmSync(targetPath, { force: true });
+    fs.copyFileSync(sourcePath, targetPath);
+  });
+
+  legacyRuntimeDirectories.forEach((directoryName) => {
+    const sourcePath = path.join(publicDir, directoryName);
+    if (!fs.existsSync(sourcePath)) {
       return;
     }
 
-    fs.rmSync(path.join(publicDir, entry.name), { force: true });
+    const targetPath = path.join(legacyDir, directoryName);
+    fs.rmSync(targetPath, { recursive: true, force: true });
+    fs.cpSync(sourcePath, targetPath, { recursive: true, force: true });
   });
 }
 
@@ -76,6 +122,8 @@ async function main(): Promise<void> {
     assertDescriptorContent(page);
     writeTextFile(page.fileName, page.html);
   });
+
+  copyLegacyRuntimeOutputs();
 
   console.log(
     `Generated ${manifest.frontendPageDescriptors.length} HTML pages and ${manifest.frontendStylesheets.length} stylesheets in ${publicDir}`

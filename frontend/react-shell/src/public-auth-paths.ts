@@ -6,6 +6,32 @@ function isReactShellPath(pathname: string): boolean {
   return pathname === "/react" || pathname.startsWith("/react/");
 }
 
+function normalizeLegacyDocumentPath(pathname: string): string {
+  const url = new URL(pathname, "http://localhost");
+
+  if (url.pathname === "/index.html" || url.pathname === "/landing.html") {
+    url.pathname = "/";
+  } else if (url.pathname === "/register.html") {
+    url.pathname = "/register";
+  } else if (url.pathname === "/lobby.html") {
+    url.pathname = "/lobby";
+  } else if (url.pathname === "/new-game.html") {
+    url.pathname = "/lobby/new";
+  } else if (url.pathname === "/profile.html") {
+    url.pathname = "/profile";
+  } else if (url.pathname === "/game.html") {
+    const gameId = url.searchParams.get("gameId");
+    if (gameId) {
+      url.pathname = `/game/${encodeURIComponent(gameId)}`;
+      url.searchParams.delete("gameId");
+    } else {
+      url.pathname = "/game";
+    }
+  }
+
+  return url.pathname + url.search + url.hash;
+}
+
 function isReservedAuthPath(pathname: string): boolean {
   return (
     pathname === "/login" ||
@@ -45,25 +71,23 @@ function hydrateNamespacePath(
   pathname: string,
   namespace: ShellNamespace = currentShellNamespace()
 ): string {
-  if (namespace !== "react" || pathname.startsWith("/react/") || pathname === "/react") {
-    return pathname;
+  const normalizedPathname = normalizeLegacyDocumentPath(pathname);
+
+  if (
+    namespace !== "react" ||
+    normalizedPathname.startsWith("/react/") ||
+    normalizedPathname === "/react"
+  ) {
+    return normalizedPathname;
   }
 
-  return isReactRelativeShellPath(pathname) ? `/react${pathname}` : pathname;
+  return isReactRelativeShellPath(normalizedPathname)
+    ? `/react${normalizedPathname}`
+    : normalizedPathname;
 }
 
 function normalizeCanonicalShellPath(pathname: string): string {
-  const url = new URL(pathname, "http://localhost");
-
-  if (url.pathname === "/lobby") {
-    url.pathname = "/lobby.html";
-  } else if (url.pathname === "/lobby/new") {
-    url.pathname = "/new-game.html";
-  } else if (url.pathname === "/profile") {
-    url.pathname = "/profile.html";
-  }
-
-  return url.pathname + url.search + url.hash;
+  return normalizeLegacyDocumentPath(pathname);
 }
 
 function serializeNextPathForNamespace(
@@ -103,7 +127,7 @@ export function buildLoginPath(namespace: ShellNamespace = currentShellNamespace
 }
 
 export function buildRegisterPath(namespace: ShellNamespace = currentShellNamespace()): string {
-  return namespace === "react" ? "/react/register" : "/register.html";
+  return namespace === "react" ? "/react/register" : "/register";
 }
 
 export function buildUnauthorizedPath(namespace: ShellNamespace = currentShellNamespace()): string {
@@ -111,15 +135,15 @@ export function buildUnauthorizedPath(namespace: ShellNamespace = currentShellNa
 }
 
 export function buildLobbyPath(namespace: ShellNamespace = currentShellNamespace()): string {
-  return namespace === "react" ? "/react/lobby" : "/lobby.html";
+  return namespace === "react" ? "/react/lobby" : "/lobby";
 }
 
 export function buildNewGamePath(namespace: ShellNamespace = currentShellNamespace()): string {
-  return namespace === "react" ? "/react/lobby/new" : "/new-game.html";
+  return namespace === "react" ? "/react/lobby/new" : "/lobby/new";
 }
 
 export function buildProfilePath(namespace: ShellNamespace = currentShellNamespace()): string {
-  return namespace === "react" ? "/react/profile" : "/profile.html";
+  return namespace === "react" ? "/react/profile" : "/profile";
 }
 
 export function buildGameIndexPath(namespace: ShellNamespace = currentShellNamespace()): string {
@@ -141,12 +165,14 @@ export function normalizeNextPath(
     return fallback;
   }
 
-  if (isReservedAuthPath(nextPath)) {
+  const normalizedNextPath = normalizeLegacyDocumentPath(nextPath);
+
+  if (isReservedAuthPath(normalizedNextPath)) {
     return fallback;
   }
 
   const namespace = detectShellNamespace(fallback);
-  const hydratedPath = hydrateNamespacePath(nextPath, namespace);
+  const hydratedPath = hydrateNamespacePath(normalizedNextPath, namespace);
 
   return namespace === "react" ? hydratedPath : normalizeCanonicalShellPath(hydratedPath);
 }

@@ -136,8 +136,9 @@ interface Body {
 
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
+const legacyPublicRoot = path.join(projectRoot, "public", "legacy");
 const frontendI18nModulePromise = import(
-  pathToFileURL(path.join(projectRoot, "public", "i18n.mjs")).href
+  pathToFileURL(path.join(legacyPublicRoot, "i18n.mjs")).href
 );
 let frontendApiClientModulePromise: Promise<any> | null = null;
 
@@ -267,7 +268,7 @@ function getFrontendApiClientModule(): Promise<any> {
 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-frontend-client-"));
   const tempPublicRoot = path.join(tempRoot, "public");
-  fs.cpSync(path.join(projectRoot, "public", "core"), path.join(tempPublicRoot, "core"), {
+  fs.cpSync(path.join(legacyPublicRoot, "core"), path.join(tempPublicRoot, "core"), {
     recursive: true,
     force: true
   });
@@ -275,7 +276,7 @@ function getFrontendApiClientModule(): Promise<any> {
     recursive: true,
     force: true
   });
-  fs.cpSync(path.join(projectRoot, "public", "locales"), path.join(tempPublicRoot, "locales"), {
+  fs.cpSync(path.join(legacyPublicRoot, "locales"), path.join(tempPublicRoot, "locales"), {
     recursive: true,
     force: true
   });
@@ -283,10 +284,7 @@ function getFrontendApiClientModule(): Promise<any> {
     recursive: true,
     force: true
   });
-  fs.copyFileSync(
-    path.join(projectRoot, "public", "i18n.mjs"),
-    path.join(tempPublicRoot, "i18n.mjs")
-  );
+  fs.copyFileSync(path.join(legacyPublicRoot, "i18n.mjs"), path.join(tempPublicRoot, "i18n.mjs"));
 
   frontendApiClientModulePromise = import(
     pathToFileURL(path.join(tempPublicRoot, "core", "api", "client.mjs")).href
@@ -330,7 +328,7 @@ function authHeaders(sessionToken: string): HeaderMap {
 }
 
 function readPublicHtml(fileName: string): string {
-  return fs.readFileSync(path.join(projectRoot, "public", fileName), "utf8");
+  return fs.readFileSync(path.join(legacyPublicRoot, fileName), "utf8");
 }
 
 function readProjectJson(fileName: string): any {

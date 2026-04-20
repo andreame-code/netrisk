@@ -17,13 +17,13 @@ test("user can create a new game, see it in the list, and open it immediately", 
   }
 
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, owner);
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await loginAgainIfNeeded();
 
   await page.locator("#create-game-button").click();
-  await expect(page).toHaveURL(/\/new-game\.html$/);
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.locator("#setup-game-name").fill(gameName);
@@ -33,12 +33,12 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i, { timeout: 15000 });
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await loginAgainIfNeeded();
   await expect(page.getByTestId("game-session-list")).toContainText(gameName);
   await expect(page.getByTestId("game-session-details")).toContainText(gameName);
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await loginAgainIfNeeded();
   const targetRow = page.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   await expect(targetRow).toBeVisible({ timeout: 15000 });
@@ -56,5 +56,4 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i, { timeout: 15000 });
 });
-
 

@@ -13,7 +13,7 @@ Today the project includes:
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
-- canonical React + Vite UI served on `/`, `/login`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`, and `/game/:gameId`, with `/react/*` kept as a supported alias
+- canonical React + Vite UI served on clean routes `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`, with `/react/*` kept as a supported alias, root `.html` routes kept as compatibility redirects, and the legacy rollback UI isolated under `/legacy/*`
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
@@ -81,7 +81,8 @@ npm start
 ```
 
 Application available at `http://localhost:3000`.
-After `npm start`, the same built React shell serves the canonical user-facing routes and the supported `/react/*` aliases from `http://localhost:3000`.
+After `npm start`, the same built React shell serves the canonical user-facing clean routes and the supported `/react/*` aliases from `http://localhost:3000`.
+The rollback static UI remains available only under `http://localhost:3000/legacy/*` during the transition period.
 
 React shell preview:
 
@@ -89,7 +90,7 @@ React shell preview:
 npm run dev:react-shell
 ```
 
-The React + Vite shell is reachable at `http://localhost:5173/react/` in development. After `npm run build:ts`, the main server serves the same shell on the canonical routes and keeps `/react/*` as an alias namespace.
+The React + Vite shell is reachable at `http://localhost:5173/react/` in development. After `npm run build:ts`, the main server serves the same shell on the canonical clean routes, keeps `/react/*` as an alias namespace, and leaves `/legacy/*` available only for rollback testing.
 The Vite dev server proxies `/api` to `VITE_BACKEND_TARGET`, which defaults to `http://127.0.0.1:3000`.
 Within the React shell, TanStack Query owns route-level remote state such as gameplay snapshots and mutations, while Zustand is limited to local shell/session state.
 
@@ -127,7 +128,7 @@ Preview and production deployments build through:
 npm run build:ts
 ```
 
-That build emits the legacy static site and the React shell together under `public/`, which is also the configured Vercel output directory.
+That build emits the React shell under `public/react`, the rollback HTML/CSS entry documents under `public/legacy`, and the shared static/runtime assets under `public/`, which is also the configured Vercel output directory.
 
 Required deploy/runtime variables are:
 
@@ -289,11 +290,11 @@ For a full local gate before pushing, use `npm run test:all:e2e`.
 The architecture follows a simple principle: frontend renders and sends actions, backend decides what is valid, shared modules define the common domain.
 
 - `public`
-  Static web interface output generated from the frontend sources and served by the runtime.
+  Static web interface output generated from the frontend sources and served by the runtime, with clean-route React entry handling at the root and rollback HTML/CSS documents isolated under `public/legacy`.
 - `frontend/react-shell`
   React + Vite shell sources that power the canonical user-facing routes and the supported `/react/*` alias namespace.
 - `frontend/src`
-  TypeScript frontend sources for pages, shell, i18n, typed API client helpers, and generated shared imports.
+  TypeScript frontend sources for the rollback static pages, shared shell/i18n, typed API client helpers, and generated shared imports.
 - `modules`
   Runtime-discoverable NetRisk modules that can extend setup defaults, content, presets, and UI slots.
 - `backend`
@@ -386,15 +387,17 @@ Game state notably contains:
 
 Main frontend screens currently available:
 
-- `/` and `index.html`: canonical React landing entry
-- `/lobby.html`: canonical React lobby
-- `/new-game.html`: canonical React new game setup
-- `/game.html`: compatibility bridge that resolves to `/game` or `/game/:gameId`
+- `/`: canonical React landing entry
+- `/login`: canonical React sign-in route
+- `/register`: canonical React register route
+- `/lobby`: canonical React lobby
+- `/lobby/new`: canonical React new game setup
+- `/profile`: canonical React profile
 - `/game`: canonical React gameplay index/start shell
 - `/game/:gameId`: canonical React gameplay route
-- `/profile.html`: canonical React profile
-- `/register.html`: canonical React register route
-- `/login`: canonical React sign-in route
+- `/index.html`, `/landing.html`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`: compatibility redirects to the clean canonical React routes
+- `/game.html`: compatibility bridge that resolves to `/game` or `/game/:gameId`
+- `/legacy/*.html`: rollback namespace for the previous static UI, kept temporarily and not linked from the main React shell
 - `/react/`: supported alias for the React landing/bootstrap route
 - `/react/login`: supported alias for the React sign-in route
 - `/react/register`: supported alias for the React register route
@@ -417,11 +420,11 @@ The game screen also includes:
 - latest combat summary panel with dice and comparison
 - current player card panel with set selection and trade submission
 
-On the canonical React gameplay routes, with `/react/game/*` kept as an alias, the shell also supports:
+On the canonical React gameplay routes, with `/react/game/*` kept as an alias and `/legacy/game.html` kept only as a rollback surface, the shell also supports:
 
 - snapshot bootstrap plus live SSE refresh from the backend state
 - join/start, trade cards, reinforce, attack, move-after-conquest, fortify, end-turn, and surrender actions
-- canonical React gameplay on `/game/:id`, without a separate legacy rollback namespace
+- canonical React gameplay on `/game/:id`, while `/legacy/game.html` remains available only as a non-canonical rollback surface
 
 ## License
 

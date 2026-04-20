@@ -3,10 +3,10 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const owner = uniqueUser(`wcv_${suffix}`);
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
   await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
@@ -24,7 +24,7 @@ const viewports = [
 ];
 
 for (const viewport of viewports) {
-  test(`world classic armies stay visually centered at ${viewport.name}`, async ({ page }) => {
+test(`world classic armies stay visually centered at ${viewport.name}`, async ({ page }) => {
     test.slow();
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openWorldClassicGame(page, viewport.name);
@@ -34,4 +34,3 @@ for (const viewport of viewports) {
     );
   });
 }
-

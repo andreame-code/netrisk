@@ -1256,14 +1256,12 @@ function createApp(options: CreateAppOptions = {}) {
     const isReactShellDocumentRoute =
       !isModuleAssetRequest &&
       (url.pathname === "/" ||
-        url.pathname === "/index.html" ||
         url.pathname === "/login" ||
         url.pathname === "/register" ||
-        url.pathname === "/register.html" ||
+        url.pathname === "/lobby" ||
+        url.pathname === "/lobby/new" ||
+        url.pathname === "/profile" ||
         url.pathname === "/unauthorized" ||
-        url.pathname === "/lobby.html" ||
-        url.pathname === "/new-game.html" ||
-        url.pathname === "/profile.html" ||
         url.pathname === "/game.html" ||
         url.pathname === "/game" ||
         url.pathname === "/react" ||
@@ -1346,6 +1344,46 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
+        if (req.method === "GET" && url.pathname === "/index.html") {
+          res.writeHead(302, {
+            Location: "/"
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname === "/register.html") {
+          res.writeHead(302, {
+            Location: "/register" + url.search
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname === "/lobby.html") {
+          res.writeHead(302, {
+            Location: "/lobby" + url.search
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname === "/new-game.html") {
+          res.writeHead(302, {
+            Location: "/lobby/new" + url.search
+          });
+          res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname === "/profile.html") {
+          res.writeHead(302, {
+            Location: "/profile" + url.search
+          });
+          res.end();
+          return null;
+        }
+
         if (req.method === "GET" && url.pathname === "/game.html") {
           const requestedGameId = url.searchParams.get("gameId");
           if (requestedGameId) {
@@ -1355,6 +1393,14 @@ function createApp(options: CreateAppOptions = {}) {
             res.end();
             return null;
           }
+        }
+
+        if (req.method === "GET" && (url.pathname === "/legacy" || url.pathname === "/legacy/")) {
+          res.writeHead(302, {
+            Location: "/legacy/index.html"
+          });
+          res.end();
+          return null;
         }
 
         serveStatic(res, url);

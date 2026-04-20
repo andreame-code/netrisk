@@ -11,7 +11,7 @@ L'applicazione include già:
 - autenticazione (register/login/logout), profilo utente e preferenze tema
 - validazione runtime condivisa dei payload auth/profile, lobby e gameplay tra backend e frontend
 - layer client API frontend tipizzato per auth, profile, lobby, setup e gameplay
-- shell React + Vite che serve le route canoniche utente, con `/react/*` mantenuto come alias supportato
+- shell React + Vite che serve le route canoniche pulite (`/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, `/game/:gameId`), con `/react/*` mantenuto come alias supportato, le vecchie `.html` come redirect di compatibilita e `/legacy/*` come namespace rollback transitorio
 - convenzioni React shell con TanStack Query per route/server state remoto e Zustand limitato a shell/session UI
 - route React protette per login, lobby, new game, profile e gameplay core-playable sulle URL canoniche e sugli alias `/react/*`
 - osservabilita minima della React shell con Sentry lato browser, release tagging e correlazione request-id verso il backend
@@ -31,7 +31,7 @@ Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 ## Cartelle principali
 
 `/frontend/src`  
-Sorgente TypeScript (`.mts`) della UI web, della shell condivisa, dell'i18n e della manifest static site.
+Sorgente TypeScript (`.mts`) della UI rollback legacy, della shell condivisa, dell'i18n e della manifest static site.
 
 `/frontend/react-shell`  
 Shell React + Vite, con alias verso `frontend/src/core` e `shared`, usata sia per le route canoniche sia per il namespace supportato `/react/*`.
@@ -44,10 +44,13 @@ Boundary HTTP frontend framework-agnostic: request helpers tipizzati, parsing/va
 Asset sorgente frontend (mappe e media) sincronizzati nella build pubblica.
 
 `/public`  
-Output statico generato della UI (`.html`, `.css`, `.mjs`) effettivamente servito dal runtime applicativo.
+Output statico generato della UI effettivamente servito dal runtime applicativo; il root non espone piu i vecchi documenti `.html`, mentre la rollback UI resta sotto `public/legacy`.
 
 `/public/react`  
 Output build della shell React, servito dal backend statico come bundle condiviso per le route canoniche e per `/react/*`.
+
+`/public/legacy`  
+Documenti HTML/CSS e asset di rollback della UI precedente, tenuti separati dalle route canoniche per facilitarne la rimozione successiva.
 
 `/backend`  
 Server HTTP, autenticazione, autorizzazione, datastore, sessioni di gioco e route API.
@@ -163,7 +166,7 @@ Categorie future da trattare con lo stesso modello:
 
 - Runtime backend: Node.js HTTP server (`backend/server.cts`).
 - Runtime deploy: entrypoint `api/index.ts` che espone `createApp()` dal backend compilato.
-- Pipeline frontend: `frontend/src` viene compilato e materializzato in `public/` tramite gli script di build.
+- Pipeline frontend: `frontend/src` viene compilato e materializzato come namespace rollback in `public/legacy/`, con i runtime asset condivisi lasciati in `public/` e copiati dove servono al rollback.
 - Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` per l'alias namespace e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling, SSE payload parsing ed error translation per auth, profile, lobby, setup e gameplay.
@@ -175,7 +178,7 @@ Categorie future da trattare con lo stesso modello:
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
 - Correlazione runtime: le risposte `/api/*` espongono `X-Request-Id`; gli errori backend inattesi vengono loggati con `requestId`, route e `release` per facilitare la diagnosi dei problemi emersi dalla shell React.
-- Routing statico: `backend/server.cts` risolve le route React canoniche e gli alias `/react/*` senza sovrapporre frontend diversi.
+- Routing statico: `backend/server.cts` risolve le route React canoniche pulite e gli alias `/react/*`, converte le vecchie root `.html` in redirect/bridge di compatibilita e serve la UI precedente solo sotto `/legacy/*`.
 - Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.
 
 ## Flusso sintetico applicativo

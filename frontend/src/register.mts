@@ -37,6 +37,10 @@ function setHeaderAuthFeedback(message = ""): void {
   window.netriskShell?.setHeaderAuthFeedback?.(message, "error");
 }
 
+function profileLocation(): string {
+  return window.location.pathname.startsWith("/legacy/") ? "/legacy/profile.html" : "/profile";
+}
+
 function renderNavAvatar(username = "") {
   const avatar = maybeQuery("#nav-avatar");
   if (!avatar) {
@@ -74,7 +78,7 @@ async function loginWithCredentials(username: string, password: string): Promise
   state.user = data.user;
   window.netriskTheme?.applyUserTheme?.(state.user);
   render();
-  window.location.href = "/profile.html";
+  window.location.href = profileLocation();
 }
 
 async function restoreSession() {
