@@ -9,14 +9,32 @@ type SpawnError = Error & {
   status?: number | null;
 };
 
+function normalizedVercelToken(): string | null {
+  const token = process.env.VERCEL_TOKEN;
+  if (typeof token !== "string" || !token.trim()) {
+    return null;
+  }
+
+  return token.trim();
+}
+
 function run(command: string, args: string[]): string {
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    stdio: "pipe",
-    cwd: process.cwd(),
-    env: process.env,
-    shell: process.platform === "win32"
-  });
+  const token = normalizedVercelToken();
+  const commandArgs = command === "vercel" && token ? args.concat(["--token", token]) : args;
+  const result =
+    process.platform === "win32" && command === "vercel"
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "vercel"].concat(commandArgs), {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        })
+      : spawnSync(command, commandArgs, {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        });
 
   if (result.status !== 0) {
     const error = new Error(
