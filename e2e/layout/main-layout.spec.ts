@@ -2,8 +2,9 @@ const { test, expect } = require("@playwright/test");
 const { resetGame } = require("../support/game-helpers");
 
 test("main layout exposes core regions", async ({ page }) => {
-  await resetGame(page);
-  await page.goto("/game.html");
+  const resetPayload = await resetGame(page);
+  const gameId = resetPayload?.state?.gameId;
+  await page.goto(`/game/${encodeURIComponent(gameId)}`);
 
   await expect(page.getByTestId("app-shell")).toBeVisible();
   await expect(page.getByTestId("battlefield-layout")).toBeVisible();
@@ -15,4 +16,3 @@ test("main layout exposes core regions", async ({ page }) => {
   await expect(page.getByTestId("phase-indicator")).not.toBeEmpty();
   await expect(page.getByTestId("status-summary")).toBeVisible();
 });
-

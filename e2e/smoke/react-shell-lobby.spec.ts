@@ -27,13 +27,17 @@ async function loadGameState(page, sessionToken, gameId) {
   return stateResponse.json();
 }
 
-test("react lobby redirects guests to the login route", async ({ page }) => {
+test("react lobby keeps guest access inline with the legacy auth copy", async ({ page }) => {
   await resetGame(page);
 
   await page.goto("/react/lobby");
 
-  await expect(page).toHaveURL(/\/react\/login\?next=%2Flobby$/);
-  await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
+  await expect(page).toHaveURL(/\/react\/lobby$/);
+  await expect(page.getByTestId("react-shell-lobby-page")).toBeVisible();
+  await expect(page.getByTestId("react-shell-session-status")).toContainText(/guest/i);
+  await expect(page.locator("#auth-status")).toContainText(
+    /Accedi per aprire e gestire le tue sessioni|Log in to open and manage your sessions/i
+  );
 });
 
 test("react lobby shows 15 sessions initially and loads more on scroll", async ({ page }) => {

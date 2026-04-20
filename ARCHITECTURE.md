@@ -11,9 +11,9 @@ L'applicazione include già:
 - autenticazione (register/login/logout), profilo utente e preferenze tema
 - validazione runtime condivisa dei payload auth/profile, lobby e gameplay tra backend e frontend
 - layer client API frontend tipizzato per auth, profile, lobby, setup e gameplay
-- shell React + Vite parallela servita su `/react/` senza sostituire la UI legacy
+- shell React + Vite che serve le route canoniche utente, con `/react/*` mantenuto come alias supportato e `/legacy/*` come rollback-only
 - convenzioni React shell con TanStack Query per route/server state remoto e Zustand limitato a shell/session UI
-- route React protette per login, lobby, new game, profile e gameplay core-playable su `/react/game/:gameId`
+- route React protette per login, lobby, new game, profile e gameplay core-playable sulle URL canoniche e sugli alias `/react/*`
 - osservabilita minima della React shell con Sentry lato browser, release tagging e correlazione request-id verso il backend
 - lobby, creazione partita, join player umani e bot AI
 - setup partita 2-4 giocatori con mappe supportate
@@ -34,7 +34,7 @@ Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 Sorgente TypeScript (`.mts`) della UI web, della shell condivisa, dell'i18n e della manifest static site.
 
 `/frontend/react-shell`  
-Shell React + Vite parallela, con alias verso `frontend/src/core` e `shared`, usata come percorso di migrazione incrementale.
+Shell React + Vite, con alias verso `frontend/src/core` e `shared`, usata sia per le route canoniche sia per il namespace supportato `/react/*`.
 Usa TanStack Query per snapshot/mutazioni remote e Zustand solo per stato locale di shell/sessione.
 
 `/frontend/src/core/api`  
@@ -47,7 +47,7 @@ Asset sorgente frontend (mappe e media) sincronizzati nella build pubblica.
 Output statico generato della UI (`.html`, `.css`, `.mjs`) effettivamente servito dal runtime applicativo.
 
 `/public/react`  
-Output build della shell React, servito dal backend statico su `/react` e `/react/`.
+Output build della shell React, servito dal backend statico come bundle condiviso per le route canoniche e per `/react/*`.
 
 `/backend`  
 Server HTTP, autenticazione, autorizzazione, datastore, sessioni di gioco e route API.
@@ -164,7 +164,7 @@ Categorie future da trattare con lo stesso modello:
 - Runtime backend: Node.js HTTP server (`backend/server.cts`).
 - Runtime deploy: entrypoint `api/index.ts` che espone `createApp()` dal backend compilato.
 - Pipeline frontend: `frontend/src` viene compilato e materializzato in `public/` tramite gli script di build.
-- Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
+- Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` per l'alias namespace e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling, SSE payload parsing ed error translation per auth, profile, lobby, setup e gameplay.
 - Frontend observability boundary: il transport layer puo segnalare solo errori inattesi (`network`, `5xx`, payload validi ma fuori schema) tramite il reporter registrato dalla React shell, senza trasformare il frontend legacy in source of truth del monitoraggio.
@@ -175,13 +175,13 @@ Categorie future da trattare con lo stesso modello:
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
 - Correlazione runtime: le risposte `/api/*` espongono `X-Request-Id`; gli errori backend inattesi vengono loggati con `requestId`, route e `release` per facilitare la diagnosi dei problemi emersi dalla shell React.
-- Routing statico: `backend/server.cts` risolve `/`, `/game/*`, le pagine legacy e `/react/` senza sovrapporre i due frontend.
+- Routing statico: `backend/server.cts` risolve le route React canoniche, gli alias `/react/*` e le pagine legacy sotto `/legacy/*` senza sovrapporre frontend diversi.
 - Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.
 
 ## Flusso sintetico applicativo
 
 1. Il client invia azioni o richieste via route backend.
-   Per la shell React e i flussi UI legacy gia migrati, il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
+   Per le route React canoniche, per gli alias `/react/*` e per i fallback legacy ancora mantenuti, il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
    La shell React riusa lo stesso boundary tipizzato invece di introdurre una seconda logica transport.
 2. Il backend autentica/autorizza utente e valida versione stato.
 3. Le route delegano al motore (`backend/engine`) la logica di dominio.

@@ -2,15 +2,16 @@ import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
-  GameListResponse
+  GameListResponse,
+  ModuleOptionsResponse
 } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { getSession, listGames } from "@frontend-core/api/client.mts";
+import { getModuleOptions, getSession, listGames } from "@frontend-core/api/client.mts";
 
 import { createDeferred } from "../../test/deferred";
 import { renderReactShell } from "../../test/render-react-shell";
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@frontend-core/api/client.mts", () => ({
   getSession: vi.fn(),
@@ -20,12 +21,14 @@ vi.mock("@frontend-core/api/client.mts", () => ({
   getProfile: vi.fn(),
   updateThemePreference: vi.fn(),
   listGames: vi.fn(),
+  getModuleOptions: vi.fn(),
   getGameOptions: vi.fn(),
   createGame: vi.fn(),
   openGame: vi.fn(),
   joinGame: vi.fn()
 }));
 
+const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
 const listGamesMock = vi.mocked(listGames);
 
@@ -54,6 +57,40 @@ function createLobbyGames(): GameListResponse {
   };
 }
 
+function createActiveLobbyGames(activeGameId = "game-42"): GameListResponse {
+  return {
+    games: [
+      {
+        id: activeGameId,
+        name: "Bridge Match",
+        phase: "active",
+        playerCount: 2,
+        updatedAt: "2026-04-20T06:00:00.000Z",
+        totalPlayers: 2
+      }
+    ],
+    activeGameId
+  };
+}
+
+function emptyModuleOptions(): ModuleOptionsResponse {
+  return {
+    modules: [],
+    enabledModules: [],
+    gameModules: [],
+    content: {},
+    gamePresets: [],
+    uiSlots: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: []
+  };
+}
+
+beforeEach(() => {
+  getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
+});
+
 describe("React shell routing and session integration", () => {
   it("renders the landing route for the /index.html document alias", async () => {
     renderReactShell("/index.html");
@@ -62,25 +99,30 @@ describe("React shell routing and session integration", () => {
     expect(window.location.pathname).toBe("/index.html");
   });
 
-  it("shows protected route loading while the session request is pending", async () => {
+  it("shows the legacy profile loading state while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 
     getSessionMock.mockReturnValue(sessionRequest.promise);
 
     renderReactShell("/react/profile");
 
-    expect(screen.getByTestId("react-shell-loading")).toBeInTheDocument();
-    expect(screen.getByText("Checking route access")).toBeInTheDocument();
+    expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
+    expect(screen.getByText("Caricamento dati giocatore...")).toBeInTheDocument();
+    expect(screen.getByText("Verifica della sessione in corso...")).toBeInTheDocument();
   });
 
-  it("redirects unauthenticated protected routes to login and preserves the next path", async () => {
+  it("keeps unauthenticated profile routes inline and shows the legacy guest state", async () => {
     getSessionMock.mockRejectedValue(createAuthRequiredError());
 
     renderReactShell("/react/profile?tab=stats");
 
-    expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/react/login");
-    expect(new URLSearchParams(window.location.search).get("next")).toBe("/profile?tab=stats");
+    expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/react/profile");
+    expect(new URLSearchParams(window.location.search).get("tab")).toBe("stats");
+    expect(
+      screen.getByText("Accedi prima di consultare il profilo giocatore.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Sessione non disponibile.")).toBeInTheDocument();
   });
 
   it("routes authenticated bootstrap traffic from the shell root to the lobby", async () => {
@@ -110,6 +152,29 @@ describe("React shell routing and session integration", () => {
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     await waitFor(() => {
       expect(getSessionMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it("resolves /game.html without gameId to the authenticated user's active game route", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createActiveLobbyGames());
+
+    renderReactShell("/game.html");
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/game/game-42");
+    });
+  });
+
+  it("falls back to the canonical lobby when /game.html has no user-scoped active game", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderReactShell("/game.html");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/lobby.html");
     });
   });
 });

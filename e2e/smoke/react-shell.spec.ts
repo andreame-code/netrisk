@@ -23,7 +23,7 @@ async function createAuthenticatedSession(page, username, password = "secret123"
   return sessionToken;
 }
 
-test("react shell bootstrap redirects guests to the login route", async ({ page }) => {
+test("react shell bootstrap keeps guests on the canonical landing route", async ({ page }) => {
   await resetGame(page);
 
   await page.route("**/api/auth/session", async (route) => {
@@ -33,20 +33,24 @@ test("react shell bootstrap redirects guests to the login route", async ({ page 
 
   await page.goto("/react/");
 
-  await expect(page).toHaveTitle(/NetRisk React Shell/i);
-  await expect(page.getByTestId("react-shell-loading")).toBeVisible();
-  await expect(page).toHaveURL(/\/react\/login$/);
-  await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
-  await expect(page.getByTestId("react-shell-session-status")).toContainText(/Guest/i);
+  await expect(page).toHaveTitle(/Frontline Dominion/i);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator(".ld-header")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Accedi" })).toBeVisible();
 });
 
-test("protected react routes redirect guests and preserve the requested destination", async ({ page }) => {
+test("react profile keeps guest access inline and preserves the requested destination", async ({ page }) => {
   await resetGame(page);
 
-  await page.goto("/react/profile");
+  await page.goto("/react/profile?tab=stats");
 
-  await expect(page).toHaveURL(/\/react\/login\?next=%2Fprofile$/);
-  await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
+  await expect(page).toHaveURL(/\/react\/profile\?tab=stats$/);
+  await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();
+  await expect(page.getByTestId("react-shell-session-status")).toContainText(/guest/i);
+  await expect(page.locator("#profile-feedback")).toContainText(
+    /Accedi prima di consultare il profilo giocatore|Log in before opening the player profile/i
+  );
+  await expect(page.locator("#profile-content")).toHaveAttribute("hidden", "");
 });
 
 test("authenticated sessions can open a protected react route directly", async ({ page }) => {
@@ -62,10 +66,11 @@ test("authenticated sessions can open a protected react route directly", async (
   await expect(page.getByTestId("react-shell-session-status")).toContainText(/Authenticated/i);
 });
 
-test("react profile pilot shows query loading before rendering authenticated data", async ({ page }) => {
+test("react profile shows query loading before resolving into the legacy empty-history state", async ({ page }) => {
   await resetGame(page);
 
-  const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_prof_load"));
+  const username = uniqueUser("rsh_prof_load");
+  const sessionToken = await createAuthenticatedSession(page, username);
   await attachSessionCookie(page, sessionToken);
 
   let releaseProfileResponse;
@@ -83,7 +88,8 @@ test("react profile pilot shows query loading before rendering authenticated dat
   releaseProfileResponse();
   await navigation;
 
-  await expect(page.getByTestId("react-shell-profile-metrics")).toBeVisible();
+  await expect(page.locator("#profile-name")).toContainText(username);
+  await expect(page.getByTestId("react-shell-profile-empty")).toBeVisible();
   await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("command");
 });
 
@@ -96,7 +102,7 @@ test("react profile shows the empty-history state for a new authenticated user",
   await page.goto("/react/profile");
 
   await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();
-  await expect(page.getByTestId("react-shell-profile-metrics")).toBeVisible();
+  await expect(page.locator("#profile-content")).toHaveAttribute("hidden", "");
   await expect(page.getByTestId("react-shell-profile-empty")).toBeVisible();
   await expect(page.getByTestId("react-shell-profile-empty")).toContainText(
     /No stats available|Nessuna statistica disponibile/
@@ -186,7 +192,7 @@ test("react profile participating games open the React gameplay route", async ({
   const openLink = page.getByTestId(`react-shell-profile-open-${createdGame.game.id}`);
   await expect(openLink).toBeVisible();
   await expect(openLink).toHaveAttribute("href", new RegExp(`/react/game/${createdGame.game.id}$`));
-  await expect(page.getByText(gameName)).toBeVisible();
+  await expect(openLink).toContainText(gameName);
 
   await openLink.click();
 
@@ -194,7 +200,7 @@ test("react profile participating games open the React gameplay route", async ({
     new RegExp(`/react/game/${createdGame.game.id}$`)
   );
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
-  await expect(page.getByText(gameName)).toBeVisible();
+  await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.locator("#players")).toContainText(username, { timeout: 15000 });
 });
 
@@ -228,7 +234,7 @@ test("react profile restores the previous theme when the mutation fails", async 
   );
 });
 
-test("react login returns the user to the protected route that triggered it", async ({ page }) => {
+test("react login returns the user to the requested gameplay route", async ({ page }) => {
   await resetGame(page);
 
   const username = uniqueUser("react_shell_login");
@@ -262,14 +268,13 @@ test("react login returns the user to the protected route that triggered it", as
 
   await page.context().clearCookies();
 
-  await page.goto(`/react/game/${createdGame.game.id}`);
-  await expect(page).toHaveURL(
-    new RegExp(`/react/login\\?next=%2Fgame%2F${createdGame.game.id}$`)
-  );
+  await page.goto(`/react/login?next=%2Fgame%2F${createdGame.game.id}`);
+  await expect(page).toHaveURL(new RegExp(`/react/login\\?next=%2Fgame%2F${createdGame.game.id}$`));
 
-  await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  const loginPage = page.getByTestId("react-shell-login-page");
+  await loginPage.getByLabel("Username").fill(username);
+  await loginPage.getByLabel("Password").fill(password);
+  await loginPage.getByRole("button", { name: /Sign in|Accedi/i }).click();
 
   await expect(page).toHaveURL(new RegExp(`/react/game/${createdGame.game.id}$`));
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
@@ -284,10 +289,11 @@ test("react register creates an account and enters the requested protected route
 
   await page.goto("/react/register?next=%2Fprofile");
 
-  await page.getByLabel(/Username/i).fill(username);
-  await page.getByLabel(/^Password$/i).fill("secret123");
-  await page.getByLabel(/Confirm password|Conferma password/i).fill("secret123");
-  await page.getByRole("button", { name: /Register|Registrati/i }).click();
+  const registerPage = page.getByTestId("react-shell-register-page");
+  await registerPage.getByLabel(/Username/i).fill(username);
+  await registerPage.getByLabel(/^Password$/i).fill("secret123");
+  await registerPage.getByLabel(/Confirm password|Conferma password/i).fill("secret123");
+  await registerPage.getByRole("button", { name: /Register|Registrati/i }).click();
 
   await expect(page).toHaveURL(/\/react\/profile$/);
   await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();

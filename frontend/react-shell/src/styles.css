@@ -1,5 +1,3 @@
-@import "../../../public/shell.css";
-
 :root,
 html[data-theme="command"],
 html[data-theme="midnight"],
@@ -46,37 +44,6 @@ html[data-theme="ember"] {
   --shell-node-border: var(--border);
   --shell-node-ring: var(--text-inverse);
   --shell-player-swatch-ring: var(--text-inverse);
-  color-scheme: dark;
-  font-family: Georgia, "Trebuchet MS", serif;
-  background: var(--shell-bg);
-  color: var(--shell-heading);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-[hidden] {
-  display: none !important;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--shell-bg);
-  color: var(--shell-heading);
-  font-family: inherit;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-a {
-  color: inherit;
 }
 
 .react-shell-page {
@@ -94,35 +61,10 @@ a {
   box-shadow: var(--bevel), var(--shadow-soft);
 }
 
-.profile-shell,
-.top-nav-bar {
-  border: 1px solid var(--shell-border-hi);
-  background: var(--nav-surface);
-  box-shadow: var(--bevel), var(--shadow-soft);
-}
-
-.top-nav-register {
-  border-color: var(--shell-button-border);
-  background: var(--shell-button-bg);
-  color: var(--shell-button-copy);
-  box-shadow: var(--button-primary-shadow);
-}
-
-.shell-header-auth {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.shell-header-auth input[hidden],
-.top-nav-register[hidden] {
-  display: none;
-}
-
 .hero-panel {
   padding: 1.5rem;
 }
 
-.eyebrow,
 .status-label {
   margin: 0 0 0.75rem;
   font-size: 0.68rem;
@@ -919,8 +861,14 @@ a {
   position: relative;
 }
 
+.game-info-bottom .game-compact-heading {
+  min-height: 49px;
+  align-items: flex-start;
+}
+
 .map-viewport {
   position: relative;
+  height: 100%;
 }
 
 .map-controls {
@@ -951,9 +899,11 @@ a {
 .map-board-surface {
   --map-territory-node-scale: 1;
   position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  min-height: 360px;
-  border-radius: var(--campaign-card-radius);
+  min-height: 0;
+  border-radius: 26px;
   touch-action: none;
   user-select: none;
 }
@@ -966,94 +916,71 @@ a {
   cursor: grabbing;
 }
 
-.map-board-transform {
+.map-markers-layer {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  z-index: 2;
+}
+
+.map-board-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+.map-board-transform {
   transform-origin: center center;
   will-change: transform;
 }
 
-.game-map-board {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--campaign-card-radius);
-  border: 1px solid var(--shell-border-hi);
-  background: var(--shell-map-bg);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  box-shadow: var(--bevel), var(--shadow-soft);
-}
-
-.game-map-board.has-image {
-  background-size: cover;
-}
-
-.game-map-connections {
+.map-lines {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  display: none;
 }
 
-.game-map-connections line {
-  stroke: var(--shell-map-link);
-  stroke-width: 6;
-  stroke-linecap: round;
+.map-link {
+  stroke: var(--line);
+  stroke-width: 0.55;
+  opacity: 0.85;
 }
 
 .territory-node {
-  --territory-player-color: var(--shell-heading);
+  --territory-node-size: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
   position: absolute;
   display: grid;
-  gap: 0.1rem;
-  min-width: calc(6.25rem * var(--map-territory-node-scale, 1));
-  padding:
-    calc(0.55rem * var(--map-territory-node-scale, 1))
-    calc(0.65rem * var(--map-territory-node-scale, 1));
-  border-radius: var(--campaign-card-radius);
-  border: 1px solid var(--shell-node-border);
-  background: var(--shell-node-bg);
-  color: var(--shell-field-text);
+  place-items: center;
+  width: var(--territory-node-size);
+  height: var(--territory-node-size);
+  min-width: var(--territory-node-size);
+  min-height: var(--territory-node-size);
+  margin: 0;
+  padding: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  border: 2px solid var(--text-inverse);
+  background: var(--owner-color, var(--owner-color-default, #9aa6b2));
+  color: var(--owner-text-color, var(--owner-text-default, var(--text-inverse)));
   transform: translate(-50%, -50%);
-  box-shadow: var(--bevel), var(--shadow-soft);
+  transform-origin: center center;
+  box-shadow:
+    0 0 0 1px var(--overlay),
+    var(--shadow-soft);
   cursor: pointer;
-  text-align: left;
-}
-
-.territory-node strong {
-  font-size: calc(0.92rem * var(--map-territory-node-scale, 1));
-}
-
-.territory-node span {
-  color: var(--shell-muted);
-  font-size: calc(0.78rem * var(--map-territory-node-scale, 1));
+  will-change: left, top;
 }
 
 .territory-node .territory-armies {
-  color: var(--shell-heading);
-  font-size: calc(1rem * var(--map-territory-node-scale, 1));
+  display: inline-block;
   font-weight: 700;
-}
-
-.territory-node::before {
-  content: "";
-  position: absolute;
-  inset:
-    auto
-    auto
-    calc(0.55rem * var(--map-territory-node-scale, 1))
-    calc(0.55rem * var(--map-territory-node-scale, 1));
-  width: calc(0.7rem * var(--map-territory-node-scale, 1));
-  height: calc(0.7rem * var(--map-territory-node-scale, 1));
-  border-radius: 999px;
-  background: var(--territory-player-color);
-  box-shadow: 0 0 0 2px var(--shell-node-ring);
+  font-size: clamp(0.78rem, calc(0.92rem * var(--map-territory-node-scale, 1)), 0.92rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 1px var(--overlay);
 }
 
 .territory-node:hover,
@@ -1062,11 +989,27 @@ a {
 .territory-node.is-reinforce,
 .territory-node.is-fortify-source,
 .territory-node.is-fortify-target {
-  border-color: var(--shell-accent);
+  transform:
+    translate(-50%, -50%)
+    translateY(calc(-2px * var(--map-territory-node-scale, 1)))
+    scale(1.05);
 }
 
-.territory-node.is-mine {
-  background: var(--shell-node-bg-mine);
+.territory-node.is-source,
+.territory-node.is-reinforce,
+.territory-node.is-fortify-source {
+  outline: 3px solid var(--text-inverse);
+  box-shadow:
+    0 0 0 5px var(--success),
+    var(--shadow-soft);
+}
+
+.territory-node.is-target,
+.territory-node.is-fortify-target {
+  outline: 3px solid var(--text-inverse);
+  box-shadow:
+    0 0 0 5px var(--danger),
+    var(--shadow-soft);
 }
 
 .game-map-legend {
@@ -1209,7 +1152,10 @@ a {
   }
 
   .territory-node {
-    min-width: 5.2rem;
-    padding: 0.45rem 0.5rem;
+    width: clamp(30px, 8vw, 36px);
+    height: clamp(30px, 8vw, 36px);
+    min-width: clamp(30px, 8vw, 36px);
+    min-height: clamp(30px, 8vw, 36px);
+    padding: 0;
   }
 }

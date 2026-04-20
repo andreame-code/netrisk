@@ -19,7 +19,7 @@ async function resetGame(page) {
     try {
       const response = await page.request.post("/api/test/reset");
       await expect(response.ok()).toBeTruthy();
-      return;
+      return await response.json();
     } catch (error) {
       lastError = error;
       if (attempt === attempts - 1) {
@@ -73,15 +73,21 @@ async function ensureSharedLobbyGame(page, sessionToken) {
   };
 
   if (sharedLobbyGameId) {
-    const stateResponse = await page.request.get(
-      `/api/state?gameId=${encodeURIComponent(sharedLobbyGameId)}`,
-      {
-        headers: requestHeaders
+    try {
+      const stateResponse = await page.request.get(
+        `/api/state?gameId=${encodeURIComponent(sharedLobbyGameId)}`,
+        {
+          headers: requestHeaders
+        }
+      );
+      if (stateResponse.ok()) {
+        return sharedLobbyGameId;
       }
-    );
-    if (stateResponse.ok()) {
-      return sharedLobbyGameId;
+    } catch (error) {
+      void error;
     }
+
+    sharedLobbyGameId = null;
   }
 
   const createResponse = await page.request.post("/api/games", {

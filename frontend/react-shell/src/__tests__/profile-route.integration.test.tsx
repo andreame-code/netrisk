@@ -22,7 +22,7 @@ import { useAuthStore } from "@react-shell/auth-store";
 import { createDeferred } from "../../test/deferred";
 import { renderReactShell } from "../../test/render-react-shell";
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@frontend-core/api/client.mts", () => ({
   getSession: vi.fn(),
@@ -269,6 +269,25 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
   };
 }
 
+function emptyModuleOptionsResponse(): ModuleOptionsResponse {
+  return {
+    modules: [],
+    enabledModules: [],
+    gameModules: [],
+    content: {},
+    gamePresets: [],
+    uiSlots: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: []
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  getModuleOptionsMock.mockResolvedValue(emptyModuleOptionsResponse());
+});
+
 describe("ProfileRoute integration", () => {
   it("shows a profile loading state while the profile query is pending", async () => {
     const profileRequest = createDeferred<ProfileResponse>();
@@ -278,7 +297,9 @@ describe("ProfileRoute integration", () => {
 
     renderReactShell("/react/profile");
 
-    expect(await screen.findByTestId("react-shell-profile-loading")).toBeInTheDocument();
+    expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
+    expect(screen.getByText("Caricamento dati giocatore...")).toBeInTheDocument();
+    expect(screen.queryByTestId("react-shell-profile-metrics")).not.toBeInTheDocument();
   });
 
   it("shows an error state and retries the profile flow", async () => {
@@ -310,7 +331,9 @@ describe("ProfileRoute integration", () => {
     expect(within(metrics).getByText("12")).toBeInTheDocument();
     expect(within(metrics).getByText("7")).toBeInTheDocument();
     expect(within(metrics).getByText("5")).toBeInTheDocument();
-    expect(screen.getByText("Mediterranean Command")).toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-profile-open-game-42")).toHaveTextContent(
+      "Mediterranean Command"
+    );
     expect(screen.getByTestId("react-shell-profile-open-game-42").getAttribute("href")).toMatch(
       /\/game\/game-42$/
     );
@@ -352,7 +375,10 @@ describe("ProfileRoute integration", () => {
     getSessionMock.mockResolvedValue(createSession("ember", "admin"));
     getProfileMock.mockResolvedValue(createProfileResponse());
     getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
-    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse());
+    getModuleOptionsMock
+      .mockResolvedValueOnce(emptyModuleOptionsResponse())
+      .mockResolvedValueOnce(createModuleOptionsResponse())
+      .mockResolvedValueOnce(createModuleOptionsResponse());
     setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
 
     const { user } = renderReactShell("/react/profile");
@@ -382,6 +408,7 @@ describe("ProfileRoute integration", () => {
     getProfileMock.mockResolvedValue(createProfileResponse());
     getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
     getModuleOptionsMock
+      .mockResolvedValueOnce(emptyModuleOptionsResponse())
       .mockResolvedValueOnce(createModuleOptionsResponse())
       .mockRejectedValueOnce(new Error("Module options unavailable."));
     setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
@@ -407,6 +434,7 @@ describe("ProfileRoute integration", () => {
     getProfileMock.mockResolvedValue(createProfileResponse());
     getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
     getModuleOptionsMock
+      .mockResolvedValueOnce(emptyModuleOptionsResponse())
       .mockResolvedValueOnce(createModuleOptionsResponse())
       .mockImplementationOnce(() => moduleOptionsRefresh.promise);
     setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));

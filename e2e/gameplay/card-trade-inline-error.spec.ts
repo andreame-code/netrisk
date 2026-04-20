@@ -50,7 +50,21 @@ test("game page shows an inline trade error and clears it on selection change", 
   });
 
   await page.route("**/api/games**", async (route) => {
-    await route.fulfill({ json: { games: [{ id: "g-1", name: "Trade Invalid Match", updatedAt: "2026-03-19T10:00:00.000Z", status: "active", playerCount: 2 }], activeGameId: "g-1" } });
+    await route.fulfill({
+      json: {
+        games: [
+          {
+            id: "g-1",
+            name: "Trade Invalid Match",
+            updatedAt: "2026-03-19T10:00:00.000Z",
+            phase: "active",
+            playerCount: 2,
+            totalPlayers: 2
+          }
+        ],
+        activeGameId: "g-1"
+      }
+    });
   });
 
   await page.route("**/api/state**", async (route) => {
@@ -78,4 +92,3 @@ test("game page shows an inline trade error and clears it on selection change", 
   await page.locator('[data-card-id="c3"]').click();
   await expect(page.locator('#card-trade-error')).toBeHidden();
 });
-

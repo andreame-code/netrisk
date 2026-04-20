@@ -3,9 +3,10 @@ const { resetGame } = require("../support/game-helpers");
 
 test("battlefield layout matches the baseline", async ({ page }) => {
   test.slow();
-  await resetGame(page);
+  const resetPayload = await resetGame(page);
+  const gameId = resetPayload?.state?.gameId;
   await page.setViewportSize({ width: 1280, height: 960 });
-  await page.goto("/game.html");
+  await page.goto(`/game/${encodeURIComponent(gameId)}`);
   await expect(page.locator("#map [data-territory-id]")).toHaveCount(9);
   await page.waitForTimeout(300);
   await expect(page.getByTestId("battlefield-layout")).toHaveScreenshot("battlefield-layout.png", {
@@ -13,4 +14,3 @@ test("battlefield layout matches the baseline", async ({ page }) => {
     maxDiffPixels: 5000
   });
 });
-
