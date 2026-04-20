@@ -298,6 +298,7 @@ describe("ProfileRoute integration", () => {
     renderReactShell("/react/profile");
 
     expect(await screen.findByTestId("react-shell-profile-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("react-shell-profile-metrics")).not.toBeInTheDocument();
   });
 
   it("shows an error state and retries the profile flow", async () => {

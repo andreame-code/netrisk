@@ -411,38 +411,40 @@ export function ProfileRoute() {
             </article>
           </div>
 
-          <div className="profile-metrics-grid" data-testid="react-shell-profile-metrics">
-            <article className="profile-metric-card">
-              <span className="profile-metric-label">{t("profile.metrics.gamesPlayed")}</span>
-              <strong id="metric-games-played" className="profile-metric-value">
-                {profile?.gamesPlayed || 0}
-              </strong>
-            </article>
-            <article className="profile-metric-card accent-win">
-              <span className="profile-metric-label">{t("profile.metrics.wins")}</span>
-              <strong id="metric-wins" className="profile-metric-value">
-                {profile?.wins || 0}
-              </strong>
-            </article>
-            <article className="profile-metric-card accent-loss">
-              <span className="profile-metric-label">{t("profile.metrics.losses")}</span>
-              <strong id="metric-losses" className="profile-metric-value">
-                {profile?.losses || 0}
-              </strong>
-            </article>
-            <article className="profile-metric-card accent-neutral">
-              <span className="profile-metric-label">{t("profile.metrics.inProgress")}</span>
-              <strong id="metric-in-progress" className="profile-metric-value">
-                {profile?.gamesInProgress || 0}
-              </strong>
-            </article>
-            <article className="profile-metric-card accent-gold wide-card">
-              <span className="profile-metric-label">{t("profile.metrics.winRate")}</span>
-              <strong id="metric-win-rate" className="profile-metric-value">
-                {profile?.winRate == null ? "--" : `${profile.winRate}%`}
-              </strong>
-            </article>
-          </div>
+          {profileContentVisible ? (
+            <div className="profile-metrics-grid" data-testid="react-shell-profile-metrics">
+              <article className="profile-metric-card">
+                <span className="profile-metric-label">{t("profile.metrics.gamesPlayed")}</span>
+                <strong id="metric-games-played" className="profile-metric-value">
+                  {profile?.gamesPlayed || 0}
+                </strong>
+              </article>
+              <article className="profile-metric-card accent-win">
+                <span className="profile-metric-label">{t("profile.metrics.wins")}</span>
+                <strong id="metric-wins" className="profile-metric-value">
+                  {profile?.wins || 0}
+                </strong>
+              </article>
+              <article className="profile-metric-card accent-loss">
+                <span className="profile-metric-label">{t("profile.metrics.losses")}</span>
+                <strong id="metric-losses" className="profile-metric-value">
+                  {profile?.losses || 0}
+                </strong>
+              </article>
+              <article className="profile-metric-card accent-neutral">
+                <span className="profile-metric-label">{t("profile.metrics.inProgress")}</span>
+                <strong id="metric-in-progress" className="profile-metric-value">
+                  {profile?.gamesInProgress || 0}
+                </strong>
+              </article>
+              <article className="profile-metric-card accent-gold wide-card">
+                <span className="profile-metric-label">{t("profile.metrics.winRate")}</span>
+                <strong id="metric-win-rate" className="profile-metric-value">
+                  {profile?.winRate == null ? "--" : `${profile.winRate}%`}
+                </strong>
+              </article>
+            </div>
+          ) : null}
 
           <div className="profile-future-grid">
             <article className="profile-note-card profile-games-card">
