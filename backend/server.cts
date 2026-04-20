@@ -1253,11 +1253,6 @@ function createApp(options: CreateAppOptions = {}) {
   function serveStatic(res: Response, url: URL) {
     const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
     const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
-    const isLegacyRoute =
-      !isModuleAssetRequest &&
-      (url.pathname === "/legacy" ||
-        url.pathname === "/legacy/" ||
-        url.pathname.indexOf("/legacy/") === 0);
     const isReactShellDocumentRoute =
       !isModuleAssetRequest &&
       (url.pathname === "/" ||
@@ -1277,13 +1272,9 @@ function createApp(options: CreateAppOptions = {}) {
         /^\/game\/[^/]+$/.test(url.pathname));
     const relativePath = isModuleAssetRequest
       ? url.pathname.replace(/^\/modules\//, "")
-      : isLegacyRoute
-        ? url.pathname === "/legacy" || url.pathname === "/legacy/"
-          ? "/index.html"
-          : url.pathname.replace(/^\/legacy/, "")
-        : isReactShellDocumentRoute
-          ? "/react/index.html"
-          : url.pathname;
+      : isReactShellDocumentRoute
+        ? "/react/index.html"
+        : url.pathname;
     const resolvedStaticRoot = path.resolve(staticRoot);
     const filePath = path.resolve(path.join(staticRoot, relativePath));
     if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
@@ -1338,7 +1329,6 @@ function createApp(options: CreateAppOptions = {}) {
 
   function handleRequest(req: Request, res: Response) {
     const url = new URL(req.url || "/", "http://" + req.headers.host);
-    const legacyGamePathMatch = url.pathname.match(/^\/legacy\/game\/([^/]+)$/);
 
     addSecurityHeaders(res);
 
@@ -1365,14 +1355,6 @@ function createApp(options: CreateAppOptions = {}) {
             res.end();
             return null;
           }
-        }
-
-        if (req.method === "GET" && legacyGamePathMatch) {
-          res.writeHead(302, {
-            Location: "/legacy/game.html?gameId=" + encodeURIComponent(legacyGamePathMatch[1] || "")
-          });
-          res.end();
-          return null;
         }
 
         serveStatic(res, url);
