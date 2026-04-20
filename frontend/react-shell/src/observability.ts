@@ -82,6 +82,9 @@ function applyObservabilityScope(error: Error, context: FrontendObservabilityCon
     if (context.kind) {
       scope.setTag("app.error_kind", context.kind);
     }
+    if (context.category) {
+      scope.setTag("app.error_category", context.category);
+    }
     if (context.code) {
       scope.setTag("app.error_code", context.code);
     }

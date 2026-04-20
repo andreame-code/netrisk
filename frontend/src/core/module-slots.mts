@@ -1,4 +1,5 @@
 import { setMarkup } from "./dom.mjs";
+import { getModuleOptionsOrNull } from "./api/client.mjs";
 import type { ModuleOptionsResponse, NetRiskUiSlotContribution } from "./types.mjs";
 
 type MountModuleSlotSectionOptions = {
@@ -26,19 +27,10 @@ async function fetchModuleOptions(): Promise<ModuleOptionsResponse | null> {
     return moduleOptionsPromise;
   }
 
-  moduleOptionsPromise = (async () => {
-    try {
-      const response = await fetch("/api/modules/options");
-      const payload = (await response.json()) as ModuleOptionsResponse;
-      if (!response.ok) {
-        return null;
-      }
-
-      return payload;
-    } catch {
-      return null;
-    }
-  })();
+  moduleOptionsPromise = getModuleOptionsOrNull({
+    errorMessage: "Unable to load module options.",
+    fallbackMessage: "Unable to validate module options."
+  });
 
   return moduleOptionsPromise;
 }

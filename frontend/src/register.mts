@@ -1,8 +1,9 @@
 import { byId, maybeQuery, setDisabled, setHidden } from "./core/dom.mjs";
+import { getSession, login, logout, register } from "./core/api/client.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import { validateRegistrationInput } from "./core/register-validation.mjs";
-import type { LoginResponse, PublicUser, SessionResponse } from "./core/types.mjs";
-import { t, translateServerMessage } from "./i18n.mjs";
+import type { PublicUser } from "./core/types.mjs";
+import { t } from "./i18n.mjs";
 
 const state: {
   user: PublicUser | null;
@@ -65,16 +66,16 @@ function setFeedback(message = "", tone = "") {
 }
 
 async function loginWithCredentials(username: string, password: string): Promise<void> {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
-  const data = (await response.json()) as LoginResponse;
-  if (!response.ok) {
-    throw new Error(translateServerMessage(data, t("errors.loginFailed")));
-  }
-
+  const data = await login(
+    {
+      username,
+      password
+    },
+    {
+      errorMessage: t("errors.loginFailed"),
+      fallbackMessage: t("errors.loginFailed")
+    }
+  );
   state.user = data.user;
   window.netriskTheme?.applyUserTheme?.(state.user);
   render();
@@ -83,12 +84,10 @@ async function loginWithCredentials(username: string, password: string): Promise
 
 async function restoreSession() {
   try {
-    const response = await fetch("/api/auth/session");
-    if (!response.ok) {
-      throw new Error(t("auth.sessionExpired"));
-    }
-
-    const data = (await response.json()) as SessionResponse;
+    const data = await getSession({
+      errorMessage: t("auth.sessionExpired"),
+      fallbackMessage: t("auth.sessionExpired")
+    });
     state.user = data.user;
     window.netriskTheme?.applyUserTheme?.(state.user);
   } catch (_error) {
@@ -146,10 +145,9 @@ if (elements.headerLoginForm) {
 
 elements.logoutButton.addEventListener("click", async () => {
   try {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({})
+    await logout({
+      errorMessage: t("errors.requestFailed"),
+      fallbackMessage: t("errors.requestFailed")
     });
   } catch (_error) {}
 
@@ -183,15 +181,17 @@ elements.form.addEventListener("submit", async (event) => {
   setFeedback();
 
   try {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password })
-    });
-    const data = (await response.json()) as LoginResponse;
-    if (!response.ok) {
-      throw new Error(translateServerMessage(data, t("register.errors.submitFailed")));
-    }
+    await register(
+      {
+        username,
+        email,
+        password
+      },
+      {
+        errorMessage: t("register.errors.submitFailed"),
+        fallbackMessage: t("register.errors.submitFailed")
+      }
+    );
 
     await loginWithCredentials(username, password);
   } catch (error) {

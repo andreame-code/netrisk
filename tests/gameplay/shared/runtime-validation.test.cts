@@ -6,10 +6,12 @@ const {
   gameMutationResponseSchema,
   loginRequestSchema,
   logoutResponseSchema,
+  messagePayloadSchema,
   parseWithSchema,
   profileResponseSchema,
   registerRequestSchema,
   themePreferenceResponseSchema,
+  transportErrorPayloadSchema,
   toValidationErrors
 } = require("../../../shared/runtime-validation.cjs");
 
@@ -124,6 +126,24 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
   const logoutResponse = parseWithSchema(logoutResponseSchema, {
     ok: true
   });
+  const messagePayload = parseWithSchema(messagePayloadSchema, {
+    message: "Everything is fine.",
+    messageKey: "server.ok",
+    messageParams: {
+      scope: "auth"
+    }
+  });
+  const transportErrorPayload = parseWithSchema(transportErrorPayloadSchema, {
+    code: "REQUEST_VALIDATION_FAILED",
+    error: "Richiesta non valida.",
+    validationErrors: [
+      {
+        code: "invalid_type",
+        path: "players.0.slot",
+        message: "Expected number."
+      }
+    ]
+  });
 
   assert.equal(loginRequest.username, "commander");
   assert.equal(sessionResponse.user.username, "commander");
@@ -134,6 +154,8 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
   assert.equal(gameListResponse.games[0].id, "g-1");
   assert.equal(gameMutationResponse.playerId, "p-1");
   assert.equal(logoutResponse.ok, true);
+  assert.equal(messagePayload.messageKey, "server.ok");
+  assert.equal(transportErrorPayload.validationErrors[0].path, "players.0.slot");
 });
 
 register("shared runtime validation exposes deterministic validation issue paths", () => {
