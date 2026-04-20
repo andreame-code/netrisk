@@ -36,17 +36,15 @@ type VercelScopeCandidate = {
 };
 
 function runJson<T>(args: string[]): T {
-  const token = process.env.VERCEL_TOKEN;
-  const commandArgs = token ? args.concat(["--token", token]) : args;
   const result =
     process.platform === "win32"
-      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "vercel"].concat(commandArgs), {
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "vercel"].concat(args), {
           encoding: "utf8",
           stdio: "pipe",
           cwd: process.cwd(),
           env: process.env
         })
-      : spawnSync("vercel", commandArgs, {
+      : spawnSync("vercel", args, {
           encoding: "utf8",
           stdio: "pipe",
           cwd: process.cwd(),
@@ -109,6 +107,15 @@ function currentProjectName(): string {
   throw new Error(`Unable to determine project name from ${packageJsonPath}`);
 }
 
+function normalizeScopeArg(scopeArg: string): string {
+  const normalizedScopeArg = scopeArg.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(normalizedScopeArg)) {
+    throw new Error(`Unsupported Vercel scope value: ${scopeArg}`);
+  }
+
+  return normalizedScopeArg;
+}
+
 function uniqueScopeCandidates(candidates: VercelScopeCandidate[]): VercelScopeCandidate[] {
   const seen = new Set<string>();
 
@@ -129,7 +136,7 @@ function findProjectInScope(
 ): { projectId: string; candidate: VercelScopeCandidate } | null {
   const projectList = runJson<VercelProjectList>(
     ["project", "ls", "--format", "json"].concat(
-      candidate.scopeArg ? ["--scope", candidate.scopeArg] : []
+      candidate.scopeArg ? ["--scope", normalizeScopeArg(candidate.scopeArg)] : []
     )
   );
   const linkedProject = (projectList.projects || []).find(
@@ -163,22 +170,23 @@ async function main(): Promise<void> {
         typeof team.id === "string" && !!team.id && typeof team.slug === "string" && !!team.slug
     )
     .map((team) => ({
-      label: team.slug as string,
+      label: normalizeScopeArg(team.slug as string),
       orgId: team.id as string,
-      scopeArg: team.slug as string
+      scopeArg: normalizeScopeArg(team.slug as string)
     }));
   const personalCandidate: VercelScopeCandidate = {
-    label: authenticatedUser.username,
+    label: normalizeScopeArg(authenticatedUser.username),
     orgId: authenticatedUser.id,
-    scopeArg: authenticatedUser.username
+    scopeArg: normalizeScopeArg(authenticatedUser.username)
   };
   const allScopeCandidates = uniqueScopeCandidates(teamCandidates.concat([personalCandidate]));
-  const scopeCandidates = requestedScope
-    ? allScopeCandidates.filter((candidate) => candidate.scopeArg === requestedScope)
+  const normalizedRequestedScope = requestedScope ? normalizeScopeArg(requestedScope) : "";
+  const scopeCandidates = normalizedRequestedScope
+    ? allScopeCandidates.filter((candidate) => candidate.scopeArg === normalizedRequestedScope)
     : allScopeCandidates;
 
-  if (requestedScope && !scopeCandidates.length) {
-    throw new Error(`Unable to resolve requested Vercel scope ${requestedScope}.`);
+  if (normalizedRequestedScope && !scopeCandidates.length) {
+    throw new Error(`Unable to resolve requested Vercel scope ${normalizedRequestedScope}.`);
   }
   const resolvedProject = scopeCandidates.reduce<{
     projectId: string;
