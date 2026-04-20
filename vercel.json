@@ -20,7 +20,27 @@
       "destination": "/react/index.html"
     },
     {
+      "source": "/register.html",
+      "destination": "/react/index.html"
+    },
+    {
       "source": "/unauthorized",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/lobby.html",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/new-game.html",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/profile.html",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/game.html",
       "destination": "/react/index.html"
     },
     {

@@ -43,7 +43,27 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
     "Expected /register to rewrite to /react/index.html for the React auth flow."
   );
   assert.ok(
+    hasRewriteRule(rewrites, "/register.html", "/react/index.html"),
+    "Expected /register.html to rewrite to /react/index.html for the canonical auth alias."
+  );
+  assert.ok(
     hasRewriteRule(rewrites, "/unauthorized", "/react/index.html"),
     "Expected /unauthorized to rewrite to /react/index.html for the React auth flow."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/lobby.html", "/react/index.html"),
+    "Expected /lobby.html to rewrite to /react/index.html for the canonical lobby route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/new-game.html", "/react/index.html"),
+    "Expected /new-game.html to rewrite to /react/index.html for the canonical new-game route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/profile.html", "/react/index.html"),
+    "Expected /profile.html to rewrite to /react/index.html for the canonical profile route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/game.html", "/react/index.html"),
+    "Expected /game.html to rewrite to /react/index.html for the canonical gameplay document alias."
   );
 });
