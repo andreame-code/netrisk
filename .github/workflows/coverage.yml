@@ -10,6 +10,7 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -28,12 +29,16 @@ jobs:
 
       - name: Publish coverage summary
         run: |
-          node -e "const fs=require('node:fs'); const summary=require('./coverage/coverage-summary.json').total; const pct=(k)=>Number(summary[k].pct).toFixed(2); const body=['## Coverage','',`- Statements: ${pct('statements')}%`,`- Branches: ${pct('branches')}%`,`- Functions: ${pct('functions')}%`,`- Lines: ${pct('lines')}%`,''].join('\n'); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, body);"
+          node -e "const fs=require('node:fs'); const summary=require('./coverage/coverage-summary.json').total; const required=require('./.tsbuild/scripts/check-coverage-thresholds.cjs').MINIMUM_COVERAGE; const pct=(k)=>Number(summary[k].pct).toFixed(2); const body=['## Coverage','',`- Statements: ${pct('statements')}% (required ${required.statements.toFixed(2)}%)`,`- Branches: ${pct('branches')}% (required ${required.branches.toFixed(2)}%)`,`- Functions: ${pct('functions')}% (required ${required.functions.toFixed(2)}%)`,`- Lines: ${pct('lines')}% (required ${required.lines.toFixed(2)}%)`,''].join('\n'); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, body);"
 
       - name: Upload coverage artifacts
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
             coverage/coverage-summary.json
             coverage/lcov.info
+
+      - name: Enforce coverage thresholds
+        run: npm run coverage:check

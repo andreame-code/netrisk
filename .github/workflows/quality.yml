@@ -30,6 +30,23 @@ jobs:
       - name: Run React shell typecheck
         run: npm run typecheck:react-shell
 
+      - name: Run build
+        run: npm run build:ts
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Prepare Vercel project link
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npm run vercel:link:ci
+
+      - name: Run Vercel env parity check
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ENV_CHECK_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+        run: npm run vercel:env:check
+
       - name: Run lint
         run: npm run lint
 
@@ -38,6 +55,3 @@ jobs:
 
       - name: Run React shell tests
         run: npm run test:react
-
-      - name: Run build
-        run: npm run build:ts
