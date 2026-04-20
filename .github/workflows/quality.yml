@@ -33,12 +33,21 @@ jobs:
       - name: Run build
         run: npm run build:ts
 
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run format check
+        run: npm run format:check
+
+      - name: Run React shell tests
+        run: npm run test:react
+
       - name: Install Vercel CLI
         run: npm install --global vercel@50.39.0
 
       - name: Verify Vercel auth for env parity
         id: vercel_auth
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
@@ -51,9 +60,9 @@ jobs:
           vercel whoami --token "$VERCEL_TOKEN"
 
       - name: Note skipped Vercel env parity check
-        if: ${{ github.event_name == 'pull_request' && steps.vercel_auth.outcome != 'success' }}
+        if: ${{ steps.vercel_auth.outcome != 'success' }}
         run: |
-          echo "Skipping Vercel env parity check because VERCEL_TOKEN is missing or invalid for this pull request run." >> "$GITHUB_STEP_SUMMARY"
+          echo "Skipping Vercel env parity check because VERCEL_TOKEN is missing or invalid for this run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Vercel env parity check
         if: ${{ steps.vercel_auth.outcome == 'success' }}
@@ -63,12 +72,3 @@ jobs:
           VERCEL_PROJECT_ID: prj_R61andzsXOZjOAfvj9GSOjS35aLv
           VERCEL_ENV_CHECK_BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
         run: npm run vercel:env:check
-
-      - name: Run lint
-        run: npm run lint
-
-      - name: Run format check
-        run: npm run format:check
-
-      - name: Run React shell tests
-        run: npm run test:react
