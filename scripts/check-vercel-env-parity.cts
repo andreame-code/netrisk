@@ -9,23 +9,15 @@ type SpawnError = Error & {
   status?: number | null;
 };
 
-function quoteWindowsArgument(value: string): string {
-  return /[\s"]/u.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
-}
-
 function run(command: string, args: string[]): string {
   const result =
     process.platform === "win32" && command === "vercel"
-      ? spawnSync(
-          "cmd.exe",
-          ["/d", "/s", "/c", [command].concat(args).map(quoteWindowsArgument).join(" ")],
-          {
-            encoding: "utf8",
-            stdio: "pipe",
-            cwd: process.cwd(),
-            env: process.env
-          }
-        )
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", command].concat(args), {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        })
       : spawnSync(command, args, {
           encoding: "utf8",
           stdio: "pipe",

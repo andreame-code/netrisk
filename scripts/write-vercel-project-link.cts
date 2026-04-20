@@ -22,25 +22,17 @@ type VercelTeamList = {
   }>;
 };
 
-function quoteWindowsArgument(value: string): string {
-  return /[\s"]/u.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
-}
-
 function runJson<T>(args: string[]): T {
   const token = process.env.VERCEL_TOKEN;
   const commandArgs = token ? args.concat(["--token", token]) : args;
   const result =
     process.platform === "win32"
-      ? spawnSync(
-          "cmd.exe",
-          ["/d", "/s", "/c", ["vercel"].concat(commandArgs).map(quoteWindowsArgument).join(" ")],
-          {
-            encoding: "utf8",
-            stdio: "pipe",
-            cwd: process.cwd(),
-            env: process.env
-          }
-        )
+      ? spawnSync("cmd.exe", ["/d", "/s", "/c", "vercel"].concat(commandArgs), {
+          encoding: "utf8",
+          stdio: "pipe",
+          cwd: process.cwd(),
+          env: process.env
+        })
       : spawnSync("vercel", commandArgs, {
           encoding: "utf8",
           stdio: "pipe",
