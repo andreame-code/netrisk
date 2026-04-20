@@ -22,6 +22,13 @@ type VercelTeamList = {
   }>;
 };
 
+type VercelUserResponse = {
+  user?: {
+    id?: string;
+    username?: string;
+  };
+};
+
 function runJson<T>(args: string[]): T {
   const token = process.env.VERCEL_TOKEN;
   const commandArgs = token ? args.concat(["--token", token]) : args;
@@ -51,6 +58,38 @@ function runJson<T>(args: string[]): T {
   return JSON.parse(result.stdout) as T;
 }
 
+async function fetchAuthenticatedUser(): Promise<
+  Required<NonNullable<VercelUserResponse["user"]>>
+> {
+  const token = process.env.VERCEL_TOKEN;
+  if (!token) {
+    throw new Error("VERCEL_TOKEN is required to fetch the authenticated Vercel user.");
+  }
+
+  const response = await fetch("https://api.vercel.com/v2/user", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch authenticated Vercel user: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as VercelUserResponse;
+  if (typeof payload.user?.id !== "string" || !payload.user.id.trim()) {
+    throw new Error("Authenticated Vercel user response is missing an id.");
+  }
+
+  return {
+    id: payload.user.id.trim(),
+    username:
+      typeof payload.user.username === "string" && payload.user.username.trim()
+        ? payload.user.username.trim()
+        : "personal"
+  };
+}
+
 function currentProjectName(): string {
   const packageJsonPath = path.join(process.cwd(), "package.json");
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8")) as {
@@ -64,7 +103,7 @@ function currentProjectName(): string {
   throw new Error(`Unable to determine project name from ${packageJsonPath}`);
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const projectFilePath = path.join(process.cwd(), ".vercel", "project.json");
   if (fs.existsSync(projectFilePath)) {
     console.log(`Using existing Vercel project link at ${projectFilePath}.`);
@@ -78,25 +117,26 @@ function main(): void {
     (teamList.teams || []).find((team) => team.current) ||
     ((teamList.teams || []).length === 1 ? teamList.teams?.[0] : null);
 
-  if (!matchingTeam?.id || !matchingTeam.slug) {
-    throw new Error(`Unable to resolve a Vercel team scope for project ${projectName}`);
+  const authenticatedUser = matchingTeam?.slug ? null : await fetchAuthenticatedUser();
+  const scopeLabel = matchingTeam?.slug || authenticatedUser?.username || "personal";
+  const orgId = matchingTeam?.id || authenticatedUser?.id;
+
+  if (!orgId) {
+    throw new Error(`Unable to resolve a Vercel scope id for project ${projectName}`);
   }
 
-  const projectList = runJson<VercelProjectList>([
-    "project",
-    "ls",
-    "--format",
-    "json",
-    "--scope",
-    matchingTeam.slug
-  ]);
+  const projectList = runJson<VercelProjectList>(
+    ["project", "ls", "--format", "json"].concat(
+      matchingTeam?.slug ? ["--scope", matchingTeam.slug] : []
+    )
+  );
   const linkedProject = (projectList.projects || []).find(
     (project) => project.name === projectName
   );
 
   if (!linkedProject?.id) {
     throw new Error(
-      `Unable to resolve Vercel project id for project ${projectName} in scope ${matchingTeam.slug}`
+      `Unable to resolve Vercel project id for project ${projectName} in scope ${scopeLabel}`
     );
   }
 
@@ -106,7 +146,7 @@ function main(): void {
     JSON.stringify(
       {
         projectId: linkedProject.id,
-        orgId: matchingTeam.id,
+        orgId,
         projectName
       },
       null,
@@ -115,7 +155,11 @@ function main(): void {
     "utf8"
   );
 
-  console.log(`Wrote Vercel project link for ${projectName} in scope ${matchingTeam.slug}.`);
+  console.log(`Wrote Vercel project link for ${projectName} in scope ${scopeLabel}.`);
 }
 
-main();
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  process.exitCode = 1;
+});
