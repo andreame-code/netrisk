@@ -13,7 +13,7 @@ Today the project includes:
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
-- canonical React + Vite UI served on `/`, `/login`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`, and `/game/:gameId`, with `/react/*` kept as a supported alias and `/legacy/*` kept for rollback only
+- canonical React + Vite UI served on `/`, `/login`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`, and `/game/:gameId`, with `/react/*` kept as a supported alias
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
@@ -81,7 +81,7 @@ npm start
 ```
 
 Application available at `http://localhost:3000`.
-After `npm start`, the same built React shell serves the canonical user-facing routes and the supported `/react/*` aliases from `http://localhost:3000`, while `/legacy/*` remains available only for rollback.
+After `npm start`, the same built React shell serves the canonical user-facing routes and the supported `/react/*` aliases from `http://localhost:3000`.
 
 React shell preview:
 
@@ -403,10 +403,9 @@ Main frontend screens currently available:
 - `/react/profile`: supported alias for the React profile route
 - `/react/game`: supported alias for the React gameplay index/start shell
 - `/react/game/:gameId`: supported alias for the React gameplay route
-- `/legacy/*`: legacy rollback namespace kept available until final cleanup
 
 The UI is designed to stay thin: it displays state received from the server and sends actions via API.
-For the canonical React routes, their `/react/*` aliases, and the remaining rollback legacy pages, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
+For the canonical React routes and their `/react/*` aliases, raw network details now live in the typed frontend client layer under `frontend/src/core/api/`, so page modules stay focused on rendering and UI state.
 The React shell follows the same rule: it reuses the shared typed client and does not duplicate game rules locally.
 In the React shell, TanStack Query is used for route-level remote state and mutations, while Zustand is reserved for shell-local session state and UI ownership.
 
@@ -422,7 +421,7 @@ On the canonical React gameplay routes, with `/react/game/*` kept as an alias, t
 
 - snapshot bootstrap plus live SSE refresh from the backend state
 - join/start, trade cards, reinforce, attack, move-after-conquest, fortify, end-turn, and surrender actions
-- canonical React gameplay on `/game/:id`, with legacy retained separately under `/legacy/*` for rollback only
+- canonical React gameplay on `/game/:id`, without a separate legacy rollback namespace
 
 ## License
 

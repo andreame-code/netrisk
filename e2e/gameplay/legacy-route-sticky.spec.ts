@@ -1,7 +1,9 @@
 const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
-test("legacy gameplay fallback stays on the legacy route across reloads", async ({ page }) => {
+test("legacy gameplay routes are no longer served after the React cutover cleanup", async ({
+  page
+}) => {
   test.slow();
   const ownerUser = uniqueUser("legacy_route_owner");
   const gameName = uniqueUser("legacy_route_game");
@@ -19,14 +21,10 @@ test("legacy gameplay fallback stays on the legacy route across reloads", async 
   const gameMatch = page.url().match(/\/game\/([^/?#]+)/);
   expect(gameMatch).toBeTruthy();
   const gameId = decodeURIComponent(gameMatch[1]);
-  const expectedLegacyUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
+  const retiredLegacyUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
 
-  await page.goto(expectedLegacyUrl);
-  await expect(page).toHaveURL(new RegExp(`${expectedLegacyUrl.replace("?", "\\?")}$`));
-  await expect(page.locator("#game-status")).toContainText(gameName);
-
-  await page.reload();
-
-  await expect(page).toHaveURL(new RegExp(`${expectedLegacyUrl.replace("?", "\\?")}$`));
-  await expect(page.locator("#game-status")).toContainText(gameName);
+  const legacyResponse = await page.goto(retiredLegacyUrl);
+  expect(legacyResponse).toBeTruthy();
+  expect(legacyResponse.status()).toBe(404);
+  await expect(page.locator("body")).toContainText("File non trovato.");
 });

@@ -11,7 +11,7 @@ L'applicazione include già:
 - autenticazione (register/login/logout), profilo utente e preferenze tema
 - validazione runtime condivisa dei payload auth/profile, lobby e gameplay tra backend e frontend
 - layer client API frontend tipizzato per auth, profile, lobby, setup e gameplay
-- shell React + Vite che serve le route canoniche utente, con `/react/*` mantenuto come alias supportato e `/legacy/*` come rollback-only
+- shell React + Vite che serve le route canoniche utente, con `/react/*` mantenuto come alias supportato
 - convenzioni React shell con TanStack Query per route/server state remoto e Zustand limitato a shell/session UI
 - route React protette per login, lobby, new game, profile e gameplay core-playable sulle URL canoniche e sugli alias `/react/*`
 - osservabilita minima della React shell con Sentry lato browser, release tagging e correlazione request-id verso il backend
@@ -175,13 +175,13 @@ Categorie future da trattare con lo stesso modello:
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
 - Correlazione runtime: le risposte `/api/*` espongono `X-Request-Id`; gli errori backend inattesi vengono loggati con `requestId`, route e `release` per facilitare la diagnosi dei problemi emersi dalla shell React.
-- Routing statico: `backend/server.cts` risolve le route React canoniche, gli alias `/react/*` e le pagine legacy sotto `/legacy/*` senza sovrapporre frontend diversi.
+- Routing statico: `backend/server.cts` risolve le route React canoniche e gli alias `/react/*` senza sovrapporre frontend diversi.
 - Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.
 
 ## Flusso sintetico applicativo
 
 1. Il client invia azioni o richieste via route backend.
-   Per le route React canoniche, per gli alias `/react/*` e per i fallback legacy ancora mantenuti, il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
+   Per le route React canoniche e per gli alias `/react/*`, il client passa attraverso il layer `frontend/src/core/api` invece di fare `fetch` inline nei moduli pagina.
    La shell React riusa lo stesso boundary tipizzato invece di introdurre una seconda logica transport.
 2. Il backend autentica/autorizza utente e valida versione stato.
 3. Le route delegano al motore (`backend/engine`) la logica di dominio.

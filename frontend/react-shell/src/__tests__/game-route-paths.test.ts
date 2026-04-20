@@ -5,20 +5,22 @@ import {
 
 import { describe, expect, it } from "vitest";
 
-describe("legacy and canonical game route helpers", () => {
+describe("canonical game route helpers", () => {
   it("reads the requested game id from canonical direct routes", () => {
     expect(requestedGameIdFromLocation("/game/game-123", "")).toBe("game-123");
   });
 
-  it("keeps legacy gameplay URLs inside the legacy namespace during sync", () => {
-    expect(
-      buildSyncedGameLocation("http://127.0.0.1:3100/legacy/game.html?gameId=stale", "game-123")
-    ).toBe("/legacy/game.html?gameId=game-123");
+  it("reads the requested game id from the gameplay bridge query string", () => {
+    expect(requestedGameIdFromLocation("/game.html", "?gameId=game-123")).toBe("game-123");
   });
 
-  it("clears the legacy game id without escaping back to the canonical route", () => {
+  it("syncs gameplay URLs to the current canonical direct route", () => {
     expect(
-      buildSyncedGameLocation("http://127.0.0.1:3100/legacy/game.html?gameId=game-123", null)
-    ).toBe("/legacy/game.html");
+      buildSyncedGameLocation("http://127.0.0.1:3100/game.html?gameId=stale", "game-123")
+    ).toBe("/game/game-123");
+  });
+
+  it("clears the canonical game id back to the gameplay bridge", () => {
+    expect(buildSyncedGameLocation("http://127.0.0.1:3100/game/game-123", null)).toBe("/game.html");
   });
 });
