@@ -2,6 +2,7 @@ const path = require("path");
 const { createDatastore } = require("./datastore.cjs");
 const { mapMaybe } = require("./maybe-async.cjs");
 const { normalizeStoreStateRecord } = require("./store-state-normalization.cjs");
+const { findCoreBaseSupportedMap } = require("../shared/core-base-catalog.cjs");
 import type { ParticipatingGameContract, ProfileContract } from "../shared/api-contracts.cjs";
 import type { GameState, Player, TurnPhaseValue } from "../shared/models.cjs";
 
@@ -48,7 +49,11 @@ type PlayerProfileStoreOptions = {
 };
 
 function readableMapName(mapId: string | null | undefined): string | null {
-  return mapId || null;
+  if (!mapId) {
+    return null;
+  }
+
+  return findCoreBaseSupportedMap(mapId)?.name || mapId;
 }
 
 function safeClone<T>(value: T): T {

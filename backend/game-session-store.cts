@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { createDatastore } = require("./datastore.cjs");
 const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
 const { normalizeStoreStateRecord } = require("./store-state-normalization.cjs");
+const { findCoreBaseSupportedMap } = require("../shared/core-base-catalog.cjs");
 
 interface GamePlayerConfig {
   type?: string;
@@ -96,7 +97,11 @@ function safeClone<T>(value: T): T {
 }
 
 function readableMapName(mapId: string | null | undefined): string | null {
-  return mapId || null;
+  if (!mapId) {
+    return null;
+  }
+
+  return findCoreBaseSupportedMap(mapId)?.name || mapId;
 }
 
 function normalizeStateRecord<T extends GameStateRecord>(

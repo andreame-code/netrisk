@@ -247,6 +247,137 @@ register(
   }
 );
 
+register(
+  "game session store defaults to built-in map labels without a custom resolver",
+  async () => {
+    const gameSessions = createGameSessionStore({
+      datastore: {
+        listGames() {
+          return [
+            {
+              id: "builtin-map",
+              name: "Built-in Map Game",
+              version: 2,
+              creatorUserId: "u-1",
+              state: {
+                phase: "active",
+                players: [{ id: "u-1", name: "commander" }],
+                gameConfig: {
+                  mapId: "world-classic",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              },
+              createdAt: "2026-04-21T19:45:00.000Z",
+              updatedAt: "2026-04-21T19:45:00.000Z"
+            },
+            {
+              id: "missing-map",
+              name: "Missing Map Game",
+              version: 3,
+              creatorUserId: "u-2",
+              state: {
+                phase: "active",
+                players: [{ id: "u-2", name: "archivist" }],
+                gameConfig: {
+                  mapId: "orphaned-module-map",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              },
+              createdAt: "2026-04-21T19:46:00.000Z",
+              updatedAt: "2026-04-21T19:46:00.000Z"
+            }
+          ];
+        },
+        createGame(entry: unknown) {
+          return entry;
+        },
+        setActiveGameId() {},
+        findGameById() {
+          return null;
+        },
+        getActiveGameId() {
+          return null;
+        },
+        updateGame(entry: unknown) {
+          return entry;
+        }
+      }
+    });
+
+    const games = await gameSessions.listGames();
+    const builtinMapGame = games.find((entry: { id: string }) => entry.id === "builtin-map");
+    const missingMapGame = games.find((entry: { id: string }) => entry.id === "missing-map");
+
+    assert.ok(builtinMapGame);
+    assert.ok(missingMapGame);
+    assert.equal(builtinMapGame.mapName, "World Classic");
+    assert.equal(missingMapGame.mapName, "orphaned-module-map");
+  }
+);
+
+register(
+  "player profile store defaults to built-in map labels without a custom resolver",
+  async () => {
+    const playerProfiles = createPlayerProfileStore({
+      datastore: {
+        listGames() {
+          return [
+            {
+              id: "builtin-map",
+              name: "Built-in Map Game",
+              updatedAt: "2026-04-21T19:45:00.000Z",
+              state: {
+                phase: "active",
+                currentTurnIndex: 0,
+                players: [{ id: "p-1", name: "commander", surrendered: false }],
+                territories: {},
+                hands: { "p-1": [] },
+                gameConfig: {
+                  mapId: "world-classic",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              }
+            },
+            {
+              id: "missing-map",
+              name: "Missing Map Game",
+              updatedAt: "2026-04-21T19:46:00.000Z",
+              state: {
+                phase: "active",
+                currentTurnIndex: 0,
+                players: [{ id: "p-1", name: "commander", surrendered: false }],
+                territories: {},
+                hands: { "p-1": [] },
+                gameConfig: {
+                  mapId: "orphaned-module-map",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              }
+            }
+          ];
+        }
+      }
+    });
+
+    const profile = await playerProfiles.getPlayerProfile("commander");
+    const builtinMapGame = profile.participatingGames.find(
+      (entry: { id: string }) => entry.id === "builtin-map"
+    );
+    const missingMapGame = profile.participatingGames.find(
+      (entry: { id: string }) => entry.id === "missing-map"
+    );
+
+    assert.ok(builtinMapGame);
+    assert.ok(missingMapGame);
+    assert.equal(builtinMapGame.mapName, "World Classic");
+    assert.equal(missingMapGame.mapName, "orphaned-module-map");
+  }
+);
+
 register("game session store preserves runtime setup ids while rehydrating state", async () => {
   const games: any[] = [];
   let activeGameId: string | null = null;
