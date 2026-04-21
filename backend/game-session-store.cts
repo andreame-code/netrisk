@@ -1,8 +1,8 @@
 const path = require("path");
 const crypto = require("crypto");
-const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
+const { normalizeStoreStateRecord } = require("./store-state-normalization.cjs");
 
 interface GamePlayerConfig {
   type?: string;
@@ -99,8 +99,11 @@ function readableMapName(mapId: string | null | undefined): string | null {
   return mapId || null;
 }
 
-function normalizeStateRecord<T extends GameStateRecord>(state: T): T {
-  return migrateGameStateExtensions(state) as T;
+function normalizeStateRecord<T extends GameStateRecord>(
+  state: T,
+  persistedState?: GameStateRecord | null
+): T {
+  return normalizeStoreStateRecord(state, persistedState) as T;
 }
 
 function normalizeActiveModules(
@@ -160,7 +163,7 @@ function summarizeGameWithMapName(
   resolveMapName: (mapId: string | null | undefined) => string | null
 ): GameSummary {
   const storedMapName = persistedMapName(entry);
-  const state = normalizeStateRecord(entry.state || {});
+  const state = normalizeStateRecord(safeClone(entry.state || {}), entry.state || null);
   const config = state.gameConfig || null;
   const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players)
     ? config.players
@@ -228,7 +231,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       throw new Error("La creazione della partita richiede uno stato iniziale valido.");
     }
 
-    const normalizedInitialState = normalizeStateRecord(safeClone(initialState));
+    const normalizedInitialState = normalizeStateRecord(safeClone(initialState), initialState);
     return chainMaybe(datastore.listGames(), (games: GameEntry[]) => {
       const timestamp = new Date().toISOString();
       const entry: GameEntry = {
@@ -244,7 +247,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       return chainMaybe(datastore.createGame(entry), (created: GameEntry) =>
         mapMaybe(datastore.setActiveGameId(created.id), () => ({
           game: summarizeGameWithMapName(created, resolveMapName),
-          state: normalizeStateRecord(safeClone(created.state))
+          state: normalizeStateRecord(safeClone(created.state), created.state)
         }))
       );
     });
@@ -281,7 +284,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
           ...summarizeGameWithMapName(entry, resolveMapName),
           creatorUserId: entry.creatorUserId || null
         },
-        state: normalizeStateRecord(safeClone(entry.state))
+        state: normalizeStateRecord(safeClone(entry.state), entry.state)
       };
     });
   }
@@ -298,7 +301,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
 
       return mapMaybe(datastore.setActiveGameId(gameId), () => ({
         game: summarizeGameWithMapName(entry, resolveMapName),
-        state: normalizeStateRecord(safeClone(entry.state))
+        state: normalizeStateRecord(safeClone(entry.state), entry.state)
       }));
     });
   }
@@ -336,7 +339,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         throw conflict;
       }
 
-      entry.state = normalizeStateRecord(safeClone(state));
+      entry.state = normalizeStateRecord(safeClone(state), state);
       entry.version = currentVersion + 1;
       entry.updatedAt = new Date().toISOString();
       return mapMaybe(datastore.updateGame(entry), (updatedEntry: GameEntry) =>

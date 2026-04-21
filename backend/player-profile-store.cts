@@ -1,7 +1,7 @@
 const path = require("path");
 const { createDatastore } = require("./datastore.cjs");
-const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
 const { mapMaybe } = require("./maybe-async.cjs");
+const { normalizeStoreStateRecord } = require("./store-state-normalization.cjs");
 import type { ParticipatingGameContract, ProfileContract } from "../shared/api-contracts.cjs";
 import type { GameState, Player, TurnPhaseValue } from "../shared/models.cjs";
 
@@ -55,8 +55,11 @@ function safeClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function normalizeStateRecord<T extends GameEntry["state"]>(state: T): T {
-  return migrateGameStateExtensions(state) as T;
+function normalizeStateRecord<T extends GameEntry["state"]>(
+  state: T,
+  persistedState?: GameEntry["state"] | null
+): T {
+  return normalizeStoreStateRecord(state, persistedState) as T;
 }
 
 function territoriesOwnedBy(entry: GameEntry, playerId: string | null | undefined): number {
@@ -157,7 +160,10 @@ function summarizeParticipatingGameWithMapName(
   resolveMapName: (mapId: string | null | undefined) => string | null
 ): ParticipatingGameContract {
   const storedMapName = persistedMapName(entry);
-  const state = normalizeStateRecord(safeClone(entry?.state || ({} as GameEntry["state"])));
+  const state = normalizeStateRecord(
+    safeClone(entry?.state || ({} as GameEntry["state"])),
+    entry?.state || null
+  );
   const normalizedEntry = { ...entry, state };
   const config = state.gameConfig || null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];

@@ -148,3 +148,92 @@ register(
     assert.equal(storedNameGame.mapName, "Archived World");
   }
 );
+
+register("game session store preserves runtime setup ids while rehydrating state", async () => {
+  const games: any[] = [];
+  let activeGameId: string | null = null;
+
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId(gameId: string) {
+        activeGameId = gameId;
+      },
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return activeGameId;
+      },
+      updateGame(entry: any) {
+        const index = games.findIndex((candidate) => candidate.id === entry.id);
+        if (index >= 0) {
+          games[index] = entry;
+        }
+        return entry;
+      }
+    }
+  });
+
+  const created = await gameSessions.createGame(
+    {
+      phase: "lobby",
+      turnPhase: "reinforcement",
+      currentTurnIndex: 0,
+      players: [{ id: "p-1", name: "commander", surrendered: false }],
+      territories: {},
+      hands: { "p-1": [] },
+      mapId: "classic-mini",
+      mapName: "Classic Mini",
+      diceRuleSetId: "standard",
+      contentPackId: "core",
+      victoryRuleSetId: "conquest",
+      pieceSetId: "classic",
+      gameConfig: {
+        ruleSetId: "runtime.classic",
+        ruleSetName: "Runtime Classic",
+        contentPackId: "core",
+        pieceSetId: "classic",
+        mapId: "classic-mini",
+        mapName: "Classic Mini",
+        diceRuleSetId: "standard",
+        diceRuleSetName: "Standard",
+        diceRuleSetAttackerMaxDice: 3,
+        diceRuleSetDefenderMaxDice: 2,
+        diceRuleSetAttackerMustLeaveOneArmyBehind: true,
+        diceRuleSetDefenderWinsTies: true,
+        victoryRuleSetId: "runtime-victory",
+        themeId: "runtime-theme",
+        pieceSkinId: "runtime-skin",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      }
+    },
+    { name: "Runtime Config Game" }
+  );
+
+  assert.equal(created.state.gameConfig.ruleSetId, "runtime.classic");
+  assert.equal(created.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(created.state.gameConfig.themeId, "runtime-theme");
+  assert.equal(created.state.gameConfig.pieceSkinId, "runtime-skin");
+
+  const loaded = await gameSessions.getGame(created.game.id);
+  assert.equal(loaded.state.gameConfig.ruleSetId, "runtime.classic");
+  assert.equal(loaded.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(loaded.state.gameConfig.themeId, "runtime-theme");
+  assert.equal(loaded.state.gameConfig.pieceSkinId, "runtime-skin");
+
+  await gameSessions.saveGame(created.game.id, loaded.state, loaded.game.version);
+  const reopened = await gameSessions.openGame(created.game.id);
+
+  assert.equal(reopened.state.gameConfig.ruleSetId, "runtime.classic");
+  assert.equal(reopened.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(reopened.state.gameConfig.themeId, "runtime-theme");
+  assert.equal(reopened.state.gameConfig.pieceSkinId, "runtime-skin");
+});
