@@ -28,7 +28,7 @@ import {
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes,
-  migrateGameConfigExtensions,
+  type ExtensionAwareGameConfig,
   type BuiltInNewGameRuleSetSummary,
   type PieceSkin,
   type VictoryRuleSet,
@@ -196,6 +196,71 @@ export function buildHistoricalAiNames(
   }
 
   return names;
+}
+
+function cloneModuleSelection(
+  moduleSelection: NetRiskGameModuleSelection
+): NetRiskGameModuleSelection {
+  return {
+    moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
+    activeModules: moduleSelection.activeModules.map((entry) => ({
+      id: entry.id,
+      version: entry.version
+    })),
+    contentProfileId: moduleSelection.contentProfileId || null,
+    gameplayProfileId: moduleSelection.gameplayProfileId || null,
+    uiProfileId: moduleSelection.uiProfileId || null
+  };
+}
+
+function buildResolvedGameConfig(
+  config: ValidatedNewGameConfig,
+  moduleSelection: NetRiskGameModuleSelection,
+  resolvedSetup: NetRiskResolvedModuleSetup | null | undefined,
+  hydratedConfigInput: NewGameConfigInput
+): ExtensionAwareGameConfig {
+  const clonedModuleSelection = cloneModuleSelection(moduleSelection);
+
+  return {
+    extensionSchemaVersion: config.extensionSchemaVersion,
+    moduleSchemaVersion: clonedModuleSelection.moduleSchemaVersion,
+    name: config.name,
+    contentPackId: config.contentPackId,
+    pieceSetId: config.pieceSetId,
+    pieceSetName: config.selectedPieceSet.name,
+    pieceSetPalette: [...config.selectedPieceSet.palette],
+    ruleSetId: config.ruleSetId,
+    ruleSetName: config.ruleSetName,
+    mapId: config.mapId,
+    mapName: config.mapName,
+    diceRuleSetId: config.diceRuleSetId,
+    diceRuleSetName: config.selectedDiceRuleSet.name,
+    diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
+    diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
+    diceRuleSetAttackerMustLeaveOneArmyBehind:
+      config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
+    diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
+    victoryRuleSetId: config.victoryRuleSetId,
+    themeId: config.themeId,
+    pieceSkinId: config.pieceSkinId,
+    activeModules: clonedModuleSelection.activeModules,
+    gamePresetId:
+      typeof hydratedConfigInput.gamePresetId === "string"
+        ? hydratedConfigInput.gamePresetId
+        : null,
+    contentProfileId: clonedModuleSelection.contentProfileId || null,
+    gameplayProfileId: clonedModuleSelection.gameplayProfileId || null,
+    uiProfileId: clonedModuleSelection.uiProfileId || null,
+    gameplayEffects: resolvedSetup?.gameplayEffects || null,
+    scenarioSetup: resolvedSetup?.scenarioSetup || null,
+    turnTimeoutHours: config.turnTimeoutHours,
+    totalPlayers: config.totalPlayers,
+    players: config.players.map((player) => ({
+      slot: player.slot,
+      type: player.type,
+      name: player.name
+    }))
+  };
 }
 
 export function validateNewGameConfig(
@@ -615,42 +680,12 @@ export function createConfiguredInitialState(
         state.diceRuleSetId = config.diceRuleSetId;
         state.victoryRuleSetId = config.victoryRuleSetId;
         state.pieceSetId = config.pieceSetId;
-        state.gameConfig = migrateGameConfigExtensions({
-          name: config.name,
-          contentPackId: config.contentPackId,
-          pieceSetId: config.pieceSetId,
-          pieceSetName: config.selectedPieceSet.name,
-          pieceSetPalette: [...config.selectedPieceSet.palette],
-          ruleSetId: config.ruleSetId,
-          ruleSetName: config.ruleSetName,
-          mapId: config.mapId,
-          mapName: config.mapName,
-          diceRuleSetId: config.diceRuleSetId,
-          diceRuleSetName: config.selectedDiceRuleSet.name,
-          diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
-          diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
-          diceRuleSetAttackerMustLeaveOneArmyBehind:
-            config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
-          diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
-          victoryRuleSetId: config.victoryRuleSetId,
-          themeId: config.themeId,
-          pieceSkinId: config.pieceSkinId,
-          moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
-          activeModules: moduleSelection.activeModules,
-          gamePresetId:
-            typeof hydratedConfigInput.gamePresetId === "string"
-              ? hydratedConfigInput.gamePresetId
-              : null,
-          contentProfileId: moduleSelection.contentProfileId || null,
-          gameplayProfileId: moduleSelection.gameplayProfileId || null,
-          uiProfileId: moduleSelection.uiProfileId || null,
-          gameplayEffects: resolvedSetup?.gameplayEffects || null,
-          scenarioSetup: resolvedSetup?.scenarioSetup || null,
-          extensionSchemaVersion: config.extensionSchemaVersion,
-          turnTimeoutHours: config.turnTimeoutHours,
-          totalPlayers: config.totalPlayers,
-          players: config.players
-        });
+        state.gameConfig = buildResolvedGameConfig(
+          config,
+          moduleSelection,
+          resolvedSetup || null,
+          hydratedConfigInput
+        );
 
         config.players.forEach((player) => {
           if (player.type !== "ai") {

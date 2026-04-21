@@ -233,6 +233,69 @@ register(
   }
 );
 
+register("createConfiguredInitialState preserves runtime-resolved setup ids in gameConfig", () => {
+  const configured = createConfiguredInitialState(
+    {
+      ruleSetId: "runtime.classic",
+      victoryRuleSetId: "runtime-victory",
+      themeId: "runtime-theme",
+      pieceSkinId: "runtime-skin",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    {
+      random: () => 0,
+      resolveRuleSet: (ruleSetId: string) =>
+        ruleSetId === "runtime.classic"
+          ? {
+              id: "runtime.classic",
+              name: "Runtime Classic",
+              defaults: {
+                extensionSchemaVersion: 1,
+                mapId: "classic-mini",
+                diceRuleSetId: "standard",
+                victoryRuleSetId: "runtime-victory",
+                themeId: "runtime-theme",
+                pieceSkinId: "runtime-skin"
+              }
+            }
+          : null,
+      resolveVictoryRuleSet: (victoryRuleSetId: string) =>
+        victoryRuleSetId === "runtime-victory"
+          ? {
+              id: "runtime-victory",
+              name: "Runtime Victory",
+              description: "Victory rule resolved from runtime catalog"
+            }
+          : null,
+      resolveTheme: (themeId: string) =>
+        themeId === "runtime-theme"
+          ? {
+              id: "runtime-theme",
+              name: "Runtime Theme",
+              description: "Theme resolved from runtime catalog"
+            }
+          : null,
+      resolvePieceSkin: (pieceSkinId: string) =>
+        pieceSkinId === "runtime-skin"
+          ? {
+              id: "runtime-skin",
+              name: "Runtime Skin",
+              description: "Piece skin resolved from runtime catalog",
+              renderStyleId: "runtime-style",
+              usesPlayerColor: true
+            }
+          : null
+    }
+  );
+
+  assert.equal(configured.state.gameConfig.ruleSetId, "runtime.classic");
+  assert.equal(configured.state.gameConfig.ruleSetName, "Runtime Classic");
+  assert.equal(configured.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(configured.state.gameConfig.themeId, "runtime-theme");
+  assert.equal(configured.state.gameConfig.pieceSkinId, "runtime-skin");
+});
+
 register(
   "createConfiguredInitialState writes explicit extension selections into gameConfig",
   () => {
