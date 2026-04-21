@@ -237,3 +237,63 @@ register("game session store preserves runtime setup ids while rehydrating state
   assert.equal(reopened.state.gameConfig.themeId, "runtime-theme");
   assert.equal(reopened.state.gameConfig.pieceSkinId, "runtime-skin");
 });
+
+register("game session store rehydrates legacy root setup fields into gameConfig", async () => {
+  const games: any[] = [];
+  let activeGameId: string | null = null;
+
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId(gameId: string) {
+        activeGameId = gameId;
+      },
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return activeGameId;
+      },
+      updateGame(entry: any) {
+        const index = games.findIndex((candidate) => candidate.id === entry.id);
+        if (index >= 0) {
+          games[index] = entry;
+        }
+        return entry;
+      }
+    }
+  });
+
+  const created = await gameSessions.createGame(
+    {
+      phase: "lobby",
+      turnPhase: "reinforcement",
+      currentTurnIndex: 0,
+      players: [{ id: "p-1", name: "commander", surrendered: false }],
+      territories: {},
+      hands: { "p-1": [] },
+      mapId: "classic-mini",
+      mapName: "Classic Mini",
+      diceRuleSetId: "standard",
+      contentPackId: "runtime-pack",
+      victoryRuleSetId: "runtime-victory",
+      pieceSetId: "runtime-piece-set"
+    },
+    { name: "Legacy Root Setup Game" }
+  );
+
+  assert.equal(created.state.gameConfig.contentPackId, "runtime-pack");
+  assert.equal(created.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(created.state.gameConfig.pieceSetId, "runtime-piece-set");
+
+  const loaded = await gameSessions.getGame(created.game.id);
+  assert.equal(loaded.state.gameConfig.contentPackId, "runtime-pack");
+  assert.equal(loaded.state.gameConfig.victoryRuleSetId, "runtime-victory");
+  assert.equal(loaded.state.gameConfig.pieceSetId, "runtime-piece-set");
+});

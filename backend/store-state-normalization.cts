@@ -2,9 +2,12 @@ const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
 
 type StoreStateRecord = {
   gameConfig?: Record<string, unknown> | null;
+  contentPackId?: unknown;
   mapId?: unknown;
   mapName?: unknown;
   diceRuleSetId?: unknown;
+  victoryRuleSetId?: unknown;
+  pieceSetId?: unknown;
 };
 
 const PERSISTED_GAME_CONFIG_KEYS = Object.freeze([
@@ -43,6 +46,23 @@ function cloneValue<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function copyRootValueToGameConfig(
+  normalizedConfig: Record<string, unknown>,
+  rawConfig: Record<string, unknown> | null,
+  rawState: StoreStateRecord,
+  key: "contentPackId" | "pieceSetId" | "victoryRuleSetId"
+) {
+  const rawConfigValue = rawConfig ? rawConfig[key] : undefined;
+  if (typeof rawConfigValue === "string" && rawConfigValue.trim()) {
+    return;
+  }
+
+  const rawStateValue = rawState[key];
+  if (typeof rawStateValue === "string" && rawStateValue.trim()) {
+    normalizedConfig[key] = rawStateValue;
+  }
+}
+
 export function normalizeStoreStateRecord<T extends StoreStateRecord>(
   state: T,
   persistedState?: StoreStateRecord | null
@@ -72,6 +92,12 @@ export function normalizeStoreStateRecord<T extends StoreStateRecord>(
 
       normalizedConfig[key] = cloneValue(value);
     });
+  }
+
+  if (normalizedConfig) {
+    copyRootValueToGameConfig(normalizedConfig, rawConfig, rawState, "contentPackId");
+    copyRootValueToGameConfig(normalizedConfig, rawConfig, rawState, "pieceSetId");
+    copyRootValueToGameConfig(normalizedConfig, rawConfig, rawState, "victoryRuleSetId");
   }
 
   if (typeof rawState.mapId === "string" && rawState.mapId.trim()) {
