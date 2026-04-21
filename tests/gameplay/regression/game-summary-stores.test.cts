@@ -238,6 +238,101 @@ register("game session store preserves runtime setup ids while rehydrating state
   assert.equal(reopened.state.gameConfig.pieceSkinId, "runtime-skin");
 });
 
+register(
+  "game session store preserves modular scenario and gameplay setup across round trips",
+  async () => {
+    const games: any[] = [];
+    let activeGameId: string | null = null;
+    const expectedScenarioSetup = {
+      territoryBonuses: [{ territoryId: "alaska", bonusArmies: 2 }],
+      logMessage: "Scenario runtime applied."
+    };
+    const expectedGameplayEffects = {
+      attackMinimumArmies: 4,
+      attackLimitPerTurn: 2,
+      minimumAttacksPerTurn: 1,
+      conquestMinimumArmies: 3,
+      fortifyMinimumArmies: 2,
+      requiredFortifyWhenAvailable: true,
+      reinforcementAdjustments: [{ label: "Harsh winter", flatBonus: 1, minimumTotal: 4 }]
+    };
+
+    const gameSessions = createGameSessionStore({
+      datastore: {
+        listGames() {
+          return games;
+        },
+        createGame(entry: any) {
+          games.push(entry);
+          return entry;
+        },
+        setActiveGameId(gameId: string) {
+          activeGameId = gameId;
+        },
+        findGameById(gameId: string) {
+          return games.find((entry) => entry.id === gameId) || null;
+        },
+        getActiveGameId() {
+          return activeGameId;
+        },
+        updateGame(entry: any) {
+          const index = games.findIndex((candidate) => candidate.id === entry.id);
+          if (index >= 0) {
+            games[index] = entry;
+          }
+          return entry;
+        }
+      }
+    });
+
+    const created = await gameSessions.createGame(
+      {
+        phase: "lobby",
+        turnPhase: "reinforcement",
+        currentTurnIndex: 0,
+        players: [{ id: "p-1", name: "commander", surrendered: false }],
+        territories: {},
+        hands: { "p-1": [] },
+        mapId: "classic-mini",
+        mapName: "Classic Mini",
+        diceRuleSetId: "standard",
+        gameConfig: {
+          ruleSetId: "runtime.classic",
+          ruleSetName: "Runtime Classic",
+          mapId: "classic-mini",
+          mapName: "Classic Mini",
+          diceRuleSetId: "standard",
+          victoryRuleSetId: "runtime-victory",
+          themeId: "runtime-theme",
+          pieceSkinId: "runtime-skin",
+          gameplayEffects: expectedGameplayEffects,
+          scenarioSetup: expectedScenarioSetup,
+          turnTimeoutHours: 24,
+          totalPlayers: 2,
+          players: [{ type: "human" }, { type: "ai" }]
+        }
+      },
+      { name: "Runtime Scenario Game" }
+    );
+
+    assert.deepEqual(created.state.gameConfig.scenarioSetup, expectedScenarioSetup);
+    assert.deepEqual(created.state.gameConfig.gameplayEffects, expectedGameplayEffects);
+    assert.equal(created.state.gameConfig.turnTimeoutHours, 24);
+
+    const loaded = await gameSessions.getGame(created.game.id);
+    assert.deepEqual(loaded.state.gameConfig.scenarioSetup, expectedScenarioSetup);
+    assert.deepEqual(loaded.state.gameConfig.gameplayEffects, expectedGameplayEffects);
+    assert.equal(loaded.state.gameConfig.turnTimeoutHours, 24);
+
+    await gameSessions.saveGame(created.game.id, loaded.state, loaded.game.version);
+    const reopened = await gameSessions.openGame(created.game.id);
+
+    assert.deepEqual(reopened.state.gameConfig.scenarioSetup, expectedScenarioSetup);
+    assert.deepEqual(reopened.state.gameConfig.gameplayEffects, expectedGameplayEffects);
+    assert.equal(reopened.state.gameConfig.turnTimeoutHours, 24);
+  }
+);
+
 register("game session store rehydrates legacy root setup fields into gameConfig", async () => {
   const games: any[] = [];
   let activeGameId: string | null = null;

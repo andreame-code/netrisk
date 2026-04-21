@@ -1069,7 +1069,8 @@ register(
             activeModuleIds: ["demo.defaults"],
             contentProfileId: "demo.defaults.content",
             gameplayProfileId: "demo.defaults.gameplay",
-            uiProfileId: "demo.defaults.ui"
+            uiProfileId: "demo.defaults.ui",
+            turnTimeoutHours: 24
           },
           authHeaders(adminSessionToken)
         );
@@ -1084,6 +1085,7 @@ register(
         );
         assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
         assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+        assert.equal(createGameResponse.payload.state.gameConfig.turnTimeoutHours, 24);
         assert.equal(
           createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId,
           "aurora"
@@ -1128,6 +1130,65 @@ register(
         );
         assert.equal(
           createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
+            .minimumTotal,
+          8
+        );
+
+        const openGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games/open",
+          {
+            gameId: createGameResponse.payload.game.id
+          },
+          authHeaders(adminSessionToken)
+        );
+
+        assert.equal(openGameResponse.statusCode, 200);
+        assert.equal(openGameResponse.payload.state.gameConfig.turnTimeoutHours, 24);
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId,
+          "aurora"
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.scenarioSetup.logMessage,
+          "Scenario defaults applied."
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.attackMinimumArmies,
+          3
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.attackLimitPerTurn,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.minimumAttacksPerTurn,
+          1
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.majorityControlThresholdPercent,
+          60
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.conquestMinimumArmies,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.fortifyMinimumArmies,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.requiredFortifyWhenAvailable,
+          true
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
+            .flatBonus,
+          5
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
             .minimumTotal,
           8
         );
