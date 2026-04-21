@@ -4,6 +4,10 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createApp } = require("../../../backend/server.cjs");
+const {
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} = require("../../../shared/core-base-catalog.cjs");
 
 type HeaderMap = Record<string, string>;
 
@@ -368,6 +372,28 @@ register(
         );
       }
     );
+  }
+);
+
+register(
+  "module runtime espone maps e built-in new-game rule sets dal catalogo shared core.base",
+  async () => {
+    await withModuleServer([], async ({ app }) => {
+      const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+      assert.equal(gameOptionsResponse.statusCode, 200);
+      assert.deepEqual(
+        gameOptionsResponse.payload.maps.map((entry: { id: string }) => entry.id),
+        listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id)
+      );
+      assert.deepEqual(
+        gameOptionsResponse.payload.ruleSets.map((entry: { id: string }) => entry.id),
+        listCoreBaseNewGameRuleSets().map((entry: { id: string }) => entry.id)
+      );
+      assert.deepEqual(
+        gameOptionsResponse.payload.resolvedCatalog.maps.map((entry: { id: string }) => entry.id),
+        listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id)
+      );
+    });
   }
 );
 

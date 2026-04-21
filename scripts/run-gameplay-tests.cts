@@ -22,6 +22,7 @@ const gameplayTestModules = [
   "../tests/gameplay/shared/map-loader.test.cjs",
   "../tests/gameplay/shared/continent-loader.test.cjs",
   "../tests/gameplay/shared/extensions.test.cjs",
+  "../tests/gameplay/shared/core-base-catalog.test.cjs",
   "../tests/gameplay/shared/runtime-validation.test.cjs",
   "../tests/gameplay/ai/ai-player.test.cjs",
   "../tests/gameplay/setup/game-setup.test.cjs",

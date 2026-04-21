@@ -2,16 +2,17 @@ const fs = require("fs");
 const path = require("path");
 const { listCardRuleSets } = require("../shared/cards.cjs");
 const {
+  findCoreBaseSupportedMap,
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} = require("../shared/core-base-catalog.cjs");
+const {
   findContentPack: findBuiltInContentPack,
   listContentPacks
 } = require("../shared/content-packs.cjs");
 const { findDiceRuleSet: findBuiltInDiceRuleSet, listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
-const {
-  findSupportedMap: findBuiltInSupportedMap,
-  listSupportedMaps,
-  summarizeMap
-} = require("../shared/maps/index.cjs");
+const { summarizeMap } = require("../shared/maps/index.cjs");
 const {
   findPlayerPieceSet: findBuiltInPlayerPieceSet,
   listPlayerPieceSets
@@ -20,7 +21,6 @@ const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const {
-  listBuiltInNewGameRuleSets,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes
@@ -573,7 +573,7 @@ function defaultCoreManifest(): NetRiskModuleManifest {
 function defaultCoreClientManifest(): NetRiskModuleClientManifest {
   return {
     content: {
-      mapIds: listSupportedMaps().map((map: { id: string }) => map.id),
+      mapIds: listCoreBaseMapSummaries().map((map: { id: string }) => map.id),
       siteThemeIds: listSiteThemes().map((theme: { id: string }) => theme.id),
       pieceSkinIds: listPieceSkins().map((skin: { id: string }) => skin.id),
       playerPieceSetIds: listPlayerPieceSets().map((pieceSet: { id: string }) => pieceSet.id),
@@ -1073,12 +1073,12 @@ function buildResolvedModuleCatalog(
     content,
     maps: filterMapsByAllowedIds(
       [
-        ...listSupportedMaps().map(cloneMapSummary),
+        ...listCoreBaseMapSummaries().map(cloneMapSummary),
         ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
       ],
       content.mapIds
     ),
-    ruleSets: filterRuleSetsByAllowedContent(listBuiltInNewGameRuleSets(), content),
+    ruleSets: filterRuleSetsByAllowedContent(listCoreBaseNewGameRuleSets(), content),
     playerPieceSets: filterPlayerPieceSetsByAllowedIds(
       [
         ...listPlayerPieceSets().map(clonePlayerPieceSetSummary),
@@ -1297,7 +1297,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     const errors: string[] = [];
     serverModule.maps.forEach((moduleMap) => {
       try {
-        if (findBuiltInSupportedMap(moduleMap.id)) {
+        if (findCoreBaseSupportedMap(moduleMap.id)) {
           errors.push(`Module map "${moduleMap.id}" conflicts with a built-in map.`);
           return;
         }
@@ -1331,7 +1331,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     const errors: string[] = [];
     const knownMapIds = new Set([
-      ...listSupportedMaps().map((entry: { id: string }) => entry.id),
+      ...listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimeMapsById.keys())
     ]);
     const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
@@ -1864,7 +1864,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       return getModuleOptions();
     },
     findSupportedMap(mapId: string): SupportedMap | null {
-      const builtInMap = findBuiltInSupportedMap(mapId);
+      const builtInMap = findCoreBaseSupportedMap(mapId);
       if (builtInMap) {
         return cloneSupportedMap(builtInMap);
       }

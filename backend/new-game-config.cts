@@ -22,11 +22,9 @@ import {
   DEFAULT_THEME_ID,
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
-  findBuiltInNewGameRuleSet,
   findPieceSkin,
   findVictoryRuleSet,
   findVisualTheme,
-  listBuiltInNewGameRuleSets,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes,
@@ -36,6 +34,12 @@ import {
   type VictoryRuleSet,
   type VisualTheme
 } from "../shared/extensions.cjs";
+import {
+  findCoreBaseNewGameRuleSet,
+  findCoreBaseSupportedMap,
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} from "../shared/core-base-catalog.cjs";
 import {
   normalizeNetRiskGameModuleSelection,
   type NetRiskGameModuleSelection,
@@ -47,7 +51,7 @@ import {
   TURN_TIMEOUT_HOURS_OPTIONS,
   type TurnTimeoutHoursValue
 } from "../shared/turn-timeouts.cjs";
-import { findSupportedMap, listSupportedMaps, type SupportedMap } from "../shared/maps/index.cjs";
+import type { SupportedMap } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
@@ -151,11 +155,19 @@ export function normalizePlayerType(value: string | undefined): PlayerType {
 }
 
 export function findNewGameRuleSet(ruleSetId: string | null | undefined): NewGameRuleSet | null {
-  return findBuiltInNewGameRuleSet(ruleSetId);
+  return findCoreBaseNewGameRuleSet(ruleSetId);
 }
 
 export function listNewGameRuleSets() {
-  return listBuiltInNewGameRuleSets();
+  return listCoreBaseNewGameRuleSets();
+}
+
+export function findSupportedMap(mapId: string): SupportedMap | null {
+  return findCoreBaseSupportedMap(mapId);
+}
+
+export function listSupportedMaps() {
+  return listCoreBaseMapSummaries();
 }
 
 export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
@@ -708,8 +720,6 @@ export {
   listDiceRuleSets,
   listPlayerPieceSets,
   listPieceSkins,
-  listSupportedMaps,
   listVictoryRuleSets,
-  listVisualThemes,
-  findSupportedMap
+  listVisualThemes
 };

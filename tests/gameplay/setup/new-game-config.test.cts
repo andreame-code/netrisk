@@ -1,10 +1,18 @@
 const assert = require("node:assert/strict");
 const {
   createConfiguredInitialState,
+  findSupportedMap,
   findNewGameRuleSet,
   listNewGameRuleSets,
+  listSupportedMaps,
   validateNewGameConfig
 } = require("../../../backend/new-game-config.cjs");
+const {
+  findCoreBaseNewGameRuleSet,
+  findCoreBaseSupportedMap,
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} = require("../../../shared/core-base-catalog.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -27,6 +35,26 @@ register("new game rule set lookups expose only the minimal built-in adapter sha
   assert.equal(listedRuleSet.id, foundRuleSet.id);
   assert.equal(listedRuleSet.name, foundRuleSet.name);
 });
+
+register(
+  "new game config delegates maps and built-in rule sets to the shared core.base catalog",
+  () => {
+    assert.deepEqual(
+      listNewGameRuleSets().map((ruleSet: { id: string }) => ruleSet.id),
+      listCoreBaseNewGameRuleSets().map((ruleSet: { id: string }) => ruleSet.id)
+    );
+    assert.deepEqual(
+      listSupportedMaps().map((map: { id: string }) => map.id),
+      listCoreBaseMapSummaries().map((map: { id: string }) => map.id)
+    );
+
+    assert.deepEqual(
+      findNewGameRuleSet("classic-defense-3"),
+      findCoreBaseNewGameRuleSet("classic-defense-3")
+    );
+    assert.deepEqual(findSupportedMap("classic-mini"), findCoreBaseSupportedMap("classic-mini"));
+  }
+);
 
 register("validateNewGameConfig supports injected rule set resolvers", () => {
   const config = validateNewGameConfig(
