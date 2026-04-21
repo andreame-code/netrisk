@@ -24,7 +24,8 @@ L'applicazione include già:
 - eliminazione giocatore, vittoria e resa
 - sincronizzazione stato/eventi e controlli di autorizzazione lato route
 - gestione conflitti di versione in azioni concorrenti
-- runtime moduli con catalogo admin, enable/disable, content pack, preset e defaults server-side
+- runtime moduli con `core.base` come baseline provider, catalogo admin `resolvedCatalog`, enable/disable, content pack, preset e defaults server-side
+- persistenza dei metadata modulari di setup, cosi moduli attivi, preset/profili, `scenarioSetup`, `gameplayEffects` e timeout turno sopravvivono ai round trip create/open/save
 
 Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
 
@@ -111,7 +112,8 @@ Suite Playwright per flussi end-to-end UI + API.
 - `site-themes.cts`: registry temi supportati
 - `player-piece-sets.cts`: registry palette/set pedine giocatore
 - `content-packs.cts`: manifest compositi che raggruppano moduli compatibili
-- `content-catalog.cts`: catalogo aggregato dei moduli contenuto registrati
+- `content-catalog.cts`: riepilogo built-in dei contenuti registrati, utile come sorgente shared ma non come snapshot canonico runtime/admin
+- `core-base-catalog.cts`: baseline catalog condiviso del modulo `core.base` per setup e admin surfaces
 - `map-loader.cts` + `continent-loader.cts`: loader/validatori CSV mantenuti per import e verifiche
 - `typed-map-data.cts` + `shared/maps/*`: definizioni mappa tipizzate e registry delle mappe supportate
 - `map-graph.cts`: adiacenze/supporto topologico mappa
@@ -120,6 +122,15 @@ Suite Playwright per flussi end-to-end UI + API.
 ## Modello di estensibilita
 
 NetRisk deve evolvere tramite moduli registrati, non tramite condizioni sparse nel codice.
+
+Modello operativo attuale:
+
+- `core.base` espone il baseline catalog del prodotto, e sempre presente, viene auto-iniettato nelle selezioni gioco e non e pensato come modulo opzionale disattivabile
+- i moduli runtime abilitati estendono quel baseline
+- `backend/module-runtime.cts` risolve un catalogo unico condiviso
+- `/api/modules/options` espone la vista admin completa con il catalogo installato e il sottoinsieme `gameModules`
+- `/api/game/options` espone la vista setup/pubblica derivata dallo stesso catalogo, con `modules` gia proiettato dal sottoinsieme `gameModules`
+- `resolvedCatalog` e la fonte canonica per i consumer nuovi; i campi flat top-level restano mirror di compatibilita
 
 Ogni elemento estendibile deve tendere a uno di questi pattern:
 
@@ -138,16 +149,19 @@ Categorie modulo gia impostate:
 
 - temi sito
 - set pedine / palette giocatori
+- skin pedine
 - ruleset dadi
 - ruleset carte
 - ruleset vittoria
+- ruleset setup / preset partita
 - mappe
+- content pack
+- profili content/gameplay/ui
+- slot UI
 
 Categorie future da trattare con lo stesso modello:
 
-- skin pedine e asset grafici
 - pacchetti UI/tema avanzati
-- modalità partita e setup presets
 - AI profiles
 - obiettivi personalizzati
 - regole opzionali di movimento/combattimento/rinforzo
@@ -170,6 +184,7 @@ Categorie future da trattare con lo stesso modello:
 - Pipeline React shell: `frontend/react-shell` viene buildata con Vite in `public/react/`, con `base=/react/` per l'alias namespace e proxy dev `/api` verso `VITE_BACKEND_TARGET`.
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling, SSE payload parsing ed error translation per auth, profile, lobby, setup e gameplay.
+- Modular catalog boundary: i consumer frontend e backend che leggono opzioni modulo/setup devono preferire `resolvedCatalog`; i campi flat su `/api/modules/options` e `/api/game/options` esistono per retrocompatibilita, non come nuova source of truth.
 - Frontend observability boundary: il transport layer puo segnalare solo errori inattesi (`network`, `5xx`, payload validi ma fuori schema) tramite il reporter registrato dalla React shell, senza trasformare il frontend legacy in source of truth del monitoraggio.
 - React server-state ownership: nella shell React le query remote e le mutazioni stanno in TanStack Query; Zustand non sostituisce il backend e resta confinato a stato locale/sessione della shell.
 - Datastore supportati:

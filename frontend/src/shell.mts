@@ -1,5 +1,6 @@
 import { setMarkup } from "./core/dom.mjs";
 import { getModuleOptionsOrNull, login } from "./core/api/client.mjs";
+import { resolvedUiSlots } from "./core/module-catalog.mjs";
 import { DEFAULT_THEME, SUPPORTED_THEMES, normalizeTheme } from "./core/contracts.mjs";
 import type { ThemeName } from "./core/contracts.mjs";
 import { messageFromError } from "./core/errors.mjs";
@@ -316,12 +317,12 @@ async function renderTopNavModuleSlots() {
   }
 
   const data = await fetchModuleOptions();
-  if (!data || !Array.isArray(data.uiSlots)) {
+  if (!data) {
     setMarkup(container, "");
     return;
   }
 
-  const topNavSlots = data.uiSlots
+  const topNavSlots = resolvedUiSlots(data)
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
 

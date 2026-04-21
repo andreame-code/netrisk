@@ -1,5 +1,6 @@
 import { setMarkup } from "./dom.mjs";
 import { getModuleOptionsOrNull } from "./api/client.mjs";
+import { resolvedUiSlots } from "./module-catalog.mjs";
 import type { ModuleOptionsResponse, NetRiskUiSlotContribution } from "./types.mjs";
 
 type MountModuleSlotSectionOptions = {
@@ -88,11 +89,9 @@ export async function mountModuleSlotSection({
   }
 
   const payload = await fetchModuleOptions();
-  const slots = Array.isArray(payload?.uiSlots)
-    ? payload.uiSlots
-        .filter((slot) => slot.slotId === slotId)
-        .sort((left, right) => Number(left.order || 0) - Number(right.order || 0))
-    : [];
+  const slots = resolvedUiSlots(payload)
+    .filter((slot) => slot.slotId === slotId)
+    .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
 
   const existingSection = document.querySelector(`#${containerId}`) as HTMLElement | null;
   if (!slots.length) {

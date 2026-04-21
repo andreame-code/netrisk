@@ -5,7 +5,9 @@ const {
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
   MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+  findBuiltInNewGameRuleSet,
   listExtensionPacks,
+  listBuiltInNewGameRuleSets,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes,
@@ -53,6 +55,67 @@ register("extension registries expose default packs and selectable capabilities"
   assert.equal(
     pieceSkins.find((skin: { id: string }) => skin.id === "command-ring")?.renderStyleId,
     "ring-core"
+  );
+});
+
+register("built-in new game rule set summaries stay derived from extension packs", () => {
+  const packs = listExtensionPacks() as Array<{
+    id: string;
+    name: string;
+    defaults: {
+      mapId: string;
+      diceRuleSetId: string;
+      victoryRuleSetId: string;
+      themeId: string;
+      pieceSkinId: string;
+    };
+  }>;
+  const ruleSets = listBuiltInNewGameRuleSets() as Array<Record<string, unknown>>;
+  const classicDefensePack = packs.find((pack) => pack.id === "classic-defense-3");
+  const classicDefenseRuleSet = findBuiltInNewGameRuleSet("classic-defense-3") as Record<
+    string,
+    unknown
+  > | null;
+
+  if (!classicDefensePack) {
+    throw new Error("Expected classic-defense-3 extension pack to exist.");
+  }
+  assert.equal(ruleSets.length, packs.length);
+  assert.deepEqual(
+    ruleSets.map((ruleSet) => ruleSet.id),
+    packs.map((pack) => pack.id)
+  );
+  if (!classicDefenseRuleSet) {
+    throw new Error("Expected classic-defense-3 built-in new game rule set to exist.");
+  }
+  assert.deepEqual(Object.keys(classicDefenseRuleSet).sort(), ["defaults", "id", "name"]);
+  assert.equal("version" in classicDefenseRuleSet, false);
+  assert.equal("mapIds" in classicDefenseRuleSet, false);
+  assert.equal("diceRuleSetIds" in classicDefenseRuleSet, false);
+  assert.equal("victoryRuleSetIds" in classicDefenseRuleSet, false);
+  assert.equal("themeIds" in classicDefenseRuleSet, false);
+  assert.equal("pieceSkinIds" in classicDefenseRuleSet, false);
+  assert.equal(classicDefenseRuleSet.id, classicDefensePack.id);
+  assert.equal(classicDefenseRuleSet.name, classicDefensePack.name);
+  assert.equal(
+    (classicDefenseRuleSet.defaults as Record<string, unknown>).mapId,
+    classicDefensePack.defaults.mapId
+  );
+  assert.equal(
+    (classicDefenseRuleSet.defaults as Record<string, unknown>).diceRuleSetId,
+    classicDefensePack.defaults.diceRuleSetId
+  );
+  assert.equal(
+    (classicDefenseRuleSet.defaults as Record<string, unknown>).victoryRuleSetId,
+    classicDefensePack.defaults.victoryRuleSetId
+  );
+  assert.equal(
+    (classicDefenseRuleSet.defaults as Record<string, unknown>).themeId,
+    classicDefensePack.defaults.themeId
+  );
+  assert.equal(
+    (classicDefenseRuleSet.defaults as Record<string, unknown>).pieceSkinId,
+    classicDefensePack.defaults.pieceSkinId
   );
 });
 

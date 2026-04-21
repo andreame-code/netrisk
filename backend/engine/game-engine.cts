@@ -685,56 +685,84 @@ function applyScenarioSetupOnStart(state: EngineState): void {
 }
 
 export function publicState(state: EngineState) {
-  migrateGameStateExtensions(state);
-  const currentPlayer = getCurrentPlayer(state);
-  const diceRuleSet = resolveDiceRuleSetFromState(state);
-  const lastAction = state.lastAction as
+  const rawGameConfig =
+    state.gameConfig && typeof state.gameConfig === "object" ? { ...state.gameConfig } : null;
+  const snapshotState = {
+    ...state,
+    gameConfig: rawGameConfig ? { ...rawGameConfig } : state.gameConfig
+  } as EngineState;
+
+  migrateGameStateExtensions(snapshotState);
+
+  if (rawGameConfig && snapshotState.gameConfig) {
+    const snapshotGameConfig = snapshotState.gameConfig;
+    (["ruleSetId", "ruleSetName", "victoryRuleSetId", "themeId", "pieceSkinId"] as const).forEach(
+      (key) => {
+        const rawValue = rawGameConfig[key];
+        if (typeof rawValue === "string" && rawValue.trim()) {
+          snapshotGameConfig[key] = rawValue;
+        }
+      }
+    );
+  }
+
+  const currentPlayer = getCurrentPlayer(snapshotState);
+  const diceRuleSet = resolveDiceRuleSetFromState(snapshotState);
+  const lastAction = snapshotState.lastAction as
     | ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>)
     | null;
 
   return {
-    phase: state.phase,
-    turnPhase: state.turnPhase,
-    players: state.players.map((player) => ({
+    phase: snapshotState.phase,
+    turnPhase: snapshotState.turnPhase,
+    players: snapshotState.players.map((player) => ({
       id: player.id,
       name: player.name,
       color: player.color,
       connected: player.connected,
       isAi: Boolean(player.isAi),
       surrendered: Boolean(player.surrendered),
-      territoryCount: player.id ? territoriesOwnedBy(state, player.id).length : 0,
-      eliminated: state.phase !== "lobby" && !isPlayerAlive(state, player),
+      territoryCount: player.id ? territoriesOwnedBy(snapshotState, player.id).length : 0,
+      eliminated: snapshotState.phase !== "lobby" && !isPlayerAlive(snapshotState, player),
       cardCount:
-        player.id && Array.isArray(state.hands?.[player.id]) ? state.hands[player.id].length : 0
+        player.id && Array.isArray(snapshotState.hands?.[player.id])
+          ? snapshotState.hands[player.id].length
+          : 0
     })),
-    map: getMapTerritories(state).map((territory) => ({
+    map: getMapTerritories(snapshotState).map((territory) => ({
       id: territory.id,
       name: territory.name,
       neighbors: territory.neighbors,
       continentId: territory.continentId,
-      ownerId: state.territories[territory.id]?.ownerId || null,
-      armies: state.territories[territory.id]?.armies || 0,
-      x: getMapPositions(state)[territory.id] ? getMapPositions(state)[territory.id].x : null,
-      y: getMapPositions(state)[territory.id] ? getMapPositions(state)[territory.id].y : null
+      ownerId: snapshotState.territories[territory.id]?.ownerId || null,
+      armies: snapshotState.territories[territory.id]?.armies || 0,
+      x: getMapPositions(snapshotState)[territory.id]
+        ? getMapPositions(snapshotState)[territory.id].x
+        : null,
+      y: getMapPositions(snapshotState)[territory.id]
+        ? getMapPositions(snapshotState)[territory.id].y
+        : null
     })),
-    continents: state.continents,
+    continents: snapshotState.continents,
     mapVisual: {
-      imageUrl: state.mapImageUrl || null,
-      aspectRatio: state.mapAspectRatio || null
+      imageUrl: snapshotState.mapImageUrl || null,
+      aspectRatio: snapshotState.mapAspectRatio || null
     },
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
-    reinforcementPool: state.reinforcementPool,
-    winnerId: state.winnerId,
-    gameConfig: state.gameConfig
+    reinforcementPool: snapshotState.reinforcementPool,
+    winnerId: snapshotState.winnerId,
+    gameConfig: snapshotState.gameConfig
       ? {
-          ...state.gameConfig,
+          ...snapshotState.gameConfig,
           mapName:
-            state.gameConfig.mapName ||
+            snapshotState.gameConfig.mapName ||
             readableMapName(
-              typeof state.gameConfig.mapId === "string" ? state.gameConfig.mapId : null
+              typeof snapshotState.gameConfig.mapId === "string"
+                ? snapshotState.gameConfig.mapId
+                : null
             ),
           pieceSet: (() => {
-            const pieceSet = resolvePlayerPieceSetFromState(state);
+            const pieceSet = resolvePlayerPieceSetFromState(snapshotState);
             return {
               id: pieceSet.id,
               name: pieceSet.name,
@@ -742,14 +770,14 @@ export function publicState(state: EngineState) {
             };
           })(),
           pieceSkin: getPieceSkin(
-            typeof state.gameConfig.pieceSkinId === "string"
-              ? state.gameConfig.pieceSkinId
+            typeof snapshotState.gameConfig.pieceSkinId === "string"
+              ? snapshotState.gameConfig.pieceSkinId
               : undefined
           )
         }
       : null,
-    log: state.log,
-    logEntries: state.logEntries,
+    log: snapshotState.log,
+    logEntries: snapshotState.logEntries,
     lastAction,
     lastCombat:
       lastAction && lastAction.type === GameAction.ATTACK ? lastAction.combat || null : null,
@@ -758,21 +786,25 @@ export function publicState(state: EngineState) {
       attackerMaxDice: diceRuleSet.attackerMaxDice,
       defenderMaxDice: diceRuleSet.defenderMaxDice
     },
-    pendingConquest: state.pendingConquest,
-    fortifyUsed: Boolean(state.fortifyUsed),
-    attacksThisTurn: Number.isInteger(state.attacksThisTurn) ? state.attacksThisTurn : 0,
-    conqueredTerritoryThisTurn: Boolean(state.conqueredTerritoryThisTurn),
+    pendingConquest: snapshotState.pendingConquest,
+    fortifyUsed: Boolean(snapshotState.fortifyUsed),
+    attacksThisTurn: Number.isInteger(snapshotState.attacksThisTurn)
+      ? snapshotState.attacksThisTurn
+      : 0,
+    conqueredTerritoryThisTurn: Boolean(snapshotState.conqueredTerritoryThisTurn),
     cardState: {
-      ruleSetId: state.cardRuleSetId || "standard",
-      tradeCount: Number.isInteger(state.tradeCount) ? state.tradeCount : 0,
-      deckCount: Array.isArray(state.deck) ? state.deck.length : 0,
-      discardCount: Array.isArray(state.discardPile) ? state.discardPile.length : 0,
-      nextTradeBonus: getCardRuleSet(state.cardRuleSetId || "standard").tradeBonusForIndex(
-        Number.isInteger(state.tradeCount) ? state.tradeCount : 0
+      ruleSetId: snapshotState.cardRuleSetId || "standard",
+      tradeCount: Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0,
+      deckCount: Array.isArray(snapshotState.deck) ? snapshotState.deck.length : 0,
+      discardCount: Array.isArray(snapshotState.discardPile) ? snapshotState.discardPile.length : 0,
+      nextTradeBonus: getCardRuleSet(snapshotState.cardRuleSetId || "standard").tradeBonusForIndex(
+        Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0
       ),
-      maxHandBeforeForcedTrade: getForcedTradeLimit(state),
+      maxHandBeforeForcedTrade: getForcedTradeLimit(snapshotState),
       currentPlayerMustTrade:
-        currentPlayer && currentPlayer.id ? playerMustTradeCards(state, currentPlayer.id) : false
+        currentPlayer && currentPlayer.id
+          ? playerMustTradeCards(snapshotState, currentPlayer.id)
+          : false
     }
   };
 }

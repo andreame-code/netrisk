@@ -2,16 +2,17 @@ const fs = require("fs");
 const path = require("path");
 const { listCardRuleSets } = require("../shared/cards.cjs");
 const {
+  findCoreBaseSupportedMap,
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} = require("../shared/core-base-catalog.cjs");
+const {
   findContentPack: findBuiltInContentPack,
   listContentPacks
 } = require("../shared/content-packs.cjs");
 const { findDiceRuleSet: findBuiltInDiceRuleSet, listDiceRuleSets } = require("../shared/dice.cjs");
 const { listFortifyRuleSets } = require("../shared/fortify-rule-sets.cjs");
-const {
-  findSupportedMap: findBuiltInSupportedMap,
-  listSupportedMaps,
-  summarizeMap
-} = require("../shared/maps/index.cjs");
+const { summarizeMap } = require("../shared/maps/index.cjs");
 const {
   findPlayerPieceSet: findBuiltInPlayerPieceSet,
   listPlayerPieceSets
@@ -19,7 +20,11 @@ const {
 const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets.cjs");
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
-const { listPieceSkins, listVictoryRuleSets } = require("../shared/extensions.cjs");
+const {
+  listPieceSkins,
+  listVictoryRuleSets,
+  listVisualThemes
+} = require("../shared/extensions.cjs");
 const {
   CORE_MODULE_ID,
   CORE_MODULE_VERSION,
@@ -47,14 +52,20 @@ import type {
   NetRiskModuleProfile,
   NetRiskModulePlayerPieceSetDefinition,
   NetRiskModuleReference,
+  NetRiskResolvedModuleCatalog,
   NetRiskResolvedGamePreset,
   NetRiskResolvedModuleSetup,
   NetRiskScenarioSetup,
-  NetRiskServerModule,
-  NetRiskUiSlotContribution
+  NetRiskServerModule
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
+import type {
+  BuiltInNewGameRuleSetSummary,
+  PieceSkin,
+  VictoryRuleSet,
+  VisualTheme
+} from "../shared/extensions.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
 
@@ -72,20 +83,8 @@ type ModuleRuntimeOptions = {
   };
 };
 
-type ModuleOptionsSnapshot = {
-  modules: NetRiskInstalledModule[];
-  enabledModules: NetRiskModuleReference[];
-  gameModules: NetRiskInstalledModule[];
-  content: NetRiskContentContribution;
-  maps: MapSummary[];
-  playerPieceSets: PlayerPieceSetSummary[];
-  diceRuleSets: DiceRuleSetSummary[];
-  contentPacks: ContentPackSummary[];
-  gamePresets: NetRiskGamePreset[];
-  uiSlots: NetRiskUiSlotContribution[];
-  contentProfiles: NetRiskModuleProfile[];
-  gameplayProfiles: NetRiskModuleProfile[];
-  uiProfiles: NetRiskModuleProfile[];
+type ModuleOptionsSnapshot = NetRiskResolvedModuleCatalog & {
+  resolvedCatalog: NetRiskResolvedModuleCatalog;
 };
 
 type RuntimeModuleMapEntry = {
@@ -121,8 +120,6 @@ const CONTENT_CONTRIBUTION_KEYS = [
   "fortifyRuleSetIds",
   "reinforcementRuleSetIds"
 ] as const;
-
-type ContentContributionKey = (typeof CONTENT_CONTRIBUTION_KEYS)[number];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -214,6 +211,34 @@ function cloneDiceRuleSetSummary(ruleSet: DiceRuleSetSummary): DiceRuleSetSummar
 function cloneDiceRuleSet(ruleSet: DiceRuleSet): DiceRuleSet {
   return {
     ...ruleSet
+  };
+}
+
+function cloneVictoryRuleSet(ruleSet: VictoryRuleSet): VictoryRuleSet {
+  return {
+    ...ruleSet
+  };
+}
+
+function cloneRuleSetSummary(ruleSet: BuiltInNewGameRuleSetSummary): BuiltInNewGameRuleSetSummary {
+  return {
+    id: ruleSet.id,
+    name: ruleSet.name,
+    defaults: {
+      ...ruleSet.defaults
+    }
+  };
+}
+
+function cloneVisualTheme(theme: VisualTheme): VisualTheme {
+  return {
+    ...theme
+  };
+}
+
+function clonePieceSkin(pieceSkin: PieceSkin): PieceSkin {
+  return {
+    ...pieceSkin
   };
 }
 
@@ -548,7 +573,7 @@ function defaultCoreManifest(): NetRiskModuleManifest {
 function defaultCoreClientManifest(): NetRiskModuleClientManifest {
   return {
     content: {
-      mapIds: listSupportedMaps().map((map: { id: string }) => map.id),
+      mapIds: listCoreBaseMapSummaries().map((map: { id: string }) => map.id),
       siteThemeIds: listSiteThemes().map((theme: { id: string }) => theme.id),
       pieceSkinIds: listPieceSkins().map((skin: { id: string }) => skin.id),
       playerPieceSetIds: listPlayerPieceSets().map((pieceSet: { id: string }) => pieceSet.id),
@@ -935,13 +960,59 @@ function filterDiceRuleSetsByAllowedIds(
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneDiceRuleSetSummary);
 }
 
-function buildModuleOptions(
+function filterVictoryRuleSetsByAllowedIds(
+  entries: VictoryRuleSet[],
+  allowedIds: string[] | null | undefined
+): VictoryRuleSet[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneVictoryRuleSet);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneVictoryRuleSet);
+}
+
+function filterRuleSetsByAllowedContent(
+  entries: BuiltInNewGameRuleSetSummary[],
+  _content: NetRiskContentContribution
+): BuiltInNewGameRuleSetSummary[] {
+  // Rule sets are setup presets/default bundles, not capability lists. Content filtering already
+  // happens on maps, dice, victory rules, themes, and piece skins individually, so pruning
+  // rule sets by their defaults can hide valid configurations that explicitly override them.
+  return entries.map(cloneRuleSetSummary);
+}
+
+function filterThemesByAllowedIds(
+  entries: VisualTheme[],
+  allowedIds: string[] | null | undefined
+): VisualTheme[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(cloneVisualTheme);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneVisualTheme);
+}
+
+function filterPieceSkinsByAllowedIds(
+  entries: PieceSkin[],
+  allowedIds: string[] | null | undefined
+): PieceSkin[] {
+  if (!Array.isArray(allowedIds) || !allowedIds.length) {
+    return entries.map(clonePieceSkin);
+  }
+
+  const allowedIdSet = new Set(allowedIds);
+  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(clonePieceSkin);
+}
+
+function buildResolvedModuleCatalog(
   modules: NetRiskInstalledModule[],
   runtimeMapEntries: RuntimeModuleMapEntry[],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
-): ModuleOptionsSnapshot {
+): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter(
     (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
@@ -965,6 +1036,7 @@ function buildModuleOptions(
     enabledRuntimePlayerPieceSetEntries,
     enabledRuntimeDiceRuleSetEntries
   );
+
   return {
     modules: clonedModules,
     enabledModules: enabledReferences(clonedModules),
@@ -974,11 +1046,12 @@ function buildModuleOptions(
     content,
     maps: filterMapsByAllowedIds(
       [
-        ...listSupportedMaps().map(cloneMapSummary),
+        ...listCoreBaseMapSummaries().map(cloneMapSummary),
         ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
       ],
       content.mapIds
     ),
+    ruleSets: filterRuleSetsByAllowedContent(listCoreBaseNewGameRuleSets(), content),
     playerPieceSets: filterPlayerPieceSetsByAllowedIds(
       [
         ...listPlayerPieceSets().map(clonePlayerPieceSetSummary),
@@ -1015,6 +1088,18 @@ function buildModuleOptions(
       ],
       content.contentPackIds
     ),
+    victoryRuleSets: filterVictoryRuleSetsByAllowedIds(
+      listVictoryRuleSets().map(cloneVictoryRuleSet),
+      content.victoryRuleSetIds
+    ),
+    themes: filterThemesByAllowedIds(
+      listVisualThemes().map(cloneVisualTheme),
+      content.siteThemeIds
+    ),
+    pieceSkins: filterPieceSkinsByAllowedIds(
+      listPieceSkins().map(clonePieceSkin),
+      content.pieceSkinIds
+    ),
     gamePresets: summarizeGamePresets(enabled),
     uiSlots: enabled
       .flatMap((moduleEntry) => moduleEntry.clientManifest?.ui?.slots || [])
@@ -1023,6 +1108,27 @@ function buildModuleOptions(
     contentProfiles: summarizeProfiles(enabled, "content"),
     gameplayProfiles: summarizeProfiles(enabled, "gameplay"),
     uiProfiles: summarizeProfiles(enabled, "ui")
+  };
+}
+
+function buildModuleOptions(
+  modules: NetRiskInstalledModule[],
+  runtimeMapEntries: RuntimeModuleMapEntry[],
+  runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
+  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
+): ModuleOptionsSnapshot {
+  const resolvedCatalog = buildResolvedModuleCatalog(
+    modules,
+    runtimeMapEntries,
+    runtimeContentPackEntries,
+    runtimePlayerPieceSetEntries,
+    runtimeDiceRuleSetEntries
+  );
+
+  return {
+    ...resolvedCatalog,
+    resolvedCatalog
   };
 }
 
@@ -1164,7 +1270,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     const errors: string[] = [];
     serverModule.maps.forEach((moduleMap) => {
       try {
-        if (findBuiltInSupportedMap(moduleMap.id)) {
+        if (findCoreBaseSupportedMap(moduleMap.id)) {
           errors.push(`Module map "${moduleMap.id}" conflicts with a built-in map.`);
           return;
         }
@@ -1198,7 +1304,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
     const errors: string[] = [];
     const knownMapIds = new Set([
-      ...listSupportedMaps().map((entry: { id: string }) => entry.id),
+      ...listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimeMapsById.keys())
     ]);
     const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
@@ -1731,7 +1837,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       return getModuleOptions();
     },
     findSupportedMap(mapId: string): SupportedMap | null {
-      const builtInMap = findBuiltInSupportedMap(mapId);
+      const builtInMap = findCoreBaseSupportedMap(mapId);
       if (builtInMap) {
         return cloneSupportedMap(builtInMap);
       }

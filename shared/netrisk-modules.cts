@@ -3,10 +3,37 @@ export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
 export const NETRISK_MODULE_SCHEMA_VERSION = 1;
 export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
+export const NETRISK_MODULE_CAPABILITY_KINDS = [
+  "card-rule-set",
+  "content-pack",
+  "dice-rule-set",
+  "fortify-rule-set",
+  "gameplay-hook",
+  "map",
+  "player-piece-set",
+  "reinforcement-rule-set",
+  "site-theme",
+  "ui-slot",
+  "victory-rule-set"
+] as const;
+export const NETRISK_UI_SLOT_IDS = [
+  "admin-modules-page",
+  "game.sidebar",
+  "lobby.page",
+  "new-game.sidebar",
+  "top-nav-bar"
+] as const;
 
 import type { ContentPackSummary } from "./content-packs.cjs";
-import type { DiceRuleSet } from "./dice.cjs";
-import type { PlayerPieceSet } from "./player-piece-sets.cjs";
+import type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
+import type {
+  BuiltInNewGameRuleSetSummary,
+  PieceSkin,
+  VictoryRuleSet,
+  VisualTheme
+} from "./extensions.cjs";
+import type { MapSummary } from "./maps/index.cjs";
+import type { PlayerPieceSet, PlayerPieceSetSummary } from "./player-piece-sets.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
 
 export type NetRiskModuleKind = "content" | "gameplay" | "ui" | "hybrid";
@@ -24,9 +51,11 @@ export type NetRiskUiSlotKind =
   | "page-section"
   | "admin-card"
   | "widget";
+export type NetRiskModuleCapabilityKind = (typeof NETRISK_MODULE_CAPABILITY_KINDS)[number];
+export type NetRiskUiSlotId = (typeof NETRISK_UI_SLOT_IDS)[number];
 
 export interface NetRiskModuleCapability {
-  kind: string;
+  kind: NetRiskModuleCapabilityKind;
   targetId?: string | null;
   hook?: string | null;
   scope?: "global" | "game";
@@ -86,7 +115,7 @@ export interface NetRiskGamePreset {
 }
 
 export interface NetRiskUiSlotContribution {
-  slotId: string;
+  slotId: NetRiskUiSlotId;
   itemId: string;
   title: string;
   kind: NetRiskUiSlotKind;
@@ -253,6 +282,26 @@ export interface NetRiskServerModule {
   } | null;
 }
 
+export interface NetRiskResolvedModuleCatalog {
+  modules: NetRiskInstalledModule[];
+  enabledModules: NetRiskModuleReference[];
+  gameModules: NetRiskInstalledModule[];
+  content: NetRiskContentContribution;
+  maps: MapSummary[];
+  ruleSets: BuiltInNewGameRuleSetSummary[];
+  playerPieceSets: PlayerPieceSetSummary[];
+  diceRuleSets: DiceRuleSetSummary[];
+  contentPacks: ContentPackSummary[];
+  victoryRuleSets: VictoryRuleSet[];
+  themes: VisualTheme[];
+  pieceSkins: PieceSkin[];
+  gamePresets: NetRiskGamePreset[];
+  uiSlots: NetRiskUiSlotContribution[];
+  contentProfiles: NetRiskModuleProfile[];
+  gameplayProfiles: NetRiskModuleProfile[];
+  uiProfiles: NetRiskModuleProfile[];
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -261,13 +310,27 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+function isSupportedModuleCapabilityKind(value: unknown): value is NetRiskModuleCapabilityKind {
+  return (
+    isNonEmptyString(value) &&
+    (NETRISK_MODULE_CAPABILITY_KINDS as readonly string[]).includes(String(value).trim())
+  );
+}
+
+function isSupportedUiSlotId(value: unknown): value is NetRiskUiSlotId {
+  return (
+    isNonEmptyString(value) &&
+    (NETRISK_UI_SLOT_IDS as readonly string[]).includes(String(value).trim())
+  );
+}
+
 function normalizeCapability(raw: unknown, sourcePath: string): NetRiskModuleCapability {
-  if (!isObject(raw) || !isNonEmptyString(raw.kind)) {
+  if (!isObject(raw) || !isSupportedModuleCapabilityKind(raw.kind)) {
     throw new Error(`Invalid module capability in "${sourcePath}".`);
   }
 
   return {
-    kind: String(raw.kind).trim(),
+    kind: String(raw.kind).trim() as NetRiskModuleCapabilityKind,
     targetId: isNonEmptyString(raw.targetId) ? String(raw.targetId).trim() : null,
     hook: isNonEmptyString(raw.hook) ? String(raw.hook).trim() : null,
     scope: raw.scope === "game" ? "game" : "global",
@@ -290,7 +353,7 @@ function normalizeDependency(raw: unknown, sourcePath: string): NetRiskModuleDep
 function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContribution {
   if (
     !isObject(raw) ||
-    !isNonEmptyString(raw.slotId) ||
+    !isSupportedUiSlotId(raw.slotId) ||
     !isNonEmptyString(raw.itemId) ||
     !isNonEmptyString(raw.title)
   ) {
@@ -310,7 +373,7 @@ function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContrib
   }
 
   return {
-    slotId: String(raw.slotId).trim(),
+    slotId: String(raw.slotId).trim() as NetRiskUiSlotId,
     itemId: String(raw.itemId).trim(),
     title: String(raw.title).trim(),
     kind,

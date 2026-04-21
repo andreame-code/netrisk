@@ -22,17 +22,24 @@ import {
   DEFAULT_THEME_ID,
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
-  findExtensionPack,
   findPieceSkin,
   findVictoryRuleSet,
   findVisualTheme,
-  listExtensionPacks,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes,
-  migrateGameConfigExtensions,
-  type ExtensionPackManifest
+  type ExtensionAwareGameConfig,
+  type BuiltInNewGameRuleSetSummary,
+  type PieceSkin,
+  type VictoryRuleSet,
+  type VisualTheme
 } from "../shared/extensions.cjs";
+import {
+  findCoreBaseNewGameRuleSet,
+  findCoreBaseSupportedMap,
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} from "../shared/core-base-catalog.cjs";
 import {
   normalizeNetRiskGameModuleSelection,
   type NetRiskGameModuleSelection,
@@ -44,7 +51,7 @@ import {
   TURN_TIMEOUT_HOURS_OPTIONS,
   type TurnTimeoutHoursValue
 } from "../shared/turn-timeouts.cjs";
-import { findSupportedMap, listSupportedMaps, type SupportedMap } from "../shared/maps/index.cjs";
+import type { SupportedMap } from "../shared/maps/index.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
@@ -88,7 +95,7 @@ export const AI_GENERAL_NAMES = [
 export const STANDARD_NEW_GAME_RULE_SET_ID = "classic";
 export const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
 
-type NewGameRuleSet = Readonly<ExtensionPackManifest>;
+type NewGameRuleSet = Readonly<BuiltInNewGameRuleSetSummary>;
 type PlayerType = "human" | "ai";
 
 interface RequestedPlayerSlot {
@@ -148,11 +155,19 @@ export function normalizePlayerType(value: string | undefined): PlayerType {
 }
 
 export function findNewGameRuleSet(ruleSetId: string | null | undefined): NewGameRuleSet | null {
-  return findExtensionPack(ruleSetId);
+  return findCoreBaseNewGameRuleSet(ruleSetId);
 }
 
 export function listNewGameRuleSets() {
-  return listExtensionPacks();
+  return listCoreBaseNewGameRuleSets();
+}
+
+export function findSupportedMap(mapId: string): SupportedMap | null {
+  return findCoreBaseSupportedMap(mapId);
+}
+
+export function listSupportedMaps() {
+  return listCoreBaseMapSummaries();
 }
 
 export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
@@ -183,14 +198,83 @@ export function buildHistoricalAiNames(
   return names;
 }
 
+function cloneModuleSelection(
+  moduleSelection: NetRiskGameModuleSelection
+): NetRiskGameModuleSelection {
+  return {
+    moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
+    activeModules: moduleSelection.activeModules.map((entry) => ({
+      id: entry.id,
+      version: entry.version
+    })),
+    contentProfileId: moduleSelection.contentProfileId || null,
+    gameplayProfileId: moduleSelection.gameplayProfileId || null,
+    uiProfileId: moduleSelection.uiProfileId || null
+  };
+}
+
+function buildResolvedGameConfig(
+  config: ValidatedNewGameConfig,
+  moduleSelection: NetRiskGameModuleSelection,
+  resolvedSetup: NetRiskResolvedModuleSetup | null | undefined,
+  hydratedConfigInput: NewGameConfigInput
+): ExtensionAwareGameConfig {
+  const clonedModuleSelection = cloneModuleSelection(moduleSelection);
+
+  return {
+    extensionSchemaVersion: config.extensionSchemaVersion,
+    moduleSchemaVersion: clonedModuleSelection.moduleSchemaVersion,
+    name: config.name,
+    contentPackId: config.contentPackId,
+    pieceSetId: config.pieceSetId,
+    pieceSetName: config.selectedPieceSet.name,
+    pieceSetPalette: [...config.selectedPieceSet.palette],
+    ruleSetId: config.ruleSetId,
+    ruleSetName: config.ruleSetName,
+    mapId: config.mapId,
+    mapName: config.mapName,
+    diceRuleSetId: config.diceRuleSetId,
+    diceRuleSetName: config.selectedDiceRuleSet.name,
+    diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
+    diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
+    diceRuleSetAttackerMustLeaveOneArmyBehind:
+      config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
+    diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
+    victoryRuleSetId: config.victoryRuleSetId,
+    themeId: config.themeId,
+    pieceSkinId: config.pieceSkinId,
+    activeModules: clonedModuleSelection.activeModules,
+    gamePresetId:
+      typeof hydratedConfigInput.gamePresetId === "string"
+        ? hydratedConfigInput.gamePresetId
+        : null,
+    contentProfileId: clonedModuleSelection.contentProfileId || null,
+    gameplayProfileId: clonedModuleSelection.gameplayProfileId || null,
+    uiProfileId: clonedModuleSelection.uiProfileId || null,
+    gameplayEffects: resolvedSetup?.gameplayEffects || null,
+    scenarioSetup: resolvedSetup?.scenarioSetup || null,
+    turnTimeoutHours: config.turnTimeoutHours,
+    totalPlayers: config.totalPlayers,
+    players: config.players.map((player) => ({
+      slot: player.slot,
+      type: player.type,
+      name: player.name
+    }))
+  };
+}
+
 export function validateNewGameConfig(
   input: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
+    resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
+    resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
   } = {}
 ): ValidatedNewGameConfig {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
@@ -213,7 +297,9 @@ export function validateNewGameConfig(
   }
 
   const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
-  const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
+  const resolveRuleSet =
+    typeof options.resolveRuleSet === "function" ? options.resolveRuleSet : findNewGameRuleSet;
+  const selectedRuleSet = resolveRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
     throw createLocalizedError(
       "Il ruleset selezionato non e supportato.",
@@ -258,7 +344,11 @@ export function validateNewGameConfig(
       selectedContentPack.defaultVictoryRuleSetId ||
       DEFAULT_VICTORY_RULE_SET_ID
   );
-  const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
+  const resolveVictoryRuleSet =
+    typeof options.resolveVictoryRuleSet === "function"
+      ? options.resolveVictoryRuleSet
+      : findVictoryRuleSet;
+  const selectedVictoryRuleSet = resolveVictoryRuleSet(requestedVictoryRuleSetId);
   if (!selectedVictoryRuleSet) {
     throw createLocalizedError(
       "La regola vittoria selezionata non e supportata.",
@@ -287,7 +377,9 @@ export function validateNewGameConfig(
       selectedContentPack.defaultSiteThemeId ||
       DEFAULT_THEME_ID
   );
-  const selectedTheme = findVisualTheme(requestedThemeId);
+  const resolveTheme =
+    typeof options.resolveTheme === "function" ? options.resolveTheme : findVisualTheme;
+  const selectedTheme = resolveTheme(requestedThemeId);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }
@@ -295,7 +387,9 @@ export function validateNewGameConfig(
   const requestedPieceSkinId = String(
     input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID
   );
-  const selectedPieceSkin = findPieceSkin(requestedPieceSkinId);
+  const resolvePieceSkin =
+    typeof options.resolvePieceSkin === "function" ? options.resolvePieceSkin : findPieceSkin;
+  const selectedPieceSkin = resolvePieceSkin(requestedPieceSkinId);
   if (!selectedPieceSkin) {
     throw createLocalizedError(
       "La skin pedina selezionata non e supportata.",
@@ -379,10 +473,14 @@ export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
+    resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
+    resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
       activeModuleIds?: string[];
@@ -539,10 +637,14 @@ export function createConfiguredInitialState(
       };
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
+        resolveRuleSet: options.resolveRuleSet,
         resolveContentPack: options.resolveContentPack,
         resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,
-        resolveSupportedMap: options.resolveSupportedMap
+        resolveSupportedMap: options.resolveSupportedMap,
+        resolveVictoryRuleSet: options.resolveVictoryRuleSet,
+        resolveTheme: options.resolveTheme,
+        resolvePieceSkin: options.resolvePieceSkin
       });
       const resolvedModuleSelection =
         typeof options.resolveGameModuleSelection === "function"
@@ -578,42 +680,12 @@ export function createConfiguredInitialState(
         state.diceRuleSetId = config.diceRuleSetId;
         state.victoryRuleSetId = config.victoryRuleSetId;
         state.pieceSetId = config.pieceSetId;
-        state.gameConfig = migrateGameConfigExtensions({
-          name: config.name,
-          contentPackId: config.contentPackId,
-          pieceSetId: config.pieceSetId,
-          pieceSetName: config.selectedPieceSet.name,
-          pieceSetPalette: [...config.selectedPieceSet.palette],
-          ruleSetId: config.ruleSetId,
-          ruleSetName: config.ruleSetName,
-          mapId: config.mapId,
-          mapName: config.mapName,
-          diceRuleSetId: config.diceRuleSetId,
-          diceRuleSetName: config.selectedDiceRuleSet.name,
-          diceRuleSetAttackerMaxDice: config.selectedDiceRuleSet.attackerMaxDice,
-          diceRuleSetDefenderMaxDice: config.selectedDiceRuleSet.defenderMaxDice,
-          diceRuleSetAttackerMustLeaveOneArmyBehind:
-            config.selectedDiceRuleSet.attackerMustLeaveOneArmyBehind,
-          diceRuleSetDefenderWinsTies: config.selectedDiceRuleSet.defenderWinsTies,
-          victoryRuleSetId: config.victoryRuleSetId,
-          themeId: config.themeId,
-          pieceSkinId: config.pieceSkinId,
-          moduleSchemaVersion: moduleSelection.moduleSchemaVersion,
-          activeModules: moduleSelection.activeModules,
-          gamePresetId:
-            typeof hydratedConfigInput.gamePresetId === "string"
-              ? hydratedConfigInput.gamePresetId
-              : null,
-          contentProfileId: moduleSelection.contentProfileId || null,
-          gameplayProfileId: moduleSelection.gameplayProfileId || null,
-          uiProfileId: moduleSelection.uiProfileId || null,
-          gameplayEffects: resolvedSetup?.gameplayEffects || null,
-          scenarioSetup: resolvedSetup?.scenarioSetup || null,
-          extensionSchemaVersion: config.extensionSchemaVersion,
-          turnTimeoutHours: config.turnTimeoutHours,
-          totalPlayers: config.totalPlayers,
-          players: config.players
-        });
+        state.gameConfig = buildResolvedGameConfig(
+          config,
+          moduleSelection,
+          resolvedSetup || null,
+          hydratedConfigInput
+        );
 
         config.players.forEach((player) => {
           if (player.type !== "ai") {
@@ -683,8 +755,6 @@ export {
   listDiceRuleSets,
   listPlayerPieceSets,
   listPieceSkins,
-  listSupportedMaps,
   listVictoryRuleSets,
-  listVisualThemes,
-  findSupportedMap
+  listVisualThemes
 };

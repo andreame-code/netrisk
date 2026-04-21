@@ -28,7 +28,7 @@ flowchart LR
 Notes:
 
 - The game remains in `lobby` until a valid start request succeeds.
-- `POST /api/games/open` does not mutate the rules flow; it rehydrates a saved snapshot and can resume pending AI work before replying.
+- `POST /api/games/open` does not mutate the rules flow; it rehydrates a saved snapshot, preserves modular setup metadata already stored in `gameConfig`, and can resume pending AI work before replying.
 - Player surrender feeds the same victory detection path used by normal turn resolution.
 
 ## Turn lifecycle

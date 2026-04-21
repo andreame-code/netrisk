@@ -1,15 +1,28 @@
 # Extending NetRisk
 
-NetRisk supports two extension paths:
+NetRisk now resolves setup, admin, and client-visible module data through one additive catalog model:
 
-- built-in extensions under `shared` for core maps, registries, and engine-integrated rule families
-- runtime modules under `modules` for additive content, presets, UI slots, and optional server-side content packages
+```text
+core.base baseline + enabled runtime modules -> backend/module-runtime.cts -> resolvedCatalog
+```
 
-Choose the built-in path when the feature becomes part of the main product baseline. Choose a runtime module when the feature should stay optional, discoverable, and enable/disable-friendly.
+`core.base` is the baseline provider for the default modular platform. It is always enabled and should not be treated as a toggleable optional module. Optional modules under `modules/` extend that baseline. The backend exposes the result through:
+
+- `GET /api/modules/options` for the full admin-facing module snapshot
+- `GET /api/game/options` for the setup-facing public snapshot
+
+Both endpoints now include an additive `resolvedCatalog` field. New consumers should treat `resolvedCatalog` as the canonical source of truth. The flat top-level arrays (`maps`, `ruleSets`, `themes`, and so on) remain available as backward-compatible mirrors derived from that catalog.
+
+NetRisk still supports two authoring paths:
+
+- shared baseline content under `shared` when the feature becomes part of the default product
+- optional runtime modules under `modules` when the feature should stay discoverable, enable/disable-friendly, and packageable for admins
+
+Choose the shared baseline path when the feature should ship with `core.base`. Choose a runtime module when the feature should remain optional or be rolled out incrementally.
 
 ## Path 1: built-in maps and rule registries
 
-Use this path for core content that should always ship with the base game.
+Use this path for core content that should always ship with the default `core.base` experience.
 
 ### Adding a built-in map
 
@@ -17,9 +30,10 @@ Use this path for core content that should always ship with the base game.
 2. Add the exported map module under `shared/maps`.
 3. Register it in `shared/maps/index.cts`.
 4. Keep topology and validation inside shared utilities such as `shared/map-graph.cts`, `shared/map-loader.cts`, and `shared/typed-map-data.cts`.
-5. Cover the new map with shared and gameplay tests.
+5. If the map should be part of the default setup catalog, expose it through `shared/core-base-catalog.cts`.
+6. Cover the new map with shared and gameplay tests.
 
-The current built-in map registry is resolved through `shared/maps/index.cts`, which is the single source of truth for supported maps.
+The typed map definitions still live under `shared/maps/*`, but the baseline setup catalog now flows through `shared/core-base-catalog.cts`.
 
 ### Adding a built-in rule family or rule variant
 
@@ -32,9 +46,10 @@ Rule ids should remain stable and backend-resolved.
    - `shared/victory-rule-sets.cts`
    - `shared/dice.cts`
 2. Make sure setup and extension selection continue to store rule ids instead of duplicated rule logic. The current selection flow is centered on `shared/extensions.cts`.
-3. Apply the rule in the matching engine module under `backend/engine`.
-4. Update validation and defaults only where the transport or configuration shape changes.
-5. Add focused gameplay tests.
+3. If the rule variant should be selectable in the baseline setup catalog, expose the summarized baseline entry through `shared/core-base-catalog.cts`.
+4. Apply the rule in the matching engine module under `backend/engine`.
+5. Update validation and defaults only where the transport or configuration shape changes.
+6. Add focused gameplay tests.
 
 Good examples already in the repository:
 
@@ -43,7 +58,7 @@ Good examples already in the repository:
 
 ## Path 2: runtime modules
 
-Runtime modules are loaded from `modules` and validated by the backend runtime catalog.
+Runtime modules are loaded from `modules`, validated by the backend runtime, and merged with the `core.base` baseline into `resolvedCatalog`.
 
 Use this path for:
 
@@ -51,6 +66,17 @@ Use this path for:
 - selectable presets and profiles
 - UI slot contributions
 - runtime piece sets, dice rule sets, or server-side gameplay defaults
+
+### What admins get from modules
+
+For admins, enabling a module can now change all of these surfaces without patching route handlers or React consumers:
+
+- available maps, content packs, piece sets, dice rule sets, victory rule sets, themes, and piece skins
+- game presets
+- content, gameplay, and UI profiles
+- supported UI slot contributions
+
+Those changes become visible through `/api/modules/options` and `/api/game/options`, and the selected modular setup stays persisted when a game is created, reopened, summarized, or shown in profile/admin views.
 
 ### Required files
 
@@ -95,6 +121,14 @@ The demo module shows all three patterns:
 - a game preset that activates the module and picks profiles
 - named profiles for content, gameplay, and UI
 
+Supported `slotId` values are currently:
+
+- `admin-modules-page`
+- `game.sidebar`
+- `lobby.page`
+- `new-game.sidebar`
+- `top-nav-bar`
+
 ### Optional server entrypoint
 
 Add a server entrypoint when the module contributes runtime content or defaults that the backend must resolve directly. The current runtime supports:
@@ -105,6 +139,8 @@ Add a server entrypoint when the module contributes runtime content or defaults 
 - `diceRuleSets`
 - server-side `profiles`
 
+Server-side profiles can also contribute setup defaults, `gameplayEffects`, and `scenarioSetup`, which are then persisted in `gameConfig` and preserved across create/open/save round trips.
+
 The regression coverage in `tests/gameplay/regression/module-runtime.test.cts` contains concrete fixtures for runtime maps, content packs, piece sets, dice rule sets, and server-side default profiles.
 
 ### Runtime module checklist
@@ -113,8 +149,9 @@ The regression coverage in `tests/gameplay/regression/module-runtime.test.cts` c
 2. Add `client-manifest.json` for presets, slots, and profiles.
 3. Add a server entrypoint only when backend-resolved content is needed.
 4. Enable the module through the modules API or admin tooling.
-5. Verify that `GET /api/modules/options` and `GET /api/game/options` expose the expected catalog changes.
-6. Add regression coverage for enable/disable behavior and selection rules.
+5. Verify that `GET /api/modules/options` and `GET /api/game/options` expose the expected `resolvedCatalog` changes.
+6. Verify that admin summaries and reopened games still show the expected active modules, preset/profile ids, and modular setup metadata.
+7. Add regression coverage for enable/disable behavior, selection rules, and persistence-sensitive setup data.
 
 ## Built-in vs runtime: which one should you pick?
 
@@ -136,5 +173,6 @@ Use runtime modules when:
 - Keep game rules in `backend/engine`, not in React components.
 - Keep shared ids and transport contracts in `shared`.
 - Avoid duplicating validation in both frontend and backend.
+- Prefer `resolvedCatalog` in new consumers and keep flat option fields only for compatibility bridges.
 - Prefer additive modules and registries over broad refactors.
 - Back every new map, rule, or module path with focused tests.

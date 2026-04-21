@@ -4,6 +4,10 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createApp } = require("../../../backend/server.cjs");
+const {
+  listCoreBaseMapSummaries,
+  listCoreBaseNewGameRuleSets
+} = require("../../../shared/core-base-catalog.cjs");
 
 type HeaderMap = Record<string, string>;
 
@@ -327,10 +331,307 @@ register(
           ),
           true
         );
+
+        assert.equal(Boolean(optionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          optionsResponse.payload.resolvedCatalog.uiSlots.some(
+            (entry: any) => entry.itemId === "demo.valid.briefing"
+          ),
+          true
+        );
+        assert.equal(
+          optionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "demo.valid"
+          ),
+          true
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.victoryRuleSets), true);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.themes), true);
+        assert.equal(Array.isArray(gameOptionsResponse.payload.pieceSkins), true);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+            (entry: any) => entry.itemId === "demo.valid.briefing"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.modules.some(
+            (entry: any) => entry.id === "demo.valid"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.modules.some(
+            (entry: any) => entry.id === "demo.invalid"
+          ),
+          false
+        );
       }
     );
   }
 );
+
+register(
+  "module runtime espone maps e built-in new-game rule sets dal catalogo shared core.base",
+  async () => {
+    await withModuleServer([], async ({ app }) => {
+      const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+      assert.equal(gameOptionsResponse.statusCode, 200);
+      assert.deepEqual(
+        gameOptionsResponse.payload.maps.map((entry: { id: string }) => entry.id),
+        listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id)
+      );
+      assert.deepEqual(
+        gameOptionsResponse.payload.ruleSets.map((entry: { id: string }) => entry.id),
+        listCoreBaseNewGameRuleSets().map((entry: { id: string }) => entry.id)
+      );
+      assert.deepEqual(
+        gameOptionsResponse.payload.resolvedCatalog.maps.map((entry: { id: string }) => entry.id),
+        listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id)
+      );
+    });
+  }
+);
+
+register(
+  "module runtime isola capability kinds non supportati senza rompere gli endpoint options",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "unsupported.capability",
+          manifest: {
+            schemaVersion: 1,
+            id: "unsupported.capability",
+            version: "1.0.0",
+            displayName: "Unsupported Capability",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            capabilities: [{ kind: "totally-new-capability", scope: "game" }]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const catalogResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(catalogResponse.statusCode, 200);
+        const unsupportedModule = catalogResponse.payload.modules.find(
+          (entry: any) => entry.id === "unsupported.capability"
+        );
+        assert.equal(Boolean(unsupportedModule), true);
+        assert.equal(unsupportedModule.status, "error");
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "unsupported.capability"
+          ),
+          false
+        );
+      }
+    );
+  }
+);
+
+register(
+  "module runtime mantiene il contratto top-level di /api/game/options per i consumer legacy/new-game",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.contract",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.contract",
+            version: "1.0.0",
+            displayName: "Demo Contract",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "gameplay-hook",
+                scope: "game",
+                hook: "setup.profile",
+                description: "Contract gameplay profile"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            gamePresets: [
+              {
+                id: "demo.contract.preset",
+                name: "Contract Preset",
+                activeModuleIds: ["demo.contract"],
+                contentProfileId: "demo.contract.content",
+                gameplayProfileId: "demo.contract.gameplay",
+                uiProfileId: "demo.contract.ui"
+              }
+            ],
+            profiles: {
+              content: [{ id: "demo.contract.content", name: "Contract Content" }],
+              gameplay: [{ id: "demo.contract.gameplay", name: "Contract Gameplay" }],
+              ui: [{ id: "demo.contract.ui", name: "Contract UI" }]
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.contract/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+
+        assert.equal(
+          gameOptionsResponse.payload.gamePresets.some(
+            (entry: any) => entry.id === "demo.contract.preset"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.contentProfiles.some(
+            (entry: any) => entry.id === "demo.contract.content"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.gameplayProfiles.some(
+            (entry: any) => entry.id === "demo.contract.gameplay"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.uiProfiles.some(
+            (entry: any) => entry.id === "demo.contract.ui"
+          ),
+          true
+        );
+
+        const topLevelModules =
+          gameOptionsResponse.payload.gameModules ?? gameOptionsResponse.payload.modules;
+        assert.equal(Array.isArray(topLevelModules), true);
+        assert.equal(
+          topLevelModules.some((entry: any) => entry.id === "demo.contract"),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "demo.contract"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register("module runtime non espone slot UI con slotId non supportati", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "unsupported.slot",
+        manifest: {
+          schemaVersion: 1,
+          id: "unsupported.slot",
+          version: "1.0.0",
+          displayName: "Unsupported Slot",
+          engineVersion: "1.0.0",
+          kind: "ui",
+          capabilities: [{ kind: "ui-slot", scope: "global", description: "Unsupported slot" }],
+          entrypoints: {
+            clientManifest: "client-manifest.json"
+          }
+        },
+        clientManifest: {
+          ui: {
+            slots: [
+              {
+                slotId: "unsupported.slot-id",
+                itemId: "unsupported.slot.item",
+                title: "Unsupported Slot",
+                kind: "panel"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const catalogResponse = await callApp(
+        app,
+        "GET",
+        "/api/modules",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(catalogResponse.statusCode, 200);
+      const unsupportedModule = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "unsupported.slot"
+      );
+      assert.equal(Boolean(unsupportedModule), true);
+      assert.equal(
+        unsupportedModule.errors.some((entry: string) =>
+          entry.includes("Invalid UI slot contribution")
+        ),
+        true
+      );
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.uiSlots.some(
+          (entry: any) => entry.itemId === "unsupported.slot.item"
+        ),
+        false
+      );
+      assert.equal(Boolean(moduleOptionsResponse.payload.resolvedCatalog), true);
+      assert.equal(
+        moduleOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+          (entry: any) => entry.itemId === "unsupported.slot.item"
+        ),
+        false
+      );
+    }
+  );
+});
 
 register(
   "module runtime rifiuta client manifest che escono dalla directory del modulo",
@@ -600,6 +901,14 @@ register(
           ["standard"]
         );
         assert.deepEqual(
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic", "classic-defense-3"]
+        );
+        assert.deepEqual(
+          optionsResponse.payload.ruleSets.map((entry: any) => entry.id),
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id)
+        );
+        assert.deepEqual(
           optionsResponse.payload.victoryRuleSets.map((entry: any) => entry.id),
           ["conquest"]
         );
@@ -624,6 +933,27 @@ register(
         assert.equal(moduleOptionsResponse.statusCode, 200);
         assert.deepEqual(moduleOptionsResponse.payload.content.mapIds, ["classic-mini"]);
         assert.deepEqual(moduleOptionsResponse.payload.content.siteThemeIds, ["command"]);
+        assert.deepEqual(
+          moduleOptionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic", "classic-defense-3"]
+        );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Catalog Override",
+            ruleSetId: "classic-defense-3",
+            diceRuleSetId: "standard",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
+        assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "standard");
 
         const invalidCreateResponse = await callApp(
           app,
@@ -756,7 +1086,8 @@ register(
             activeModuleIds: ["demo.defaults"],
             contentProfileId: "demo.defaults.content",
             gameplayProfileId: "demo.defaults.gameplay",
-            uiProfileId: "demo.defaults.ui"
+            uiProfileId: "demo.defaults.ui",
+            turnTimeoutHours: 24
           },
           authHeaders(adminSessionToken)
         );
@@ -771,6 +1102,7 @@ register(
         );
         assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
         assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+        assert.equal(createGameResponse.payload.state.gameConfig.turnTimeoutHours, 24);
         assert.equal(
           createGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId,
           "aurora"
@@ -815,6 +1147,65 @@ register(
         );
         assert.equal(
           createGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
+            .minimumTotal,
+          8
+        );
+
+        const openGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games/open",
+          {
+            gameId: createGameResponse.payload.game.id
+          },
+          authHeaders(adminSessionToken)
+        );
+
+        assert.equal(openGameResponse.statusCode, 200);
+        assert.equal(openGameResponse.payload.state.gameConfig.turnTimeoutHours, 24);
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.scenarioSetup.territoryBonuses[0].territoryId,
+          "aurora"
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.scenarioSetup.logMessage,
+          "Scenario defaults applied."
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.attackMinimumArmies,
+          3
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.attackLimitPerTurn,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.minimumAttacksPerTurn,
+          1
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.majorityControlThresholdPercent,
+          60
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.conquestMinimumArmies,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.fortifyMinimumArmies,
+          2
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.requiredFortifyWhenAvailable,
+          true
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
+            .flatBonus,
+          5
+        );
+        assert.equal(
+          openGameResponse.payload.state.gameConfig.gameplayEffects.reinforcementAdjustments[0]
             .minimumTotal,
           8
         );
@@ -1291,6 +1682,85 @@ register(
   }
 );
 
+register(
+  "module runtime keeps rule sets selectable when content filters preset defaults",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "core.base",
+          manifest: {
+            schemaVersion: 1,
+            id: "core.base",
+            version: "1.0.0",
+            displayName: "Core Restricted Overrides",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [],
+            conflicts: [],
+            capabilities: [
+              { kind: "map", scope: "game", description: "Restricted core maps" },
+              { kind: "site-theme", scope: "global", description: "Restricted core themes" }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            content: {
+              mapIds: ["world-classic"],
+              siteThemeIds: ["ember"],
+              pieceSkinIds: ["command-ring"],
+              playerPieceSetIds: ["classic"],
+              contentPackIds: ["core"],
+              diceRuleSetIds: ["standard"],
+              cardRuleSetIds: ["standard"],
+              victoryRuleSetIds: ["majority-control"],
+              fortifyRuleSetIds: ["standard"],
+              reinforcementRuleSetIds: ["standard"]
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const optionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(optionsResponse.statusCode, 200);
+        assert.deepEqual(
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic", "classic-defense-3"]
+        );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Preset Defaults",
+            ruleSetId: "classic",
+            mapId: "world-classic",
+            diceRuleSetId: "standard",
+            victoryRuleSetId: "majority-control",
+            themeId: "ember",
+            pieceSkinId: "command-ring",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic");
+        assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
+        assert.equal(
+          createGameResponse.payload.state.gameConfig.victoryRuleSetId,
+          "majority-control"
+        );
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
+        assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+      }
+    );
+  }
+);
+
 register("module runtime espone dice rule set locali e li usa in creazione partita", async () => {
   await withModuleServer(
     [
@@ -1498,6 +1968,10 @@ register("module runtime espone e risolve game preset modulari nel setup partita
       assert.equal(createGameResponse.payload.state.gameConfig.mapId, "classic-mini");
       assert.equal(createGameResponse.payload.state.gameConfig.themeId, "command");
       assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+      assert.equal(
+        createGameResponse.payload.state.gameConfig.victoryRuleSetId,
+        "majority-control"
+      );
       assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
       assert.equal(
         createGameResponse.payload.state.gameConfig.activeModules.some(

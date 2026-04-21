@@ -11,11 +11,7 @@ const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
-  listNewGameRuleSets,
-  listPieceSkins,
-  listTurnTimeoutHoursOptions,
-  listVictoryRuleSets,
-  listVisualThemes
+  listTurnTimeoutHoursOptions
 } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
 const { isPromiseLike } = require("./maybe-async.cjs");
@@ -143,18 +139,6 @@ const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
-
-function filterCatalogByAllowedIds<T extends { id: string }>(
-  entries: T[],
-  allowedIds: string[] | null | undefined
-): T[] {
-  if (!Array.isArray(allowedIds) || !allowedIds.length) {
-    return entries;
-  }
-
-  const allowedIdSet = new Set(allowedIds);
-  return entries.filter((entry) => allowedIdSet.has(entry.id));
-}
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -298,14 +282,24 @@ function createApp(options: CreateAppOptions = {}) {
     projectRoot: runtimeProjectRoot,
     datastore
   });
+  const resolveCatalogMapName = (mapId: string | null | undefined) => {
+    if (typeof mapId !== "string" || !mapId.trim()) {
+      return null;
+    }
+
+    const map = moduleRuntime.findSupportedMap(mapId);
+    return map ? map.name : mapId;
+  };
   const gamesFile = options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json");
   const gameSessions = createGameSessionStore({
     datastore,
-    dataFile: gamesFile
+    dataFile: gamesFile,
+    resolveMapName: resolveCatalogMapName
   });
   const playerProfiles = createPlayerProfileStore({
     datastore,
-    gamesFile
+    gamesFile,
+    resolveMapName: resolveCatalogMapName
   });
   const auth = createAuthStore({
     datastore,
@@ -779,31 +773,10 @@ function createApp(options: CreateAppOptions = {}) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
       await handleGameOptionsRoute(
         res,
-        listNewGameRuleSets,
-        () => moduleOptions.maps,
-        () => moduleOptions.diceRuleSets,
-        () =>
-          filterCatalogByAllowedIds(
-            listVictoryRuleSets(),
-            moduleOptions.content?.victoryRuleSetIds
-          ),
-        () => filterCatalogByAllowedIds(listVisualThemes(), moduleOptions.content?.siteThemeIds),
-        () => filterCatalogByAllowedIds(listPieceSkins(), moduleOptions.content?.pieceSkinIds),
+        () => moduleOptions.resolvedCatalog || moduleOptions,
         listTurnTimeoutHoursOptions,
         sendJson,
-        () => moduleOptions.playerPieceSets,
-        () => moduleOptions.contentPacks,
-        async () => {
-          return {
-            modules: moduleOptions.gameModules,
-            enabledModules: moduleOptions.enabledModules,
-            gamePresets: moduleOptions.gamePresets,
-            contentProfiles: moduleOptions.contentProfiles,
-            gameplayProfiles: moduleOptions.gameplayProfiles,
-            uiProfiles: moduleOptions.uiProfiles,
-            uiSlots: moduleOptions.uiSlots
-          };
-        },
+        undefined,
         sendLocalizedError
       );
       return;
@@ -938,7 +911,8 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
-      await moduleRuntime.getModuleOptions();
+      const moduleOptions = await moduleRuntime.getModuleOptions();
+      const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
       await handleCreateGameRoute(
         req,
         res,
@@ -947,6 +921,9 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (body: Record<string, unknown>) =>
           createConfiguredInitialState(body, {
+            resolveRuleSet: (ruleSetId: string) =>
+              resolvedCatalog.ruleSets.find((entry: { id: string }) => entry.id === ruleSetId) ||
+              null,
             resolveContentPack: (contentPackId: string) =>
               moduleRuntime.findContentPack(contentPackId),
             resolveDiceRuleSet: (diceRuleSetId: string) =>
@@ -954,6 +931,16 @@ function createApp(options: CreateAppOptions = {}) {
             resolvePlayerPieceSet: (pieceSetId: string) =>
               moduleRuntime.findPlayerPieceSet(pieceSetId),
             resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
+            resolveVictoryRuleSet: (victoryRuleSetId: string) =>
+              resolvedCatalog.victoryRuleSets.find(
+                (entry: { id: string }) => entry.id === victoryRuleSetId
+              ) || null,
+            resolveTheme: (themeId: string) =>
+              resolvedCatalog.themes.find((entry: { id: string }) => entry.id === themeId) || null,
+            resolvePieceSkin: (pieceSkinId: string) =>
+              resolvedCatalog.pieceSkins.find(
+                (entry: { id: string }) => entry.id === pieceSkinId
+              ) || null,
             resolveGamePreset: (input: {
               gamePresetId?: string | null;
               activeModuleIds?: string[];

@@ -352,6 +352,7 @@
         "tags": ["games"],
         "operationId": "getGameOptions",
         "summary": "Read the selectable setup catalog",
+        "description": "Returns the setup-facing catalog resolved from the core.base baseline plus enabled runtime modules. The additive resolvedCatalog field is canonical; top-level arrays remain backward-compatible mirrors.",
         "responses": {
           "200": {
             "description": "Catalog used to configure new games.",
@@ -391,6 +392,7 @@
         "tags": ["modules"],
         "operationId": "getModuleOptions",
         "summary": "Read the runtime module option snapshot",
+        "description": "Returns the full admin-facing modular catalog resolved from the core.base baseline plus enabled runtime modules. The additive resolvedCatalog field is canonical; top-level arrays remain backward-compatible mirrors.",
         "responses": {
           "200": {
             "description": "Runtime module selection data and enabled content restrictions.",
@@ -1005,7 +1007,14 @@
         "required": ["slotId", "itemId", "title", "kind"],
         "properties": {
           "slotId": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "admin-modules-page",
+              "game.sidebar",
+              "lobby.page",
+              "new-game.sidebar",
+              "top-nav-bar"
+            ]
           },
           "itemId": {
             "type": "string"
@@ -1099,7 +1108,20 @@
         "required": ["kind"],
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "card-rule-set",
+              "content-pack",
+              "dice-rule-set",
+              "fortify-rule-set",
+              "gameplay-hook",
+              "map",
+              "player-piece-set",
+              "reinforcement-rule-set",
+              "site-theme",
+              "ui-slot",
+              "victory-rule-set"
+            ]
           },
           "targetId": {
             "type": ["string", "null"]
@@ -1519,6 +1541,130 @@
           }
         }
       },
+      "ResolvedModuleCatalog": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "modules",
+          "enabledModules",
+          "gameModules",
+          "content",
+          "maps",
+          "ruleSets",
+          "playerPieceSets",
+          "diceRuleSets",
+          "contentPacks",
+          "victoryRuleSets",
+          "themes",
+          "pieceSkins",
+          "gamePresets",
+          "uiSlots",
+          "contentProfiles",
+          "gameplayProfiles",
+          "uiProfiles"
+        ],
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "enabledModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleReference"
+            }
+          },
+          "gameModules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstalledModuleSummary"
+            }
+          },
+          "content": {
+            "$ref": "#/components/schemas/NetRiskContentContribution"
+          },
+          "maps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MapSummary"
+            }
+          },
+          "ruleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleSetSummary"
+            }
+          },
+          "playerPieceSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerPieceSetSummary"
+            }
+          },
+          "diceRuleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiceRuleSet"
+            }
+          },
+          "contentPacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentPackSummary"
+            }
+          },
+          "victoryRuleSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VictoryRuleSet"
+            }
+          },
+          "themes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VisualTheme"
+            }
+          },
+          "pieceSkins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PieceSkin"
+            }
+          },
+          "gamePresets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskGamePreset"
+            }
+          },
+          "uiSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskUiSlotContribution"
+            }
+          },
+          "contentProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "gameplayProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          },
+          "uiProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetRiskModuleProfile"
+            }
+          }
+        }
+      },
       "GameOptionsResponse": {
         "type": "object",
         "additionalProperties": true,
@@ -1623,6 +1769,10 @@
               "$ref": "#/components/schemas/ContentPackSummary"
             }
           },
+          "resolvedCatalog": {
+            "description": "Canonical setup-facing modular catalog resolved from core.base plus enabled runtime modules. Top-level arrays in this response remain backward-compatible mirrors.",
+            "$ref": "#/components/schemas/ResolvedModuleCatalog"
+          },
           "turnTimeoutHoursOptions": {
             "type": "array",
             "items": {
@@ -1682,6 +1832,9 @@
           },
           "activeGameId": {
             "type": ["string", "null"]
+          },
+          "state": {
+            "$ref": "#/components/schemas/GameStateSnapshot"
           }
         }
       },
@@ -1880,10 +2033,6 @@
           "enabledModules",
           "gameModules",
           "content",
-          "maps",
-          "playerPieceSets",
-          "diceRuleSets",
-          "contentPacks",
           "gamePresets",
           "uiSlots",
           "contentProfiles",
@@ -1965,6 +2114,10 @@
             "items": {
               "$ref": "#/components/schemas/NetRiskModuleProfile"
             }
+          },
+          "resolvedCatalog": {
+            "description": "Canonical admin-facing modular catalog resolved from core.base plus enabled runtime modules. Top-level arrays in this response remain backward-compatible mirrors.",
+            "$ref": "#/components/schemas/ResolvedModuleCatalog"
           }
         }
       },

@@ -150,7 +150,7 @@ function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
         errors: [],
         capabilities: [
           {
-            kind: "ui",
+            kind: "ui-slot",
             scope: "global",
             hook: "profile",
             targetId: "admin-modules-page"
@@ -172,7 +172,7 @@ function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
           conflicts: [],
           capabilities: [
             {
-              kind: "ui",
+              kind: "ui-slot",
               scope: "global",
               hook: "profile",
               targetId: "admin-modules-page"
@@ -266,6 +266,38 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
         name: "Demo UI profile"
       }
     ]
+  };
+}
+
+function createResolvedCatalogModuleOptionsResponse(): ModuleOptionsResponse {
+  const base = createModuleOptionsResponse();
+
+  return {
+    ...base,
+    gamePresets: [],
+    uiSlots: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [],
+    resolvedCatalog: {
+      modules: base.modules,
+      enabledModules: base.enabledModules,
+      gameModules: base.gameModules,
+      content: base.content,
+      maps: [],
+      ruleSets: [],
+      diceRuleSets: [],
+      victoryRuleSets: [],
+      themes: [],
+      pieceSkins: [],
+      playerPieceSets: [],
+      contentPacks: [],
+      gamePresets: base.gamePresets,
+      uiSlots: base.uiSlots,
+      contentProfiles: base.contentProfiles,
+      gameplayProfiles: base.gameplayProfiles,
+      uiProfiles: base.uiProfiles
+    }
   };
 }
 
@@ -377,8 +409,8 @@ describe("ProfileRoute integration", () => {
     getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
     getModuleOptionsMock
       .mockResolvedValueOnce(emptyModuleOptionsResponse())
-      .mockResolvedValueOnce(createModuleOptionsResponse())
-      .mockResolvedValueOnce(createModuleOptionsResponse());
+      .mockResolvedValueOnce(createResolvedCatalogModuleOptionsResponse())
+      .mockResolvedValueOnce(createResolvedCatalogModuleOptionsResponse());
     setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
 
     const { user } = renderReactShell("/react/profile");

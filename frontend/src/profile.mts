@@ -13,6 +13,7 @@ import {
 } from "./core/api/client.mjs";
 import { isAuthApiError } from "./core/api/http.mjs";
 import { messageFromError } from "./core/errors.mjs";
+import { resolvedUiSlots } from "./core/module-catalog.mjs";
 import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
 import type {
   NetRiskModuleCapability,
@@ -541,9 +542,9 @@ async function loadAdminModuleSlots(): Promise<void> {
     return;
   }
 
-  const adminSlots = Array.isArray(payload.uiSlots)
-    ? payload.uiSlots.filter((slot) => slot.slotId === "admin-modules-page")
-    : [];
+  const adminSlots = resolvedUiSlots(payload).filter(
+    (slot) => slot.slotId === "admin-modules-page"
+  );
   renderAdminModuleSlots(adminSlots);
 }
 

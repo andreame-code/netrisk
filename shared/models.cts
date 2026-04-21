@@ -36,6 +36,7 @@ export {
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
   MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
+  findBuiltInNewGameRuleSet,
   findExtensionPack,
   findPieceSkin,
   findVictoryRuleSet,
@@ -44,6 +45,7 @@ export {
   getPieceSkin,
   getVictoryRuleSet,
   getVisualTheme,
+  listBuiltInNewGameRuleSets,
   listExtensionPacks,
   listPieceSkins,
   listSupportedThemeIds,
@@ -56,6 +58,7 @@ export {
   validateExtensionPackCatalog
 } from "./extensions.cjs";
 export type {
+  BuiltInNewGameRuleSetSummary,
   ExtensionCatalogValidationResult,
   ExtensionAwareGameConfig,
   ExtensionPackManifest,
