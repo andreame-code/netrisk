@@ -60,6 +60,8 @@ register("publicState preserves runtime setup ids without mutating live state", 
   const state = setupLiveState();
   state.gameConfig = {
     ...(state.gameConfig || {}),
+    ruleSetId: "runtime.ruleset",
+    ruleSetName: "Runtime Ruleset",
     victoryRuleSetId: "runtime.victory",
     themeId: "runtime.theme",
     pieceSkinId: "runtime.skin"
@@ -67,9 +69,13 @@ register("publicState preserves runtime setup ids without mutating live state", 
 
   const snapshot = publicState(state);
 
+  assert.equal(snapshot.gameConfig?.ruleSetId, "runtime.ruleset");
+  assert.equal(snapshot.gameConfig?.ruleSetName, "Runtime Ruleset");
   assert.equal(snapshot.gameConfig?.victoryRuleSetId, "runtime.victory");
   assert.equal(snapshot.gameConfig?.themeId, "runtime.theme");
   assert.equal(snapshot.gameConfig?.pieceSkinId, "runtime.skin");
+  assert.equal(state.gameConfig?.ruleSetId, "runtime.ruleset");
+  assert.equal(state.gameConfig?.ruleSetName, "Runtime Ruleset");
   assert.equal(state.gameConfig?.victoryRuleSetId, "runtime.victory");
   assert.equal(state.gameConfig?.themeId, "runtime.theme");
   assert.equal(state.gameConfig?.pieceSkinId, "runtime.skin");
