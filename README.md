@@ -39,7 +39,9 @@ Today the project includes:
 - events and state synchronization from server to frontend
 - route-level authorization checks for game pages and actions
 - optimistic concurrency handling for game version conflicts
-- modular runtime catalog with enable/disable flows, content packs, presets, and server-side module defaults
+- unified modular catalog with `core.base` as the baseline provider, additive `resolvedCatalog` payloads on `/api/modules/options` and `/api/game/options`, and backward-compatible flat option fields
+- admin-facing module workflows with rescan/enable/disable that can change setup content, presets, profiles, and supported UI slots without custom consumer branches
+- persisted modular setup metadata, so active modules, preset/profile ids, scenario defaults, gameplay effects, and turn timeout survive create/open/save round trips and summary/profile views
 
 Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`.
 
@@ -52,6 +54,19 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [Extending NetRisk](docs/extending-netrisk.md)
 - [Contributing](CONTRIBUTING.md)
 - [Architecture background](ARCHITECTURE.md)
+
+## Module platform notes
+
+NetRisk now treats the default experience as a baseline module platform rather than a pile of special cases:
+
+- `core.base` provides the baseline setup/admin catalog
+- `core.base` is always on and is not intended to appear as a toggleable optional module
+- enabled runtime modules extend that baseline through one resolved modular snapshot
+- `/api/modules/options` exposes the full admin-facing snapshot
+- `/api/game/options` exposes the setup-facing public snapshot
+- `resolvedCatalog` is the canonical source of truth for new consumers, while the top-level flat arrays remain compatibility mirrors
+
+For admins, this means a module can now change maps, rule sets, themes, piece skins, presets, profiles, and supported UI slots through normal module enable/disable flows, without requiring dedicated frontend or route logic for each module.
 
 ## Quick Start
 

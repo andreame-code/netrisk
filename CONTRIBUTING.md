@@ -56,6 +56,7 @@ Keep game rules out of React components and out of route handlers. The backend i
 - Modify the minimum code required for the change.
 - Do not mix cosmetic refactors with feature work.
 - Reuse existing ids, registries, and validation helpers instead of introducing parallel patterns.
+- For setup/module option consumers, prefer the frontend catalog helpers in `frontend/src/core/module-catalog.mts`, and keep any contract change aligned with `shared/api-contracts.cts` plus `shared/runtime-validation.cts`.
 - Keep new code in TypeScript.
 
 ## Validation expectations
@@ -77,7 +78,8 @@ Built-in maps live in `shared`, not in the frontend.
 2. Add the map module under `shared/maps`.
 3. Register it in `shared/maps/index.cts`.
 4. Keep map-specific validation and topology inside shared helpers such as `shared/map-graph.cts` and `shared/map-loader.cts`.
-5. Cover the new map with gameplay and shared tests instead of UI-only checks.
+5. If the map should be part of the default product catalog, expose it through `shared/core-base-catalog.cts`.
+6. Cover the new map with gameplay and shared tests instead of UI-only checks.
 
 Do not hardcode map rules or adjacency in the browser.
 
@@ -87,9 +89,10 @@ Rules should be selected by stable ids and resolved on the backend.
 
 1. Add or extend the shared registry that owns the rule family, such as dice, victory, reinforcement, or fortify rule sets.
 2. Persist only ids and metadata needed by the game config.
-3. Apply the rule in the appropriate engine module under `backend/engine`.
-4. Keep request/response validation separate from rule evaluation.
-5. Add focused tests under `tests/gameplay`.
+3. If the rule should be selectable in the default baseline setup, surface its summary through `shared/core-base-catalog.cts`.
+4. Apply the rule in the appropriate engine module under `backend/engine`.
+5. Keep request/response validation separate from rule evaluation.
+6. Add focused tests under `tests/gameplay`.
 
 If a rule changes setup defaults or extension selection, update the shared extension/module selection flow rather than duplicating conditionals in the UI.
 
@@ -97,11 +100,16 @@ If a rule changes setup defaults or extension selection, update the shared exten
 
 Runtime modules are the right choice for additive content, presets, UI slots, or optional gameplay packaging.
 
+Default product content belongs in shared registries plus `shared/core-base-catalog.cts`. Use `modules/` for additive packaging that should stay optional.
+
 1. Create a folder under `modules/<module-id>`.
-2. Add `module.json` with id, version, capabilities, dependencies, and entrypoints.
+2. Add `module.json` with id, version, capabilities, dependencies, and entrypoints. Optional runtime modules should normally depend on `core.base`.
 3. Add `client-manifest.json` for UI slots, profiles, presets, and client-visible content declarations.
 4. Add a server entrypoint only when the module contributes runtime maps, content packs, piece sets, dice rule sets, or server-side profile defaults.
-5. Verify the module through the runtime catalog and add or extend regression coverage in `tests/gameplay/regression/module-runtime.test.cts`.
+5. Verify the module through `/api/modules/options` and `/api/game/options`, treating `resolvedCatalog` as the canonical snapshot and the flat top-level arrays as compatibility mirrors.
+6. Verify rescan/enable/disable flows, including the case where a module is still referenced by an active game.
+7. Confirm the module does not expose `core.base` as a toggleable setup/admin option.
+8. Add or extend regression coverage in `tests/gameplay/regression/module-runtime.test.cts`.
 
 Use the existing `modules/demo.command-center` fixture as the baseline shape for manifests and slot declarations.
 
@@ -111,6 +119,8 @@ Use the existing `modules/demo.command-center` fixture as the baseline shape for
 - Validate inbound route payloads and important outbound responses.
 - Treat opaque game snapshots as server-owned data structures.
 - Keep OpenAPI and Markdown API docs aligned with the code whenever a public route changes.
+- If you touch `/api/modules/options` or `/api/game/options`, document both the canonical `resolvedCatalog` behavior and any compatibility mirrors you keep.
+- If you touch module manifests or catalog resolution, also verify `/api/modules`, `/api/modules/options`, `/api/game/options`, plus admin rescan/enable/disable behavior.
 
 ## Pull requests
 

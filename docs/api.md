@@ -24,6 +24,32 @@ This companion guide covers public endpoints that are intentionally snapshot-dri
 - Request validation failures add `validationErrors` and use `code: "REQUEST_VALIDATION_FAILED"`.
 - Optimistic concurrency conflicts return `409` with `code: "VERSION_CONFLICT"`, `currentVersion`, and a fresh `state` snapshot.
 
+## Modular option catalogs
+
+Two public endpoints now expose the modular setup/admin catalog:
+
+- `GET /api/modules/options`: full admin-facing snapshot for module management, enable/disable flows, presets, profiles, and supported UI slots
+- `GET /api/game/options`: setup-facing snapshot for new game flows and other consumers that need only the selectable public catalog
+- `GET /api/game-options`: legacy alias that returns the same payload as `GET /api/game/options`
+
+Both payloads include an additive `resolvedCatalog` field. New consumers should treat `resolvedCatalog` as the canonical source of truth.
+
+The flat top-level arrays such as `maps`, `ruleSets`, `themes`, `pieceSkins`, `gamePresets`, and profile lists are still returned, but they are backward-compatible mirrors derived from `resolvedCatalog`.
+
+Operationally, the catalog is resolved as:
+
+- `core.base` baseline catalog
+- plus any enabled runtime modules
+- merged by `backend/module-runtime.cts`
+
+For admins, this means rescan/enable/disable can change maps, rule sets, presets, profiles, themes, piece skins, and supported UI slots without requiring module-specific API routes or frontend branches.
+
+Inside `GET /api/modules/options`:
+
+- `modules` is the installed module catalog
+- `enabledModules` is the enabled module id/version list
+- `gameModules` is the enabled non-UI subset relevant to game/setup selection
+
 ## Endpoints outside the OpenAPI artifact
 
 ### `GET /api/state`
@@ -32,6 +58,7 @@ This companion guide covers public endpoints that are intentionally snapshot-dri
 - Creator-bound games require a valid session; open games can be read without auth.
 - Before responding, the backend may resume pending AI work for the requested game.
 - The snapshot shape is intentionally broad and mirrors the state the frontend consumes.
+- When a game was created from modular presets or profiles, the snapshot can preserve server-owned `gameConfig` metadata such as active modules, preset/profile ids, `scenarioSetup`, `gameplayEffects`, and `turnTimeoutHours`.
 
 ### `GET /api/events`
 
@@ -93,6 +120,12 @@ Success responses return:
 - Expects `gameId` and `playerId`.
 - The authenticated user must be allowed to start the game and must own the supplied player slot.
 - Success payload is `{ "ok": true, "state": { ... } }`.
+
+### `POST /api/games/open`
+
+- Opens an existing game for the authenticated user and returns the same mutation envelope documented in OpenAPI.
+- Success payload includes `state`, so clients can rehydrate gameplay from a single response without a second `/api/state` round trip.
+- For modular games, the returned snapshot preserves resolved setup metadata already stored in `gameConfig`; clients should not recompute those values from local built-in defaults.
 
 ### `POST /api/cards/trade`
 
