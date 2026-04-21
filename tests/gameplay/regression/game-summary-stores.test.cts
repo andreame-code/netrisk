@@ -149,6 +149,62 @@ register(
   }
 );
 
+register(
+  "player profile summaries expose modular metadata from normalized gameConfig",
+  async () => {
+    const playerProfiles = createPlayerProfileStore({
+      datastore: {
+        listGames() {
+          return [
+            {
+              id: "modular-profile-game",
+              name: "Modular Profile Game",
+              updatedAt: "2026-04-21T16:10:00.000Z",
+              state: {
+                phase: "active",
+                turnPhase: "attack",
+                currentTurnIndex: 0,
+                players: [{ id: "p-1", name: "commander", surrendered: false }],
+                territories: {},
+                hands: { "p-1": [] },
+                gameConfig: {
+                  mapId: "world-classic",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }],
+                  activeModules: [
+                    { id: "core.base", version: "1.0.0" },
+                    { id: "demo.command-center", version: "1.0.0" },
+                    { id: "broken-only-id" }
+                  ],
+                  gamePresetId: "demo.command-center.command-ops",
+                  contentProfileId: "demo.command-center.content",
+                  gameplayProfileId: "demo.command-center.gameplay",
+                  uiProfileId: "demo.command-center.ui"
+                }
+              }
+            }
+          ];
+        }
+      }
+    });
+
+    const profile = await playerProfiles.getPlayerProfile("commander");
+    const modularGame = profile.participatingGames.find(
+      (entry: { id: string }) => entry.id === "modular-profile-game"
+    );
+
+    assert.ok(modularGame);
+    assert.deepEqual(modularGame.activeModules, [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.command-center", version: "1.0.0" }
+    ]);
+    assert.equal(modularGame.gamePresetId, "demo.command-center.command-ops");
+    assert.equal(modularGame.contentProfileId, "demo.command-center.content");
+    assert.equal(modularGame.gameplayProfileId, "demo.command-center.gameplay");
+    assert.equal(modularGame.uiProfileId, "demo.command-center.ui");
+  }
+);
+
 register("game session store preserves runtime setup ids while rehydrating state", async () => {
   const games: any[] = [];
   let activeGameId: string | null = null;
