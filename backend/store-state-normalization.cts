@@ -1,4 +1,5 @@
 const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
+const { findCoreBaseSupportedMap } = require("../shared/core-base-catalog.cjs");
 
 type StoreStateRecord = {
   gameConfig?: Record<string, unknown> | null;
@@ -63,6 +64,43 @@ function copyRootValueToGameConfig(
   }
 }
 
+function persistMapSelectionIntoGameConfig(
+  normalizedConfig: Record<string, unknown> | null,
+  rawConfig: Record<string, unknown> | null,
+  rawState: StoreStateRecord
+) {
+  if (!normalizedConfig) {
+    return;
+  }
+
+  const rawConfigMapId =
+    typeof rawConfig?.mapId === "string" && rawConfig.mapId.trim() ? rawConfig.mapId : null;
+  const rawStateMapId =
+    typeof rawState.mapId === "string" && rawState.mapId.trim() ? rawState.mapId : null;
+  const persistedMapId = rawConfigMapId || rawStateMapId;
+
+  if (!persistedMapId) {
+    return;
+  }
+
+  normalizedConfig.mapId = persistedMapId;
+
+  const rawConfigMapName =
+    typeof rawConfig?.mapName === "string" && rawConfig.mapName.trim() ? rawConfig.mapName : null;
+  const rawStateMapName =
+    typeof rawState.mapName === "string" && rawState.mapName.trim() ? rawState.mapName : null;
+  const persistedMapName = rawConfigMapName || rawStateMapName;
+
+  if (persistedMapName) {
+    normalizedConfig.mapName = persistedMapName;
+    return;
+  }
+
+  if (!findCoreBaseSupportedMap(persistedMapId)) {
+    normalizedConfig.mapName = persistedMapId;
+  }
+}
+
 export function normalizeStoreStateRecord<T extends StoreStateRecord>(
   state: T,
   persistedState?: StoreStateRecord | null
@@ -99,6 +137,8 @@ export function normalizeStoreStateRecord<T extends StoreStateRecord>(
     copyRootValueToGameConfig(normalizedConfig, rawConfig, rawState, "pieceSetId");
     copyRootValueToGameConfig(normalizedConfig, rawConfig, rawState, "victoryRuleSetId");
   }
+
+  persistMapSelectionIntoGameConfig(normalizedConfig, rawConfig, rawState);
 
   if (typeof rawState.mapId === "string" && rawState.mapId.trim()) {
     normalizedState.mapId = rawState.mapId;

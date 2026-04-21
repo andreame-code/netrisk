@@ -621,3 +621,81 @@ register("game session store rehydrates legacy root setup fields into gameConfig
   assert.equal(loaded.state.gameConfig.victoryRuleSetId, "runtime-victory");
   assert.equal(loaded.state.gameConfig.pieceSetId, "runtime-piece-set");
 });
+
+register(
+  "game session store keeps persisted custom map ids and labels in sync during normalization",
+  async () => {
+    const games = [
+      {
+        id: "root-custom-map",
+        name: "Root Custom Map Game",
+        version: 1,
+        creatorUserId: "u-1",
+        state: {
+          phase: "lobby",
+          turnPhase: "reinforcement",
+          currentTurnIndex: 0,
+          players: [{ id: "p-1", name: "commander", surrendered: false }],
+          territories: {},
+          hands: { "p-1": [] },
+          mapId: "orphaned-module-map",
+          diceRuleSetId: "standard"
+        },
+        createdAt: "2026-04-21T20:35:00.000Z",
+        updatedAt: "2026-04-21T20:35:00.000Z"
+      },
+      {
+        id: "config-custom-map",
+        name: "Config Custom Map Game",
+        version: 1,
+        creatorUserId: "u-2",
+        state: {
+          phase: "lobby",
+          turnPhase: "reinforcement",
+          currentTurnIndex: 0,
+          players: [{ id: "p-2", name: "strategist", surrendered: false }],
+          territories: {},
+          hands: { "p-2": [] },
+          diceRuleSetId: "standard",
+          gameConfig: {
+            mapId: "orphaned-module-map",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          }
+        },
+        createdAt: "2026-04-21T20:36:00.000Z",
+        updatedAt: "2026-04-21T20:36:00.000Z"
+      }
+    ];
+
+    const gameSessions = createGameSessionStore({
+      datastore: {
+        listGames() {
+          return games;
+        },
+        createGame(entry: any) {
+          return entry;
+        },
+        setActiveGameId() {},
+        findGameById(gameId: string) {
+          return games.find((entry) => entry.id === gameId) || null;
+        },
+        getActiveGameId() {
+          return null;
+        },
+        updateGame(entry: any) {
+          return entry;
+        }
+      }
+    });
+
+    const rootCustomMap = await gameSessions.getGame("root-custom-map");
+    const configCustomMap = await gameSessions.getGame("config-custom-map");
+
+    assert.equal(rootCustomMap.state.mapId, "orphaned-module-map");
+    assert.equal(rootCustomMap.state.gameConfig.mapId, "orphaned-module-map");
+    assert.equal(rootCustomMap.state.gameConfig.mapName, "orphaned-module-map");
+    assert.equal(configCustomMap.state.gameConfig.mapId, "orphaned-module-map");
+    assert.equal(configCustomMap.state.gameConfig.mapName, "orphaned-module-map");
+  }
+);
