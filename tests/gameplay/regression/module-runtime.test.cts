@@ -354,6 +354,18 @@ register(
           ),
           true
         );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.modules.some(
+            (entry: any) => entry.id === "demo.valid"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.modules.some(
+            (entry: any) => entry.id === "demo.invalid"
+          ),
+          false
+        );
       }
     );
   }

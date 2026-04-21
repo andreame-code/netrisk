@@ -763,6 +763,10 @@ function createApp(options: CreateAppOptions = {}) {
     ) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
       const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
+      const publicResolvedCatalog = {
+        ...resolvedCatalog,
+        modules: resolvedCatalog.gameModules
+      };
       await handleGameOptionsRoute(
         res,
         listNewGameRuleSets,
@@ -777,14 +781,14 @@ function createApp(options: CreateAppOptions = {}) {
         () => resolvedCatalog.contentPacks,
         async () => {
           return {
-            modules: resolvedCatalog.gameModules,
-            enabledModules: resolvedCatalog.enabledModules,
-            gamePresets: resolvedCatalog.gamePresets,
-            contentProfiles: resolvedCatalog.contentProfiles,
-            gameplayProfiles: resolvedCatalog.gameplayProfiles,
-            uiProfiles: resolvedCatalog.uiProfiles,
-            uiSlots: resolvedCatalog.uiSlots,
-            resolvedCatalog
+            modules: publicResolvedCatalog.gameModules,
+            enabledModules: publicResolvedCatalog.enabledModules,
+            gamePresets: publicResolvedCatalog.gamePresets,
+            contentProfiles: publicResolvedCatalog.contentProfiles,
+            gameplayProfiles: publicResolvedCatalog.gameplayProfiles,
+            uiProfiles: publicResolvedCatalog.uiProfiles,
+            uiSlots: publicResolvedCatalog.uiSlots,
+            resolvedCatalog: publicResolvedCatalog
           };
         },
         sendLocalizedError
