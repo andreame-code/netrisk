@@ -285,6 +285,7 @@ function createResolvedCatalogModuleOptionsResponse(): ModuleOptionsResponse {
       gameModules: base.gameModules,
       content: base.content,
       maps: [],
+      ruleSets: [],
       diceRuleSets: [],
       victoryRuleSets: [],
       themes: [],

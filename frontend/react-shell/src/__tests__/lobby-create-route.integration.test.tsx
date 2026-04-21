@@ -203,6 +203,7 @@ function createResolvedCatalogGameOptionsResponse(): GameOptionsResponse {
       gameModules: [],
       content: {},
       maps: base.maps,
+      ruleSets: base.ruleSets,
       playerPieceSets: base.playerPieceSets || [],
       diceRuleSets: base.diceRuleSets,
       contentPacks: base.contentPacks || [],

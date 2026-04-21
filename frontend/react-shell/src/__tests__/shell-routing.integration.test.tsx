@@ -98,6 +98,7 @@ function resolvedCatalogModuleOptions(): ModuleOptionsResponse {
       gameModules: base.gameModules,
       content: base.content,
       maps: [],
+      ruleSets: [],
       playerPieceSets: [],
       diceRuleSets: [],
       contentPacks: [],
