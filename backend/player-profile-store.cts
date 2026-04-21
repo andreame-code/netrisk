@@ -166,6 +166,9 @@ function summarizeParticipatingGameWithMapName(
   );
   const normalizedEntry = { ...entry, state };
   const config = state.gameConfig || null;
+  const resolvedMapName = config
+    ? resolveMapName(config.mapId) || readableMapName(config.mapId)
+    : null;
   const configuredPlayers = Array.isArray(config?.players) ? config.players : [];
   const configuredTotalPlayers = config?.totalPlayers;
   const totalPlayers = Number.isInteger(configuredTotalPlayers)
@@ -185,7 +188,7 @@ function summarizeParticipatingGameWithMapName(
     phase: state?.phase || "lobby",
     playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     totalPlayers: totalPlayers || null,
-    mapName: storedMapName ?? (config ? resolveMapName(config?.mapId) : null),
+    mapName: storedMapName ?? resolvedMapName,
     updatedAt: entry.updatedAt,
     activeModules,
     gamePresetId: typeof config?.gamePresetId === "string" ? config.gamePresetId : null,

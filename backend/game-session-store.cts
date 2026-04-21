@@ -165,6 +165,9 @@ function summarizeGameWithMapName(
   const storedMapName = persistedMapName(entry);
   const state = normalizeStateRecord(safeClone(entry.state || {}), entry.state || null);
   const config = state.gameConfig || null;
+  const resolvedMapName = config
+    ? resolveMapName(config.mapId) || readableMapName(config.mapId)
+    : null;
   const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players)
     ? config.players
     : [];
@@ -184,7 +187,7 @@ function summarizeGameWithMapName(
     playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     contentPackId: config?.contentPackId || null,
     mapId: config?.mapId || null,
-    mapName: storedMapName ?? (config ? resolveMapName(config.mapId) : null),
+    mapName: storedMapName ?? resolvedMapName,
     diceRuleSetId: config?.diceRuleSetId || null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,

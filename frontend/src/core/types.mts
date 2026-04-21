@@ -233,6 +233,7 @@ export type ResolvedModuleCatalog = {
   gameModules: InstalledModuleSummary[];
   content: NetRiskContentContribution;
   maps: MapSummary[];
+  ruleSets: RuleSetSummary[];
   playerPieceSets: PlayerPieceSetSummary[];
   diceRuleSets: DiceRuleSet[];
   contentPacks: ContentPackSummary[];

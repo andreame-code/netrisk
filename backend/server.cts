@@ -288,7 +288,7 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     const map = moduleRuntime.findSupportedMap(mapId);
-    return map ? map.name : null;
+    return map ? map.name : mapId;
   };
   const gamesFile = options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json");
   const gameSessions = createGameSessionStore({

@@ -45,6 +45,23 @@ register(
               },
               createdAt: "2026-04-21T16:05:00.000Z",
               updatedAt: "2026-04-21T16:05:00.000Z"
+            },
+            {
+              id: "missing-map",
+              name: "Missing Map Game",
+              version: 4,
+              creatorUserId: "u-3",
+              state: {
+                phase: "active",
+                players: [{ id: "u-3", name: "archivist" }],
+                gameConfig: {
+                  mapId: "orphaned-module-map",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              },
+              createdAt: "2026-04-21T16:06:00.000Z",
+              updatedAt: "2026-04-21T16:06:00.000Z"
             }
           ];
         },
@@ -73,11 +90,14 @@ register(
     const games = await gameSessions.listGames();
     const resolvedMapGame = games.find((entry: { id: string }) => entry.id === "resolved-map");
     const storedNameGame = games.find((entry: { id: string }) => entry.id === "stored-name");
+    const missingMapGame = games.find((entry: { id: string }) => entry.id === "missing-map");
 
     assert.ok(resolvedMapGame);
     assert.ok(storedNameGame);
+    assert.ok(missingMapGame);
     assert.equal(resolvedMapGame.mapName, "Runtime Outpost");
     assert.equal(storedNameGame.mapName, "Archived World");
+    assert.equal(missingMapGame.mapName, "orphaned-module-map");
   }
 );
 
@@ -122,6 +142,23 @@ register(
                   players: [{ type: "human" }, { type: "ai" }]
                 }
               }
+            },
+            {
+              id: "missing-map",
+              name: "Missing Map Game",
+              updatedAt: "2026-04-21T16:06:00.000Z",
+              state: {
+                phase: "active",
+                currentTurnIndex: 0,
+                players: [{ id: "p-1", name: "commander", surrendered: false }],
+                territories: {},
+                hands: { "p-1": [] },
+                gameConfig: {
+                  mapId: "orphaned-module-map",
+                  totalPlayers: 2,
+                  players: [{ type: "human" }, { type: "ai" }]
+                }
+              }
             }
           ];
         }
@@ -141,11 +178,16 @@ register(
     const storedNameGame = profile.participatingGames.find(
       (entry: { id: string }) => entry.id === "stored-name"
     );
+    const missingMapGame = profile.participatingGames.find(
+      (entry: { id: string }) => entry.id === "missing-map"
+    );
 
     assert.ok(resolvedMapGame);
     assert.ok(storedNameGame);
+    assert.ok(missingMapGame);
     assert.equal(resolvedMapGame.mapName, "Runtime Outpost");
     assert.equal(storedNameGame.mapName, "Archived World");
+    assert.equal(missingMapGame.mapName, "orphaned-module-map");
   }
 );
 

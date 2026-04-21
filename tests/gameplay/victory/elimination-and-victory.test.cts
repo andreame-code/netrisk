@@ -56,6 +56,25 @@ register("publicState exposes the resolved piece skin metadata for rendering", (
   assert.equal(snapshot.gameConfig?.pieceSkin?.renderStyleId, "ring-core");
 });
 
+register("publicState preserves runtime setup ids without mutating live state", () => {
+  const state = setupLiveState();
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: "runtime.victory",
+    themeId: "runtime.theme",
+    pieceSkinId: "runtime.skin"
+  };
+
+  const snapshot = publicState(state);
+
+  assert.equal(snapshot.gameConfig?.victoryRuleSetId, "runtime.victory");
+  assert.equal(snapshot.gameConfig?.themeId, "runtime.theme");
+  assert.equal(snapshot.gameConfig?.pieceSkinId, "runtime.skin");
+  assert.equal(state.gameConfig?.victoryRuleSetId, "runtime.victory");
+  assert.equal(state.gameConfig?.themeId, "runtime.theme");
+  assert.equal(state.gameConfig?.pieceSkinId, "runtime.skin");
+});
+
 register("declareWinnerIfNeeded assigns victory when one active player remains", () => {
   const state = setupLiveState();
   const won = declareWinnerIfNeeded(state);

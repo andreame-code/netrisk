@@ -902,7 +902,7 @@ register(
         );
         assert.deepEqual(
           optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
-          ["classic"]
+          ["classic", "classic-defense-3"]
         );
         assert.deepEqual(
           optionsResponse.payload.ruleSets.map((entry: any) => entry.id),
@@ -935,8 +935,25 @@ register(
         assert.deepEqual(moduleOptionsResponse.payload.content.siteThemeIds, ["command"]);
         assert.deepEqual(
           moduleOptionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
-          ["classic"]
+          ["classic", "classic-defense-3"]
         );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Catalog Override",
+            ruleSetId: "classic-defense-3",
+            diceRuleSetId: "standard",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
+        assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "standard");
 
         const invalidCreateResponse = await callApp(
           app,
@@ -1660,6 +1677,85 @@ register(
 
         assert.equal(joinResponse.statusCode, 201);
         assert.equal(joinResponse.payload.state.players[1].color, "#445566");
+      }
+    );
+  }
+);
+
+register(
+  "module runtime keeps rule sets selectable when content filters preset defaults",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "core.base",
+          manifest: {
+            schemaVersion: 1,
+            id: "core.base",
+            version: "1.0.0",
+            displayName: "Core Restricted Overrides",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [],
+            conflicts: [],
+            capabilities: [
+              { kind: "map", scope: "game", description: "Restricted core maps" },
+              { kind: "site-theme", scope: "global", description: "Restricted core themes" }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            content: {
+              mapIds: ["world-classic"],
+              siteThemeIds: ["ember"],
+              pieceSkinIds: ["command-ring"],
+              playerPieceSetIds: ["classic"],
+              contentPackIds: ["core"],
+              diceRuleSetIds: ["standard"],
+              cardRuleSetIds: ["standard"],
+              victoryRuleSetIds: ["majority-control"],
+              fortifyRuleSetIds: ["standard"],
+              reinforcementRuleSetIds: ["standard"]
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const optionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(optionsResponse.statusCode, 200);
+        assert.deepEqual(
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic", "classic-defense-3"]
+        );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Preset Defaults",
+            ruleSetId: "classic",
+            mapId: "world-classic",
+            diceRuleSetId: "standard",
+            victoryRuleSetId: "majority-control",
+            themeId: "ember",
+            pieceSkinId: "command-ring",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic");
+        assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
+        assert.equal(
+          createGameResponse.payload.state.gameConfig.victoryRuleSetId,
+          "majority-control"
+        );
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
+        assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
       }
     );
   }

@@ -974,39 +974,12 @@ function filterVictoryRuleSetsByAllowedIds(
 
 function filterRuleSetsByAllowedContent(
   entries: BuiltInNewGameRuleSetSummary[],
-  content: NetRiskContentContribution
+  _content: NetRiskContentContribution
 ): BuiltInNewGameRuleSetSummary[] {
-  const allowedMapIds =
-    Array.isArray(content.mapIds) && content.mapIds.length ? new Set(content.mapIds) : null;
-  const allowedDiceRuleSetIds =
-    Array.isArray(content.diceRuleSetIds) && content.diceRuleSetIds.length
-      ? new Set(content.diceRuleSetIds)
-      : null;
-  const allowedVictoryRuleSetIds =
-    Array.isArray(content.victoryRuleSetIds) && content.victoryRuleSetIds.length
-      ? new Set(content.victoryRuleSetIds)
-      : null;
-  const allowedThemeIds =
-    Array.isArray(content.siteThemeIds) && content.siteThemeIds.length
-      ? new Set(content.siteThemeIds)
-      : null;
-  const allowedPieceSkinIds =
-    Array.isArray(content.pieceSkinIds) && content.pieceSkinIds.length
-      ? new Set(content.pieceSkinIds)
-      : null;
-
-  return entries
-    .filter((entry) => {
-      const defaults = entry.defaults;
-      return (
-        (!allowedMapIds || allowedMapIds.has(defaults.mapId)) &&
-        (!allowedDiceRuleSetIds || allowedDiceRuleSetIds.has(defaults.diceRuleSetId)) &&
-        (!allowedVictoryRuleSetIds || allowedVictoryRuleSetIds.has(defaults.victoryRuleSetId)) &&
-        (!allowedThemeIds || allowedThemeIds.has(defaults.themeId)) &&
-        (!allowedPieceSkinIds || allowedPieceSkinIds.has(defaults.pieceSkinId))
-      );
-    })
-    .map(cloneRuleSetSummary);
+  // Rule sets are setup presets/default bundles, not capability lists. Content filtering already
+  // happens on maps, dice, victory rules, themes, and piece skins individually, so pruning
+  // rule sets by their defaults can hide valid configurations that explicitly override them.
+  return entries.map(cloneRuleSetSummary);
 }
 
 function filterThemesByAllowedIds(
