@@ -11,7 +11,6 @@ const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
 const {
   createConfiguredInitialState,
-  listNewGameRuleSets,
   listTurnTimeoutHoursOptions
 } = require("./new-game-config.cjs");
 const { secureRandom } = require("./random.cjs");
@@ -769,7 +768,7 @@ function createApp(options: CreateAppOptions = {}) {
       };
       await handleGameOptionsRoute(
         res,
-        listNewGameRuleSets,
+        () => publicResolvedCatalog.ruleSets,
         () => resolvedCatalog.maps,
         () => resolvedCatalog.diceRuleSets,
         () => resolvedCatalog.victoryRuleSets,
@@ -935,6 +934,9 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (body: Record<string, unknown>) =>
           createConfiguredInitialState(body, {
+            resolveRuleSet: (ruleSetId: string) =>
+              resolvedCatalog.ruleSets.find((entry: { id: string }) => entry.id === ruleSetId) ||
+              null,
             resolveContentPack: (contentPackId: string) =>
               moduleRuntime.findContentPack(contentPackId),
             resolveDiceRuleSet: (diceRuleSetId: string) =>

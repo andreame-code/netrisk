@@ -26,7 +26,12 @@ export const NETRISK_UI_SLOT_IDS = [
 
 import type { ContentPackSummary } from "./content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
-import type { PieceSkin, VictoryRuleSet, VisualTheme } from "./extensions.cjs";
+import type {
+  BuiltInNewGameRuleSetSummary,
+  PieceSkin,
+  VictoryRuleSet,
+  VisualTheme
+} from "./extensions.cjs";
 import type { MapSummary } from "./maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "./player-piece-sets.cjs";
 import type { StaticContinentRecord, StaticTerritoryRecord } from "./typed-map-data.cjs";
@@ -283,6 +288,7 @@ export interface NetRiskResolvedModuleCatalog {
   gameModules: NetRiskInstalledModule[];
   content: NetRiskContentContribution;
   maps: MapSummary[];
+  ruleSets: BuiltInNewGameRuleSetSummary[];
   playerPieceSets: PlayerPieceSetSummary[];
   diceRuleSets: DiceRuleSetSummary[];
   contentPacks: ContentPackSummary[];

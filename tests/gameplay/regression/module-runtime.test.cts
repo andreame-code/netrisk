@@ -875,6 +875,14 @@ register(
           ["standard"]
         );
         assert.deepEqual(
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic"]
+        );
+        assert.deepEqual(
+          optionsResponse.payload.ruleSets.map((entry: any) => entry.id),
+          optionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id)
+        );
+        assert.deepEqual(
           optionsResponse.payload.victoryRuleSets.map((entry: any) => entry.id),
           ["conquest"]
         );
@@ -899,6 +907,10 @@ register(
         assert.equal(moduleOptionsResponse.statusCode, 200);
         assert.deepEqual(moduleOptionsResponse.payload.content.mapIds, ["classic-mini"]);
         assert.deepEqual(moduleOptionsResponse.payload.content.siteThemeIds, ["command"]);
+        assert.deepEqual(
+          moduleOptionsResponse.payload.resolvedCatalog.ruleSets.map((entry: any) => entry.id),
+          ["classic"]
+        );
 
         const invalidCreateResponse = await callApp(
           app,

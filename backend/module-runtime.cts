@@ -20,6 +20,7 @@ const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const {
+  listBuiltInNewGameRuleSets,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes
@@ -59,7 +60,12 @@ import type {
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
-import type { PieceSkin, VictoryRuleSet, VisualTheme } from "../shared/extensions.cjs";
+import type {
+  BuiltInNewGameRuleSetSummary,
+  PieceSkin,
+  VictoryRuleSet,
+  VisualTheme
+} from "../shared/extensions.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
 
@@ -211,6 +217,16 @@ function cloneDiceRuleSet(ruleSet: DiceRuleSet): DiceRuleSet {
 function cloneVictoryRuleSet(ruleSet: VictoryRuleSet): VictoryRuleSet {
   return {
     ...ruleSet
+  };
+}
+
+function cloneRuleSetSummary(ruleSet: BuiltInNewGameRuleSetSummary): BuiltInNewGameRuleSetSummary {
+  return {
+    id: ruleSet.id,
+    name: ruleSet.name,
+    defaults: {
+      ...ruleSet.defaults
+    }
   };
 }
 
@@ -956,6 +972,43 @@ function filterVictoryRuleSetsByAllowedIds(
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneVictoryRuleSet);
 }
 
+function filterRuleSetsByAllowedContent(
+  entries: BuiltInNewGameRuleSetSummary[],
+  content: NetRiskContentContribution
+): BuiltInNewGameRuleSetSummary[] {
+  const allowedMapIds =
+    Array.isArray(content.mapIds) && content.mapIds.length ? new Set(content.mapIds) : null;
+  const allowedDiceRuleSetIds =
+    Array.isArray(content.diceRuleSetIds) && content.diceRuleSetIds.length
+      ? new Set(content.diceRuleSetIds)
+      : null;
+  const allowedVictoryRuleSetIds =
+    Array.isArray(content.victoryRuleSetIds) && content.victoryRuleSetIds.length
+      ? new Set(content.victoryRuleSetIds)
+      : null;
+  const allowedThemeIds =
+    Array.isArray(content.siteThemeIds) && content.siteThemeIds.length
+      ? new Set(content.siteThemeIds)
+      : null;
+  const allowedPieceSkinIds =
+    Array.isArray(content.pieceSkinIds) && content.pieceSkinIds.length
+      ? new Set(content.pieceSkinIds)
+      : null;
+
+  return entries
+    .filter((entry) => {
+      const defaults = entry.defaults;
+      return (
+        (!allowedMapIds || allowedMapIds.has(defaults.mapId)) &&
+        (!allowedDiceRuleSetIds || allowedDiceRuleSetIds.has(defaults.diceRuleSetId)) &&
+        (!allowedVictoryRuleSetIds || allowedVictoryRuleSetIds.has(defaults.victoryRuleSetId)) &&
+        (!allowedThemeIds || allowedThemeIds.has(defaults.themeId)) &&
+        (!allowedPieceSkinIds || allowedPieceSkinIds.has(defaults.pieceSkinId))
+      );
+    })
+    .map(cloneRuleSetSummary);
+}
+
 function filterThemesByAllowedIds(
   entries: VisualTheme[],
   allowedIds: string[] | null | undefined
@@ -1025,6 +1078,7 @@ function buildResolvedModuleCatalog(
       ],
       content.mapIds
     ),
+    ruleSets: filterRuleSetsByAllowedContent(listBuiltInNewGameRuleSets(), content),
     playerPieceSets: filterPlayerPieceSetsByAllowedIds(
       [
         ...listPlayerPieceSets().map(clonePlayerPieceSetSummary),

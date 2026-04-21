@@ -190,6 +190,7 @@ export function validateNewGameConfig(
   input: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
@@ -219,7 +220,9 @@ export function validateNewGameConfig(
   }
 
   const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
-  const selectedRuleSet = findNewGameRuleSet(requestedRuleSetId);
+  const resolveRuleSet =
+    typeof options.resolveRuleSet === "function" ? options.resolveRuleSet : findNewGameRuleSet;
+  const selectedRuleSet = resolveRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
     throw createLocalizedError(
       "Il ruleset selezionato non e supportato.",
@@ -393,6 +396,7 @@ export function createConfiguredInitialState(
   configInput: NewGameConfigInput = {},
   options: {
     random?: () => number;
+    resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
@@ -556,6 +560,7 @@ export function createConfiguredInitialState(
       };
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
+        resolveRuleSet: options.resolveRuleSet,
         resolveContentPack: options.resolveContentPack,
         resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,

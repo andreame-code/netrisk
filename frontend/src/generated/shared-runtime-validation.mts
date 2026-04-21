@@ -462,6 +462,7 @@ export const resolvedModuleCatalogSchema = objectSchema({
   gameModules: z.array(installedModuleSummarySchema),
   content: netRiskContentContributionSchema,
   maps: z.array(mapSummarySchema),
+  ruleSets: z.array(ruleSetSummarySchema),
   playerPieceSets: z.array(playerPieceSetSummarySchema),
   diceRuleSets: z.array(diceRuleSetSchema),
   contentPacks: z.array(contentPackSummarySchema),

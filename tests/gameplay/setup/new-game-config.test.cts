@@ -28,6 +28,40 @@ register("new game rule set lookups expose only the minimal built-in adapter sha
   assert.equal(listedRuleSet.name, foundRuleSet.name);
 });
 
+register("validateNewGameConfig supports injected rule set resolvers", () => {
+  const config = validateNewGameConfig(
+    {
+      ruleSetId: "runtime.classic",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    {
+      random: () => 0,
+      resolveRuleSet: (ruleSetId: string) =>
+        ruleSetId === "runtime.classic"
+          ? {
+              id: "runtime.classic",
+              name: "Runtime Classic",
+              defaults: {
+                extensionSchemaVersion: 1,
+                mapId: "classic-mini",
+                diceRuleSetId: "standard",
+                victoryRuleSetId: "conquest",
+                themeId: "command",
+                pieceSkinId: "classic-color"
+              }
+            }
+          : null
+    }
+  );
+
+  assert.equal(config.ruleSetId, "runtime.classic");
+  assert.equal(config.ruleSetName, "Runtime Classic");
+  assert.equal(config.mapId, "classic-mini");
+  assert.equal(config.diceRuleSetId, "standard");
+  assert.equal(config.victoryRuleSetId, "conquest");
+});
+
 register("validateNewGameConfig derives modular defaults from the selected extension pack", () => {
   const config = validateNewGameConfig(
     {

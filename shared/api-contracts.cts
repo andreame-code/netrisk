@@ -110,6 +110,7 @@ export interface NetRiskResolvedModuleCatalogContract {
   gameModules: NetRiskInstalledModuleContract[];
   content: NetRiskContentContributionContract;
   maps: Array<Record<string, unknown>>;
+  ruleSets: Array<Record<string, unknown>>;
   playerPieceSets: Array<Record<string, unknown>>;
   diceRuleSets: Array<Record<string, unknown>>;
   contentPacks: Array<Record<string, unknown>>;
