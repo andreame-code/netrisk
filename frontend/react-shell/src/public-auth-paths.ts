@@ -57,6 +57,9 @@ function isReactRelativeShellPath(pathname: string): boolean {
     pathname.startsWith("/lobby?") ||
     pathname === "/lobby/new" ||
     pathname.startsWith("/lobby/new?") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin?") ||
+    pathname.startsWith("/admin/") ||
     pathname === "/profile" ||
     pathname.startsWith("/profile?") ||
     pathname === "/game" ||
@@ -144,6 +147,10 @@ export function buildNewGamePath(namespace: ShellNamespace = currentShellNamespa
 
 export function buildProfilePath(namespace: ShellNamespace = currentShellNamespace()): string {
   return namespace === "react" ? "/react/profile" : "/profile";
+}
+
+export function buildAdminPath(namespace: ShellNamespace = currentShellNamespace()): string {
+  return namespace === "react" ? "/react/admin" : "/admin";
 }
 
 export function buildGameIndexPath(namespace: ShellNamespace = currentShellNamespace()): string {

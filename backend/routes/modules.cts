@@ -189,18 +189,22 @@ async function handleDisableModuleRoute(
       engineVersion
     });
   } catch (error: any) {
-    const message =
-      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-        ? "Il modulo e ancora usato da una partita attiva."
+    const isActiveGameConflict =
+      typeof error?.message === "string" && error.message.indexOf("active game") !== -1;
+    const isAdminDefaultsConflict =
+      typeof error?.message === "string" && error.message.indexOf("admin defaults") !== -1;
+    const message = isActiveGameConflict
+      ? "Il modulo e ancora usato da una partita attiva."
+      : isAdminDefaultsConflict
+        ? "Il modulo e ancora usato dalla configurazione admin."
         : "Disabilitazione modulo non riuscita.";
-    const key =
-      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-        ? "server.modules.disableInUse"
+    const key = isActiveGameConflict
+      ? "server.modules.disableInUse"
+      : isAdminDefaultsConflict
+        ? "server.modules.disableAdminConfigInUse"
         : "server.modules.disableFailed";
     const statusCode =
-      typeof error?.message === "string" && error.message.indexOf("active game") !== -1
-        ? 409
-        : error?.statusCode || 400;
+      isActiveGameConflict || isAdminDefaultsConflict ? 409 : error?.statusCode || 400;
     sendLocalizedError(res, statusCode, error, message, key);
   }
 }

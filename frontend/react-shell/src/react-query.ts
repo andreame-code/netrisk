@@ -41,3 +41,27 @@ export function gameOptionsQueryKey() {
 export function gameplayStateQueryKey(gameId: string) {
   return ["gameplay", "state", gameId] as const;
 }
+
+export function adminOverviewQueryKey() {
+  return ["admin", "overview"] as const;
+}
+
+export function adminUsersQueryKey(query: string, role: string) {
+  return ["admin", "users", query, role] as const;
+}
+
+export function adminGamesQueryKey(query: string, status: string) {
+  return ["admin", "games", query, status] as const;
+}
+
+export function adminConfigQueryKey() {
+  return ["admin", "config"] as const;
+}
+
+export function adminMaintenanceQueryKey() {
+  return ["admin", "maintenance"] as const;
+}
+
+export function adminAuditQueryKey() {
+  return ["admin", "audit"] as const;
+}

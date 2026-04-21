@@ -41,6 +41,9 @@ const LobbyCreateRoute = lazy(async () => ({
 const ProfileRoute = lazy(async () => ({
   default: (await import("@react-shell/profile-route")).ProfileRoute
 }));
+const AdminRoute = lazy(async () => ({
+  default: (await import("@react-shell/admin-route")).AdminRoute
+}));
 const GameRoute = lazy(async () => ({
   default: (await import("@react-shell/gameplay-route")).GameRoute
 }));
@@ -373,6 +376,8 @@ export function AppRoutes() {
             <Route path="/lobby/new" element={<LobbyCreateRoute />} />
             <Route path="/new-game.html" element={<LegacyDocumentRedirect to="/lobby/new" />} />
             <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
+            <Route path="/admin/*" element={<AdminRoute />} />
+            <Route path="/react/admin/*" element={<AdminRoute />} />
             <Route path="/profile" element={<ProfileRoute />} />
             <Route path="/profile.html" element={<LegacyDocumentRedirect to="/profile" />} />
             <Route path="/react/profile" element={<ProfileRoute />} />

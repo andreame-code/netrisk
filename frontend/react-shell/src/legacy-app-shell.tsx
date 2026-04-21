@@ -15,6 +15,7 @@ import { getLocale, listSupportedLocales, setLocale, t } from "@frontend-i18n";
 import { useAuth } from "@react-shell/auth";
 import { clearCurrentPlayerId } from "@react-shell/player-session";
 import {
+  buildAdminPath,
   buildBootstrapPath,
   buildGameIndexPath,
   buildGamePath,
@@ -24,7 +25,7 @@ import {
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 
-type AppSection = "game" | "lobby" | "login" | "profile" | "register";
+type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
 
 function resolveAppSection(pathname: string): AppSection {
   if (pathname === "/login" || pathname === "/react/login") {
@@ -37,6 +38,15 @@ function resolveAppSection(pathname: string): AppSection {
 
   if (pathname === "/profile" || pathname === "/profile.html" || pathname === "/react/profile") {
     return "profile";
+  }
+
+  if (
+    pathname === "/admin" ||
+    pathname === "/react/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/react/admin/")
+  ) {
+    return "admin";
   }
 
   if (
@@ -92,7 +102,10 @@ function sessionStatusLabel(status: ReturnType<typeof useAuth>["state"]["status"
   return "guest";
 }
 
-function isNavSectionActive(section: AppSection, target: "game" | "lobby" | "profile"): boolean {
+function isNavSectionActive(
+  section: AppSection,
+  target: "admin" | "game" | "lobby" | "profile"
+): boolean {
   if (target === "lobby") {
     return section === "lobby" || section === "login" || section === "register";
   }
@@ -149,6 +162,7 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
 
   const isAuthenticated = state.status === "authenticated";
   const lobbyHref = buildLobbyPath(namespace);
+  const adminHref = buildAdminPath(namespace);
   const profileHref = buildProfilePath(namespace);
   const registerHref = buildRegisterPath(namespace);
   const bootstrapHref = buildBootstrapPath(namespace);
@@ -248,6 +262,14 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
           >
             {t("nav.profile")}
           </Link>
+          {isAuthenticated && state.user.role === "admin" ? (
+            <Link
+              className={`nav-link${isNavSectionActive(section, "admin") ? " is-active" : ""}`}
+              to={adminHref}
+            >
+              Admin
+            </Link>
+          ) : null}
         </nav>
 
         <div className="top-nav-zone top-nav-module-slots" id="top-nav-module-slots">

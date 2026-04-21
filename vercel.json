@@ -74,6 +74,14 @@
       "destination": "/react/index.html"
     },
     {
+      "source": "/admin",
+      "destination": "/react/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/react/index.html"
+    },
+    {
       "source": "/profile",
       "destination": "/react/index.html"
     },

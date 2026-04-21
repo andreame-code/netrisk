@@ -254,26 +254,43 @@ function sanitizeProfiles(
 }
 
 function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
+  const adminDefaults = options.adminDefaults || {};
+  const initialTotalPlayers = Number.isInteger(adminDefaults.totalPlayers)
+    ? Math.min(
+        options.playerRange?.max || 4,
+        Math.max(options.playerRange?.min || 2, Number(adminDefaults.totalPlayers))
+      )
+    : Math.max(options.playerRange?.min || 2, 2);
   const initialState: NewGameFormState = {
     name: "",
-    contentPackId: firstId(options.contentPacks),
-    ruleSetId: firstId(options.ruleSets),
-    mapId: firstId(options.maps),
+    contentPackId: pickAvailableId(adminDefaults.contentPackId, options.contentPacks),
+    ruleSetId: pickAvailableId(adminDefaults.ruleSetId, options.ruleSets),
+    mapId: pickAvailableId(adminDefaults.mapId, options.maps),
     customizeOptions: false,
-    diceRuleSetId: firstId(options.diceRuleSets),
-    victoryRuleSetId: firstId(options.victoryRuleSets),
-    themeId: firstId(options.themes),
-    pieceSkinId: firstId(options.pieceSkins),
-    turnTimeoutHours: options.turnTimeoutHoursOptions?.[0]
-      ? String(options.turnTimeoutHoursOptions[0])
-      : "",
-    totalPlayers: Math.max(options.playerRange?.min || 2, 2),
-    playerTypes: ["human", "human"],
-    selectedModuleIds: [],
-    gamePresetId: "",
-    contentProfileId: "",
-    gameplayProfileId: "",
-    uiProfileId: ""
+    diceRuleSetId: pickAvailableId(adminDefaults.diceRuleSetId, options.diceRuleSets),
+    victoryRuleSetId: pickAvailableId(adminDefaults.victoryRuleSetId, options.victoryRuleSets),
+    themeId: pickAvailableId(adminDefaults.themeId, options.themes),
+    pieceSkinId: pickAvailableId(adminDefaults.pieceSkinId, options.pieceSkins),
+    turnTimeoutHours:
+      adminDefaults.turnTimeoutHours != null
+        ? String(adminDefaults.turnTimeoutHours)
+        : options.turnTimeoutHoursOptions?.[0]
+          ? String(options.turnTimeoutHoursOptions[0])
+          : "",
+    totalPlayers: initialTotalPlayers,
+    playerTypes: ensurePlayerTypes(
+      Array.isArray(adminDefaults.players)
+        ? adminDefaults.players.map((slot) => (slot?.type === "ai" ? "ai" : "human"))
+        : [],
+      initialTotalPlayers
+    ),
+    selectedModuleIds: Array.isArray(adminDefaults.activeModuleIds)
+      ? adminDefaults.activeModuleIds
+      : [],
+    gamePresetId: adminDefaults.gamePresetId || "",
+    contentProfileId: adminDefaults.contentProfileId || "",
+    gameplayProfileId: adminDefaults.gameplayProfileId || "",
+    uiProfileId: adminDefaults.uiProfileId || ""
   };
 
   const withContentPackDefaults = applyContentPackDefaults(
@@ -281,7 +298,17 @@ function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
     options,
     initialState.contentPackId
   );
-  return applyRuleSetDefaults(withContentPackDefaults, options, initialState.ruleSetId);
+  return sanitizeProfiles(
+    {
+      ...applyRuleSetDefaults(withContentPackDefaults, options, initialState.ruleSetId),
+      mapId: pickAvailableId(adminDefaults.mapId, options.maps),
+      diceRuleSetId: pickAvailableId(adminDefaults.diceRuleSetId, options.diceRuleSets),
+      victoryRuleSetId: pickAvailableId(adminDefaults.victoryRuleSetId, options.victoryRuleSets),
+      themeId: pickAvailableId(adminDefaults.themeId, options.themes),
+      pieceSkinId: pickAvailableId(adminDefaults.pieceSkinId, options.pieceSkins)
+    },
+    options
+  );
 }
 
 function applyGamePreset(

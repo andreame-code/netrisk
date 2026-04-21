@@ -58,6 +58,14 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
     "Expected /lobby/new to rewrite to /react/index.html for the canonical new game route."
   );
   assert.ok(
+    hasRewriteRule(rewrites, "/admin", "/react/index.html"),
+    "Expected /admin to rewrite to /react/index.html for the canonical admin route."
+  );
+  assert.ok(
+    hasRewriteRule(rewrites, "/admin/:path*", "/react/index.html"),
+    "Expected /admin/:path* to rewrite to /react/index.html for admin deep links."
+  );
+  assert.ok(
     hasRewriteRule(rewrites, "/profile", "/react/index.html"),
     "Expected /profile to rewrite to /react/index.html for the canonical profile route."
   );

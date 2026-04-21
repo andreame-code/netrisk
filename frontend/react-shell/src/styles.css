@@ -1101,6 +1101,357 @@ html[data-theme="ember"] {
   overflow: auto;
 }
 
+.status-pill.warning {
+  color: var(--shell-warning);
+}
+
+.status-pill.danger {
+  color: var(--shell-danger);
+}
+
+.admin-page {
+  width: min(1380px, calc(100% - 2rem));
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 1rem;
+  padding: 1.25rem;
+}
+
+.admin-sidebar-header h2 {
+  margin: 0;
+}
+
+.admin-nav {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.admin-nav-link {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-control-radius);
+  background: var(--shell-card-bg);
+  color: var(--shell-copy);
+  text-decoration: none;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease,
+    background 120ms ease;
+}
+
+.admin-nav-link strong {
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+}
+
+.admin-nav-link span {
+  color: var(--shell-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.admin-nav-link:hover,
+.admin-nav-link.is-active {
+  border-color: var(--shell-border-hi);
+  background: var(--shell-card-bg-hover);
+  transform: translateY(-1px);
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-section-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-hero-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.admin-hero-copy {
+  max-width: 58rem;
+}
+
+.admin-metrics-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-metric {
+  min-height: 124px;
+}
+
+.admin-metric-warning {
+  border-color: var(--shell-warning-border);
+}
+
+.admin-metric-danger {
+  border-color: var(--shell-danger-border);
+}
+
+.admin-metric-success {
+  border-color: var(--shell-success-border);
+}
+
+.admin-metric-value {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--shell-heading);
+}
+
+.admin-card-span {
+  grid-column: 1 / -1;
+}
+
+.admin-definition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.admin-definition-grid dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-muted);
+}
+
+.admin-definition-grid dd {
+  margin: 0.45rem 0 0;
+  color: var(--shell-heading);
+}
+
+.admin-toolbar-panel {
+  padding: 1rem 1.25rem;
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-toolbar .shell-field {
+  min-width: min(260px, 100%);
+  flex: 1 1 220px;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.9rem 0.75rem;
+  border-bottom: 1px solid var(--shell-border);
+  vertical-align: top;
+  text-align: left;
+}
+
+.admin-table th {
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--shell-muted);
+}
+
+.admin-table-copy {
+  margin: 0.3rem 0 0;
+  color: var(--shell-muted);
+}
+
+.admin-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-games-grid {
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+}
+
+.admin-game-list,
+.admin-player-list,
+.admin-issue-list,
+.admin-audit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-game-item,
+.admin-audit-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-control-radius);
+  background: var(--shell-card-bg);
+}
+
+.admin-list-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-control-radius);
+  background: var(--shell-card-bg);
+  color: var(--shell-copy);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-list-button.is-selected {
+  border-color: var(--shell-border-hi);
+  background: var(--shell-card-bg-hover);
+}
+
+.admin-list-button p,
+.admin-game-item p,
+.admin-audit-item p,
+.admin-player-list p,
+.admin-issue-item p {
+  margin: 0.35rem 0 0;
+  color: var(--shell-muted);
+}
+
+.admin-detail-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-detail-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-detail-summary p {
+  margin: 0;
+  color: var(--shell-muted);
+}
+
+.admin-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-issue-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-control-radius);
+  background: var(--shell-card-bg);
+}
+
+.admin-json-block {
+  margin: 0;
+  padding: 1rem;
+  border-radius: var(--campaign-control-radius);
+  background: rgba(9, 12, 16, 0.82);
+  color: #f3f0e9;
+  overflow: auto;
+  max-height: 460px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-module-picker {
+  margin-top: 1.25rem;
+}
+
+.admin-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-module-toggle {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-control-radius);
+  background: var(--shell-card-bg);
+}
+
+.admin-module-toggle span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-module-toggle small {
+  color: var(--shell-muted);
+}
+
+.admin-danger-action {
+  border-color: var(--shell-danger-border);
+  color: var(--shell-danger);
+}
+
+@media (max-width: 1080px) {
+  .admin-shell,
+  .admin-games-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-sidebar {
+    position: static;
+  }
+
+  .admin-form-grid,
+  .admin-definition-grid,
+  .admin-metrics-grid,
+  .admin-detail-grid,
+  .admin-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .react-shell-page {
     width: min(100% - 1.25rem, 100%);
@@ -1139,6 +1490,13 @@ html[data-theme="ember"] {
   .profile-metric-grid,
   .lobby-summary-grid,
   .lobby-shell-grid,
+  .admin-form-grid,
+  .admin-definition-grid,
+  .admin-metrics-grid,
+  .admin-detail-grid,
+  .admin-module-grid,
+  .admin-shell,
+  .admin-games-grid,
   .new-game-grid,
   .new-game-advanced-grid,
   .new-game-inline-grid,
