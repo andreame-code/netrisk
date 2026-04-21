@@ -9,6 +9,7 @@ import type {
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import { getModuleOptions } from "@frontend-core/api/client.mts";
+import { resolvedUiSlots } from "@frontend-core/module-catalog.mts";
 import { getLocale, listSupportedLocales, setLocale, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
@@ -156,7 +157,7 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
     : buildGameIndexPath(namespace);
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";
-  const topNavSlots = ((moduleOptionsQuery.data?.uiSlots || []) as NetRiskUiSlotContribution[])
+  const topNavSlots = (resolvedUiSlots(moduleOptionsQuery.data) as NetRiskUiSlotContribution[])
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
   const visibleTopNavSlots = isAuthenticated ? topNavSlots : [];

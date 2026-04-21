@@ -269,6 +269,37 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
   };
 }
 
+function createResolvedCatalogModuleOptionsResponse(): ModuleOptionsResponse {
+  const base = createModuleOptionsResponse();
+
+  return {
+    ...base,
+    gamePresets: [],
+    uiSlots: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [],
+    resolvedCatalog: {
+      modules: base.modules,
+      enabledModules: base.enabledModules,
+      gameModules: base.gameModules,
+      content: base.content,
+      maps: [],
+      diceRuleSets: [],
+      victoryRuleSets: [],
+      themes: [],
+      pieceSkins: [],
+      playerPieceSets: [],
+      contentPacks: [],
+      gamePresets: base.gamePresets,
+      uiSlots: base.uiSlots,
+      contentProfiles: base.contentProfiles,
+      gameplayProfiles: base.gameplayProfiles,
+      uiProfiles: base.uiProfiles
+    }
+  };
+}
+
 function emptyModuleOptionsResponse(): ModuleOptionsResponse {
   return {
     modules: [],
@@ -377,8 +408,8 @@ describe("ProfileRoute integration", () => {
     getModulesCatalogMock.mockResolvedValue(createModuleCatalogResponse(false));
     getModuleOptionsMock
       .mockResolvedValueOnce(emptyModuleOptionsResponse())
-      .mockResolvedValueOnce(createModuleOptionsResponse())
-      .mockResolvedValueOnce(createModuleOptionsResponse());
+      .mockResolvedValueOnce(createResolvedCatalogModuleOptionsResponse())
+      .mockResolvedValueOnce(createResolvedCatalogModuleOptionsResponse());
     setModuleEnabledMock.mockResolvedValue(createModuleCatalogResponse(true));
 
     const { user } = renderReactShell("/react/profile");

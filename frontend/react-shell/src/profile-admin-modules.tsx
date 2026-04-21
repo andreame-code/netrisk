@@ -5,8 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   InstalledModuleSummary,
   ModulesCatalogResponse,
-  NetRiskModuleCapability,
-  NetRiskUiSlotContribution
+  NetRiskModuleCapability
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import {
@@ -16,6 +15,7 @@ import {
   setModuleEnabled
 } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
+import { resolvedUiSlots } from "@frontend-core/module-catalog.mts";
 import { t } from "@frontend-i18n";
 
 import {
@@ -120,7 +120,7 @@ function catalogReadyMessage(payload: ModulesCatalogResponse | undefined): strin
 }
 
 function adminSlots(optionsPayload: Awaited<ReturnType<typeof getModuleOptions>> | undefined) {
-  return (optionsPayload?.uiSlots || []).filter((slot) => slot.slotId === "admin-modules-page");
+  return resolvedUiSlots(optionsPayload).filter((slot) => slot.slotId === "admin-modules-page");
 }
 
 function ModuleBadgeList({
@@ -266,7 +266,7 @@ function ProfileModuleCard({
   );
 }
 
-function ProfileAdminSlotCard({ slot }: { slot: NetRiskUiSlotContribution }) {
+function ProfileAdminSlotCard({ slot }: { slot: ReturnType<typeof adminSlots>[number] }) {
   return (
     <article
       className="profile-module-card"

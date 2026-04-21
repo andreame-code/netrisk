@@ -87,6 +87,41 @@ function emptyModuleOptions(): ModuleOptionsResponse {
   };
 }
 
+function resolvedCatalogModuleOptions(): ModuleOptionsResponse {
+  const base = emptyModuleOptions();
+
+  return {
+    ...base,
+    resolvedCatalog: {
+      modules: base.modules,
+      enabledModules: base.enabledModules,
+      gameModules: base.gameModules,
+      content: base.content,
+      maps: [],
+      playerPieceSets: [],
+      diceRuleSets: [],
+      contentPacks: [],
+      victoryRuleSets: [],
+      themes: [],
+      pieceSkins: [],
+      gamePresets: [],
+      uiSlots: [
+        {
+          slotId: "top-nav-bar",
+          itemId: "ops-center",
+          title: "Ops Center",
+          kind: "nav-link",
+          route: "/ops-center",
+          order: 10
+        }
+      ],
+      contentProfiles: [],
+      gameplayProfiles: [],
+      uiProfiles: []
+    }
+  };
+}
+
 beforeEach(() => {
   getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
 });
@@ -189,5 +224,18 @@ describe("React shell routing and session integration", () => {
       expect(window.location.pathname).toBe("/lobby");
       expect(new URLSearchParams(window.location.search).get("tab")).toBe("active");
     });
+  });
+
+  it("renders authenticated top-nav slots when they are provided through resolvedCatalog", async () => {
+    getSessionMock.mockResolvedValue(createSession());
+    listGamesMock.mockResolvedValue(createLobbyGames());
+    getModuleOptionsMock.mockResolvedValue(resolvedCatalogModuleOptions());
+
+    renderReactShell("/react/");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+
+    const opsCenterLink = await screen.findByRole("link", { name: "Ops Center" });
+    expect(opsCenterLink).toHaveAttribute("href", "/ops-center");
   });
 });

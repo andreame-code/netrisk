@@ -187,6 +187,62 @@ function createGameOptionsResponse(): GameOptionsResponse {
   };
 }
 
+function createResolvedCatalogGameOptionsResponse(): GameOptionsResponse {
+  const base = createGameOptionsResponse();
+
+  return {
+    ...base,
+    gamePresets: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [],
+    uiSlots: [],
+    resolvedCatalog: {
+      modules: base.modules || [],
+      enabledModules: base.enabledModules || [],
+      gameModules: [],
+      content: {},
+      maps: base.maps,
+      playerPieceSets: base.playerPieceSets || [],
+      diceRuleSets: base.diceRuleSets,
+      contentPacks: base.contentPacks || [],
+      victoryRuleSets: base.victoryRuleSets,
+      themes: base.themes,
+      pieceSkins: base.pieceSkins,
+      gamePresets: [
+        {
+          id: "preset-resolved",
+          name: "Resolved Strike Package",
+          description: "Resolved preset for shell consumers",
+          activeModuleIds: [],
+          contentProfileId: "content-resolved",
+          gameplayProfileId: "gameplay-resolved",
+          uiProfileId: "ui-resolved"
+        }
+      ],
+      uiSlots: [],
+      contentProfiles: [
+        {
+          id: "content-resolved",
+          name: "Resolved Content Profile"
+        }
+      ],
+      gameplayProfiles: [
+        {
+          id: "gameplay-resolved",
+          name: "Resolved Gameplay Profile"
+        }
+      ],
+      uiProfiles: [
+        {
+          id: "ui-resolved",
+          name: "Resolved UI Profile"
+        }
+      ]
+    }
+  };
+}
+
 async function renderLobbyCreateRoute() {
   const rendered = renderReactShell("/react/lobby/new");
   const createPage = await screen.findByTestId("react-shell-lobby-create-page");
@@ -293,6 +349,78 @@ describe("LobbyCreateRoute integration", () => {
       );
       expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "game-99");
       expect(openReactGameMock).toHaveBeenCalledWith("game-99");
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "renders presets and profiles from resolvedCatalog and submits the resolved selections",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route, customizeOptionsToggle, submitButton } = await renderLobbyCreateRoute();
+
+      await user.click(customizeOptionsToggle);
+
+      await waitFor(() => {
+        expect(customizeOptionsToggle).toBeChecked();
+      });
+
+      const presetSelect = (await route.findByTestId(
+        "react-shell-new-game-preset"
+      )) as HTMLSelectElement;
+      const contentProfileSelect = (await route.findByTestId(
+        "react-shell-new-game-content-profile"
+      )) as HTMLSelectElement;
+      const gameplayProfileSelect = (await route.findByTestId(
+        "react-shell-new-game-gameplay-profile"
+      )) as HTMLSelectElement;
+      const uiProfileSelect = (await route.findByTestId(
+        "react-shell-new-game-ui-profile"
+      )) as HTMLSelectElement;
+
+      expect(
+        within(presetSelect).getByRole("option", { name: "Resolved Strike Package" })
+      ).toBeInTheDocument();
+      expect(
+        within(contentProfileSelect).getByRole("option", {
+          name: "Resolved Content Profile"
+        })
+      ).toBeInTheDocument();
+      expect(
+        within(gameplayProfileSelect).getByRole("option", {
+          name: "Resolved Gameplay Profile"
+        })
+      ).toBeInTheDocument();
+      expect(
+        within(uiProfileSelect).getByRole("option", { name: "Resolved UI Profile" })
+      ).toBeInTheDocument();
+
+      await user.selectOptions(presetSelect, "preset-resolved");
+
+      await waitFor(() => {
+        expect(presetSelect).toHaveValue("preset-resolved");
+        expect(contentProfileSelect).toHaveValue("content-resolved");
+        expect(gameplayProfileSelect).toHaveValue("gameplay-resolved");
+        expect(uiProfileSelect).toHaveValue("ui-resolved");
+        expect(submitButton).toBeEnabled();
+      });
+
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gamePresetId: "preset-resolved",
+          contentProfileId: "content-resolved",
+          gameplayProfileId: "gameplay-resolved",
+          uiProfileId: "ui-resolved"
+        }),
+        expect.any(Object)
+      );
     },
     lobbyCreateRouteTimeoutMs
   );

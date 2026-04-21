@@ -8,13 +8,19 @@ import type {
   CreateGameRequest,
   GameListResponse,
   GameOptionsResponse,
-  NetRiskGamePreset,
   NetRiskModuleProfile,
   RuleSetSummary
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
+import {
+  resolvedContentProfiles,
+  resolvedGameplayProfiles,
+  resolvedGameModules,
+  resolvedGamePresets,
+  resolvedUiProfiles
+} from "@frontend-core/module-catalog.mts";
 import { t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
@@ -217,15 +223,15 @@ function sanitizeProfiles(
   options: GameOptionsResponse
 ): NewGameFormState {
   const availableContentProfiles = filterProfilesForSelectedModules(
-    options.contentProfiles,
+    resolvedContentProfiles(options),
     formState.selectedModuleIds
   );
   const availableGameplayProfiles = filterProfilesForSelectedModules(
-    options.gameplayProfiles,
+    resolvedGameplayProfiles(options),
     formState.selectedModuleIds
   );
   const availableUiProfiles = filterProfilesForSelectedModules(
-    options.uiProfiles,
+    resolvedUiProfiles(options),
     formState.selectedModuleIds
   );
 
@@ -290,8 +296,7 @@ function applyGamePreset(
     };
   }
 
-  const preset =
-    options.gamePresets?.find((entry: NetRiskGamePreset) => entry.id === gamePresetId) || null;
+  const preset = resolvedGamePresets(options).find((entry) => entry.id === gamePresetId) || null;
   if (!preset) {
     return formState;
   }
@@ -374,18 +379,19 @@ export function LobbyCreateRoute() {
   });
 
   const options = gameOptionsQuery.data;
+  const gamePresets = resolvedGamePresets(options);
   const availableModules =
-    options?.modules?.filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
+    resolvedGameModules(options).filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
   const contentProfiles = filterProfilesForSelectedModules(
-    options?.contentProfiles,
+    resolvedContentProfiles(options),
     formState?.selectedModuleIds || []
   );
   const gameplayProfiles = filterProfilesForSelectedModules(
-    options?.gameplayProfiles,
+    resolvedGameplayProfiles(options),
     formState?.selectedModuleIds || []
   );
   const uiProfiles = filterProfilesForSelectedModules(
-    options?.uiProfiles,
+    resolvedUiProfiles(options),
     formState?.selectedModuleIds || []
   );
   const currentContentPack = formState
@@ -878,13 +884,13 @@ export function LobbyCreateRoute() {
                       </select>
                     </label>
 
-                    {options.gamePresets?.length ||
+                    {gamePresets.length ||
                     availableModules.length ||
                     contentProfiles.length ||
                     gameplayProfiles.length ||
                     uiProfiles.length ? (
                       <div id="setup-module-options">
-                        {options.gamePresets?.length ? (
+                        {gamePresets.length ? (
                           <label className="field-stack">
                             <span>Preset</span>
                             <select
@@ -898,7 +904,7 @@ export function LobbyCreateRoute() {
                               data-testid="react-shell-new-game-preset"
                             >
                               <option value="">{t("common.notAvailable")}</option>
-                              {options.gamePresets.map((preset) => (
+                              {gamePresets.map((preset) => (
                                 <option key={preset.id} value={preset.id}>
                                   {preset.name}
                                 </option>
