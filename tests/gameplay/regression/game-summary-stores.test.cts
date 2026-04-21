@@ -693,9 +693,85 @@ register(
     const configCustomMap = await gameSessions.getGame("config-custom-map");
 
     assert.equal(rootCustomMap.state.mapId, "orphaned-module-map");
+    assert.equal(rootCustomMap.state.mapName, null);
     assert.equal(rootCustomMap.state.gameConfig.mapId, "orphaned-module-map");
-    assert.equal(rootCustomMap.state.gameConfig.mapName, "orphaned-module-map");
+    assert.equal(rootCustomMap.state.gameConfig.mapName, null);
+    assert.equal(configCustomMap.state.mapId, "orphaned-module-map");
+    assert.equal(configCustomMap.state.mapName, null);
     assert.equal(configCustomMap.state.gameConfig.mapId, "orphaned-module-map");
-    assert.equal(configCustomMap.state.gameConfig.mapName, "orphaned-module-map");
+    assert.equal(configCustomMap.state.gameConfig.mapName, null);
+  }
+);
+
+register(
+  "game session summaries still use runtime map resolvers after saving custom maps without labels",
+  async () => {
+    const games: any[] = [
+      {
+        id: "runtime-custom-map",
+        name: "Runtime Custom Map Game",
+        version: 1,
+        creatorUserId: "u-1",
+        state: {
+          phase: "lobby",
+          turnPhase: "reinforcement",
+          currentTurnIndex: 0,
+          players: [{ id: "p-1", name: "commander", surrendered: false }],
+          territories: {},
+          hands: { "p-1": [] },
+          mapId: "runtime-module-map",
+          diceRuleSetId: "standard",
+          gameConfig: {
+            mapId: "runtime-module-map",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          }
+        },
+        createdAt: "2026-04-21T20:45:00.000Z",
+        updatedAt: "2026-04-21T20:45:00.000Z"
+      }
+    ];
+
+    const gameSessions = createGameSessionStore({
+      datastore: {
+        listGames() {
+          return games;
+        },
+        createGame(entry: any) {
+          return entry;
+        },
+        setActiveGameId() {},
+        findGameById(gameId: string) {
+          return games.find((entry) => entry.id === gameId) || null;
+        },
+        getActiveGameId() {
+          return null;
+        },
+        updateGame(entry: any) {
+          const index = games.findIndex((candidate) => candidate.id === entry.id);
+          if (index >= 0) {
+            games[index] = entry;
+          }
+          return entry;
+        }
+      },
+      resolveMapName: (mapId: string | null | undefined) =>
+        mapId === "runtime-module-map" ? "Runtime Frontier" : null
+    });
+
+    const loaded = await gameSessions.getGame("runtime-custom-map");
+    assert.equal(loaded.state.mapId, "runtime-module-map");
+    assert.equal(loaded.state.mapName, null);
+    assert.equal(loaded.state.gameConfig.mapId, "runtime-module-map");
+    assert.equal(loaded.state.gameConfig.mapName, null);
+
+    await gameSessions.saveGame("runtime-custom-map", loaded.state, loaded.game.version);
+    const summaries = await gameSessions.listGames();
+    const runtimeCustomMap = summaries.find(
+      (entry: { id: string }) => entry.id === "runtime-custom-map"
+    );
+
+    assert.ok(runtimeCustomMap);
+    assert.equal(runtimeCustomMap.mapName, "Runtime Frontier");
   }
 );

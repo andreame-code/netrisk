@@ -97,7 +97,40 @@ function persistMapSelectionIntoGameConfig(
   }
 
   if (!findCoreBaseSupportedMap(persistedMapId)) {
-    normalizedConfig.mapName = persistedMapId;
+    normalizedConfig.mapName = null;
+  }
+}
+
+function persistMapSelectionIntoState(
+  normalizedState: StoreStateRecord,
+  rawConfig: Record<string, unknown> | null,
+  rawState: StoreStateRecord
+) {
+  const rawConfigMapId =
+    typeof rawConfig?.mapId === "string" && rawConfig.mapId.trim() ? rawConfig.mapId : null;
+  const rawStateMapId =
+    typeof rawState.mapId === "string" && rawState.mapId.trim() ? rawState.mapId : null;
+  const persistedMapId = rawStateMapId || rawConfigMapId;
+
+  if (!persistedMapId) {
+    return;
+  }
+
+  normalizedState.mapId = persistedMapId;
+
+  const rawConfigMapName =
+    typeof rawConfig?.mapName === "string" && rawConfig.mapName.trim() ? rawConfig.mapName : null;
+  const rawStateMapName =
+    typeof rawState.mapName === "string" && rawState.mapName.trim() ? rawState.mapName : null;
+  const persistedMapName = rawStateMapName || rawConfigMapName;
+
+  if (persistedMapName) {
+    normalizedState.mapName = persistedMapName;
+    return;
+  }
+
+  if (!findCoreBaseSupportedMap(persistedMapId)) {
+    normalizedState.mapName = null;
   }
 }
 
@@ -139,14 +172,7 @@ export function normalizeStoreStateRecord<T extends StoreStateRecord>(
   }
 
   persistMapSelectionIntoGameConfig(normalizedConfig, rawConfig, rawState);
-
-  if (typeof rawState.mapId === "string" && rawState.mapId.trim()) {
-    normalizedState.mapId = rawState.mapId;
-  }
-
-  if (typeof rawState.mapName === "string" && rawState.mapName.trim()) {
-    normalizedState.mapName = rawState.mapName;
-  }
+  persistMapSelectionIntoState(normalizedState, rawConfig, rawState);
 
   if (typeof rawState.diceRuleSetId === "string" && rawState.diceRuleSetId.trim()) {
     normalizedState.diceRuleSetId = rawState.diceRuleSetId;
