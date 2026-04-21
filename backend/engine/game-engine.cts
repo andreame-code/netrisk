@@ -696,14 +696,14 @@ export function publicState(state: EngineState) {
 
   if (rawGameConfig && snapshotState.gameConfig) {
     const snapshotGameConfig = snapshotState.gameConfig;
-    (
-      ["ruleSetId", "ruleSetName", "victoryRuleSetId", "themeId", "pieceSkinId"] as const
-    ).forEach((key) => {
-      const rawValue = rawGameConfig[key];
-      if (typeof rawValue === "string" && rawValue.trim()) {
-        snapshotGameConfig[key] = rawValue;
+    (["ruleSetId", "ruleSetName", "victoryRuleSetId", "themeId", "pieceSkinId"] as const).forEach(
+      (key) => {
+        const rawValue = rawGameConfig[key];
+        if (typeof rawValue === "string" && rawValue.trim()) {
+          snapshotGameConfig[key] = rawValue;
+        }
       }
-    });
+    );
   }
 
   const currentPlayer = getCurrentPlayer(snapshotState);
