@@ -921,7 +921,8 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
-      await moduleRuntime.getModuleOptions();
+      const moduleOptions = await moduleRuntime.getModuleOptions();
+      const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
       await handleCreateGameRoute(
         req,
         res,
@@ -937,6 +938,16 @@ function createApp(options: CreateAppOptions = {}) {
             resolvePlayerPieceSet: (pieceSetId: string) =>
               moduleRuntime.findPlayerPieceSet(pieceSetId),
             resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
+            resolveVictoryRuleSet: (victoryRuleSetId: string) =>
+              resolvedCatalog.victoryRuleSets.find(
+                (entry: { id: string }) => entry.id === victoryRuleSetId
+              ) || null,
+            resolveTheme: (themeId: string) =>
+              resolvedCatalog.themes.find((entry: { id: string }) => entry.id === themeId) || null,
+            resolvePieceSkin: (pieceSkinId: string) =>
+              resolvedCatalog.pieceSkins.find(
+                (entry: { id: string }) => entry.id === pieceSkinId
+              ) || null,
             resolveGamePreset: (input: {
               gamePresetId?: string | null;
               activeModuleIds?: string[];

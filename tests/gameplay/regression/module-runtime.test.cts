@@ -1761,6 +1761,10 @@ register("module runtime espone e risolve game preset modulari nel setup partita
       assert.equal(createGameResponse.payload.state.gameConfig.mapId, "classic-mini");
       assert.equal(createGameResponse.payload.state.gameConfig.themeId, "command");
       assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+      assert.equal(
+        createGameResponse.payload.state.gameConfig.victoryRuleSetId,
+        "majority-control"
+      );
       assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
       assert.equal(
         createGameResponse.payload.state.gameConfig.activeModules.some(

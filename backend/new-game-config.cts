@@ -31,7 +31,10 @@ import {
   listVictoryRuleSets,
   listVisualThemes,
   migrateGameConfigExtensions,
-  type ExtensionPackManifest
+  type ExtensionPackManifest,
+  type PieceSkin,
+  type VictoryRuleSet,
+  type VisualTheme
 } from "../shared/extensions.cjs";
 import {
   normalizeNetRiskGameModuleSelection,
@@ -191,6 +194,9 @@ export function validateNewGameConfig(
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
+    resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
+    resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
   } = {}
 ): ValidatedNewGameConfig {
   const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
@@ -258,7 +264,11 @@ export function validateNewGameConfig(
       selectedContentPack.defaultVictoryRuleSetId ||
       DEFAULT_VICTORY_RULE_SET_ID
   );
-  const selectedVictoryRuleSet = findVictoryRuleSet(requestedVictoryRuleSetId);
+  const resolveVictoryRuleSet =
+    typeof options.resolveVictoryRuleSet === "function"
+      ? options.resolveVictoryRuleSet
+      : findVictoryRuleSet;
+  const selectedVictoryRuleSet = resolveVictoryRuleSet(requestedVictoryRuleSetId);
   if (!selectedVictoryRuleSet) {
     throw createLocalizedError(
       "La regola vittoria selezionata non e supportata.",
@@ -287,7 +297,9 @@ export function validateNewGameConfig(
       selectedContentPack.defaultSiteThemeId ||
       DEFAULT_THEME_ID
   );
-  const selectedTheme = findVisualTheme(requestedThemeId);
+  const resolveTheme =
+    typeof options.resolveTheme === "function" ? options.resolveTheme : findVisualTheme;
+  const selectedTheme = resolveTheme(requestedThemeId);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }
@@ -295,7 +307,9 @@ export function validateNewGameConfig(
   const requestedPieceSkinId = String(
     input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID
   );
-  const selectedPieceSkin = findPieceSkin(requestedPieceSkinId);
+  const resolvePieceSkin =
+    typeof options.resolvePieceSkin === "function" ? options.resolvePieceSkin : findPieceSkin;
+  const selectedPieceSkin = resolvePieceSkin(requestedPieceSkinId);
   if (!selectedPieceSkin) {
     throw createLocalizedError(
       "La skin pedina selezionata non e supportata.",
@@ -383,6 +397,9 @@ export function createConfiguredInitialState(
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
+    resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
+    resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
       activeModuleIds?: string[];
@@ -542,7 +559,10 @@ export function createConfiguredInitialState(
         resolveContentPack: options.resolveContentPack,
         resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,
-        resolveSupportedMap: options.resolveSupportedMap
+        resolveSupportedMap: options.resolveSupportedMap,
+        resolveVictoryRuleSet: options.resolveVictoryRuleSet,
+        resolveTheme: options.resolveTheme,
+        resolvePieceSkin: options.resolvePieceSkin
       });
       const resolvedModuleSelection =
         typeof options.resolveGameModuleSelection === "function"
