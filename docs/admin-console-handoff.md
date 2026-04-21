@@ -70,6 +70,14 @@
 
 ## PR Status
 
-- branch prepared locally
-- local build, React tests, backend tests, and gameplay tests are green
-- PR creation/review status should be updated here once the GitHub workflow step completes
+- branch: `codex/admin-console`
+- commits:
+  - `19695c1` `Build admin console`
+  - `dad2a0f` `Document admin console workflow`
+- draft PR: `#139` `[codex] Build admin console`
+- PR URL: `https://github.com/andreame-code/netrisk/pull/139`
+- remote checks currently visible on the PR:
+  - `Vercel`: success
+  - `Vercel Preview Comments`: success
+- Codex review was explicitly requested via PR comment, but no review objects or inline threads were returned during this session
+- GitHub Actions checks did not appear in the PR status rollup during this session, so the visible remote status is limited to the Vercel checks above
