@@ -2,6 +2,13 @@ import { byId, closest, maybeQuery, setDisabled, setHidden, setMarkup } from "./
 import { createGame, getGameOptions, getSession, login, logout } from "./core/api/client.mjs";
 import { messageFromError } from "./core/errors.mjs";
 import { buildSyncedGameLocation } from "./core/game-route-paths.mjs";
+import {
+  resolvedContentProfiles,
+  resolvedGameplayProfiles,
+  resolvedGameModules,
+  resolvedGamePresets,
+  resolvedUiProfiles
+} from "./core/module-catalog.mjs";
 import { mountModuleSlotSection } from "./core/module-slots.mjs";
 import type {
   ContentPackSummary,
@@ -872,11 +879,11 @@ async function loadOptions() {
   state.victoryRuleSets = data.victoryRuleSets || [];
   state.themes = data.themes || [];
   state.pieceSkins = data.pieceSkins || [];
-  state.modules = data.modules || [];
-  state.gamePresets = data.gamePresets || [];
-  state.contentProfiles = data.contentProfiles || [];
-  state.gameplayProfiles = data.gameplayProfiles || [];
-  state.uiProfiles = data.uiProfiles || [];
+  state.modules = resolvedGameModules(data);
+  state.gamePresets = resolvedGamePresets(data);
+  state.contentProfiles = resolvedContentProfiles(data);
+  state.gameplayProfiles = resolvedGameplayProfiles(data);
+  state.uiProfiles = resolvedUiProfiles(data);
   state.turnTimeoutHoursOptions = Array.isArray(data.turnTimeoutHoursOptions)
     ? data.turnTimeoutHoursOptions
     : [];

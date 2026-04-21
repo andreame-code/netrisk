@@ -421,6 +421,110 @@ register(
   }
 );
 
+register(
+  "module runtime mantiene il contratto top-level di /api/game/options per i consumer legacy/new-game",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.contract",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.contract",
+            version: "1.0.0",
+            displayName: "Demo Contract",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "gameplay-hook",
+                scope: "game",
+                hook: "setup.profile",
+                description: "Contract gameplay profile"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            gamePresets: [
+              {
+                id: "demo.contract.preset",
+                name: "Contract Preset",
+                activeModuleIds: ["demo.contract"],
+                contentProfileId: "demo.contract.content",
+                gameplayProfileId: "demo.contract.gameplay",
+                uiProfileId: "demo.contract.ui"
+              }
+            ],
+            profiles: {
+              content: [{ id: "demo.contract.content", name: "Contract Content" }],
+              gameplay: [{ id: "demo.contract.gameplay", name: "Contract Gameplay" }],
+              ui: [{ id: "demo.contract.ui", name: "Contract UI" }]
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.contract/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(Boolean(gameOptionsResponse.payload.resolvedCatalog), true);
+
+        assert.equal(
+          gameOptionsResponse.payload.gamePresets.some(
+            (entry: any) => entry.id === "demo.contract.preset"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.contentProfiles.some(
+            (entry: any) => entry.id === "demo.contract.content"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.gameplayProfiles.some(
+            (entry: any) => entry.id === "demo.contract.gameplay"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.uiProfiles.some(
+            (entry: any) => entry.id === "demo.contract.ui"
+          ),
+          true
+        );
+
+        const topLevelModules =
+          gameOptionsResponse.payload.gameModules ?? gameOptionsResponse.payload.modules;
+        assert.equal(Array.isArray(topLevelModules), true);
+        assert.equal(
+          topLevelModules.some((entry: any) => entry.id === "demo.contract"),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.resolvedCatalog.gameModules.some(
+            (entry: any) => entry.id === "demo.contract"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
 register("module runtime non espone slot UI con slotId non supportati", async () => {
   await withModuleServer(
     [
