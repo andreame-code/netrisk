@@ -72,6 +72,12 @@ export interface ExtensionPackSummary extends ExtensionPackManifest {
   defaults: ExtensionSelection;
 }
 
+export interface BuiltInNewGameRuleSetSummary {
+  id: string;
+  name: string;
+  defaults: ExtensionSelection;
+}
+
 export interface ExtensionCatalogValidationResult {
   packs: ExtensionPackManifest[];
 }
@@ -294,6 +300,25 @@ const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManife
   ) as Record<string, Readonly<ExtensionPackManifest>>
 );
 
+function withExtensionSchemaVersion(
+  defaults: Omit<ExtensionSelection, "extensionSchemaVersion">
+): ExtensionSelection {
+  return {
+    extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
+    ...defaults
+  };
+}
+
+function toBuiltInNewGameRuleSetSummary(
+  pack: Readonly<ExtensionPackManifest>
+): BuiltInNewGameRuleSetSummary {
+  return {
+    id: pack.id,
+    name: pack.name,
+    defaults: withExtensionSchemaVersion(pack.defaults)
+  };
+}
+
 function readableMapName(mapId: string | null | undefined): string | null {
   const map = findSupportedMap(mapId || "");
   return map ? map.name : mapId || null;
@@ -370,11 +395,19 @@ export function getExtensionPack(
 export function listExtensionPacks(): ExtensionPackSummary[] {
   return Object.values(extensionPacks).map((pack) => ({
     ...pack,
-    defaults: {
-      extensionSchemaVersion: EXTENSION_SCHEMA_VERSION,
-      ...pack.defaults
-    }
+    defaults: withExtensionSchemaVersion(pack.defaults)
   }));
+}
+
+export function findBuiltInNewGameRuleSet(
+  ruleSetId: string | null | undefined
+): BuiltInNewGameRuleSetSummary | null {
+  const pack = findExtensionPack(ruleSetId);
+  return pack ? toBuiltInNewGameRuleSetSummary(pack) : null;
+}
+
+export function listBuiltInNewGameRuleSets(): BuiltInNewGameRuleSetSummary[] {
+  return Object.values(extensionPacks).map(toBuiltInNewGameRuleSetSummary);
 }
 
 export function normalizeExtensionSelection(

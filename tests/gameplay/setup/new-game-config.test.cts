@@ -1,10 +1,32 @@
 const assert = require("node:assert/strict");
 const {
   createConfiguredInitialState,
+  findNewGameRuleSet,
+  listNewGameRuleSets,
   validateNewGameConfig
 } = require("../../../backend/new-game-config.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
+
+register("new game rule set lookups expose only the minimal built-in adapter shape", () => {
+  const listedRuleSet = listNewGameRuleSets().find(
+    (ruleSet: { id: string }) => ruleSet.id === "classic-defense-3"
+  ) as Record<string, unknown> | undefined;
+  const foundRuleSet = findNewGameRuleSet("classic-defense-3") as Record<string, unknown> | null;
+
+  if (!listedRuleSet) {
+    throw new Error("Expected classic-defense-3 to be listed among built-in new game rule sets.");
+  }
+  if (!foundRuleSet) {
+    throw new Error("Expected classic-defense-3 built-in new game rule set to exist.");
+  }
+  assert.deepEqual(Object.keys(foundRuleSet).sort(), ["defaults", "id", "name"]);
+  assert.equal("version" in foundRuleSet, false);
+  assert.equal("mapIds" in foundRuleSet, false);
+  assert.equal("diceRuleSetIds" in foundRuleSet, false);
+  assert.equal(listedRuleSet.id, foundRuleSet.id);
+  assert.equal(listedRuleSet.name, foundRuleSet.name);
+});
 
 register("validateNewGameConfig derives modular defaults from the selected extension pack", () => {
   const config = validateNewGameConfig(
@@ -23,6 +45,38 @@ register("validateNewGameConfig derives modular defaults from the selected exten
   assert.equal(config.pieceSkinId, "classic-color");
   assert.equal(config.extensionSchemaVersion, 1);
 });
+
+register(
+  "validateNewGameConfig keeps deriving defaults from ruleSetId with the minimal built-in adapter",
+  () => {
+    const selectedRuleSet = findNewGameRuleSet("classic-defense-3") as Record<
+      string,
+      unknown
+    > | null;
+
+    if (!selectedRuleSet) {
+      throw new Error("Expected classic-defense-3 built-in new game rule set to exist.");
+    }
+    assert.deepEqual(Object.keys(selectedRuleSet).sort(), ["defaults", "id", "name"]);
+
+    const config = validateNewGameConfig(
+      {
+        ruleSetId: "classic-defense-3",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      },
+      { random: () => 0 }
+    );
+
+    assert.equal(config.ruleSetId, "classic-defense-3");
+    assert.equal(config.ruleSetName, "Classic Defense 3");
+    assert.equal(config.mapId, "classic-mini");
+    assert.equal(config.diceRuleSetId, "defense-3");
+    assert.equal(config.victoryRuleSetId, "conquest");
+    assert.equal(config.themeId, "command");
+    assert.equal(config.pieceSkinId, "classic-color");
+  }
+);
 
 register("validateNewGameConfig supports injected victory, theme, and piece skin resolvers", () => {
   const config = validateNewGameConfig(

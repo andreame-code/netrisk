@@ -22,16 +22,16 @@ import {
   DEFAULT_THEME_ID,
   DEFAULT_VICTORY_RULE_SET_ID,
   EXTENSION_SCHEMA_VERSION,
-  findExtensionPack,
+  findBuiltInNewGameRuleSet,
   findPieceSkin,
   findVictoryRuleSet,
   findVisualTheme,
-  listExtensionPacks,
+  listBuiltInNewGameRuleSets,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes,
   migrateGameConfigExtensions,
-  type ExtensionPackManifest,
+  type BuiltInNewGameRuleSetSummary,
   type PieceSkin,
   type VictoryRuleSet,
   type VisualTheme
@@ -91,7 +91,7 @@ export const AI_GENERAL_NAMES = [
 export const STANDARD_NEW_GAME_RULE_SET_ID = "classic";
 export const DEFENSE_THREE_NEW_GAME_RULE_SET_ID = "classic-defense-3";
 
-type NewGameRuleSet = Readonly<ExtensionPackManifest>;
+type NewGameRuleSet = Readonly<BuiltInNewGameRuleSetSummary>;
 type PlayerType = "human" | "ai";
 
 interface RequestedPlayerSlot {
@@ -151,11 +151,11 @@ export function normalizePlayerType(value: string | undefined): PlayerType {
 }
 
 export function findNewGameRuleSet(ruleSetId: string | null | undefined): NewGameRuleSet | null {
-  return findExtensionPack(ruleSetId);
+  return findBuiltInNewGameRuleSet(ruleSetId);
 }
 
 export function listNewGameRuleSets() {
-  return listExtensionPacks();
+  return listBuiltInNewGameRuleSets();
 }
 
 export function listTurnTimeoutHoursOptions(): TurnTimeoutHoursValue[] {
