@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "npm run build:ts && node .tsbuild/backend/server.cjs",
+    "admin:grant": "npm run build:ts && node .tsbuild/scripts/grant-admin.cjs",
     "backup:data": "node .tsbuild/scripts/backup-datastore.cjs",
     "backup:check": "node .tsbuild/scripts/check-backup.cjs",
     "build:ts": "tsc -p tsconfig.json && npm run build:frontend && npm run build:react-shell && node .tsbuild/scripts/generate-supabase-schema.cjs && npm run check:ts-sources",
