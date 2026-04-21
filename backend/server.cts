@@ -771,35 +771,12 @@ function createApp(options: CreateAppOptions = {}) {
       (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")
     ) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
-      const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
-      const publicResolvedCatalog = {
-        ...resolvedCatalog,
-        modules: resolvedCatalog.gameModules
-      };
       await handleGameOptionsRoute(
         res,
-        () => publicResolvedCatalog.ruleSets,
-        () => resolvedCatalog.maps,
-        () => resolvedCatalog.diceRuleSets,
-        () => resolvedCatalog.victoryRuleSets,
-        () => resolvedCatalog.themes,
-        () => resolvedCatalog.pieceSkins,
+        () => moduleOptions.resolvedCatalog || moduleOptions,
         listTurnTimeoutHoursOptions,
         sendJson,
-        () => resolvedCatalog.playerPieceSets,
-        () => resolvedCatalog.contentPacks,
-        async () => {
-          return {
-            modules: publicResolvedCatalog.gameModules,
-            enabledModules: publicResolvedCatalog.enabledModules,
-            gamePresets: publicResolvedCatalog.gamePresets,
-            contentProfiles: publicResolvedCatalog.contentProfiles,
-            gameplayProfiles: publicResolvedCatalog.gameplayProfiles,
-            uiProfiles: publicResolvedCatalog.uiProfiles,
-            uiSlots: publicResolvedCatalog.uiSlots,
-            resolvedCatalog: publicResolvedCatalog
-          };
-        },
+        undefined,
         sendLocalizedError
       );
       return;

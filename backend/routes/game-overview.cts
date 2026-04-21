@@ -2,12 +2,25 @@ type SendJson = (res: unknown, statusCode: number, payload: unknown) => void;
 
 type ListGames = () => Promise<unknown> | unknown;
 type GetTargetGameId = (body?: Record<string, unknown>, url?: URL | null) => string | null;
-type ListRuleSets = () => unknown;
-type ListMaps = () => unknown;
-type ListDiceRuleSets = () => unknown;
-type ListVictoryRuleSets = () => unknown;
-type ListThemes = () => unknown;
-type ListPieceSkins = () => unknown;
+type GameOptionsResolvedCatalog = {
+  modules?: unknown[];
+  enabledModules?: unknown[];
+  gameModules?: unknown[];
+  maps?: unknown[];
+  ruleSets?: unknown[];
+  playerPieceSets?: unknown[];
+  diceRuleSets?: unknown[];
+  contentPacks?: unknown[];
+  victoryRuleSets?: unknown[];
+  themes?: unknown[];
+  pieceSkins?: unknown[];
+  gamePresets?: unknown[];
+  uiSlots?: unknown[];
+  contentProfiles?: unknown[];
+  gameplayProfiles?: unknown[];
+  uiProfiles?: unknown[];
+};
+type GetResolvedCatalog = () => Promise<GameOptionsResolvedCatalog> | GameOptionsResolvedCatalog;
 type ListTurnTimeoutHoursOptions = () => unknown;
 type ListPlayerPieceSets = () => unknown;
 type ListContentPacks = () => unknown;
@@ -52,28 +65,30 @@ async function handleGamesListRoute(
 
 async function handleGameOptionsRoute(
   res: unknown,
-  listRuleSets: ListRuleSets,
-  listMaps: ListMaps,
-  listDiceRuleSets: ListDiceRuleSets,
-  listVictoryRuleSets: ListVictoryRuleSets,
-  listThemes: ListThemes,
-  listPieceSkins: ListPieceSkins,
+  getResolvedCatalog: GetResolvedCatalog,
   listTurnTimeoutHoursOptions: ListTurnTimeoutHoursOptions,
   sendJson: SendJson,
-  listPlayerPieceSets?: ListPlayerPieceSets,
-  listContentPacks?: ListContentPacks,
   getExtraGameOptions?: GetExtraGameOptions,
   sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
+  const resolvedCatalog = toPublicGameOptionsCatalog(await getResolvedCatalog());
   const payload = {
-    ruleSets: listRuleSets(),
-    maps: listMaps(),
-    diceRuleSets: listDiceRuleSets(),
-    victoryRuleSets: listVictoryRuleSets(),
-    themes: listThemes(),
-    pieceSkins: listPieceSkins(),
-    playerPieceSets: typeof listPlayerPieceSets === "function" ? listPlayerPieceSets() : [],
-    contentPacks: typeof listContentPacks === "function" ? listContentPacks() : [],
+    ruleSets: listEntries(resolvedCatalog.ruleSets),
+    maps: listEntries(resolvedCatalog.maps),
+    diceRuleSets: listEntries(resolvedCatalog.diceRuleSets),
+    victoryRuleSets: listEntries(resolvedCatalog.victoryRuleSets),
+    themes: listEntries(resolvedCatalog.themes),
+    pieceSkins: listEntries(resolvedCatalog.pieceSkins),
+    modules: listEntries(resolvedCatalog.modules),
+    enabledModules: listEntries(resolvedCatalog.enabledModules),
+    gamePresets: listEntries(resolvedCatalog.gamePresets),
+    contentProfiles: listEntries(resolvedCatalog.contentProfiles),
+    gameplayProfiles: listEntries(resolvedCatalog.gameplayProfiles),
+    uiProfiles: listEntries(resolvedCatalog.uiProfiles),
+    uiSlots: listEntries(resolvedCatalog.uiSlots),
+    playerPieceSets: listEntries(resolvedCatalog.playerPieceSets),
+    contentPacks: listEntries(resolvedCatalog.contentPacks),
+    resolvedCatalog,
     turnTimeoutHoursOptions: listTurnTimeoutHoursOptions(),
     playerRange: { min: 2, max: 4 },
     ...(typeof getExtraGameOptions === "function" ? await getExtraGameOptions() : {})
@@ -92,6 +107,20 @@ async function handleGameOptionsRoute(
     sendJson as SendJson,
     sendLocalizedError
   );
+}
+
+function listEntries<T>(entries: T[] | null | undefined): T[] {
+  return Array.isArray(entries) ? entries : [];
+}
+
+function toPublicGameOptionsCatalog(
+  resolvedCatalog: GameOptionsResolvedCatalog | null | undefined
+): GameOptionsResolvedCatalog {
+  const catalog = resolvedCatalog || {};
+  return {
+    ...catalog,
+    modules: listEntries(catalog.gameModules || catalog.modules)
+  };
 }
 
 module.exports = {
