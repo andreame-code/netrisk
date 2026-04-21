@@ -1,7 +1,6 @@
 const path = require("path");
 const crypto = require("crypto");
 const { migrateGameStateExtensions } = require("../shared/extensions.cjs");
-const { findSupportedMap } = require("../shared/maps/index.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { chainMaybe, mapMaybe } = require("./maybe-async.cjs");
 
@@ -82,6 +81,7 @@ interface GameSessionStoreOptions {
   dataFile?: string;
   usersFile?: string;
   sessionsFile?: string;
+  resolveMapName?: (mapId: string | null | undefined) => string | null;
 }
 
 type VersionConflictError = Error & {
@@ -96,8 +96,7 @@ function safeClone<T>(value: T): T {
 }
 
 function readableMapName(mapId: string | null | undefined): string | null {
-  const map = findSupportedMap(mapId);
-  return map ? map.name : mapId || null;
+  return mapId || null;
 }
 
 function normalizeStateRecord<T extends GameStateRecord>(state: T): T {
@@ -138,7 +137,29 @@ function normalizeGameName(name: unknown, fallbackIndex: number): string {
   return normalized;
 }
 
+function persistedMapName(entry: GameEntry): string | null {
+  const configMapName = entry?.state?.gameConfig?.mapName;
+  if (typeof configMapName === "string" && configMapName.trim()) {
+    return configMapName;
+  }
+
+  const stateMapName = entry?.state?.mapName;
+  if (typeof stateMapName === "string" && stateMapName.trim()) {
+    return stateMapName;
+  }
+
+  return null;
+}
+
 function summarizeGame(entry: GameEntry): GameSummary {
+  return summarizeGameWithMapName(entry, readableMapName);
+}
+
+function summarizeGameWithMapName(
+  entry: GameEntry,
+  resolveMapName: (mapId: string | null | undefined) => string | null
+): GameSummary {
+  const storedMapName = persistedMapName(entry);
   const state = normalizeStateRecord(entry.state || {});
   const config = state.gameConfig || null;
   const configuredPlayers: GamePlayerConfig[] = Array.isArray(config?.players)
@@ -160,7 +181,7 @@ function summarizeGame(entry: GameEntry): GameSummary {
     playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     contentPackId: config?.contentPackId || null,
     mapId: config?.mapId || null,
-    mapName: config ? config.mapName || readableMapName(config.mapId) : null,
+    mapName: storedMapName ?? (config ? resolveMapName(config.mapId) : null),
     diceRuleSetId: config?.diceRuleSetId || null,
     totalPlayers: totalPlayers || null,
     aiCount: configuredPlayers.filter((player) => player.type === "ai").length,
@@ -185,6 +206,8 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       legacySessionsFile:
         options.sessionsFile || path.join(__dirname, "..", "data", "sessions.json")
     })) as NonNullable<GameSessionStoreOptions["datastore"]>;
+  const resolveMapName =
+    typeof options.resolveMapName === "function" ? options.resolveMapName : readableMapName;
 
   function listGames() {
     return mapMaybe(datastore.listGames(), (games: GameEntry[]) =>
@@ -193,7 +216,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         .sort((left: GameEntry, right: GameEntry) =>
           String(right.updatedAt).localeCompare(String(left.updatedAt))
         )
-        .map(summarizeGame)
+        .map((entry) => summarizeGameWithMapName(entry, resolveMapName))
     );
   }
 
@@ -220,7 +243,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
 
       return chainMaybe(datastore.createGame(entry), (created: GameEntry) =>
         mapMaybe(datastore.setActiveGameId(created.id), () => ({
-          game: summarizeGame(created),
+          game: summarizeGameWithMapName(created, resolveMapName),
           state: normalizeStateRecord(safeClone(created.state))
         }))
       );
@@ -237,7 +260,9 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         throw new Error(`Partita "${gameId}" non trovata.`);
       }
 
-      return mapMaybe(datastore.setActiveGameId(gameId), () => summarizeGame(entry));
+      return mapMaybe(datastore.setActiveGameId(gameId), () =>
+        summarizeGameWithMapName(entry, resolveMapName)
+      );
     });
   }
 
@@ -253,7 +278,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
 
       return {
         game: {
-          ...summarizeGame(entry),
+          ...summarizeGameWithMapName(entry, resolveMapName),
           creatorUserId: entry.creatorUserId || null
         },
         state: normalizeStateRecord(safeClone(entry.state))
@@ -272,7 +297,7 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
       }
 
       return mapMaybe(datastore.setActiveGameId(gameId), () => ({
-        game: summarizeGame(entry),
+        game: summarizeGameWithMapName(entry, resolveMapName),
         state: normalizeStateRecord(safeClone(entry.state))
       }));
     });
@@ -307,14 +332,16 @@ function createGameSessionStore(options: GameSessionStoreOptions = {}) {
         conflict.code = "VERSION_CONFLICT";
         conflict.currentVersion = currentVersion;
         conflict.currentState = safeClone(entry.state);
-        conflict.game = summarizeGame(entry);
+        conflict.game = summarizeGameWithMapName(entry, resolveMapName);
         throw conflict;
       }
 
       entry.state = normalizeStateRecord(safeClone(state));
       entry.version = currentVersion + 1;
       entry.updatedAt = new Date().toISOString();
-      return mapMaybe(datastore.updateGame(entry), summarizeGame);
+      return mapMaybe(datastore.updateGame(entry), (updatedEntry: GameEntry) =>
+        summarizeGameWithMapName(updatedEntry, resolveMapName)
+      );
     });
   }
 

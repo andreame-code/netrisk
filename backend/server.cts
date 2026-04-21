@@ -282,14 +282,24 @@ function createApp(options: CreateAppOptions = {}) {
     projectRoot: runtimeProjectRoot,
     datastore
   });
+  const resolveCatalogMapName = (mapId: string | null | undefined) => {
+    if (typeof mapId !== "string" || !mapId.trim()) {
+      return null;
+    }
+
+    const map = moduleRuntime.findSupportedMap(mapId);
+    return map ? map.name : null;
+  };
   const gamesFile = options.gamesFile || path.join(runtimeProjectRoot, "data", "games.json");
   const gameSessions = createGameSessionStore({
     datastore,
-    dataFile: gamesFile
+    dataFile: gamesFile,
+    resolveMapName: resolveCatalogMapName
   });
   const playerProfiles = createPlayerProfileStore({
     datastore,
-    gamesFile
+    gamesFile,
+    resolveMapName: resolveCatalogMapName
   });
   const auth = createAuthStore({
     datastore,

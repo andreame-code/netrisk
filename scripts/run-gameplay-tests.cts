@@ -38,6 +38,7 @@ const gameplayTestModules = [
   "../tests/gameplay/victory/victory-detection.test.cjs",
   "../tests/gameplay/victory/elimination-and-victory.test.cjs",
   "../tests/gameplay/regression/full-flows.test.cjs",
+  "../tests/gameplay/regression/game-summary-stores.test.cjs",
   "../tests/gameplay/regression/module-runtime.test.cjs",
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
   "../tests/gameplay/regression/vercel-routing-config.test.cjs",
