@@ -52,6 +52,7 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [API transport notes](docs/api.md)
 - [Gameplay flows](docs/gameplay-flows.md)
 - [Admin console guide](docs/admin-console.md)
+- [Admin console execution plan](docs/admin-console-plan.md)
 - [Admin console handoff](docs/admin-console-handoff.md)
 - [React migration matrix](docs/react-migration-matrix.md)
 - [Extending NetRisk](docs/extending-netrisk.md)
@@ -106,6 +107,13 @@ Application available at `http://localhost:3000`.
 After `npm start`, the same built React shell serves the canonical user-facing clean routes and the supported `/react/*` aliases from `http://localhost:3000`.
 The rollback static UI remains available only under `http://localhost:3000/legacy/*` during the transition period.
 Authenticated administrators can access the operational console at `http://localhost:3000/admin`.
+Grant a local admin account with:
+
+```bash
+npm run admin:grant -- --username your_username
+```
+
+Refresh the session after the role change, then reopen `/admin`.
 
 React shell preview:
 

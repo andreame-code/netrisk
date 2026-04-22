@@ -49,3 +49,15 @@ Notes:
 - module disable now refuses when the module is still referenced by admin defaults
 - game repair preserves runtime-resolved IDs while synchronizing stale top-level snapshot fields
 - cleanup and destructive actions are audit logged on both success and failure paths where applicable
+
+## Regression coverage
+
+- `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx` verifies admin route gating, non-admin navigation hiding, section loading, and core mutation UX wiring in the React shell
+- `tests/gameplay/regression/admin-console-routes.test.cts` verifies admin API protection for anonymous and non-admin callers, role mutation, destructive confirmation enforcement, failure audit logging, maintenance actions, and admin-default runtime preservation
+- `tests/gameplay/regression/vercel-routing-config.test.cts` verifies `/admin` and `/react/admin` continue to route correctly through the deployed rewrite layer
+
+Notable backend regressions covered today:
+
+- create-game requests that provide an explicit `ruleSetId` but omit `pieceSetId` still preserve valid admin defaults for piece sets
+- destructive admin actions fail closed without explicit confirmation and emit audit entries on the failure path
+- anonymous and authenticated non-admin callers receive `AUTH_REQUIRED` or `ADMIN_ONLY` on protected admin mutations

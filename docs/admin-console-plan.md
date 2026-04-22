@@ -26,3 +26,10 @@
 - Preserve runtime-resolved IDs when validating and normalizing admin-managed config.
 - Require explicit confirmation for destructive or repair-style actions.
 - Keep the first admin console small but operational, with real data and real mutation paths.
+
+## Implementation Status
+
+- delivery slices 1 through 6 are now implemented on `codex/admin-console`
+- the shipped console includes `Overview`, `Users`, `Games`, `Configurations`, `Runtime / Modules`, `Maintenance`, and `Audit Log`
+- the latest hardening pass added regression coverage for anonymous/non-admin protection on admin mutations, destructive confirmation failures with audit logging, and admin-default preservation when `ruleSetId` is explicit but `pieceSetId` is omitted
+- the remaining work is now operational hardening rather than missing first-slice functionality: durable audit retention, richer bulk UX, and deeper runtime repair/remap tooling

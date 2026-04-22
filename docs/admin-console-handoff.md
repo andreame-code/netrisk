@@ -37,8 +37,8 @@
 
 ## Tests Added
 
-- admin route integration coverage in `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx`
-- backend regression coverage in `tests/gameplay/regression/admin-console-routes.test.cts`
+- admin route integration coverage in `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx` for route gating, section rendering, and admin mutation wiring
+- backend regression coverage in `tests/gameplay/regression/admin-console-routes.test.cts` for role mutation, config/runtime preservation, anonymous/non-admin protection, destructive confirmation enforcement, and failed-action audit logging
 - Vercel/admin route rewrite coverage in `tests/gameplay/regression/vercel-routing-config.test.cts`
 
 ## Biggest Compromises
@@ -59,7 +59,7 @@
 2. add richer module/runtime repair and remap flows for invalid references
 3. replace prompt-based confirmations with explicit admin confirmation dialogs
 4. add pagination and bulk actions for larger user/game datasets
-5. add remote CI, preview, and review status back into this handoff once the PR loop completes
+5. add targeted browser E2E coverage for the most sensitive destructive admin flows
 
 ## Remaining Gaps Ranked By Impact
 
@@ -71,18 +71,27 @@
 ## PR Status
 
 - branch: `codex/admin-console`
-- commits:
-  - `95a35c6` `Build admin console`
-  - `40e2ee1` `Document admin console workflow`
-  - `7da88e1` `Update admin console handoff`
-  - `4d12bff` `Address Codex admin review`
+- recent commits:
+  - `e994fc4` `Fix admin console regressions and CI stability`
+  - `8547f38` `Honor admin piece set defaults in game setup`
+  - `8744b84` `Decouple admin piece-set defaults from explicit rule sets`
+  - `feb762b` `Add admin console permission and confirmation regressions`
 - draft PR: `#139` `[codex] Build admin console`
 - PR URL: `https://github.com/andreame-code/netrisk/pull/139`
-- latest local validation after rebase onto `origin/main`:
+- latest local validation on `feb762b`:
   - `npm run build:ts`: success
-  - `npm run test:all`: success
-- latest Codex review findings addressed locally before push:
-  - admin defaults now seed omitted new-game fields without overriding explicit content-pack or rule-set driven defaults
-  - stale lobby cleanup now re-checks the loaded game phase before mutating a game discovered as stale
-  - `/api/game/options` now degrades safely when persisted admin defaults contain invalid runtime references
-- remote PR checks and review state must be re-read after the rebased branch is force-pushed and a fresh Codex review is requested on the new HEAD
+  - `node .tsbuild/scripts/run-gameplay-tests.cjs`: success
+  - `npm run test:react`: success
+  - `npm run format:check`: success
+  - `npm run lint`: success with pre-existing warnings only
+- latest hardening validated before this handoff refresh:
+  - admin defaults still seed omitted new-game fields without overriding explicit content-pack or rule-set driven defaults
+  - stale lobby cleanup re-checks loaded game phase before mutating a game discovered as stale
+  - `/api/game/options` degrades safely when persisted admin defaults contain invalid runtime references
+  - admin mutation routes reject both anonymous and authenticated non-admin callers
+  - destructive admin actions fail closed without confirmation and write failure audit entries
+- remote PR state verified on `2026-04-22`:
+  - `mergeable`: `MERGEABLE`
+  - `mergeStateStatus`: `CLEAN`
+  - checks green: `coverage`, `quality`, `e2e-smoke`, `CodeQL`, `Vercel`, `Vercel Preview Comments`
+  - latest Codex confirmation: `https://github.com/andreame-code/netrisk/pull/139#issuecomment-4296016695`
