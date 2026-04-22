@@ -232,17 +232,16 @@ function createAuthoredVictoryDraft(
     moduleType: "victory-objectives",
     content: {
       mapId: overrides.mapId || "classic-mini",
-      objectives:
-        overrides.objectives || [
-          {
-            id: "hold-na-asia",
-            title: "Hold North America and Asia",
-            description: "Control North America and Asia at the same time.",
-            enabled: true,
-            type: "control-continents",
-            continentIds: ["north_america", "asia"]
-          }
-        ]
+      objectives: overrides.objectives || [
+        {
+          id: "hold-na-asia",
+          title: "Hold North America and Asia",
+          description: "Control North America and Asia at the same time.",
+          enabled: true,
+          type: "control-continents",
+          continentIds: ["north_america", "asia"]
+        }
+      ]
     }
   };
 }
@@ -359,55 +358,58 @@ register("admin mutation routes reject anonymous and non-admin access", async ()
   });
 });
 
-register("content studio saves invalid drafts but blocks publishing until validation passes", async () => {
-  await withAdminApp(async ({ app, adminSessionToken }) => {
-    const draft = createAuthoredVictoryDraft({
-      id: "victory.too-many-territories",
-      objectives: [
-        {
-          id: "hold-999",
-          title: "Hold 999 territories",
-          description: "Impossible validation target for a classic map.",
-          enabled: true,
-          type: "control-territory-count",
-          territoryCount: 999
-        }
-      ]
+register(
+  "content studio saves invalid drafts but blocks publishing until validation passes",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const draft = createAuthoredVictoryDraft({
+        id: "victory.too-many-territories",
+        objectives: [
+          {
+            id: "hold-999",
+            title: "Hold 999 territories",
+            description: "Impossible validation target for a classic map.",
+            enabled: true,
+            type: "control-territory-count",
+            territoryCount: 999
+          }
+        ]
+      });
+
+      const saveResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/content-studio/modules",
+        draft,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(saveResponse.statusCode, 201);
+      assert.equal(saveResponse.payload.module.status, "draft");
+      assert.equal(saveResponse.payload.validation.valid, false);
+      assert.equal(
+        saveResponse.payload.validation.errors.some(
+          (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
+        ),
+        true
+      );
+
+      const publishResponse = await callApp(
+        app,
+        "POST",
+        `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/publish`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(publishResponse.statusCode, 400);
+      assert.equal(
+        publishResponse.payload.validation.errors.some(
+          (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
+        ),
+        true
+      );
     });
-
-    const saveResponse = await callApp(
-      app,
-      "POST",
-      "/api/admin/content-studio/modules",
-      draft,
-      authHeaders(adminSessionToken)
-    );
-    assert.equal(saveResponse.statusCode, 201);
-    assert.equal(saveResponse.payload.module.status, "draft");
-    assert.equal(saveResponse.payload.validation.valid, false);
-    assert.equal(
-      saveResponse.payload.validation.errors.some(
-        (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
-      ),
-      true
-    );
-
-    const publishResponse = await callApp(
-      app,
-      "POST",
-      `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/publish`,
-      {},
-      authHeaders(adminSessionToken)
-    );
-    assert.equal(publishResponse.statusCode, 400);
-    assert.equal(
-      publishResponse.payload.validation.errors.some(
-        (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
-      ),
-      true
-    );
-  });
-});
+  }
+);
 
 register(
   "content studio publishes authored victory modules into runtime options and persists engine data",
@@ -470,10 +472,7 @@ register(
       );
       assert.equal(createGameResponse.statusCode, 201);
       assert.equal(createGameResponse.payload.state.gameConfig.victoryRuleSetId, draft.id);
-      assert.equal(
-        createGameResponse.payload.state.gameConfig.victoryObjectiveModule.id,
-        draft.id
-      );
+      assert.equal(createGameResponse.payload.state.gameConfig.victoryObjectiveModule.id, draft.id);
       assert.equal(
         createGameResponse.payload.state.gameConfig.victoryObjectiveModule.objectives[0].type,
         "control-territory-count"

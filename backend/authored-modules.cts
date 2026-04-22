@@ -1,4 +1,7 @@
-const { authoredModuleInputSchema, authoredModuleSchema } = require("../shared/runtime-validation.cjs");
+const {
+  authoredModuleInputSchema,
+  authoredModuleSchema
+} = require("../shared/runtime-validation.cjs");
 const { registeredMaps } = require("../shared/maps/index.cjs");
 
 import type {
@@ -130,10 +133,7 @@ function readableList(values: string[]): string {
   return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 }
 
-function objectiveSummary(
-  objective: AuthoredVictoryObjective,
-  map: SupportedMap | null
-): string {
+function objectiveSummary(objective: AuthoredVictoryObjective, map: SupportedMap | null): string {
   if (objective.type === "control-continents") {
     const continentNames = (objective.continentIds || [])
       .map((continentId) =>
@@ -159,7 +159,9 @@ function objectiveSummary(
 }
 
 function moduleSummaryText(moduleEntry: AuthoredModule, map: SupportedMap | null): string {
-  const enabledObjectives = (moduleEntry.content.objectives || []).filter((objective) => objective.enabled);
+  const enabledObjectives = (moduleEntry.content.objectives || []).filter(
+    (objective) => objective.enabled
+  );
   if (!enabledObjectives.length) {
     return "No enabled win conditions yet.";
   }
@@ -171,7 +173,10 @@ function moduleSummaryText(moduleEntry: AuthoredModule, map: SupportedMap | null
   return `Win condition: complete any of the ${enabledObjectives.length} enabled objectives for ${moduleEntry.name || "this module"}.`;
 }
 
-function buildPreview(moduleEntry: AuthoredModule, map: SupportedMap | null): AuthoredModulePreview {
+function buildPreview(
+  moduleEntry: AuthoredModule,
+  map: SupportedMap | null
+): AuthoredModulePreview {
   return {
     summary: moduleSummaryText(moduleEntry, map),
     objectiveSummaries: (moduleEntry.content.objectives || []).map((objective) =>
@@ -180,7 +185,10 @@ function buildPreview(moduleEntry: AuthoredModule, map: SupportedMap | null): Au
   };
 }
 
-function buildRuntime(moduleEntry: AuthoredModule, map: SupportedMap | null): AuthoredModuleRuntime {
+function buildRuntime(
+  moduleEntry: AuthoredModule,
+  map: SupportedMap | null
+): AuthoredModuleRuntime {
   const mapOption = map ? buildMapOption(map) : null;
 
   return {
@@ -272,7 +280,11 @@ function validateModule(
     errors.push(issue("required-id", "id", "Module id is required."));
   } else if (!ID_PATTERN.test(moduleId)) {
     errors.push(
-      issue("invalid-id", "id", "Use letters, numbers, dashes, underscores, or dots for the module id.")
+      issue(
+        "invalid-id",
+        "id",
+        "Use letters, numbers, dashes, underscores, or dots for the module id."
+      )
     );
   }
 
@@ -289,7 +301,9 @@ function validateModule(
   }
 
   if (!mapId) {
-    errors.push(issue("required-map", "content.mapId", "Select a target map for this objective module."));
+    errors.push(
+      issue("required-map", "content.mapId", "Select a target map for this objective module.")
+    );
   } else if (!mapOption) {
     errors.push(
       issue(
@@ -302,7 +316,11 @@ function validateModule(
 
   if (!objectives.length) {
     errors.push(
-      issue("required-objectives", "content.objectives", "Add at least one objective before publishing.")
+      issue(
+        "required-objectives",
+        "content.objectives",
+        "Add at least one objective before publishing."
+      )
     );
   }
 
@@ -335,7 +353,9 @@ function validateModule(
     }
 
     if (!title) {
-      errors.push(issue("required-objective-title", `${basePath}.title`, "Objective title is required."));
+      errors.push(
+        issue("required-objective-title", `${basePath}.title`, "Objective title is required.")
+      );
     }
 
     if (!objectiveDescription) {
@@ -452,7 +472,10 @@ function toDetailPayload(
   };
 }
 
-function toSummaryPayload(moduleEntry: AuthoredModule, mapCatalog: MapCatalog): AuthoredModuleSummary {
+function toSummaryPayload(
+  moduleEntry: AuthoredModule,
+  mapCatalog: MapCatalog
+): AuthoredModuleSummary {
   const detail = validateModule(moduleEntry, mapCatalog);
 
   return {
@@ -655,9 +678,12 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     stateKey: AUTHORED_MODULES_STATE_KEY,
     setMapCatalog(nextCatalog: Partial<MapCatalog>) {
       mapCatalog = {
-        listMaps: typeof nextCatalog.listMaps === "function" ? nextCatalog.listMaps : mapCatalog.listMaps,
+        listMaps:
+          typeof nextCatalog.listMaps === "function" ? nextCatalog.listMaps : mapCatalog.listMaps,
         resolveMap:
-          typeof nextCatalog.resolveMap === "function" ? nextCatalog.resolveMap : mapCatalog.resolveMap
+          typeof nextCatalog.resolveMap === "function"
+            ? nextCatalog.resolveMap
+            : mapCatalog.resolveMap
       };
     },
     async listEditorOptions(): Promise<AdminAuthoredModuleEditorOptionsResponse> {
@@ -706,14 +732,19 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
           description: moduleEntry.description,
           source: "authored" as const,
           mapId: normalizeString(moduleEntry.content.mapId) || null,
-          objectiveCount: moduleEntry.content.objectives.filter((objective) => objective.enabled).length,
+          objectiveCount: moduleEntry.content.objectives.filter((objective) => objective.enabled)
+            .length,
           moduleType: moduleEntry.moduleType,
           runtime: detail.runtime
         }));
     },
-    async findPublishedVictoryRuleSetRuntime(moduleId: string): Promise<AuthoredModuleRuntime | null> {
+    async findPublishedVictoryRuleSetRuntime(
+      moduleId: string
+    ): Promise<AuthoredModuleRuntime | null> {
       const modules = await readModules();
-      const moduleEntry = modules.find((entry) => entry.id === moduleId && entry.status === "published");
+      const moduleEntry = modules.find(
+        (entry) => entry.id === moduleId && entry.status === "published"
+      );
       if (!moduleEntry) {
         return null;
       }

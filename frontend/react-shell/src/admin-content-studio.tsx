@@ -133,9 +133,7 @@ function createObjective(
   };
 }
 
-function createEmptyDraft(
-  mapOption: AuthoredMapOption | null
-): EditorDraft {
+function createEmptyDraft(mapOption: AuthoredMapOption | null): EditorDraft {
   return {
     id: "",
     name: "",
@@ -218,7 +216,10 @@ function ValidationPanel({ inspection }: { inspection: ContentStudioInspection |
       ) : (
         <ul className="content-studio-validation-list">
           {errors.map((entry) => (
-            <li key={`${entry.path}-${entry.code}`} className="content-studio-validation-item is-error">
+            <li
+              key={`${entry.path}-${entry.code}`}
+              className="content-studio-validation-item is-error"
+            >
               <strong>{entry.code}</strong>
               <p>{entry.message}</p>
               <span>{entry.path}</span>
@@ -275,11 +276,7 @@ function RuntimePanel({ inspection }: { inspection: ContentStudioInspection | nu
   );
 }
 
-export function AdminContentStudioSection({
-  frameContext
-}: {
-  frameContext: AdminFrameContext;
-}) {
+export function AdminContentStudioSection({ frameContext }: { frameContext: AdminFrameContext }) {
   const queryClient = useQueryClient();
   const [selectedEditorKey, setSelectedEditorKey] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditorDraft | null>(null);
@@ -350,7 +347,10 @@ export function AdminContentStudioSection({
       return;
     }
 
-    if (!activeObjectiveId || !draft.content.objectives.some((entry) => entry.id === activeObjectiveId)) {
+    if (
+      !activeObjectiveId ||
+      !draft.content.objectives.some((entry) => entry.id === activeObjectiveId)
+    ) {
       setActiveObjectiveId(draft.content.objectives[0]?.id || null);
     }
   }, [activeObjectiveId, draft]);
@@ -466,10 +466,7 @@ export function AdminContentStudioSection({
     setDraft(nextDraft);
   }
 
-  function updateModuleField<K extends keyof EditorDraft>(
-    key: K,
-    value: EditorDraft[K]
-  ) {
+  function updateModuleField<K extends keyof EditorDraft>(key: K, value: EditorDraft[K]) {
     if (!draft) {
       return;
     }
@@ -527,7 +524,9 @@ export function AdminContentStudioSection({
       return;
     }
 
-    const nextObjectives = draft.content.objectives.filter((objective) => objective.id !== objectiveId);
+    const nextObjectives = draft.content.objectives.filter(
+      (objective) => objective.id !== objectiveId
+    );
     updateDraft({
       ...draft,
       content: {
@@ -583,7 +582,9 @@ export function AdminContentStudioSection({
     draft?.content.objectives.find((objective) => objective.id === activeObjectiveId) || null;
   const latestInspection = currentInspection(detailQuery.data, inspection);
   const modules = modulesQuery.data?.modules || [];
-  const isEditableDraft = Boolean(draft && (isNewDraft || detailQuery.data?.module.status === "draft"));
+  const isEditableDraft = Boolean(
+    draft && (isNewDraft || detailQuery.data?.module.status === "draft")
+  );
   const isBusy =
     validateMutation.isPending ||
     saveMutation.isPending ||
@@ -657,7 +658,9 @@ export function AdminContentStudioSection({
       <section className="card-panel admin-toolbar-panel admin-toolbar-panel-sticky">
         <div className="admin-toolbar admin-toolbar-dense">
           <div className="admin-toolbar-summary">
-            <span className={`chip ${moduleStatusTone(draft?.status || detailQuery.data?.module.status)}`}>
+            <span
+              className={`chip ${moduleStatusTone(draft?.status || detailQuery.data?.module.status)}`}
+            >
               {moduleStatusLabel(draft?.status || detailQuery.data?.module.status)}
             </span>
             <span className={`chip ${validationTone(latestInspection?.validation.valid)}`}>
@@ -711,7 +714,10 @@ export function AdminContentStudioSection({
         </div>
       </section>
 
-      {saveMutation.isError || publishMutation.isError || enableMutation.isError || disableMutation.isError ? (
+      {saveMutation.isError ||
+      publishMutation.isError ||
+      enableMutation.isError ||
+      disableMutation.isError ? (
         <section className="status-panel status-panel-error">
           <p className="status-label">Content Studio</p>
           <h2>Last mutation failed</h2>
@@ -920,7 +926,9 @@ export function AdminContentStudioSection({
                         >
                           <div className="admin-list-copy">
                             <strong>{objective.title || `Objective ${index + 1}`}</strong>
-                            <span>{objective.description || "No player-facing description yet."}</span>
+                            <span>
+                              {objective.description || "No player-facing description yet."}
+                            </span>
                             <span className="admin-item-meta">
                               {objective.id || "missing-id"} · {objectiveTypeLabel(objective.type)}
                             </span>
@@ -984,7 +992,9 @@ export function AdminContentStudioSection({
                               }
                               disabled={!isEditableDraft}
                             >
-                              <option value="control-continents">Control specific continents</option>
+                              <option value="control-continents">
+                                Control specific continents
+                              </option>
                               <option value="control-territory-count">
                                 Control minimum territory count
                               </option>
@@ -1042,7 +1052,9 @@ export function AdminContentStudioSection({
                             </p>
                             <div className="content-studio-chip-row">
                               {(selectedMap?.continents || []).map((continent) => {
-                                const selected = activeObjective.continentIds.includes(continent.id);
+                                const selected = activeObjective.continentIds.includes(
+                                  continent.id
+                                );
                                 return (
                                   <button
                                     key={continent.id}
@@ -1068,7 +1080,8 @@ export function AdminContentStudioSection({
                                   >
                                     <strong>{continent.name}</strong>
                                     <span>
-                                      {continent.territoryCount} territories · bonus {continent.bonus}
+                                      {continent.territoryCount} territories · bonus{" "}
+                                      {continent.bonus}
                                     </span>
                                   </button>
                                 );
@@ -1096,7 +1109,8 @@ export function AdminContentStudioSection({
                               disabled={!isEditableDraft}
                             />
                             <small>
-                              Must be between 1 and {selectedMap?.territoryCount || "the map limit"}.
+                              Must be between 1 and {selectedMap?.territoryCount || "the map limit"}
+                              .
                             </small>
                           </label>
                         )}

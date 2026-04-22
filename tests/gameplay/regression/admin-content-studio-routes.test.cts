@@ -141,22 +141,22 @@ function createVictoryDraft(
     id: overrides.id || "victory.world.na-asia",
     name: overrides.name || "North America and Asia",
     description:
-      overrides.description || "Author a world-classic objective that spans two strategic continents.",
+      overrides.description ||
+      "Author a world-classic objective that spans two strategic continents.",
     version: overrides.version || "1.0.0",
     moduleType: "victory-objectives",
     content: {
       mapId: overrides.mapId || "world-classic",
-      objectives:
-        overrides.objectives || [
-          {
-            id: "hold-na-asia",
-            title: "Hold North America and Asia",
-            description: "Control North America and Asia at the same time.",
-            enabled: true,
-            type: "control-continents",
-            continentIds: ["north_america", "asia"]
-          }
-        ]
+      objectives: overrides.objectives || [
+        {
+          id: "hold-na-asia",
+          title: "Hold North America and Asia",
+          description: "Control North America and Asia at the same time.",
+          enabled: true,
+          type: "control-continents",
+          continentIds: ["north_america", "asia"]
+        }
+      ]
     }
   };
 }
@@ -262,7 +262,9 @@ register("content studio routes expose CRUD, validation, and enable toggles", as
     const enabledOptionsResponse = await callApp(app, "GET", "/api/game/options");
     assert.equal(enabledOptionsResponse.statusCode, 200);
     assert.equal(
-      enabledOptionsResponse.payload.victoryRuleSets.some((entry: { id?: string }) => entry.id === draft.id),
+      enabledOptionsResponse.payload.victoryRuleSets.some(
+        (entry: { id?: string }) => entry.id === draft.id
+      ),
       true
     );
 
@@ -279,7 +281,9 @@ register("content studio routes expose CRUD, validation, and enable toggles", as
     const disabledOptionsResponse = await callApp(app, "GET", "/api/game/options");
     assert.equal(disabledOptionsResponse.statusCode, 200);
     assert.equal(
-      disabledOptionsResponse.payload.victoryRuleSets.some((entry: { id?: string }) => entry.id === draft.id),
+      disabledOptionsResponse.payload.victoryRuleSets.some(
+        (entry: { id?: string }) => entry.id === draft.id
+      ),
       false
     );
 
@@ -296,7 +300,9 @@ register("content studio routes expose CRUD, validation, and enable toggles", as
     const reenabledOptionsResponse = await callApp(app, "GET", "/api/game/options");
     assert.equal(reenabledOptionsResponse.statusCode, 200);
     assert.equal(
-      reenabledOptionsResponse.payload.victoryRuleSets.some((entry: { id?: string }) => entry.id === draft.id),
+      reenabledOptionsResponse.payload.victoryRuleSets.some(
+        (entry: { id?: string }) => entry.id === draft.id
+      ),
       true
     );
   });

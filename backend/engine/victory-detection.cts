@@ -282,7 +282,9 @@ function resolveAuthoredVictoryModule(
   state: GameState,
   victoryRuleSetId: string
 ): ActiveVictoryContext["authoredVictoryModule"] {
-  const parsed = authoredVictoryModuleRuntimeSchema.safeParse(state.gameConfig?.victoryObjectiveModule);
+  const parsed = authoredVictoryModuleRuntimeSchema.safeParse(
+    state.gameConfig?.victoryObjectiveModule
+  );
   if (!parsed.success) {
     return null;
   }
@@ -377,8 +379,7 @@ function evaluateAuthoredVictoryObjectives(context: ActiveVictoryContext): Victo
 
     return declareVictory(context.state, player, context.victoryRuleSet, {
       summary:
-        player.name +
-        ` completes the objective "${matchedObjective.title}" and wins the game.`,
+        player.name + ` completes the objective "${matchedObjective.title}" and wins the game.`,
       summaryKey: "game.log.victoryAuthoredObjective",
       summaryParams: {
         objectiveId: matchedObjective.id,

@@ -1099,23 +1099,21 @@ export const authoredVictoryObjectiveBaseSchema = objectSchema({
   type: z.enum(AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES)
 });
 
-export const authoredVictoryControlContinentsObjectiveSchema = authoredVictoryObjectiveBaseSchema.extend(
-  {
+export const authoredVictoryControlContinentsObjectiveSchema =
+  authoredVictoryObjectiveBaseSchema.extend({
     type: z.literal("control-continents"),
     continentIds: z.array(z.string())
-  }
-);
+  });
 
 export type AuthoredVictoryControlContinentsObjective = z.infer<
   typeof authoredVictoryControlContinentsObjectiveSchema
 >;
 
-export const authoredVictoryTerritoryCountObjectiveSchema = authoredVictoryObjectiveBaseSchema.extend(
-  {
+export const authoredVictoryTerritoryCountObjectiveSchema =
+  authoredVictoryObjectiveBaseSchema.extend({
     type: z.literal("control-territory-count"),
     territoryCount: z.number().int().nullable().optional()
-  }
-);
+  });
 
 export type AuthoredVictoryTerritoryCountObjective = z.infer<
   typeof authoredVictoryTerritoryCountObjectiveSchema
@@ -1194,9 +1192,7 @@ export const authoredVictoryRuntimeObjectiveSchema = z.discriminatedUnion("type"
   authoredVictoryRuntimeTerritoryCountObjectiveSchema
 ]);
 
-export type AuthoredVictoryRuntimeObjective = z.infer<
-  typeof authoredVictoryRuntimeObjectiveSchema
->;
+export type AuthoredVictoryRuntimeObjective = z.infer<typeof authoredVictoryRuntimeObjectiveSchema>;
 
 export const authoredVictoryModuleRuntimeSchema = objectSchema({
   id: z.string(),
@@ -1210,9 +1206,7 @@ export const authoredVictoryModuleRuntimeSchema = objectSchema({
   preview: authoredModulePreviewSchema
 });
 
-export type AuthoredVictoryModuleRuntime = z.infer<
-  typeof authoredVictoryModuleRuntimeSchema
->;
+export type AuthoredVictoryModuleRuntime = z.infer<typeof authoredVictoryModuleRuntimeSchema>;
 
 export const authoredModuleRuntimeSchema = authoredVictoryModuleRuntimeSchema;
 

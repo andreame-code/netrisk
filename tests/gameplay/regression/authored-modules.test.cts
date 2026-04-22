@@ -42,27 +42,30 @@ function createVictoryDraft(
     id: overrides.id || "victory.world.na-asia",
     name: overrides.name || "North America and Asia",
     description:
-      overrides.description || "Author a world-classic objective that spans two strategic continents.",
+      overrides.description ||
+      "Author a world-classic objective that spans two strategic continents.",
     version: overrides.version || "1.0.0",
     moduleType: "victory-objectives",
     content: {
       mapId: overrides.mapId || "world-classic",
-      objectives:
-        overrides.objectives || [
-          {
-            id: "hold-na-asia",
-            title: "Hold North America and Asia",
-            description: "Control North America and Asia at the same time.",
-            enabled: true,
-            type: "control-continents",
-            continentIds: ["north_america", "asia"]
-          }
-        ]
+      objectives: overrides.objectives || [
+        {
+          id: "hold-na-asia",
+          title: "Hold North America and Asia",
+          description: "Control North America and Asia at the same time.",
+          enabled: true,
+          type: "control-continents",
+          continentIds: ["north_america", "asia"]
+        }
+      ]
     }
   };
 }
 
-function toStoredModule(input: ReturnType<typeof createVictoryDraft>, overrides: Record<string, unknown> = {}) {
+function toStoredModule(
+  input: ReturnType<typeof createVictoryDraft>,
+  overrides: Record<string, unknown> = {}
+) {
   return {
     ...clone(input),
     status: "draft",
@@ -105,7 +108,10 @@ register("authored modules service filters stored modules and exposes editor opt
 
   const options = await service.listEditorOptions();
   assert.deepEqual(options.moduleTypes, ["victory-objectives"]);
-  assert.equal(options.maps.some((entry: { id?: string }) => entry.id === "world-classic"), true);
+  assert.equal(
+    options.maps.some((entry: { id?: string }) => entry.id === "world-classic"),
+    true
+  );
 
   const modules = await service.listModules();
   assert.deepEqual(
@@ -123,60 +129,70 @@ register("authored modules service filters stored modules and exposes editor opt
   assert.equal(await service.isModuleStored("missing-module"), false);
 });
 
-register("authored modules service validates drafts and manages the publish lifecycle", async () => {
-  const datastore = createMemoryDatastore();
-  const service = createAuthoredModulesService({ datastore });
+register(
+  "authored modules service validates drafts and manages the publish lifecycle",
+  async () => {
+    const datastore = createMemoryDatastore();
+    const service = createAuthoredModulesService({ datastore });
 
-  const invalidValidation = await service.validateDraft(
-    createVictoryDraft({
-      id: "victory.invalid-validation",
-      objectives: [
-        {
-          id: "duplicate-objective",
-          title: "Broken continent objective",
-          description: "Select the same and an invalid continent.",
-          enabled: true,
-          type: "control-continents",
-          continentIds: ["north_america", "north_america", "atlantis"]
-        },
-        {
-          id: "duplicate-objective",
-          title: "Broken territory objective",
-          description: "Set an impossible territory count.",
-          enabled: true,
-          type: "control-territory-count",
-          territoryCount: 0
-        }
-      ]
-    })
-  );
-  const invalidCodes = invalidValidation.validation.errors.map((entry: { code: string }) => entry.code);
-  assert.equal(invalidValidation.validation.valid, false);
-  assert.equal(invalidCodes.includes("duplicate-objective-id"), true);
-  assert.equal(invalidCodes.includes("duplicate-continent-id"), true);
-  assert.equal(invalidCodes.includes("invalid-continent-id"), true);
-  assert.equal(invalidCodes.includes("invalid-territory-count"), true);
+    const invalidValidation = await service.validateDraft(
+      createVictoryDraft({
+        id: "victory.invalid-validation",
+        objectives: [
+          {
+            id: "duplicate-objective",
+            title: "Broken continent objective",
+            description: "Select the same and an invalid continent.",
+            enabled: true,
+            type: "control-continents",
+            continentIds: ["north_america", "north_america", "atlantis"]
+          },
+          {
+            id: "duplicate-objective",
+            title: "Broken territory objective",
+            description: "Set an impossible territory count.",
+            enabled: true,
+            type: "control-territory-count",
+            territoryCount: 0
+          }
+        ]
+      })
+    );
+    const invalidCodes = invalidValidation.validation.errors.map(
+      (entry: { code: string }) => entry.code
+    );
+    assert.equal(invalidValidation.validation.valid, false);
+    assert.equal(invalidCodes.includes("duplicate-objective-id"), true);
+    assert.equal(invalidCodes.includes("duplicate-continent-id"), true);
+    assert.equal(invalidCodes.includes("invalid-continent-id"), true);
+    assert.equal(invalidCodes.includes("invalid-territory-count"), true);
 
-  const savedDraft = await service.saveDraft(createVictoryDraft({ id: "victory.lifecycle" }));
-  assert.equal(savedDraft.module.status, "draft");
+    const savedDraft = await service.saveDraft(createVictoryDraft({ id: "victory.lifecycle" }));
+    assert.equal(savedDraft.module.status, "draft");
 
-  const published = await service.publishModule("victory.lifecycle");
-  assert.equal(published.module.status, "published");
+    const published = await service.publishModule("victory.lifecycle");
+    assert.equal(published.module.status, "published");
 
-  const publishedRuleSets = await service.listPublishedVictoryRuleSets();
-  const publishedRule = publishedRuleSets.find((entry: { id: string }) => entry.id === "victory.lifecycle");
-  assert.ok(publishedRule);
-  assert.equal(publishedRule.source, "authored");
-  assert.equal(publishedRule.objectiveCount, 1);
+    const publishedRuleSets = await service.listPublishedVictoryRuleSets();
+    const publishedRule = publishedRuleSets.find(
+      (entry: { id: string }) => entry.id === "victory.lifecycle"
+    );
+    assert.ok(publishedRule);
+    assert.equal(publishedRule.source, "authored");
+    assert.equal(publishedRule.objectiveCount, 1);
 
-  const disabled = await service.disableModule("victory.lifecycle");
-  assert.equal(disabled.module.status, "disabled");
-  assert.equal(await service.findPublishedVictoryRuleSetRuntime("victory.lifecycle"), null);
+    const disabled = await service.disableModule("victory.lifecycle");
+    assert.equal(disabled.module.status, "disabled");
+    assert.equal(await service.findPublishedVictoryRuleSetRuntime("victory.lifecycle"), null);
 
-  const enabled = await service.enableModule("victory.lifecycle");
-  assert.equal(enabled.module.status, "published");
-  assert.equal((await service.findPublishedVictoryRuleSetRuntime("victory.lifecycle"))?.id, "victory.lifecycle");
-});
+    const enabled = await service.enableModule("victory.lifecycle");
+    assert.equal(enabled.module.status, "published");
+    assert.equal(
+      (await service.findPublishedVictoryRuleSetRuntime("victory.lifecycle"))?.id,
+      "victory.lifecycle"
+    );
+  }
+);
 
 register("authored modules service blocks published edits and invalid re-enabling", async () => {
   const datastore = createMemoryDatastore();
