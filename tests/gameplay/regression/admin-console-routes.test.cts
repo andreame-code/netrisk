@@ -236,6 +236,75 @@ register("admin console overview rejects anonymous and non-admin access", async 
   });
 });
 
+register("admin mutation routes reject anonymous and non-admin access", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const createGameResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      {
+        name: "Protected Admin Mutation Lobby"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createGameResponse.statusCode, 201);
+    const gameId = createGameResponse.payload.game.id;
+
+    const registered = await app.auth.registerPasswordUser("field_captain", "secret123");
+    assert.equal(registered.ok, true);
+    const login = await app.auth.loginWithPassword("field_captain", "secret123");
+    assert.equal(login.ok, true);
+
+    const anonymousGameActionResponse = await callApp(app, "POST", "/api/admin/games/action", {
+      gameId,
+      action: "close-lobby",
+      confirmation: gameId
+    });
+    assert.equal(anonymousGameActionResponse.statusCode, 401);
+    assert.equal(anonymousGameActionResponse.payload.code, "AUTH_REQUIRED");
+
+    const nonAdminGameActionResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      {
+        gameId,
+        action: "close-lobby",
+        confirmation: gameId
+      },
+      authHeaders(login.sessionToken)
+    );
+    assert.equal(nonAdminGameActionResponse.statusCode, 403);
+    assert.equal(nonAdminGameActionResponse.payload.code, "ADMIN_ONLY");
+
+    const nonAdminMaintenanceResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/maintenance",
+      {
+        action: "validate-all"
+      },
+      authHeaders(login.sessionToken)
+    );
+    assert.equal(nonAdminMaintenanceResponse.statusCode, 403);
+    assert.equal(nonAdminMaintenanceResponse.payload.code, "ADMIN_ONLY");
+
+    const nonAdminConfigResponse = await callApp(
+      app,
+      "PUT",
+      "/api/admin/config",
+      {
+        defaults: {
+          themeId: "ember"
+        }
+      },
+      authHeaders(login.sessionToken)
+    );
+    assert.equal(nonAdminConfigResponse.statusCode, 403);
+    assert.equal(nonAdminConfigResponse.payload.code, "ADMIN_ONLY");
+  });
+});
+
 register("admin console can promote a user and grant admin access", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const registered = await app.auth.registerPasswordUser("operations_guest", "secret123");
@@ -584,6 +653,81 @@ register("admin console can close a lobby with explicit confirmation", async () 
     assert.equal(closeResponse.payload.audit.action, "game.close-lobby");
   });
 });
+
+register(
+  "admin destructive actions require explicit confirmation and audit failed attempts",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const createGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Confirmation Required Lobby"
+        },
+        authHeaders(adminSessionToken)
+      );
+
+      assert.equal(createGameResponse.statusCode, 201);
+      const gameId = createGameResponse.payload.game.id;
+
+      const closeResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/games/action",
+        {
+          gameId,
+          action: "close-lobby"
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(closeResponse.statusCode, 400);
+
+      const gameDetailResponse = await callApp(
+        app,
+        "GET",
+        `/api/admin/games/${gameId}`,
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(gameDetailResponse.statusCode, 200);
+      assert.equal(gameDetailResponse.payload.game.phase, "lobby");
+
+      const cleanupResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/maintenance",
+        {
+          action: "cleanup-stale-lobbies"
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(cleanupResponse.statusCode, 400);
+
+      const auditResponse = await callApp(
+        app,
+        "GET",
+        "/api/admin/audit",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(auditResponse.statusCode, 200);
+      assert.equal(
+        auditResponse.payload.entries.some(
+          (entry: any) => entry.action === "game.close-lobby" && entry.result === "failure"
+        ),
+        true
+      );
+      assert.equal(
+        auditResponse.payload.entries.some(
+          (entry: any) =>
+            entry.action === "maintenance.cleanup-stale-lobbies" && entry.result === "failure"
+        ),
+        true
+      );
+    });
+  }
+);
 
 register(
   "admin repair preserves runtime dice rule ids while fixing the stored snapshot",
