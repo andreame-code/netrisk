@@ -393,9 +393,7 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (!activeGameId && initError) {
-      const error = initError;
-      initError = null;
-      throw error;
+      throw initError;
     }
   }
 
