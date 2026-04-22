@@ -52,7 +52,7 @@ Notes:
 
 ## Regression coverage
 
-- `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx` verifies admin route gating, non-admin navigation hiding, section loading, and core mutation UX wiring in the React shell
+- `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx` verifies admin route gating, non-admin navigation hiding, and overview-shell loading in the React shell
 - `tests/gameplay/regression/admin-console-routes.test.cts` verifies admin API protection for anonymous and non-admin callers, role mutation, destructive confirmation enforcement, failure audit logging, maintenance actions, and admin-default runtime preservation
 - `tests/gameplay/regression/vercel-routing-config.test.cts` verifies `/admin` and `/react/admin` continue to route correctly through the deployed rewrite layer
 

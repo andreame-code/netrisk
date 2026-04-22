@@ -71,13 +71,14 @@
 ## PR Status
 
 - branch: `codex/admin-console`
-- recent commits:
+- selected implementation commits in this PR:
   - `e994fc4` `Fix admin console regressions and CI stability`
   - `8547f38` `Honor admin piece set defaults in game setup`
   - `8744b84` `Decouple admin piece-set defaults from explicit rule sets`
   - `feb762b` `Add admin console permission and confirmation regressions`
 - draft PR: `#139` `[codex] Build admin console`
 - PR URL: `https://github.com/andreame-code/netrisk/pull/139`
+- exact branch head may move with later documentation-only refresh commits; use the PR commit list for the latest SHA
 - latest local validation on `feb762b`:
   - `npm run build:ts`: success
   - `node .tsbuild/scripts/run-gameplay-tests.cjs`: success
