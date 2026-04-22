@@ -1049,14 +1049,20 @@ export function AdminContentStudioSection({
                                     type="button"
                                     className={`content-studio-chip${selected ? " is-selected" : ""}`}
                                     onClick={() =>
-                                      updateObjective(activeObjective.id, (objective) => ({
-                                        ...objective,
-                                        continentIds: selected
-                                          ? objective.continentIds.filter(
-                                              (entry) => entry !== continent.id
-                                            )
-                                          : [...objective.continentIds, continent.id]
-                                      }))
+                                      updateObjective(activeObjective.id, (objective) => {
+                                        if (objective.type !== "control-continents") {
+                                          return objective;
+                                        }
+
+                                        return {
+                                          ...objective,
+                                          continentIds: selected
+                                            ? objective.continentIds.filter(
+                                                (entry) => entry !== continent.id
+                                              )
+                                            : [...objective.continentIds, continent.id]
+                                        };
+                                      })
                                     }
                                     disabled={!isEditableDraft}
                                   >
@@ -1078,10 +1084,14 @@ export function AdminContentStudioSection({
                               max={selectedMap?.territoryCount || 42}
                               value={String(activeObjective.territoryCount)}
                               onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => ({
-                                  ...objective,
-                                  territoryCount: Number(event.target.value || "0")
-                                }))
+                                updateObjective(activeObjective.id, (objective) =>
+                                  objective.type !== "control-territory-count"
+                                    ? objective
+                                    : {
+                                        ...objective,
+                                        territoryCount: Number(event.target.value || "0")
+                                      }
+                                )
                               }
                               disabled={!isEditableDraft}
                             />
