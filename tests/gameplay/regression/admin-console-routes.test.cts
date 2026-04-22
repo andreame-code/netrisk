@@ -1560,6 +1560,92 @@ register(
   }
 );
 
+register(
+  "admin config updates can repair stale stored defaults with a valid replacement payload",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      await app.datastore.setAppState("adminConsoleConfig", {
+        defaults: {
+          activeModuleIds: ["demo.missing-module"],
+          themeId: "ghost-theme"
+        },
+        maintenance: {
+          staleLobbyDays: 7,
+          auditLogLimit: 120
+        },
+        updatedAt: new Date().toISOString(),
+        updatedBy: {
+          id: "admin-1",
+          username: "admin_commander",
+          role: "admin"
+        }
+      });
+
+      const response = await callApp(
+        app,
+        "PUT",
+        "/api/admin/config",
+        {
+          defaults: {
+            themeId: "ember"
+          }
+        },
+        authHeaders(adminSessionToken)
+      );
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.payload.config.defaults.themeId, "ember");
+      assert.deepEqual(response.payload.config.defaults.activeModuleIds, ["core.base"]);
+      assert.equal(response.payload.audit.action, "config.update");
+    });
+  }
+);
+
+register(
+  "admin game actions still succeed when audit persistence fails after the mutation",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const createGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Audit Failure Close Lobby"
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(createGameResponse.statusCode, 201);
+
+      const originalSetAppState = app.datastore.setAppState.bind(app.datastore);
+      app.datastore.setAppState = (key: string, value: unknown) => {
+        if (key === "adminAuditLog") {
+          throw new Error("audit store unavailable");
+        }
+        return originalSetAppState(key, value);
+      };
+
+      const actionResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/games/action",
+        {
+          gameId: createGameResponse.payload.game.id,
+          action: "close-lobby",
+          confirmation: createGameResponse.payload.game.id
+        },
+        authHeaders(adminSessionToken)
+      );
+
+      assert.equal(actionResponse.statusCode, 200);
+      assert.equal(actionResponse.payload.game.phase, "finished");
+      assert.equal(actionResponse.payload.audit.action, "game.close-lobby");
+
+      const storedGame = await app.datastore.findGameById(createGameResponse.payload.game.id);
+      assert.equal(storedGame?.state?.phase, "finished");
+    });
+  }
+);
+
 register("stale lobby cleanup skips games that become active before mutation", async () => {
   const persistedStates: Array<{ gameId: string; phase: string }> = [];
   const broadcastStates: Array<{ gameId: string; phase: string }> = [];

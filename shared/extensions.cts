@@ -291,11 +291,25 @@ export function validateExtensionPackCatalog(
   };
 }
 
+function deepFreeze<T>(value: T): Readonly<T> {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) {
+    return value;
+  }
+
+  const nestedValues = Array.isArray(value)
+    ? value
+    : Object.values(value as Record<string, unknown>);
+  nestedValues.forEach((entry) => {
+    deepFreeze(entry);
+  });
+  return Object.freeze(value);
+}
+
 const extensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackManifest>>>(
   Object.fromEntries(
     validateExtensionPackCatalog(Object.values(rawExtensionPacks)).packs.map((pack) => [
       pack.id,
-      Object.freeze(pack)
+      deepFreeze(pack)
     ])
   ) as Record<string, Readonly<ExtensionPackManifest>>
 );
@@ -498,27 +512,22 @@ export function migrateGameConfigExtensions(
     runtimeDiceRuleSetId && !findDiceRuleSet(runtimeDiceRuleSetId) && runtimeDiceRuleSetName
       ? runtimeDiceRuleSetId
       : selection.diceRuleSetId;
-  const runtimeMapId =
-    typeof source.mapId === "string"
-      ? source.mapId.trim()
-      : typeof fallback.mapId === "string"
-        ? fallback.mapId.trim()
-        : "";
-  const runtimeMapName =
-    typeof source.mapName === "string"
-      ? source.mapName.trim()
-      : typeof fallback.mapName === "string"
-        ? fallback.mapName.trim()
-        : "";
-  const resolvedMapId =
-    runtimeMapId && !findSupportedMap(runtimeMapId) && runtimeMapName
-      ? runtimeMapId
+  const sourceMapId = typeof source.mapId === "string" ? source.mapId.trim() : "";
+  const fallbackMapId = typeof fallback.mapId === "string" ? fallback.mapId.trim() : "";
+  const runtimeMapId = sourceMapId || fallbackMapId;
+  const sourceMapName = typeof source.mapName === "string" ? source.mapName.trim() : "";
+  const fallbackMapName = typeof fallback.mapName === "string" ? fallback.mapName.trim() : "";
+  const resolvedMapId = sourceMapId
+    ? sourceMapId
+    : fallbackMapId && findSupportedMap(fallbackMapId)
+      ? fallbackMapId
       : selection.mapId;
+  const mapIdMigrated = Boolean(runtimeMapId) && resolvedMapId !== runtimeMapId;
   const mapName =
-    typeof source.mapName === "string"
-      ? source.mapName
-      : typeof fallback.mapName === "string"
-        ? fallback.mapName
+    !mapIdMigrated && sourceMapName
+      ? sourceMapName
+      : !mapIdMigrated && fallbackMapName && resolvedMapId === runtimeMapId
+        ? fallbackMapName
         : readableMapName(resolvedMapId);
   const moduleSelection = normalizeNetRiskGameModuleSelection({
     moduleSchemaVersion:
@@ -617,14 +626,16 @@ export function migrateGameStateExtensions<T extends ExtensionGameStateLike>(
     mapName: typeof state.mapName === "string" ? state.mapName : undefined,
     diceRuleSetId: typeof state.diceRuleSetId === "string" ? state.diceRuleSetId : undefined
   });
+  const hasSupportedMapId =
+    typeof state.mapId === "string" && Boolean(findSupportedMap(state.mapId));
 
   (state as T & { gameConfig: ExtensionAwareGameConfig }).gameConfig = migratedConfig;
 
-  if (typeof state.mapId !== "string" || !findSupportedMap(state.mapId)) {
+  if (!hasSupportedMapId) {
     (state as T & { mapId: string }).mapId = migratedConfig.mapId;
   }
 
-  if (typeof state.mapName !== "string" || !state.mapName) {
+  if (!hasSupportedMapId || typeof state.mapName !== "string" || !state.mapName) {
     (state as T & { mapName: string | null }).mapName =
       migratedConfig.mapName || readableMapName(migratedConfig.mapId);
   }

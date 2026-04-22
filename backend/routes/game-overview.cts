@@ -22,8 +22,6 @@ type GameOptionsResolvedCatalog = {
 };
 type GetResolvedCatalog = () => Promise<GameOptionsResolvedCatalog> | GameOptionsResolvedCatalog;
 type ListTurnTimeoutHoursOptions = () => unknown;
-type ListPlayerPieceSets = () => unknown;
-type ListContentPacks = () => unknown;
 type GetExtraGameOptions = () => Record<string, unknown> | Promise<Record<string, unknown>>;
 type SendLocalizedError = (
   res: import("node:http").ServerResponse,
@@ -71,7 +69,7 @@ async function handleGameOptionsRoute(
   getExtraGameOptions?: GetExtraGameOptions,
   sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
-  const resolvedCatalog = toPublicGameOptionsCatalog(await getResolvedCatalog());
+  const resolvedCatalog = (await getResolvedCatalog()) || {};
   const payload = {
     ruleSets: listEntries(resolvedCatalog.ruleSets),
     maps: listEntries(resolvedCatalog.maps),
@@ -79,7 +77,7 @@ async function handleGameOptionsRoute(
     victoryRuleSets: listEntries(resolvedCatalog.victoryRuleSets),
     themes: listEntries(resolvedCatalog.themes),
     pieceSkins: listEntries(resolvedCatalog.pieceSkins),
-    modules: listEntries(resolvedCatalog.modules),
+    modules: listEntries(resolvedCatalog.gameModules || resolvedCatalog.modules),
     enabledModules: listEntries(resolvedCatalog.enabledModules),
     gamePresets: listEntries(resolvedCatalog.gamePresets),
     contentProfiles: listEntries(resolvedCatalog.contentProfiles),
@@ -111,16 +109,6 @@ async function handleGameOptionsRoute(
 
 function listEntries<T>(entries: T[] | null | undefined): T[] {
   return Array.isArray(entries) ? entries : [];
-}
-
-function toPublicGameOptionsCatalog(
-  resolvedCatalog: GameOptionsResolvedCatalog | null | undefined
-): GameOptionsResolvedCatalog {
-  const catalog = resolvedCatalog || {};
-  return {
-    ...catalog,
-    modules: listEntries(catalog.gameModules || catalog.modules)
-  };
 }
 
 module.exports = {

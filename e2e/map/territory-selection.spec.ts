@@ -1,5 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { getReinforcementCount, registerLoginAndJoin, resetGame, uniqueUser } = require("../support/game-helpers");
+const {
+  getReinforcementCount,
+  registerLoginAndJoin,
+  resetGame,
+  uniqueUser
+} = require("../support/game-helpers");
 
 test("territory selection updates action controls for the current player", async ({ browser }) => {
   test.slow();
@@ -21,7 +26,10 @@ test("territory selection updates action controls for the current player", async
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
 
-  const myTerritory = firstPage.locator('[data-territory-id]').filter({ hasText: firstUser }).first();
+  const myTerritory = firstPage
+    .locator("[data-territory-id]")
+    .filter({ hasText: firstUser })
+    .first();
   await expect(myTerritory).toBeVisible();
 
   const territoryId = await myTerritory.getAttribute("data-territory-id");
@@ -58,10 +66,14 @@ test("reinforcement still works when local player identity is stale", async ({ b
     localStorage.setItem("frontline-player-id", "stale-player-id");
   });
   await firstPage.reload();
-  await expect(firstPage.getByTestId("current-player-indicator")).toContainText(firstUser);
+  await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
+  await expect(firstPage.locator("#identity-status")).toContainText(firstUser);
 
   const beforeReinforcementCount = await getReinforcementCount(firstPage);
-  const myTerritory = firstPage.locator('[data-territory-id]').filter({ hasText: firstUser }).first();
+  const myTerritory = firstPage
+    .locator("[data-territory-id]")
+    .filter({ hasText: firstUser })
+    .first();
   await expect(myTerritory).toBeVisible();
   await myTerritory.click();
 
@@ -74,7 +86,9 @@ test("reinforcement still works when local player identity is stale", async ({ b
   await firstPage.locator("#reinforce-amount").fill("1");
   await firstPage.locator("#reinforce-multi-button").click();
 
-  await expect.poll(async () => getReinforcementCount(firstPage)).toBe(Math.max(0, beforeReinforcementCount - 1));
+  await expect
+    .poll(async () => getReinforcementCount(firstPage))
+    .toBe(Math.max(0, beforeReinforcementCount - 1));
   expect(dialogMessages).not.toContain("Giocatore non valido.");
 
   await firstContext.close();
