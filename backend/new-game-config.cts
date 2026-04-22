@@ -269,6 +269,7 @@ export function validateNewGameConfig(
     random?: () => number;
     resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
     fallbackConfigInput?: NewGameConfigInput;
+    presentationDefaultsInput?: NewGameConfigInput;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
@@ -279,9 +280,13 @@ export function validateNewGameConfig(
   } = {}
 ): ValidatedNewGameConfig {
   const fallbackConfigInput = options.fallbackConfigInput || {};
+  const presentationDefaultsInput = options.presentationDefaultsInput || input;
   const hasExplicitContentPackId =
-    typeof input.contentPackId === "string" && input.contentPackId !== "";
-  const hasExplicitRuleSetId = typeof input.ruleSetId === "string" && input.ruleSetId !== "";
+    typeof presentationDefaultsInput.contentPackId === "string" &&
+    presentationDefaultsInput.contentPackId !== "";
+  const hasExplicitRuleSetId =
+    typeof presentationDefaultsInput.ruleSetId === "string" &&
+    presentationDefaultsInput.ruleSetId !== "";
   const canPreferFallbackPresentationDefaults = !hasExplicitContentPackId && !hasExplicitRuleSetId;
   const totalPlayersSource =
     input.totalPlayers == null ? fallbackConfigInput.totalPlayers : input.totalPlayers;
@@ -376,6 +381,7 @@ export function validateNewGameConfig(
 
   const requestedPieceSetId = String(
     input.pieceSetId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.pieceSetId : null) ||
       selectedContentPack.defaultPieceSetId ||
       fallbackConfigInput.pieceSetId ||
       DEFAULT_PLAYER_PIECE_SET_ID
@@ -692,6 +698,7 @@ export function createConfiguredInitialState(
         random: options.random,
         resolveRuleSet: options.resolveRuleSet,
         fallbackConfigInput: defaultConfigInput,
+        presentationDefaultsInput: configInput,
         resolveContentPack: options.resolveContentPack,
         resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,

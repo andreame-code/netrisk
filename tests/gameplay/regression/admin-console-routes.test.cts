@@ -350,6 +350,11 @@ register(
                 scope: "game",
                 hook: "setup.profile",
                 description: "Setup defaults profile"
+              },
+              {
+                kind: "player-piece-set",
+                scope: "game",
+                description: "Runtime player piece set"
               }
             ],
             entrypoints: {
@@ -366,6 +371,13 @@ register(
           },
           serverEntryPath: "server-module.cjs",
           serverEntrySource: `module.exports = {
+  playerPieceSets: [
+    {
+      id: "signal-palette",
+      name: "Signal Palette",
+      palette: ["#112233", "#445566", "#778899", "#99aabb"]
+    }
+  ],
   profiles: {
     content: [
       { id: "demo.defaults.content", defaults: { mapId: "world-classic" } }
@@ -404,6 +416,7 @@ register(
           {
             defaults: {
               activeModuleIds: ["demo.defaults"],
+              pieceSetId: "signal-palette",
               contentProfileId: "demo.defaults.content",
               gameplayProfileId: "demo.defaults.gameplay",
               uiProfileId: "demo.defaults.ui"
@@ -417,6 +430,7 @@ register(
           "core.base",
           "demo.defaults"
         ]);
+        assert.equal(configResponse.payload.config.defaults.pieceSetId, "signal-palette");
         assert.equal(
           configResponse.payload.config.defaults.contentProfileId,
           "demo.defaults.content"
@@ -453,6 +467,7 @@ register(
           "demo.defaults.gameplay"
         );
         assert.equal(createGameResponse.payload.state.gameConfig.uiProfileId, "demo.defaults.ui");
+        assert.equal(createGameResponse.payload.state.gameConfig.pieceSetId, "signal-palette");
         assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
         assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
         assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
