@@ -3428,6 +3428,69 @@ register("auth store migra password legacy in hash al login riuscito", async () 
   }
 });
 
+register("auth store non ricalcola o migra credenziali gia scrypt al login", async () => {
+  const crypto = require("crypto");
+  let updateUserCredentialsCalls = 0;
+  let createdSessionUserId: string | null = null;
+  const salt = "stable-salt";
+  const keylen = 64;
+  const storedUser = {
+    id: "scrypt-user",
+    username: "scrypt-user",
+    role: "user",
+    credentials: {
+      password: {
+        algorithm: "scrypt",
+        salt,
+        keylen,
+        hash: crypto.scryptSync("secret123", salt, keylen).toString("hex")
+      }
+    },
+    profile: {
+      displayName: "Scrypt User"
+    }
+  };
+
+  const auth = createAuthStore({
+    datastore: {
+      async listUsers() {
+        return [storedUser];
+      },
+      async findUserByUsername(username: string) {
+        return username === "scrypt-user" ? storedUser : null;
+      },
+      async findUserById(userId: string) {
+        return userId === "scrypt-user" ? storedUser : null;
+      },
+      async createUser() {
+        throw new Error("createUser should not be called during login.");
+      },
+      async updateUserCredentials() {
+        updateUserCredentialsCalls += 1;
+        return storedUser;
+      },
+      async updateUserProfile() {
+        throw new Error("updateUserProfile should not be called during login.");
+      },
+      createSession(token: string, userId: string, createdAt: number) {
+        void token;
+        void createdAt;
+        createdSessionUserId = userId;
+      },
+      async findSession() {
+        return null;
+      },
+      async deleteSession() {}
+    }
+  });
+
+  const login = await auth.loginWithPassword("scrypt-user", "secret123");
+
+  assert.equal(login.ok, true);
+  assert.equal(updateUserCredentialsCalls, 0);
+  assert.equal(createdSessionUserId, "scrypt-user");
+});
+
 register("auth store accetta email opzionale ma rifiuta password debole", async () => {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
@@ -6446,6 +6509,67 @@ register("API profile preferences theme persiste il tema utente validato", async
       body: JSON.stringify({ theme: "unknown-theme" })
     });
     assert.equal(invalidThemeResponse.status, 400);
+  });
+});
+
+register("API profile account aggiorna email e password del giocatore autenticato", async () => {
+  await withEnvironment({ AUTH_ENCRYPTION_KEY: "test-account-key" }, async () => {
+    await withServer(async (baseUrl) => {
+      const session = await createAuthenticatedSession(baseUrl, uniqueName("profile_account_api"));
+      const nextPassword = "UpdatedSecret!";
+
+      const updateResponse = await fetch(baseUrl + "/api/profile/account", {
+        method: "PUT",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({
+          currentPassword: TEST_PASSWORD,
+          email: "updated@example.com",
+          newPassword: nextPassword,
+          confirmNewPassword: nextPassword
+        })
+      });
+      assert.equal(updateResponse.status, 200);
+      const updatePayload: any = await readJson(updateResponse);
+      assert.equal(updatePayload.user.hasEmail, true);
+
+      const oldLoginResponse = await fetch(baseUrl + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: session.user.username,
+          password: TEST_PASSWORD
+        })
+      });
+      assert.equal(oldLoginResponse.status, 401);
+
+      const newLoginResponse = await fetch(baseUrl + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: session.user.username,
+          password: nextPassword
+        })
+      });
+      assert.equal(newLoginResponse.status, 200);
+      const newSessionToken = sessionTokenFromSetCookie(newLoginResponse.headers.get("set-cookie"));
+      const sessionResponse = await fetch(baseUrl + "/api/auth/session", {
+        headers: authHeaders(newSessionToken)
+      });
+      assert.equal(sessionResponse.status, 200);
+      const sessionPayload: any = await readJson(sessionResponse);
+      assert.equal(sessionPayload.user.hasEmail, true);
+
+      const invalidPasswordResponse = await fetch(baseUrl + "/api/profile/account", {
+        method: "PUT",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({
+          currentPassword: "wrong-password",
+          newPassword: "AnotherSecret!",
+          confirmNewPassword: "AnotherSecret!"
+        })
+      });
+      assert.equal(invalidPasswordResponse.status, 401);
+    });
   });
 });
 

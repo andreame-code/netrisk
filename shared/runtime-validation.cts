@@ -184,6 +184,22 @@ export const themePreferenceResponseSchema = objectSchema({
 
 export type ThemePreferenceResponse = z.infer<typeof themePreferenceResponseSchema>;
 
+export const accountSettingsRequestSchema = objectSchema({
+  currentPassword: z.string().min(1),
+  email: z.string().min(1).optional(),
+  newPassword: z.string().min(1).optional(),
+  confirmNewPassword: z.string().min(1).optional()
+});
+
+export type AccountSettingsRequest = z.infer<typeof accountSettingsRequestSchema>;
+
+export const accountSettingsResponseSchema = objectSchema({
+  ok: z.literal(true),
+  user: publicUserSchema
+});
+
+export type AccountSettingsResponse = z.infer<typeof accountSettingsResponseSchema>;
+
 export const logoutResponseSchema = objectSchema({
   ok: z.literal(true)
 });

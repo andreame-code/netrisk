@@ -1,5 +1,7 @@
 const assert = require("node:assert/strict");
 const {
+  accountSettingsRequestSchema,
+  accountSettingsResponseSchema,
   authSessionResponseSchema,
   gameIdRequestSchema,
   gameListResponseSchema,
@@ -18,6 +20,21 @@ const {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("shared runtime validation parses the auth/profile slice payloads", () => {
+  const accountSettingsRequest = parseWithSchema(accountSettingsRequestSchema, {
+    currentPassword: "secret123",
+    email: "commander@example.com",
+    newPassword: "newsecret",
+    confirmNewPassword: "newsecret"
+  });
+  const accountSettingsResponse = parseWithSchema(accountSettingsResponseSchema, {
+    ok: true,
+    user: {
+      id: "u-1",
+      username: "commander",
+      hasEmail: true,
+      preferences: { theme: "command" }
+    }
+  });
   const loginRequest = parseWithSchema(loginRequestSchema, {
     username: "commander",
     password: "secret123"
@@ -145,6 +162,8 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
     ]
   });
 
+  assert.equal(accountSettingsRequest.currentPassword, "secret123");
+  assert.equal(accountSettingsResponse.user.hasEmail, true);
   assert.equal(loginRequest.username, "commander");
   assert.equal(sessionResponse.user.username, "commander");
   assert.equal(profileResponse.profile.participatingGames.length, 1);

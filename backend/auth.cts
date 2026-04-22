@@ -98,6 +98,14 @@ interface RegistrationInput {
   email: string;
 }
 
+interface AccountSettingsInput {
+  userId: string;
+  currentPassword: string;
+  email?: string;
+  newPassword?: string;
+  confirmNewPassword?: string;
+}
+
 interface AuthFailure {
   ok: false;
   error: string;
@@ -242,6 +250,16 @@ function registrationInput(inputOrUsername: unknown, password?: unknown): Regist
   };
 }
 
+function accountSettingsInput(input: Record<string, unknown>): AccountSettingsInput {
+  return {
+    userId: String(input.userId || "").trim(),
+    currentPassword: String(input.currentPassword || ""),
+    email: normalizeEmail(input.email),
+    newPassword: String(input.newPassword || ""),
+    confirmNewPassword: String(input.confirmNewPassword || "")
+  };
+}
+
 function authFailure(
   error: string,
   errorKey: string,
@@ -286,6 +304,49 @@ function registrationValidationError(
   return null;
 }
 
+function accountSettingsValidationError(
+  input: AccountSettingsInput,
+  protector: ReturnType<typeof createFieldProtector>
+): AuthFailure | null {
+  const nextEmail = normalizeEmail(input.email);
+  const nextPassword = String(input.newPassword || "");
+  const confirmNewPassword = String(input.confirmNewPassword || "");
+  const hasEmailChange = Boolean(nextEmail);
+  const hasPasswordChange = Boolean(nextPassword || confirmNewPassword);
+
+  if (!hasEmailChange && !hasPasswordChange) {
+    return authFailure("Nessuna modifica da salvare.", "auth.account.noChanges");
+  }
+
+  if (hasEmailChange && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+    return authFailure("Email non valida.", "auth.register.invalidEmail");
+  }
+
+  if (hasEmailChange && !protector.isConfigured()) {
+    return authFailure(
+      "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.",
+      "auth.register.emailProtectionUnavailable"
+    );
+  }
+
+  if (hasPasswordChange && !nextPassword) {
+    return authFailure("Inserisci la nuova password.", "auth.account.newPasswordRequired");
+  }
+
+  if (nextPassword && nextPassword.length < 4) {
+    return authFailure(
+      "Password troppo corta: usa almeno 4 caratteri.",
+      "auth.register.shortPassword"
+    );
+  }
+
+  if (hasPasswordChange && nextPassword !== confirmNewPassword) {
+    return authFailure("Le password non coincidono.", "auth.account.passwordMismatch");
+  }
+
+  return null;
+}
+
 function maskEmail(email: string): string {
   const normalized = normalizeEmail(email);
   const parts = normalized.split("@");
@@ -318,6 +379,21 @@ function buildProfile(
   return profile;
 }
 
+function withUpdatedContactEmail(
+  profile: UserProfile | undefined,
+  email: string,
+  protector: ReturnType<typeof createFieldProtector>
+): UserProfile {
+  return {
+    ...(profile || {}),
+    contact: {
+      ...((profile?.contact as UserProfile["contact"] | undefined) || {}),
+      emailEncrypted: protector.encrypt(email),
+      emailHint: maskEmail(email)
+    }
+  };
+}
+
 function createAuthStore(options: AuthStoreOptions = {}) {
   const datastore = (options.datastore ||
     createAuthRepository({
@@ -339,6 +415,50 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   async function findByUsername(username: string) {
     const normalized = normalizeUsername(username);
     return normalized ? datastore.findUserByUsername(normalized) : null;
+  }
+
+  async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
+    if (!user) {
+      return null;
+    }
+
+    if (typeof user.credentials?.password?.secret === "string") {
+      if (user.credentials.password.secret !== String(password || "")) {
+        return null;
+      }
+
+      const migratedCredentials = {
+        ...(user.credentials || {}),
+        password: passwordRecord(password)
+      };
+
+      return (
+        (await datastore.updateUserCredentials(user.id, migratedCredentials)) || {
+          ...user,
+          credentials: migratedCredentials
+        }
+      );
+    }
+
+    if (!verifyPassword(user.credentials, password)) {
+      return null;
+    }
+
+    if (user.credentials?.password?.algorithm !== "scrypt") {
+      const migratedCredentials = {
+        ...(user.credentials || {}),
+        password: passwordRecord(password)
+      };
+
+      return (
+        (await datastore.updateUserCredentials(user.id, migratedCredentials)) || {
+          ...user,
+          credentials: migratedCredentials
+        }
+      );
+    }
+
+    return user;
   }
 
   async function registerPasswordUser(inputOrUsername: unknown, password?: unknown) {
@@ -368,35 +488,18 @@ function createAuthStore(options: AuthStoreOptions = {}) {
 
   async function loginWithPassword(username: string, password: unknown) {
     const user = await findByUsername(username);
-
-    if (typeof user?.credentials?.password?.secret === "string") {
-      // Password in chiaro (legacy): verifica e migra subito a scrypt
-      if (!user || user.credentials.password.secret !== String(password || "")) {
-        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
-      }
-      await datastore.updateUserCredentials(user.id, {
-        ...user.credentials,
-        password: passwordRecord(password)
-      });
-    } else {
-      if (!user || !verifyPassword(user.credentials, password)) {
-        return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
-      }
-      if (user.credentials?.password?.algorithm !== "scrypt") {
-        await datastore.updateUserCredentials(user.id, {
-          ...user.credentials,
-          password: passwordRecord(password)
-        });
-      }
+    const verifiedUser = await verifyUserPasswordAndMigrate(user, password);
+    if (!verifiedUser) {
+      return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
     }
 
     const sessionToken = crypto.randomBytes(16).toString("hex");
-    await datastore.createSession(sessionToken, user.id, Date.now());
+    await datastore.createSession(sessionToken, verifiedUser.id, Date.now());
 
     return {
       ok: true,
       sessionToken,
-      user: publicUser(user)
+      user: publicUser(verifiedUser)
     };
   }
 
@@ -453,6 +556,48 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return updatedUser ? publicUser(updatedUser) : null;
   }
 
+  async function updateUserAccountSettings(input: Record<string, unknown>) {
+    const normalizedInput = accountSettingsInput(input);
+    const validationError = accountSettingsValidationError(normalizedInput, protector);
+    if (validationError) {
+      return validationError;
+    }
+
+    const currentUser = await datastore.findUserById(normalizedInput.userId);
+    const verifiedUser = await verifyUserPasswordAndMigrate(
+      currentUser,
+      normalizedInput.currentPassword
+    );
+    if (!verifiedUser) {
+      return authFailure("Password attuale non valida.", "auth.account.currentPasswordInvalid");
+    }
+
+    let updatedUser = verifiedUser;
+    const nextEmail = normalizeEmail(normalizedInput.email);
+    const nextPassword = String(normalizedInput.newPassword || "");
+
+    if (nextEmail) {
+      updatedUser =
+        (await datastore.updateUserProfile(
+          updatedUser.id,
+          withUpdatedContactEmail(updatedUser.profile, nextEmail, protector)
+        )) || updatedUser;
+    }
+
+    if (nextPassword) {
+      updatedUser =
+        (await datastore.updateUserCredentials(updatedUser.id, {
+          ...(updatedUser.credentials || {}),
+          password: passwordRecord(nextPassword)
+        })) || updatedUser;
+    }
+
+    return {
+      ok: true,
+      user: publicUser(updatedUser)
+    };
+  }
+
   return {
     datastore,
     findByUsername,
@@ -462,6 +607,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     logout,
     publicUser,
     registerPasswordUser,
+    updateUserAccountSettings,
     updateUserProfile,
     updateUserThemePreference
   };

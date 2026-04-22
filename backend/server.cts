@@ -41,6 +41,7 @@ const {
 } = require("./http-response.cjs");
 const { broadcastEventPayload } = require("./event-broadcast.cjs");
 const {
+  handleAccountSettingsRoute,
   handleAuthSessionRoute,
   handleProfileRoute,
   handleThemePreferenceRoute
@@ -1245,6 +1246,26 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "PUT" && url.pathname === "/api/profile/preferences/theme") {
       const body = await parseBody(req);
       await handleThemePreferenceRoute(
+        {
+          req,
+          res,
+          requireAuth,
+          auth,
+          playerProfiles,
+          sendJson,
+          sendLocalizedError,
+          extractUserPreferences,
+          supportedSiteThemes,
+          resolveStoredTheme
+        },
+        body
+      );
+      return;
+    }
+
+    if (req.method === "PUT" && url.pathname === "/api/profile/account") {
+      const body = await parseBody(req);
+      await handleAccountSettingsRoute(
         {
           req,
           res,
