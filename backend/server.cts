@@ -213,9 +213,9 @@ function parseBody(req: Request): Promise<Record<string, any>> {
   });
 }
 
-  function deepClone<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value ?? null)) as T;
-  }
+function deepClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value ?? null)) as T;
+}
 
 function parseCookies(req: Request): CookieMap {
   const rawCookies = String(req.headers.cookie || "");

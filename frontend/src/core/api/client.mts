@@ -377,7 +377,9 @@ export function updateAdminConfig(
   });
 }
 
-export function getAdminMaintenanceReport(messages: ClientMessages): Promise<AdminMaintenanceReport> {
+export function getAdminMaintenanceReport(
+  messages: ClientMessages
+): Promise<AdminMaintenanceReport> {
   return requestJson({
     path: "/api/admin/maintenance",
     responseSchema: adminMaintenanceReportSchema,

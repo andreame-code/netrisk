@@ -131,9 +131,7 @@ type AdminConsoleOptions = {
   };
   gameSessions: {
     listGames(): Promise<GameSummary[]> | GameSummary[];
-    getGame(
-      gameId: string
-    ):
+    getGame(gameId: string):
       | Promise<{ game: GameSummary; state: GameState }>
       | {
           game: GameSummary;
@@ -149,10 +147,12 @@ type AdminConsoleOptions = {
   createConfiguredInitialState(
     configInput?: Record<string, unknown>,
     options?: Record<string, unknown>
-  ): Promise<{ state: GameState; config: Record<string, unknown> }> | {
-    state: GameState;
-    config: Record<string, unknown>;
-  };
+  ):
+    | Promise<{ state: GameState; config: Record<string, unknown> }>
+    | {
+        state: GameState;
+        config: Record<string, unknown>;
+      };
   moduleRuntime: {
     listInstalledModules(): Promise<Array<Record<string, unknown>>>;
     getEnabledModules(): Promise<Array<{ id: string; version: string }>>;
@@ -188,7 +188,10 @@ function publicUserRole(user: PublicUser | null | undefined): "admin" | "user" {
   return user?.role === "admin" ? "admin" : "user";
 }
 
-function toPublicUser(auth: AdminConsoleOptions["auth"], user: StoredUser | null | undefined): PublicUser {
+function toPublicUser(
+  auth: AdminConsoleOptions["auth"],
+  user: StoredUser | null | undefined
+): PublicUser {
   return (
     auth.publicUser(user) || {
       id: String(user?.id || ""),
@@ -197,7 +200,10 @@ function toPublicUser(auth: AdminConsoleOptions["auth"], user: StoredUser | null
       hasEmail: false,
       authMethods: [],
       preferences: {
-        theme: typeof user?.profile?.preferences?.theme === "string" ? user.profile.preferences.theme : null
+        theme:
+          typeof user?.profile?.preferences?.theme === "string"
+            ? user.profile.preferences.theme
+            : null
       }
     }
   );
@@ -226,7 +232,9 @@ function normalizeAuditEntries(raw: unknown): AdminAuditEntry[] {
   }
 
   return raw
-    .filter((entry): entry is Record<string, unknown> => Boolean(entry && typeof entry === "object"))
+    .filter((entry): entry is Record<string, unknown> =>
+      Boolean(entry && typeof entry === "object")
+    )
     .map((entry) => ({
       id: asNonEmptyString(entry.id) || crypto.randomBytes(8).toString("hex"),
       actorId: asNonEmptyString(entry.actorId) || "unknown",
@@ -343,9 +351,12 @@ function createAdminConsole(options: AdminConsoleOptions) {
   async function resolveAdminDefaults(input: Record<string, unknown> = {}) {
     const configured = await maybeResolve(
       options.createConfiguredInitialState(input, {
-        resolveContentPack: (contentPackId: string) => options.moduleRuntime.findContentPack(contentPackId),
-        resolveDiceRuleSet: (diceRuleSetId: string) => options.moduleRuntime.findDiceRuleSet(diceRuleSetId),
-        resolvePlayerPieceSet: (pieceSetId: string) => options.moduleRuntime.findPlayerPieceSet(pieceSetId),
+        resolveContentPack: (contentPackId: string) =>
+          options.moduleRuntime.findContentPack(contentPackId),
+        resolveDiceRuleSet: (diceRuleSetId: string) =>
+          options.moduleRuntime.findDiceRuleSet(diceRuleSetId),
+        resolvePlayerPieceSet: (pieceSetId: string) =>
+          options.moduleRuntime.findPlayerPieceSet(pieceSetId),
         resolveSupportedMap: (mapId: string) => options.moduleRuntime.findSupportedMap(mapId),
         resolveGamePreset: (presetInput: Record<string, unknown>) =>
           options.moduleRuntime.resolveGamePreset(presetInput),
@@ -358,11 +369,13 @@ function createAdminConsole(options: AdminConsoleOptions) {
 
     const gameConfig = ensureGameConfig(configured.state);
     const activeModules = asArray(gameConfig.activeModules as Array<{ id?: string }> | null);
-    const players = asArray(gameConfig.players as Array<Record<string, unknown>> | null).map((player) => ({
-      slot: typeof player.slot === "number" ? player.slot : null,
-      type: typeof player.type === "string" ? player.type : null,
-      name: typeof player.name === "string" ? player.name : null
-    }));
+    const players = asArray(gameConfig.players as Array<Record<string, unknown>> | null).map(
+      (player) => ({
+        slot: typeof player.slot === "number" ? player.slot : null,
+        type: typeof player.type === "string" ? player.type : null,
+        name: typeof player.name === "string" ? player.name : null
+      })
+    );
 
     return {
       totalPlayers:
@@ -580,10 +593,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
       });
     }
 
-    if (
-      summary.phase === "active" &&
-      (!Array.isArray(state.players) || !state.players.length)
-    ) {
+    if (summary.phase === "active" && (!Array.isArray(state.players) || !state.players.length)) {
       issues.push({
         code: "active-game-without-players",
         severity: "error",
@@ -707,7 +717,9 @@ function createAdminConsole(options: AdminConsoleOptions) {
     const summaries = asArray(users)
       .map((user) => {
         const participatingGames = asArray(rawGames).filter((game) => gameUsesUser(game, user));
-        const completedGames = participatingGames.filter((game) => game?.state?.phase === "finished");
+        const completedGames = participatingGames.filter(
+          (game) => game?.state?.phase === "finished"
+        );
         const wins = completedGames.filter((game) => gameWonByUser(game, user)).length;
         const publicUser = toPublicUser(options.auth, user);
         const role = publicUserRole(publicUser);
@@ -755,7 +767,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
-  async function updateUserRole(actor: PublicUser, input: { userId: string; role: "admin" | "user" }) {
+  async function updateUserRole(
+    actor: PublicUser,
+    input: { userId: string; role: "admin" | "user" }
+  ) {
     const targetUser = await maybeResolve(options.datastore.findUserById(input.userId));
     if (!targetUser) {
       throw new Error(`Utente "${input.userId}" non trovato.`);
@@ -1009,8 +1024,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
         invalidGames: enrichedGames.filter((game) => game.health === "error").length,
         orphanedModuleReferences: issues.filter(
           (issue) =>
-            issue.code === "orphaned-module-reference" ||
-            issue.code === "disabled-module-reference"
+            issue.code === "orphaned-module-reference" || issue.code === "disabled-module-reference"
         ).length
       },
       issues
@@ -1052,8 +1066,8 @@ function createAdminConsole(options: AdminConsoleOptions) {
 
     const config = await loadConfigRecord();
     const games = await listGames({ status: "lobby" });
-    const staleGames = games.games.filter((game) =>
-      game.stale || game.issues.some((issue) => issue.code === "stale-lobby")
+    const staleGames = games.games.filter(
+      (game) => game.stale || game.issues.some((issue) => issue.code === "stale-lobby")
     );
     const affectedGameIds: string[] = [];
 

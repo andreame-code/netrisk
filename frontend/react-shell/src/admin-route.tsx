@@ -43,14 +43,7 @@ import {
   adminUsersQueryKey
 } from "@react-shell/react-query";
 
-type AdminSection =
-  | "audit"
-  | "config"
-  | "games"
-  | "maintenance"
-  | "modules"
-  | "overview"
-  | "users";
+type AdminSection = "audit" | "config" | "games" | "maintenance" | "modules" | "overview" | "users";
 
 type AdminConfigFormState = {
   totalPlayers: string;
@@ -154,7 +147,9 @@ function filterProfilesForSelectedModules(
   );
 }
 
-function buildConfigFormState(config: AdminConfigResponse["config"] | null | undefined): AdminConfigFormState {
+function buildConfigFormState(
+  config: AdminConfigResponse["config"] | null | undefined
+): AdminConfigFormState {
   const defaults = config?.defaults || {};
 
   return {
@@ -369,7 +364,9 @@ function OverviewSection() {
             <ul className="admin-issue-list">
               {overview.issues.map((issue, index) => (
                 <li key={`${issue.code}:${issue.gameId || index}`} className="admin-issue-item">
-                  <span className={`status-pill ${statusTone(issue.severity)}`}>{issue.severity}</span>
+                  <span className={`status-pill ${statusTone(issue.severity)}`}>
+                    {issue.severity}
+                  </span>
                   <div>
                     <strong>{issue.code}</strong>
                     <p>{issue.message}</p>
@@ -398,7 +395,8 @@ function OverviewSection() {
                 <div>
                   <strong>{game.name}</strong>
                   <p>
-                    {game.phase} · {game.playerCount} players · updated {formatTimestamp(game.updatedAt)}
+                    {game.phase} · {game.playerCount} players · updated{" "}
+                    {formatTimestamp(game.updatedAt)}
                   </p>
                 </div>
                 <span className={`status-pill ${statusTone(game.health)}`}>{game.health}</span>
@@ -426,7 +424,9 @@ function OverviewSection() {
                     {entry.actorUsername} · {entry.targetType} · {formatTimestamp(entry.createdAt)}
                   </p>
                 </div>
-                <span className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}>
+                <span
+                  className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}
+                >
                   {entry.result}
                 </span>
               </li>
@@ -492,7 +492,11 @@ function UsersSection() {
         <div className="admin-toolbar">
           <label className="shell-field">
             <span>Search</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Username" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Username"
+            />
           </label>
           <label className="shell-field">
             <span>Role</span>
@@ -556,7 +560,9 @@ function UsersSection() {
                       </p>
                     </td>
                     <td>
-                      <span className={`status-pill ${user.role === "admin" ? "success" : "muted"}`}>
+                      <span
+                        className={`status-pill ${user.role === "admin" ? "success" : "muted"}`}
+                      >
                         {user.role}
                       </span>
                     </td>
@@ -680,7 +686,11 @@ function GamesSection() {
         <div className="admin-toolbar">
           <label className="shell-field">
             <span>Search</span>
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Game name or id" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Game name or id"
+            />
           </label>
           <label className="shell-field">
             <span>Status</span>
@@ -725,7 +735,8 @@ function GamesSection() {
                     <div>
                       <strong>{game.name}</strong>
                       <p>
-                        {game.phase} · {game.playerCount} players · {formatTimestamp(game.updatedAt)}
+                        {game.phase} · {game.playerCount} players ·{" "}
+                        {formatTimestamp(game.updatedAt)}
                       </p>
                     </div>
                     <span className={`status-pill ${statusTone(game.health)}`}>{game.health}</span>
@@ -785,8 +796,8 @@ function GamesSection() {
                   {detailsQuery.data.game.health}
                 </span>
                 <p>
-                  {detailsQuery.data.game.phase} · {detailsQuery.data.game.playerCount} players · issue
-                  count {detailsQuery.data.game.issueCount}
+                  {detailsQuery.data.game.phase} · {detailsQuery.data.game.playerCount} players ·
+                  issue count {detailsQuery.data.game.issueCount}
                 </p>
               </div>
 
@@ -890,7 +901,10 @@ function ConfigSection() {
     formState?.activeModuleIds || []
   );
 
-  function updateField<K extends keyof AdminConfigFormState>(key: K, value: AdminConfigFormState[K]) {
+  function updateField<K extends keyof AdminConfigFormState>(
+    key: K,
+    value: AdminConfigFormState[K]
+  ) {
     setFormState((current) => (current ? { ...current, [key]: value } : current));
   }
 
@@ -949,7 +963,9 @@ function ConfigSection() {
         <section className="status-panel">
           <p className="status-label">Config</p>
           <h2>Loading defaults</h2>
-          <p className="status-copy">Pulling the current config and the available runtime options.</p>
+          <p className="status-copy">
+            Pulling the current config and the available runtime options.
+          </p>
         </section>
       ) : configQuery.isError || optionsQuery.isError || !gameOptions ? (
         <section className="status-panel status-panel-error">
@@ -982,7 +998,10 @@ function ConfigSection() {
 
             <label className="shell-field">
               <span>Rule set</span>
-              <select value={formState.ruleSetId} onChange={(event) => updateField("ruleSetId", event.target.value)}>
+              <select
+                value={formState.ruleSetId}
+                onChange={(event) => updateField("ruleSetId", event.target.value)}
+              >
                 <option value="">System default</option>
                 {gameOptions.ruleSets.map((entry) => (
                   <option key={entry.id} value={entry.id}>
@@ -994,7 +1013,10 @@ function ConfigSection() {
 
             <label className="shell-field">
               <span>Map</span>
-              <select value={formState.mapId} onChange={(event) => updateField("mapId", event.target.value)}>
+              <select
+                value={formState.mapId}
+                onChange={(event) => updateField("mapId", event.target.value)}
+              >
                 <option value="">System default</option>
                 {gameOptions.maps.map((entry) => (
                   <option key={entry.id} value={entry.id}>
@@ -1051,7 +1073,10 @@ function ConfigSection() {
 
             <label className="shell-field">
               <span>Theme</span>
-              <select value={formState.themeId} onChange={(event) => updateField("themeId", event.target.value)}>
+              <select
+                value={formState.themeId}
+                onChange={(event) => updateField("themeId", event.target.value)}
+              >
                 <option value="">System default</option>
                 {gameOptions.themes.map((entry) => (
                   <option key={entry.id} value={entry.id}>
@@ -1239,8 +1264,10 @@ function MaintenanceSection() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: (input: { action: "validate-all" | "cleanup-stale-lobbies"; confirmation?: string | null }) =>
-      runAdminMaintenanceAction(input, requestMessages("admin maintenance action")),
+    mutationFn: (input: {
+      action: "validate-all" | "cleanup-stale-lobbies";
+      confirmation?: string | null;
+    }) => runAdminMaintenanceAction(input, requestMessages("admin maintenance action")),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: adminMaintenanceQueryKey() }),
@@ -1339,7 +1366,9 @@ function MaintenanceSection() {
               <ul className="admin-issue-list">
                 {reportQuery.data.issues.map((issue, index) => (
                   <li key={`${issue.code}:${issue.gameId || index}`} className="admin-issue-item">
-                    <span className={`status-pill ${statusTone(issue.severity)}`}>{issue.severity}</span>
+                    <span className={`status-pill ${statusTone(issue.severity)}`}>
+                      {issue.severity}
+                    </span>
                     <div>
                       <strong>{issue.code}</strong>
                       <p>{issue.message}</p>
@@ -1406,7 +1435,9 @@ function AuditSection() {
                       {entry.targetLabel ? ` · ${entry.targetLabel}` : ""}
                     </td>
                     <td>
-                      <span className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}>
+                      <span
+                        className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}
+                      >
                         {entry.result}
                       </span>
                     </td>

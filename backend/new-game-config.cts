@@ -279,7 +279,8 @@ export function validateNewGameConfig(
   } = {}
 ): ValidatedNewGameConfig {
   const fallbackConfigInput = options.fallbackConfigInput || {};
-  const hasExplicitContentPackId = typeof input.contentPackId === "string" && input.contentPackId !== "";
+  const hasExplicitContentPackId =
+    typeof input.contentPackId === "string" && input.contentPackId !== "";
   const hasExplicitRuleSetId = typeof input.ruleSetId === "string" && input.ruleSetId !== "";
   const canPreferFallbackPresentationDefaults = !hasExplicitContentPackId && !hasExplicitRuleSetId;
   const totalPlayersSource =
@@ -651,6 +652,18 @@ export function createConfiguredInitialState(
     ) => {
       const resolvedDefaults = resolvedSetup?.defaults || null;
       const hydratedConfigInput: NewGameConfigInput = {
+        ...(Array.isArray(moduleDefaultsResolutionInput.activeModuleIds)
+          ? { activeModuleIds: moduleDefaultsResolutionInput.activeModuleIds }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.contentProfileId === "string"
+          ? { contentProfileId: moduleDefaultsResolutionInput.contentProfileId }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.gameplayProfileId === "string"
+          ? { gameplayProfileId: moduleDefaultsResolutionInput.gameplayProfileId }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.uiProfileId === "string"
+          ? { uiProfileId: moduleDefaultsResolutionInput.uiProfileId }
+          : {}),
         ...(typeof resolvedDefaults?.contentPackId === "string"
           ? { contentPackId: resolvedDefaults.contentPackId }
           : {}),
