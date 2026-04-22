@@ -213,6 +213,40 @@ async function withModuleAdminApp(
   }
 }
 
+function createAuthoredVictoryDraft(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    mapId: string;
+    objectives: unknown[];
+  }> = {}
+) {
+  return {
+    id: overrides.id || "victory.na-asia",
+    name: overrides.name || "North America and Asia",
+    description:
+      overrides.description || "Author a custom victory objective that spans two continents.",
+    version: overrides.version || "1.0.0",
+    moduleType: "victory-objectives",
+    content: {
+      mapId: overrides.mapId || "classic-mini",
+      objectives:
+        overrides.objectives || [
+          {
+            id: "hold-na-asia",
+            title: "Hold North America and Asia",
+            description: "Control North America and Asia at the same time.",
+            enabled: true,
+            type: "control-continents",
+            continentIds: ["north_america", "asia"]
+          }
+        ]
+    }
+  };
+}
+
 register("admin console overview rejects anonymous and non-admin access", async () => {
   await withAdminApp(async ({ app }) => {
     const anonymousResponse = await callApp(app, "GET", "/api/admin/overview");
@@ -302,8 +336,161 @@ register("admin mutation routes reject anonymous and non-admin access", async ()
     );
     assert.equal(nonAdminConfigResponse.statusCode, 403);
     assert.equal(nonAdminConfigResponse.payload.code, "ADMIN_ONLY");
+
+    const authoredDraftPayload = createAuthoredVictoryDraft();
+    const anonymousAuthoredModuleResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/content-studio/modules",
+      authoredDraftPayload
+    );
+    assert.equal(anonymousAuthoredModuleResponse.statusCode, 401);
+    assert.equal(anonymousAuthoredModuleResponse.payload.code, "AUTH_REQUIRED");
+
+    const nonAdminAuthoredModuleResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/content-studio/modules",
+      authoredDraftPayload,
+      authHeaders(login.sessionToken)
+    );
+    assert.equal(nonAdminAuthoredModuleResponse.statusCode, 403);
+    assert.equal(nonAdminAuthoredModuleResponse.payload.code, "ADMIN_ONLY");
   });
 });
+
+register("content studio saves invalid drafts but blocks publishing until validation passes", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const draft = createAuthoredVictoryDraft({
+      id: "victory.too-many-territories",
+      objectives: [
+        {
+          id: "hold-999",
+          title: "Hold 999 territories",
+          description: "Impossible validation target for a classic map.",
+          enabled: true,
+          type: "control-territory-count",
+          territoryCount: 999
+        }
+      ]
+    });
+
+    const saveResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/content-studio/modules",
+      draft,
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(saveResponse.statusCode, 201);
+    assert.equal(saveResponse.payload.module.status, "draft");
+    assert.equal(saveResponse.payload.validation.valid, false);
+    assert.equal(
+      saveResponse.payload.validation.errors.some(
+        (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
+      ),
+      true
+    );
+
+    const publishResponse = await callApp(
+      app,
+      "POST",
+      `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/publish`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(publishResponse.statusCode, 400);
+    assert.equal(
+      publishResponse.payload.validation.errors.some(
+        (entry: { code?: string }) => entry.code === "territory-count-out-of-range"
+      ),
+      true
+    );
+  });
+});
+
+register(
+  "content studio publishes authored victory modules into runtime options and persists engine data",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const draft = createAuthoredVictoryDraft({
+        id: "victory.hold-four",
+        name: "Own four territories",
+        objectives: [
+          {
+            id: "hold-four",
+            title: "Own four territories",
+            description: "Reach four territories before any rival objective resolves.",
+            enabled: true,
+            type: "control-territory-count",
+            territoryCount: 4
+          }
+        ]
+      });
+
+      const saveResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/content-studio/modules",
+        draft,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(saveResponse.statusCode, 201);
+      assert.equal(saveResponse.payload.validation.valid, true);
+
+      const publishResponse = await callApp(
+        app,
+        "POST",
+        `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/publish`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(publishResponse.statusCode, 200);
+      assert.equal(publishResponse.payload.module.status, "published");
+
+      const optionsResponse = await callApp(app, "GET", "/api/game/options");
+      assert.equal(optionsResponse.statusCode, 200);
+      const authoredRule = optionsResponse.payload.victoryRuleSets.find(
+        (entry: { id?: string }) => entry.id === draft.id
+      );
+      assert.ok(authoredRule);
+      assert.equal(authoredRule.source, "authored");
+      assert.equal(authoredRule.mapId, "classic-mini");
+
+      const createGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Authored Objective Match",
+          mapId: "classic-mini",
+          victoryRuleSetId: draft.id
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(createGameResponse.statusCode, 201);
+      assert.equal(createGameResponse.payload.state.gameConfig.victoryRuleSetId, draft.id);
+      assert.equal(
+        createGameResponse.payload.state.gameConfig.victoryObjectiveModule.id,
+        draft.id
+      );
+      assert.equal(
+        createGameResponse.payload.state.gameConfig.victoryObjectiveModule.objectives[0].type,
+        "control-territory-count"
+      );
+
+      const disableResponse = await callApp(
+        app,
+        "POST",
+        `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/disable`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(disableResponse.statusCode, 400);
+      assert.match(String(disableResponse.payload.error || ""), /active game/i);
+    });
+  }
+);
 
 register("admin console can promote a user and grant admin access", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {

@@ -156,13 +156,25 @@ type AdminConsoleOptions = {
   moduleRuntime: {
     listInstalledModules(): Promise<Array<Record<string, unknown>>>;
     getEnabledModules(): Promise<Array<{ id: string; version: string }>>;
+    getModuleOptions(): Promise<Record<string, unknown>>;
     findSupportedMap(mapId: string): Record<string, unknown> | null;
     findContentPack(contentPackId: string): Record<string, unknown> | null;
     findPlayerPieceSet(pieceSetId: string): Record<string, unknown> | null;
     findDiceRuleSet(diceRuleSetId: string): Record<string, unknown> | null;
+    findVictoryRuleSet(victoryRuleSetId: string): Record<string, unknown> | null;
     resolveGamePreset(input?: Record<string, unknown>): Promise<Record<string, unknown> | null>;
     resolveGameConfigDefaults(input?: Record<string, unknown>): Promise<Record<string, unknown>>;
     resolveGameSelection(input?: Record<string, unknown>): Promise<Record<string, unknown>>;
+  };
+  authoredModules?: {
+    listEditorOptions(): Promise<unknown> | unknown;
+    listModules(): Promise<unknown> | unknown;
+    getModule(moduleId: string): Promise<unknown> | unknown;
+    validateDraft(input: unknown): Promise<unknown> | unknown;
+    saveDraft(input: unknown): Promise<unknown> | unknown;
+    publishModule(moduleId: string): Promise<unknown> | unknown;
+    disableModule(moduleId: string): Promise<unknown> | unknown;
+    enableModule(moduleId: string): Promise<unknown> | unknown;
   };
 };
 
@@ -348,7 +360,16 @@ async function maybeResolve<T>(value: Promise<T> | T): Promise<T> {
 }
 
 function createAdminConsole(options: AdminConsoleOptions) {
+  async function ensureRuntimeCatalogReady(): Promise<void> {
+    if (typeof options.moduleRuntime.getModuleOptions !== "function") {
+      return;
+    }
+
+    await maybeResolve(options.moduleRuntime.getModuleOptions());
+  }
+
   async function resolveAdminDefaults(input: Record<string, unknown> = {}) {
+    await ensureRuntimeCatalogReady();
     const configured = await maybeResolve(
       options.createConfiguredInitialState(input, {
         resolveContentPack: (contentPackId: string) =>
@@ -358,6 +379,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
         resolvePlayerPieceSet: (pieceSetId: string) =>
           options.moduleRuntime.findPlayerPieceSet(pieceSetId),
         resolveSupportedMap: (mapId: string) => options.moduleRuntime.findSupportedMap(mapId),
+        resolveVictoryRuleSet: (victoryRuleSetId: string) =>
+          typeof options.moduleRuntime.findVictoryRuleSet === "function"
+            ? options.moduleRuntime.findVictoryRuleSet(victoryRuleSetId)
+            : findVictoryRuleSet(victoryRuleSetId),
         resolveGamePreset: (presetInput: Record<string, unknown>) =>
           options.moduleRuntime.resolveGamePreset(presetInput),
         resolveGameModuleConfigDefaults: (selectionInput: Record<string, unknown>) =>
@@ -527,7 +552,12 @@ function createAdminConsole(options: AdminConsoleOptions) {
     const issues: AdminIssue[] = [];
     const state = rawGame?.state || ({ players: [], territories: {}, hands: {} } as GameState);
     const config = ensureGameConfig(state);
-    const installedModules = await options.moduleRuntime.listInstalledModules();
+    const [installedModules] = await Promise.all([
+      options.moduleRuntime.listInstalledModules(),
+      typeof options.moduleRuntime.getModuleOptions === "function"
+        ? maybeResolve(options.moduleRuntime.getModuleOptions())
+        : Promise.resolve(null)
+    ]);
     const installedById = new Map(
       installedModules.map((moduleEntry) => [String(moduleEntry.id || ""), moduleEntry])
     );
@@ -616,7 +646,13 @@ function createAdminConsole(options: AdminConsoleOptions) {
     }
 
     const victoryRuleSetId = asNonEmptyString(config.victoryRuleSetId);
-    if (victoryRuleSetId && !findVictoryRuleSet(victoryRuleSetId)) {
+    const resolvedVictoryRuleSet =
+      victoryRuleSetId && typeof options.moduleRuntime.findVictoryRuleSet === "function"
+        ? options.moduleRuntime.findVictoryRuleSet(victoryRuleSetId)
+        : victoryRuleSetId
+          ? findVictoryRuleSet(victoryRuleSetId)
+          : null;
+    if (victoryRuleSetId && !resolvedVictoryRuleSet) {
       issues.push({
         code: "missing-victory-rule-set",
         severity: "error",
@@ -1171,6 +1207,167 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
+  function requireAuthoredModules() {
+    if (!options.authoredModules) {
+      throw new Error("Authored module service is not configured.");
+    }
+
+    return options.authoredModules;
+  }
+
+  async function authoredModuleDisableGuard(moduleId: string): Promise<void> {
+    const config = await loadConfigRecord();
+    if (config.defaults.victoryRuleSetId === moduleId) {
+      throw new Error(`Victory objective module "${moduleId}" is still referenced by admin defaults.`);
+    }
+
+    const rawGames = asArray(await maybeResolve(options.gameSessions.datastore.listGames()));
+    const activeReference = rawGames.find((game) => {
+      if (String(game?.state?.phase || "") === "finished") {
+        return false;
+      }
+
+      const gameConfig = ensureGameConfig(game?.state || {});
+      return asNonEmptyString(gameConfig.victoryRuleSetId) === moduleId;
+    });
+
+    if (activeReference) {
+      throw new Error(`Victory objective module "${moduleId}" is still referenced by an active game.`);
+    }
+  }
+
+  async function getAuthoredModuleEditorOptions() {
+    await ensureRuntimeCatalogReady();
+    return maybeResolve(requireAuthoredModules().listEditorOptions());
+  }
+
+  async function listAuthoredModules() {
+    await ensureRuntimeCatalogReady();
+    return {
+      modules: await maybeResolve(requireAuthoredModules().listModules())
+    };
+  }
+
+  async function getAuthoredModule(moduleId: string) {
+    await ensureRuntimeCatalogReady();
+    return maybeResolve(requireAuthoredModules().getModule(moduleId));
+  }
+
+  async function validateAuthoredModuleDraft(input: unknown) {
+    await ensureRuntimeCatalogReady();
+    return maybeResolve(requireAuthoredModules().validateDraft(input));
+  }
+
+  async function saveAuthoredModuleDraft(actor: PublicUser, input: unknown) {
+    await ensureRuntimeCatalogReady();
+    const detail = (await maybeResolve(requireAuthoredModules().saveDraft(input))) as {
+      module: { id: string; name: string; moduleType?: string | null; status?: string | null };
+      validation: { valid?: boolean; errors?: unknown[]; warnings?: unknown[] };
+      preview?: Record<string, unknown>;
+      runtime?: Record<string, unknown>;
+    };
+    const audit = await recordAuditSafely({
+      actor,
+      action: "content-studio.module.save-draft",
+      targetType: "authored-module",
+      targetId: detail.module.id,
+      targetLabel: detail.module.name,
+      result: "success",
+      details: {
+        moduleType: detail.module.moduleType || null,
+        status: detail.module.status || "draft",
+        valid: Boolean(detail.validation?.valid),
+        errorCount: Array.isArray(detail.validation?.errors) ? detail.validation.errors.length : 0
+      }
+    });
+
+    return {
+      ok: true,
+      ...detail,
+      audit
+    };
+  }
+
+  async function publishAuthoredModule(actor: PublicUser, moduleId: string) {
+    await ensureRuntimeCatalogReady();
+    const detail = (await maybeResolve(requireAuthoredModules().publishModule(moduleId))) as {
+      module: { id: string; name: string; moduleType?: string | null; status?: string | null };
+      validation: { errors?: unknown[] };
+    };
+    const audit = await recordAuditSafely({
+      actor,
+      action: "content-studio.module.publish",
+      targetType: "authored-module",
+      targetId: detail.module.id,
+      targetLabel: detail.module.name,
+      result: "success",
+      details: {
+        moduleType: detail.module.moduleType || null,
+        status: detail.module.status || "published",
+        errorCount: Array.isArray(detail.validation?.errors) ? detail.validation.errors.length : 0
+      }
+    });
+
+    return {
+      ok: true,
+      ...detail,
+      audit
+    };
+  }
+
+  async function disableAuthoredModule(actor: PublicUser, moduleId: string) {
+    await ensureRuntimeCatalogReady();
+    await authoredModuleDisableGuard(moduleId);
+    const detail = (await maybeResolve(requireAuthoredModules().disableModule(moduleId))) as {
+      module: { id: string; name: string; moduleType?: string | null; status?: string | null };
+    };
+    const audit = await recordAuditSafely({
+      actor,
+      action: "content-studio.module.disable",
+      targetType: "authored-module",
+      targetId: detail.module.id,
+      targetLabel: detail.module.name,
+      result: "success",
+      details: {
+        moduleType: detail.module.moduleType || null,
+        status: detail.module.status || "disabled"
+      }
+    });
+
+    return {
+      ok: true,
+      ...detail,
+      audit
+    };
+  }
+
+  async function enableAuthoredModule(actor: PublicUser, moduleId: string) {
+    await ensureRuntimeCatalogReady();
+    const detail = (await maybeResolve(requireAuthoredModules().enableModule(moduleId))) as {
+      module: { id: string; name: string; moduleType?: string | null; status?: string | null };
+      validation: { errors?: unknown[] };
+    };
+    const audit = await recordAuditSafely({
+      actor,
+      action: "content-studio.module.enable",
+      targetType: "authored-module",
+      targetId: detail.module.id,
+      targetLabel: detail.module.name,
+      result: "success",
+      details: {
+        moduleType: detail.module.moduleType || null,
+        status: detail.module.status || "published",
+        errorCount: Array.isArray(detail.validation?.errors) ? detail.validation.errors.length : 0
+      }
+    });
+
+    return {
+      ok: true,
+      ...detail,
+      audit
+    };
+  }
+
   async function assertModuleSafeToDisable(moduleId: string) {
     const config = await loadConfigRecord();
     const activeModuleIds = asArray(config.defaults.activeModuleIds as string[] | undefined);
@@ -1191,6 +1388,14 @@ function createAdminConsole(options: AdminConsoleOptions) {
     getMaintenanceReport,
     runMaintenanceAction,
     listAudit,
+    getAuthoredModuleEditorOptions,
+    listAuthoredModules,
+    getAuthoredModule,
+    validateAuthoredModuleDraft,
+    saveAuthoredModuleDraft,
+    publishAuthoredModule,
+    disableAuthoredModule,
+    enableAuthoredModule,
     recordAudit,
     assertModuleSafeToDisable,
     loadConfigRecord

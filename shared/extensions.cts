@@ -30,6 +30,10 @@ export interface VictoryRuleSet {
   id: string;
   name: string;
   description: string;
+  source?: "built-in" | "authored";
+  mapId?: string | null;
+  objectiveCount?: number;
+  moduleType?: string | null;
 }
 
 export interface VisualTheme {
@@ -515,6 +519,20 @@ export function migrateGameConfigExtensions(
   const sourceMapId = typeof source.mapId === "string" ? source.mapId.trim() : "";
   const fallbackMapId = typeof fallback.mapId === "string" ? fallback.mapId.trim() : "";
   const runtimeMapId = sourceMapId || fallbackMapId;
+  const sourceVictoryRuleSetId =
+    typeof source.victoryRuleSetId === "string" ? source.victoryRuleSetId.trim() : "";
+  const authoredVictoryModuleId =
+    source.victoryObjectiveModule &&
+    typeof source.victoryObjectiveModule === "object" &&
+    typeof (source.victoryObjectiveModule as { id?: unknown }).id === "string"
+      ? String((source.victoryObjectiveModule as { id?: unknown }).id || "").trim()
+      : "";
+  const resolvedVictoryRuleSetId =
+    sourceVictoryRuleSetId &&
+    !findVictoryRuleSet(sourceVictoryRuleSetId) &&
+    authoredVictoryModuleId === sourceVictoryRuleSetId
+      ? sourceVictoryRuleSetId
+      : selection.victoryRuleSetId;
   const sourceMapName = typeof source.mapName === "string" ? source.mapName.trim() : "";
   const fallbackMapName = typeof fallback.mapName === "string" ? fallback.mapName.trim() : "";
   const resolvedMapId = sourceMapId
@@ -600,7 +618,7 @@ export function migrateGameConfigExtensions(
         : typeof fallback.diceRuleSetDefenderWinsTies === "boolean"
           ? fallback.diceRuleSetDefenderWinsTies
           : null,
-    victoryRuleSetId: selection.victoryRuleSetId,
+    victoryRuleSetId: resolvedVictoryRuleSetId,
     themeId: selection.themeId,
     pieceSkinId: selection.pieceSkinId,
     activeModules: moduleSelection.activeModules,
