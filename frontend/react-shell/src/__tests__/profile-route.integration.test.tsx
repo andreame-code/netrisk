@@ -468,6 +468,60 @@ describe("ProfileRoute integration", () => {
     expect(screen.getByLabelText("Conferma nuova password")).toHaveValue("");
   });
 
+  it("updates only the email from the profile page and trims the submitted value", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+    updateAccountSettingsMock.mockResolvedValue(createAccountSettingsResponse());
+
+    const { user } = renderReactShell("/react/profile");
+
+    await user.type(await screen.findByLabelText("Password attuale"), "secret123");
+    await user.type(screen.getByLabelText("Nuova email"), "  commander@example.com  ");
+    await user.click(screen.getByTestId("react-shell-profile-account-submit"));
+
+    expect(updateAccountSettingsMock).toHaveBeenCalledWith(
+      {
+        currentPassword: "secret123",
+        email: "commander@example.com"
+      },
+      expect.any(Object)
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
+        "Email aggiornata."
+      );
+    });
+  });
+
+  it("updates only the password from the profile page", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+    updateAccountSettingsMock.mockResolvedValue(createAccountSettingsResponse());
+
+    const { user } = renderReactShell("/react/profile");
+
+    await user.type(await screen.findByLabelText("Password attuale"), "secret123");
+    await user.type(screen.getByLabelText("Nuova password"), "newsecret");
+    await user.type(screen.getByLabelText("Conferma nuova password"), "newsecret");
+    await user.click(screen.getByTestId("react-shell-profile-account-submit"));
+
+    expect(updateAccountSettingsMock).toHaveBeenCalledWith(
+      {
+        currentPassword: "secret123",
+        newPassword: "newsecret",
+        confirmNewPassword: "newsecret"
+      },
+      expect.any(Object)
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
+        "Password aggiornata."
+      );
+    });
+  });
+
   it("shows an account update error when credential changes fail", async () => {
     getSessionMock.mockResolvedValue(createSession("ember"));
     getProfileMock.mockResolvedValue(createProfileResponse());
@@ -487,6 +541,41 @@ describe("ProfileRoute integration", () => {
     });
 
     expect(screen.getByLabelText("Password attuale")).toHaveValue("");
+  });
+
+  it("shows a client validation error and does not submit when no account changes are provided", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+
+    const { user } = renderReactShell("/react/profile");
+
+    await user.click(await screen.findByTestId("react-shell-profile-account-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
+        "Inserisci una nuova email o una nuova password."
+      );
+    });
+
+    expect(updateAccountSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("requires the current password before submitting account changes", async () => {
+    getSessionMock.mockResolvedValue(createSession("ember"));
+    getProfileMock.mockResolvedValue(createProfileResponse());
+
+    const { user } = renderReactShell("/react/profile");
+
+    await user.type(await screen.findByLabelText("Nuova email"), "commander@example.com");
+    await user.click(screen.getByTestId("react-shell-profile-account-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
+        "Inserisci la password attuale per confermare la modifica."
+      );
+    });
+
+    expect(updateAccountSettingsMock).not.toHaveBeenCalled();
   });
 
   it("renders admin module controls and toggles a module from the React profile", async () => {
