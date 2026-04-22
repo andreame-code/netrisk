@@ -187,7 +187,10 @@ describe("Admin route integration", () => {
     renderReactShell("/react/admin");
 
     expect(await screen.findByTestId("admin-route-page")).toBeInTheDocument();
+    expect(await screen.findByText("Operator console")).toBeInTheDocument();
     expect(await screen.findByText("Operational command center")).toBeInTheDocument();
+    expect(screen.getByText("Monitor")).toBeInTheDocument();
+    expect(screen.getByText("Operate")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
     expect(screen.getByText("Current server defaults")).toBeInTheDocument();
     expect(screen.getByText("Latest admin actions")).toBeInTheDocument();
