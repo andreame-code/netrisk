@@ -1153,6 +1153,10 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
       ? window.prompt(`Type ${selectedGameId} to confirm ${action}.`)
       : null;
 
+    if (destructive && !confirmation?.trim()) {
+      return;
+    }
+
     actionMutation.mutate({
       gameId: selectedGameId,
       action,
@@ -1511,6 +1515,14 @@ function ConfigSection({ frameContext }: { frameContext: AdminFrameContext }) {
   }
 
   function handleResetOverrides() {
+    const confirmed = window.confirm(
+      "Clear all configured default overrides from this form? Maintenance thresholds will stay as-is."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setFormState((current) => (current ? clearAdminConfigOverrides(current) : current));
   }
 
@@ -1954,6 +1966,11 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
 
   function handleCleanup() {
     const confirmation = window.prompt("Type cleanup-stale-lobbies to confirm cleanup.");
+
+    if (!confirmation?.trim()) {
+      return;
+    }
+
     actionMutation.mutate({
       action: "cleanup-stale-lobbies",
       confirmation
