@@ -1,8 +1,11 @@
 import type {
+  AccountSettingsUpdateResponseContract,
   ProfileResponseContract,
   AuthSessionResponseContract
 } from "../../shared/api-contracts.cjs";
 const {
+  accountSettingsRequestSchema,
+  accountSettingsResponseSchema,
   authSessionResponseSchema,
   profileResponseSchema,
   themePreferenceRequestSchema,
@@ -22,6 +25,13 @@ interface AccountRouteDeps {
   requireAuth: RequireAuthFn;
   auth: {
     publicUser(user: unknown): unknown;
+    updateUserAccountSettings(input: Record<string, unknown>): Promise<{
+      ok: boolean;
+      user?: unknown;
+      error?: string;
+      errorKey?: string;
+      errorParams?: Record<string, unknown>;
+    }>;
     updateUserThemePreference(
       userId: string,
       theme: string
@@ -145,6 +155,60 @@ export async function handleThemePreferenceRoute(
       preferences: user?.preferences || { theme: deps.resolveStoredTheme(parsedBody.theme) }
     },
     themePreferenceResponseSchema,
+    deps.sendJson,
+    deps.sendLocalizedError
+  );
+  return true;
+}
+
+export async function handleAccountSettingsRoute(
+  deps: AccountRouteDeps,
+  body: Record<string, unknown>
+): Promise<boolean> {
+  const authContext = await deps.requireAuth(deps.req, deps.res, body);
+  if (!authContext) {
+    return true;
+  }
+
+  const parsedBody = parseRequestOrSendError(
+    deps.res,
+    body,
+    accountSettingsRequestSchema,
+    deps.sendLocalizedError
+  );
+  if (!parsedBody) {
+    return true;
+  }
+
+  const result = await deps.auth.updateUserAccountSettings({
+    userId: authContext.user.id,
+    currentPassword: parsedBody.currentPassword,
+    ...(parsedBody.email ? { email: parsedBody.email } : {}),
+    ...(parsedBody.newPassword ? { newPassword: parsedBody.newPassword } : {}),
+    ...(parsedBody.confirmNewPassword ? { confirmNewPassword: parsedBody.confirmNewPassword } : {})
+  });
+
+  if (!result.ok || !result.user) {
+    deps.sendLocalizedError(
+      deps.res,
+      result.errorKey === "auth.account.currentPasswordInvalid" ? 401 : 400,
+      result as Record<string, unknown>,
+      result.error || "Aggiornamento account non riuscito.",
+      result.errorKey || "profile.account.status.saveFailed",
+      result.errorParams
+    );
+    return true;
+  }
+
+  const payload: AccountSettingsUpdateResponseContract = {
+    ok: true,
+    user: result.user as AccountSettingsUpdateResponseContract["user"]
+  };
+  sendValidatedJson(
+    deps.res,
+    200,
+    payload,
+    accountSettingsResponseSchema,
     deps.sendJson,
     deps.sendLocalizedError
   );

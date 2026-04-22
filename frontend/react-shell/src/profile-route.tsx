@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getProfile, updateThemePreference } from "@frontend-core/api/client.mts";
+import {
+  getProfile,
+  updateAccountSettings,
+  updateThemePreference
+} from "@frontend-core/api/client.mts";
 import { normalizeTheme } from "@frontend-core/contracts.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
@@ -66,6 +70,42 @@ function profileRankTitle(winRate: number | null | undefined): string {
   return t("profile.ranks.recruit");
 }
 
+function validateAccountSettingsInput(input: {
+  currentPassword: string;
+  email: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}): string | null {
+  const trimmedEmail = input.email.trim();
+  const hasPasswordChange = Boolean(input.newPassword || input.confirmNewPassword);
+
+  if (!trimmedEmail && !hasPasswordChange) {
+    return t("profile.account.errors.noChanges");
+  }
+
+  if (!input.currentPassword) {
+    return t("profile.account.errors.currentPasswordRequired");
+  }
+
+  if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return t("register.errors.invalidEmail");
+  }
+
+  if (hasPasswordChange && !input.newPassword) {
+    return t("auth.account.newPasswordRequired");
+  }
+
+  if (input.newPassword && input.newPassword.length < 4) {
+    return t("register.errors.shortPassword");
+  }
+
+  if (hasPasswordChange && input.newPassword !== input.confirmNewPassword) {
+    return t("register.errors.passwordMismatch");
+  }
+
+  return null;
+}
+
 export function ProfileRoute() {
   const { state, refresh } = useAuth();
   const queryClient = useQueryClient();
@@ -76,6 +116,14 @@ export function ProfileRoute() {
     "idle"
   );
   const [themeErrorMessage, setThemeErrorMessage] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [accountFeedbackMode, setAccountFeedbackMode] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [accountFeedbackMessage, setAccountFeedbackMessage] = useState("");
 
   useEffect(() => {
     setSelectedTheme(committedTheme);
@@ -103,6 +151,18 @@ export function ProfileRoute() {
         fallbackMessage: t("profile.preferences.status.saveFailed", {
           theme: themeLabel(theme)
         })
+      })
+  });
+  const accountSettingsMutation = useMutation({
+    mutationFn: (request: {
+      currentPassword: string;
+      email?: string;
+      newPassword?: string;
+      confirmNewPassword?: string;
+    }) =>
+      updateAccountSettings(request, {
+        errorMessage: t("errors.requestFailed"),
+        fallbackMessage: t("profile.account.status.saveFailed")
       })
   });
 
@@ -157,6 +217,62 @@ export function ProfileRoute() {
     }
   }
 
+  async function handleAccountSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+
+    if (!currentUser) {
+      return;
+    }
+
+    const trimmedEmail = accountEmail.trim();
+    const validationError = validateAccountSettingsInput({
+      currentPassword,
+      email: trimmedEmail,
+      newPassword,
+      confirmNewPassword
+    });
+    if (validationError) {
+      setAccountFeedbackMode("error");
+      setAccountFeedbackMessage(validationError);
+      return;
+    }
+
+    setAccountFeedbackMode("saving");
+    setAccountFeedbackMessage("");
+
+    try {
+      const response = await accountSettingsMutation.mutateAsync({
+        currentPassword,
+        ...(trimmedEmail ? { email: trimmedEmail } : {}),
+        ...(newPassword ? { newPassword } : {}),
+        ...(confirmNewPassword ? { confirmNewPassword } : {})
+      });
+      const syncedUser = {
+        ...currentUser,
+        ...response.user,
+        preferences: response.user.preferences || currentUser.preferences
+      };
+
+      updateAuthenticatedUser(syncedUser);
+      setAccountEmail("");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setAccountFeedbackMode("saved");
+      setAccountFeedbackMessage(
+        trimmedEmail && newPassword
+          ? t("profile.account.status.savedAll")
+          : trimmedEmail
+            ? t("profile.account.status.savedEmail")
+            : t("profile.account.status.savedPassword")
+      );
+    } catch (error) {
+      setCurrentPassword("");
+      setAccountFeedbackMode("error");
+      setAccountFeedbackMessage(messageFromError(error, t("profile.account.status.saveFailed")));
+    }
+  }
+
   const themeStatusMessage =
     themeFeedbackMode === "saving"
       ? t("profile.preferences.status.saving")
@@ -165,6 +281,14 @@ export function ProfileRoute() {
         : themeFeedbackMode === "error"
           ? themeErrorMessage
           : t("profile.preferences.status.current", { theme: themeLabel(committedTheme) });
+  const accountStatusMessage =
+    accountFeedbackMode === "saving"
+      ? t("profile.account.status.saving")
+      : accountFeedbackMode === "saved" || accountFeedbackMode === "error"
+        ? accountFeedbackMessage
+        : currentUser?.hasEmail
+          ? t("profile.account.emailStatus.configured")
+          : t("profile.account.emailStatus.missing");
 
   const profile = profileQuery.data?.profile || null;
   const activeGames = Array.isArray(profile?.participatingGames) ? profile.participatingGames : [];
@@ -376,6 +500,104 @@ export function ProfileRoute() {
               {themeStatusMessage}
             </p>
           </div>
+        </section>
+
+        <section
+          id="profile-account-settings"
+          className="profile-preferences profile-note-card"
+          hidden={!currentUser}
+        >
+          <div className="profile-preferences-head">
+            <div>
+              <p className="eyebrow profile-section-eyebrow">{t("profile.account.eyebrow")}</p>
+              <h3>{t("profile.account.heading")}</h3>
+            </div>
+          </div>
+          <p className="stage-copy">{t("profile.account.copy")}</p>
+          <form className="shell-form" onSubmit={(event) => void handleAccountSubmit(event)}>
+            <div className="profile-theme-row">
+              <label className="profile-theme-field" htmlFor="profile-account-current-password">
+                <span className="profile-theme-label">
+                  {t("profile.account.currentPassword.label")}
+                </span>
+                <input
+                  id="profile-account-current-password"
+                  type="password"
+                  name="current-password"
+                  autoComplete="current-password"
+                  placeholder={t("profile.account.currentPassword.placeholder")}
+                  value={currentPassword}
+                  disabled={accountSettingsMutation.isPending || !currentUser}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
+              </label>
+              <label className="profile-theme-field" htmlFor="profile-account-email">
+                <span className="profile-theme-label">{t("profile.account.email.label")}</span>
+                <input
+                  id="profile-account-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  maxLength={128}
+                  placeholder={t("profile.account.email.placeholder")}
+                  value={accountEmail}
+                  disabled={accountSettingsMutation.isPending || !currentUser}
+                  onChange={(event) => setAccountEmail(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="profile-theme-row">
+              <label className="profile-theme-field" htmlFor="profile-account-new-password">
+                <span className="profile-theme-label">
+                  {t("profile.account.newPassword.label")}
+                </span>
+                <input
+                  id="profile-account-new-password"
+                  type="password"
+                  name="new-password"
+                  autoComplete="new-password"
+                  placeholder={t("profile.account.newPassword.placeholder")}
+                  value={newPassword}
+                  disabled={accountSettingsMutation.isPending || !currentUser}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                />
+              </label>
+              <label className="profile-theme-field" htmlFor="profile-account-confirm-password">
+                <span className="profile-theme-label">
+                  {t("profile.account.confirmPassword.label")}
+                </span>
+                <input
+                  id="profile-account-confirm-password"
+                  type="password"
+                  name="confirm-new-password"
+                  autoComplete="new-password"
+                  placeholder={t("profile.account.confirmPassword.placeholder")}
+                  value={confirmNewPassword}
+                  disabled={accountSettingsMutation.isPending || !currentUser}
+                  onChange={(event) => setConfirmNewPassword(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="shell-actions">
+              <button
+                type="submit"
+                className="refresh-button"
+                disabled={accountSettingsMutation.isPending || !currentUser}
+                data-testid="react-shell-profile-account-submit"
+              >
+                {t("profile.account.submit")}
+              </button>
+            </div>
+          </form>
+          <p
+            id="profile-account-status"
+            className={`profile-theme-status${accountFeedbackMode === "error" ? " is-error" : ""}`}
+            data-testid="react-shell-profile-account-status"
+          >
+            {accountStatusMessage}
+          </p>
         </section>
 
         <div id="profile-modules" hidden={currentUser?.role !== "admin"}>

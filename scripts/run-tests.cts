@@ -6449,6 +6449,67 @@ register("API profile preferences theme persiste il tema utente validato", async
   });
 });
 
+register("API profile account aggiorna email e password del giocatore autenticato", async () => {
+  await withEnvironment({ AUTH_ENCRYPTION_KEY: "test-account-key" }, async () => {
+    await withServer(async (baseUrl) => {
+      const session = await createAuthenticatedSession(baseUrl, uniqueName("profile_account_api"));
+      const nextPassword = "UpdatedSecret!";
+
+      const updateResponse = await fetch(baseUrl + "/api/profile/account", {
+        method: "PUT",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({
+          currentPassword: TEST_PASSWORD,
+          email: "updated@example.com",
+          newPassword: nextPassword,
+          confirmNewPassword: nextPassword
+        })
+      });
+      assert.equal(updateResponse.status, 200);
+      const updatePayload: any = await readJson(updateResponse);
+      assert.equal(updatePayload.user.hasEmail, true);
+
+      const oldLoginResponse = await fetch(baseUrl + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: session.user.username,
+          password: TEST_PASSWORD
+        })
+      });
+      assert.equal(oldLoginResponse.status, 401);
+
+      const newLoginResponse = await fetch(baseUrl + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: session.user.username,
+          password: nextPassword
+        })
+      });
+      assert.equal(newLoginResponse.status, 200);
+      const newSessionToken = sessionTokenFromSetCookie(newLoginResponse.headers.get("set-cookie"));
+      const sessionResponse = await fetch(baseUrl + "/api/auth/session", {
+        headers: authHeaders(newSessionToken)
+      });
+      assert.equal(sessionResponse.status, 200);
+      const sessionPayload: any = await readJson(sessionResponse);
+      assert.equal(sessionPayload.user.hasEmail, true);
+
+      const invalidPasswordResponse = await fetch(baseUrl + "/api/profile/account", {
+        method: "PUT",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({
+          currentPassword: "wrong-password",
+          newPassword: "AnotherSecret!",
+          confirmNewPassword: "AnotherSecret!"
+        })
+      });
+      assert.equal(invalidPasswordResponse.status, 401);
+    });
+  });
+});
+
 register("GET /api/state risponde con lo stato pubblico", async () => {
   await withServer(async (baseUrl, context) => {
     const state = createInitialState();

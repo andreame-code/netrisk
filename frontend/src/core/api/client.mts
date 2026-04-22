@@ -1,4 +1,6 @@
 import {
+  accountSettingsRequestSchema,
+  accountSettingsResponseSchema,
   adminAuditResponseSchema,
   adminConfigResponseSchema,
   adminConfigUpdateRequestSchema,
@@ -38,6 +40,8 @@ import {
   tradeCardsRequestSchema
 } from "../../generated/shared-runtime-validation.mjs";
 import type {
+  AccountSettingsRequest,
+  AccountSettingsResponse,
   AdminAuditResponse,
   AdminConfigResponse,
   AdminConfigUpdateRequest,
@@ -241,6 +245,22 @@ export function updateThemePreference(
     requestSchemaName: "ThemePreferenceRequest",
     responseSchema: themePreferenceResponseSchema,
     responseSchemaName: "ThemePreferenceResponse",
+    ...messages
+  });
+}
+
+export function updateAccountSettings(
+  request: AccountSettingsRequest,
+  messages: ClientMessages
+): Promise<AccountSettingsResponse> {
+  return requestJson({
+    path: "/api/profile/account",
+    method: "PUT",
+    body: request,
+    requestSchema: accountSettingsRequestSchema,
+    requestSchemaName: "AccountSettingsRequest",
+    responseSchema: accountSettingsResponseSchema,
+    responseSchemaName: "AccountSettingsResponse",
     ...messages
   });
 }

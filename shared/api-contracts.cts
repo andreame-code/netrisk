@@ -194,6 +194,18 @@ export interface AuthSessionResponseContract {
   user: PublicUserContract;
 }
 
+export interface AccountSettingsUpdateRequestContract {
+  currentPassword: string;
+  email?: string;
+  newPassword?: string;
+  confirmNewPassword?: string;
+}
+
+export interface AccountSettingsUpdateResponseContract {
+  ok: true;
+  user: PublicUserContract;
+}
+
 export interface ParticipatingGameLobbyContract {
   playerName: string;
   statusLabel: string;

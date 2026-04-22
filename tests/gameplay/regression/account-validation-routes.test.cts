@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {
+  handleAccountSettingsRoute,
   handleAuthSessionRoute,
   handleProfileRoute,
   handleThemePreferenceRoute
@@ -56,6 +57,19 @@ function createAccountDeps(overrides = {}) {
           id: userId,
           username: "commander",
           preferences: { theme }
+        };
+      },
+      async updateUserAccountSettings() {
+        return {
+          ok: true,
+          user: {
+            id: "u-1",
+            username: "commander",
+            role: "user",
+            authMethods: ["password"],
+            hasEmail: true,
+            preferences: { theme: "command" }
+          }
         };
       }
     },
@@ -160,6 +174,30 @@ register(
 );
 
 register(
+  "handleAccountSettingsRoute rejects invalid inbound account payloads with mapped validation errors",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
+
+    await handleAccountSettingsRoute(
+      createAccountDeps({
+        sendLocalizedError(...args: LocalizedErrorCall) {
+          localizedErrorCall = args;
+        }
+      }),
+      { currentPassword: 3 }
+    );
+
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 400);
+    assert.equal(call[6], "REQUEST_VALIDATION_FAILED");
+    assert.deepEqual(
+      call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+      ["currentPassword"]
+    );
+  }
+);
+
+register(
   "handleThemePreferenceRoute rejects invalid inbound theme payloads with mapped validation errors",
   async () => {
     let localizedErrorCall: LocalizedErrorCall | null = null;
@@ -238,6 +276,59 @@ register("handleProfileRoute traps invalid outbound profile payloads", async () 
   assert.deepEqual(
     call[7].validationErrors.map((entry: ValidationIssue) => entry.path).slice(0, 2),
     ["profile.playerName", "profile.gamesPlayed"]
+  );
+});
+
+register("handleAccountSettingsRoute traps invalid outbound account payloads", async () => {
+  let localizedErrorCall: LocalizedErrorCall | null = null;
+
+  const handled = await handleAccountSettingsRoute(
+    createAccountDeps({
+      auth: {
+        publicUser(user: { id: string; username: string }) {
+          return {
+            id: user.id,
+            username: user.username,
+            role: "user",
+            authMethods: ["password"],
+            hasEmail: false,
+            preferences: { theme: "command" }
+          };
+        },
+        async updateUserThemePreference(userId: string, theme: string) {
+          return {
+            id: userId,
+            username: "commander",
+            preferences: { theme }
+          };
+        },
+        async updateUserAccountSettings() {
+          return {
+            ok: true,
+            user: {
+              username: "commander"
+            }
+          };
+        }
+      },
+      sendLocalizedError(...args: LocalizedErrorCall) {
+        localizedErrorCall = args;
+      }
+    }),
+    {
+      currentPassword: "secret123",
+      newPassword: "newsecret",
+      confirmNewPassword: "newsecret"
+    }
+  );
+
+  assert.equal(handled, true);
+  const call = requireLocalizedErrorCall(localizedErrorCall);
+  assert.equal(call[1], 500);
+  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+  assert.deepEqual(
+    call[7].validationErrors.map((entry: ValidationIssue) => entry.path),
+    ["user.id"]
   );
 });
 
