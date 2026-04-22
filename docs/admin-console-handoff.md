@@ -72,12 +72,17 @@
 
 - branch: `codex/admin-console`
 - commits:
-  - `19695c1` `Build admin console`
-  - `dad2a0f` `Document admin console workflow`
+  - `95a35c6` `Build admin console`
+  - `40e2ee1` `Document admin console workflow`
+  - `7da88e1` `Update admin console handoff`
+  - `4d12bff` `Address Codex admin review`
 - draft PR: `#139` `[codex] Build admin console`
 - PR URL: `https://github.com/andreame-code/netrisk/pull/139`
-- remote checks currently visible on the PR:
-  - `Vercel`: success
-  - `Vercel Preview Comments`: success
-- Codex review was explicitly requested via PR comment, but no review objects or inline threads were returned during this session
-- GitHub Actions checks did not appear in the PR status rollup during this session, so the visible remote status is limited to the Vercel checks above
+- latest local validation after rebase onto `origin/main`:
+  - `npm run build:ts`: success
+  - `npm run test:all`: success
+- latest Codex review findings addressed locally before push:
+  - admin defaults now seed omitted new-game fields without overriding explicit content-pack or rule-set driven defaults
+  - stale lobby cleanup now re-checks the loaded game phase before mutating a game discovered as stale
+  - `/api/game/options` now degrades safely when persisted admin defaults contain invalid runtime references
+- remote PR checks and review state must be re-read after the rebased branch is force-pushed and a fresh Codex review is requested on the new HEAD
