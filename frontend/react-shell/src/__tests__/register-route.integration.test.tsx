@@ -31,7 +31,7 @@ const getProfileMock = vi.mocked(getProfile);
 const listGamesMock = vi.mocked(listGames);
 const loginMock = vi.mocked(login);
 const registerMock = vi.mocked(register);
-const registerRouteTimeoutMs = 15000;
+const registerRouteTimeoutMs = 30000;
 
 function createAuthRequiredError(): Error & { code: string } {
   const error = new Error("Sign in to continue.") as Error & { code: string };

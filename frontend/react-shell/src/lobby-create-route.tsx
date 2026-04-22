@@ -79,6 +79,17 @@ function pickAvailableId<T extends { id: string }>(
   return firstId(entries);
 }
 
+function pickExplicitId<T extends { id: string }>(
+  preferredId: string | null | undefined,
+  entries: T[] | null | undefined
+): string {
+  if (preferredId && entries?.some((entry) => entry.id === preferredId)) {
+    return preferredId;
+  }
+
+  return "";
+}
+
 function pickPresetId<T extends { id: string }>(
   presetId: string | null | undefined,
   currentId: string,
@@ -254,26 +265,54 @@ function sanitizeProfiles(
 }
 
 function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
+  const adminDefaults = options.adminDefaults || {};
+  const adminDefaultMapId = pickExplicitId(adminDefaults.mapId, options.maps);
+  const adminDefaultDiceRuleSetId = pickExplicitId(
+    adminDefaults.diceRuleSetId,
+    options.diceRuleSets
+  );
+  const adminDefaultVictoryRuleSetId = pickExplicitId(
+    adminDefaults.victoryRuleSetId,
+    options.victoryRuleSets
+  );
+  const adminDefaultThemeId = pickExplicitId(adminDefaults.themeId, options.themes);
+  const adminDefaultPieceSkinId = pickExplicitId(adminDefaults.pieceSkinId, options.pieceSkins);
+  const initialTotalPlayers = Number.isInteger(adminDefaults.totalPlayers)
+    ? Math.min(
+        options.playerRange?.max || 4,
+        Math.max(options.playerRange?.min || 2, Number(adminDefaults.totalPlayers))
+      )
+    : Math.max(options.playerRange?.min || 2, 2);
   const initialState: NewGameFormState = {
     name: "",
-    contentPackId: firstId(options.contentPacks),
-    ruleSetId: firstId(options.ruleSets),
-    mapId: firstId(options.maps),
+    contentPackId: pickAvailableId(adminDefaults.contentPackId, options.contentPacks),
+    ruleSetId: pickAvailableId(adminDefaults.ruleSetId, options.ruleSets),
+    mapId: adminDefaultMapId,
     customizeOptions: false,
-    diceRuleSetId: firstId(options.diceRuleSets),
-    victoryRuleSetId: firstId(options.victoryRuleSets),
-    themeId: firstId(options.themes),
-    pieceSkinId: firstId(options.pieceSkins),
-    turnTimeoutHours: options.turnTimeoutHoursOptions?.[0]
-      ? String(options.turnTimeoutHoursOptions[0])
-      : "",
-    totalPlayers: Math.max(options.playerRange?.min || 2, 2),
-    playerTypes: ["human", "human"],
-    selectedModuleIds: [],
-    gamePresetId: "",
-    contentProfileId: "",
-    gameplayProfileId: "",
-    uiProfileId: ""
+    diceRuleSetId: adminDefaultDiceRuleSetId,
+    victoryRuleSetId: adminDefaultVictoryRuleSetId,
+    themeId: adminDefaultThemeId,
+    pieceSkinId: adminDefaultPieceSkinId,
+    turnTimeoutHours:
+      adminDefaults.turnTimeoutHours != null
+        ? String(adminDefaults.turnTimeoutHours)
+        : options.turnTimeoutHoursOptions?.[0]
+          ? String(options.turnTimeoutHoursOptions[0])
+          : "",
+    totalPlayers: initialTotalPlayers,
+    playerTypes: ensurePlayerTypes(
+      Array.isArray(adminDefaults.players)
+        ? adminDefaults.players.map((slot) => (slot?.type === "ai" ? "ai" : "human"))
+        : [],
+      initialTotalPlayers
+    ),
+    selectedModuleIds: Array.isArray(adminDefaults.activeModuleIds)
+      ? adminDefaults.activeModuleIds
+      : [],
+    gamePresetId: adminDefaults.gamePresetId || "",
+    contentProfileId: adminDefaults.contentProfileId || "",
+    gameplayProfileId: adminDefaults.gameplayProfileId || "",
+    uiProfileId: adminDefaults.uiProfileId || ""
   };
 
   const withContentPackDefaults = applyContentPackDefaults(
@@ -281,7 +320,17 @@ function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
     options,
     initialState.contentPackId
   );
-  return applyRuleSetDefaults(withContentPackDefaults, options, initialState.ruleSetId);
+  return sanitizeProfiles(
+    {
+      ...applyRuleSetDefaults(withContentPackDefaults, options, initialState.ruleSetId),
+      ...(adminDefaultMapId ? { mapId: adminDefaultMapId } : {}),
+      ...(adminDefaultDiceRuleSetId ? { diceRuleSetId: adminDefaultDiceRuleSetId } : {}),
+      ...(adminDefaultVictoryRuleSetId ? { victoryRuleSetId: adminDefaultVictoryRuleSetId } : {}),
+      ...(adminDefaultThemeId ? { themeId: adminDefaultThemeId } : {}),
+      ...(adminDefaultPieceSkinId ? { pieceSkinId: adminDefaultPieceSkinId } : {})
+    },
+    options
+  );
 }
 
 function applyGamePreset(

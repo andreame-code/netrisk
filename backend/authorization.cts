@@ -149,6 +149,10 @@ function canManageModules(actor: Actor | null): boolean {
   return Boolean(actor && actor.id && actor.role === Roles.ADMIN);
 }
 
+function canManageAdmin(actor: Actor | null): boolean {
+  return Boolean(actor && actor.id && actor.role === Roles.ADMIN);
+}
+
 function authorize(action: string, context: AuthorizationContext = {}) {
   const actor = actorForUser(context.user);
 
@@ -217,6 +221,22 @@ function authorize(action: string, context: AuthorizationContext = {}) {
     return { ok: true, actor };
   }
 
+  if (action === "admin:manage") {
+    if (!actor) {
+      throw createAuthorizationError("Sessione non valida.", 401, "AUTH_REQUIRED");
+    }
+
+    if (!canManageAdmin(actor)) {
+      throw createAuthorizationError(
+        "Solo gli admin possono accedere alla console amministrativa.",
+        403,
+        "ADMIN_ONLY"
+      );
+    }
+
+    return { ok: true, actor };
+  }
+
   throw createAuthorizationError("Policy non supportata: " + action, 500, "POLICY_NOT_IMPLEMENTED");
 }
 
@@ -226,6 +246,7 @@ module.exports = {
   authorize,
   canReadGame,
   canCreateGame,
+  canManageAdmin,
   canManageModules,
   canOpenGame,
   canStartGame

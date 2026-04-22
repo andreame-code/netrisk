@@ -2,6 +2,7 @@ const http = require("http");
 const crypto = require("node:crypto");
 const fs = require("fs");
 const path = require("path");
+const { createAdminConsole } = require("./admin-console.cjs");
 const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { createModuleRuntime } = require("./module-runtime.cjs");
@@ -58,6 +59,19 @@ const {
   handleModuleOptionsRoute,
   handleRescanModulesRoute
 } = require("./routes/modules.cjs");
+const {
+  handleAdminAuditRoute,
+  handleAdminConfigRoute,
+  handleAdminConfigUpdateRoute,
+  handleAdminGameActionRoute,
+  handleAdminGameDetailRoute,
+  handleAdminGamesRoute,
+  handleAdminMaintenanceActionRoute,
+  handleAdminMaintenanceRoute,
+  handleAdminOverviewRoute,
+  handleAdminUserRoleRoute,
+  handleAdminUsersRoute
+} = require("./routes/admin.cjs");
 const {
   handleLoginRoute,
   handleLogoutRoute,
@@ -199,6 +213,10 @@ function parseBody(req: Request): Promise<Record<string, any>> {
   });
 }
 
+function deepClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value ?? null)) as T;
+}
+
 function parseCookies(req: Request): CookieMap {
   const rawCookies = String(req.headers.cookie || "");
   if (!rawCookies) {
@@ -306,6 +324,25 @@ function createApp(options: CreateAppOptions = {}) {
     dataFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
+  const adminConsole = createAdminConsole({
+    datastore,
+    auth,
+    gameSessions,
+    loadGameContext,
+    persistGameContext,
+    broadcastGame,
+    createConfiguredInitialState,
+    moduleRuntime
+  });
+
+  async function getSafeAdminDefaults() {
+    try {
+      const adminConfig = await adminConsole.getConfig();
+      return adminConfig.config.defaults;
+    } catch (error) {
+      return undefined;
+    }
+  }
   const clientsByGameId = new Map<string, Set<EventClient>>();
   let initPromise: Promise<void> | null = null;
 
@@ -771,12 +808,15 @@ function createApp(options: CreateAppOptions = {}) {
       (url.pathname === "/api/game-options" || url.pathname === "/api/game/options")
     ) {
       const moduleOptions = await moduleRuntime.getModuleOptions();
+      const adminDefaults = await getSafeAdminDefaults();
       await handleGameOptionsRoute(
         res,
         () => moduleOptions.resolvedCatalog || moduleOptions,
         listTurnTimeoutHoursOptions,
         sendJson,
-        undefined,
+        async () => ({
+          ...(adminDefaults ? { adminDefaults } : {})
+        }),
         sendLocalizedError
       );
       return;
@@ -844,11 +884,170 @@ function createApp(options: CreateAppOptions = {}) {
         decodeURIComponent(disableModuleMatch[1] || ""),
         requireAuth,
         authorize,
-        (moduleId: string) => moduleRuntime.disableModule(moduleId),
+        async (moduleId: string) => {
+          await adminConsole.assertModuleSafeToDisable(moduleId);
+          return moduleRuntime.disableModule(moduleId);
+        },
         () => moduleRuntime.getEnabledModules(),
         sendJson,
         sendLocalizedError,
         NETRISK_ENGINE_VERSION
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/overview") {
+      await handleAdminOverviewRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/users") {
+      await handleAdminUsersRoute(
+        req,
+        res,
+        url,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/users/role") {
+      const body = await parseBody(req);
+      await handleAdminUserRoleRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/games") {
+      await handleAdminGamesRoute(
+        req,
+        res,
+        url,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    const adminGameDetailMatch =
+      req.method === "GET" ? url.pathname.match(/^\/api\/admin\/games\/([^/]+)$/) : null;
+    if (adminGameDetailMatch) {
+      await handleAdminGameDetailRoute(
+        req,
+        res,
+        decodeURIComponent(adminGameDetailMatch[1] || ""),
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/games/action") {
+      const body = await parseBody(req);
+      await handleAdminGameActionRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/config") {
+      await handleAdminConfigRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "PUT" && url.pathname === "/api/admin/config") {
+      const body = await parseBody(req);
+      await handleAdminConfigUpdateRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/maintenance") {
+      await handleAdminMaintenanceRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/maintenance") {
+      const body = await parseBody(req);
+      await handleAdminMaintenanceActionRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/audit") {
+      await handleAdminAuditRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
       );
       return;
     }
@@ -913,6 +1112,7 @@ function createApp(options: CreateAppOptions = {}) {
       const body = await parseBody(req);
       const moduleOptions = await moduleRuntime.getModuleOptions();
       const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
+      const adminDefaults = await getSafeAdminDefaults();
       await handleCreateGameRoute(
         req,
         res,
@@ -921,6 +1121,7 @@ function createApp(options: CreateAppOptions = {}) {
         authorize,
         (body: Record<string, unknown>) =>
           createConfiguredInitialState(body, {
+            defaultConfigInput: deepClone(adminDefaults || {}),
             resolveRuleSet: (ruleSetId: string) =>
               resolvedCatalog.ruleSets.find((entry: { id: string }) => entry.id === ruleSetId) ||
               null,
@@ -1247,6 +1448,8 @@ function createApp(options: CreateAppOptions = {}) {
         url.pathname === "/register" ||
         url.pathname === "/lobby" ||
         url.pathname === "/lobby/new" ||
+        url.pathname === "/admin" ||
+        url.pathname.indexOf("/admin/") === 0 ||
         url.pathname === "/profile" ||
         url.pathname === "/unauthorized" ||
         url.pathname === "/game.html" ||
@@ -1401,6 +1604,7 @@ function createApp(options: CreateAppOptions = {}) {
   const server = http.createServer(handleRequest);
 
   return {
+    adminConsole,
     auth,
     datastore,
     handleApi,

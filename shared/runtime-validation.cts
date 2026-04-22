@@ -632,6 +632,27 @@ export const gameListResponseSchema = objectSchema({
 
 export type GameListResponse = z.infer<typeof gameListResponseSchema>;
 
+export const adminGameDefaultsSchema = objectSchema({
+  totalPlayers: z.number().int().nullable().optional(),
+  contentPackId: z.string().min(1).nullable().optional(),
+  ruleSetId: z.string().min(1).nullable().optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  diceRuleSetId: z.string().min(1).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).nullable().optional(),
+  pieceSetId: z.string().min(1).nullable().optional(),
+  themeId: z.string().min(1).nullable().optional(),
+  pieceSkinId: z.string().min(1).nullable().optional(),
+  gamePresetId: z.string().min(1).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1)).optional(),
+  contentProfileId: z.string().min(1).nullable().optional(),
+  gameplayProfileId: z.string().min(1).nullable().optional(),
+  uiProfileId: z.string().min(1).nullable().optional(),
+  turnTimeoutHours: z.number().int().nullable().optional(),
+  players: z.array(playerSlotConfigSchema).nullable().optional()
+});
+
+export type AdminGameDefaults = z.infer<typeof adminGameDefaultsSchema>;
+
 export const gameOptionsResponseSchema = objectSchema({
   ruleSets: z.array(ruleSetSummarySchema),
   maps: z.array(mapSummarySchema),
@@ -653,7 +674,8 @@ export const gameOptionsResponseSchema = objectSchema({
   playerRange: objectSchema({
     min: z.number().int(),
     max: z.number().int()
-  })
+  }),
+  adminDefaults: adminGameDefaultsSchema.optional()
 });
 
 export type GameOptionsResponse = z.infer<typeof gameOptionsResponseSchema>;
@@ -998,3 +1020,207 @@ export const profileResponseSchema = objectSchema({
 });
 
 export type ProfileResponse = z.infer<typeof profileResponseSchema>;
+
+export const adminIssueSchema = objectSchema({
+  code: z.string().min(1),
+  severity: z.enum(["info", "warning", "error"]),
+  message: z.string().min(1),
+  gameId: z.string().min(1).nullable().optional(),
+  actionId: z.string().min(1).nullable().optional()
+});
+
+export type AdminIssue = z.infer<typeof adminIssueSchema>;
+
+export const adminAuditEntrySchema = objectSchema({
+  id: z.string().min(1),
+  actorId: z.string().min(1),
+  actorUsername: z.string().min(1),
+  action: z.string().min(1),
+  targetType: z.string().min(1),
+  targetId: z.string().min(1).nullable().optional(),
+  targetLabel: z.string().min(1).nullable().optional(),
+  result: z.enum(["success", "failure"]),
+  createdAt: z.string().min(1),
+  details: z.record(z.string(), z.unknown()).nullable().optional()
+});
+
+export type AdminAuditEntry = z.infer<typeof adminAuditEntrySchema>;
+
+export const adminConfigSchema = objectSchema({
+  defaults: adminGameDefaultsSchema,
+  maintenance: objectSchema({
+    staleLobbyDays: z.number().int().min(1).max(365),
+    auditLogLimit: z.number().int().min(10).max(500)
+  }),
+  updatedAt: z.string().min(1).nullable().optional(),
+  updatedBy: publicUserSchema.nullable().optional()
+});
+
+export type AdminConfig = z.infer<typeof adminConfigSchema>;
+
+export const adminUserSummarySchema = publicUserSchema.extend({
+  createdAt: z.string().min(1),
+  gamesPlayed: z.number().int(),
+  gamesInProgress: z.number().int(),
+  wins: z.number().int(),
+  canPromote: z.boolean(),
+  canDemote: z.boolean()
+});
+
+export type AdminUserSummary = z.infer<typeof adminUserSummarySchema>;
+
+export const adminGameSummarySchema = gameSummarySchema.extend({
+  stale: z.boolean(),
+  health: z.enum(["ok", "warning", "error"]),
+  issueCount: z.number().int(),
+  issues: z.array(adminIssueSchema)
+});
+
+export type AdminGameSummary = z.infer<typeof adminGameSummarySchema>;
+
+export const adminGamePlayerSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  linkedUserId: z.string().min(1).nullable().optional(),
+  isAi: z.boolean().optional(),
+  surrendered: z.boolean().optional(),
+  territoryCount: z.number().int(),
+  cardCount: z.number().int()
+});
+
+export type AdminGamePlayer = z.infer<typeof adminGamePlayerSchema>;
+
+export const adminOverviewResponseSchema = objectSchema({
+  summary: objectSchema({
+    totalUsers: z.number().int(),
+    adminUsers: z.number().int(),
+    activeGames: z.number().int(),
+    lobbyGames: z.number().int(),
+    finishedGames: z.number().int(),
+    staleLobbies: z.number().int(),
+    invalidGames: z.number().int(),
+    enabledModules: z.number().int()
+  }),
+  config: adminConfigSchema,
+  recentGames: z.array(adminGameSummarySchema),
+  issues: z.array(adminIssueSchema),
+  audit: z.array(adminAuditEntrySchema)
+});
+
+export type AdminOverviewResponse = z.infer<typeof adminOverviewResponseSchema>;
+
+export const adminUsersResponseSchema = objectSchema({
+  users: z.array(adminUserSummarySchema),
+  total: z.number().int(),
+  filteredTotal: z.number().int(),
+  query: z.string(),
+  role: z.string().min(1).nullable().optional()
+});
+
+export type AdminUsersResponse = z.infer<typeof adminUsersResponseSchema>;
+
+export const adminUserRoleUpdateRequestSchema = objectSchema({
+  userId: z.string().min(1),
+  role: z.enum(["admin", "user"])
+});
+
+export type AdminUserRoleUpdateRequest = z.infer<typeof adminUserRoleUpdateRequestSchema>;
+
+export const adminUserRoleUpdateResponseSchema = objectSchema({
+  ok: z.literal(true),
+  user: adminUserSummarySchema,
+  audit: adminAuditEntrySchema
+});
+
+export type AdminUserRoleUpdateResponse = z.infer<typeof adminUserRoleUpdateResponseSchema>;
+
+export const adminGamesResponseSchema = objectSchema({
+  games: z.array(adminGameSummarySchema),
+  total: z.number().int(),
+  filteredTotal: z.number().int(),
+  status: z.string().min(1).nullable().optional(),
+  query: z.string()
+});
+
+export type AdminGamesResponse = z.infer<typeof adminGamesResponseSchema>;
+
+export const adminGameDetailsResponseSchema = objectSchema({
+  game: adminGameSummarySchema,
+  players: z.array(adminGamePlayerSchema),
+  rawState: z.record(z.string(), z.unknown())
+});
+
+export type AdminGameDetailsResponse = z.infer<typeof adminGameDetailsResponseSchema>;
+
+export const adminGameActionRequestSchema = objectSchema({
+  gameId: z.string().min(1),
+  action: z.enum(["close-lobby", "terminate-game", "repair-game-config"]),
+  confirmation: z.string().min(1).nullable().optional()
+});
+
+export type AdminGameActionRequest = z.infer<typeof adminGameActionRequestSchema>;
+
+export const adminGameActionResponseSchema = objectSchema({
+  ok: z.literal(true),
+  game: adminGameSummarySchema,
+  players: z.array(adminGamePlayerSchema),
+  rawState: z.record(z.string(), z.unknown()),
+  audit: adminAuditEntrySchema
+});
+
+export type AdminGameActionResponse = z.infer<typeof adminGameActionResponseSchema>;
+
+export const adminConfigResponseSchema = objectSchema({
+  config: adminConfigSchema
+});
+
+export type AdminConfigResponse = z.infer<typeof adminConfigResponseSchema>;
+
+export const adminConfigUpdateRequestSchema = objectSchema({
+  defaults: adminGameDefaultsSchema,
+  maintenance: adminConfigSchema.shape.maintenance.optional()
+});
+
+export type AdminConfigUpdateRequest = z.infer<typeof adminConfigUpdateRequestSchema>;
+
+export const adminConfigUpdateResponseSchema = objectSchema({
+  ok: z.literal(true),
+  config: adminConfigSchema,
+  audit: adminAuditEntrySchema
+});
+
+export type AdminConfigUpdateResponse = z.infer<typeof adminConfigUpdateResponseSchema>;
+
+export const adminMaintenanceReportSchema = objectSchema({
+  summary: objectSchema({
+    totalGames: z.number().int(),
+    staleLobbies: z.number().int(),
+    invalidGames: z.number().int(),
+    orphanedModuleReferences: z.number().int()
+  }),
+  issues: z.array(adminIssueSchema)
+});
+
+export type AdminMaintenanceReport = z.infer<typeof adminMaintenanceReportSchema>;
+
+export const adminMaintenanceActionRequestSchema = objectSchema({
+  action: z.enum(["validate-all", "cleanup-stale-lobbies"]),
+  confirmation: z.string().min(1).nullable().optional()
+});
+
+export type AdminMaintenanceActionRequest = z.infer<typeof adminMaintenanceActionRequestSchema>;
+
+export const adminMaintenanceActionResponseSchema = objectSchema({
+  ok: z.literal(true),
+  report: adminMaintenanceReportSchema,
+  affectedGameIds: z.array(z.string().min(1)),
+  audit: adminAuditEntrySchema
+});
+
+export type AdminMaintenanceActionResponse = z.infer<typeof adminMaintenanceActionResponseSchema>;
+
+export const adminAuditResponseSchema = objectSchema({
+  entries: z.array(adminAuditEntrySchema)
+});
+
+export type AdminAuditResponse = z.infer<typeof adminAuditResponseSchema>;

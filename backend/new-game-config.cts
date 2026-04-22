@@ -268,6 +268,8 @@ export function validateNewGameConfig(
   options: {
     random?: () => number;
     resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
+    fallbackConfigInput?: NewGameConfigInput;
+    presentationDefaultsInput?: NewGameConfigInput;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
@@ -277,7 +279,19 @@ export function validateNewGameConfig(
     resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
   } = {}
 ): ValidatedNewGameConfig {
-  const totalPlayers = input.totalPlayers == null ? 2 : Number(input.totalPlayers);
+  const fallbackConfigInput = options.fallbackConfigInput || {};
+  const presentationDefaultsInput = options.presentationDefaultsInput || input;
+  const hasExplicitContentPackId =
+    typeof presentationDefaultsInput.contentPackId === "string" &&
+    presentationDefaultsInput.contentPackId !== "";
+  const hasExplicitRuleSetId =
+    typeof presentationDefaultsInput.ruleSetId === "string" &&
+    presentationDefaultsInput.ruleSetId !== "";
+  const canPreferFallbackPresentationDefaults = !hasExplicitContentPackId && !hasExplicitRuleSetId;
+  const canPreferFallbackPieceSetDefaults = !hasExplicitContentPackId;
+  const totalPlayersSource =
+    input.totalPlayers == null ? fallbackConfigInput.totalPlayers : input.totalPlayers;
+  const totalPlayers = totalPlayersSource == null ? 2 : Number(totalPlayersSource);
   if (!Number.isInteger(totalPlayers) || totalPlayers < 2 || totalPlayers > 4) {
     throw createLocalizedError(
       "Il numero totale di giocatori deve essere compreso tra 2 e 4.",
@@ -285,7 +299,9 @@ export function validateNewGameConfig(
     );
   }
 
-  const requestedContentPackId = String(input.contentPackId || DEFAULT_CONTENT_PACK_ID);
+  const requestedContentPackId = String(
+    input.contentPackId || fallbackConfigInput.contentPackId || DEFAULT_CONTENT_PACK_ID
+  );
   const resolveContentPack =
     typeof options.resolveContentPack === "function" ? options.resolveContentPack : findContentPack;
   const selectedContentPack = resolveContentPack(requestedContentPackId);
@@ -296,9 +312,11 @@ export function validateNewGameConfig(
     );
   }
 
-  const requestedRuleSetId = String(input.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID);
   const resolveRuleSet =
     typeof options.resolveRuleSet === "function" ? options.resolveRuleSet : findNewGameRuleSet;
+  const requestedRuleSetId = String(
+    input.ruleSetId || fallbackConfigInput.ruleSetId || STANDARD_NEW_GAME_RULE_SET_ID
+  );
   const selectedRuleSet = resolveRuleSet(requestedRuleSetId);
   if (!selectedRuleSet) {
     throw createLocalizedError(
@@ -309,8 +327,10 @@ export function validateNewGameConfig(
 
   const mapId = String(
     input.mapId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.mapId : null) ||
       selectedContentPack.defaultMapId ||
       selectedRuleSet.defaults.mapId ||
+      fallbackConfigInput.mapId ||
       "classic-mini"
   );
   const resolveSupportedMap =
@@ -324,8 +344,10 @@ export function validateNewGameConfig(
 
   const requestedDiceRuleSetId = String(
     input.diceRuleSetId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.diceRuleSetId : null) ||
       selectedRuleSet.defaults.diceRuleSetId ||
       selectedContentPack.defaultDiceRuleSetId ||
+      fallbackConfigInput.diceRuleSetId ||
       STANDARD_DICE_RULE_SET_ID
   );
   const resolveDiceRuleSet =
@@ -340,8 +362,10 @@ export function validateNewGameConfig(
 
   const requestedVictoryRuleSetId = String(
     input.victoryRuleSetId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.victoryRuleSetId : null) ||
       selectedRuleSet.defaults.victoryRuleSetId ||
       selectedContentPack.defaultVictoryRuleSetId ||
+      fallbackConfigInput.victoryRuleSetId ||
       DEFAULT_VICTORY_RULE_SET_ID
   );
   const resolveVictoryRuleSet =
@@ -357,7 +381,11 @@ export function validateNewGameConfig(
   }
 
   const requestedPieceSetId = String(
-    input.pieceSetId || selectedContentPack.defaultPieceSetId || DEFAULT_PLAYER_PIECE_SET_ID
+    input.pieceSetId ||
+      (canPreferFallbackPieceSetDefaults ? fallbackConfigInput.pieceSetId : null) ||
+      selectedContentPack.defaultPieceSetId ||
+      fallbackConfigInput.pieceSetId ||
+      DEFAULT_PLAYER_PIECE_SET_ID
   );
   const resolvePlayerPieceSet =
     typeof options.resolvePlayerPieceSet === "function"
@@ -373,8 +401,10 @@ export function validateNewGameConfig(
 
   const requestedThemeId = String(
     input.themeId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.themeId : null) ||
       selectedRuleSet.defaults.themeId ||
       selectedContentPack.defaultSiteThemeId ||
+      fallbackConfigInput.themeId ||
       DEFAULT_THEME_ID
   );
   const resolveTheme =
@@ -385,7 +415,11 @@ export function validateNewGameConfig(
   }
 
   const requestedPieceSkinId = String(
-    input.pieceSkinId || selectedRuleSet.defaults.pieceSkinId || DEFAULT_PIECE_SKIN_ID
+    input.pieceSkinId ||
+      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.pieceSkinId : null) ||
+      selectedRuleSet.defaults.pieceSkinId ||
+      fallbackConfigInput.pieceSkinId ||
+      DEFAULT_PIECE_SKIN_ID
   );
   const resolvePieceSkin =
     typeof options.resolvePieceSkin === "function" ? options.resolvePieceSkin : findPieceSkin;
@@ -397,9 +431,11 @@ export function validateNewGameConfig(
     );
   }
 
+  const turnTimeoutSource =
+    input.turnTimeoutHours == null ? fallbackConfigInput.turnTimeoutHours : input.turnTimeoutHours;
   const turnTimeoutHours =
-    input.turnTimeoutHours == null ? null : normalizeTurnTimeoutHours(input.turnTimeoutHours);
-  if (input.turnTimeoutHours != null && turnTimeoutHours == null) {
+    turnTimeoutSource == null ? null : normalizeTurnTimeoutHours(turnTimeoutSource);
+  if (turnTimeoutSource != null && turnTimeoutHours == null) {
     throw createLocalizedError(
       "Il limite tempo turno selezionato non e supportato.",
       "newGame.invalidTurnTimeoutHours",
@@ -474,6 +510,7 @@ export function createConfiguredInitialState(
   options: {
     random?: () => number;
     resolveRuleSet?: (ruleSetId: string) => NewGameRuleSet | null;
+    defaultConfigInput?: NewGameConfigInput;
     resolveContentPack?: (contentPackId: string) => ContentPackSummary | null;
     resolveDiceRuleSet?: (diceRuleSetId: string) => DiceRuleSet | null;
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
@@ -528,13 +565,20 @@ export function createConfiguredInitialState(
       gameInput: { name: string | undefined };
       config: ValidatedNewGameConfig;
     }> {
+  const defaultConfigInput = options.defaultConfigInput || {};
+  const presetResolutionInput: NewGameConfigInput = {
+    ...defaultConfigInput,
+    ...configInput
+  };
   const resolvedPreset =
     typeof options.resolveGamePreset === "function"
       ? options.resolveGamePreset({
           gamePresetId:
-            typeof configInput.gamePresetId === "string" ? configInput.gamePresetId : null,
-          activeModuleIds: Array.isArray(configInput.activeModuleIds)
-            ? configInput.activeModuleIds
+            typeof presetResolutionInput.gamePresetId === "string"
+              ? presetResolutionInput.gamePresetId
+              : null,
+          activeModuleIds: Array.isArray(presetResolutionInput.activeModuleIds)
+            ? presetResolutionInput.activeModuleIds
             : []
         })
       : null;
@@ -584,24 +628,28 @@ export function createConfiguredInitialState(
         : {}),
       ...configInput
     };
+    const moduleDefaultsResolutionInput: NewGameConfigInput = {
+      ...defaultConfigInput,
+      ...hydratedPresetInput
+    };
 
     const resolvedProfileDefaults =
       typeof options.resolveGameModuleConfigDefaults === "function"
         ? options.resolveGameModuleConfigDefaults({
-            activeModuleIds: Array.isArray(hydratedPresetInput.activeModuleIds)
-              ? hydratedPresetInput.activeModuleIds
+            activeModuleIds: Array.isArray(moduleDefaultsResolutionInput.activeModuleIds)
+              ? moduleDefaultsResolutionInput.activeModuleIds
               : [],
             contentProfileId:
-              typeof hydratedPresetInput.contentProfileId === "string"
-                ? hydratedPresetInput.contentProfileId
+              typeof moduleDefaultsResolutionInput.contentProfileId === "string"
+                ? moduleDefaultsResolutionInput.contentProfileId
                 : null,
             gameplayProfileId:
-              typeof hydratedPresetInput.gameplayProfileId === "string"
-                ? hydratedPresetInput.gameplayProfileId
+              typeof moduleDefaultsResolutionInput.gameplayProfileId === "string"
+                ? moduleDefaultsResolutionInput.gameplayProfileId
                 : null,
             uiProfileId:
-              typeof hydratedPresetInput.uiProfileId === "string"
-                ? hydratedPresetInput.uiProfileId
+              typeof moduleDefaultsResolutionInput.uiProfileId === "string"
+                ? moduleDefaultsResolutionInput.uiProfileId
                 : null
           })
         : null;
@@ -611,6 +659,18 @@ export function createConfiguredInitialState(
     ) => {
       const resolvedDefaults = resolvedSetup?.defaults || null;
       const hydratedConfigInput: NewGameConfigInput = {
+        ...(Array.isArray(moduleDefaultsResolutionInput.activeModuleIds)
+          ? { activeModuleIds: moduleDefaultsResolutionInput.activeModuleIds }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.contentProfileId === "string"
+          ? { contentProfileId: moduleDefaultsResolutionInput.contentProfileId }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.gameplayProfileId === "string"
+          ? { gameplayProfileId: moduleDefaultsResolutionInput.gameplayProfileId }
+          : {}),
+        ...(typeof moduleDefaultsResolutionInput.uiProfileId === "string"
+          ? { uiProfileId: moduleDefaultsResolutionInput.uiProfileId }
+          : {}),
         ...(typeof resolvedDefaults?.contentPackId === "string"
           ? { contentPackId: resolvedDefaults.contentPackId }
           : {}),
@@ -638,6 +698,8 @@ export function createConfiguredInitialState(
       const config = validateNewGameConfig(hydratedConfigInput, {
         random: options.random,
         resolveRuleSet: options.resolveRuleSet,
+        fallbackConfigInput: defaultConfigInput,
+        presentationDefaultsInput: configInput,
         resolveContentPack: options.resolveContentPack,
         resolveDiceRuleSet: options.resolveDiceRuleSet,
         resolvePlayerPieceSet: options.resolvePlayerPieceSet,

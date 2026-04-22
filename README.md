@@ -18,6 +18,7 @@ Today the project includes:
 - shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
 - canonical React + Vite UI served on clean routes `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`, with `/react/*` kept as a supported alias, root `.html` routes kept as compatibility redirects, and the legacy rollback UI isolated under `/legacy/*`
+- admin-only operational console on `/admin` and `/react/admin` with overview, users, games, configuration, maintenance, runtime modules, and audit log sections
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
@@ -50,6 +51,9 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [OpenAPI reference](docs/openapi.json)
 - [API transport notes](docs/api.md)
 - [Gameplay flows](docs/gameplay-flows.md)
+- [Admin console guide](docs/admin-console.md)
+- [Admin console execution plan](docs/admin-console-plan.md)
+- [Admin console handoff](docs/admin-console-handoff.md)
 - [React migration matrix](docs/react-migration-matrix.md)
 - [Extending NetRisk](docs/extending-netrisk.md)
 - [Contributing](CONTRIBUTING.md)
@@ -102,6 +106,14 @@ npm start
 Application available at `http://localhost:3000`.
 After `npm start`, the same built React shell serves the canonical user-facing clean routes and the supported `/react/*` aliases from `http://localhost:3000`.
 The rollback static UI remains available only under `http://localhost:3000/legacy/*` during the transition period.
+Authenticated administrators can access the operational console at `http://localhost:3000/admin`.
+Grant a local admin account with:
+
+```bash
+npm run admin:grant -- --username your_username
+```
+
+Refresh the session after the role change, then reopen `/admin`.
 
 React shell preview:
 
@@ -125,6 +137,12 @@ The example configuration in `.env.example` is intended for a Supabase/Vercel en
 ```bash
 DATASTORE_DRIVER=sqlite
 PORT=3000
+```
+
+To promote a locally registered user to admin:
+
+```bash
+npm run admin:grant -- --username your_username
 ```
 
 ## Scheduled jobs
@@ -210,6 +228,7 @@ Before opening a separate analytics or PWA issue, verify all of the following:
 
 ```bash
 npm start
+npm run admin:grant -- --username your_username
 npm run backup:data
 npm run backup:check -- --file data/backups/netrisk-YYYYMMDD-HHMMSS.sqlite
 npm run build:react-shell

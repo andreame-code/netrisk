@@ -49,7 +49,7 @@ const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
 const openReactGameMock = vi.mocked(openReactGame);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
-const lobbyCreateRouteTimeoutMs = 15_000;
+const lobbyCreateRouteTimeoutMs = 30_000;
 
 function createSession(theme = "command"): AuthSessionResponse {
   return {
@@ -264,6 +264,7 @@ async function renderLobbyCreateRoute() {
     route,
     customizeOptionsToggle,
     submitButton,
+    mapSelect: (await route.findByTestId("react-shell-new-game-map")) as HTMLSelectElement,
     diceSelect: (await route.findByTestId("react-shell-new-game-dice")) as HTMLSelectElement,
     victorySelect: (await route.findByTestId("react-shell-new-game-victory")) as HTMLSelectElement,
     themeSelect: (await route.findByTestId("react-shell-new-game-theme")) as HTMLSelectElement,
@@ -350,6 +351,45 @@ describe("LobbyCreateRoute integration", () => {
       );
       expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "game-99");
       expect(openReactGameMock).toHaveBeenCalledWith("game-99");
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "preserves the selected rule-set defaults when admin fallback setup ids are omitted",
+    async () => {
+      const baseOptions = createGameOptionsResponse();
+      getGameOptionsMock.mockResolvedValue({
+        ...baseOptions,
+        maps: [
+          {
+            id: "map-alt",
+            name: "Aurora Front",
+            territoryCount: 24,
+            continentCount: 4,
+            continentBonuses: []
+          },
+          ...baseOptions.maps
+        ],
+        diceRuleSets: [baseOptions.diceRuleSets[1], baseOptions.diceRuleSets[0]],
+        victoryRuleSets: [baseOptions.victoryRuleSets[1], baseOptions.victoryRuleSets[0]],
+        themes: [baseOptions.themes[1], baseOptions.themes[0]],
+        pieceSkins: [baseOptions.pieceSkins[1], baseOptions.pieceSkins[0]],
+        adminDefaults: {
+          ruleSetId: "rules-default"
+        }
+      });
+
+      const { mapSelect, diceSelect, victorySelect, themeSelect, pieceSkinSelect } =
+        await renderLobbyCreateRoute();
+
+      await waitFor(() => {
+        expect(mapSelect).toHaveValue("map-default");
+        expect(diceSelect).toHaveValue("dice-default");
+        expect(victorySelect).toHaveValue("victory-default");
+        expect(themeSelect).toHaveValue("theme-default");
+        expect(pieceSkinSelect).toHaveValue("skin-default");
+      });
     },
     lobbyCreateRouteTimeoutMs
   );

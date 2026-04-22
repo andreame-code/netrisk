@@ -146,6 +146,25 @@ export interface GameSummaryContract {
   uiProfileId?: string | null;
 }
 
+export interface AdminGameDefaultsContract {
+  totalPlayers?: number | null;
+  contentPackId?: string | null;
+  ruleSetId?: string | null;
+  mapId?: string | null;
+  diceRuleSetId?: string | null;
+  victoryRuleSetId?: string | null;
+  pieceSetId?: string | null;
+  themeId?: string | null;
+  pieceSkinId?: string | null;
+  gamePresetId?: string | null;
+  activeModuleIds?: string[];
+  contentProfileId?: string | null;
+  gameplayProfileId?: string | null;
+  uiProfileId?: string | null;
+  turnTimeoutHours?: number | null;
+  players?: Array<Record<string, unknown>> | null;
+}
+
 export interface GameOptionsResponseContract {
   ruleSets: Array<Record<string, unknown>>;
   maps: Array<Record<string, unknown>>;
@@ -168,6 +187,7 @@ export interface GameOptionsResponseContract {
     min: number;
     max: number;
   };
+  adminDefaults?: AdminGameDefaultsContract;
 }
 
 export interface AuthSessionResponseContract {
@@ -207,6 +227,147 @@ export interface ProfileContract {
 
 export interface ProfileResponseContract {
   profile: ProfileContract;
+}
+
+export interface AdminIssueContract {
+  code: string;
+  severity: string;
+  message: string;
+  gameId?: string | null;
+  actionId?: string | null;
+}
+
+export interface AdminAuditEntryContract {
+  id: string;
+  actorId: string;
+  actorUsername: string;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  targetLabel?: string | null;
+  result: string;
+  createdAt: string;
+  details?: Record<string, unknown> | null;
+}
+
+export interface AdminConfigContract {
+  defaults: AdminGameDefaultsContract;
+  maintenance: {
+    staleLobbyDays: number;
+    auditLogLimit: number;
+  };
+  updatedAt?: string | null;
+  updatedBy?: PublicUserContract | null;
+}
+
+export interface AdminUserSummaryContract extends PublicUserContract {
+  createdAt: string;
+  gamesPlayed: number;
+  gamesInProgress: number;
+  wins: number;
+  canPromote: boolean;
+  canDemote: boolean;
+}
+
+export interface AdminGameSummaryContract extends GameSummaryContract {
+  stale: boolean;
+  health: string;
+  issueCount: number;
+  issues: AdminIssueContract[];
+}
+
+export interface AdminGamePlayerContract {
+  id: string;
+  name: string;
+  linkedUserId?: string | null;
+  isAi?: boolean;
+  surrendered?: boolean;
+  territoryCount: number;
+  cardCount: number;
+}
+
+export interface AdminOverviewResponseContract {
+  summary: {
+    totalUsers: number;
+    adminUsers: number;
+    activeGames: number;
+    lobbyGames: number;
+    finishedGames: number;
+    staleLobbies: number;
+    invalidGames: number;
+    enabledModules: number;
+  };
+  config: AdminConfigContract;
+  recentGames: AdminGameSummaryContract[];
+  issues: AdminIssueContract[];
+  audit: AdminAuditEntryContract[];
+}
+
+export interface AdminUsersResponseContract {
+  users: AdminUserSummaryContract[];
+  total: number;
+  filteredTotal: number;
+  query: string;
+  role: string | null;
+}
+
+export interface AdminUserRoleUpdateResponseContract {
+  ok: boolean;
+  user: AdminUserSummaryContract;
+  audit: AdminAuditEntryContract;
+}
+
+export interface AdminGamesResponseContract {
+  games: AdminGameSummaryContract[];
+  total: number;
+  filteredTotal: number;
+  status: string | null;
+  query: string;
+}
+
+export interface AdminGameDetailsResponseContract {
+  game: AdminGameSummaryContract;
+  players: AdminGamePlayerContract[];
+  rawState: Record<string, unknown>;
+}
+
+export interface AdminGameActionResponseContract {
+  ok: boolean;
+  game: AdminGameSummaryContract;
+  players: AdminGamePlayerContract[];
+  rawState: Record<string, unknown>;
+  audit: AdminAuditEntryContract;
+}
+
+export interface AdminConfigResponseContract {
+  config: AdminConfigContract;
+}
+
+export interface AdminConfigUpdateResponseContract {
+  ok: boolean;
+  config: AdminConfigContract;
+  audit: AdminAuditEntryContract;
+}
+
+export interface AdminMaintenanceReportContract {
+  summary: {
+    totalGames: number;
+    staleLobbies: number;
+    invalidGames: number;
+    orphanedModuleReferences: number;
+  };
+  issues: AdminIssueContract[];
+}
+
+export interface AdminMaintenanceActionResponseContract {
+  ok: boolean;
+  report: AdminMaintenanceReportContract;
+  affectedGameIds: string[];
+  audit: AdminAuditEntryContract;
+}
+
+export interface AdminAuditResponseContract {
+  entries: AdminAuditEntryContract[];
 }
 
 export interface GameMutationResponseContract {

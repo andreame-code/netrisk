@@ -1,4 +1,19 @@
 import {
+  adminAuditResponseSchema,
+  adminConfigResponseSchema,
+  adminConfigUpdateRequestSchema,
+  adminConfigUpdateResponseSchema,
+  adminGameActionRequestSchema,
+  adminGameActionResponseSchema,
+  adminGameDetailsResponseSchema,
+  adminGamesResponseSchema,
+  adminMaintenanceActionRequestSchema,
+  adminMaintenanceActionResponseSchema,
+  adminMaintenanceReportSchema,
+  adminOverviewResponseSchema,
+  adminUserRoleUpdateRequestSchema,
+  adminUserRoleUpdateResponseSchema,
+  adminUsersResponseSchema,
   authSessionResponseSchema,
   createGameRequestSchema,
   createGameResponseSchema,
@@ -23,6 +38,21 @@ import {
   tradeCardsRequestSchema
 } from "../../generated/shared-runtime-validation.mjs";
 import type {
+  AdminAuditResponse,
+  AdminConfigResponse,
+  AdminConfigUpdateRequest,
+  AdminConfigUpdateResponse,
+  AdminGameActionRequest,
+  AdminGameActionResponse,
+  AdminGameDetailsResponse,
+  AdminGamesResponse,
+  AdminMaintenanceActionRequest,
+  AdminMaintenanceActionResponse,
+  AdminMaintenanceReport,
+  AdminOverviewResponse,
+  AdminUserRoleUpdateRequest,
+  AdminUserRoleUpdateResponse,
+  AdminUsersResponse,
   AuthSessionResponse,
   CreateGameRequest,
   CreateGameResponse,
@@ -58,6 +88,16 @@ type GameListRequestOptions = {
 
 type GameStateRequestOptions = {
   gameId?: string | null;
+};
+
+type AdminUsersRequestOptions = {
+  query?: string | null;
+  role?: string | null;
+};
+
+type AdminGamesRequestOptions = {
+  query?: string | null;
+  status?: string | null;
 };
 
 type GameEventSubscriptionOptions = {
@@ -201,6 +241,174 @@ export function updateThemePreference(
     requestSchemaName: "ThemePreferenceRequest",
     responseSchema: themePreferenceResponseSchema,
     responseSchemaName: "ThemePreferenceResponse",
+    ...messages
+  });
+}
+
+export function getAdminOverview(messages: ClientMessages): Promise<AdminOverviewResponse> {
+  return requestJson({
+    path: "/api/admin/overview",
+    responseSchema: adminOverviewResponseSchema,
+    responseSchemaName: "AdminOverviewResponse",
+    ...messages
+  });
+}
+
+function buildAdminUsersPath(options: AdminUsersRequestOptions = {}): string {
+  const params = new URLSearchParams();
+
+  if (options.query) {
+    params.set("q", options.query);
+  }
+
+  if (options.role) {
+    params.set("role", options.role);
+  }
+
+  const query = params.toString();
+  return query ? `/api/admin/users?${query}` : "/api/admin/users";
+}
+
+export function listAdminUsers(
+  messages: ClientMessages,
+  options: AdminUsersRequestOptions = {}
+): Promise<AdminUsersResponse> {
+  return requestJson({
+    path: buildAdminUsersPath(options),
+    responseSchema: adminUsersResponseSchema,
+    responseSchemaName: "AdminUsersResponse",
+    ...messages
+  });
+}
+
+export function updateAdminUserRole(
+  request: AdminUserRoleUpdateRequest,
+  messages: ClientMessages
+): Promise<AdminUserRoleUpdateResponse> {
+  return requestJson({
+    path: "/api/admin/users/role",
+    method: "POST",
+    body: request,
+    requestSchema: adminUserRoleUpdateRequestSchema,
+    requestSchemaName: "AdminUserRoleUpdateRequest",
+    responseSchema: adminUserRoleUpdateResponseSchema,
+    responseSchemaName: "AdminUserRoleUpdateResponse",
+    ...messages
+  });
+}
+
+function buildAdminGamesPath(options: AdminGamesRequestOptions = {}): string {
+  const params = new URLSearchParams();
+
+  if (options.query) {
+    params.set("q", options.query);
+  }
+
+  if (options.status) {
+    params.set("status", options.status);
+  }
+
+  const query = params.toString();
+  return query ? `/api/admin/games?${query}` : "/api/admin/games";
+}
+
+export function listAdminGames(
+  messages: ClientMessages,
+  options: AdminGamesRequestOptions = {}
+): Promise<AdminGamesResponse> {
+  return requestJson({
+    path: buildAdminGamesPath(options),
+    responseSchema: adminGamesResponseSchema,
+    responseSchemaName: "AdminGamesResponse",
+    ...messages
+  });
+}
+
+export function getAdminGameDetails(
+  gameId: string,
+  messages: ClientMessages
+): Promise<AdminGameDetailsResponse> {
+  return requestJson({
+    path: `/api/admin/games/${encodeURIComponent(gameId)}`,
+    responseSchema: adminGameDetailsResponseSchema,
+    responseSchemaName: "AdminGameDetailsResponse",
+    ...messages
+  });
+}
+
+export function runAdminGameAction(
+  request: AdminGameActionRequest,
+  messages: ClientMessages
+): Promise<AdminGameActionResponse> {
+  return requestJson({
+    path: "/api/admin/games/action",
+    method: "POST",
+    body: request,
+    requestSchema: adminGameActionRequestSchema,
+    requestSchemaName: "AdminGameActionRequest",
+    responseSchema: adminGameActionResponseSchema,
+    responseSchemaName: "AdminGameActionResponse",
+    ...messages
+  });
+}
+
+export function getAdminConfig(messages: ClientMessages): Promise<AdminConfigResponse> {
+  return requestJson({
+    path: "/api/admin/config",
+    responseSchema: adminConfigResponseSchema,
+    responseSchemaName: "AdminConfigResponse",
+    ...messages
+  });
+}
+
+export function updateAdminConfig(
+  request: AdminConfigUpdateRequest,
+  messages: ClientMessages
+): Promise<AdminConfigUpdateResponse> {
+  return requestJson({
+    path: "/api/admin/config",
+    method: "PUT",
+    body: request,
+    requestSchema: adminConfigUpdateRequestSchema,
+    requestSchemaName: "AdminConfigUpdateRequest",
+    responseSchema: adminConfigUpdateResponseSchema,
+    responseSchemaName: "AdminConfigUpdateResponse",
+    ...messages
+  });
+}
+
+export function getAdminMaintenanceReport(
+  messages: ClientMessages
+): Promise<AdminMaintenanceReport> {
+  return requestJson({
+    path: "/api/admin/maintenance",
+    responseSchema: adminMaintenanceReportSchema,
+    responseSchemaName: "AdminMaintenanceReport",
+    ...messages
+  });
+}
+
+export function runAdminMaintenanceAction(
+  request: AdminMaintenanceActionRequest,
+  messages: ClientMessages
+): Promise<AdminMaintenanceActionResponse> {
+  return requestJson({
+    path: "/api/admin/maintenance",
+    method: "POST",
+    body: request,
+    requestSchema: adminMaintenanceActionRequestSchema,
+    requestSchemaName: "AdminMaintenanceActionRequest",
+    responseSchema: adminMaintenanceActionResponseSchema,
+    responseSchemaName: "AdminMaintenanceActionResponse",
+    ...messages
+  });
+}
+
+export function getAdminAudit(messages: ClientMessages): Promise<AdminAuditResponse> {
+  return requestJson({
+    path: "/api/admin/audit",
+    responseSchema: adminAuditResponseSchema,
+    responseSchemaName: "AdminAuditResponse",
     ...messages
   });
 }
