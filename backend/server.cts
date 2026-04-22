@@ -138,10 +138,10 @@ function resolveProjectRoot() {
     }
     seen.add(absolute);
 
-    const frontendPath = path.join(absolute, "frontend", "src");
+    const publicPath = path.join(absolute, "public");
     const dataPath = path.join(absolute, "data");
 
-    if (fs.existsSync(frontendPath) && fs.existsSync(dataPath)) {
+    if (fs.existsSync(publicPath) && fs.existsSync(dataPath)) {
       return absolute;
     }
   }
@@ -345,19 +345,30 @@ function createApp(options: CreateAppOptions = {}) {
   }
   const clientsByGameId = new Map<string, Set<EventClient>>();
   let initPromise: Promise<void> | null = null;
+  let initError: unknown = null;
 
-  const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
-  if (isPromiseLike(eagerInitialGame)) {
-    initPromise = eagerInitialGame
+  function beginActiveGameInitialization(initialGameSource: Promise<any> | any): Promise<void> {
+    initError = null;
+    const nextInitPromise = Promise.resolve(initialGameSource)
       .then((initialGame: any) => {
         activeGameId = initialGame.game.id;
         activeGameVersion = initialGame.game.version;
         activeGameName = initialGame.game.name;
         replaceState(initialGame.state);
       })
+      .catch((error: any) => {
+        initError = error;
+      })
       .finally(() => {
         initPromise = null;
       });
+    initPromise = nextInitPromise;
+    return nextInitPromise;
+  }
+
+  const eagerInitialGame = gameSessions.ensureActiveGame(createInitialState);
+  if (isPromiseLike(eagerInitialGame)) {
+    void beginActiveGameInitialization(eagerInitialGame);
   } else {
     activeGameId = eagerInitialGame.game.id;
     activeGameVersion = eagerInitialGame.game.version;
@@ -376,19 +387,16 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (!initPromise) {
-      initPromise = Promise.resolve(gameSessions.ensureActiveGame(createInitialState))
-        .then((initialGame: any) => {
-          activeGameId = initialGame.game.id;
-          activeGameVersion = initialGame.game.version;
-          activeGameName = initialGame.game.name;
-          replaceState(initialGame.state);
-        })
-        .finally(() => {
-          initPromise = null;
-        });
+      await beginActiveGameInitialization(gameSessions.ensureActiveGame(createInitialState));
+    } else {
+      await initPromise;
     }
 
-    await initPromise;
+    if (!activeGameId && initError) {
+      const error = initError;
+      initError = null;
+      throw error;
+    }
   }
 
   async function persistActiveGame(expectedVersion?: number | null) {

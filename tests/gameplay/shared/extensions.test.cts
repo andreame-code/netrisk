@@ -6,6 +6,7 @@ const {
   EXTENSION_SCHEMA_VERSION,
   MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
   findBuiltInNewGameRuleSet,
+  getExtensionPack,
   listExtensionPacks,
   listBuiltInNewGameRuleSets,
   listPieceSkins,
@@ -152,6 +153,41 @@ register("migrateGameStateExtensions backfills gameConfig for legacy states", ()
   assert.equal(migrated.gameConfig.themeId, DEFAULT_THEME_ID);
   assert.equal(migrated.gameConfig.pieceSkinId, DEFAULT_PIECE_SKIN_ID);
 });
+
+register("getExtensionPack deep-freezes nested defaults and capability arrays", () => {
+  const pack = getExtensionPack("classic-defense-3") as {
+    defaults: { mapId: string };
+    mapIds: string[];
+  };
+
+  assert.equal(Object.isFrozen(pack), true);
+  assert.equal(Object.isFrozen(pack.defaults), true);
+  assert.equal(Object.isFrozen(pack.mapIds), true);
+  assert.throws(() => {
+    pack.defaults.mapId = "middle-earth";
+  });
+  assert.throws(() => {
+    pack.mapIds.push("middle-earth");
+  });
+});
+
+register(
+  "migrateGameConfigExtensions falls back to a supported map and recomputes its name",
+  () => {
+    const migrated = migrateGameConfigExtensions(
+      {
+        ruleSetId: "classic-defense-3"
+      },
+      {
+        mapId: "ghost-map",
+        mapName: "Ghost Map"
+      }
+    );
+
+    assert.equal(migrated.mapId, "classic-mini");
+    assert.equal(migrated.mapName, "Classic Mini");
+  }
+);
 
 register(
   "migrateGameConfigExtensions preserves runtime dice rule ids when metadata is present",

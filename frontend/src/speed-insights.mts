@@ -9,6 +9,10 @@ function isLocalDevelopmentHost(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
+function isVercelDeploymentHost(hostname: string): boolean {
+  return /(?:^|\.)vercel\.app$/i.test(hostname) || /(?:^|\.)vercel\.sh$/i.test(hostname);
+}
+
 function registerSpeedInsights(targetWindow: SpeedInsightsWindow): void {
   targetWindow.si =
     targetWindow.si ??
@@ -17,7 +21,8 @@ function registerSpeedInsights(targetWindow: SpeedInsightsWindow): void {
       targetWindow.siq.push(args);
     });
 
-  if (isLocalDevelopmentHost(targetWindow.location.hostname)) {
+  const hostname = targetWindow.location.hostname;
+  if (isLocalDevelopmentHost(hostname) || !isVercelDeploymentHost(hostname)) {
     return;
   }
 

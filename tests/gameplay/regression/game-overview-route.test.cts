@@ -39,7 +39,7 @@ register("handleGameOptionsRoute derives legacy options from the resolved catalo
   assert.deepEqual(payloads[0].themes, [{ id: "command" }]);
   assert.deepEqual(payloads[0].pieceSkins, [{ id: "classic-color" }]);
   assert.deepEqual(payloads[0].resolvedCatalog, {
-    modules: [{ id: "demo.valid" }],
+    modules: [{ id: "installed.module" }],
     enabledModules: [{ id: "demo.valid", version: "1.0.0" }],
     gameModules: [{ id: "demo.valid" }],
     ruleSets: [{ id: "classic" }],

@@ -406,9 +406,13 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
-  async function loadConfigRecord(): Promise<AdminConfigRecord> {
+  async function readConfigSource(): Promise<Record<string, unknown>> {
     const raw = await maybeResolve(options.datastore.getAppState(ADMIN_CONFIG_STATE_KEY));
-    const source = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  }
+
+  async function loadConfigRecord(): Promise<AdminConfigRecord> {
+    const source = await readConfigSource();
     const defaults = await resolveAdminDefaults(
       source.defaults && typeof source.defaults === "object"
         ? (source.defaults as Record<string, unknown>)
@@ -480,6 +484,34 @@ function createAdminConsole(options: AdminConsoleOptions) {
     const nextEntries = [entry, ...entries].slice(0, config.maintenance.auditLogLimit);
     await maybeResolve(options.datastore.setAppState(ADMIN_AUDIT_LOG_STATE_KEY, nextEntries));
     return entry;
+  }
+
+  async function recordAuditSafely(input: {
+    actor: PublicUser;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    targetLabel?: string | null;
+    result: "success" | "failure";
+    details?: Record<string, unknown> | null;
+  }): Promise<AdminAuditEntry> {
+    try {
+      return await recordAudit(input);
+    } catch (error) {
+      console.error("Failed to persist admin audit entry:", error);
+      return {
+        id: crypto.randomBytes(8).toString("hex"),
+        actorId: input.actor.id,
+        actorUsername: input.actor.username,
+        action: input.action,
+        targetType: input.targetType,
+        targetId: input.targetId || null,
+        targetLabel: input.targetLabel || null,
+        result: input.result,
+        createdAt: new Date().toISOString(),
+        details: input.details ? safeClone(input.details) : null
+      };
+    }
   }
 
   async function rawGamesById(): Promise<Map<string, RawGameRecord>> {
@@ -789,7 +821,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
       throw new Error(`Utente "${input.userId}" aggiornato ma non ricaricabile.`);
     }
 
-    const audit = await recordAudit({
+    const audit = await recordAuditSafely({
       actor,
       action: "user.role.update",
       targetType: "user",
@@ -937,7 +969,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
     }
 
     const detail = await getGameDetails(input.gameId);
-    const audit = await recordAudit({
+    const audit = await recordAuditSafely({
       actor,
       action: `game.${input.action}`,
       targetType: "game",
@@ -969,22 +1001,24 @@ function createAdminConsole(options: AdminConsoleOptions) {
       maintenance?: Record<string, unknown>;
     }
   ) {
-    const currentConfig = await loadConfigRecord();
+    const currentConfigSource = await readConfigSource();
     const defaults = await resolveAdminDefaults(
       input.defaults && typeof input.defaults === "object"
         ? (input.defaults as Record<string, unknown>)
-        : currentConfig.defaults
+        : currentConfigSource.defaults && typeof currentConfigSource.defaults === "object"
+          ? (currentConfigSource.defaults as Record<string, unknown>)
+          : {}
     );
     const maintenance = input.maintenance
       ? normalizeMaintenanceConfig(input.maintenance)
-      : currentConfig.maintenance;
+      : normalizeMaintenanceConfig(currentConfigSource.maintenance);
     const savedConfig = await saveConfigRecord({
       defaults,
       maintenance,
       updatedAt: new Date().toISOString(),
       updatedBy: actor
     });
-    const audit = await recordAudit({
+    const audit = await recordAuditSafely({
       actor,
       action: "config.update",
       targetType: "config",
@@ -1040,7 +1074,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
   ) {
     if (input.action === "validate-all") {
       const report = await getMaintenanceReport();
-      const audit = await recordAudit({
+      const audit = await recordAuditSafely({
         actor,
         action: "maintenance.validate-all",
         targetType: "maintenance",
@@ -1110,7 +1144,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
     }
 
     const report = await getMaintenanceReport();
-    const audit = await recordAudit({
+    const audit = await recordAuditSafely({
       actor,
       action: "maintenance.cleanup-stale-lobbies",
       targetType: "maintenance",

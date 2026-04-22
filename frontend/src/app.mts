@@ -640,9 +640,10 @@ function fitMapBoardToViewport() {
     Number.parseFloat(stageStyles.paddingBottom || "0");
   const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
   const stageRect = mapStage.getBoundingClientRect();
+  const stageTop = Math.max(0, stageRect.top);
   const availableHeight = Math.max(
     0,
-    window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0")
+    window.innerHeight - stageTop - Number.parseFloat(stageStyles.paddingBottom || "0")
   );
   if (!availableWidth || !availableHeight) {
     return;
@@ -2526,9 +2527,9 @@ async function loginWithCredentials(username: string, password: string): Promise
   const data = await send("/api/auth/login", { username, password });
   setSession(data.user);
   clearPlayerIdentity();
-  await loadState().catch(() => {});
   await loadGameList();
   await openRequestedGameIfNeeded();
+  await loadState().catch(() => {});
   render();
   ensureEventConnection();
 }
@@ -2552,6 +2553,10 @@ async function openRequestedGameIfNeeded() {
   const canAutoOpenRequestedGame =
     !requestedGame.creatorUserId || requestedGame.creatorUserId === state.user?.id;
   if (!canAutoOpenRequestedGame) {
+    if (!state.user && requestedGame.creatorUserId) {
+      pendingRequestedGameId = requestedId;
+      return;
+    }
     pendingRequestedGameId = null;
     syncGameRoute(null);
     return;

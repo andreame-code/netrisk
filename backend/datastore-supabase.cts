@@ -197,6 +197,13 @@ function toQueryString(filters: QueryFilters = {}): string {
   return parts.length ? `?${parts.join("&")}` : "";
 }
 
+function escapePostgrestLikeValue(value: string): string {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_");
+}
+
 function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
   const supabaseUrl = String(
     options.supabaseUrl ||
@@ -496,7 +503,7 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     async findUserByUsername(username: string) {
       await ensureInitialized();
       const row = await selectOne<UserRow>("users", {
-        username: `eq.${username}`
+        username: `ilike.${escapePostgrestLikeValue(username)}`
       });
       return normalizeUser(row);
     },
