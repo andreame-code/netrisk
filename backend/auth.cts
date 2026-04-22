@@ -422,15 +422,15 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return null;
     }
 
-    const migratedCredentials = {
-      ...(user.credentials || {}),
-      password: passwordRecord(password)
-    };
-
     if (typeof user.credentials?.password?.secret === "string") {
       if (user.credentials.password.secret !== String(password || "")) {
         return null;
       }
+
+      const migratedCredentials = {
+        ...(user.credentials || {}),
+        password: passwordRecord(password)
+      };
 
       return (
         (await datastore.updateUserCredentials(user.id, migratedCredentials)) || {
@@ -445,6 +445,11 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (user.credentials?.password?.algorithm !== "scrypt") {
+      const migratedCredentials = {
+        ...(user.credentials || {}),
+        password: passwordRecord(password)
+      };
+
       return (
         (await datastore.updateUserCredentials(user.id, migratedCredentials)) || {
           ...user,

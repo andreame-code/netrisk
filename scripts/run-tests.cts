@@ -3428,6 +3428,69 @@ register("auth store migra password legacy in hash al login riuscito", async () 
   }
 });
 
+register("auth store non ricalcola o migra credenziali gia scrypt al login", async () => {
+  const crypto = require("crypto");
+  let updateUserCredentialsCalls = 0;
+  let createdSessionUserId: string | null = null;
+  const salt = "stable-salt";
+  const keylen = 64;
+  const storedUser = {
+    id: "scrypt-user",
+    username: "scrypt-user",
+    role: "user",
+    credentials: {
+      password: {
+        algorithm: "scrypt",
+        salt,
+        keylen,
+        hash: crypto.scryptSync("secret123", salt, keylen).toString("hex")
+      }
+    },
+    profile: {
+      displayName: "Scrypt User"
+    }
+  };
+
+  const auth = createAuthStore({
+    datastore: {
+      async listUsers() {
+        return [storedUser];
+      },
+      async findUserByUsername(username: string) {
+        return username === "scrypt-user" ? storedUser : null;
+      },
+      async findUserById(userId: string) {
+        return userId === "scrypt-user" ? storedUser : null;
+      },
+      async createUser() {
+        throw new Error("createUser should not be called during login.");
+      },
+      async updateUserCredentials() {
+        updateUserCredentialsCalls += 1;
+        return storedUser;
+      },
+      async updateUserProfile() {
+        throw new Error("updateUserProfile should not be called during login.");
+      },
+      createSession(token: string, userId: string, createdAt: number) {
+        void token;
+        void createdAt;
+        createdSessionUserId = userId;
+      },
+      async findSession() {
+        return null;
+      },
+      async deleteSession() {}
+    }
+  });
+
+  const login = await auth.loginWithPassword("scrypt-user", "secret123");
+
+  assert.equal(login.ok, true);
+  assert.equal(updateUserCredentialsCalls, 0);
+  assert.equal(createdSessionUserId, "scrypt-user");
+});
+
 register("auth store accetta email opzionale ma rifiuta password debole", async () => {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
