@@ -43,6 +43,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/module-runtime.test.cjs",
   "../tests/gameplay/regression/admin-console-routes.test.cjs",
   "../tests/gameplay/regression/startup-init-error.test.cjs",
+  "../tests/gameplay/regression/tooling-and-supabase-regressions.test.cjs",
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
   "../tests/gameplay/regression/vercel-routing-config.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
