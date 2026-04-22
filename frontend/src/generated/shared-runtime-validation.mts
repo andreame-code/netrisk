@@ -156,7 +156,7 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
 export const registerRequestSchema = objectSchema({
   username: z.string().min(1),
-  password: z.string().min(1),
+  password: z.string().min(8).max(128),
   email: z.string().optional()
 });
 

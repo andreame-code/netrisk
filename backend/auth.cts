@@ -265,10 +265,19 @@ function registrationValidationError(
     );
   }
 
-  if (input.password.length < 4) {
+  // Enforce minimum password length for security (NIST 800-63B)
+  // and a maximum to prevent DoS attacks during hashing.
+  if (input.password.length < 8) {
     return authFailure(
-      "Password troppo corta: usa almeno 4 caratteri.",
+      "Password troppo corta: usa almeno 8 caratteri.",
       "auth.register.shortPassword"
+    );
+  }
+
+  if (input.password.length > 128) {
+    return authFailure(
+      "Password troppo lunga: usa massimo 128 caratteri.",
+      "auth.register.longPassword"
     );
   }
 

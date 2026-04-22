@@ -9,6 +9,7 @@ export type RegistrationValidationKey =
   | "register.errors.requiredFields"
   | "register.errors.invalidUsername"
   | "register.errors.shortPassword"
+  | "register.errors.longPassword"
   | "register.errors.passwordMismatch"
   | "register.errors.invalidEmail";
 
@@ -26,8 +27,12 @@ export function validateRegistrationInput(
     return "register.errors.invalidUsername";
   }
 
-  if (input.password.length < 4) {
+  if (input.password.length < 8) {
     return "register.errors.shortPassword";
+  }
+
+  if (input.password.length > 128) {
+    return "register.errors.longPassword";
   }
 
   if (input.password !== input.confirmPassword) {
