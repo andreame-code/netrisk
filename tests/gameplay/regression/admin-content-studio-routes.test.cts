@@ -138,7 +138,7 @@ function createVictoryDraft(
   }> = {}
 ) {
   return {
-    id: overrides.id || "victory.world.na-asia",
+    id: typeof overrides.id === "string" ? overrides.id : "victory.world.na-asia",
     name: overrides.name || "North America and Asia",
     description:
       overrides.description ||
@@ -320,6 +320,21 @@ register("content studio update route rejects body and path id mismatches", asyn
 
     assert.equal(response.statusCode, 400);
     assert.match(String(response.payload.error || ""), /does not match route id/i);
+  });
+});
+
+register("content studio rejects empty module ids at the API boundary", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const response = await callApp(
+      app,
+      "POST",
+      "/api/admin/content-studio/modules/validate",
+      createVictoryDraft({ id: "" }),
+      authHeaders(adminSessionToken)
+    );
+
+    assert.equal(response.statusCode, 400);
+    assert.match(String(response.payload.error || ""), /id/i);
   });
 });
 

@@ -1133,7 +1133,7 @@ export const authoredVictoryModuleContentSchema = objectSchema({
 export type AuthoredVictoryModuleContent = z.infer<typeof authoredVictoryModuleContentSchema>;
 
 export const authoredModuleInputSchema = objectSchema({
-  id: z.string(),
+  id: z.string().trim().min(1),
   name: z.string(),
   description: z.string(),
   version: z.string(),

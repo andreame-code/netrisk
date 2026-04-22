@@ -3,6 +3,7 @@ const {
   authoredModuleSchema
 } = require("../shared/runtime-validation.cjs");
 const { registeredMaps } = require("../shared/maps/index.cjs");
+const { listVictoryRuleSets } = require("../shared/victory-rule-sets.cjs");
 
 import type {
   AuthoredMapOption,
@@ -98,6 +99,12 @@ function defaultMapCatalog(): MapCatalog {
     }
   };
 }
+
+const builtInVictoryRuleSetIds = new Set(
+  listVictoryRuleSets()
+    .map((entry: { id?: unknown }) => normalizeString(entry?.id))
+    .filter(isNonEmptyString)
+);
 
 function buildMapOption(map: SupportedMap): AuthoredMapOption {
   const territories = Array.isArray(map?.territories) ? map.territories : [];
@@ -284,6 +291,14 @@ function validateModule(
         "invalid-id",
         "id",
         "Use letters, numbers, dashes, underscores, or dots for the module id."
+      )
+    );
+  } else if (builtInVictoryRuleSetIds.has(moduleId)) {
+    errors.push(
+      issue(
+        "reserved-module-id",
+        "id",
+        `Module id "${moduleId}" is already used by a built-in victory rule set.`
       )
     );
   }

@@ -135,6 +135,15 @@ register(
     const datastore = createMemoryDatastore();
     const service = createAuthoredModulesService({ datastore });
 
+    const builtInIdValidation = await service.validateDraft(createVictoryDraft({ id: "conquest" }));
+    assert.equal(builtInIdValidation.validation.valid, false);
+    assert.equal(
+      builtInIdValidation.validation.errors.some(
+        (entry: { code?: string }) => entry.code === "reserved-module-id"
+      ),
+      true
+    );
+
     const invalidValidation = await service.validateDraft(
       createVictoryDraft({
         id: "victory.invalid-validation",
