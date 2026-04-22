@@ -288,6 +288,7 @@ export function validateNewGameConfig(
     typeof presentationDefaultsInput.ruleSetId === "string" &&
     presentationDefaultsInput.ruleSetId !== "";
   const canPreferFallbackPresentationDefaults = !hasExplicitContentPackId && !hasExplicitRuleSetId;
+  const canPreferFallbackPieceSetDefaults = !hasExplicitContentPackId;
   const totalPlayersSource =
     input.totalPlayers == null ? fallbackConfigInput.totalPlayers : input.totalPlayers;
   const totalPlayers = totalPlayersSource == null ? 2 : Number(totalPlayersSource);
@@ -381,7 +382,7 @@ export function validateNewGameConfig(
 
   const requestedPieceSetId = String(
     input.pieceSetId ||
-      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.pieceSetId : null) ||
+      (canPreferFallbackPieceSetDefaults ? fallbackConfigInput.pieceSetId : null) ||
       selectedContentPack.defaultPieceSetId ||
       fallbackConfigInput.pieceSetId ||
       DEFAULT_PLAYER_PIECE_SET_ID

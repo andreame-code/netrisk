@@ -477,6 +477,24 @@ register(
         );
         assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
         assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
+
+        const explicitRuleSetResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Admin Module Defaults With Explicit Rule Set",
+            ruleSetId: "classic-defense-3"
+          },
+          authHeaders(adminSessionToken)
+        );
+
+        assert.equal(explicitRuleSetResponse.statusCode, 201);
+        assert.equal(
+          explicitRuleSetResponse.payload.state.gameConfig.ruleSetId,
+          "classic-defense-3"
+        );
+        assert.equal(explicitRuleSetResponse.payload.state.gameConfig.pieceSetId, "signal-palette");
       }
     );
   }
