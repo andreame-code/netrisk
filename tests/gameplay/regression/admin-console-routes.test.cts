@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createApp } = require("../../../backend/server.cjs");
+const { createAdminConsole } = require("../../../backend/admin-console.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -241,6 +242,9 @@ register("admin console updates defaults and new game creation consumes them", a
         defaults: {
           themeId: "ember",
           mapId: "middle-earth",
+          diceRuleSetId: "defense-3",
+          victoryRuleSetId: "majority-control",
+          pieceSkinId: "command-ring",
           totalPlayers: 3
         },
         maintenance: {
@@ -260,6 +264,9 @@ register("admin console updates defaults and new game creation consumes them", a
     assert.equal(optionsResponse.statusCode, 200);
     assert.equal(optionsResponse.payload.adminDefaults.themeId, "ember");
     assert.equal(optionsResponse.payload.adminDefaults.mapId, "middle-earth");
+    assert.equal(optionsResponse.payload.adminDefaults.diceRuleSetId, "defense-3");
+    assert.equal(optionsResponse.payload.adminDefaults.victoryRuleSetId, "majority-control");
+    assert.equal(optionsResponse.payload.adminDefaults.pieceSkinId, "command-ring");
     assert.equal(optionsResponse.payload.adminDefaults.totalPlayers, 3);
 
     const createGameResponse = await callApp(
@@ -274,7 +281,62 @@ register("admin console updates defaults and new game creation consumes them", a
     assert.equal(createGameResponse.statusCode, 200);
     assert.equal(createGameResponse.payload.state.gameConfig.themeId, "ember");
     assert.equal(createGameResponse.payload.state.gameConfig.mapId, "middle-earth");
+    assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "defense-3");
+    assert.equal(createGameResponse.payload.state.gameConfig.victoryRuleSetId, "majority-control");
+    assert.equal(createGameResponse.payload.state.gameConfig.pieceSkinId, "command-ring");
     assert.equal(createGameResponse.payload.state.gameConfig.totalPlayers, 3);
+  });
+});
+
+register("public game options ignore stale invalid admin defaults instead of failing", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const configResponse = await callApp(
+      app,
+      "PUT",
+      "/api/admin/config",
+      {
+        defaults: {
+          activeModuleIds: ["demo.missing-module"],
+          gamePresetId: "demo.missing-preset"
+        }
+      },
+      authHeaders(adminSessionToken)
+    );
+
+    assert.equal(configResponse.statusCode, 400);
+
+    await app.datastore.setAppState("adminConsoleConfig", {
+      defaults: {
+        activeModuleIds: ["demo.missing-module"],
+        gamePresetId: "demo.missing-preset"
+      },
+      maintenance: {
+        staleLobbyDays: 7,
+        auditLogLimit: 120
+      },
+      updatedAt: new Date().toISOString(),
+      updatedBy: {
+        id: "admin_commander",
+        username: "admin_commander",
+        role: "admin"
+      }
+    });
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal("adminDefaults" in optionsResponse.payload, false);
+
+    const createGameResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      {
+        name: "Fallback Config Match"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createGameResponse.statusCode, 200);
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "classic-mini");
   });
 });
 
@@ -403,4 +465,189 @@ register("admin repair preserves runtime dice rule ids while fixing the stored s
       assert.equal(repairResponse.payload.rawState.diceRuleSetId, "demo-barrage");
     }
   );
+});
+
+register("stale lobby cleanup skips games that become active before mutation", async () => {
+  const persistedStates: Array<{ gameId: string; phase: string }> = [];
+  const broadcastStates: Array<{ gameId: string; phase: string }> = [];
+  const adminConsole = createAdminConsole({
+    datastore: {
+      listUsers() {
+        return [];
+      },
+      findUserById() {
+        return null;
+      },
+      updateUserRoleByUsername() {},
+      getAppState(key: string) {
+        if (key === "adminConsoleConfig") {
+          return {
+            defaults: {},
+            maintenance: {
+              staleLobbyDays: 1,
+              auditLogLimit: 120
+            }
+          };
+        }
+
+        if (key === "adminAuditLog") {
+          return [];
+        }
+
+        return null;
+      },
+      setAppState() {
+        return null;
+      }
+    },
+    auth: {
+      publicUser(user: any) {
+        return user;
+      }
+    },
+    gameSessions: {
+      listGames() {
+        return [
+          {
+            id: "game-race",
+            name: "Race Lobby",
+            version: 1,
+            phase: "lobby",
+            playerCount: 1,
+            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+      },
+      getGame() {
+        return {
+          game: {
+            id: "game-race",
+            name: "Race Lobby",
+            version: 1,
+            phase: "lobby",
+            playerCount: 1,
+            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          state: {
+            phase: "lobby",
+            players: [],
+            territories: {},
+            hands: {},
+            gameConfig: {}
+          }
+        };
+      },
+      datastore: {
+        listGames() {
+          return [
+            {
+              id: "game-race",
+              name: "Race Lobby",
+              version: 1,
+              creatorUserId: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+              state: {
+                phase: "lobby",
+                players: [],
+                territories: {},
+                hands: {},
+                gameConfig: {}
+              }
+            }
+          ];
+        }
+      }
+    },
+    loadGameContext() {
+      return {
+        gameId: "game-race",
+        gameName: "Race Lobby",
+        version: 1,
+        state: {
+          phase: "active",
+          players: [],
+          territories: {},
+          hands: {},
+          gameConfig: {}
+        }
+      };
+    },
+    persistGameContext(gameContext: any) {
+      persistedStates.push({
+        gameId: gameContext.gameId,
+        phase: String(gameContext.state?.phase || "")
+      });
+      return null;
+    },
+    broadcastGame(gameContext: any) {
+      broadcastStates.push({
+        gameId: gameContext.gameId,
+        phase: String(gameContext.state?.phase || "")
+      });
+    },
+    createConfiguredInitialState() {
+      return {
+        state: {
+          gameConfig: {},
+          contentPackId: "core",
+          diceRuleSetId: "standard",
+          victoryRuleSetId: "conquest",
+          pieceSetId: "classic"
+        },
+        config: {}
+      };
+    },
+    moduleRuntime: {
+      listInstalledModules() {
+        return [];
+      },
+      getEnabledModules() {
+        return [];
+      },
+      findSupportedMap() {
+        return null;
+      },
+      findContentPack() {
+        return null;
+      },
+      findPlayerPieceSet() {
+        return null;
+      },
+      findDiceRuleSet() {
+        return null;
+      },
+      resolveGamePreset() {
+        return null;
+      },
+      resolveGameConfigDefaults() {
+        return {};
+      },
+      resolveGameSelection() {
+        return {
+          moduleSchemaVersion: 1,
+          activeModules: [],
+          contentProfileId: null,
+          gameplayProfileId: null,
+          uiProfileId: null
+        };
+      }
+    }
+  });
+
+  const actionResponse = await adminConsole.runMaintenanceAction(
+    {
+      id: "admin-1",
+      username: "admin_commander",
+      role: "admin"
+    },
+    {
+      action: "cleanup-stale-lobbies",
+      confirmation: "cleanup-stale-lobbies"
+    }
+  );
+
+  assert.deepEqual(actionResponse.affectedGameIds, []);
+  assert.deepEqual(persistedStates, []);
+  assert.deepEqual(broadcastStates, []);
 });

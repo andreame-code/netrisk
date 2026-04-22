@@ -1063,6 +1063,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
         continue;
       }
 
+      if (String(context.state?.phase || "") !== "lobby") {
+        continue;
+      }
+
       const nextState = safeClone(context.state);
       nextState.phase = "finished";
       nextState.adminMeta = {
