@@ -90,6 +90,34 @@ register("check-no-js-sources consente docs/openapi.json nel repo tracciato", ()
   });
 });
 
+register("check-no-js-sources consente config JSON in .github nel repo tracciato", () => {
+  withTrackedTempRepo((repoDir) => {
+    writeFile(
+      repoDir,
+      "package.json",
+      JSON.stringify({
+        name: "allowlist-github-json",
+        private: true
+      })
+    );
+    writeFile(
+      repoDir,
+      ".github/codex-pr-readiness.json",
+      JSON.stringify({
+        targetLabel: "codex"
+      })
+    );
+    runGit(["add", "."], repoDir);
+
+    const output = execFileSync(process.execPath, [builtScriptPath], {
+      cwd: repoDir,
+      encoding: "utf8"
+    });
+
+    assert.match(output, /Tracked repository sources satisfy the TS-complete allowlist\./);
+  });
+});
+
 register("check-no-js-sources rifiuta file js tracciati fuori allowlist", () => {
   withTrackedTempRepo((repoDir) => {
     writeFile(

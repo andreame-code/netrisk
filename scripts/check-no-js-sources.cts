@@ -32,6 +32,7 @@ const allowedPathPatterns = [
   /^\.vercelignore$/,
   /^\.githooks\/.+$/,
   /^\.github\/.+\.yml$/,
+  /^\.github\/.+\.json$/,
   /^\.prettierignore$/,
   /^\.prettierrc\.json$/,
   /^LICENSE$/,
