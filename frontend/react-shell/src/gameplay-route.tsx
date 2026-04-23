@@ -261,7 +261,21 @@ export function GameRoute() {
   }
 
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
-  const myPlayerId = snapshot?.playerId || storedPlayerId || null;
+  const authenticatedPlayer =
+    authenticatedUser && Array.isArray(snapshot?.players)
+      ? snapshot.players.find(
+          (player) => !player.isAi && player.name === authenticatedUser.username
+        ) || null
+      : null;
+  const storedPlayer =
+    storedPlayerId && playersById[storedPlayerId] ? playersById[storedPlayerId] : null;
+  const myPlayerId =
+    snapshot?.playerId ||
+    authenticatedPlayer?.id ||
+    (storedPlayer && (!authenticatedUser || storedPlayer.name === authenticatedUser.username)
+      ? storedPlayer.id
+      : null) ||
+    null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];

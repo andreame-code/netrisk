@@ -174,6 +174,7 @@ function createGameplayState(overrides: Partial<GameStateResponse> = {}): GameSt
 describe("GameRoute integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
 
     closeStreamMock = vi.fn();
     streamHandlers = null;
@@ -203,6 +204,33 @@ describe("GameRoute integration", () => {
 
   afterEach(() => {
     streamHandlers = null;
+    window.localStorage.clear();
+  });
+
+  it("keeps reinforcement actions visible when the session user matches the current player", async () => {
+    getGameStateMock.mockResolvedValue(createGameplayState({ playerId: null }));
+
+    renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.getElementById("reinforce-group")).toBeVisible();
+    });
+  });
+
+  it("restores reinforcement actions from the legacy stored player id format", async () => {
+    getSessionMock.mockRejectedValue(
+      Object.assign(new Error("Unauthorized"), { code: "AUTH_REQUIRED" })
+    );
+    getGameStateMock.mockResolvedValue(createGameplayState({ playerId: null }));
+    window.localStorage.setItem("frontline-player-id", "p1");
+
+    renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.getElementById("reinforce-group")).toBeVisible();
+    });
   });
 
   it("falls back to polling after an invalid stream payload and returns to live updates after recovery", async () => {
