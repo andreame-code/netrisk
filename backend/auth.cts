@@ -283,9 +283,9 @@ function registrationValidationError(
     );
   }
 
-  if (input.password.length < 4) {
+  if (input.password.length < 8 || input.password.length > 128) {
     return authFailure(
-      "Password troppo corta: usa almeno 4 caratteri.",
+      "Password non valida: usa tra 8 e 128 caratteri.",
       "auth.register.shortPassword"
     );
   }
@@ -333,9 +333,9 @@ function accountSettingsValidationError(
     return authFailure("Inserisci la nuova password.", "auth.account.newPasswordRequired");
   }
 
-  if (nextPassword && nextPassword.length < 4) {
+  if (nextPassword && (nextPassword.length < 8 || nextPassword.length > 128)) {
     return authFailure(
-      "Password troppo corta: usa almeno 4 caratteri.",
+      "Password non valida: usa tra 8 e 128 caratteri.",
       "auth.register.shortPassword"
     );
   }
