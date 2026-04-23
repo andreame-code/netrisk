@@ -324,3 +324,76 @@ register(
     assert.equal(result.victory?.summaryParams?.objectiveTitle, "Own four territories");
   }
 );
+
+register("detectVictory only resolves the authored objective assigned to the player", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 1 },
+      { id: "c", ownerId: "p1", armies: 1 },
+      { id: "d", ownerId: "p1", armies: 1 },
+      { id: "e", ownerId: "p2", armies: 1 }
+    ]),
+    currentTurnIndex: 0,
+    turnPhase: TurnPhase.ATTACK
+  });
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: "victory.mixed",
+    victoryObjectiveAssignments: {
+      p1: "hold-continent"
+    },
+    victoryObjectiveModule: {
+      id: "victory.mixed",
+      name: "Mixed objectives",
+      description: "Different objectives for each player.",
+      version: "1.0.0",
+      moduleType: "victory-objectives",
+      kind: "authored-victory-objectives",
+      map: {
+        id: "classic-mini",
+        name: "Classic Mini",
+        territoryCount: 5,
+        continentCount: 1
+      },
+      objectives: [
+        {
+          id: "hold-continent",
+          title: "Hold the continent",
+          description: "Control the target continent.",
+          enabled: true,
+          type: "control-continents",
+          continentIds: ["north"],
+          continentNames: ["North"],
+          summary: "Control North."
+        },
+        {
+          id: "hold-four",
+          title: "Own four territories",
+          description: "Reach four territories.",
+          enabled: true,
+          type: "control-territory-count",
+          territoryCount: 4,
+          summary: "Own at least 4 territories."
+        }
+      ],
+      preview: {
+        summary: "Win condition: complete your assigned objective.",
+        objectiveSummaries: ["Control North.", "Own at least 4 territories."]
+      }
+    }
+  };
+
+  const blockedResult = detectVictory(state);
+
+  assert.equal(blockedResult.code, "NO_VICTORY");
+  state.gameConfig.victoryObjectiveAssignments = {
+    p1: "hold-four"
+  };
+
+  const winningResult = detectVictory(state);
+
+  assert.equal(winningResult.code, "VICTORY_DECLARED");
+  assert.equal(winningResult.victory?.summaryParams?.objectiveId, "hold-four");
+});

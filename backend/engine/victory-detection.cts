@@ -10,6 +10,7 @@ import {
   type Player,
   type VictoryRuleSet
 } from "../../shared/models.cjs";
+import { resolveAssignedVictoryObjectiveId } from "./victory-objectives.cjs";
 const { authoredVictoryModuleRuntimeSchema } = require("../../shared/runtime-validation.cjs");
 
 export interface VictoryResult {
@@ -368,8 +369,14 @@ function evaluateAuthoredVictoryObjectives(context: ActiveVictoryContext): Victo
   const orderedPlayers = orderedActivePlayers(context.state, context.activePlayers);
 
   for (const player of orderedPlayers) {
+    const assignedObjectiveId = resolveAssignedVictoryObjectiveId(context.state, player.id);
+    const objectivesForPlayer = assignedObjectiveId
+      ? context.authoredVictoryModule.objectives.filter(
+          (objective) => objective.id === assignedObjectiveId
+        )
+      : context.authoredVictoryModule.objectives;
     const matchedObjective =
-      context.authoredVictoryModule.objectives.find((objective) =>
+      objectivesForPlayer.find((objective) =>
         evaluateAuthoredObjectiveForPlayer(context.state, player, objective)
       ) || null;
 

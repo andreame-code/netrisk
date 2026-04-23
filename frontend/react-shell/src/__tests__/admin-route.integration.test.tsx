@@ -1050,4 +1050,73 @@ describe("Admin route integration", () => {
       );
     });
   });
+
+  it("starts a new draft with a generated module id and saves it", async () => {
+    const { user } = renderReactShell("/react/admin/content-studio");
+
+    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+
+    validateAdminAuthoredModuleMock.mockClear();
+    createAdminAuthoredModuleMock.mockClear();
+    createAdminAuthoredModuleMock
+      .mockResolvedValueOnce(
+        createAuthoredMutationResponse({
+          id: "victory.new-draft"
+        })
+      )
+      .mockResolvedValueOnce(
+        createAuthoredMutationResponse({
+          id: "victory.new-draft-2"
+        })
+      );
+
+    await user.click(screen.getByRole("button", { name: "New draft" }));
+
+    const moduleIdField = (await screen.findByDisplayValue(
+      "victory.new-draft"
+    )) as HTMLInputElement;
+    expect(moduleIdField.value).toBe("victory.new-draft");
+
+    await waitFor(() => {
+      expect(validateAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "victory.new-draft",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(createAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "victory.new-draft",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "New draft" }));
+
+    const nextModuleIdField = (await screen.findByDisplayValue(
+      "victory.new-draft-2"
+    )) as HTMLInputElement;
+    expect(nextModuleIdField.value).toBe("victory.new-draft-2");
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(createAdminAuthoredModuleMock).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: "victory.new-draft-2",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+  });
 });
