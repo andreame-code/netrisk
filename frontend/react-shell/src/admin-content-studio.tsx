@@ -108,6 +108,16 @@ function createObjectiveId(index: number): string {
   return `objective-${index + 1}`;
 }
 
+function createNextObjectiveIndex(objectives: AuthoredVictoryObjective[]): number {
+  let index = objectives.length;
+
+  while (objectives.some((objective) => objective.id === createObjectiveId(index))) {
+    index += 1;
+  }
+
+  return index;
+}
+
 function createObjective(
   index: number,
   type: AuthoredVictoryObjective["type"]
@@ -501,7 +511,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       return;
     }
 
-    const nextObjective = createObjective(draft.content.objectives.length, type);
+    const nextObjective = createObjective(createNextObjectiveIndex(draft.content.objectives), type);
     updateDraft({
       ...draft,
       content: {
