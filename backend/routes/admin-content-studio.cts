@@ -142,7 +142,7 @@ function sendAuthoredModuleError(
 }
 
 function ensureModuleIdMatchesPath(routeModuleId: string, bodyModuleId: string) {
-  if (routeModuleId !== bodyModuleId) {
+  if (routeModuleId.trim() !== bodyModuleId) {
     throw new Error(
       `Request body module id "${bodyModuleId}" does not match route id "${routeModuleId}".`
     );

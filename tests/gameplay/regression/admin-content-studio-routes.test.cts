@@ -323,6 +323,21 @@ register("content studio update route rejects body and path id mismatches", asyn
   });
 });
 
+register("content studio update route accepts legacy route ids with extra whitespace", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const response = await callApp(
+      app,
+      "PUT",
+      "/api/admin/content-studio/modules/%20victory.route-id%20",
+      createVictoryDraft({ id: " victory.route-id " }),
+      authHeaders(adminSessionToken)
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.payload.module.id, "victory.route-id");
+  });
+});
+
 register("content studio rejects empty module ids at the API boundary", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const response = await callApp(
