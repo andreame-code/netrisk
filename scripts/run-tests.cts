@@ -3508,7 +3508,7 @@ register("auth store accetta email opzionale ma rifiuta password debole", async 
 
     const weak = await auth.registerPasswordUser({
       username: "weak-user",
-      password: "123",
+      password: "1234567",
       email: "weak@example.com"
     });
     assert.equal(weak.ok, false);
@@ -6729,10 +6729,10 @@ register(
       });
 
       try {
-        const registered = await app.auth.registerPasswordUser("supa_tester", "secret");
+        const registered = await app.auth.registerPasswordUser("supa_tester", TEST_PASSWORD);
         assert.equal(registered.ok, true);
 
-        const login = await app.auth.loginWithPassword("supa_tester", "secret");
+        const login = await app.auth.loginWithPassword("supa_tester", TEST_PASSWORD);
         assert.equal(login.ok, true);
         assert.equal(typeof login.sessionToken, "string");
 

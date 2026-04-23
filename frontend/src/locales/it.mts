@@ -29,7 +29,7 @@ export const it = Object.freeze({
   "auth.register.requiredFields": "Inserisci utente e password.",
   "auth.register.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",
-  "auth.register.shortPassword": "Password troppo corta: usa almeno 4 caratteri.",
+  "auth.register.shortPassword": "Password troppo corta: usa almeno 8 caratteri.",
   "auth.register.invalidEmail": "Email non valida.",
   "auth.register.emailProtectionUnavailable":
     "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.",
@@ -495,13 +495,13 @@ export const it = Object.freeze({
   "register.guideline.username":
     "Username: 3-32 caratteri, lettere, numeri, underscore o trattino.",
   "register.guideline.email": "Email non obbligatoria.",
-  "register.guideline.password": "Password: almeno 4 caratteri.",
+  "register.guideline.password": "Password: tra 8 e 128 caratteri.",
   "register.submit": "Registrati",
   "register.auth.loggedIn": "Hai gia effettuato l'accesso come {username}.",
   "register.errors.requiredFields": "Compila i campi obbligatori.",
   "register.errors.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",
-  "register.errors.shortPassword": "Usa una password con almeno 4 caratteri.",
+  "register.errors.shortPassword": "Usa una password tra 8 e 128 caratteri.",
   "register.errors.passwordMismatch": "Le password non coincidono.",
   "register.errors.invalidEmail": "Email non valida.",
   "register.errors.submitFailed": "Registrazione non riuscita.",
