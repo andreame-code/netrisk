@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
@@ -9,6 +9,7 @@ import type {
 import {
   getGameState,
   getModuleOptions,
+  sendGameAction,
   getSession,
   subscribeToGameEvents
 } from "@frontend-core/api/client.mts";
@@ -45,6 +46,7 @@ vi.mock("@react-shell/gameplay-map-viewport", () => ({
 const getGameStateMock = vi.mocked(getGameState);
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
+const sendGameActionMock = vi.mocked(sendGameAction);
 const subscribeToGameEventsMock = vi.mocked(subscribeToGameEvents);
 
 type StreamHandlers = Parameters<typeof subscribeToGameEvents>[0];
@@ -174,6 +176,7 @@ function createGameplayState(overrides: Partial<GameStateResponse> = {}): GameSt
 describe("GameRoute integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
 
     closeStreamMock = vi.fn();
     streamHandlers = null;
@@ -181,6 +184,35 @@ describe("GameRoute integration", () => {
     getSessionMock.mockResolvedValue(createSession());
     getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
     getGameStateMock.mockResolvedValue(createGameplayState());
+    sendGameActionMock.mockResolvedValue({
+      ok: true,
+      state: createGameplayState({
+        reinforcementPool: 2,
+        version: 5,
+        map: [
+          {
+            id: "aurora",
+            name: "Aurora",
+            neighbors: ["bastion"],
+            continentId: "north",
+            ownerId: "p1",
+            armies: 4,
+            x: 0.2,
+            y: 0.3
+          },
+          {
+            id: "bastion",
+            name: "Bastion",
+            neighbors: ["aurora"],
+            continentId: "north",
+            ownerId: "p2",
+            armies: 1,
+            x: 0.65,
+            y: 0.45
+          }
+        ]
+      })
+    });
     subscribeToGameEventsMock.mockImplementation((handlers) => {
       streamHandlers = handlers;
       return {
@@ -203,6 +235,57 @@ describe("GameRoute integration", () => {
 
   afterEach(() => {
     streamHandlers = null;
+    window.localStorage.clear();
+  });
+
+  it("keeps reinforcement actions visible when the session user matches the current player", async () => {
+    getGameStateMock.mockResolvedValue(createGameplayState({ playerId: null }));
+
+    renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.getElementById("reinforce-group")).toBeVisible();
+    });
+  });
+
+  it("restores reinforcement actions from the legacy stored player id format", async () => {
+    getSessionMock.mockRejectedValue(
+      Object.assign(new Error("Unauthorized"), { code: "AUTH_REQUIRED" })
+    );
+    getGameStateMock.mockResolvedValue(createGameplayState({ playerId: null }));
+    window.localStorage.setItem("frontline-player-id", "p1");
+
+    renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.getElementById("reinforce-group")).toBeVisible();
+    });
+  });
+
+  it("submits reinforce without expectedVersion when the player id is inferred", async () => {
+    getGameStateMock.mockResolvedValue(createGameplayState({ playerId: null }));
+
+    renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(document.getElementById("reinforce-group")).toBeVisible();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Aggiungi" }));
+
+    await waitFor(() => {
+      expect(sendGameActionMock).toHaveBeenCalledTimes(1);
+    });
+    expect(sendGameActionMock.mock.calls[0]?.[0]).toEqual({
+      gameId: "g-1",
+      playerId: "p1",
+      type: "reinforce",
+      territoryId: "aurora",
+      amount: 1
+    });
   });
 
   it("falls back to polling after an invalid stream payload and returns to live updates after recovery", async () => {

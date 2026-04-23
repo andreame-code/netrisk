@@ -261,7 +261,21 @@ export function GameRoute() {
   }
 
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
-  const myPlayerId = snapshot?.playerId || storedPlayerId || null;
+  const authenticatedPlayer =
+    authenticatedUser && Array.isArray(snapshot?.players)
+      ? snapshot.players.find(
+          (player) => !player.isAi && player.name === authenticatedUser.username
+        ) || null
+      : null;
+  const storedPlayer =
+    storedPlayerId && playersById[storedPlayerId] ? playersById[storedPlayerId] : null;
+  const myPlayerId =
+    snapshot?.playerId ||
+    authenticatedPlayer?.id ||
+    (storedPlayer && (!authenticatedUser || storedPlayer.name === authenticatedUser.username)
+      ? storedPlayer.id
+      : null) ||
+    null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
@@ -271,6 +285,8 @@ export function GameRoute() {
   );
   const currentVersion =
     snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
+  const actionExpectedVersion =
+    snapshot?.playerId && snapshot.playerId === myPlayerId ? currentVersion : undefined;
   const isMyTurn = Boolean(
     snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
   );
@@ -486,7 +502,7 @@ export function GameRoute() {
         {
           gameId: resolvedGameId,
           playerId: myPlayerId,
-          ...(currentVersion ? { expectedVersion: currentVersion } : {})
+          ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
         },
         {
           errorMessage: t("errors.requestFailed"),
@@ -578,7 +594,7 @@ export function GameRoute() {
       type: "reinforce",
       territoryId: reinforceTerritoryId,
       amount,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -593,7 +609,7 @@ export function GameRoute() {
       type: "reinforce",
       territoryId: reinforceTerritoryId,
       amount: Math.max(1, Number(snapshot?.reinforcementPool || 1)),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -609,7 +625,7 @@ export function GameRoute() {
       fromId: attackFromId,
       toId: attackToId,
       attackDice: Number(attackDiceCount),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -628,7 +644,7 @@ export function GameRoute() {
       playerId: myPlayerId,
       type: "moveAfterConquest",
       armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -642,7 +658,7 @@ export function GameRoute() {
       playerId: myPlayerId,
       type: "moveAfterConquest",
       armies: pendingConquestMax,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -659,7 +675,7 @@ export function GameRoute() {
       fromId: fortifyFromId,
       toId: fortifyToId,
       armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -672,7 +688,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "endTurn",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -685,7 +701,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       cardIds: selectedTradeCardIds,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -729,7 +745,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "surrender",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 

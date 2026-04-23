@@ -4,6 +4,48 @@ type StoredPlayerSession = {
   playerId: string;
 };
 
+function parseStoredPlayerId(rawValue: string, gameId?: string | null): string | null {
+  const normalizedValue = rawValue.trim();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  try {
+    const parsedValue = JSON.parse(normalizedValue) as Partial<StoredPlayerSession> | string | null;
+    if (typeof parsedValue === "string") {
+      return parsedValue.trim() || null;
+    }
+
+    if (typeof parsedValue === "number" && /^\d+$/.test(normalizedValue)) {
+      return normalizedValue;
+    }
+
+    if (
+      !parsedValue ||
+      typeof parsedValue.playerId !== "string" ||
+      typeof parsedValue.gameId !== "string"
+    ) {
+      return null;
+    }
+
+    if (gameId && parsedValue.gameId !== gameId) {
+      return null;
+    }
+
+    return parsedValue.playerId;
+  } catch {
+    if (
+      normalizedValue.startsWith("{") ||
+      normalizedValue.startsWith("[") ||
+      normalizedValue.startsWith('"')
+    ) {
+      return null;
+    }
+
+    return normalizedValue;
+  }
+}
+
 export function storeCurrentPlayerId(
   playerId: string | null | undefined,
   gameId?: string | null
@@ -33,20 +75,7 @@ export function readCurrentPlayerId(gameId?: string | null): string | null {
       return null;
     }
 
-    const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSession> | null;
-    if (
-      !parsedValue ||
-      typeof parsedValue.playerId !== "string" ||
-      typeof parsedValue.gameId !== "string"
-    ) {
-      return null;
-    }
-
-    if (gameId && parsedValue.gameId !== gameId) {
-      return null;
-    }
-
-    return parsedValue.playerId;
+    return parseStoredPlayerId(rawValue, gameId);
   } catch {
     return null;
   }
