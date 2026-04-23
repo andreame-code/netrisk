@@ -702,6 +702,7 @@ export function publicState(state: EngineState) {
 
   if (rawGameConfig && snapshotState.gameConfig) {
     const snapshotGameConfig = snapshotState.gameConfig;
+    delete snapshotGameConfig.victoryObjectiveAssignments;
     (["ruleSetId", "ruleSetName", "victoryRuleSetId", "themeId", "pieceSkinId"] as const).forEach(
       (key) => {
         const rawValue = rawGameConfig[key];

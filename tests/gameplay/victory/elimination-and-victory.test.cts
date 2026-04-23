@@ -139,6 +139,7 @@ register("startGame assigns authored victory objectives to each player", () => {
   const assignedObjective = getAssignedVictoryObjectiveForPlayer(state, "p1");
   assert.equal(Boolean(assignedObjective), true);
   assert.equal(assignedObjective?.moduleId, "victory.missions");
+  assert.equal(publicState(state).gameConfig?.victoryObjectiveAssignments, undefined);
 });
 
 register("declareWinnerIfNeeded assigns victory when one active player remains", () => {
