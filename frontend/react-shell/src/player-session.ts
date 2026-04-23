@@ -16,6 +16,10 @@ function parseStoredPlayerId(rawValue: string, gameId?: string | null): string |
       return parsedValue.trim() || null;
     }
 
+    if (typeof parsedValue === "number" && /^\d+$/.test(normalizedValue)) {
+      return normalizedValue;
+    }
+
     if (
       !parsedValue ||
       typeof parsedValue.playerId !== "string" ||
