@@ -1,0 +1,45 @@
+{
+  "targetLabel": "codex",
+  "branchPrefix": "codex/",
+  "codexActors": ["chatgpt-codex-connector"],
+  "codexGreenlightPhrases": [
+    "codex greenlight",
+    "codex pr readiness: greenlight",
+    "codex final approval"
+  ],
+  "requiredCheckNames": ["quality", "coverage", "e2e-smoke", "Analyze (javascript-typescript)"],
+  "requiredQualitySteps": {
+    "typecheck": ["Run repository typecheck", "Run React shell typecheck"],
+    "build": ["Run build"],
+    "lint": ["Run lint"],
+    "format": ["Run format check"],
+    "reactTests": ["Run React shell tests"]
+  },
+  "maxCommitsBehindBase": 0,
+  "summaryCommentMarker": "<!-- codex-pr-readiness-summary -->",
+  "skipTestAllowlist": [],
+  "temporaryMarkerAllowlist": [],
+  "syncRequirements": [
+    {
+      "ifChanged": ["shared/runtime-validation.cts"],
+      "mustAlsoChange": ["frontend/src/generated/shared-runtime-validation.mts"],
+      "message": "Shared runtime validation changes must keep generated frontend artifacts in sync."
+    }
+  ],
+  "productionFileGlobs": [
+    "backend/**",
+    "shared/**",
+    "scripts/**",
+    "frontend/src/**",
+    "frontend/react-shell/src/**",
+    "api/**",
+    "modules/**",
+    "supabase/**"
+  ],
+  "testFileGlobs": ["tests/**", "e2e/**", "frontend/react-shell/src/__tests__/**"],
+  "docFileGlobs": ["docs/**", "*.md", "**/*.md"],
+  "largeDiffChangeThreshold": 700,
+  "significantChangeThreshold": 250,
+  "lowTestAdditionsMinProductionAdditions": 80,
+  "lowTestAdditionsRatio": 0.05
+}

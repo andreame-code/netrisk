@@ -117,7 +117,6 @@ function createNextObjectiveIndex(objectives: AuthoredVictoryObjective[]): numbe
 
   return index;
 }
-
 function createObjective(
   index: number,
   type: AuthoredVictoryObjective["type"]

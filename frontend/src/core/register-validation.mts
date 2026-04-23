@@ -26,7 +26,7 @@ export function validateRegistrationInput(
     return "register.errors.invalidUsername";
   }
 
-  if (input.password.length < 4) {
+  if (input.password.length < 8 || input.password.length > 128) {
     return "register.errors.shortPassword";
   }
 

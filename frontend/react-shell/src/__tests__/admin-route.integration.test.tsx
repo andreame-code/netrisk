@@ -994,7 +994,6 @@ describe("Admin route integration", () => {
     expect(screen.getByText("Engine-ready JSON")).toBeInTheDocument();
     expect(screen.getByText(/authored-victory-objectives/)).toBeInTheDocument();
   });
-
   it("keeps generated objective ids unique after removing an existing objective", async () => {
     const detail = createAuthoredModuleDetail({
       content: {

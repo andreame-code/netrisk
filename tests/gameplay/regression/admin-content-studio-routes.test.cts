@@ -337,7 +337,6 @@ register("content studio update route accepts legacy route ids with extra whites
     assert.equal(response.payload.module.id, "victory.route-id");
   });
 });
-
 register("content studio rejects empty module ids at the API boundary", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const response = await callApp(
