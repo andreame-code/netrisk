@@ -222,6 +222,17 @@ register("codex PR readiness targets only draft Codex PRs", () => {
   assert.equal(skipped.targeted, false);
 });
 
+register("codex PR readiness workflow listens to all pull_request workflow_run completions", () => {
+  const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(
+    workflow,
+    /github\.event_name == 'workflow_run' &&\s+github\.event\.workflow_run\.event == 'pull_request'\) \|\|/
+  );
+  assert.doesNotMatch(workflow, /github\.event\.workflow_run\.head_branch/);
+});
+
 register(
   "codex PR readiness blocks pending checks, stale Codex feedback, stale branches, and conflicts",
   () => {
