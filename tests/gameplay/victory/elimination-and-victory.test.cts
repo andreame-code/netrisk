@@ -2,8 +2,10 @@ const assert = require("node:assert/strict");
 const {
   createInitialState,
   declareWinnerIfNeeded,
+  getAssignedVictoryObjectiveForPlayer,
   getMapTerritories,
   publicState,
+  startGame,
   surrenderPlayer
 } = require("../../../backend/engine/game-engine.cjs");
 const { MAJORITY_CONTROL_VICTORY_RULE_SET_ID } = require("../../../shared/models.cjs");
@@ -79,6 +81,64 @@ register("publicState preserves runtime setup ids without mutating live state", 
   assert.equal(state.gameConfig?.victoryRuleSetId, "runtime.victory");
   assert.equal(state.gameConfig?.themeId, "runtime.theme");
   assert.equal(state.gameConfig?.pieceSkinId, "runtime.skin");
+});
+
+register("startGame assigns authored victory objectives to each player", () => {
+  const state = createInitialState();
+  state.players = [
+    { id: "p1", name: "Alice", color: "#111111", connected: true },
+    { id: "p2", name: "Bob", color: "#222222", connected: true }
+  ];
+  state.gameConfig = {
+    ...(state.gameConfig || {}),
+    victoryRuleSetId: "victory.missions",
+    victoryObjectiveModule: {
+      id: "victory.missions",
+      name: "Mission deck",
+      description: "Private objectives.",
+      version: "1.0.0",
+      moduleType: "victory-objectives",
+      kind: "authored-victory-objectives",
+      map: {
+        id: "classic-mini",
+        name: "Classic Mini",
+        territoryCount: 0,
+        continentCount: 0
+      },
+      objectives: [
+        {
+          id: "mission-a",
+          title: "Mission A",
+          description: "Complete mission A.",
+          enabled: true,
+          type: "control-territory-count",
+          territoryCount: 3,
+          summary: "Own 3 territories."
+        },
+        {
+          id: "mission-b",
+          title: "Mission B",
+          description: "Complete mission B.",
+          enabled: true,
+          type: "control-territory-count",
+          territoryCount: 4,
+          summary: "Own 4 territories."
+        }
+      ],
+      preview: {
+        summary: "Win condition: complete your mission.",
+        objectiveSummaries: ["Own 3 territories.", "Own 4 territories."]
+      }
+    }
+  };
+
+  startGame(state, () => 0);
+
+  assert.equal(typeof state.gameConfig?.victoryObjectiveAssignments?.p1, "string");
+  assert.equal(typeof state.gameConfig?.victoryObjectiveAssignments?.p2, "string");
+  const assignedObjective = getAssignedVictoryObjectiveForPlayer(state, "p1");
+  assert.equal(Boolean(assignedObjective), true);
+  assert.equal(assignedObjective?.moduleId, "victory.missions");
 });
 
 register("declareWinnerIfNeeded assigns victory when one active player remains", () => {

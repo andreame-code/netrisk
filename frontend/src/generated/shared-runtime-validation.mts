@@ -854,6 +854,18 @@ export const snapshotDiceRuleSetSchema = objectSchema({
 
 export type SnapshotDiceRuleSet = z.infer<typeof snapshotDiceRuleSetSchema>;
 
+export const snapshotVictoryObjectiveSchema = objectSchema({
+  moduleId: z.string().min(1),
+  moduleName: z.string().min(1),
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  type: z.string().min(1),
+  summary: z.string().min(1).optional()
+});
+
+export type SnapshotVictoryObjective = z.infer<typeof snapshotVictoryObjectiveSchema>;
+
 export const snapshotLogEntrySchema = objectSchema({
   message: z.string().min(1).optional(),
   messageKey: z.string().min(1).nullable().optional(),
@@ -916,6 +928,7 @@ export const gameSnapshotSchema = objectSchema({
   gameConfig: gameConfigSummarySchema.nullable().optional(),
   mapVisual: snapshotMapVisualSchema.nullable().optional(),
   diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
+  assignedVictoryObjective: snapshotVictoryObjectiveSchema.nullable().optional(),
   fortifyUsed: z.boolean().optional(),
   attacksThisTurn: z.number().optional(),
   conqueredTerritoryThisTurn: z.boolean().optional(),
@@ -946,6 +959,7 @@ export const gameMutationStateSchema = objectSchema({
   gameConfig: gameConfigSummarySchema.nullable().optional(),
   mapVisual: snapshotMapVisualSchema.nullable().optional(),
   diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
+  assignedVictoryObjective: snapshotVictoryObjectiveSchema.nullable().optional(),
   fortifyUsed: z.boolean().optional(),
   attacksThisTurn: z.number().optional(),
   conqueredTerritoryThisTurn: z.boolean().optional(),

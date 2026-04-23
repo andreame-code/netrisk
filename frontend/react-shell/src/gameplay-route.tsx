@@ -265,6 +265,7 @@ export function GameRoute() {
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
+  const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
   const localizedLog = translateGameLogEntries(snapshot);
   const myTerritories = (snapshot?.map || []).filter(
     (territory) => territory.ownerId === myPlayerId
@@ -965,6 +966,26 @@ export function GameRoute() {
               <span>{t("game.reinforcementBanner")}</span>{" "}
               <strong id="reinforcement-banner-value">{snapshot.reinforcementPool}</strong>
             </span>
+          </div>
+
+          <div
+            className="rail-section game-objective-section"
+            data-testid="assigned-objective-panel"
+            hidden={!assignedVictoryObjective}
+          >
+            <div className="section-title-row">
+              <h3>{t("game.objective.heading")}</h3>
+              <span className="badge accent">{t("game.objective.badge")}</span>
+            </div>
+            <article className="action-meta-list">
+              <strong>{assignedVictoryObjective?.title}</strong>
+              <p className="action-help">{assignedVictoryObjective?.description}</p>
+              <p className="action-help">
+                {t("game.objective.module", {
+                  moduleName: assignedVictoryObjective?.moduleName || ""
+                })}
+              </p>
+            </article>
           </div>
 
           <div

@@ -23,8 +23,8 @@ const {
   addPlayer,
   createInitialState,
   forceEndTurn,
-  getCurrentPlayer,
   getPlayer,
+  getAssignedVictoryObjectiveForPlayer,
   publicState,
   startGame,
   tradeCardSet
@@ -699,7 +699,15 @@ function createApp(options: CreateAppOptions = {}) {
     return {
       ...baseSnapshot,
       playerId: resolvedPlayer ? resolvedPlayer.id : null,
-      ...(resolvedPlayer ? { playerHand: visibleHandForPlayer(nextState, resolvedPlayer) } : {})
+      ...(resolvedPlayer
+        ? {
+            playerHand: visibleHandForPlayer(nextState, resolvedPlayer),
+            assignedVictoryObjective: getAssignedVictoryObjectiveForPlayer(
+              nextState,
+              resolvedPlayer.id
+            )
+          }
+        : {})
     };
   }
 
@@ -1574,7 +1582,7 @@ function createApp(options: CreateAppOptions = {}) {
         startGame,
         persistWithAiTurns,
         broadcastGame,
-        snapshotForState,
+        snapshotForUser,
         sendJson,
         sendLocalizedError
       );

@@ -29,12 +29,18 @@ import {
   type Territory
 } from "../../shared/models.cjs";
 import { detectVictory } from "./victory-detection.cjs";
+import {
+  assignVictoryObjectives,
+  getAssignedVictoryObjectiveForPlayer,
+  resolveAssignedVictoryObjectiveId
+} from "./victory-objectives.cjs";
 import { compareCombatDice, rollCombatDice } from "./combat-dice.cjs";
 import { calculateReinforcements } from "./reinforcement-calculator.cjs";
 import { findSupportedMap } from "../../shared/maps/index.cjs";
 const { secureRandom } = require("../random.cjs");
 
 export { GameAction, TurnPhase };
+export { getAssignedVictoryObjectiveForPlayer, resolveAssignedVictoryObjectiveId };
 
 type LoadedMap = NonNullable<ReturnType<typeof findSupportedMap>> & {
   backgroundImage?: string | null;
@@ -833,6 +839,7 @@ export function startGame(
   state.fortifyUsed = false;
   state.attacksThisTurn = 0;
   state.conqueredTerritoryThisTurn = false;
+  assignVictoryObjectives(state, random);
 
   shuffledTerritories.forEach((territoryId) => {
     state.territories[territoryId] = { ownerId: null, armies: 0 };
