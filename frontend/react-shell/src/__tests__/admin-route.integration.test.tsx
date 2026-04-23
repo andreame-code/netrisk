@@ -994,4 +994,129 @@ describe("Admin route integration", () => {
     expect(screen.getByText("Engine-ready JSON")).toBeInTheDocument();
     expect(screen.getByText(/authored-victory-objectives/)).toBeInTheDocument();
   });
+  it("keeps generated objective ids unique after removing an existing objective", async () => {
+    const detail = createAuthoredModuleDetail({
+      content: {
+        mapId: "classic-mini",
+        objectives: [
+          {
+            id: "objective-1",
+            title: "First objective",
+            description: "Original first objective.",
+            enabled: true,
+            type: "control-continents",
+            continentIds: ["north_america"]
+          },
+          {
+            id: "objective-2",
+            title: "Second objective",
+            description: "Original second objective.",
+            enabled: true,
+            type: "control-territory-count",
+            territoryCount: 12
+          }
+        ]
+      }
+    });
+    getAdminAuthoredModuleMock.mockResolvedValue(detail);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const { user } = renderReactShell("/react/admin/content-studio");
+
+    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("objective-1")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Remove objective" }));
+    await user.click(screen.getByRole("button", { name: "Add territory objective" }));
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Remove objective "objective-1" from this draft? This change is not reversible.'
+    );
+    expect(await screen.findByDisplayValue("objective-3")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(updateAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        "victory.na-asia",
+        expect.objectContaining({
+          content: expect.objectContaining({
+            objectives: expect.arrayContaining([
+              expect.objectContaining({ id: "objective-2" }),
+              expect.objectContaining({ id: "objective-3" })
+            ])
+          })
+        }),
+        expect.anything()
+      );
+    });
+  });
+
+  it("starts a new draft with a generated module id and saves it", async () => {
+    const { user } = renderReactShell("/react/admin/content-studio");
+
+    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+
+    validateAdminAuthoredModuleMock.mockClear();
+    createAdminAuthoredModuleMock.mockClear();
+    createAdminAuthoredModuleMock
+      .mockResolvedValueOnce(
+        createAuthoredMutationResponse({
+          id: "victory.new-draft"
+        })
+      )
+      .mockResolvedValueOnce(
+        createAuthoredMutationResponse({
+          id: "victory.new-draft-2"
+        })
+      );
+
+    await user.click(screen.getByRole("button", { name: "New draft" }));
+
+    const moduleIdField = (await screen.findByDisplayValue(
+      "victory.new-draft"
+    )) as HTMLInputElement;
+    expect(moduleIdField.value).toBe("victory.new-draft");
+
+    await waitFor(() => {
+      expect(validateAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "victory.new-draft",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(createAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "victory.new-draft",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "New draft" }));
+
+    const nextModuleIdField = (await screen.findByDisplayValue(
+      "victory.new-draft-2"
+    )) as HTMLInputElement;
+    expect(nextModuleIdField.value).toBe("victory.new-draft-2");
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(createAdminAuthoredModuleMock).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          id: "victory.new-draft-2",
+          moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+  });
 });

@@ -108,6 +108,15 @@ function createObjectiveId(index: number): string {
   return `objective-${index + 1}`;
 }
 
+function createNextObjectiveIndex(objectives: AuthoredVictoryObjective[]): number {
+  let index = objectives.length;
+
+  while (objectives.some((objective) => objective.id === createObjectiveId(index))) {
+    index += 1;
+  }
+
+  return index;
+}
 function createObjective(
   index: number,
   type: AuthoredVictoryObjective["type"]
@@ -133,9 +142,45 @@ function createObjective(
   };
 }
 
-function createEmptyDraft(mapOption: AuthoredMapOption | null): EditorDraft {
+function createDefaultModuleId(existingModuleIds: string[]): string {
+  const baseId = "victory.new-draft";
+  if (!existingModuleIds.includes(baseId)) {
+    return baseId;
+  }
+
+  let suffix = 2;
+  while (existingModuleIds.includes(`${baseId}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseId}-${suffix}`;
+}
+
+function reservedModuleIds(
+  authoredModules: Array<{ id: string }>,
+  draft: EditorDraft | null,
+  selectedModuleId: string | null
+): string[] {
+  const ids = new Set(authoredModules.map((entry) => entry.id));
+
+  const currentDraftId = String(draft?.id || "").trim();
+  if (currentDraftId) {
+    ids.add(currentDraftId);
+  }
+
+  if (selectedModuleId) {
+    ids.add(selectedModuleId);
+  }
+
+  return [...ids];
+}
+
+function createEmptyDraft(
+  mapOption: AuthoredMapOption | null,
+  existingModuleIds: string[] = []
+): EditorDraft {
   return {
-    id: "",
+    id: createDefaultModuleId(existingModuleIds),
     name: "",
     description: "",
     version: "1.0.0",
@@ -306,6 +351,8 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
     enabled: Boolean(selectedModuleId)
   });
 
+  const authoredModules = modulesQuery.data?.modules || [];
+  const draftReservedModuleIds = reservedModuleIds(authoredModules, draft, selectedModuleId);
   const deferredDraft = useDeferredValue(draft);
 
   useEffect(() => {
@@ -317,15 +364,15 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }, [modulesQuery.data, selectedEditorKey]);
 
   useEffect(() => {
-    if (!isNewDraft || !optionsQuery.data) {
+    if (!isNewDraft || !optionsQuery.data || draft) {
       return;
     }
 
-    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data));
+    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setDraft(nextDraft);
     setInspection(null);
     setActiveObjectiveId(nextDraft.content.objectives[0]?.id || null);
-  }, [isNewDraft, optionsQuery.data]);
+  }, [draft, draftReservedModuleIds, isNewDraft, optionsQuery.data]);
 
   useEffect(() => {
     if (!detailQuery.data || !selectedModuleId) {
@@ -455,7 +502,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }, [deferredDraft, detailQuery.data?.module.status, isNewDraft]);
 
   function startNewDraft() {
-    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data));
+    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setSelectedEditorKey(NEW_MODULE_KEY);
     setDraft(nextDraft);
     setInspection(null);
@@ -501,7 +548,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       return;
     }
 
-    const nextObjective = createObjective(draft.content.objectives.length, type);
+    const nextObjective = createObjective(createNextObjectiveIndex(draft.content.objectives), type);
     updateDraft({
       ...draft,
       content: {
@@ -581,7 +628,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   const activeObjective =
     draft?.content.objectives.find((objective) => objective.id === activeObjectiveId) || null;
   const latestInspection = currentInspection(detailQuery.data, inspection);
-  const modules = modulesQuery.data?.modules || [];
+  const modules = authoredModules;
   const isEditableDraft = Boolean(
     draft && (isNewDraft || detailQuery.data?.module.status === "draft")
   );

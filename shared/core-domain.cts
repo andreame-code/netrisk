@@ -65,6 +65,7 @@ export interface GameConfig {
   gameplayProfileId?: string | null;
   uiProfileId?: string | null;
   gameplayEffects?: NetRiskGameplayEffects | null;
+  victoryObjectiveAssignments?: Record<string, string>;
   turnTimeoutHours?: number | null;
   totalPlayers?: number;
   players?: Array<Record<string, unknown>>;

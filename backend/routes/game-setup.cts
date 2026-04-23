@@ -39,6 +39,13 @@ type SnapshotForState = (
   version: number | null,
   gameName: string | null
 ) => unknown;
+type SnapshotForUser = (
+  state: any,
+  gameId: string | null,
+  version: number | null,
+  gameName: string | null,
+  user: AuthContext["user"]
+) => unknown;
 type Authorize = (action: string, context: Record<string, unknown>) => void;
 type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
@@ -195,7 +202,7 @@ async function handleStartRoute(
   startGame: StartGame,
   persistWithAiTurns: PersistWithAiTurns,
   broadcastGame: BroadcastGame,
-  snapshotForState: SnapshotForState,
+  snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
@@ -264,11 +271,12 @@ async function handleStartRoute(
         messageParams: {},
         code: "VERSION_CONFLICT",
         currentVersion: gameContext.version,
-        state: snapshotForState(
+        state: snapshotForUser(
           gameContext.state,
           gameContext.gameId,
           gameContext.version,
-          gameContext.gameName
+          gameContext.gameName,
+          authContext.user
         )
       },
       gameVersionConflictResponseSchema,
@@ -299,11 +307,12 @@ async function handleStartRoute(
           messageParams: {},
           code: error.code,
           currentVersion: error.currentVersion,
-          state: snapshotForState(
+          state: snapshotForUser(
             error.currentState,
             gameContext.gameId,
             error.currentVersion,
-            error.game?.name || gameContext.gameName
+            error.game?.name || gameContext.gameName,
+            authContext.user
           )
         },
         gameVersionConflictResponseSchema,
@@ -322,11 +331,12 @@ async function handleStartRoute(
     {
       ok: true,
       playerId: parsedBody.playerId,
-      state: snapshotForState(
+      state: snapshotForUser(
         gameContext.state,
         gameContext.gameId,
         gameContext.version,
-        gameContext.gameName
+        gameContext.gameName,
+        authContext.user
       )
     },
     gameMutationResponseSchema,
