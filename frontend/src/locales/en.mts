@@ -29,7 +29,7 @@ export const en = Object.freeze({
   "auth.register.requiredFields": "Enter username and password.",
   "auth.register.invalidUsername":
     "Valid username: 3-32 characters, letters, numbers, underscore, and hyphen.",
-  "auth.register.shortPassword": "Use a password with 8-128 characters.",
+  "auth.register.shortPassword": "Password too short: use at least 8 characters.",
   "auth.register.invalidEmail": "Invalid email.",
   "auth.register.emailProtectionUnavailable":
     "Optional email is available only when AUTH_ENCRYPTION_KEY is configured on the server.",

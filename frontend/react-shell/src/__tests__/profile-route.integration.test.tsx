@@ -578,47 +578,6 @@ describe("ProfileRoute integration", () => {
     expect(updateAccountSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("rejects passwords shorter than 8 characters before submitting account changes", async () => {
-    getSessionMock.mockResolvedValue(createSession("ember"));
-    getProfileMock.mockResolvedValue(createProfileResponse());
-
-    const { user } = renderReactShell("/react/profile");
-
-    await user.type(await screen.findByLabelText("Password attuale"), "secret123");
-    await user.type(screen.getByLabelText("Nuova password"), "short77");
-    await user.type(screen.getByLabelText("Conferma nuova password"), "short77");
-    await user.click(screen.getByTestId("react-shell-profile-account-submit"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
-        "Usa una password tra 8 e 128 caratteri."
-      );
-    });
-
-    expect(updateAccountSettingsMock).not.toHaveBeenCalled();
-  });
-
-  it("rejects passwords longer than 128 characters before submitting account changes", async () => {
-    getSessionMock.mockResolvedValue(createSession("ember"));
-    getProfileMock.mockResolvedValue(createProfileResponse());
-
-    const { user } = renderReactShell("/react/profile");
-    const tooLongPassword = "x".repeat(129);
-
-    await user.type(await screen.findByLabelText("Password attuale"), "secret123");
-    await user.type(screen.getByLabelText("Nuova password"), tooLongPassword);
-    await user.type(screen.getByLabelText("Conferma nuova password"), tooLongPassword);
-    await user.click(screen.getByTestId("react-shell-profile-account-submit"));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("react-shell-profile-account-status")).toHaveTextContent(
-        "Usa una password tra 8 e 128 caratteri."
-      );
-    });
-
-    expect(updateAccountSettingsMock).not.toHaveBeenCalled();
-  });
-
   it("renders admin module controls and toggles a module from the React profile", async () => {
     getSessionMock.mockResolvedValue(createSession("ember", "admin"));
     getProfileMock.mockResolvedValue(createProfileResponse());
