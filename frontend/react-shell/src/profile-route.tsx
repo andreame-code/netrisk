@@ -95,7 +95,7 @@ function validateAccountSettingsInput(input: {
     return t("auth.account.newPasswordRequired");
   }
 
-  if (input.newPassword && input.newPassword.length < 4) {
+  if (input.newPassword && (input.newPassword.length < 8 || input.newPassword.length > 128)) {
     return t("register.errors.shortPassword");
   }
 
