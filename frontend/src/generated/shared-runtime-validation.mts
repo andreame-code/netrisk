@@ -72,6 +72,8 @@ function objectSchema<T extends z.ZodRawShape>(shape: T) {
   return z.object(shape).passthrough();
 }
 
+const passwordSchema = z.string().min(8).max(128);
+
 export function formatValidationPath(path: IssuePathSegment[] | undefined): string {
   if (!Array.isArray(path) || !path.length) {
     return "$";
@@ -156,7 +158,7 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>;
 
 export const registerRequestSchema = objectSchema({
   username: z.string().min(1),
-  password: z.string().min(8).max(128),
+  password: passwordSchema,
   email: z.string().optional()
 });
 
@@ -188,8 +190,8 @@ export type ThemePreferenceResponse = z.infer<typeof themePreferenceResponseSche
 export const accountSettingsRequestSchema = objectSchema({
   currentPassword: z.string().min(1),
   email: z.string().min(1).optional(),
-  newPassword: z.string().min(8).max(128).optional(),
-  confirmNewPassword: z.string().min(8).max(128).optional()
+  newPassword: passwordSchema.optional(),
+  confirmNewPassword: passwordSchema.optional()
 });
 
 export type AccountSettingsRequest = z.infer<typeof accountSettingsRequestSchema>;
