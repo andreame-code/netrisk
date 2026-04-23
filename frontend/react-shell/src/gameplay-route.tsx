@@ -285,6 +285,8 @@ export function GameRoute() {
   );
   const currentVersion =
     snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
+  const actionExpectedVersion =
+    snapshot?.playerId && snapshot.playerId === myPlayerId ? currentVersion : undefined;
   const isMyTurn = Boolean(
     snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
   );
@@ -500,7 +502,7 @@ export function GameRoute() {
         {
           gameId: resolvedGameId,
           playerId: myPlayerId,
-          ...(currentVersion ? { expectedVersion: currentVersion } : {})
+          ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
         },
         {
           errorMessage: t("errors.requestFailed"),
@@ -592,7 +594,7 @@ export function GameRoute() {
       type: "reinforce",
       territoryId: reinforceTerritoryId,
       amount,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -607,7 +609,7 @@ export function GameRoute() {
       type: "reinforce",
       territoryId: reinforceTerritoryId,
       amount: Math.max(1, Number(snapshot?.reinforcementPool || 1)),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -623,7 +625,7 @@ export function GameRoute() {
       fromId: attackFromId,
       toId: attackToId,
       attackDice: Number(attackDiceCount),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -642,7 +644,7 @@ export function GameRoute() {
       playerId: myPlayerId,
       type: "moveAfterConquest",
       armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -656,7 +658,7 @@ export function GameRoute() {
       playerId: myPlayerId,
       type: "moveAfterConquest",
       armies: pendingConquestMax,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -673,7 +675,7 @@ export function GameRoute() {
       fromId: fortifyFromId,
       toId: fortifyToId,
       armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -686,7 +688,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "endTurn",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -699,7 +701,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       cardIds: selectedTradeCardIds,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
@@ -743,7 +745,7 @@ export function GameRoute() {
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "surrender",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      ...(actionExpectedVersion ? { expectedVersion: actionExpectedVersion } : {})
     });
   }
 
