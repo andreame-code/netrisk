@@ -156,6 +156,25 @@ function createDefaultModuleId(existingModuleIds: string[]): string {
   return `${baseId}-${suffix}`;
 }
 
+function reservedModuleIds(
+  authoredModules: Array<{ id: string }>,
+  draft: EditorDraft | null,
+  selectedModuleId: string | null
+): string[] {
+  const ids = new Set(authoredModules.map((entry) => entry.id));
+
+  const currentDraftId = String(draft?.id || "").trim();
+  if (currentDraftId) {
+    ids.add(currentDraftId);
+  }
+
+  if (selectedModuleId) {
+    ids.add(selectedModuleId);
+  }
+
+  return [...ids];
+}
+
 function createEmptyDraft(
   mapOption: AuthoredMapOption | null,
   existingModuleIds: string[] = []
@@ -333,6 +352,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   });
 
   const authoredModules = modulesQuery.data?.modules || [];
+  const draftReservedModuleIds = reservedModuleIds(authoredModules, draft, selectedModuleId);
   const deferredDraft = useDeferredValue(draft);
 
   useEffect(() => {
@@ -348,14 +368,11 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       return;
     }
 
-    const nextDraft = createEmptyDraft(
-      firstMap(optionsQuery.data),
-      authoredModules.map((entry) => entry.id)
-    );
+    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setDraft(nextDraft);
     setInspection(null);
     setActiveObjectiveId(nextDraft.content.objectives[0]?.id || null);
-  }, [authoredModules, draft, isNewDraft, optionsQuery.data]);
+  }, [draft, draftReservedModuleIds, isNewDraft, optionsQuery.data]);
 
   useEffect(() => {
     if (!detailQuery.data || !selectedModuleId) {
@@ -485,10 +502,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }, [deferredDraft, detailQuery.data?.module.status, isNewDraft]);
 
   function startNewDraft() {
-    const nextDraft = createEmptyDraft(
-      firstMap(optionsQuery.data),
-      authoredModules.map((entry) => entry.id)
-    );
+    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setSelectedEditorKey(NEW_MODULE_KEY);
     setDraft(nextDraft);
     setInspection(null);
