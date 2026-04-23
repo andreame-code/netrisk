@@ -1,6 +1,12 @@
 import {
   accountSettingsRequestSchema,
   accountSettingsResponseSchema,
+  adminAuthoredModuleDetailResponseSchema,
+  adminAuthoredModuleEditorOptionsResponseSchema,
+  adminAuthoredModuleMutationResponseSchema,
+  adminAuthoredModulesListResponseSchema,
+  adminAuthoredModuleUpsertRequestSchema,
+  adminAuthoredModuleValidateResponseSchema,
   adminAuditResponseSchema,
   adminConfigResponseSchema,
   adminConfigUpdateRequestSchema,
@@ -42,6 +48,12 @@ import {
 import type {
   AccountSettingsRequest,
   AccountSettingsResponse,
+  AdminAuthoredModuleDetailResponse,
+  AdminAuthoredModuleEditorOptionsResponse,
+  AdminAuthoredModuleMutationResponse,
+  AdminAuthoredModulesListResponse,
+  AdminAuthoredModuleUpsertRequest,
+  AdminAuthoredModuleValidateResponse,
   AdminAuditResponse,
   AdminConfigResponse,
   AdminConfigUpdateRequest,
@@ -429,6 +441,131 @@ export function getAdminAudit(messages: ClientMessages): Promise<AdminAuditRespo
     path: "/api/admin/audit",
     responseSchema: adminAuditResponseSchema,
     responseSchemaName: "AdminAuditResponse",
+    ...messages
+  });
+}
+
+export function getAdminContentStudioOptions(
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleEditorOptionsResponse> {
+  return requestJson({
+    path: "/api/admin/content-studio/options",
+    responseSchema: adminAuthoredModuleEditorOptionsResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleEditorOptionsResponse",
+    ...messages
+  });
+}
+
+export function listAdminAuthoredModules(
+  messages: ClientMessages
+): Promise<AdminAuthoredModulesListResponse> {
+  return requestJson({
+    path: "/api/admin/content-studio/modules",
+    responseSchema: adminAuthoredModulesListResponseSchema,
+    responseSchemaName: "AdminAuthoredModulesListResponse",
+    ...messages
+  });
+}
+
+export function getAdminAuthoredModule(
+  moduleId: string,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleDetailResponse> {
+  return requestJson({
+    path: `/api/admin/content-studio/modules/${encodeURIComponent(moduleId)}`,
+    responseSchema: adminAuthoredModuleDetailResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleDetailResponse",
+    ...messages
+  });
+}
+
+export function validateAdminAuthoredModule(
+  request: AdminAuthoredModuleUpsertRequest,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleValidateResponse> {
+  return requestJson({
+    path: "/api/admin/content-studio/modules/validate",
+    method: "POST",
+    body: request,
+    requestSchema: adminAuthoredModuleUpsertRequestSchema,
+    requestSchemaName: "AdminAuthoredModuleUpsertRequest",
+    responseSchema: adminAuthoredModuleValidateResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleValidateResponse",
+    ...messages
+  });
+}
+
+export function createAdminAuthoredModule(
+  request: AdminAuthoredModuleUpsertRequest,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleMutationResponse> {
+  return requestJson({
+    path: "/api/admin/content-studio/modules",
+    method: "POST",
+    body: request,
+    requestSchema: adminAuthoredModuleUpsertRequestSchema,
+    requestSchemaName: "AdminAuthoredModuleUpsertRequest",
+    responseSchema: adminAuthoredModuleMutationResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleMutationResponse",
+    ...messages
+  });
+}
+
+export function updateAdminAuthoredModule(
+  moduleId: string,
+  request: AdminAuthoredModuleUpsertRequest,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleMutationResponse> {
+  return requestJson({
+    path: `/api/admin/content-studio/modules/${encodeURIComponent(moduleId)}`,
+    method: "PUT",
+    body: request,
+    requestSchema: adminAuthoredModuleUpsertRequestSchema,
+    requestSchemaName: "AdminAuthoredModuleUpsertRequest",
+    responseSchema: adminAuthoredModuleMutationResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleMutationResponse",
+    ...messages
+  });
+}
+
+export function publishAdminAuthoredModule(
+  moduleId: string,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleMutationResponse> {
+  return requestJson({
+    path: `/api/admin/content-studio/modules/${encodeURIComponent(moduleId)}/publish`,
+    method: "POST",
+    body: {},
+    responseSchema: adminAuthoredModuleMutationResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleMutationResponse",
+    ...messages
+  });
+}
+
+export function enableAdminAuthoredModule(
+  moduleId: string,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleMutationResponse> {
+  return requestJson({
+    path: `/api/admin/content-studio/modules/${encodeURIComponent(moduleId)}/enable`,
+    method: "POST",
+    body: {},
+    responseSchema: adminAuthoredModuleMutationResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleMutationResponse",
+    ...messages
+  });
+}
+
+export function disableAdminAuthoredModule(
+  moduleId: string,
+  messages: ClientMessages
+): Promise<AdminAuthoredModuleMutationResponse> {
+  return requestJson({
+    path: `/api/admin/content-studio/modules/${encodeURIComponent(moduleId)}/disable`,
+    method: "POST",
+    body: {},
+    responseSchema: adminAuthoredModuleMutationResponseSchema,
+    responseSchemaName: "AdminAuthoredModuleMutationResponse",
     ...messages
   });
 }

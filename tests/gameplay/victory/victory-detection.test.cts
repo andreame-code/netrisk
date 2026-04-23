@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { detectVictory } = require("../../../backend/engine/victory-detection.cjs");
 const { MAJORITY_CONTROL_VICTORY_RULE_SET_ID } = require("../../../shared/models.cjs");
 const {
+  makeContinent,
   makePlayers,
   makeState,
   territoryStates,
@@ -194,3 +195,132 @@ register("detectVictory majority control usa la soglia modulare persistita nel g
   assert.equal(result.victory?.summaryParams?.majorityControlThresholdPercent, 60);
   assert.equal(result.victory?.summaryParams?.requiredTerritoryCount, 6);
 });
+
+register(
+  "detectVictory resolves authored continent objectives from the persisted gameConfig",
+  () => {
+    const state = makeState({
+      players: makePlayers(["Alice", "Bob"]),
+      territories: territoryStates([
+        { id: "alaska", ownerId: "p1", armies: 1 },
+        { id: "ontario", ownerId: "p1", armies: 1 },
+        { id: "india", ownerId: "p1", armies: 1 },
+        { id: "china", ownerId: "p1", armies: 1 },
+        { id: "brazil", ownerId: "p2", armies: 1 }
+      ]),
+      continents: [
+        makeContinent("north_america", ["alaska", "ontario"], 5, {
+          name: "North America"
+        }),
+        makeContinent("asia", ["india", "china"], 7, {
+          name: "Asia"
+        }),
+        makeContinent("south_america", ["brazil"], 2, {
+          name: "South America"
+        })
+      ],
+      currentTurnIndex: 0,
+      turnPhase: TurnPhase.ATTACK
+    });
+    state.gameConfig = {
+      ...(state.gameConfig || {}),
+      victoryRuleSetId: "victory.na-asia",
+      victoryObjectiveModule: {
+        id: "victory.na-asia",
+        name: "North America and Asia",
+        description: "Control both continents simultaneously.",
+        version: "1.0.0",
+        moduleType: "victory-objectives",
+        kind: "authored-victory-objectives",
+        map: {
+          id: "classic-mini",
+          name: "Classic Mini",
+          territoryCount: 5,
+          continentCount: 3
+        },
+        objectives: [
+          {
+            id: "hold-na-asia",
+            title: "Hold North America and Asia",
+            description: "Control North America and Asia at the same time.",
+            enabled: true,
+            type: "control-continents",
+            continentIds: ["north_america", "asia"],
+            continentNames: ["North America", "Asia"],
+            summary: "Control North America and Asia simultaneously."
+          }
+        ],
+        preview: {
+          summary: "Win condition: control North America and Asia simultaneously.",
+          objectiveSummaries: ["Control North America and Asia simultaneously."]
+        }
+      }
+    };
+
+    const result = detectVictory(state);
+
+    assert.equal(result.code, "VICTORY_DECLARED");
+    assert.equal(result.victory?.winnerId, "p1");
+    assert.equal(result.victory?.summaryKey, "game.log.victoryAuthoredObjective");
+    assert.equal(result.victory?.summaryParams?.objectiveId, "hold-na-asia");
+    assert.equal(result.victory?.summaryParams?.victoryModuleId, "victory.na-asia");
+  }
+);
+
+register(
+  "detectVictory resolves authored territory-count objectives from the persisted gameConfig",
+  () => {
+    const state = makeState({
+      players: makePlayers(["Alice", "Bob"]),
+      territories: territoryStates([
+        { id: "a", ownerId: "p1", armies: 1 },
+        { id: "b", ownerId: "p1", armies: 1 },
+        { id: "c", ownerId: "p1", armies: 1 },
+        { id: "d", ownerId: "p1", armies: 1 },
+        { id: "e", ownerId: "p2", armies: 1 }
+      ]),
+      currentTurnIndex: 0,
+      turnPhase: TurnPhase.ATTACK
+    });
+    state.gameConfig = {
+      ...(state.gameConfig || {}),
+      victoryRuleSetId: "victory.territory-count",
+      victoryObjectiveModule: {
+        id: "victory.territory-count",
+        name: "Territory Control",
+        description: "Reach the configured number of territories.",
+        version: "1.0.0",
+        moduleType: "victory-objectives",
+        kind: "authored-victory-objectives",
+        map: {
+          id: "classic-mini",
+          name: "Classic Mini",
+          territoryCount: 5,
+          continentCount: 0
+        },
+        objectives: [
+          {
+            id: "hold-four",
+            title: "Own four territories",
+            description: "Reach four territories.",
+            enabled: true,
+            type: "control-territory-count",
+            territoryCount: 4,
+            summary: "Own at least 4 territories."
+          }
+        ],
+        preview: {
+          summary: "Win condition: own at least 4 territories.",
+          objectiveSummaries: ["Own at least 4 territories."]
+        }
+      }
+    };
+
+    const result = detectVictory(state);
+
+    assert.equal(result.code, "VICTORY_DECLARED");
+    assert.equal(result.victory?.winnerId, "p1");
+    assert.equal(result.victory?.summaryParams?.objectiveType, "control-territory-count");
+    assert.equal(result.victory?.summaryParams?.objectiveTitle, "Own four territories");
+  }
+);

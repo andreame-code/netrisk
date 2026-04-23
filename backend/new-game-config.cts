@@ -52,6 +52,7 @@ import {
   type TurnTimeoutHoursValue
 } from "../shared/turn-timeouts.cjs";
 import type { SupportedMap } from "../shared/maps/index.cjs";
+import type { AuthoredVictoryModuleRuntime } from "../shared/runtime-validation.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
@@ -217,7 +218,8 @@ function buildResolvedGameConfig(
   config: ValidatedNewGameConfig,
   moduleSelection: NetRiskGameModuleSelection,
   resolvedSetup: NetRiskResolvedModuleSetup | null | undefined,
-  hydratedConfigInput: NewGameConfigInput
+  hydratedConfigInput: NewGameConfigInput,
+  authoredVictoryRuntime: AuthoredVictoryModuleRuntime | null = null
 ): ExtensionAwareGameConfig {
   const clonedModuleSelection = cloneModuleSelection(moduleSelection);
 
@@ -253,6 +255,9 @@ function buildResolvedGameConfig(
     uiProfileId: clonedModuleSelection.uiProfileId || null,
     gameplayEffects: resolvedSetup?.gameplayEffects || null,
     scenarioSetup: resolvedSetup?.scenarioSetup || null,
+    victoryObjectiveModule: authoredVictoryRuntime
+      ? (JSON.parse(JSON.stringify(authoredVictoryRuntime)) as AuthoredVictoryModuleRuntime)
+      : null,
     turnTimeoutHours: config.turnTimeoutHours,
     totalPlayers: config.totalPlayers,
     players: config.players.map((player) => ({
@@ -377,6 +382,22 @@ export function validateNewGameConfig(
     throw createLocalizedError(
       "La regola vittoria selezionata non e supportata.",
       "newGame.invalidVictoryRuleSet"
+    );
+  }
+
+  if (
+    typeof selectedVictoryRuleSet.mapId === "string" &&
+    selectedVictoryRuleSet.mapId &&
+    selectedVictoryRuleSet.mapId !== selectedMap.id
+  ) {
+    throw createLocalizedError(
+      `La regola vittoria selezionata richiede la mappa "${selectedVictoryRuleSet.mapId}".`,
+      "newGame.invalidVictoryRuleSetMap",
+      {
+        requiredMapId: selectedVictoryRuleSet.mapId,
+        selectedMapId: selectedMap.id,
+        victoryRuleSetId: selectedVictoryRuleSet.id
+      }
     );
   }
 
@@ -516,6 +537,7 @@ export function createConfiguredInitialState(
     resolvePlayerPieceSet?: (pieceSetId: string) => PlayerPieceSet | null;
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
+    resolveVictoryRuleRuntime?: (victoryRuleSetId: string) => AuthoredVictoryModuleRuntime | null;
     resolveTheme?: (themeId: string) => VisualTheme | null;
     resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
     resolveGamePreset?: (input: {
@@ -737,6 +759,10 @@ export function createConfiguredInitialState(
           : config.moduleSelection;
 
       const finalizeConfiguredState = (moduleSelection: NetRiskGameModuleSelection) => {
+        const authoredVictoryRuntime =
+          typeof options.resolveVictoryRuleRuntime === "function"
+            ? options.resolveVictoryRuleRuntime(config.victoryRuleSetId)
+            : null;
         const state = createInitialState(config.selectedMap);
         state.contentPackId = config.contentPackId;
         state.diceRuleSetId = config.diceRuleSetId;
@@ -746,7 +772,8 @@ export function createConfiguredInitialState(
           config,
           moduleSelection,
           resolvedSetup || null,
-          hydratedConfigInput
+          hydratedConfigInput,
+          authoredVictoryRuntime
         );
 
         config.players.forEach((player) => {

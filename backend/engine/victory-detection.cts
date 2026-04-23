@@ -3,11 +3,14 @@ import {
   MAJORITY_CONTROL_VICTORY_RULE_SET_ID,
   TurnPhase,
   createLocalizedError,
+  findVictoryRuleSet,
   getVictoryRuleSet,
   migrateGameStateExtensions,
   type GameState,
-  type Player
+  type Player,
+  type VictoryRuleSet
 } from "../../shared/models.cjs";
+const { authoredVictoryModuleRuntimeSchema } = require("../../shared/runtime-validation.cjs");
 
 export interface VictoryResult {
   ok: true;
@@ -34,9 +37,48 @@ export interface VictoryResult {
 
 interface ActiveVictoryContext {
   state: GameState;
-  victoryRuleSet: ReturnType<typeof getVictoryRuleSet>;
+  victoryRuleSet: VictoryRuleSet;
   activePlayers: Player[];
   majorityControlThresholdPercent: number;
+  authoredVictoryModule: null | {
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    moduleType: "victory-objectives";
+    kind: "authored-victory-objectives";
+    map: {
+      id: string;
+      name: string;
+      territoryCount: number;
+      continentCount: number;
+    };
+    objectives: Array<
+      | {
+          id: string;
+          title: string;
+          description: string;
+          enabled: boolean;
+          type: "control-continents";
+          continentIds: string[];
+          continentNames: string[];
+          summary: string;
+        }
+      | {
+          id: string;
+          title: string;
+          description: string;
+          enabled: boolean;
+          type: "control-territory-count";
+          territoryCount: number;
+          summary: string;
+        }
+    >;
+    preview: {
+      summary: string;
+      objectiveSummaries: string[];
+    };
+  };
 }
 
 function territoryCountByPlayer(state: GameState, playerId: string | null): number {
@@ -236,6 +278,122 @@ function resolveMajorityControlThresholdPercent(state: GameState): number {
   return 70;
 }
 
+function resolveAuthoredVictoryModule(
+  state: GameState,
+  victoryRuleSetId: string
+): ActiveVictoryContext["authoredVictoryModule"] {
+  const parsed = authoredVictoryModuleRuntimeSchema.safeParse(
+    state.gameConfig?.victoryObjectiveModule
+  );
+  if (!parsed.success) {
+    return null;
+  }
+
+  if (parsed.data.id !== victoryRuleSetId) {
+    return null;
+  }
+
+  return parsed.data;
+}
+
+function orderedActivePlayers(state: GameState, activePlayers: Player[]): Player[] {
+  if (
+    !Number.isInteger(state.currentTurnIndex) ||
+    Number(state.currentTurnIndex) < 0 ||
+    Number(state.currentTurnIndex) >= state.players.length
+  ) {
+    return activePlayers;
+  }
+
+  const currentPlayerId = state.players[Number(state.currentTurnIndex)]?.id || null;
+  if (!currentPlayerId) {
+    return activePlayers;
+  }
+
+  return [...activePlayers].sort((left, right) => {
+    if (left.id === currentPlayerId) {
+      return -1;
+    }
+
+    if (right.id === currentPlayerId) {
+      return 1;
+    }
+
+    return 0;
+  });
+}
+
+function playerControlsContinent(
+  state: GameState,
+  playerId: string | null,
+  continentId: string
+): boolean {
+  if (!playerId || !Array.isArray(state.continents)) {
+    return false;
+  }
+
+  const continent = state.continents.find((entry) => entry?.id === continentId) || null;
+  if (!continent || !Array.isArray(continent.territoryIds) || continent.territoryIds.length === 0) {
+    return false;
+  }
+
+  return continent.territoryIds.every(
+    (territoryId) => state.territories?.[territoryId]?.ownerId === playerId
+  );
+}
+
+function evaluateAuthoredObjectiveForPlayer(
+  state: GameState,
+  player: Player,
+  objective: NonNullable<ActiveVictoryContext["authoredVictoryModule"]>["objectives"][number]
+): boolean {
+  if (!objective.enabled) {
+    return false;
+  }
+
+  if (objective.type === "control-continents") {
+    return objective.continentIds.every((continentId) =>
+      playerControlsContinent(state, player.id, continentId)
+    );
+  }
+
+  return territoryCountByPlayer(state, player.id) >= objective.territoryCount;
+}
+
+function evaluateAuthoredVictoryObjectives(context: ActiveVictoryContext): VictoryResult {
+  if (!context.authoredVictoryModule) {
+    return noVictoryResult(context.activePlayers);
+  }
+
+  const orderedPlayers = orderedActivePlayers(context.state, context.activePlayers);
+
+  for (const player of orderedPlayers) {
+    const matchedObjective =
+      context.authoredVictoryModule.objectives.find((objective) =>
+        evaluateAuthoredObjectiveForPlayer(context.state, player, objective)
+      ) || null;
+
+    if (!matchedObjective) {
+      continue;
+    }
+
+    return declareVictory(context.state, player, context.victoryRuleSet, {
+      summary:
+        player.name + ` completes the objective "${matchedObjective.title}" and wins the game.`,
+      summaryKey: "game.log.victoryAuthoredObjective",
+      summaryParams: {
+        objectiveId: matchedObjective.id,
+        objectiveTitle: matchedObjective.title,
+        objectiveType: matchedObjective.type,
+        objectiveSummary: matchedObjective.summary,
+        victoryModuleId: context.authoredVictoryModule.id
+      }
+    });
+  }
+
+  return noVictoryResult(context.activePlayers);
+}
+
 const victoryEvaluators: Record<string, (context: ActiveVictoryContext) => VictoryResult> = {
   [DEFAULT_VICTORY_RULE_SET_ID]: evaluateConquestVictory,
   [MAJORITY_CONTROL_VICTORY_RULE_SET_ID]: evaluateMajorityControlVictory
@@ -245,8 +403,29 @@ export function detectVictory(state: GameState): VictoryResult {
   migrateGameStateExtensions(state);
   validateState(state);
   const victoryRuleSetId = state.gameConfig?.victoryRuleSetId || DEFAULT_VICTORY_RULE_SET_ID;
-  const victoryRuleSet = getVictoryRuleSet(victoryRuleSetId);
+  const authoredVictoryModule = resolveAuthoredVictoryModule(state, victoryRuleSetId);
+  const builtInVictoryRuleSet = findVictoryRuleSet(victoryRuleSetId);
+  const victoryRuleSet: VictoryRuleSet = authoredVictoryModule
+    ? {
+        id: authoredVictoryModule.id,
+        name: authoredVictoryModule.name,
+        description: authoredVictoryModule.description,
+        source: "authored",
+        mapId: authoredVictoryModule.map.id,
+        objectiveCount: authoredVictoryModule.objectives.filter((objective) => objective.enabled)
+          .length,
+        moduleType: authoredVictoryModule.moduleType
+      }
+    : getVictoryRuleSet(victoryRuleSetId);
   const majorityControlThresholdPercent = resolveMajorityControlThresholdPercent(state);
+
+  if (!authoredVictoryModule && !builtInVictoryRuleSet && state.gameConfig?.victoryRuleSetId) {
+    throw createLocalizedError(
+      `Victory detection found unsupported rule set "${victoryRuleSetId}".`,
+      "game.victory.internal.invalidRuleSet",
+      { victoryRuleSetId }
+    );
+  }
 
   const activePlayers = state.players.filter((player) => isActivePlayer(state, player));
   if (activePlayers.length === 0) {
@@ -261,11 +440,22 @@ export function detectVictory(state: GameState): VictoryResult {
     return aiOnlyRemainResult(state, activePlayers);
   }
 
+  if (authoredVictoryModule) {
+    return evaluateAuthoredVictoryObjectives({
+      state,
+      victoryRuleSet,
+      activePlayers,
+      majorityControlThresholdPercent,
+      authoredVictoryModule
+    });
+  }
+
   const evaluateVictory = victoryEvaluators[victoryRuleSet.id] || evaluateConquestVictory;
   return evaluateVictory({
     state,
     victoryRuleSet,
     activePlayers,
-    majorityControlThresholdPercent
+    majorityControlThresholdPercent,
+    authoredVictoryModule: null
   });
 }

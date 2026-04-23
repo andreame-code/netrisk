@@ -21,6 +21,7 @@ const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const {
+  findVictoryRuleSet: findBuiltInVictoryRuleSet,
   listPieceSkins,
   listVictoryRuleSets,
   listVisualThemes
@@ -68,6 +69,7 @@ import type {
 } from "../shared/extensions.cjs";
 import type { MapSummary, SupportedMap } from "../shared/maps/index.cjs";
 import type { PlayerPieceSet, PlayerPieceSetSummary } from "../shared/player-piece-sets.cjs";
+import type { AuthoredVictoryModuleRuntime } from "../shared/runtime-validation.cjs";
 
 type CatalogState = {
   enabledById: Record<string, boolean>;
@@ -80,6 +82,11 @@ type ModuleRuntimeOptions = {
     getAppState?: (key: string) => unknown | Promise<unknown>;
     setAppState?: (key: string, value: unknown) => unknown | Promise<unknown>;
     listGames?: () => Array<Record<string, unknown>> | Promise<Array<Record<string, unknown>>>;
+  };
+  authoredModules?: {
+    listPublishedVictoryRuleSets?: () =>
+      | AuthoredPublishedVictoryRuleSet[]
+      | Promise<AuthoredPublishedVictoryRuleSet[]>;
   };
 };
 
@@ -105,6 +112,17 @@ type RuntimeModulePlayerPieceSetEntry = {
 type RuntimeModuleDiceRuleSetEntry = {
   moduleId: string;
   diceRuleSet: DiceRuleSet;
+};
+
+type AuthoredPublishedVictoryRuleSet = {
+  id: string;
+  name: string;
+  description: string;
+  source: "authored";
+  mapId?: string | null;
+  objectiveCount?: number;
+  moduleType?: string | null;
+  runtime: AuthoredVictoryModuleRuntime;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -218,6 +236,12 @@ function cloneVictoryRuleSet(ruleSet: VictoryRuleSet): VictoryRuleSet {
   return {
     ...ruleSet
   };
+}
+
+function cloneAuthoredVictoryRuntime(
+  runtime: AuthoredVictoryModuleRuntime
+): AuthoredVictoryModuleRuntime {
+  return JSON.parse(JSON.stringify(runtime ?? null)) as AuthoredVictoryModuleRuntime;
 }
 
 function cloneRuleSetSummary(ruleSet: BuiltInNewGameRuleSetSummary): BuiltInNewGameRuleSetSummary {
@@ -1011,7 +1035,8 @@ function buildResolvedModuleCatalog(
   runtimeMapEntries: RuntimeModuleMapEntry[],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
-  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
   const enabled = clonedModules.filter(
@@ -1036,6 +1061,13 @@ function buildResolvedModuleCatalog(
     enabledRuntimePlayerPieceSetEntries,
     enabledRuntimeDiceRuleSetEntries
   );
+  const authoredVictoryRuleSetIds = authoredVictoryRuleSets.map((entry) => entry.id);
+
+  if (authoredVictoryRuleSetIds.length) {
+    content.victoryRuleSetIds = Array.from(
+      new Set([...(content.victoryRuleSetIds || []), ...authoredVictoryRuleSetIds])
+    );
+  }
 
   return {
     modules: clonedModules,
@@ -1089,7 +1121,21 @@ function buildResolvedModuleCatalog(
       content.contentPackIds
     ),
     victoryRuleSets: filterVictoryRuleSetsByAllowedIds(
-      listVictoryRuleSets().map(cloneVictoryRuleSet),
+      [
+        ...listVictoryRuleSets().map(cloneVictoryRuleSet),
+        ...authoredVictoryRuleSets.map((entry) =>
+          cloneVictoryRuleSet({
+            id: entry.id,
+            name: entry.name,
+            description: entry.description,
+            source: entry.source,
+            mapId: entry.mapId || null,
+            objectiveCount:
+              typeof entry.objectiveCount === "number" ? entry.objectiveCount : undefined,
+            moduleType: entry.moduleType || null
+          })
+        )
+      ],
       content.victoryRuleSetIds
     ),
     themes: filterThemesByAllowedIds(
@@ -1116,14 +1162,16 @@ function buildModuleOptions(
   runtimeMapEntries: RuntimeModuleMapEntry[],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
-  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[]
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): ModuleOptionsSnapshot {
   const resolvedCatalog = buildResolvedModuleCatalog(
     modules,
     runtimeMapEntries,
     runtimeContentPackEntries,
     runtimePlayerPieceSetEntries,
-    runtimeDiceRuleSetEntries
+    runtimeDiceRuleSetEntries,
+    authoredVictoryRuleSets
   );
 
   return {
@@ -1257,6 +1305,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
   let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
+  let authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [];
+  let authoredVictoryRuleSetRuntimesById = new Map<string, AuthoredVictoryModuleRuntime>();
 
   function registerServerModuleMaps(
     moduleId: string,
@@ -1816,12 +1866,33 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function getModuleOptions() {
     const modules = await ensureCatalog();
+    await refreshAuthoredVictoryRuleSets();
     return buildModuleOptions(
       modules,
       listEnabledRuntimeMaps(modules),
       listEnabledRuntimeContentPacks(modules),
       listEnabledRuntimePlayerPieceSets(modules),
-      listEnabledRuntimeDiceRuleSets(modules)
+      listEnabledRuntimeDiceRuleSets(modules),
+      authoredVictoryRuleSets
+    );
+  }
+
+  async function refreshAuthoredVictoryRuleSets() {
+    if (typeof options.authoredModules?.listPublishedVictoryRuleSets !== "function") {
+      authoredVictoryRuleSets = [];
+      authoredVictoryRuleSetRuntimesById = new Map();
+      return;
+    }
+
+    const published = await options.authoredModules.listPublishedVictoryRuleSets();
+    authoredVictoryRuleSets = Array.isArray(published)
+      ? published.map((entry) => ({
+          ...entry,
+          runtime: cloneAuthoredVictoryRuntime(entry.runtime)
+        }))
+      : [];
+    authoredVictoryRuleSetRuntimesById = new Map(
+      authoredVictoryRuleSets.map((entry) => [entry.id, cloneAuthoredVictoryRuntime(entry.runtime)])
     );
   }
 
@@ -1835,6 +1906,22 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     },
     async getModuleOptions() {
       return getModuleOptions();
+    },
+    listSupportedMaps(): SupportedMap[] {
+      const builtInMaps = listCoreBaseMapSummaries()
+        .map((summary: { id: string }) => findCoreBaseSupportedMap(summary.id))
+        .filter((entry: SupportedMap | null): entry is SupportedMap => Boolean(entry))
+        .map(cloneSupportedMap);
+      const runtimeMaps = Array.from(runtimeMapsById.values())
+        .filter((runtimeEntry) => {
+          const ownerModule = cachedModules.find(
+            (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+          );
+          return Boolean(ownerModule?.enabled && ownerModule.compatible);
+        })
+        .map((runtimeEntry) => cloneSupportedMap(runtimeEntry.map));
+
+      return [...builtInMaps, ...runtimeMaps];
     },
     findSupportedMap(mapId: string): SupportedMap | null {
       const builtInMap = findCoreBaseSupportedMap(mapId);
@@ -1915,6 +2002,35 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return cloneDiceRuleSet(runtimeEntry.diceRuleSet);
+    },
+    findVictoryRuleSet(victoryRuleSetId: string): VictoryRuleSet | null {
+      const builtInVictoryRuleSet = findBuiltInVictoryRuleSet(victoryRuleSetId);
+      if (builtInVictoryRuleSet) {
+        return cloneVictoryRuleSet(builtInVictoryRuleSet);
+      }
+
+      const authoredVictoryRuleSet =
+        authoredVictoryRuleSets.find((entry) => entry.id === victoryRuleSetId) || null;
+      if (!authoredVictoryRuleSet) {
+        return null;
+      }
+
+      return cloneVictoryRuleSet({
+        id: authoredVictoryRuleSet.id,
+        name: authoredVictoryRuleSet.name,
+        description: authoredVictoryRuleSet.description,
+        source: authoredVictoryRuleSet.source,
+        mapId: authoredVictoryRuleSet.mapId || null,
+        objectiveCount:
+          typeof authoredVictoryRuleSet.objectiveCount === "number"
+            ? authoredVictoryRuleSet.objectiveCount
+            : undefined,
+        moduleType: authoredVictoryRuleSet.moduleType || null
+      });
+    },
+    findVictoryRuleSetRuntime(victoryRuleSetId: string): AuthoredVictoryModuleRuntime | null {
+      const runtime = authoredVictoryRuleSetRuntimesById.get(victoryRuleSetId);
+      return runtime ? cloneAuthoredVictoryRuntime(runtime) : null;
     },
     async getEnabledModules() {
       return enabledReferences(await ensureCatalog());
@@ -2229,6 +2345,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
         listEnabledRuntimeDiceRuleSets(selectedModuleEntries)
       );
+      if (authoredVictoryRuleSets.length) {
+        selectedContent.victoryRuleSetIds = Array.from(
+          new Set([
+            ...(selectedContent.victoryRuleSetIds || []),
+            ...authoredVictoryRuleSets.map((entry) => entry.id)
+          ])
+        );
+      }
       const availableContentProfiles = new Set(
         selectedContentProfiles.map((profile) => profile.id)
       );

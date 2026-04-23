@@ -21,6 +21,13 @@ const NETRISK_UI_SLOT_ID_VALUES = [
   "new-game.sidebar",
   "top-nav-bar"
 ] as const;
+const AUTHORED_MODULE_STATUS_VALUES = ["draft", "published", "disabled"] as const;
+const AUTHORED_MODULE_TYPE_VALUES = ["victory-objectives"] as const;
+const AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES = [
+  "control-continents",
+  "control-territory-count"
+] as const;
+const AUTHORED_MODULE_VALIDATION_SEVERITY_VALUES = ["warning", "error"] as const;
 
 type IssuePathSegment = string | number;
 
@@ -210,7 +217,11 @@ export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 export const victoryRuleSetSchema = objectSchema({
   id: z.string().min(1),
   name: z.string().min(1),
-  description: z.string().min(1)
+  description: z.string().min(1),
+  source: z.enum(["built-in", "authored"]).optional(),
+  mapId: z.string().min(1).nullable().optional(),
+  objectiveCount: z.number().int().optional(),
+  moduleType: z.string().min(1).nullable().optional()
 });
 
 export type VictoryRuleSet = z.infer<typeof victoryRuleSetSchema>;
@@ -1063,6 +1074,173 @@ export const adminAuditEntrySchema = objectSchema({
 
 export type AdminAuditEntry = z.infer<typeof adminAuditEntrySchema>;
 
+export const authoredModuleValidationIssueSchema = objectSchema({
+  code: z.string().min(1),
+  path: z.string().min(1),
+  severity: z.enum(AUTHORED_MODULE_VALIDATION_SEVERITY_VALUES),
+  message: z.string().min(1)
+});
+
+export type AuthoredModuleValidationIssue = z.infer<typeof authoredModuleValidationIssueSchema>;
+
+export const authoredModuleValidationSchema = objectSchema({
+  valid: z.boolean(),
+  errors: z.array(authoredModuleValidationIssueSchema),
+  warnings: z.array(authoredModuleValidationIssueSchema)
+});
+
+export type AuthoredModuleValidation = z.infer<typeof authoredModuleValidationSchema>;
+
+export const authoredVictoryObjectiveBaseSchema = objectSchema({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  type: z.enum(AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES)
+});
+
+export const authoredVictoryControlContinentsObjectiveSchema =
+  authoredVictoryObjectiveBaseSchema.extend({
+    type: z.literal("control-continents"),
+    continentIds: z.array(z.string())
+  });
+
+export type AuthoredVictoryControlContinentsObjective = z.infer<
+  typeof authoredVictoryControlContinentsObjectiveSchema
+>;
+
+export const authoredVictoryTerritoryCountObjectiveSchema =
+  authoredVictoryObjectiveBaseSchema.extend({
+    type: z.literal("control-territory-count"),
+    territoryCount: z.number().int().nullable().optional()
+  });
+
+export type AuthoredVictoryTerritoryCountObjective = z.infer<
+  typeof authoredVictoryTerritoryCountObjectiveSchema
+>;
+
+export const authoredVictoryObjectiveSchema = z.discriminatedUnion("type", [
+  authoredVictoryControlContinentsObjectiveSchema,
+  authoredVictoryTerritoryCountObjectiveSchema
+]);
+
+export type AuthoredVictoryObjective = z.infer<typeof authoredVictoryObjectiveSchema>;
+
+export const authoredVictoryModuleContentSchema = objectSchema({
+  mapId: z.string(),
+  objectives: z.array(authoredVictoryObjectiveSchema)
+});
+
+export type AuthoredVictoryModuleContent = z.infer<typeof authoredVictoryModuleContentSchema>;
+
+export const authoredModuleInputSchema = objectSchema({
+  id: z.string().trim().min(1),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
+  content: authoredVictoryModuleContentSchema
+});
+
+export type AuthoredModuleInput = z.infer<typeof authoredModuleInputSchema>;
+
+export const authoredModuleSchema = authoredModuleInputSchema.extend({
+  status: z.enum(AUTHORED_MODULE_STATUS_VALUES),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1)
+});
+
+export type AuthoredModule = z.infer<typeof authoredModuleSchema>;
+
+export const authoredModulePreviewSchema = objectSchema({
+  summary: z.string(),
+  objectiveSummaries: z.array(z.string())
+});
+
+export type AuthoredModulePreview = z.infer<typeof authoredModulePreviewSchema>;
+
+export const authoredVictoryRuntimeMapSchema = objectSchema({
+  id: z.string(),
+  name: z.string(),
+  territoryCount: z.number().int().nonnegative(),
+  continentCount: z.number().int().nonnegative()
+});
+
+export type AuthoredVictoryRuntimeMap = z.infer<typeof authoredVictoryRuntimeMapSchema>;
+
+export const authoredVictoryRuntimeControlContinentsObjectiveSchema =
+  authoredVictoryControlContinentsObjectiveSchema.extend({
+    continentNames: z.array(z.string()),
+    summary: z.string()
+  });
+
+export type AuthoredVictoryRuntimeControlContinentsObjective = z.infer<
+  typeof authoredVictoryRuntimeControlContinentsObjectiveSchema
+>;
+
+export const authoredVictoryRuntimeTerritoryCountObjectiveSchema =
+  authoredVictoryTerritoryCountObjectiveSchema.extend({
+    summary: z.string()
+  });
+
+export type AuthoredVictoryRuntimeTerritoryCountObjective = z.infer<
+  typeof authoredVictoryRuntimeTerritoryCountObjectiveSchema
+>;
+
+export const authoredVictoryRuntimeObjectiveSchema = z.discriminatedUnion("type", [
+  authoredVictoryRuntimeControlContinentsObjectiveSchema,
+  authoredVictoryRuntimeTerritoryCountObjectiveSchema
+]);
+
+export type AuthoredVictoryRuntimeObjective = z.infer<typeof authoredVictoryRuntimeObjectiveSchema>;
+
+export const authoredVictoryModuleRuntimeSchema = objectSchema({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  moduleType: z.literal("victory-objectives"),
+  kind: z.literal("authored-victory-objectives"),
+  map: authoredVictoryRuntimeMapSchema,
+  objectives: z.array(authoredVictoryRuntimeObjectiveSchema),
+  preview: authoredModulePreviewSchema
+});
+
+export type AuthoredVictoryModuleRuntime = z.infer<typeof authoredVictoryModuleRuntimeSchema>;
+
+export const authoredModuleRuntimeSchema = authoredVictoryModuleRuntimeSchema;
+
+export type AuthoredModuleRuntime = z.infer<typeof authoredModuleRuntimeSchema>;
+
+export const authoredMapContinentOptionSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  bonus: z.number(),
+  territoryCount: z.number().int()
+});
+
+export type AuthoredMapContinentOption = z.infer<typeof authoredMapContinentOptionSchema>;
+
+export const authoredMapOptionSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  territoryCount: z.number().int(),
+  continentCount: z.number().int(),
+  continents: z.array(authoredMapContinentOptionSchema)
+});
+
+export type AuthoredMapOption = z.infer<typeof authoredMapOptionSchema>;
+
+export const authoredModuleSummarySchema = authoredModuleSchema.extend({
+  validation: authoredModuleValidationSchema,
+  preview: authoredModulePreviewSchema,
+  map: authoredMapOptionSchema.omit({ continents: true }).nullable().optional(),
+  objectiveCount: z.number().int(),
+  enabledObjectiveCount: z.number().int()
+});
+
+export type AuthoredModuleSummary = z.infer<typeof authoredModuleSummarySchema>;
+
 export const adminConfigSchema = objectSchema({
   defaults: adminGameDefaultsSchema,
   maintenance: objectSchema({
@@ -1241,3 +1419,60 @@ export const adminAuditResponseSchema = objectSchema({
 });
 
 export type AdminAuditResponse = z.infer<typeof adminAuditResponseSchema>;
+
+export const adminAuthoredModuleEditorOptionsResponseSchema = objectSchema({
+  moduleTypes: z.array(z.enum(AUTHORED_MODULE_TYPE_VALUES)),
+  maps: z.array(authoredMapOptionSchema)
+});
+
+export type AdminAuthoredModuleEditorOptionsResponse = z.infer<
+  typeof adminAuthoredModuleEditorOptionsResponseSchema
+>;
+
+export const adminAuthoredModulesListResponseSchema = objectSchema({
+  modules: z.array(authoredModuleSummarySchema)
+});
+
+export type AdminAuthoredModulesListResponse = z.infer<
+  typeof adminAuthoredModulesListResponseSchema
+>;
+
+export const adminAuthoredModuleDetailResponseSchema = objectSchema({
+  module: authoredModuleSchema,
+  validation: authoredModuleValidationSchema,
+  preview: authoredModulePreviewSchema,
+  runtime: authoredModuleRuntimeSchema
+});
+
+export type AdminAuthoredModuleDetailResponse = z.infer<
+  typeof adminAuthoredModuleDetailResponseSchema
+>;
+
+export const adminAuthoredModuleUpsertRequestSchema = authoredModuleInputSchema;
+
+export type AdminAuthoredModuleUpsertRequest = z.infer<
+  typeof adminAuthoredModuleUpsertRequestSchema
+>;
+
+export const adminAuthoredModuleValidateResponseSchema = objectSchema({
+  validation: authoredModuleValidationSchema,
+  preview: authoredModulePreviewSchema,
+  runtime: authoredModuleRuntimeSchema
+});
+
+export type AdminAuthoredModuleValidateResponse = z.infer<
+  typeof adminAuthoredModuleValidateResponseSchema
+>;
+
+export const adminAuthoredModuleMutationResponseSchema = objectSchema({
+  ok: z.literal(true),
+  module: authoredModuleSchema,
+  validation: authoredModuleValidationSchema,
+  preview: authoredModulePreviewSchema,
+  runtime: authoredModuleRuntimeSchema,
+  audit: adminAuditEntrySchema.nullable().optional()
+});
+
+export type AdminAuthoredModuleMutationResponse = z.infer<
+  typeof adminAuthoredModuleMutationResponseSchema
+>;

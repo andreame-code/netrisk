@@ -5,6 +5,7 @@ const path = require("path");
 const { createAdminConsole } = require("./admin-console.cjs");
 const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
+const { createAuthoredModulesService } = require("./authored-modules.cjs");
 const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
@@ -60,6 +61,17 @@ const {
   handleModuleOptionsRoute,
   handleRescanModulesRoute
 } = require("./routes/modules.cjs");
+const {
+  handleAdminContentStudioCreateRoute,
+  handleAdminContentStudioModuleDetailRoute,
+  handleAdminContentStudioDisableRoute,
+  handleAdminContentStudioEnableRoute,
+  handleAdminContentStudioModulesRoute,
+  handleAdminContentStudioOptionsRoute,
+  handleAdminContentStudioPublishRoute,
+  handleAdminContentStudioUpdateRoute,
+  handleAdminContentStudioValidateRoute
+} = require("./routes/admin-content-studio.cjs");
 const {
   handleAdminAuditRoute,
   handleAdminConfigRoute,
@@ -297,9 +309,17 @@ function createApp(options: CreateAppOptions = {}) {
     legacySessionsFile:
       options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
   });
+  const authoredModules = createAuthoredModulesService({
+    datastore
+  });
   const moduleRuntime = createModuleRuntime({
     projectRoot: runtimeProjectRoot,
-    datastore
+    datastore,
+    authoredModules
+  });
+  authoredModules.setMapCatalog({
+    listMaps: () => moduleRuntime.listSupportedMaps(),
+    resolveMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId)
   });
   const resolveCatalogMapName = (mapId: string | null | undefined) => {
     if (typeof mapId !== "string" || !mapId.trim()) {
@@ -333,7 +353,8 @@ function createApp(options: CreateAppOptions = {}) {
     persistGameContext,
     broadcastGame,
     createConfiguredInitialState,
-    moduleRuntime
+    moduleRuntime,
+    authoredModules
   });
 
   async function getSafeAdminDefaults() {
@@ -1059,6 +1080,146 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/admin/content-studio/options") {
+      await handleAdminContentStudioOptionsRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/content-studio/modules") {
+      await handleAdminContentStudioModulesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/content-studio/modules/validate") {
+      const body = await parseBody(req);
+      await handleAdminContentStudioValidateRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/content-studio/modules") {
+      const body = await parseBody(req);
+      await handleAdminContentStudioCreateRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    const adminContentStudioDetailMatch = url.pathname.match(
+      /^\/api\/admin\/content-studio\/modules\/([^/]+)$/
+    );
+    if (req.method === "GET" && adminContentStudioDetailMatch) {
+      await handleAdminContentStudioModuleDetailRoute(
+        req,
+        res,
+        decodeURIComponent(adminContentStudioDetailMatch[1] || ""),
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "PUT" && adminContentStudioDetailMatch) {
+      const body = await parseBody(req);
+      await handleAdminContentStudioUpdateRoute(
+        req,
+        res,
+        decodeURIComponent(adminContentStudioDetailMatch[1] || ""),
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    const adminContentStudioPublishMatch = url.pathname.match(
+      /^\/api\/admin\/content-studio\/modules\/([^/]+)\/publish$/
+    );
+    if (req.method === "POST" && adminContentStudioPublishMatch) {
+      await handleAdminContentStudioPublishRoute(
+        req,
+        res,
+        decodeURIComponent(adminContentStudioPublishMatch[1] || ""),
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    const adminContentStudioEnableMatch = url.pathname.match(
+      /^\/api\/admin\/content-studio\/modules\/([^/]+)\/enable$/
+    );
+    if (req.method === "POST" && adminContentStudioEnableMatch) {
+      await handleAdminContentStudioEnableRoute(
+        req,
+        res,
+        decodeURIComponent(adminContentStudioEnableMatch[1] || ""),
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    const adminContentStudioDisableMatch = url.pathname.match(
+      /^\/api\/admin\/content-studio\/modules\/([^/]+)\/disable$/
+    );
+    if (req.method === "POST" && adminContentStudioDisableMatch) {
+      await handleAdminContentStudioDisableRoute(
+        req,
+        res,
+        decodeURIComponent(adminContentStudioDisableMatch[1] || ""),
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/cron/scheduled-jobs") {
       await handleScheduledJobsRoute(
         req,
@@ -1143,6 +1304,8 @@ function createApp(options: CreateAppOptions = {}) {
               resolvedCatalog.victoryRuleSets.find(
                 (entry: { id: string }) => entry.id === victoryRuleSetId
               ) || null,
+            resolveVictoryRuleRuntime: (victoryRuleSetId: string) =>
+              moduleRuntime.findVictoryRuleSetRuntime(victoryRuleSetId),
             resolveTheme: (themeId: string) =>
               resolvedCatalog.themes.find((entry: { id: string }) => entry.id === themeId) || null,
             resolvePieceSkin: (pieceSkinId: string) =>
@@ -1633,9 +1796,11 @@ function createApp(options: CreateAppOptions = {}) {
   return {
     adminConsole,
     auth,
+    authoredModules,
     datastore,
     handleApi,
     handleRequest,
+    moduleRuntime,
     parseBody,
     sendJson,
     server,

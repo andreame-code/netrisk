@@ -1755,10 +1755,180 @@ button.ghost-action {
   appearance: none;
 }
 
+.content-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.content-studio-list,
+.content-studio-side-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.content-studio-list-panel,
+.content-studio-form-panel,
+.content-studio-side-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.content-studio-editor-shell,
+.content-studio-main-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.content-studio-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.content-studio-list-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.content-studio-map-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.content-studio-objective-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.content-studio-objective-list,
+.content-studio-objective-editor {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.content-studio-chip-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.content-studio-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.content-studio-chip {
+  min-width: 180px;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  color: var(--shell-copy);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.content-studio-chip:hover,
+.content-studio-chip.is-selected {
+  border-color: var(--shell-border-hi);
+  background: var(--shell-card-bg-hover);
+  transform: translateY(-1px);
+}
+
+.content-studio-chip strong {
+  font-size: 0.95rem;
+}
+
+.content-studio-chip span {
+  color: var(--shell-muted);
+  font-size: 0.82rem;
+}
+
+.content-studio-summary {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.content-studio-preview-list,
+.content-studio-validation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.content-studio-preview-list li {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+}
+
+.content-studio-validation-item {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+}
+
+.content-studio-validation-item.is-error {
+  border-color: var(--shell-danger-border);
+  background: var(--shell-danger-bg);
+}
+
+.content-studio-validation-item.is-warning {
+  border-color: var(--shell-warning-border);
+  background: var(--shell-warning-bg);
+}
+
+.content-studio-validation-item p,
+.content-studio-validation-item span {
+  margin: 0;
+}
+
+.content-studio-validation-item span {
+  color: var(--shell-muted);
+  font-size: 0.8rem;
+}
+
+.content-studio-runtime-json {
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: color-mix(in srgb, var(--shell-panel-bg) 78%, black 22%);
+  color: var(--shell-heading);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
 @media (max-width: 1180px) {
   .admin-page-header,
   .admin-users-grid,
   .admin-games-grid,
+  .content-studio-grid,
+  .content-studio-editor-grid,
+  .content-studio-objective-layout,
   .admin-kpi-layout,
   .admin-detail-grid,
   .admin-form-grid-3,
@@ -1842,6 +2012,9 @@ button.ghost-action {
   .profile-metric-grid,
   .lobby-summary-grid,
   .lobby-shell-grid,
+  .content-studio-grid,
+  .content-studio-editor-grid,
+  .content-studio-objective-layout,
   .admin-page-header,
   .admin-kpi-layout,
   .admin-users-grid,

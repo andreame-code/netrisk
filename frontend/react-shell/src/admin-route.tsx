@@ -27,6 +27,7 @@ import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { AdminContentStudioSection } from "@react-shell/admin-content-studio";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import {
   buildAdminPath,
@@ -43,7 +44,15 @@ import {
   adminUsersQueryKey
 } from "@react-shell/react-query";
 
-type AdminSection = "audit" | "config" | "games" | "maintenance" | "modules" | "overview" | "users";
+type AdminSection =
+  | "audit"
+  | "config"
+  | "content-studio"
+  | "games"
+  | "maintenance"
+  | "modules"
+  | "overview"
+  | "users";
 
 type AdminNavItem = {
   id: AdminSection;
@@ -121,6 +130,10 @@ function resolveAdminSection(pathname: string): AdminSection {
 
   if (pathname.endsWith("/config")) {
     return "config";
+  }
+
+  if (pathname.endsWith("/content-studio")) {
+    return "content-studio";
   }
 
   if (pathname.endsWith("/modules")) {
@@ -2330,6 +2343,13 @@ export function AdminRoute() {
       description: "Gameplay, visual, and maintenance defaults."
     },
     {
+      id: "content-studio",
+      group: "Operate",
+      label: "Content Studio",
+      path: `${basePath}/content-studio`,
+      description: "Author victory objective modules from the UI."
+    },
+    {
       id: "modules",
       group: "Operate",
       label: "Runtime modules",
@@ -2475,6 +2495,9 @@ export function AdminRoute() {
           {section === "users" ? <UsersSection frameContext={frameContext} /> : null}
           {section === "games" ? <GamesSection frameContext={frameContext} /> : null}
           {section === "config" ? <ConfigSection frameContext={frameContext} /> : null}
+          {section === "content-studio" ? (
+            <AdminContentStudioSection frameContext={frameContext} />
+          ) : null}
           {section === "modules" ? (
             <ModulesSection userId={currentUser.id} frameContext={frameContext} />
           ) : null}

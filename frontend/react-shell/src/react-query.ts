@@ -65,3 +65,15 @@ export function adminMaintenanceQueryKey() {
 export function adminAuditQueryKey() {
   return ["admin", "audit"] as const;
 }
+
+export function adminContentStudioOptionsQueryKey() {
+  return ["admin", "content-studio", "options"] as const;
+}
+
+export function adminContentStudioModulesQueryKey() {
+  return ["admin", "content-studio", "modules"] as const;
+}
+
+export function adminContentStudioModuleDetailQueryKey(moduleId: string | null) {
+  return ["admin", "content-studio", "module-detail", moduleId || "new"] as const;
+}
