@@ -301,7 +301,6 @@ register(
             id: "thread-1",
             isResolved: false,
             isOutdated: false,
-            updatedAt: "2026-04-23T10:12:00.000Z",
             comments: [
               {
                 authorLogin: "chatgpt-codex-connector",
@@ -744,7 +743,6 @@ register("codex PR readiness snapshots GitHub metadata into the evaluation input
                 id: "thread-1",
                 isResolved: false,
                 isOutdated: false,
-                updatedAt: "2026-04-23T10:17:00.000Z",
                 comments: {
                   nodes: [
                     {
@@ -866,7 +864,6 @@ register("codex PR readiness applies draft transitions only for fully ready PRs"
         id: "thread-blocking",
         isResolved: false,
         isOutdated: false,
-        updatedAt: "2026-04-23T10:30:00.000Z",
         comments: [
           {
             authorLogin: "chatgpt-codex-connector",

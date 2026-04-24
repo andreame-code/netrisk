@@ -1,7 +1,5 @@
 const assert = require("node:assert/strict");
-const {
-  handleOpenGameRoute
-} = require("../../../backend/routes/game-management.cjs");
+const { handleOpenGameRoute } = require("../../../backend/routes/game-management.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 

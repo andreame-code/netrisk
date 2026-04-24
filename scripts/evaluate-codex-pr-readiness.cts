@@ -90,7 +90,6 @@ type ReviewThread = {
   id: string;
   isResolved: boolean;
   isOutdated: boolean;
-  updatedAt: string;
   comments: ReviewThreadComment[];
 };
 
@@ -1135,7 +1134,6 @@ async function getReviewThreads(
                   id
                   isResolved
                   isOutdated
-                  updatedAt
                   comments(first: 20) {
                     nodes {
                       author {
@@ -1165,7 +1163,6 @@ async function getReviewThreads(
         id: String(thread.id || ""),
         isResolved: Boolean(thread.isResolved),
         isOutdated: Boolean(thread.isOutdated),
-        updatedAt: String(thread.updatedAt || ""),
         comments: asArray(thread.comments?.nodes).map((comment: any) => ({
           authorLogin: String(comment.author?.login || ""),
           body: String(comment.body || ""),
