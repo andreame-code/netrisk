@@ -431,6 +431,7 @@ jobs:
 
               const statuses = statusesResponse.data.statuses || [];
               const latestByNameMap = new Map();
+              const latestStatusByContextMap = new Map();
 
               for (const run of checkRuns) {
                 const key = normName(run.name);
@@ -445,9 +446,25 @@ jobs:
                 if (runTime > existingTime) latestByNameMap.set(key, run);
               }
 
+              for (const status of statuses) {
+                const key = normName(status.context);
+                const existing = latestStatusByContextMap.get(key);
+                if (!existing) {
+                  latestStatusByContextMap.set(key, status);
+                  continue;
+                }
+
+                const statusTime = Date.parse(status.updated_at || status.created_at || "0");
+                const existingTime = Date.parse(existing.updated_at || existing.created_at || "0");
+                if (statusTime > existingTime) latestStatusByContextMap.set(key, status);
+              }
+
+              const latestCheckRuns = [...latestByNameMap.values()];
+              const latestStatuses = [...latestStatusByContextMap.values()];
+
               const requiredRows = REQUIRED_CHECK_NAMES.map((required) => {
                 const run = latestByNameMap.get(normName(required));
-                const status = statuses.find((item) => normName(item.context) === normName(required));
+                const status = latestStatusByContextMap.get(normName(required));
 
                 if (run) {
                   if (run.status !== "completed") {
@@ -472,13 +489,13 @@ jobs:
                 return { name: required, state: "missing", details: "missing" };
               });
 
-              const failedStatuses = statuses.filter((item) => ["failure", "error"].includes(item.state));
-              const pendingStatuses = statuses.filter((item) => item.state === "pending");
-              const failedOtherRuns = checkRuns.filter((run) =>
+              const failedStatuses = latestStatuses.filter((item) => ["failure", "error"].includes(item.state));
+              const pendingStatuses = latestStatuses.filter((item) => item.state === "pending");
+              const failedOtherRuns = latestCheckRuns.filter((run) =>
                 run.status === "completed" &&
                 !["success", "neutral", "skipped"].includes(String(run.conclusion || ""))
               );
-              const pendingOtherRuns = checkRuns.filter((run) => run.status !== "completed");
+              const pendingOtherRuns = latestCheckRuns.filter((run) => run.status !== "completed");
 
               if (requiredRows.some((row) => row.state === "bad") || failedStatuses.length || failedOtherRuns.length) {
                 return {
