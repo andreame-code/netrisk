@@ -37,11 +37,12 @@ type OpenGame = (gameId: string) => Promise<any>;
 type ReplaceState = (state: any) => void;
 type BroadcastGame = (gameContext: any) => void;
 type Snapshot = () => unknown;
-type SnapshotForState = (
+type SnapshotForUser = (
   state: any,
   gameId: string | null,
   version: number | null,
-  gameName: string | null
+  gameName: string | null,
+  user: unknown
 ) => unknown;
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
@@ -152,7 +153,7 @@ async function handleOpenGameRoute(
   listGames: ListGames,
   resumeAiTurnsForRead: ResumeAiTurnsForRead,
   resolvePlayerForUser: ResolvePlayerForUser,
-  snapshotForState: SnapshotForState,
+  snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
@@ -189,11 +190,12 @@ async function handleOpenGameRoute(
         game: opened.game,
         games: await listGames(),
         activeGameId: opened.game.id,
-        state: snapshotForState(
+        state: snapshotForUser(
           opened.state,
           opened.game.id,
           opened.game.version,
-          opened.game.name
+          opened.game.name,
+          authContext.user
         ),
         playerId: resolvedPlayer ? resolvedPlayer.id : null
       },
