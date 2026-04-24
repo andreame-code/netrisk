@@ -66,24 +66,11 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
         github.event.workflow_run.event == 'pull_request') ||
-      (github.event_name == 'pull_request_target' &&
-        github.event.pull_request.draft == true &&
-        (startsWith(github.event.pull_request.head.ref, 'codex/') ||
-          contains(github.event.pull_request.labels.*.name, 'codex'))) ||
-      (github.event_name == 'pull_request_review' &&
-        github.event.pull_request.draft == true &&
-        (startsWith(github.event.pull_request.head.ref, 'codex/') ||
-          contains(github.event.pull_request.labels.*.name, 'codex'))) ||
-      (github.event_name == 'pull_request_review_comment' &&
-        github.event.pull_request.draft == true &&
-        (startsWith(github.event.pull_request.head.ref, 'codex/') ||
-          contains(github.event.pull_request.labels.*.name, 'codex'))) ||
+      github.event_name == 'pull_request_target' ||
+      github.event_name == 'pull_request_review' ||
+      github.event_name == 'pull_request_review_comment' ||
       (github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        (contains(github.event.comment.body, 'codex') ||
-          contains(github.event.comment.body, 'Codex') ||
-          contains(github.event.comment.body, 'greenlight') ||
-          contains(github.event.comment.body, 'Greenlight')))
+        github.event.issue.pull_request)
     runs-on: ubuntu-latest
     timeout-minutes: 75
 
@@ -323,10 +310,8 @@ jobs:
               });
             }
 
-            function isCodexTargetPr(pr) {
-              const labels = (pr.labels || []).map((label) => normalize(label.name || label));
-              const headRef = String(pr.head?.ref || "");
-              return pr.state === "open" && pr.draft === true && (headRef.startsWith("codex/") || labels.includes("codex"));
+            function isAutomationTargetPr(pr) {
+              return pr.state === "open";
             }
 
             async function getPr(prNumber) {
@@ -837,7 +822,7 @@ jobs:
                 }
                 if (context.payload.issue?.pull_request && context.payload.issue?.number) {
                   const pr = await getPr(context.payload.issue.number);
-                  return isCodexTargetPr(pr) ? [pr.number] : [];
+                  return isAutomationTargetPr(pr) ? [pr.number] : [];
                 }
                 return [];
               }
@@ -849,13 +834,13 @@ jobs:
                 const targetNumbers = [];
                 for (const number of uniqueNumbers) {
                   const pr = await getPr(number);
-                  if (isCodexTargetPr(pr)) targetNumbers.push(number);
+                  if (isAutomationTargetPr(pr)) targetNumbers.push(number);
                 }
                 return targetNumbers;
               }
 
               const openPrs = await listOpenPrs();
-              return openPrs.filter(isCodexTargetPr).map((pr) => pr.number);
+              return openPrs.filter(isAutomationTargetPr).map((pr) => pr.number);
             }
 
             const prNumbers = await prNumbersFromEvent();
