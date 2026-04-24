@@ -185,13 +185,12 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
       .toString("hex");
   }
 
-  const expected = Buffer.from(record.hash, "hex");
-  const received = Buffer.from(candidate, "hex");
-  if (expected.length !== received.length) {
-    return false;
-  }
+  // We hash both values using SHA-256 before timingSafeEqual to ensure constant-time comparison
+  // even if the input lengths differ (e.g. legacy vs scrypt hashes).
+  const expectedHash = crypto.createHash("sha256").update(record.hash).digest();
+  const candidateHash = crypto.createHash("sha256").update(candidate).digest();
 
-  return crypto.timingSafeEqual(expected, received);
+  return crypto.timingSafeEqual(expectedHash, candidateHash);
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
@@ -419,6 +418,10 @@ function createAuthStore(options: AuthStoreOptions = {}) {
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
     if (!user) {
+      // Dummy verification to mitigate timing-based username enumeration.
+      // This ensures that the response time for non-existent users is similar to real ones.
+      const dummySalt = "00000000000000000000000000000000";
+      crypto.scryptSync(String(password || ""), dummySalt, 64);
       return null;
     }
 
