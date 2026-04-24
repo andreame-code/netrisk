@@ -158,7 +158,7 @@ export type AuthSessionResponse = z.infer<typeof authSessionResponseSchema>;
 
 export const loginRequestSchema = objectSchema({
   username: z.string().min(1).max(32),
-  password: z.string().min(1).max(128)
+  password: z.string().min(1)
 });
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
@@ -195,7 +195,7 @@ export const themePreferenceResponseSchema = objectSchema({
 export type ThemePreferenceResponse = z.infer<typeof themePreferenceResponseSchema>;
 
 export const accountSettingsRequestSchema = objectSchema({
-  currentPassword: z.string().min(1).max(128),
+  currentPassword: z.string().min(1),
   email: z.string().min(1).max(255).optional(),
   newPassword: passwordSchema.optional(),
   confirmNewPassword: passwordSchema.optional()

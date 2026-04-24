@@ -423,15 +423,29 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   }
 
   function runDummyPasswordVerification(password: unknown) {
-    const dummyCredentials: UserCredentials = {
-      password: {
-        algorithm: "scrypt",
-        salt: "00000000000000000000000000000000",
-        keylen: 64,
-        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    const dummyCredentials: UserCredentials[] = [
+      {
+        password: {
+          algorithm: "scrypt",
+          salt: "00000000000000000000000000000000",
+          keylen: 64,
+          hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      },
+      {
+        password: {
+          algorithm: "pbkdf2",
+          salt: "00000000000000000000000000000000",
+          iterations: 120000,
+          digest: "sha256",
+          hash: "0000000000000000000000000000000000000000000000000000000000000000"
+        }
       }
-    };
-    verifyPassword(dummyCredentials, password);
+    ];
+
+    for (const credentials of dummyCredentials) {
+      verifyPassword(credentials, password);
+    }
   }
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
