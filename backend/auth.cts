@@ -422,7 +422,8 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
-  function runDummyPasswordVerification(password: unknown) {
+  function runDummyPasswordVerification() {
+    const dummySecret = "netrisk-auth-dummy";
     const dummyCredentials: UserCredentials[] = [
       {
         password: {
@@ -444,7 +445,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     ];
 
     for (const credentials of dummyCredentials) {
-      verifyPassword(credentials, password);
+      verifyPassword(credentials, dummySecret);
     }
   }
 
@@ -452,13 +453,13 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      runDummyPasswordVerification(password);
+      runDummyPasswordVerification();
       return null;
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
       if (user.credentials.password.secret !== String(password || "")) {
-        runDummyPasswordVerification(password);
+        runDummyPasswordVerification();
         return null;
       }
 
