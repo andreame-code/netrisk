@@ -424,29 +424,16 @@ function createAuthStore(options: AuthStoreOptions = {}) {
 
   function runDummyPasswordVerification() {
     const dummySecret = "netrisk-auth-dummy";
-    const dummyCredentials: UserCredentials[] = [
-      {
-        password: {
-          algorithm: "scrypt",
-          salt: "00000000000000000000000000000000",
-          keylen: 64,
-          hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-        }
-      },
-      {
-        password: {
-          algorithm: "pbkdf2",
-          salt: "00000000000000000000000000000000",
-          iterations: 120000,
-          digest: "sha256",
-          hash: "0000000000000000000000000000000000000000000000000000000000000000"
-        }
+    const dummyCredentials: UserCredentials = {
+      password: {
+        algorithm: "scrypt",
+        salt: "00000000000000000000000000000000",
+        keylen: 64,
+        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
       }
-    ];
+    };
 
-    for (const credentials of dummyCredentials) {
-      verifyPassword(credentials, dummySecret);
-    }
+    verifyPassword(dummyCredentials, dummySecret);
   }
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
