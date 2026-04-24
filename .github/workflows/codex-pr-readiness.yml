@@ -252,9 +252,8 @@ jobs:
               const reviewState = normalize(state);
 
               if (!body && !reviewState) return false;
-              if (isCleanCodexSignal(body)) return false;
-
               if (reviewState === "changes_requested") return true;
+              if (isCleanCodexSignal(body)) return false;
 
               return (
                 /\bp0\b/.test(body) ||
@@ -667,6 +666,7 @@ jobs:
               const mergeDirty =
                 pr.mergeable === false &&
                 ["dirty", "unknown_dirty"].includes(normalize(pr.mergeable_state));
+              const branchBehind = Number(freshness.behindBy || 0) > 0;
 
               let action = "none";
               let actionReason = "No action needed.";
@@ -712,6 +712,24 @@ jobs:
                   actionReason = "Requested Codex mergeability fix.";
                 } else {
                   actionReason = "Codex mergeability fix was already requested for this head SHA.";
+                }
+              } else if (branchBehind) {
+                action = "fix-branch";
+                actionReason = `PR branch is ${freshness.behindBy} commit(s) behind ${pr.base.ref}.`;
+                if (!hasActionMarker(prContext.issueComments, "fix-branch", sha)) {
+                  await postActionComment(
+                    pr.number,
+                    "fix-branch",
+                    sha,
+                    `@codex fix it
+
+                    This PR branch is ${freshness.behindBy} commit(s) behind ${pr.base.ref}.
+
+                    Please update the branch with the current base, keep the change minimal, and rerun the required checks.`
+                  );
+                  actionReason = "Requested Codex branch freshness fix.";
+                } else {
+                  actionReason = "Codex branch freshness fix was already requested for this head SHA.";
                 }
               } else if (checkState.state === "bad") {
                 action = "fix-ci";
