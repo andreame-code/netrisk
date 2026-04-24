@@ -1,98 +1,805 @@
 name: Codex PR Readiness
 
-on:
-  pull_request_target:
-    branches: ["main"]
-    types: [opened, reopened, synchronize, labeled, unlabeled, converted_to_draft]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
-  issue_comment:
-    types: [created, edited]
-  workflow_run:
-    workflows: ["Quality", "Coverage", "E2E Smoke", "CodeQL Advanced"]
-    types: [completed]
+"on":
+  schedule:
+    - cron: "*/30 * * * *"
+
   workflow_dispatch:
     inputs:
       pr_number:
         description: "Optional PR number to evaluate"
         required: false
-  schedule:
-    - cron: "*/30 * * * *"
+
+  pull_request_target:
+    branches: ["main"]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - converted_to_draft
+      - labeled
+      - unlabeled
+
+  pull_request_review:
+    types:
+      - submitted
+      - edited
+      - dismissed
+
+  pull_request_review_comment:
+    types:
+      - created
+      - edited
+      - deleted
+
+  issue_comment:
+    types:
+      - created
+      - edited
+
+  workflow_run:
+    workflows:
+      - Quality
+      - Coverage
+      - E2E Smoke
+      - CodeQL Advanced
+    types:
+      - completed
 
 permissions:
-  contents: read
   actions: read
   checks: read
+  contents: read
   issues: write
   pull-requests: write
+  statuses: read
+
+concurrency:
+  group: codex-pr-readiness
+  cancel-in-progress: false
 
 jobs:
   codex-pr-readiness:
-    if: >-
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' &&
-        github.event.workflow_run.event == 'pull_request') ||
-      (github.event_name == 'pull_request_target' &&
-        github.event.pull_request.draft == true &&
-        (startsWith(github.event.pull_request.head.ref, 'codex/') ||
-          contains(github.event.pull_request.labels.*.name, 'codex'))) ||
-      (github.event_name == 'pull_request_review' &&
-        github.event.pull_request.draft == true &&
-        (startsWith(github.event.pull_request.head.ref, 'codex/') ||
-          contains(github.event.pull_request.labels.*.name, 'codex'))) ||
-      (github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
-        (contains(github.event.comment.body, 'codex') ||
-          contains(github.event.comment.body, 'Codex') ||
-          contains(github.event.comment.body, 'greenlight') ||
-          contains(github.event.comment.body, 'Greenlight')))
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 75
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Wait for older watchdog runs
+        uses: actions/github-script@v7
         with:
-          node-version: 22
-          cache: npm
+          script: |
+            const { owner, repo } = context.repo;
+            const maxWaitMs = 60 * 60 * 1000;
+            const pollMs = 15 * 1000;
+            const startedAt = Date.now();
 
-      - name: Install dependencies
-        run: npm ci
+            while (true) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                owner,
+                repo,
+                status: "in_progress",
+                per_page: 100,
+              });
 
-      - name: Compile readiness evaluator
-        run: npx tsc -p tsconfig.json --incremental false
+              const olderRuns = runs.filter((run) =>
+                run.id !== context.runId &&
+                run.name === context.workflow &&
+                Number(run.run_number || 0) < Number(context.runNumber || 0)
+              );
 
-      - name: Evaluate Codex PR readiness
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number || '' }}
-        shell: bash
-        run: |
-          args=(
-            --apply
-            --event-path "$GITHUB_EVENT_PATH"
-            --repository "$GITHUB_REPOSITORY"
-            --json-output ".codex-pr-readiness-output.json"
-            --summary-output ".codex-pr-readiness-summary.md"
-          )
+              if (olderRuns.length === 0) {
+                core.info("No older watchdog run is active; continuing.");
+                break;
+              }
 
-          if [ -n "$INPUT_PR_NUMBER" ]; then
-            args+=(--pr-number "$INPUT_PR_NUMBER")
-          fi
+              core.info(
+                `Waiting for older watchdog run(s): ${olderRuns
+                  .map((run) => `#${run.run_number} ${run.html_url}`)
+                  .join(", ")}`
+              );
 
-          node .tsbuild/scripts/evaluate-codex-pr-readiness.cjs "${args[@]}"
+              if (Date.now() - startedAt > maxWaitMs) {
+                core.warning("Waited for older watchdog runs for 60 minutes; continuing to avoid an indefinite run.");
+                break;
+              }
 
-      - name: Publish workflow summary
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          if [ -f ".codex-pr-readiness-summary.md" ]; then
-            cat ".codex-pr-readiness-summary.md" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "# Codex PR Readiness" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "No readiness summary was generated for this run." >> "$GITHUB_STEP_SUMMARY"
-          fi
+              await new Promise((resolve) => setTimeout(resolve, pollMs));
+            }
+
+      - name: Evaluate PR readiness and trigger Codex when needed
+        uses: actions/github-script@v7
+        with:
+          # Optional: if you later add a fine-grained PAT secret named CODEX_TRIGGER_TOKEN,
+          # comments will be posted as that connected user instead of github-actions[bot].
+          # Without it, the workflow still runs with the normal GITHUB_TOKEN.
+          github-token: ${{ secrets.CODEX_TRIGGER_TOKEN || github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+
+            const REQUIRED_CHECK_NAMES = [
+              "quality",
+              "coverage",
+              "e2e-smoke",
+              "Analyze (javascript-typescript)",
+            ];
+
+            const CODEX_ACTORS = [
+              "chatgpt-codex-connector",
+              "chatgpt-codex-connector[bot]",
+            ];
+
+            const REVIEW_BOT_ACTORS = [
+              ...CODEX_ACTORS,
+              "github-advanced-security",
+              "github-advanced-security[bot]",
+              "google-labs-jules",
+              "google-labs-jules[bot]",
+            ];
+
+            const SUMMARY_MARKER = "<!-- codex-pr-readiness-watchdog:summary -->";
+            const ACTION_MARKER_PREFIX = "<!-- codex-pr-readiness-watchdog:action";
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            function normalize(value) {
+              return String(value || "").trim().toLowerCase();
+            }
+
+            function normName(value) {
+              return normalize(value).replace(/[^a-z0-9]+/g, " ").trim();
+            }
+
+            function actorLogin(item) {
+              return normalize(item?.user?.login || item?.author?.login || "");
+            }
+
+            function isCodexActor(item) {
+              const login = actorLogin(item);
+              return CODEX_ACTORS.some((actor) => login === normalize(actor));
+            }
+
+            function isReviewBotActor(item) {
+              const login = actorLogin(item);
+              return REVIEW_BOT_ACTORS.some((actor) => login === normalize(actor));
+            }
+
+            function createdAt(item) {
+              return item?.submitted_at || item?.created_at || item?.updated_at || null;
+            }
+
+            function isAfter(value, date) {
+              if (!value || !date) return false;
+              return Date.parse(value) >= Date.parse(date);
+            }
+
+            function bodyHasCurrentSha(body, sha) {
+              const text = String(body || "");
+              if (!sha) return false;
+              return text.includes(sha) || text.includes(sha.slice(0, 12)) || text.includes(sha.slice(0, 10));
+            }
+
+            function itemIsForCurrentHead(item, sha, headDate) {
+              if (item?.commit_id) return item.commit_id === sha;
+              if (bodyHasCurrentSha(item?.body, sha)) return true;
+              return isAfter(createdAt(item), headDate);
+            }
+
+            function actionMarker(type, sha) {
+              return `${ACTION_MARKER_PREFIX}:${type}:${sha} -->`;
+            }
+
+            function hasActionMarker(issueComments, type, sha) {
+              const marker = actionMarker(type, sha);
+              return issueComments.some((comment) => String(comment.body || "").includes(marker));
+            }
+
+            function isOwnAutomationComment(comment) {
+              const body = String(comment?.body || "");
+              return body.includes(SUMMARY_MARKER) || body.includes(ACTION_MARKER_PREFIX);
+            }
+
+            function isCodexUsageError(text) {
+              const body = normalize(text);
+              return body.includes("to use codex here") && body.includes("connect");
+            }
+
+            function isCleanCodexSignal(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+
+              const explicitNoSeverityFinding =
+                /\bno\s+(?:p0\s*\/\s*p1|p0\s*(?:or|and)\s*p1|p0\s+or\s+p1)\s+(?:issues?|findings?|problems?)\b/i.test(body) ||
+                /\bno\s+(?:major|blocking|critical)\s+(?:issues?|findings?|problems?)\b/i.test(body);
+
+              return (
+                body.includes("didn't find any major issues") ||
+                body.includes("did not find any major issues") ||
+                explicitNoSeverityFinding ||
+                body.includes("codex greenlight") ||
+                body.includes("codex pr readiness: greenlight") ||
+                body.includes("codex final approval") ||
+                body.includes("all tests are passing") ||
+                body.includes("all tests passed")
+              );
+            }
+
+            function hasProblemSignal(text, state) {
+              const body = normalize(text);
+              const reviewState = normalize(state);
+
+              if (!body && !reviewState) return false;
+              if (isCleanCodexSignal(body)) return false;
+
+              if (reviewState === "changes_requested") return true;
+
+              return (
+                /\bp0\b/.test(body) ||
+                /\bp1\b/.test(body) ||
+                body.includes("p1 badge") ||
+                body.includes("changes requested") ||
+                body.includes("regression") ||
+                body.includes("bug") ||
+                body.includes("failing") ||
+                body.includes("failure") ||
+                body.includes("broken") ||
+                body.includes("missing test") ||
+                body.includes("security") ||
+                body.includes("auth") ||
+                body.includes("authorization") ||
+                body.includes("admin") ||
+                body.includes("unsafe") ||
+                body.includes("must fix") ||
+                body.includes("needs fix") ||
+                body.includes("incorrect") ||
+                body.includes("crash") ||
+                body.includes("data loss") ||
+                body.includes("corrupt") ||
+                body.includes("denial of service") ||
+                body.includes("cpu-dos") ||
+                body.includes("dos vector") ||
+                body.includes("timing attack") ||
+                body.includes("avoid hashing raw input")
+              );
+            }
+
+            function hasCodexReviewPromptForHead(issueComments, sha, headDate) {
+              return issueComments.some((comment) => {
+                if (isOwnAutomationComment(comment)) return false;
+                const body = normalize(comment.body);
+                return body.includes("@codex") && body.includes("review") && itemIsForCurrentHead(comment, sha, headDate);
+              });
+            }
+
+            function summarizeProblemItems(items) {
+              return items
+                .slice(0, 6)
+                .map((item) => {
+                  const author = item?.user?.login || item?.author?.login || "unknown";
+                  const url = item?.html_url || item?.pull_request_review_id || "";
+                  const body = String(item?.body || "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .slice(0, 420);
+                  return `- ${author}: ${body}${url ? `\n  ${url}` : ""}`;
+                })
+                .join("\n");
+            }
+
+            function latestByDate(items) {
+              return [...items].sort((a, b) => {
+                return Date.parse(createdAt(b) || "0") - Date.parse(createdAt(a) || "0");
+              })[0] || null;
+            }
+
+            async function listOpenPrs() {
+              return await github.paginate(github.rest.pulls.list, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+            }
+
+            async function getPr(prNumber) {
+              const response = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              let pr = response.data;
+
+              // GitHub may return mergeable=null while it computes mergeability.
+              if (pr.mergeable === null) {
+                await sleep(1500);
+                const retry = await github.rest.pulls.get({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                });
+                pr = retry.data;
+              }
+
+              return pr;
+            }
+
+            async function getCommitDate(sha) {
+              const response = await github.rest.repos.getCommit({
+                owner,
+                repo,
+                ref: sha,
+              });
+              return (
+                response.data.commit?.committer?.date ||
+                response.data.commit?.author?.date ||
+                null
+              );
+            }
+
+            async function getBranchFreshness(pr) {
+              try {
+                const response = await github.rest.repos.compareCommitsWithBasehead({
+                  owner,
+                  repo,
+                  basehead: `${pr.base.ref}...${pr.head.sha}`,
+                });
+
+                return {
+                  status: response.data.status || "unknown",
+                  aheadBy: Number(response.data.ahead_by || 0),
+                  behindBy: Number(response.data.behind_by || 0),
+                };
+              } catch (error) {
+                core.warning(`Could not compare ${pr.base.ref}...${pr.head.sha}: ${error.message}`);
+                return { status: "unknown", aheadBy: 0, behindBy: 0 };
+              }
+            }
+
+            async function getPrContext(prNumber) {
+              const [issueComments, reviews, reviewComments] = await Promise.all([
+                github.paginate(github.rest.issues.listComments, {
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  per_page: 100,
+                }),
+                github.paginate(github.rest.pulls.listReviews, {
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  per_page: 100,
+                }),
+                github.paginate(github.rest.pulls.listReviewComments, {
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  per_page: 100,
+                }),
+              ]);
+
+              return { issueComments, reviews, reviewComments };
+            }
+
+            async function getCheckState(sha) {
+              const [checkRunsResponse, statusesResponse] = await Promise.all([
+                github.rest.checks.listForRef({
+                  owner,
+                  repo,
+                  ref: sha,
+                  per_page: 100,
+                }),
+                github.rest.repos.getCombinedStatusForRef({
+                  owner,
+                  repo,
+                  ref: sha,
+                }),
+              ]);
+
+              const checkRuns = (checkRunsResponse.data.check_runs || []).filter((run) => {
+                const name = normName(run.name);
+                return name !== "codex pr readiness" && !name.includes("codex pr readiness");
+              });
+
+              const statuses = statusesResponse.data.statuses || [];
+              const latestByNameMap = new Map();
+
+              for (const run of checkRuns) {
+                const key = normName(run.name);
+                const existing = latestByNameMap.get(key);
+                if (!existing) {
+                  latestByNameMap.set(key, run);
+                  continue;
+                }
+
+                const runTime = Date.parse(run.completed_at || run.started_at || run.created_at || "0");
+                const existingTime = Date.parse(existing.completed_at || existing.started_at || existing.created_at || "0");
+                if (runTime > existingTime) latestByNameMap.set(key, run);
+              }
+
+              const requiredRows = REQUIRED_CHECK_NAMES.map((required) => {
+                const run = latestByNameMap.get(normName(required));
+                const status = statuses.find((item) => normName(item.context) === normName(required));
+
+                if (run) {
+                  if (run.status !== "completed") {
+                    return { name: required, state: "pending", details: `${run.name}: ${run.status}` };
+                  }
+                  if (!["success", "neutral", "skipped"].includes(String(run.conclusion || ""))) {
+                    return { name: required, state: "bad", details: `${run.name}: ${run.conclusion || "unknown"}` };
+                  }
+                  return { name: required, state: "green", details: `${run.name}: ${run.conclusion}` };
+                }
+
+                if (status) {
+                  if (status.state === "pending") {
+                    return { name: required, state: "pending", details: `${status.context}: pending` };
+                  }
+                  if (["failure", "error"].includes(status.state)) {
+                    return { name: required, state: "bad", details: `${status.context}: ${status.state}` };
+                  }
+                  return { name: required, state: "green", details: `${status.context}: ${status.state}` };
+                }
+
+                return { name: required, state: "missing", details: "missing" };
+              });
+
+              const failedStatuses = statuses.filter((item) => ["failure", "error"].includes(item.state));
+              const pendingStatuses = statuses.filter((item) => item.state === "pending");
+              const failedOtherRuns = checkRuns.filter((run) =>
+                run.status === "completed" &&
+                !["success", "neutral", "skipped"].includes(String(run.conclusion || ""))
+              );
+              const pendingOtherRuns = checkRuns.filter((run) => run.status !== "completed");
+
+              if (requiredRows.some((row) => row.state === "bad") || failedStatuses.length || failedOtherRuns.length) {
+                return {
+                  state: "bad",
+                  rows: requiredRows,
+                  details: [
+                    ...requiredRows.filter((row) => row.state === "bad").map((row) => row.details),
+                    ...failedStatuses.map((item) => `${item.context}: ${item.state}`),
+                    ...failedOtherRuns.map((run) => `${run.name}: ${run.conclusion || "unknown"}`),
+                  ],
+                };
+              }
+
+              if (requiredRows.some((row) => row.state === "pending") || pendingStatuses.length || pendingOtherRuns.length) {
+                return {
+                  state: "pending",
+                  rows: requiredRows,
+                  details: [
+                    ...requiredRows.filter((row) => row.state === "pending").map((row) => row.details),
+                    ...pendingStatuses.map((item) => `${item.context}: pending`),
+                    ...pendingOtherRuns.map((run) => `${run.name}: ${run.status}`),
+                  ],
+                };
+              }
+
+              if (requiredRows.some((row) => row.state === "missing")) {
+                return {
+                  state: "unknown",
+                  rows: requiredRows,
+                  details: requiredRows.filter((row) => row.state === "missing").map((row) => row.name),
+                };
+              }
+
+              return {
+                state: "green",
+                rows: requiredRows,
+                details: requiredRows.map((row) => row.details),
+              };
+            }
+
+            async function postActionComment(prNumber, type, sha, body) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: `${actionMarker(type, sha)}\n${body.trim()}`,
+              });
+            }
+
+            async function upsertSummaryComment(prNumber, body) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: prNumber,
+                per_page: 100,
+              });
+
+              const existing = [...comments]
+                .reverse()
+                .find((comment) => String(comment.body || "").includes(SUMMARY_MARKER));
+
+              const nextBody = `${SUMMARY_MARKER}\n${body.trim()}`;
+
+              if (existing && String(existing.body || "").trim() === nextBody.trim()) {
+                return "unchanged";
+              }
+
+              if (existing) {
+                try {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existing.id,
+                    body: nextBody,
+                  });
+                  return "updated";
+                } catch (error) {
+                  core.warning(`Could not update existing summary comment on PR #${prNumber}: ${error.message}`);
+                }
+              }
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: nextBody,
+              });
+              return "created";
+            }
+
+            function buildSummary({ pr, sha, freshness, checkState, codexReviewedCurrentHead, codexOk, reviewPromptForHead, problemItems, action, actionReason }) {
+              const decision = (() => {
+                if (problemItems.length > 0) return "FIX REQUESTED";
+                if (action === "fix-ci") return "FIX REQUESTED";
+                if (action === "fix-merge") return "FIX REQUESTED";
+                if (checkState.state === "pending") return "WAITING FOR CI";
+                if (checkState.state === "unknown") return "WAITING FOR CHECKS";
+                if (checkState.state === "green" && codexOk) return "READY";
+                if (checkState.state === "green" && (codexReviewedCurrentHead || reviewPromptForHead)) return "WAITING FOR CODEX";
+                if (action === "review") return "CODEX REVIEW REQUESTED";
+                return "WATCHING";
+              })();
+
+              const lines = [
+                "## Codex PR Readiness",
+                "",
+                `Decision: **${decision}**`,
+                "",
+                `- PR: #${pr.number} — ${pr.title}`,
+                `- Draft: ${pr.draft ? "yes" : "no"}`,
+                `- Head branch: \`${pr.head.ref}\``,
+                `- Head SHA: \`${sha.slice(0, 12)}\``,
+                `- Base branch: \`${pr.base.ref}\``,
+                `- Mergeable: ${pr.mergeable === true ? "yes" : pr.mergeable === false ? `no (${pr.mergeable_state || "unknown"})` : "unknown"}`,
+                `- Branch freshness: ${freshness.behindBy} behind / ${freshness.aheadBy} ahead (${freshness.status})`,
+                `- Checks: ${checkState.state.toUpperCase()}`,
+                `- Codex reviewed current head: ${codexReviewedCurrentHead ? "yes" : "no"}`,
+                `- Codex OK: ${codexOk ? "yes" : "no"}`,
+                `- Existing @codex review prompt for this head: ${reviewPromptForHead ? "yes" : "no"}`,
+                "",
+                "### Check details",
+                ...checkState.rows.map((row) => `- \`${row.name}\`: ${row.state.toUpperCase()} — ${row.details}`),
+              ];
+
+              if (action || actionReason) {
+                lines.push("", "### Watchdog action", `- ${action || "none"}: ${actionReason || "n/a"}`);
+              }
+
+              if (problemItems.length > 0) {
+                lines.push("", "### Current problem signals", summarizeProblemItems(problemItems));
+              }
+
+              lines.push("", "_This workflow is non-failing by design. It updates this summary and asks Codex for review/fixes when needed; it does not merge PRs._");
+
+              return lines.join("\n");
+            }
+
+            async function evaluatePr(prNumber) {
+              const pr = await getPr(prNumber);
+
+              if (pr.state !== "open") {
+                core.info(`Skipping PR #${prNumber}: state=${pr.state}`);
+                return;
+              }
+
+              const sha = pr.head.sha;
+              const headDate = await getCommitDate(sha);
+              const freshness = await getBranchFreshness(pr);
+              const prContext = await getPrContext(pr.number);
+              const checkState = await getCheckState(sha);
+
+              const currentReviewItems = [
+                ...prContext.reviews,
+                ...prContext.reviewComments,
+              ].filter((item) => isReviewBotActor(item) && itemIsForCurrentHead(item, sha, headDate));
+
+              const currentCodexIssueComments = prContext.issueComments.filter((item) =>
+                isCodexActor(item) &&
+                itemIsForCurrentHead(item, sha, headDate) &&
+                !isCodexUsageError(item.body)
+              );
+
+              const currentCodexSignals = [
+                ...prContext.reviews,
+                ...prContext.reviewComments,
+                ...currentCodexIssueComments,
+              ].filter((item) => isCodexActor(item) && itemIsForCurrentHead(item, sha, headDate) && !isCodexUsageError(item.body));
+
+              const problemItems = [
+                ...currentReviewItems,
+                ...currentCodexIssueComments,
+              ].filter((item) => hasProblemSignal(item.body || "", item.state || ""));
+
+              const codexReviewedCurrentHead = currentCodexSignals.length > 0;
+              const latestCodexSignal = latestByDate(currentCodexSignals);
+              const codexOk =
+                codexReviewedCurrentHead &&
+                problemItems.length === 0 &&
+                (normalize(latestCodexSignal?.state) === "approved" ||
+                  isCleanCodexSignal(latestCodexSignal?.body || "") ||
+                  currentCodexSignals.some((signal) => bodyHasCurrentSha(signal.body, sha)));
+
+              const reviewPromptForHead = hasCodexReviewPromptForHead(prContext.issueComments, sha, headDate);
+
+              const mergeDirty =
+                pr.mergeable === false &&
+                ["dirty", "unknown_dirty"].includes(normalize(pr.mergeable_state));
+
+              let action = "none";
+              let actionReason = "No action needed.";
+
+              core.info(`PR #${pr.number}: draft=${pr.draft}, checks=${checkState.state}, problems=${problemItems.length}, codexReviewed=${codexReviewedCurrentHead}, codexOk=${codexOk}`);
+
+              if (problemItems.length > 0) {
+                action = "fix-review";
+                actionReason = "Current review/problem finding detected.";
+                if (!hasActionMarker(prContext.issueComments, "fix-review", sha)) {
+                  await postActionComment(
+                    pr.number,
+                    "fix-review",
+                    sha,
+                    `@codex fix it
+
+                    This PR has current review/problem findings on commit ${sha}.
+
+                    Please fix only the blocking issues below. Keep the change minimal, avoid unrelated refactors, add or update regression tests when appropriate, and make sure the relevant tests pass.
+
+                    ${summarizeProblemItems(problemItems)}
+
+                    After the fix, this watchdog will request another Codex review once CI is green.`
+                  );
+                  actionReason = "Requested Codex fix for current review findings.";
+                } else {
+                  actionReason = "Codex fix for current review findings was already requested for this head SHA.";
+                }
+              } else if (mergeDirty) {
+                action = "fix-merge";
+                actionReason = "PR is not cleanly mergeable.";
+                if (!hasActionMarker(prContext.issueComments, "fix-merge", sha)) {
+                  await postActionComment(
+                    pr.number,
+                    "fix-merge",
+                    sha,
+                    `@codex fix it
+
+                    This PR is not cleanly mergeable into ${pr.base.ref}.
+
+                    Please update the branch with the current base, resolve merge conflicts if needed, keep the fix minimal, and make sure the required checks still pass.`
+                  );
+                  actionReason = "Requested Codex mergeability fix.";
+                } else {
+                  actionReason = "Codex mergeability fix was already requested for this head SHA.";
+                }
+              } else if (checkState.state === "bad") {
+                action = "fix-ci";
+                actionReason = "One or more checks failed.";
+                if (!hasActionMarker(prContext.issueComments, "fix-ci", sha)) {
+                  await postActionComment(
+                    pr.number,
+                    "fix-ci",
+                    sha,
+                    `@codex fix the CI failures
+
+                    The checks for this PR are failing on commit ${sha}.
+
+                    Failing details:
+                    ${checkState.details.map((detail) => `- ${detail}`).join("\n")}
+
+                    Please inspect the failures, make the smallest safe fix, avoid unrelated refactors, and ensure the relevant tests pass.`
+                  );
+                  actionReason = "Requested Codex fix for CI failures.";
+                } else {
+                  actionReason = "Codex CI fix was already requested for this head SHA.";
+                }
+              } else if (checkState.state === "pending" || checkState.state === "unknown") {
+                action = "wait";
+                actionReason = `Checks are ${checkState.state}; waiting.`;
+              } else if (checkState.state === "green" && codexOk) {
+                action = "none";
+                actionReason = "CI is green and Codex has reviewed the current head without current findings.";
+              } else if (checkState.state === "green" && !codexOk) {
+                action = "review";
+                actionReason = "CI is green but Codex has not yet given a current-head OK signal.";
+
+                if (reviewPromptForHead) {
+                  actionReason = "A current @codex review prompt already exists; waiting for Codex.";
+                } else if (!hasActionMarker(prContext.issueComments, "review", sha)) {
+                  await postActionComment(
+                    pr.number,
+                    "review",
+                    sha,
+                    `@codex review
+
+                    Please review this PR at commit ${sha} for regressions, missing tests, auth/admin issues, game-state persistence problems, runtime module ID preservation, TypeScript/lint issues, security problems, and risky behavior changes.`
+                  );
+                  actionReason = "Requested Codex review.";
+                } else {
+                  actionReason = "Codex review was already requested for this head SHA.";
+                }
+              }
+
+              const summary = buildSummary({
+                pr,
+                sha,
+                freshness,
+                checkState,
+                codexReviewedCurrentHead,
+                codexOk,
+                reviewPromptForHead,
+                problemItems,
+                action,
+                actionReason,
+              });
+
+              const summaryStatus = await upsertSummaryComment(pr.number, summary);
+              core.info(`PR #${pr.number}: summary ${summaryStatus}; action=${action}; reason=${actionReason}`);
+            }
+
+            async function prNumbersFromEvent() {
+              const manualPrNumber = Number(context.payload?.inputs?.pr_number || 0);
+              if (manualPrNumber > 0) return [manualPrNumber];
+
+              if (context.eventName === "pull_request_target" && context.payload.pull_request?.number) {
+                return [context.payload.pull_request.number];
+              }
+
+              if (
+                (context.eventName === "pull_request_review" ||
+                  context.eventName === "pull_request_review_comment") &&
+                context.payload.pull_request?.number
+              ) {
+                return [context.payload.pull_request.number];
+              }
+
+              if (context.eventName === "issue_comment") {
+                const body = String(context.payload.comment?.body || "");
+                if (body.includes("codex-pr-readiness-watchdog:")) {
+                  core.info("Ignoring this workflow's own comment event.");
+                  return [];
+                }
+                if (context.payload.issue?.pull_request && context.payload.issue?.number) {
+                  return [context.payload.issue.number];
+                }
+                return [];
+              }
+
+              if (context.eventName === "workflow_run") {
+                const prs = context.payload.workflow_run?.pull_requests || [];
+                const numbers = prs.map((pr) => pr.number).filter(Boolean);
+                if (numbers.length) return [...new Set(numbers)];
+              }
+
+              const openPrs = await listOpenPrs();
+              return openPrs.map((pr) => pr.number);
+            }
+
+            const prNumbers = await prNumbersFromEvent();
+
+            if (!prNumbers.length) {
+              core.info("No PRs to evaluate for this event.");
+              return;
+            }
+
+            core.info(`Evaluating PRs: ${prNumbers.join(", ")}`);
+
+            for (const prNumber of prNumbers) {
+              try {
+                await evaluatePr(prNumber);
+              } catch (error) {
+                core.warning(`PR #${prNumber}: evaluation failed: ${error.message}`);
+              }
+            }
