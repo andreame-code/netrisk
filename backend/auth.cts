@@ -173,7 +173,7 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     return false;
   }
 
-  let candidate = null;
+  let candidate = "";
   if (record.algorithm === "scrypt" || !record.digest) {
     const keylen = Number.isInteger(record.keylen) ? record.keylen : 64;
     candidate = crypto.scryptSync(String(password || ""), record.salt, keylen).toString("hex");
@@ -185,13 +185,18 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
       .toString("hex");
   }
 
-  const expected = Buffer.from(record.hash, "hex");
-  const received = Buffer.from(candidate, "hex");
-  if (expected.length !== received.length) {
+  const expectedBuffer = Buffer.from(record.hash, "hex");
+  const candidateBuffer = Buffer.from(candidate, "hex");
+
+  // We use timingSafeEqual to prevent timing attacks.
+  // If the lengths differ (e.g. legacy hash vs new hash), we compare the expected buffer with itself
+  // to ensure a constant-time execution path before returning false.
+  if (expectedBuffer.length !== candidateBuffer.length) {
+    crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
     return false;
   }
 
-  return crypto.timingSafeEqual(expected, received);
+  return crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
@@ -417,13 +422,31 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
+  function runDummyPasswordVerification() {
+    const dummySecret = "netrisk-auth-dummy";
+    const dummyCredentials: UserCredentials = {
+      password: {
+        algorithm: "scrypt",
+        salt: "00000000000000000000000000000000",
+        keylen: 64,
+        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    };
+
+    verifyPassword(dummyCredentials, dummySecret);
+  }
+
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
     if (!user) {
+      // Dummy verification to mitigate timing-based username enumeration.
+      // This ensures that the response time for non-existent users is similar to real ones.
+      runDummyPasswordVerification();
       return null;
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
       if (user.credentials.password.secret !== String(password || "")) {
+        runDummyPasswordVerification();
         return null;
       }
 

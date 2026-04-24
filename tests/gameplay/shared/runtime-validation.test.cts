@@ -20,8 +20,9 @@ const {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("shared runtime validation parses the auth/profile slice payloads", () => {
+  const longLegacyPassword = "legacy-password-".repeat(16);
   const accountSettingsRequest = parseWithSchema(accountSettingsRequestSchema, {
-    currentPassword: "secret123",
+    currentPassword: longLegacyPassword,
     email: "commander@example.com",
     newPassword: "newsecret",
     confirmNewPassword: "newsecret"
@@ -37,7 +38,7 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
   });
   const loginRequest = parseWithSchema(loginRequestSchema, {
     username: "commander",
-    password: "secret123"
+    password: longLegacyPassword
   });
   const sessionResponse = parseWithSchema(authSessionResponseSchema, {
     user: {
@@ -162,9 +163,10 @@ register("shared runtime validation parses the auth/profile slice payloads", () 
     ]
   });
 
-  assert.equal(accountSettingsRequest.currentPassword, "secret123");
+  assert.equal(accountSettingsRequest.currentPassword, longLegacyPassword);
   assert.equal(accountSettingsResponse.user.hasEmail, true);
   assert.equal(loginRequest.username, "commander");
+  assert.equal(loginRequest.password, longLegacyPassword);
   assert.equal(sessionResponse.user.username, "commander");
   assert.equal(profileResponse.profile.participatingGames.length, 1);
   assert.equal(themePreferenceResponse.preferences.theme, "midnight");
