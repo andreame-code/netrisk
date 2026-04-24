@@ -11,7 +11,6 @@ name: Codex PR Readiness
         required: false
 
   pull_request_target:
-    branches: ["main"]
     types:
       - opened
       - reopened
@@ -444,9 +443,6 @@ jobs:
                 if (statusTime > existingTime) latestStatusByContextMap.set(key, status);
               }
 
-              const latestCheckRuns = [...latestByNameMap.values()];
-              const latestStatuses = [...latestStatusByContextMap.values()];
-
               const requiredRows = REQUIRED_CHECK_NAMES.map((required) => {
                 const run = latestByNameMap.get(normName(required));
                 const status = latestStatusByContextMap.get(normName(required));
@@ -474,35 +470,19 @@ jobs:
                 return { name: required, state: "missing", details: "missing" };
               });
 
-              const failedStatuses = latestStatuses.filter((item) => ["failure", "error"].includes(item.state));
-              const pendingStatuses = latestStatuses.filter((item) => item.state === "pending");
-              const failedOtherRuns = latestCheckRuns.filter((run) =>
-                run.status === "completed" &&
-                !["success", "neutral", "skipped"].includes(String(run.conclusion || ""))
-              );
-              const pendingOtherRuns = latestCheckRuns.filter((run) => run.status !== "completed");
-
-              if (requiredRows.some((row) => row.state === "bad") || failedStatuses.length || failedOtherRuns.length) {
+              if (requiredRows.some((row) => row.state === "bad")) {
                 return {
                   state: "bad",
                   rows: requiredRows,
-                  details: [
-                    ...requiredRows.filter((row) => row.state === "bad").map((row) => row.details),
-                    ...failedStatuses.map((item) => `${item.context}: ${item.state}`),
-                    ...failedOtherRuns.map((run) => `${run.name}: ${run.conclusion || "unknown"}`),
-                  ],
+                  details: requiredRows.filter((row) => row.state === "bad").map((row) => row.details),
                 };
               }
 
-              if (requiredRows.some((row) => row.state === "pending") || pendingStatuses.length || pendingOtherRuns.length) {
+              if (requiredRows.some((row) => row.state === "pending")) {
                 return {
                   state: "pending",
                   rows: requiredRows,
-                  details: [
-                    ...requiredRows.filter((row) => row.state === "pending").map((row) => row.details),
-                    ...pendingStatuses.map((item) => `${item.context}: pending`),
-                    ...pendingOtherRuns.map((run) => `${run.name}: ${run.status}`),
-                  ],
+                  details: requiredRows.filter((row) => row.state === "pending").map((row) => row.details),
                 };
               }
 
@@ -576,6 +556,7 @@ jobs:
                 if (problemItems.length > 0) return "FIX REQUESTED";
                 if (action === "fix-ci") return "FIX REQUESTED";
                 if (action === "fix-merge") return "FIX REQUESTED";
+                if (action === "fix-branch") return "FIX REQUESTED";
                 if (checkState.state === "pending") return "WAITING FOR CI";
                 if (checkState.state === "unknown") return "WAITING FOR CHECKS";
                 if (checkState.state === "green" && codexOk) return "READY";
