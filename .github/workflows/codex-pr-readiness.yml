@@ -281,7 +281,6 @@ jobs:
 
             function summarizeProblemItems(items) {
               return items
-                .slice(0, 6)
                 .map((item) => {
                   const author = item?.user?.login || item?.author?.login || "unknown";
                   const url = item?.html_url || item?.pull_request_review_id || "";
@@ -668,7 +667,9 @@ jobs:
 
                     This PR has current review/problem findings on commit ${sha}.
 
-                    Please fix only the blocking issues below. Keep the change minimal, avoid unrelated refactors, add or update regression tests when appropriate, and make sure the relevant tests pass.
+                    Please fix every blocking issue listed below, not just the first one. Keep the change minimal, avoid unrelated refactors, add or update regression tests when appropriate, and make sure the relevant tests pass.
+
+                    Current blocking findings (${problemItems.length} total):
 
                     ${summarizeProblemItems(problemItems)}
 
