@@ -268,7 +268,7 @@ jobs:
                 body.includes("broken") ||
                 body.includes("missing test") ||
                 body.includes("security") ||
-                body.includes("auth") ||
+                /\bauth\b/.test(body) ||
                 body.includes("authorization") ||
                 body.includes("admin") ||
                 body.includes("unsafe") ||
@@ -804,6 +804,7 @@ jobs:
                 const prs = context.payload.workflow_run?.pull_requests || [];
                 const numbers = prs.map((pr) => pr.number).filter(Boolean);
                 if (numbers.length) return [...new Set(numbers)];
+                return [];
               }
 
               const openPrs = await listOpenPrs();
