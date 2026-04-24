@@ -7,6 +7,9 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -43,9 +46,11 @@ jobs:
         run: npm run test:react
 
       - name: Install Vercel CLI
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
         run: npm install --global vercel@50.39.0
 
       - name: Verify Vercel auth for env parity
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
         id: vercel_auth
         continue-on-error: true
         env:
@@ -60,12 +65,12 @@ jobs:
           vercel whoami --token "$VERCEL_TOKEN"
 
       - name: Note skipped Vercel env parity check
-        if: ${{ steps.vercel_auth.outcome != 'success' }}
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.vercel_auth.outcome != 'success' }}
         run: |
           echo "Skipping Vercel env parity check because VERCEL_TOKEN is missing or invalid for this run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Vercel env parity check
-        if: ${{ steps.vercel_auth.outcome == 'success' }}
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.vercel_auth.outcome == 'success' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
