@@ -173,7 +173,7 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     return false;
   }
 
-  let candidate = null;
+  let candidate = "";
   if (record.algorithm === "scrypt" || !record.digest) {
     const keylen = Number.isInteger(record.keylen) ? record.keylen : 64;
     candidate = crypto.scryptSync(String(password || ""), record.salt, keylen).toString("hex");
@@ -185,14 +185,18 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
       .toString("hex");
   }
 
-  // We use PBKDF2 with SHA-256 to normalize the length of the hashes before timingSafeEqual.
-  // This ensures constant-time comparison even if the input lengths differ, using
-  // a secure algorithm (PBKDF2) to satisfy static analysis alerts (CodeQL).
-  const normSalt = "netrisk-timing-safe-normalization";
-  const expectedNormal = crypto.pbkdf2Sync(record.hash, normSalt, 1000, 32, "sha256");
-  const candidateNormal = crypto.pbkdf2Sync(candidate, normSalt, 1000, 32, "sha256");
+  const expectedBuffer = Buffer.from(record.hash, "hex");
+  const candidateBuffer = Buffer.from(candidate, "hex");
 
-  return crypto.timingSafeEqual(expectedNormal, candidateNormal);
+  // We use timingSafeEqual to prevent timing attacks.
+  // If the lengths differ (e.g. legacy hash vs new hash), we compare the expected buffer with itself
+  // to ensure a constant-time execution path before returning false.
+  if (expectedBuffer.length !== candidateBuffer.length) {
+    crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
@@ -422,8 +426,15 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      const dummySalt = "00000000000000000000000000000000";
-      crypto.scryptSync(String(password || ""), dummySalt, 64);
+      const dummyCredentials: UserCredentials = {
+        password: {
+          algorithm: "scrypt",
+          salt: "00000000000000000000000000000000",
+          keylen: 64,
+          hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      };
+      verifyPassword(dummyCredentials, password);
       return null;
     }
 
