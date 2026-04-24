@@ -836,7 +836,8 @@ jobs:
                   return [];
                 }
                 if (context.payload.issue?.pull_request && context.payload.issue?.number) {
-                  return [context.payload.issue.number];
+                  const pr = await getPr(context.payload.issue.number);
+                  return isCodexTargetPr(pr) ? [pr.number] : [];
                 }
                 return [];
               }
