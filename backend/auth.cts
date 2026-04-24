@@ -422,24 +422,29 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
+  function runDummyPasswordVerification(password: unknown) {
+    const dummyCredentials: UserCredentials = {
+      password: {
+        algorithm: "scrypt",
+        salt: "00000000000000000000000000000000",
+        keylen: 64,
+        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    };
+    verifyPassword(dummyCredentials, password);
+  }
+
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      const dummyCredentials: UserCredentials = {
-        password: {
-          algorithm: "scrypt",
-          salt: "00000000000000000000000000000000",
-          keylen: 64,
-          hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-        }
-      };
-      verifyPassword(dummyCredentials, password);
+      runDummyPasswordVerification(password);
       return null;
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
       if (user.credentials.password.secret !== String(password || "")) {
+        runDummyPasswordVerification(password);
         return null;
       }
 
