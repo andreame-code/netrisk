@@ -327,7 +327,7 @@ jobs:
             function isCodexTargetPr(pr) {
               const labels = (pr.labels || []).map((label) => normalize(label.name || label));
               const headRef = String(pr.head?.ref || "");
-              return pr.draft === true && (headRef.startsWith("codex/") || labels.includes("codex"));
+              return pr.state === "open" && pr.draft === true && (headRef.startsWith("codex/") || labels.includes("codex"));
             }
 
             async function getPr(prNumber) {
@@ -809,8 +809,13 @@ jobs:
               if (context.eventName === "workflow_run") {
                 const prs = context.payload.workflow_run?.pull_requests || [];
                 const numbers = prs.map((pr) => pr.number).filter(Boolean);
-                if (numbers.length) return [...new Set(numbers)];
-                return [];
+                const uniqueNumbers = [...new Set(numbers)];
+                const targetNumbers = [];
+                for (const number of uniqueNumbers) {
+                  const pr = await getPr(number);
+                  if (isCodexTargetPr(pr)) targetNumbers.push(number);
+                }
+                return targetNumbers;
               }
 
               const openPrs = await listOpenPrs();
