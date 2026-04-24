@@ -478,6 +478,48 @@ register(
         "control-territory-count"
       );
 
+      const registered = await app.auth.registerPasswordUser("objective_guest", "secret123");
+      assert.equal(registered.ok, true);
+      const guestLogin = await app.auth.loginWithPassword("objective_guest", "secret123");
+      assert.equal(guestLogin.ok, true);
+
+      const joinResponse = await callApp(
+        app,
+        "POST",
+        "/api/join",
+        {
+          gameId: createGameResponse.payload.game.id
+        },
+        authHeaders(guestLogin.sessionToken)
+      );
+      assert.equal(joinResponse.statusCode, 201);
+
+      const startResponse = await callApp(
+        app,
+        "POST",
+        "/api/start",
+        {
+          gameId: createGameResponse.payload.game.id,
+          playerId: createGameResponse.payload.playerId
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(startResponse.statusCode, 200);
+
+      const openGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games/open",
+        {
+          gameId: createGameResponse.payload.game.id
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(openGameResponse.statusCode, 200);
+      assert.equal(openGameResponse.payload.state.assignedVictoryObjective?.moduleId, draft.id);
+      assert.equal(typeof openGameResponse.payload.state.assignedVictoryObjective?.id, "string");
+      assert.deepEqual(openGameResponse.payload.state.playerHand, []);
+
       const disableResponse = await callApp(
         app,
         "POST",

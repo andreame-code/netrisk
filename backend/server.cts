@@ -1375,7 +1375,7 @@ function createApp(options: CreateAppOptions = {}) {
         () => gameSessions.listGames(),
         resumeAiTurnsForRead,
         resolvePlayerForUser,
-        snapshotForState,
+        snapshotForUser,
         sendJson,
         sendLocalizedError
       );
