@@ -228,7 +228,7 @@ register("codex PR readiness workflow listens to all pull_request workflow_run c
 
   assert.match(
     workflow,
-    /github\.event_name == 'workflow_run' &&\s+github\.event\.workflow_run\.event == 'pull_request'\) \|\|/
+    /github\.event_name == 'workflow_run' &&\s+\(github\.event\.workflow_run\.event == 'pull_request' \|\|\s+github\.event\.workflow_run\.event == 'pull_request_target'\)\) \|\|/
   );
   assert.doesNotMatch(workflow, /github\.event\.workflow_run\.head_branch/);
 });
