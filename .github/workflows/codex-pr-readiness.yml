@@ -559,9 +559,9 @@ jobs:
                 if (action === "fix-branch") return "FIX REQUESTED";
                 if (checkState.state === "pending") return "WAITING FOR CI";
                 if (checkState.state === "unknown") return "WAITING FOR CHECKS";
+                if (action === "review") return "CODEX REVIEW REQUESTED";
                 if (checkState.state === "green" && codexOk) return "READY";
                 if (checkState.state === "green" && (codexReviewedCurrentHead || reviewPromptForHead)) return "WAITING FOR CODEX";
-                if (action === "review") return "CODEX REVIEW REQUESTED";
                 return "WATCHING";
               })();
 
@@ -745,9 +745,7 @@ jobs:
                 action = "review";
                 actionReason = "CI is green but Codex has not yet given a current-head OK signal.";
 
-                if (reviewPromptForHead) {
-                  actionReason = "A current @codex review prompt already exists; waiting for Codex.";
-                } else if (!hasActionMarker(prContext.issueComments, "review", sha)) {
+                if (!hasActionMarker(prContext.issueComments, "review", sha)) {
                   await postActionComment(
                     pr.number,
                     "review",
@@ -757,6 +755,8 @@ jobs:
                     Please review this PR at commit ${sha} for regressions, missing tests, auth/admin issues, game-state persistence problems, runtime module ID preservation, TypeScript/lint issues, security problems, and risky behavior changes.`
                   );
                   actionReason = "Requested Codex review.";
+                } else if (reviewPromptForHead) {
+                  actionReason = "A current automated @codex review prompt already exists; waiting for Codex.";
                 } else {
                   actionReason = "Codex review was already requested for this head SHA.";
                 }
