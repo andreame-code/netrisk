@@ -238,13 +238,101 @@ register("codex PR readiness watchdog ignores non-actionable Codex status commen
   const workflow = fs.readFileSync(workflowPath, "utf8");
 
   assert.match(workflow, /function isNonActionableCodexSignal\(text\)/);
-  assert.match(workflow, /body\.includes\("nothing to fix yet"\)/);
-  assert.match(workflow, /body\.includes\("no failing checks or requested code updates"\)/);
-  assert.match(workflow, /body\.includes\("did not find any regression risk"\)/);
+  assert.match(workflow, /function isNegativeNonProblemCodexSignal\(text\)/);
+  assert.match(workflow, /function isCodexExecutionSummary\(text\)/);
+  assert.match(workflow, /function isSkippableCodexExecutionSignal\(text\)/);
+  assert.match(workflow, /function hasBlockingCodexMarker\(text\)/);
+  assert.match(workflow, /function hasNegatedRegressionRiskSignal\(text\)/);
+  assert.match(workflow, /function stripNegatedRegressionRiskPhrases\(text\)/);
   assert.match(
     workflow,
-    /if \(isCleanCodexSignal\(body\)\) return false;\s+if \(isNonActionableCodexSignal\(body\)\) return false;/
+    /function reviewCommentIsForCurrentHead\(item, sha, headDate, staleReviewCommentUrls = new Set\(\)\)/
   );
+  assert.match(workflow, /function getReviewThreads\(prNumber\)/);
+  assert.match(workflow, /function hydrateReviewThreadComments\(thread\)/);
+  assert.match(workflow, /function buildStaleReviewCommentUrls\(reviewThreads\)/);
+  assert.match(workflow, /comments\(first: 100, after: \$cursor\)/);
+  assert.match(workflow, /await hydrateReviewThreadComments\(thread\)/);
+  assert.doesNotMatch(workflow, /item\?\.original_commit_id && item\.original_commit_id !== sha/);
+  assert.match(workflow, /staleReviewCommentUrls\.has\(url\)/);
+  assert.match(
+    workflow,
+    /reviewCommentIsForCurrentHead\(item, sha, headDate, staleReviewCommentUrls\)/
+  );
+  const reviewCommentFreshnessBody = workflow.match(
+    /function reviewCommentIsForCurrentHead[\s\S]+?return itemIsForCurrentHead\(item, sha, headDate\);\s+}/
+  )?.[0];
+  assert.ok(reviewCommentFreshnessBody);
+  const staleReviewUrlIndex = reviewCommentFreshnessBody.indexOf(
+    "if (url && staleReviewCommentUrls.has(url)) return false;"
+  );
+  const bodyShaIndex = reviewCommentFreshnessBody.indexOf(
+    "if (bodyHasCurrentSha(item?.body, sha)) return true;"
+  );
+  assert.equal(staleReviewUrlIndex >= 0, true);
+  assert.equal(bodyShaIndex > staleReviewUrlIndex, true);
+  assert.match(workflow, /if \(hasBlockingCodexMarker\(body\)\) return false;/);
+  assert.match(
+    workflow,
+    /return isCodexExecutionSummary\(body\) \|\| isCodexExecutionPlan\(body\);/
+  );
+  assert.match(workflow, /hasUnresolvedWorkSignal/);
+  assert.match(workflow, /hasResolvedWorkSignal/);
+  assert.match(workflow, /hasCompletedActionSignal/);
+  assert.match(workflow, /\(\?:not\|never\)\\s\+\(\?:fixed\|addressed\|resolved\)/);
+  assert.match(workflow, /!hasUnresolvedWorkSignal &&/);
+  assert.match(workflow, /!hasUnresolvedWorkSignal &&\s+hasCompletedActionSignal/);
+  assert.doesNotMatch(workflow, /body\.includes\("non-actionable"\) \|\|/);
+  assert.match(workflow, /body\.includes\("this trigger is non-actionable right now"\)/);
+  assert.match(workflow, /body\.includes\("non-actionable triage note"\)/);
+  assert.match(workflow, /body\.includes\("wait for ci"\)/);
+  assert.doesNotMatch(workflow, /body\.includes\("checks are pending"\)/);
+  assert.doesNotMatch(workflow, /body\.includes\("checks still pending"\)/);
+  assert.match(workflow, /body\.includes\("nothing to fix yet"\)/);
+  assert.match(workflow, /body\.includes\("no code-change action"\)/);
+  assert.match(workflow, /body\.includes\("no code changes are needed"\)/);
+  assert.match(workflow, /body\.includes\("not opening a follow-up pr"\)/);
+  assert.match(workflow, /body\.includes\("all tests are passing"\)/);
+  assert.match(workflow, /body\.includes\("all tests passed"\)/);
+  assert.match(workflow, /body\.includes\("no failing checks or requested code updates"\)/);
+  assert.match(workflow, /hasNegatedRegressionRiskSignal\(body\)/);
+  assert.match(workflow, /stripNegatedRegressionRiskPhrases\(body\)/);
+  assert.match(
+    workflow,
+    /hasNegatedRegressionRiskSignal\(body\) &&\s+!hasGenericProblemSignal\(stripNegatedRegressionRiskPhrases\(body\)\)/
+  );
+  assert.match(workflow, /\\bno\\s\+regression\\s\+risk\\b/);
+  assert.match(
+    workflow,
+    /\\bregression\\s\+risk\\b\/i\.test\(body\) && !hasNegatedRegressionRiskSignal\(body\)/
+  );
+  const cleanFunctionBlock = workflow.slice(
+    workflow.indexOf("function isCleanCodexSignal(text)"),
+    workflow.indexOf("function isNegativeNonProblemCodexSignal(text)")
+  );
+  assert.doesNotMatch(cleanFunctionBlock, /no failing checks or requested code updates/);
+  assert.doesNotMatch(cleanFunctionBlock, /did not find any regression risk/);
+  assert.doesNotMatch(cleanFunctionBlock, /no actionable blocking defect/);
+  assert.doesNotMatch(cleanFunctionBlock, /all tests are passing/);
+  assert.doesNotMatch(cleanFunctionBlock, /all tests passed/);
+  const cleanIndex = workflow.indexOf("if (isCleanCodexSignal(body)) return false;");
+  const blockingMarkerIndex = workflow.indexOf("if (hasBlockingCodexMarker(body)) return true;");
+  const skippableExecutionIndex = workflow.indexOf(
+    "if (isSkippableCodexExecutionSignal(body)) return false;"
+  );
+  const negativeNonProblemIndex = workflow.indexOf(
+    "if (isNegativeNonProblemCodexSignal(body)) return false;"
+  );
+  const nonActionableIndex = workflow.indexOf(
+    "if (isNonActionableCodexSignal(body)) return false;"
+  );
+  const genericProblemIndex = workflow.indexOf("if (hasGenericProblemSignal(body)) return true;");
+  assert.equal(cleanIndex >= 0, true);
+  assert.equal(blockingMarkerIndex > cleanIndex, true);
+  assert.equal(skippableExecutionIndex > blockingMarkerIndex, true);
+  assert.equal(negativeNonProblemIndex > skippableExecutionIndex, true);
+  assert.equal(nonActionableIndex > negativeNonProblemIndex, true);
+  assert.equal(genericProblemIndex > nonActionableIndex, true);
 });
 
 register(
