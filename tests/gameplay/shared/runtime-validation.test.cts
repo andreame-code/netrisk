@@ -21,7 +21,7 @@ const {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("shared runtime validation parses the auth/profile slice payloads", () => {
-  const longLegacyPassword = "legacy-password-".repeat(16);
+  const longLegacyPassword = "legacy-password-".repeat(8);
   const accountSettingsRequest = parseWithSchema(accountSettingsRequestSchema, {
     currentPassword: longLegacyPassword,
     email: "commander@example.com",
@@ -252,4 +252,25 @@ register("shared runtime validation validates lobby route payload shapes", () =>
     toValidationErrors(invalidJoinResponse.error).map((entry: { path: string }) => entry.path),
     ["user.id"]
   );
+});
+
+register("shared runtime validation rejects passwords exceeding 128 characters", () => {
+  const tooLongPassword = "a".repeat(129);
+
+  const invalidLogin = loginRequestSchema.safeParse({
+    username: "commander",
+    password: tooLongPassword
+  });
+  assert.equal(invalidLogin.success, false);
+
+  const invalidAccountSettings = accountSettingsRequestSchema.safeParse({
+    currentPassword: tooLongPassword
+  });
+  assert.equal(invalidAccountSettings.success, false);
+
+  const invalidRegister = registerRequestSchema.safeParse({
+    username: "commander",
+    password: tooLongPassword
+  });
+  assert.equal(invalidRegister.success, false);
 });
