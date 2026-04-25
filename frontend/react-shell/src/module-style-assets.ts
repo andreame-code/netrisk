@@ -13,7 +13,9 @@ function resolveModuleStylesheetHref(moduleId: string, stylesheet: string): stri
   return `/modules/${encodeURIComponent(moduleId)}/${trimmed.replace(/^\.?\//, "")}`;
 }
 
-export function syncModuleStyleAssets(moduleOptions: ModuleOptionsResponse | null | undefined): void {
+export function syncModuleStyleAssets(
+  moduleOptions: ModuleOptionsResponse | null | undefined
+): void {
   if (typeof document === "undefined" || !moduleOptions) {
     return;
   }

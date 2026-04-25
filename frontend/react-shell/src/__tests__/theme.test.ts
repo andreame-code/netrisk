@@ -24,10 +24,7 @@ describe("theme runtime bridge", () => {
 
     expect(availableThemes).toEqual(["command", "ember", "aurora"]);
     expect(currentShellTheme()).toBe("command");
-    expect(listShellThemes()).toEqual([
-      { id: "ember" },
-      { id: "aurora" }
-    ]);
+    expect(listShellThemes()).toEqual([{ id: "ember" }, { id: "aurora" }]);
     expect(window.netriskTheme?.getThemes()).toEqual(["ember", "aurora"]);
   });
 });

@@ -58,7 +58,8 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
 
 describe("syncModuleStyleAssets", () => {
   it("injects only enabled module stylesheets and removes stale links", () => {
-    document.head.innerHTML = '<link rel="stylesheet" href="/stale.css" data-module-stylesheet="true">';
+    document.head.innerHTML =
+      '<link rel="stylesheet" href="/stale.css" data-module-stylesheet="true">';
 
     syncModuleStyleAssets(createModuleOptionsResponse());
 

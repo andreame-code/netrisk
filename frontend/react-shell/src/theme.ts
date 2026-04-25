@@ -10,7 +10,9 @@ const THEME_STORAGE_KEY = "netrisk.theme";
 let availableShellThemeIds = registeredThemes.map((theme) => theme.id);
 type ThemePreferenceUser = { preferences?: { theme?: string | null } | null } | null | undefined;
 
-function normalizeThemeIds(themes: Array<string | { id?: string | null }> | null | undefined): string[] {
+function normalizeThemeIds(
+  themes: Array<string | { id?: string | null }> | null | undefined
+): string[] {
   const nextThemes = Array.isArray(themes)
     ? themes
         .map((entry) => (typeof entry === "string" ? entry : String(entry?.id || "")))
@@ -95,7 +97,9 @@ export function installShellThemeBridge(): void {
     },
     getThemeFromUser(user: ThemePreferenceUser) {
       const requestedTheme = user?.preferences?.theme;
-      return requestedTheme && availableShellThemeIds.includes(requestedTheme) ? requestedTheme : null;
+      return requestedTheme && availableShellThemeIds.includes(requestedTheme)
+        ? requestedTheme
+        : null;
     },
     applyUserTheme(user: ThemePreferenceUser) {
       return applyShellTheme(user?.preferences?.theme || null);
