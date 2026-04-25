@@ -32,11 +32,11 @@ function resolveAppSection(pathname: string): AppSection {
     return "login";
   }
 
-  if (pathname === "/register" || pathname === "/register.html" || pathname === "/react/register") {
+  if (pathname === "/register" || pathname === "/react/register") {
     return "register";
   }
 
-  if (pathname === "/profile" || pathname === "/profile.html" || pathname === "/react/profile") {
+  if (pathname === "/profile" || pathname === "/react/profile") {
     return "profile";
   }
 
@@ -51,7 +51,6 @@ function resolveAppSection(pathname: string): AppSection {
 
   if (
     pathname === "/game" ||
-    pathname === "/game.html" ||
     pathname === "/react/game" ||
     /^\/game\/[^/]+$/.test(pathname) ||
     /^\/react\/game\/[^/]+$/.test(pathname)
@@ -62,7 +61,7 @@ function resolveAppSection(pathname: string): AppSection {
   return "lobby";
 }
 
-export function resolveCurrentGameId(pathname: string, search: string): string | null {
+export function resolveCurrentGameId(pathname: string): string | null {
   const pathMatch = pathname.match(/^\/(?:react\/)?game\/([^/?#]+)$/);
   if (pathMatch) {
     const rawGameId = pathMatch[1] || "";
@@ -74,9 +73,7 @@ export function resolveCurrentGameId(pathname: string, search: string): string |
     }
   }
 
-  const searchParams = new URLSearchParams(search);
-  const queryValue = searchParams.get("gameId");
-  return queryValue ? queryValue : null;
+  return null;
 }
 
 function sanitizedCurrentLocation(): string {
@@ -127,12 +124,12 @@ function emptyModuleOptions(): ModuleOptionsResponse {
   };
 }
 
-export function LegacyAppShell({ children }: { children: ReactNode }) {
+export function AppShellLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const namespace = useShellNamespace();
   const { state, signIn, signOut } = useAuth();
   const section = resolveAppSection(location.pathname);
-  const currentGameId = resolveCurrentGameId(location.pathname, location.search);
+  const currentGameId = resolveCurrentGameId(location.pathname);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");

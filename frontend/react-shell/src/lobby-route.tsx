@@ -13,7 +13,7 @@ import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { openReactGame } from "@react-shell/legacy-game-handoff";
+import { openShellGame } from "@react-shell/game-navigation";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
@@ -233,7 +233,7 @@ export function LobbyRoute() {
           activeGameId: payload.activeGameId || selectedGame.id
         });
       }
-      openReactGame(selectedGame.id);
+      openShellGame(selectedGame.id);
     } catch (error) {
       setActionError(messageFromError(error, t("errors.requestFailed")));
     }
@@ -250,7 +250,7 @@ export function LobbyRoute() {
       const payload = await joinMutation.mutateAsync(selectedGame.id);
       storeCurrentPlayerId(payload.playerId, selectedGame.id);
       await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
-      openReactGame(selectedGame.id);
+      openShellGame(selectedGame.id);
     } catch (error) {
       setActionError(messageFromError(error, t("errors.requestFailed")));
     }

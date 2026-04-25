@@ -14,7 +14,7 @@ import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { updateAuthenticatedUser } from "@react-shell/auth-store";
-import { buildReactGamePath } from "@react-shell/legacy-game-handoff";
+import { buildShellGamePath } from "@react-shell/game-navigation";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import { buildLobbyPath, buildNewGamePath } from "@react-shell/public-auth-paths";
 import { profileDetailQueryKey } from "@react-shell/react-query";
@@ -697,7 +697,7 @@ export function ProfileRoute() {
                     data-open-game-id={game.id}
                     data-testid={`react-shell-profile-open-${game.id}`}
                     key={game.id}
-                    to={buildReactGamePath(game.id)}
+                    to={buildShellGamePath(game.id)}
                   >
                     <span className="profile-game-primary">
                       <span className="profile-game-kicker">{t("profile.games.kicker")}</span>

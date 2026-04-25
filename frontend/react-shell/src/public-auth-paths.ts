@@ -6,20 +6,25 @@ function isReactShellPath(pathname: string): boolean {
   return pathname === "/react" || pathname.startsWith("/react/");
 }
 
-function normalizeLegacyDocumentPath(pathname: string): string {
+function normalizeDeprecatedPath(pathname: string): string {
   const url = new URL(pathname, "http://localhost");
 
-  if (url.pathname === "/index.html" || url.pathname === "/landing.html") {
+  if (
+    url.pathname === "/legacy" ||
+    url.pathname === "/legacy/" ||
+    url.pathname === "/legacy/index.html" ||
+    url.pathname === "/legacy/landing.html"
+  ) {
     url.pathname = "/";
-  } else if (url.pathname === "/register.html") {
+  } else if (url.pathname === "/legacy/register.html") {
     url.pathname = "/register";
-  } else if (url.pathname === "/lobby.html") {
+  } else if (url.pathname === "/legacy/lobby.html") {
     url.pathname = "/lobby";
-  } else if (url.pathname === "/new-game.html") {
+  } else if (url.pathname === "/legacy/new-game.html") {
     url.pathname = "/lobby/new";
-  } else if (url.pathname === "/profile.html") {
+  } else if (url.pathname === "/legacy/profile.html") {
     url.pathname = "/profile";
-  } else if (url.pathname === "/game.html") {
+  } else if (url.pathname === "/legacy/game.html") {
     const gameId = url.searchParams.get("gameId");
     if (gameId) {
       url.pathname = `/game/${encodeURIComponent(gameId)}`;
@@ -38,8 +43,6 @@ function isReservedAuthPath(pathname: string): boolean {
     pathname.startsWith("/login?") ||
     pathname === "/register" ||
     pathname.startsWith("/register?") ||
-    pathname === "/register.html" ||
-    pathname.startsWith("/register.html?") ||
     pathname === "/unauthorized" ||
     pathname.startsWith("/unauthorized?") ||
     pathname === "/react/login" ||
@@ -74,7 +77,7 @@ function hydrateNamespacePath(
   pathname: string,
   namespace: ShellNamespace = currentShellNamespace()
 ): string {
-  const normalizedPathname = normalizeLegacyDocumentPath(pathname);
+  const normalizedPathname = normalizeDeprecatedPath(pathname);
 
   if (
     namespace !== "react" ||
@@ -90,7 +93,7 @@ function hydrateNamespacePath(
 }
 
 function normalizeCanonicalShellPath(pathname: string): string {
-  return normalizeLegacyDocumentPath(pathname);
+  return normalizeDeprecatedPath(pathname);
 }
 
 function serializeNextPathForNamespace(
@@ -172,7 +175,7 @@ export function normalizeNextPath(
     return fallback;
   }
 
-  const normalizedNextPath = normalizeLegacyDocumentPath(nextPath);
+  const normalizedNextPath = normalizeDeprecatedPath(nextPath);
 
   if (isReservedAuthPath(normalizedNextPath)) {
     return fallback;

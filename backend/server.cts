@@ -1738,7 +1738,13 @@ function createApp(options: CreateAppOptions = {}) {
           return handleApi(req, res, url);
         }
 
-        if (req.method === "GET" && url.pathname === "/landing.html") {
+        if (
+          req.method === "GET" &&
+          (url.pathname === "/legacy" ||
+            url.pathname === "/legacy/" ||
+            url.pathname === "/legacy/index.html" ||
+            url.pathname === "/legacy/landing.html")
+        ) {
           res.writeHead(302, {
             Location: "/"
           });
@@ -1746,15 +1752,7 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
-        if (req.method === "GET" && url.pathname === "/index.html") {
-          res.writeHead(302, {
-            Location: "/"
-          });
-          res.end();
-          return null;
-        }
-
-        if (req.method === "GET" && url.pathname === "/register.html") {
+        if (req.method === "GET" && url.pathname === "/legacy/register.html") {
           res.writeHead(302, {
             Location: "/register" + url.search
           });
@@ -1762,7 +1760,7 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
-        if (req.method === "GET" && url.pathname === "/lobby.html") {
+        if (req.method === "GET" && url.pathname === "/legacy/lobby.html") {
           res.writeHead(302, {
             Location: "/lobby" + url.search
           });
@@ -1770,7 +1768,7 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
-        if (req.method === "GET" && url.pathname === "/new-game.html") {
+        if (req.method === "GET" && url.pathname === "/legacy/new-game.html") {
           res.writeHead(302, {
             Location: "/lobby/new" + url.search
           });
@@ -1778,7 +1776,7 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
-        if (req.method === "GET" && url.pathname === "/profile.html") {
+        if (req.method === "GET" && url.pathname === "/legacy/profile.html") {
           res.writeHead(302, {
             Location: "/profile" + url.search
           });
@@ -1786,22 +1784,20 @@ function createApp(options: CreateAppOptions = {}) {
           return null;
         }
 
-        if (req.method === "GET" && url.pathname === "/game.html") {
+        if (req.method === "GET" && url.pathname === "/legacy/game.html") {
           const requestedGameId = url.searchParams.get("gameId");
-          if (requestedGameId) {
-            res.writeHead(302, {
-              Location: "/game/" + encodeURIComponent(requestedGameId)
-            });
-            res.end();
-            return null;
-          }
-        }
-
-        if (req.method === "GET" && (url.pathname === "/legacy" || url.pathname === "/legacy/")) {
           res.writeHead(302, {
-            Location: "/legacy/index.html"
+            Location: requestedGameId ? "/game/" + encodeURIComponent(requestedGameId) : "/game"
           });
           res.end();
+          return null;
+        }
+
+        if (req.method === "GET" && url.pathname.startsWith("/legacy/")) {
+          res.writeHead(404, {
+            "Content-Type": "text/plain; charset=utf-8"
+          });
+          res.end("Not found");
           return null;
         }
 

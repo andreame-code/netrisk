@@ -77,40 +77,45 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
   }
 }
 
-register("GET /game.html without gameId serves the React shell bridge document", async () => {
+register("GET /game.html without gameId is no longer a supported entrypoint", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/game.html");
 
-    assert.equal(response.statusCode, 200);
-    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
-    assert.match(response.body, /<div id="root"><\/div>/i);
+    assert.equal(response.statusCode, 404);
   });
 });
 
-register("GET /game.html with gameId preserves the canonical React deep link", async () => {
+register("GET /legacy/game.html with gameId redirects to the canonical React deep link", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/game.html?gameId=g-123");
+    const response = await callRequest(app, "/legacy/game.html?gameId=g-123");
 
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.Location, "/game/g-123");
   });
 });
 
-register("GET /register.html redirects to the clean React register route", async () => {
+register("GET /legacy/game.html without gameId redirects to /game", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/register.html?next=%2Fprofile");
+    const response = await callRequest(app, "/legacy/game.html");
 
     assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.Location, "/register?next=%2Fprofile");
+    assert.equal(response.headers.Location, "/game");
   });
 });
 
-register("GET /legacy/lobby.html serves the rollback legacy document", async () => {
+register("GET /register.html is no longer a supported compatibility entrypoint", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/legacy/lobby.html");
+    const response = await callRequest(app, "/register.html?next=%2Fprofile");
 
-    assert.equal(response.statusCode, 200);
-    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
-    assert.match(response.body, /game-session-list/i);
+    assert.equal(response.statusCode, 404);
+  });
+});
+
+register("GET /legacy/lobby.html redirects to the canonical lobby route", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/lobby.html?tab=active");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/lobby?tab=active");
   });
 });

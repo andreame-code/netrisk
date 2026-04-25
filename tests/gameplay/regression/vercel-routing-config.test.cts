@@ -7,6 +7,11 @@ declare function register(name: string, fn: () => void | Promise<void>): void;
 type RewriteRule = {
   source?: string;
   destination?: string;
+  has?: Array<{
+    type?: string;
+    key?: string;
+    value?: string;
+  }>;
 };
 
 function loadVercelConfig(): { rewrites?: RewriteRule[] } {
@@ -16,6 +21,14 @@ function loadVercelConfig(): { rewrites?: RewriteRule[] } {
 
 function hasRewriteRule(rewrites: RewriteRule[], source: string, destination: string): boolean {
   return rewrites.some((entry) => entry.source === source && entry.destination === destination);
+}
+
+function findRedirectRule(
+  redirects: RewriteRule[],
+  source: string,
+  destination: string
+): RewriteRule | undefined {
+  return redirects.find((entry) => entry.source === source && entry.destination === destination);
 }
 
 register("vercel preview rewrites React shell deep links to the shell entry document", () => {
@@ -70,20 +83,41 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
     "Expected /profile to rewrite to /react/index.html for the canonical profile route."
   );
   assert.ok(
-    hasRewriteRule(rewrites, "/game.html", "/react/index.html"),
-    "Expected /game.html to rewrite to /react/index.html for the compatibility gameplay bridge."
-  );
-  assert.ok(
     hasRewriteRule(rewrites, "/unauthorized", "/react/index.html"),
     "Expected /unauthorized to rewrite to /react/index.html for the React auth flow."
   );
 
   assert.ok(
-    hasRewriteRule(redirects, "/register.html", "/register"),
-    "Expected /register.html to redirect to /register during the clean-route cutover."
+    hasRewriteRule(redirects, "/legacy", "/"),
+    "Expected /legacy to redirect to / during the legacy rollback removal."
   );
   assert.ok(
-    hasRewriteRule(redirects, "/lobby.html", "/lobby"),
-    "Expected /lobby.html to redirect to /lobby during the clean-route cutover."
+    hasRewriteRule(redirects, "/legacy/lobby.html", "/lobby"),
+    "Expected /legacy/lobby.html to redirect to /lobby during the legacy rollback removal."
   );
+  assert.ok(
+    hasRewriteRule(redirects, "/legacy/register.html", "/register"),
+    "Expected /legacy/register.html to redirect to /register during the legacy rollback removal."
+  );
+  assert.ok(
+    hasRewriteRule(redirects, "/legacy/new-game.html", "/lobby/new"),
+    "Expected /legacy/new-game.html to redirect to /lobby/new during the legacy rollback removal."
+  );
+  assert.ok(
+    hasRewriteRule(redirects, "/legacy/profile.html", "/profile"),
+    "Expected /legacy/profile.html to redirect to /profile during the legacy rollback removal."
+  );
+
+  const legacyGameRedirect = findRedirectRule(redirects, "/legacy/game.html", "/game/:gameId");
+  assert.ok(
+    legacyGameRedirect,
+    "Expected /legacy/game.html with a gameId query to redirect to /game/:gameId."
+  );
+  assert.deepEqual(legacyGameRedirect?.has, [
+    {
+      type: "query",
+      key: "gameId",
+      value: "(?<gameId>.*)"
+    }
+  ]);
 });

@@ -78,15 +78,12 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
 }
 
 register(
-  "GET /legacy/generated/shared-runtime-validation.mjs serves the rollback boundary runtime",
+  "GET /legacy/generated/shared-runtime-validation.mjs is no longer served after the rollback removal",
   async () => {
     await withApp(async (app: any) => {
       const response = await callRequest(app, "/legacy/generated/shared-runtime-validation.mjs");
 
-      assert.equal(response.statusCode, 200);
-      assert.match(response.headers["Content-Type"] || "", /javascript|ecmascript/i);
-      assert.match(response.body, /SchemaValidationError/);
-      assert.match(response.body, /parseWithSchema/);
+      assert.equal(response.statusCode, 404);
     });
   }
 );

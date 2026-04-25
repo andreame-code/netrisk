@@ -128,14 +128,14 @@ beforeEach(() => {
 });
 
 describe("React shell routing and session integration", () => {
-  it("redirects the /index.html compatibility document to the canonical landing route", async () => {
-    renderReactShell("/index.html");
+  it("renders the canonical landing route on the root path", async () => {
+    renderReactShell("/");
 
     expect(await screen.findByText("Frontline Dominion")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/");
   });
 
-  it("shows the legacy profile loading state while the session request is pending", async () => {
+  it("shows the profile loading state while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 
     getSessionMock.mockReturnValue(sessionRequest.promise);
@@ -147,7 +147,7 @@ describe("React shell routing and session integration", () => {
     expect(screen.getByText("Verifica della sessione in corso...")).toBeInTheDocument();
   });
 
-  it("keeps unauthenticated profile routes inline and shows the legacy guest state", async () => {
+  it("keeps unauthenticated profile routes inline and shows the guest state", async () => {
     getSessionMock.mockRejectedValue(createAuthRequiredError());
 
     renderReactShell("/react/profile?tab=stats");
@@ -188,42 +188,6 @@ describe("React shell routing and session integration", () => {
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     await waitFor(() => {
       expect(getSessionMock.mock.calls.length).toBeGreaterThanOrEqual(2);
-    });
-  });
-
-  it("resolves /game.html without gameId to the authenticated user's active game route", async () => {
-    getSessionMock.mockResolvedValue(createSession());
-    listGamesMock.mockResolvedValue(createActiveLobbyGames());
-
-    renderReactShell("/game.html");
-
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/game/game-42");
-    });
-  });
-
-  it("falls back to the canonical lobby when /game.html has no user-scoped active game", async () => {
-    getSessionMock.mockResolvedValue(createSession());
-    listGamesMock.mockResolvedValue(createLobbyGames());
-
-    renderReactShell("/game.html");
-
-    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/lobby");
-    });
-  });
-
-  it("redirects compatibility lobby documents to the clean canonical route", async () => {
-    getSessionMock.mockResolvedValue(createSession());
-    listGamesMock.mockResolvedValue(createLobbyGames());
-
-    renderReactShell("/lobby.html?tab=active");
-
-    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/lobby");
-      expect(new URLSearchParams(window.location.search).get("tab")).toBe("active");
     });
   });
 

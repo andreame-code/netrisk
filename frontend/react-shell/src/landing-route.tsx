@@ -124,9 +124,9 @@ export function LandingRoute() {
           <div className="ld-container">
             <header className="ld-section-header">
               <p className="ld-eyebrow">Caratteristiche</p>
-              <h2>Una campagna tattica che resta stabile mentre migriamo la UI</h2>
+              <h2>Una campagna tattica costruita su una shell React unica</h2>
               <p className="ld-section-desc">
-                Tutta la surface area utente converge in React, ma lo stato di gioco e la
+                Tutta la surface area utente passa dalla shell React, mentre stato di gioco e
                 validazione delle regole restano sull&apos;engine backend.
               </p>
             </header>
@@ -137,9 +137,8 @@ export function LandingRoute() {
                 </div>
                 <h3>Due Teatri di Guerra</h3>
                 <p>
-                  Mondo Classico e Terra di Mezzo restano disponibili con gli stessi contenuti,
-                  mentre la nuova shell React prende in carico routing, sessione e superfici di
-                  controllo.
+                  Mondo Classico e Terra di Mezzo restano disponibili con gli stessi contenuti, in
+                  una shell React che gestisce routing, sessione e superfici di controllo.
                 </p>
               </article>
               <article className="ld-feature-card ld-feature-card-accent">
@@ -159,7 +158,7 @@ export function LandingRoute() {
                 <h3>Multiplayer Persistente</h3>
                 <p>
                   Riapri la partita, riprendi la sessione e torna sul campo senza perdere lo stato:
-                  la migrazione della UI non cambia la source of truth del gioco.
+                  la source of truth del gioco resta interamente sul backend.
                 </p>
               </article>
             </div>
@@ -225,8 +224,7 @@ export function LandingRoute() {
               <p className="ld-eyebrow">Come si gioca</p>
               <h2>Entra in partita in tre mosse</h2>
               <p className="ld-section-desc">
-                Il nuovo flusso mantiene gli stessi step funzionali, ma adesso passa da un router
-                React unico e verificabile end-to-end.
+                Il flusso passa da un router React unico e verificabile end-to-end.
               </p>
             </header>
 

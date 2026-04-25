@@ -13,7 +13,7 @@ import {
   getSession
 } from "@frontend-core/api/client.mts";
 
-import { openReactGame } from "@react-shell/legacy-game-handoff";
+import { openShellGame } from "@react-shell/game-navigation";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 
 import { renderReactShell } from "../../test/render-react-shell";
@@ -35,8 +35,8 @@ vi.mock("@frontend-core/api/client.mts", () => ({
   joinGame: vi.fn()
 }));
 
-vi.mock("@react-shell/legacy-game-handoff", () => ({
-  openReactGame: vi.fn()
+vi.mock("@react-shell/game-navigation", () => ({
+  openShellGame: vi.fn()
 }));
 
 vi.mock("@react-shell/player-session", () => ({
@@ -47,7 +47,7 @@ const createGameMock = vi.mocked(createGame);
 const getGameOptionsMock = vi.mocked(getGameOptions);
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
-const openReactGameMock = vi.mocked(openReactGame);
+const openShellGameMock = vi.mocked(openShellGame);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
 const lobbyCreateRouteTimeoutMs = 30_000;
 
@@ -350,7 +350,7 @@ describe("LobbyCreateRoute integration", () => {
         expect.any(Object)
       );
       expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "game-99");
-      expect(openReactGameMock).toHaveBeenCalledWith("game-99");
+      expect(openShellGameMock).toHaveBeenCalledWith("game-99");
     },
     lobbyCreateRouteTimeoutMs
   );
