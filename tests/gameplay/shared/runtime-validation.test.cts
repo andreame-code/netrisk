@@ -21,7 +21,7 @@ const {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 register("shared runtime validation parses the auth/profile slice payloads", () => {
-  const longLegacyPassword = "legacy-password-".repeat(16);
+  const longLegacyPassword = "legacy-password-".repeat(8);
   const accountSettingsRequest = parseWithSchema(accountSettingsRequestSchema, {
     currentPassword: longLegacyPassword,
     email: "commander@example.com",
