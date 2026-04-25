@@ -3,6 +3,7 @@ const {
   accountSettingsRequestSchema,
   accountSettingsResponseSchema,
   authSessionResponseSchema,
+  formatValidationPath,
   gameIdRequestSchema,
   gameListResponseSchema,
   gameMutationResponseSchema,
@@ -216,6 +217,11 @@ register("shared runtime validation exposes deterministic validation issue paths
       (entry: { message: string }) => typeof entry.message === "string" && entry.message.length > 0
     )
   );
+});
+
+register("shared runtime validation formats root issue paths deterministically", () => {
+  assert.equal(formatValidationPath([]), "$");
+  assert.equal(formatValidationPath(undefined), "$");
 });
 
 register("shared runtime validation validates lobby route payload shapes", () => {
