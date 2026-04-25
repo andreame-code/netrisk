@@ -47,6 +47,12 @@ register("loadContinentsFromCsv rejects CSV files with missing headers", () => {
   });
 });
 
+register("loadContinentsFromCsv rejects header-only CSV files", () => {
+  withCsvFile("id,name,bonus,territoryIds", (filePath) => {
+    assert.throws(() => loadContinentsFromCsv(filePath), /at least one continent row/i);
+  });
+});
+
 register("loadContinentsFromCsv rejects invalid bonus values", () => {
   withCsvFile(["id,name,bonus,territoryIds", "north,North,nope,alpha"].join("\n"), (filePath) => {
     assert.throws(() => loadContinentsFromCsv(filePath), /invalid bonus value/i);
