@@ -25,7 +25,7 @@ register(
       [
         "# comment",
         " id , name , continentId , x , y , neighbors ",
-        " alpha , Alpha , north , 0.10 , 0.20 , beta | gamma ",
+        " alpha , Alpha , north , 0.10 , 0.20 , beta ",
         " beta , Beta , north , 0.30 , 0.40 , alpha ",
         " gamma , Gamma , south , 0.50 , 0.60 , "
       ].join("\n"),
@@ -37,7 +37,7 @@ register(
           map.territories.map((entry: any) => entry.territory.id),
           ["alpha", "beta", "gamma"]
         );
-        assert.deepEqual(map.territories[0].territory.neighbors, ["beta", "gamma"]);
+        assert.deepEqual(map.territories[0].territory.neighbors, ["beta"]);
         assert.deepEqual(map.territories[2].territory.neighbors, []);
         assert.deepEqual(map.positions.alpha, { x: 0.1, y: 0.2 });
         assert.deepEqual(map.positions.gamma, { x: 0.5, y: 0.6 });
@@ -118,6 +118,19 @@ register("loadMapDefinitionFromCsv rejects unknown neighbors", () => {
     ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,0.1,0.2,missing"].join("\n"),
     (filePath) => {
       assert.throws(() => loadMapDefinitionFromCsv(filePath), /unknown neighbor "missing"/i);
+    }
+  );
+});
+
+register("loadMapDefinitionFromCsv rejects non-bidirectional adjacency", () => {
+  withCsvFile(
+    [
+      "id,name,continentId,x,y,neighbors",
+      "alpha,Alpha,north,0.1,0.2,beta",
+      "beta,Beta,north,0.3,0.4,"
+    ].join("\n"),
+    (filePath) => {
+      assert.throws(() => loadMapDefinitionFromCsv(filePath), /must be bidirectional/i);
     }
   );
 });

@@ -5,6 +5,7 @@ import {
   type MapPosition,
   type Territory
 } from "./core-domain.cjs";
+import { buildMapGraph } from "./map-graph.cjs";
 
 export interface MapDefinitionTerritoryEntry {
   territory: Territory;
@@ -57,13 +58,7 @@ function normalizeCoordinate(rawValue: number, fieldName: string, territoryId: s
 }
 
 function validateAdjacency(territoriesById: Record<string, MapDefinitionTerritoryEntry>): void {
-  Object.values(territoriesById).forEach(({ territory }) => {
-    territory.neighbors.forEach((neighborId) => {
-      if (!territoriesById[neighborId]) {
-        throw new Error(`Territory "${territory.id}" references unknown neighbor "${neighborId}".`);
-      }
-    });
-  });
+  buildMapGraph(Object.values(territoriesById));
 }
 
 function validateTerritoryReferences(

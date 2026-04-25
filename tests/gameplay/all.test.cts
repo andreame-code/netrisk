@@ -2,6 +2,7 @@ const gameplayTestModules = [
   "./shared/runtime-validation.test.cjs",
   "./shared/map-graph.test.cjs",
   "./shared/map-loader.test.cjs",
+  "./shared/typed-map-data.test.cjs",
   "./shared/continent-loader.test.cjs",
   "./shared/extensions.test.cjs",
   "./setup/game-setup.test.cjs",

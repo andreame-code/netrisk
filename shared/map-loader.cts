@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createTerritory, type MapPosition, type Territory } from "./core-domain.cjs";
+import { buildMapGraph } from "./map-graph.cjs";
 
 const REQUIRED_HEADERS = ["id", "name", "continentId", "x", "y", "neighbors"] as const;
 
@@ -99,13 +100,7 @@ function buildTerritoryRecord(record: Record<string, string>): TerritoryRecord {
 }
 
 function validateAdjacency(territoriesById: Record<string, MapDefinitionTerritoryEntry>): void {
-  Object.values(territoriesById).forEach(({ territory }) => {
-    territory.neighbors.forEach((neighborId) => {
-      if (!territoriesById[neighborId]) {
-        throw new Error(`Territory "${territory.id}" references unknown neighbor "${neighborId}".`);
-      }
-    });
-  });
+  buildMapGraph(Object.values(territoriesById));
 }
 
 export function loadMapDefinitionFromCsv(csvPath: string): MapDefinition {
