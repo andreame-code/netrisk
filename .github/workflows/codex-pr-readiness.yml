@@ -138,6 +138,9 @@ jobs:
               "chatgpt-codex-connector[bot]",
             ];
 
+            const TARGET_LABEL = "codex";
+            const BRANCH_PREFIX = "codex/";
+
             const REVIEW_BOT_ACTORS = [
               ...CODEX_ACTORS,
               "github-advanced-security",
@@ -444,7 +447,19 @@ jobs:
             }
 
             function isAutomationTargetPr(pr) {
-              return pr.state === "open";
+              if (!pr || pr.state !== "open" || pr.draft !== true) return false;
+
+              const labels = (pr.labels || []).map((label) =>
+                normalize(label?.name || label)
+              );
+              const headRef = String(pr.head?.ref || "");
+              const author = normalize(pr.user?.login || "");
+
+              return (
+                labels.includes(TARGET_LABEL) ||
+                headRef.startsWith(BRANCH_PREFIX) ||
+                CODEX_ACTORS.some((actor) => author === normalize(actor))
+              );
             }
 
             async function getPr(prNumber) {
@@ -841,8 +856,10 @@ jobs:
             async function evaluatePr(prNumber) {
               const pr = await getPr(prNumber);
 
-              if (pr.state !== "open") {
-                core.info(`Skipping PR #${prNumber}: state=${pr.state}`);
+              if (!isAutomationTargetPr(pr)) {
+                core.info(
+                  `Skipping PR #${prNumber}: not a targeted draft Codex PR.`
+                );
                 return;
               }
 
@@ -1029,7 +1046,8 @@ jobs:
               if (manualPrNumber > 0) return [manualPrNumber];
 
               if (context.eventName === "pull_request_target" && context.payload.pull_request?.number) {
-                return [context.payload.pull_request.number];
+                const pr = context.payload.pull_request;
+                return isAutomationTargetPr(pr) ? [pr.number] : [];
               }
 
               if (
@@ -1037,7 +1055,8 @@ jobs:
                   context.eventName === "pull_request_review_comment") &&
                 context.payload.pull_request?.number
               ) {
-                return [context.payload.pull_request.number];
+                const pr = context.payload.pull_request;
+                return isAutomationTargetPr(pr) ? [pr.number] : [];
               }
 
               if (context.eventName === "issue_comment") {

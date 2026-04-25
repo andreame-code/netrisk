@@ -233,6 +233,27 @@ register("codex PR readiness workflow listens to all pull_request workflow_run c
   assert.doesNotMatch(workflow, /github\.event\.workflow_run\.head_branch/);
 });
 
+register("codex PR readiness workflow targets only draft Codex PRs", () => {
+  const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /const TARGET_LABEL = "codex";/);
+  assert.match(workflow, /const BRANCH_PREFIX = "codex\/";/);
+  assert.match(
+    workflow,
+    /if \(!pr \|\| pr\.state !== "open" \|\| pr\.draft !== true\) return false;/
+  );
+  assert.match(workflow, /labels\.includes\(TARGET_LABEL\)/);
+  assert.match(workflow, /headRef\.startsWith\(BRANCH_PREFIX\)/);
+  assert.match(workflow, /CODEX_ACTORS\.some\(\(actor\) => author === normalize\(actor\)\)/);
+  assert.match(workflow, /Skipping PR #\$\{prNumber\}: not a targeted draft Codex PR\./);
+  assert.doesNotMatch(workflow, /return \[context\.payload\.pull_request\.number\];/);
+
+  const filteredEventReturns =
+    workflow.match(/return isAutomationTargetPr\(pr\) \? \[pr\.number\] : \[\];/g) || [];
+  assert.equal(filteredEventReturns.length >= 3, true);
+});
+
 register("codex PR readiness watchdog ignores non-actionable Codex status comments", () => {
   const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
   const workflow = fs.readFileSync(workflowPath, "utf8");
