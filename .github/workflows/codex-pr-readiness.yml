@@ -621,8 +621,53 @@ jobs:
               return urls;
             }
 
+            async function getMinimizedIssueCommentUrls(prNumber) {
+              const urls = new Set();
+              let cursor = null;
+
+              while (true) {
+                const response = await github.graphql(
+                  `
+                    query PullRequestIssueComments($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+                      repository(owner: $owner, name: $repo) {
+                        pullRequest(number: $number) {
+                          comments(first: 100, after: $cursor) {
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                            nodes {
+                              url
+                              isMinimized
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  { owner, repo, number: prNumber, cursor }
+                );
+
+                const comments = response.repository?.pullRequest?.comments;
+                for (const comment of comments?.nodes || []) {
+                  if (comment?.isMinimized && comment?.url) urls.add(String(comment.url));
+                }
+
+                if (!comments?.pageInfo?.hasNextPage || !comments.pageInfo.endCursor) break;
+                cursor = comments.pageInfo.endCursor;
+              }
+
+              return urls;
+            }
+
             async function getPrContext(prNumber) {
-              const [issueComments, reviews, reviewComments, reviewThreads] = await Promise.all([
+              const [
+                issueComments,
+                reviews,
+                reviewComments,
+                reviewThreads,
+                minimizedIssueCommentUrls,
+              ] = await Promise.all([
                 github.paginate(github.rest.issues.listComments, {
                   owner,
                   repo,
@@ -642,9 +687,20 @@ jobs:
                   per_page: 100,
                 }),
                 getReviewThreads(prNumber),
+                getMinimizedIssueCommentUrls(prNumber),
               ]);
 
-              return { issueComments, reviews, reviewComments, reviewThreads };
+              const issueCommentsWithMinimizedState = issueComments.map((comment) => ({
+                ...comment,
+                isMinimized: minimizedIssueCommentUrls.has(String(comment.html_url || comment.url || "")),
+              }));
+
+              return {
+                issueComments: issueCommentsWithMinimizedState,
+                reviews,
+                reviewComments,
+                reviewThreads,
+              };
             }
 
             async function getCheckState(sha) {
@@ -805,6 +861,25 @@ jobs:
               return "created";
             }
 
+            async function markReadyForReview(pr) {
+              await github.graphql(
+                `
+                  mutation MarkReady($pullRequestId: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {
+                      pullRequest {
+                        id
+                        isDraft
+                      }
+                    }
+                  }
+                `,
+                {
+                  pullRequestId: pr.node_id,
+                }
+              );
+              pr.draft = false;
+            }
+
             function buildSummary({ pr, sha, freshness, checkState, codexReviewedCurrentHead, codexOk, reviewPromptForHead, problemItems, action, actionReason }) {
               const decision = (() => {
                 if (problemItems.length > 0) return "FIX REQUESTED";
@@ -880,7 +955,8 @@ jobs:
               const currentCodexIssueComments = prContext.issueComments.filter((item) =>
                 isCodexActor(item) &&
                 itemIsForCurrentHead(item, sha, headDate) &&
-                !isCodexUsageError(item.body)
+                !isCodexUsageError(item.body) &&
+                !item.isMinimized
               );
 
               const currentCodexSignals = [
@@ -1001,8 +1077,9 @@ jobs:
                 action = "wait";
                 actionReason = `Checks are ${checkState.state}; waiting.`;
               } else if (checkState.state === "green" && codexOk) {
-                action = "none";
-                actionReason = "CI is green and Codex has reviewed the current head without current findings.";
+                action = "mark-ready";
+                await markReadyForReview(pr);
+                actionReason = "CI is green and Codex has reviewed the current head without current findings; marked this draft PR ready for review.";
               } else if (checkState.state === "green" && !codexOk) {
                 action = "review";
                 actionReason = "CI is green but Codex has not yet given a current-head OK signal.";

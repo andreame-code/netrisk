@@ -163,7 +163,11 @@ function createTempJsonFile(name: string, payload: unknown) {
 
 function createFakeClient(
   routes: Record<string, unknown>,
-  graphqlHandler?: (query: string, variables: Record<string, unknown>) => unknown | Promise<unknown>
+  graphqlHandler?: (
+    query: string,
+    variables: Record<string, unknown>
+  ) => unknown | Promise<unknown>,
+  authenticatedLogin = "github-actions[bot]"
 ) {
   const calls: Array<Record<string, unknown>> = [];
 
@@ -185,6 +189,9 @@ function createFakeClient(
 
       const response = routes[key];
       return typeof response === "function" ? await response(body) : response;
+    },
+    async getAuthenticatedLogin() {
+      return authenticatedLogin;
     },
     async graphql(query: string, variables: Record<string, unknown>) {
       calls.push({
@@ -252,6 +259,22 @@ register("codex PR readiness workflow targets only draft Codex PRs", () => {
   const filteredEventReturns =
     workflow.match(/return isAutomationTargetPr\(pr\) \? \[pr\.number\] : \[\];/g) || [];
   assert.equal(filteredEventReturns.length >= 3, true);
+});
+
+register("codex PR readiness workflow marks fully ready drafts ready for review", () => {
+  const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /async function markReadyForReview\(pr\)/);
+  assert.match(
+    workflow,
+    /markPullRequestReadyForReview\(input: \{ pullRequestId: \$pullRequestId \}\)/
+  );
+  assert.match(workflow, /pullRequestId: pr\.node_id/);
+  assert.match(workflow, /pr\.draft = false;/);
+  assert.match(workflow, /else if \(checkState\.state === "green" && codexOk\) \{/);
+  assert.match(workflow, /action = "mark-ready";/);
+  assert.match(workflow, /await markReadyForReview\(pr\);/);
 });
 
 register("codex PR readiness watchdog ignores non-actionable Codex status comments", () => {
@@ -843,6 +866,30 @@ register("codex PR readiness snapshots GitHub metadata into the evaluation input
           body: "Codex PR readiness: greenlight",
           created_at: "2026-04-23T10:16:00.000Z",
           html_url: "https://example.test/comments/1"
+        },
+        {
+          user: { login: "chatgpt-codex-connector" },
+          body: "### Summary\n* Applied the requested fix.\n\n[View task ->](https://example.test/codex/tasks/1)",
+          created_at: "2026-04-23T10:18:00.000Z",
+          html_url: "https://example.test/comments/2"
+        },
+        {
+          user: { login: "chatgpt-codex-connector" },
+          body: "### Summary\n* Fixed the parser, preventing passive wording like could not be fixed from being misclassified.\n\n[View task ->](https://example.test/codex/tasks/2)",
+          created_at: "2026-04-23T10:19:00.000Z",
+          html_url: "https://example.test/comments/3"
+        },
+        {
+          user: { login: "chatgpt-codex-connector" },
+          body: "### Summary\n* Updated findings: one issue could not be fixed without a follow-up change.\n\n[View task ->](https://example.test/codex/tasks/3)",
+          created_at: "2026-04-23T10:20:00.000Z",
+          html_url: "https://example.test/comments/4"
+        },
+        {
+          user: { login: "chatgpt-codex-connector" },
+          body: "### Summary\n* Added regression coverage, but could not resolve the failing case.\n\n[View task ->](https://example.test/codex/tasks/4)",
+          created_at: "2026-04-23T10:21:00.000Z",
+          html_url: "https://example.test/comments/5"
         }
       ],
       "GET /repos/andreame-code/netrisk/issues/146/comments?per_page=100&page=2": [],
@@ -861,6 +908,34 @@ register("codex PR readiness snapshots GitHub metadata into the evaluation input
     async () => ({
       repository: {
         pullRequest: {
+          comments: {
+            pageInfo: {
+              hasNextPage: false,
+              endCursor: null
+            },
+            nodes: [
+              {
+                url: "https://example.test/comments/1",
+                isMinimized: false
+              },
+              {
+                url: "https://example.test/comments/2",
+                isMinimized: true
+              },
+              {
+                url: "https://example.test/comments/3",
+                isMinimized: true
+              },
+              {
+                url: "https://example.test/comments/4",
+                isMinimized: false
+              },
+              {
+                url: "https://example.test/comments/5",
+                isMinimized: false
+              }
+            ]
+          },
           reviewThreads: {
             pageInfo: {
               hasNextPage: false,
@@ -896,7 +971,31 @@ register("codex PR readiness snapshots GitHub metadata into the evaluation input
   assert.equal(snapshot.workflowJobs.length, 2);
   assert.equal(snapshot.workflowJobs[0].workflowName, "Quality");
   assert.equal(snapshot.reviewThreads[0].comments[0].authorLogin, "chatgpt-codex-connector");
-  assert.equal(snapshot.codexSignals.length, 2);
+  assert.equal(snapshot.codexSignals.length, 4);
+  assert.equal(
+    snapshot.codexSignals.some((signal: { body: string }) =>
+      signal.body.includes("Applied the requested fix")
+    ),
+    false
+  );
+  assert.equal(
+    snapshot.codexSignals.some((signal: { body: string }) =>
+      signal.body.includes("preventing passive wording")
+    ),
+    false
+  );
+  assert.equal(
+    snapshot.codexSignals.some((signal: { body: string }) =>
+      signal.body.includes("could not be fixed")
+    ),
+    true
+  );
+  assert.equal(
+    snapshot.codexSignals.some((signal: { body: string }) =>
+      signal.body.includes("could not resolve")
+    ),
+    true
+  );
   assert.equal(snapshot.changedFiles[0].path, "scripts/evaluate-codex-pr-readiness.cts");
 });
 
@@ -933,6 +1032,54 @@ register("codex PR readiness upserts a single sticky summary comment", async () 
       config.summaryCommentMarker
     ),
     "updated"
+  );
+
+  const patUpdatedClient = createFakeClient(
+    {
+      "GET /repos/andreame-code/netrisk/issues/146/comments?per_page=100&page=1": [
+        {
+          id: 17,
+          user: { login: "andreame-code" },
+          body: `${config.summaryCommentMarker}\nOld PAT summary`
+        }
+      ],
+      "PATCH /repos/andreame-code/netrisk/issues/comments/17": {}
+    },
+    undefined,
+    "andreame-code"
+  );
+  assert.equal(
+    await upsertSummaryComment(
+      patUpdatedClient,
+      146,
+      `${config.summaryCommentMarker}\nUpdated PAT summary`,
+      config.summaryCommentMarker
+    ),
+    "updated"
+  );
+
+  const crossAuthorClient = createFakeClient(
+    {
+      "GET /repos/andreame-code/netrisk/issues/146/comments?per_page=100&page=1": [
+        {
+          id: 18,
+          user: { login: "github-actions[bot]" },
+          body: `${config.summaryCommentMarker}\nBot summary`
+        }
+      ],
+      "POST /repos/andreame-code/netrisk/issues/146/comments": {}
+    },
+    undefined,
+    "andreame-code"
+  );
+  assert.equal(
+    await upsertSummaryComment(
+      crossAuthorClient,
+      146,
+      `${config.summaryCommentMarker}\nNew PAT summary`,
+      config.summaryCommentMarker
+    ),
+    "created"
   );
 
   const unchangedClient = createFakeClient({
@@ -1107,6 +1254,19 @@ register(
           method: init.method
         });
 
+        if (String(url).endsWith("/user")) {
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return { login: "andreame-code" };
+            },
+            async text() {
+              return "";
+            }
+          } as any;
+        }
+
         if (String(url).endsWith("/ok")) {
           return {
             ok: true,
@@ -1172,6 +1332,68 @@ register(
           login: "chatgpt-codex-connector"
         }
       });
+      assert.equal(await client.getAuthenticatedLogin(), "andreame-code");
+
+      const originalActor = process.env.GITHUB_ACTOR;
+      process.env.GITHUB_ACTOR = "andreame-code";
+      const successfulFetch = global.fetch;
+      try {
+        global.fetch = (async () =>
+          ({
+            ok: false,
+            status: 500,
+            async json() {
+              return {};
+            },
+            async text() {
+              return "lookup failed";
+            }
+          }) as any) as typeof global.fetch;
+        const fallbackClient = new GitHubApiClient("andreame-code/netrisk", "token");
+        assert.equal(await fallbackClient.getAuthenticatedLogin(), "github-actions[bot]");
+      } finally {
+        global.fetch = successfulFetch;
+        if (originalActor === undefined) {
+          delete process.env.GITHUB_ACTOR;
+        } else {
+          process.env.GITHUB_ACTOR = originalActor;
+        }
+      }
+
+      let transientAttempts = 0;
+      try {
+        global.fetch = (async () => {
+          transientAttempts += 1;
+          if (transientAttempts === 1) {
+            return {
+              ok: false,
+              status: 500,
+              async json() {
+                return {};
+              },
+              async text() {
+                return "temporary lookup failure";
+              }
+            } as any;
+          }
+
+          return {
+            ok: true,
+            status: 200,
+            async json() {
+              return { login: "andreame-code" };
+            },
+            async text() {
+              return "";
+            }
+          } as any;
+        }) as typeof global.fetch;
+        const transientClient = new GitHubApiClient("andreame-code/netrisk", "token");
+        assert.equal(await transientClient.getAuthenticatedLogin(), "github-actions[bot]");
+        assert.equal(await transientClient.getAuthenticatedLogin(), "andreame-code");
+      } finally {
+        global.fetch = successfulFetch;
+      }
       await assert.rejects(
         async () => client.requestJson("GET", "/fail"),
         /GET \/fail failed \(500\): boom/
