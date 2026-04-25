@@ -192,7 +192,7 @@ export const staticHtmlAssets = {
           </div>
 
           <div class="ld-map-card">
-            <div class="ld-map-frame">
+            <div class="ld-map-frame ld-map-frame--tall">
               <img
                 src="/assets/maps/middle-earth.jpg"
                 alt="Screenshot del gioco - Mappa Terra di Mezzo con 3 giocatori al turno 7"
@@ -1438,6 +1438,11 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
   object-fit: cover;
   filter: contrast(1.08) saturate(0.85);
   display: block;
+}
+
+.ld-map-frame--tall img {
+  aspect-ratio: 4 / 5;
+  object-position: center top;
 }
 
 .ld-map-frame::after {

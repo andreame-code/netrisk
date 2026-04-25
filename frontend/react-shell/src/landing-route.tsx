@@ -198,7 +198,7 @@ export function LandingRoute() {
               </div>
 
               <div className="ld-map-card">
-                <div className="ld-map-frame">
+                <div className="ld-map-frame ld-map-frame--tall">
                   <img
                     src="/assets/maps/middle-earth.jpg"
                     alt="Mappa Terra di Mezzo"
