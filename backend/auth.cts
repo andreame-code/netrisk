@@ -323,6 +323,10 @@ function accountSettingsValidationError(
     return authFailure("Nessuna modifica da salvare.", "auth.account.noChanges");
   }
 
+  if (input.currentPassword.length > 128) {
+    return authFailure("Password attuale non valida.", "auth.account.currentPasswordInvalid");
+  }
+
   if (hasEmailChange && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
     return authFailure("Email non valida.", "auth.register.invalidEmail");
   }
@@ -437,6 +441,12 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   }
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
+    if (String(password || "").length > 128) {
+      // Avoid expensive hashing for extremely long passwords.
+      runDummyPasswordVerification();
+      return null;
+    }
+
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
