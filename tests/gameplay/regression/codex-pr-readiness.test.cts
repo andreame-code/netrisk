@@ -233,6 +233,20 @@ register("codex PR readiness workflow listens to all pull_request workflow_run c
   assert.doesNotMatch(workflow, /github\.event\.workflow_run\.head_branch/);
 });
 
+register("codex PR readiness watchdog ignores non-actionable Codex status comments", () => {
+  const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /function isNonActionableCodexSignal\(text\)/);
+  assert.match(workflow, /body\.includes\("nothing to fix yet"\)/);
+  assert.match(workflow, /body\.includes\("no failing checks or requested code updates"\)/);
+  assert.match(workflow, /body\.includes\("did not find any regression risk"\)/);
+  assert.match(
+    workflow,
+    /if \(isCleanCodexSignal\(body\)\) return false;\s+if \(isNonActionableCodexSignal\(body\)\) return false;/
+  );
+});
+
 register(
   "codex PR readiness blocks pending checks, stale Codex feedback, stale branches, and conflicts",
   () => {
