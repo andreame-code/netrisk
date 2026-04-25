@@ -885,8 +885,7 @@ jobs:
                 codexReviewedCurrentHead &&
                 problemItems.length === 0 &&
                 (normalize(latestCodexSignal?.state) === "approved" ||
-                  isCleanCodexSignal(latestCodexSignal?.body || "") ||
-                  currentCodexSignals.some((signal) => bodyHasCurrentSha(signal.body, sha)));
+                  isCleanCodexSignal(latestCodexSignal?.body || ""));
 
               const reviewPromptForHead = hasCodexReviewPromptForHead(prContext.issueComments, sha, headDate);
 

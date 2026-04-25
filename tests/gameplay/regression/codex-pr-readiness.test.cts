@@ -301,6 +301,11 @@ register("codex PR readiness watchdog ignores non-actionable Codex status commen
     workflow,
     /hasNegatedRegressionRiskSignal\(body\) &&\s+!hasGenericProblemSignal\(stripNegatedRegressionRiskPhrases\(body\)\)/
   );
+  assert.doesNotMatch(
+    workflow,
+    /currentCodexSignals\.some\(\(signal\) => bodyHasCurrentSha\(signal\.body, sha\)\)/
+  );
+  assert.match(workflow, /isCleanCodexSignal\(latestCodexSignal\?\.body \|\| ""\)/);
   assert.match(workflow, /\\bno\\s\+regression\\s\+risk\\b/);
   assert.match(
     workflow,
@@ -957,6 +962,40 @@ register("codex PR readiness applies draft transitions only for fully ready PRs"
     {
       commentStatus: "unchanged",
       markedReady: true
+    }
+  );
+
+  const pendingChecksEvaluation = {
+    ...readyEvaluation,
+    checkStatuses: readyEvaluation.checkStatuses.map((status: { status: string }, index: number) =>
+      index === 0 ? { ...status, status: "pending", details: "Still running." } : status
+    )
+  };
+  assert.deepEqual(
+    await applyEvaluation(readyClient, readySnapshot, pendingChecksEvaluation, config, true),
+    {
+      commentStatus: "unchanged",
+      markedReady: false
+    }
+  );
+
+  const missingCodexOkEvaluation = {
+    ...readyEvaluation,
+    codexGreenlight: null,
+    latestCodexSignal: {
+      actorLogin: "chatgpt-codex-connector",
+      state: "COMMENTED",
+      body: `Implementation plan for ${readySnapshot.pr.headSha}`,
+      submittedAt: "2026-04-23T10:11:00.000Z",
+      url: "https://example.test/codex-plan",
+      kind: "issue-comment"
+    }
+  };
+  assert.deepEqual(
+    await applyEvaluation(readyClient, readySnapshot, missingCodexOkEvaluation, config, true),
+    {
+      commentStatus: "unchanged",
+      markedReady: false
     }
   );
 
