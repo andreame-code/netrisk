@@ -315,7 +315,11 @@ jobs:
                 hasResolvedWorkSignal ||
                 body.includes("no code changes are needed") ||
                 body.includes("created commit") ||
-                body.includes("opened a follow-up pr");
+                body.includes("opened a follow-up pr") ||
+                body.includes("created a follow-up pr") ||
+                body.includes("created a dedicated follow-up branch") ||
+                body.includes("created and switched to a dedicated follow-up branch") ||
+                body.includes("view task");
 
               return (
                 body.includes("### summary") &&
