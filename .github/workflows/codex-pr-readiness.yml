@@ -233,6 +233,24 @@ jobs:
               );
             }
 
+            function isNonActionableCodexSignal(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+
+              return (
+                body.includes("nothing to fix yet") ||
+                body.includes("there is nothing to fix yet") ||
+                body.includes("there's nothing to fix yet") ||
+                body.includes("no failing checks or requested code updates") ||
+                body.includes("no code changes were made") ||
+                body.includes("no new pr was created") ||
+                body.includes("no actionable blocking defect") ||
+                body.includes("no real code issue") ||
+                body.includes("did not find any regression risk") ||
+                body.includes("didn't find any regression risk")
+              );
+            }
+
             function hasProblemSignal(text, state) {
               const body = normalize(text);
               const reviewState = normalize(state);
@@ -240,6 +258,7 @@ jobs:
               if (!body && !reviewState) return false;
               if (reviewState === "changes_requested") return true;
               if (isCleanCodexSignal(body)) return false;
+              if (isNonActionableCodexSignal(body)) return false;
 
               return (
                 /\bp0\b/.test(body) ||
