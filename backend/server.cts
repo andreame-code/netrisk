@@ -1235,6 +1235,20 @@ function createApp(options: CreateAppOptions = {}) {
         () =>
           runScheduledJobs({
             listGames: () => gameSessions.datastore.listGames(),
+            deleteGame: (gameId: string) => {
+              if (typeof gameSessions.datastore.deleteGame !== "function") {
+                throw new Error("Il datastore non supporta la cancellazione delle partite.");
+              }
+              return gameSessions.datastore.deleteGame(gameId);
+            },
+            afterDelete: ({ gameId }: { gameId: string; gameName: string | null }) => {
+              if (gameId === activeGameId) {
+                activeGameId = null;
+                activeGameVersion = null;
+                activeGameName = null;
+                replaceState(createInitialState());
+              }
+            },
             saveGame: (
               gameId: string,
               nextState: Record<string, unknown>,

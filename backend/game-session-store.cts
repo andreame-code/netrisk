@@ -77,6 +77,7 @@ interface GameSessionStoreOptions {
     findGameById(gameId: string): GameEntry | null | Promise<GameEntry | null>;
     getActiveGameId(): string | null | Promise<string | null>;
     updateGame(entry: GameEntry): GameEntry | Promise<GameEntry>;
+    deleteGame?(gameId: string): void | Promise<void>;
   };
   dbFile?: string;
   dataFile?: string;
