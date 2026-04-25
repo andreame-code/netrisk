@@ -194,6 +194,17 @@ jobs:
               return isAfter(createdAt(item), headDate);
             }
 
+            function reviewCommentUrl(item) {
+              return String(item?.html_url || item?.url || "");
+            }
+
+            function reviewCommentIsForCurrentHead(item, sha, headDate, staleReviewCommentUrls = new Set()) {
+              const url = reviewCommentUrl(item);
+              if (url && staleReviewCommentUrls.has(url)) return false;
+              if (bodyHasCurrentSha(item?.body, sha)) return true;
+              return itemIsForCurrentHead(item, sha, headDate);
+            }
+
             function actionMarker(type, sha) {
               return `${ACTION_MARKER_PREFIX}:${type}:${sha} -->`;
             }
@@ -227,9 +238,36 @@ jobs:
                 explicitNoSeverityFinding ||
                 body.includes("codex greenlight") ||
                 body.includes("codex pr readiness: greenlight") ||
-                body.includes("codex final approval") ||
-                body.includes("all tests are passing") ||
-                body.includes("all tests passed")
+                body.includes("codex final approval")
+              );
+            }
+
+            function hasNegatedRegressionRiskSignal(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+
+              return (
+                /\b(?:did not|didn't)\s+find\s+any\s+regression\s+risk\b/i.test(body) ||
+                /\bno\s+regression\s+risk\b/i.test(body)
+              );
+            }
+
+            function stripNegatedRegressionRiskPhrases(text) {
+              return normalize(text)
+                .replace(/\b(?:did not|didn't)\s+find\s+any\s+regression\s+risk\b/gi, "")
+                .replace(/\bno\s+regression\s+risk\b/gi, "");
+            }
+
+            function isNegativeNonProblemCodexSignal(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+
+              return (
+                body.includes("no failing checks or requested code updates") ||
+                body.includes("no actionable blocking defect") ||
+                body.includes("no real code issue") ||
+                (hasNegatedRegressionRiskSignal(body) &&
+                  !hasGenericProblemSignal(stripNegatedRegressionRiskPhrases(body)))
               );
             }
 
@@ -238,32 +276,94 @@ jobs:
               if (!body || isCodexUsageError(body)) return false;
 
               return (
+                body.includes("this trigger is non-actionable right now") ||
+                body.includes("this trigger is non actionable right now") ||
+                body.includes("non-actionable triage note") ||
+                body.includes("non actionable triage note") ||
+                body.includes("wait for ci") ||
+                body.includes("waiting for ci") ||
                 body.includes("nothing to fix yet") ||
                 body.includes("there is nothing to fix yet") ||
                 body.includes("there's nothing to fix yet") ||
-                body.includes("no failing checks or requested code updates") ||
+                body.includes("nothing to patch") ||
+                body.includes("no code-change action") ||
+                body.includes("no code changes are needed") ||
                 body.includes("no code changes were made") ||
                 body.includes("no new pr was created") ||
-                body.includes("no actionable blocking defect") ||
-                body.includes("no real code issue") ||
-                body.includes("did not find any regression risk") ||
-                body.includes("didn't find any regression risk")
+                body.includes("not opening a follow-up pr") ||
+                body.includes("all tests are passing") ||
+                body.includes("all tests passed")
               );
             }
 
-            function hasProblemSignal(text, state) {
+            function isCodexExecutionSummary(text) {
               const body = normalize(text);
-              const reviewState = normalize(state);
+              if (!body || isCodexUsageError(body)) return false;
+              if (hasBlockingCodexMarker(body)) return false;
 
-              if (!body && !reviewState) return false;
-              if (reviewState === "changes_requested") return true;
-              if (isCleanCodexSignal(body)) return false;
-              if (isNonActionableCodexSignal(body)) return false;
+              const hasUnresolvedWorkSignal =
+                /\b(?:not|never)\s+(?:fixed|addressed|resolved)\b/i.test(body) ||
+                /\b(?:could not|cannot|can't|couldn't)\s+(?:fix|address|resolve)\b/i.test(body) ||
+                /\b(?:could not|cannot|can't|couldn't)\s+be\s+(?:fixed|addressed|resolved)\b/i.test(body);
+              const hasResolvedWorkSignal =
+                /\b(?:fixed|addressed|resolved)\b/i.test(body) &&
+                !hasUnresolvedWorkSignal;
+              const hasCompletedActionSignal =
+                hasResolvedWorkSignal ||
+                body.includes("no code changes are needed") ||
+                body.includes("created commit") ||
+                body.includes("opened a follow-up pr");
 
               return (
-                /\bp0\b/.test(body) ||
-                /\bp1\b/.test(body) ||
+                body.includes("### summary") &&
+                (body.includes("**testing**") || body.includes("### checks")) &&
+                !hasUnresolvedWorkSignal &&
+                hasCompletedActionSignal
+              );
+            }
+
+            function isCodexExecutionPlan(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+              if (hasBlockingCodexMarker(body)) return false;
+
+              return body.includes("implementation plan:") && body.includes("view task");
+            }
+
+            function isSkippableCodexExecutionSignal(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+              if (hasBlockingCodexMarker(body)) return false;
+
+              return isCodexExecutionSummary(body) || isCodexExecutionPlan(body);
+            }
+
+            function hasBlockingCodexMarker(text) {
+              const body = normalize(text);
+              if (!body || isCodexUsageError(body)) return false;
+
+              const hasRegressionMarker =
+                /\bregression\s+(?:found|detected|introduced|issue|bug)\b/i.test(body) ||
+                (/\bregression\s+risk\b/i.test(body) && !hasNegatedRegressionRiskSignal(body));
+
+              return (
+                body.includes("changes requested") ||
+                body.includes("p0 badge") ||
                 body.includes("p1 badge") ||
+                /\[\s*p0\s*\]/i.test(body) ||
+                /\[\s*p1\s*\]/i.test(body) ||
+                /\bp0\b\s+(?:finding|issue|blocker|blocking|critical|severity)/i.test(body) ||
+                /\bp1\b\s+(?:finding|issue|blocker|blocking|critical|severity)/i.test(body) ||
+                hasRegressionMarker ||
+                body.includes("must fix") ||
+                body.includes("needs fix")
+              );
+            }
+
+            function hasGenericProblemSignal(text) {
+              const body = normalize(text);
+
+              return (
                 body.includes("changes requested") ||
                 body.includes("regression") ||
                 body.includes("bug") ||
@@ -288,6 +388,22 @@ jobs:
                 body.includes("timing attack") ||
                 body.includes("avoid hashing raw input")
               );
+            }
+
+            function hasProblemSignal(text, state) {
+              const body = normalize(text);
+              const reviewState = normalize(state);
+
+              if (!body && !reviewState) return false;
+              if (reviewState === "changes_requested") return true;
+              if (isCleanCodexSignal(body)) return false;
+              if (hasBlockingCodexMarker(body)) return true;
+              if (isSkippableCodexExecutionSignal(body)) return false;
+              if (isNegativeNonProblemCodexSignal(body)) return false;
+              if (isNonActionableCodexSignal(body)) return false;
+              if (hasGenericProblemSignal(body)) return true;
+
+              return false;
             }
 
             function hasCodexReviewPromptForHead(issueComments, sha, headDate) {
@@ -386,8 +502,112 @@ jobs:
               }
             }
 
+            async function getReviewThreads(prNumber) {
+              const threads = [];
+              let cursor = null;
+
+              while (true) {
+                const response = await github.graphql(
+                  `
+                    query ReviewThreads($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+                      repository(owner: $owner, name: $repo) {
+                        pullRequest(number: $number) {
+                          reviewThreads(first: 100, after: $cursor) {
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                            nodes {
+                              id
+                              isResolved
+                              isOutdated
+                              comments(first: 100) {
+                                pageInfo {
+                                  hasNextPage
+                                  endCursor
+                                }
+                                nodes {
+                                  url
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  { owner, repo, number: prNumber, cursor }
+                );
+
+                const reviewThreads = response.repository?.pullRequest?.reviewThreads;
+                const nodes = reviewThreads?.nodes || [];
+                for (const thread of nodes) {
+                  await hydrateReviewThreadComments(thread);
+                }
+                threads.push(...nodes);
+
+                if (!reviewThreads?.pageInfo?.hasNextPage || !reviewThreads.pageInfo.endCursor) {
+                  break;
+                }
+                cursor = reviewThreads.pageInfo.endCursor;
+              }
+
+              return threads;
+            }
+
+            async function hydrateReviewThreadComments(thread) {
+              if (!thread?.id || !thread?.comments?.pageInfo?.hasNextPage) return;
+
+              let cursor = thread.comments.pageInfo.endCursor;
+
+              while (cursor) {
+                const response = await github.graphql(
+                  `
+                    query ReviewThreadComments($threadId: ID!, $cursor: String) {
+                      node(id: $threadId) {
+                        ... on PullRequestReviewThread {
+                          comments(first: 100, after: $cursor) {
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                            nodes {
+                              url
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  { threadId: thread.id, cursor }
+                );
+
+                const comments = response.node?.comments;
+                thread.comments.nodes.push(...(comments?.nodes || []));
+
+                if (!comments?.pageInfo?.hasNextPage || !comments.pageInfo.endCursor) {
+                  break;
+                }
+                cursor = comments.pageInfo.endCursor;
+              }
+            }
+
+            function buildStaleReviewCommentUrls(reviewThreads) {
+              const urls = new Set();
+
+              for (const thread of reviewThreads || []) {
+                if (!thread?.isResolved && !thread?.isOutdated) continue;
+
+                for (const comment of thread?.comments?.nodes || []) {
+                  if (comment?.url) urls.add(String(comment.url));
+                }
+              }
+
+              return urls;
+            }
+
             async function getPrContext(prNumber) {
-              const [issueComments, reviews, reviewComments] = await Promise.all([
+              const [issueComments, reviews, reviewComments, reviewThreads] = await Promise.all([
                 github.paginate(github.rest.issues.listComments, {
                   owner,
                   repo,
@@ -406,9 +626,10 @@ jobs:
                   pull_number: prNumber,
                   per_page: 100,
                 }),
+                getReviewThreads(prNumber),
               ]);
 
-              return { issueComments, reviews, reviewComments };
+              return { issueComments, reviews, reviewComments, reviewThreads };
             }
 
             async function getCheckState(sha) {
@@ -629,12 +850,15 @@ jobs:
               const headDate = await getCommitDate(sha);
               const freshness = await getBranchFreshness(pr);
               const prContext = await getPrContext(pr.number);
+              const staleReviewCommentUrls = buildStaleReviewCommentUrls(prContext.reviewThreads);
               const checkState = await getCheckState(sha);
 
               const currentReviewItems = [
-                ...prContext.reviews,
-                ...prContext.reviewComments,
-              ].filter((item) => isReviewBotActor(item) && itemIsForCurrentHead(item, sha, headDate));
+                ...prContext.reviews.filter((item) => itemIsForCurrentHead(item, sha, headDate)),
+                ...prContext.reviewComments.filter((item) =>
+                  reviewCommentIsForCurrentHead(item, sha, headDate, staleReviewCommentUrls)
+                ),
+              ].filter((item) => isReviewBotActor(item));
 
               const currentCodexIssueComments = prContext.issueComments.filter((item) =>
                 isCodexActor(item) &&
@@ -643,10 +867,12 @@ jobs:
               );
 
               const currentCodexSignals = [
-                ...prContext.reviews,
-                ...prContext.reviewComments,
+                ...prContext.reviews.filter((item) => itemIsForCurrentHead(item, sha, headDate)),
+                ...prContext.reviewComments.filter((item) =>
+                  reviewCommentIsForCurrentHead(item, sha, headDate, staleReviewCommentUrls)
+                ),
                 ...currentCodexIssueComments,
-              ].filter((item) => isCodexActor(item) && itemIsForCurrentHead(item, sha, headDate) && !isCodexUsageError(item.body));
+              ].filter((item) => isCodexActor(item) && !isCodexUsageError(item.body));
 
               const problemItems = [
                 ...currentReviewItems,
