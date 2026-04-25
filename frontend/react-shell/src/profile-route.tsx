@@ -8,7 +8,6 @@ import {
   updateAccountSettings,
   updateThemePreference
 } from "@frontend-core/api/client.mts";
-import { normalizeTheme } from "@frontend-core/contracts.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
@@ -18,7 +17,13 @@ import { buildShellGamePath } from "@react-shell/game-navigation";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import { buildLobbyPath, buildNewGamePath } from "@react-shell/public-auth-paths";
 import { profileDetailQueryKey } from "@react-shell/react-query";
-import { applyShellTheme, shellThemes, themeLabel } from "@react-shell/theme";
+import {
+  applyShellTheme,
+  currentShellTheme,
+  listShellThemes,
+  normalizeShellTheme,
+  themeLabel
+} from "@react-shell/theme";
 
 function phaseLabel(phase: string): string {
   if (phase === "active") {
@@ -110,7 +115,8 @@ export function ProfileRoute() {
   const { state, refresh } = useAuth();
   const queryClient = useQueryClient();
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
-  const committedTheme = normalizeTheme(authenticatedUser?.preferences?.theme || null);
+  const committedTheme = normalizeShellTheme(authenticatedUser?.preferences?.theme || null);
+  const availableThemes = listShellThemes();
   const [selectedTheme, setSelectedTheme] = useState(committedTheme);
   const [themeFeedbackMode, setThemeFeedbackMode] = useState<"idle" | "saving" | "saved" | "error">(
     "idle"
@@ -193,7 +199,7 @@ export function ProfileRoute() {
         ...response.user,
         preferences: response.preferences || response.user.preferences || currentUser.preferences
       };
-      const storedTheme = normalizeTheme(
+      const storedTheme = normalizeShellTheme(
         response.preferences?.theme || response.user.preferences?.theme || nextTheme
       );
 
@@ -485,7 +491,7 @@ export function ProfileRoute() {
                 onChange={(event) => void handleThemeChange(event.target.value)}
                 data-testid="react-shell-profile-theme-select"
               >
-                {shellThemes.map((theme) => (
+                {availableThemes.map((theme) => (
                   <option key={theme.id} value={theme.id}>
                     {themeLabel(theme.id)}
                   </option>

@@ -7,11 +7,12 @@ import { resolveLocale, setLocale } from "@frontend-i18n";
 import { App } from "@react-shell/App";
 import { createReactShellRootOptions } from "@react-shell/observability";
 import { ensureSharedStyleAssets } from "@react-shell/shared-style-assets";
-import { applyShellTheme } from "@react-shell/theme";
+import { applyShellTheme, installShellThemeBridge } from "@react-shell/theme";
 
 import "./styles.css";
 
 setLocale(resolveLocale());
+installShellThemeBridge();
 applyShellTheme(null);
 ensureSharedStyleAssets();
 

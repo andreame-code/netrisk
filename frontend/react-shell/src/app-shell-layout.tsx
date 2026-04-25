@@ -13,6 +13,7 @@ import { resolvedUiSlots } from "@frontend-core/module-catalog.mts";
 import { getLocale, listSupportedLocales, setLocale, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { syncModuleStyleAssets } from "@react-shell/module-style-assets";
 import { clearCurrentPlayerId } from "@react-shell/player-session";
 import {
   buildAdminPath,
@@ -24,6 +25,7 @@ import {
   buildRegisterPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
+import { setAvailableShellThemes } from "@react-shell/theme";
 
 type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
 
@@ -156,6 +158,11 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     document.body.dataset.shellKind = "app";
     document.body.dataset.appSection = section;
   }, [section]);
+
+  useEffect(() => {
+    syncModuleStyleAssets(moduleOptionsQuery.data);
+    setAvailableShellThemes(moduleOptionsQuery.data?.content?.siteThemeIds || null);
+  }, [moduleOptionsQuery.data]);
 
   const isAuthenticated = state.status === "authenticated";
   const lobbyHref = buildLobbyPath(namespace);
