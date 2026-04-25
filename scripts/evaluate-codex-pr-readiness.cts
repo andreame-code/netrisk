@@ -143,6 +143,17 @@ type ReviewThreadsPageInfo = {
   endCursor?: string | null;
 };
 
+type PullRequestIssueCommentsQueryData = {
+  repository?: {
+    pullRequest?: {
+      comments?: {
+        pageInfo?: ReviewThreadsPageInfo;
+        nodes?: any[];
+      };
+    };
+  };
+};
+
 type GateMessage = {
   code: string;
   message: string;
@@ -899,6 +910,7 @@ class GitHubApiClient {
   owner: string;
   repo: string;
   token: string;
+  private authenticatedLogin: string | null | undefined;
 
   constructor(repository: string, token: string) {
     const parsed = parseRepository(repository);
@@ -929,6 +941,26 @@ class GitHubApiClient {
     }
 
     return response.json();
+  }
+
+  async getAuthenticatedLogin(): Promise<string | null> {
+    if (this.authenticatedLogin !== undefined) {
+      return this.authenticatedLogin;
+    }
+
+    const fallbackLogin = "github-actions[bot]";
+    try {
+      const user = (await this.requestJson("GET", "/user")) as { login?: unknown };
+      const login = String(user.login || "").trim();
+      if (login) {
+        this.authenticatedLogin = login;
+        return this.authenticatedLogin;
+      }
+    } catch {
+      return fallbackLogin;
+    }
+
+    return fallbackLogin;
   }
 
   async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
@@ -1184,6 +1216,58 @@ async function getReviewThreads(
   return threads;
 }
 
+async function getMinimizedIssueCommentUrls(
+  client: GitHubApiClient,
+  prNumber: number
+): Promise<Set<string>> {
+  const urls = new Set<string>();
+  let cursor: string | null = null;
+
+  while (true) {
+    const payload: PullRequestIssueCommentsQueryData =
+      await client.graphql<PullRequestIssueCommentsQueryData>(
+        `
+        query PullRequestIssueComments($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+          repository(owner: $owner, name: $repo) {
+            pullRequest(number: $number) {
+              comments(first: 100, after: $cursor) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  url
+                  isMinimized
+                }
+              }
+            }
+          }
+        }
+      `,
+        {
+          owner: client.owner,
+          repo: client.repo,
+          number: prNumber,
+          cursor
+        }
+      );
+
+    const comments = payload.repository?.pullRequest?.comments;
+    asArray(comments?.nodes).forEach((comment: any) => {
+      if (comment.isMinimized) {
+        urls.add(String(comment.url || ""));
+      }
+    });
+
+    if (!comments?.pageInfo?.hasNextPage || !comments.pageInfo.endCursor) {
+      break;
+    }
+    cursor = String(comments.pageInfo.endCursor);
+  }
+
+  return urls;
+}
+
 async function getCodexSignals(client: GitHubApiClient, prNumber: number, config: GateConfig) {
   const reviewSignals = (
     await paginateRest<any>(
@@ -1200,6 +1284,7 @@ async function getCodexSignals(client: GitHubApiClient, prNumber: number, config
       url: String(review.html_url || ""),
       kind: "review" as const
     }));
+  const minimizedIssueCommentUrls = await getMinimizedIssueCommentUrls(client, prNumber);
   const issueCommentSignals = (
     await paginateRest<any>(
       client,
@@ -1207,6 +1292,7 @@ async function getCodexSignals(client: GitHubApiClient, prNumber: number, config
     )
   )
     .filter((comment) => isCodexActor(String(comment.user?.login || ""), config))
+    .filter((comment) => !minimizedIssueCommentUrls.has(String(comment.html_url || "")))
     .map((comment) => ({
       actorLogin: String(comment.user?.login || ""),
       state: null,
@@ -1256,13 +1342,18 @@ async function upsertSummaryComment(
   body: string,
   marker: string
 ): Promise<ApplyCommentStatus> {
+  const authenticatedLogin =
+    typeof client.getAuthenticatedLogin === "function"
+      ? await client.getAuthenticatedLogin()
+      : null;
+  const editableAuthorLogin = authenticatedLogin || "github-actions[bot]";
   const comments = await paginateRest<any>(
     client,
     `/repos/${client.owner}/${client.repo}/issues/${prNumber}/comments`
   );
   const existing = comments.find(
     (comment) =>
-      String(comment.user?.login || "") === "github-actions[bot]" &&
+      String(comment.user?.login || "") === editableAuthorLogin &&
       String(comment.body || "").includes(marker)
   );
 
