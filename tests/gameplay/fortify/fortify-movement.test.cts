@@ -83,6 +83,14 @@ register("moveFortifyArmies blocks a repeated fortify in the same turn", () => {
   assert.equal(result.code, "FORTIFY_ALREADY_USED");
 });
 
+register("moveFortifyArmies rejects moves within the same territory", () => {
+  const { graph, state } = setupFortifyState();
+  const result = moveFortifyArmies(state, graph, "p1", "a", "a", 1);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "SAME_TERRITORY");
+});
+
 register("moveFortifyArmies applica il minimo modulare durante la fortifica", () => {
   const { graph, state } = setupFortifyState();
   state.gameConfig = {
