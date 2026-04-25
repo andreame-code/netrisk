@@ -20,6 +20,7 @@ const tests: GameplayTest[] = [];
 const gameplayTestModules = [
   "../tests/gameplay/shared/map-graph.test.cjs",
   "../tests/gameplay/shared/map-loader.test.cjs",
+  "../tests/gameplay/shared/typed-map-data.test.cjs",
   "../tests/gameplay/shared/continent-loader.test.cjs",
   "../tests/gameplay/shared/extensions.test.cjs",
   "../tests/gameplay/shared/core-base-catalog.test.cjs",
