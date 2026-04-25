@@ -1311,6 +1311,18 @@ async function markReadyForReview(
   return true;
 }
 
+function canPromoteDraftToReady(evaluation: ReadinessEvaluation, config: GateConfig): boolean {
+  return (
+    evaluation.decision === "ready" &&
+    evaluation.blockers.length === 0 &&
+    evaluation.checkStatuses.every((status) => status.status === "pass") &&
+    evaluation.qualityStatuses.every((status) => status.status === "pass") &&
+    !!evaluation.latestCodexSignal &&
+    !!evaluation.codexGreenlight &&
+    isGreenlightSignal(evaluation.latestCodexSignal, config)
+  );
+}
+
 async function applyEvaluation(
   client: GitHubApiClient,
   snapshot: Snapshot,
@@ -1332,7 +1344,7 @@ async function applyEvaluation(
     config.summaryCommentMarker
   );
 
-  if (evaluation.decision !== "ready" || !snapshot.pr.isDraft) {
+  if (!canPromoteDraftToReady(evaluation, config) || !snapshot.pr.isDraft) {
     return {
       commentStatus,
       markedReady: false
