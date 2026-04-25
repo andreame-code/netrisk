@@ -253,3 +253,24 @@ register("shared runtime validation validates lobby route payload shapes", () =>
     ["user.id"]
   );
 });
+
+register("shared runtime validation rejects passwords exceeding 128 characters", () => {
+  const tooLongPassword = "a".repeat(129);
+
+  const invalidLogin = loginRequestSchema.safeParse({
+    username: "commander",
+    password: tooLongPassword
+  });
+  assert.equal(invalidLogin.success, false);
+
+  const invalidAccountSettings = accountSettingsRequestSchema.safeParse({
+    currentPassword: tooLongPassword
+  });
+  assert.equal(invalidAccountSettings.success, false);
+
+  const invalidRegister = registerRequestSchema.safeParse({
+    username: "commander",
+    password: tooLongPassword
+  });
+  assert.equal(invalidRegister.success, false);
+});
