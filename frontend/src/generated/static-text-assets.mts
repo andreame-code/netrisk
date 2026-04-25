@@ -1414,6 +1414,7 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
 
 .ld-map-frame {
   position: relative;
+  aspect-ratio: 16 / 9;
   border-radius: var(--radius);
   overflow: hidden;
   border: 2px solid var(--border-hi);
@@ -1434,7 +1435,7 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
 
 .ld-map-frame img {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   object-fit: cover;
   filter: contrast(1.08) saturate(0.85);
   display: block;
