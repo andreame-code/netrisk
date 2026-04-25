@@ -119,10 +119,9 @@ jobs:
       - name: Evaluate PR readiness and trigger Codex when needed
         uses: actions/github-script@v7
         with:
-          # Optional: if you later add a fine-grained PAT secret named CODEX_TRIGGER_TOKEN,
-          # comments will be posted as that connected user instead of github-actions[bot].
-          # Without it, the workflow still runs with the normal GITHUB_TOKEN.
-          github-token: ${{ secrets.CODEX_TRIGGER_TOKEN || github.token }}
+          # Use the workflow GITHUB_TOKEN here so the readiness mutation can
+          # mark draft PRs ready for review without PAT permission mismatches.
+          github-token: ${{ github.token }}
           script: |
             const { owner, repo } = context.repo;
 
