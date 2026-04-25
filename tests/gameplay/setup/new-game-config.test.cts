@@ -331,3 +331,13 @@ register("validateNewGameConfig rejects unsupported victory rules", () => {
     /regola vittoria/i
   );
 });
+
+register("validateNewGameConfig rejects unsupported maps", () => {
+  assert.throws(
+    () =>
+      validateNewGameConfig({
+        mapId: "unknown-map"
+      }),
+    /mappa selezionata/i
+  );
+});
