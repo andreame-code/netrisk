@@ -3,6 +3,10 @@ const { buildMapDefinition } = require("../../../shared/typed-map-data.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
+register("buildMapDefinition rejects empty territory records", () => {
+  assert.throws(() => buildMapDefinition("empty-map", []), /at least one territory/i);
+});
+
 register("buildMapDefinition rejects non-bidirectional adjacency", () => {
   assert.throws(
     () =>
