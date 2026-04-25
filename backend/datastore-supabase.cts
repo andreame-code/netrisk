@@ -630,6 +630,14 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
 
       return normalizeGame(updated[0] || null);
     },
+    async deleteGame(gameId: string) {
+      await ensureInitialized();
+      await deleteRows("games", { id: `eq.${gameId}` });
+      const activeGameId = await datastore.getActiveGameId();
+      if (activeGameId === gameId) {
+        await datastore.setActiveGameId(null);
+      }
+    },
     async getActiveGameId() {
       await ensureInitialized();
       const row = await selectOne<AppStateRow>("app_state", { key: "eq.activeGameId" });

@@ -4910,6 +4910,7 @@ register(
 register("scheduler entrypoint espone anche il job di recovery AI", async () => {
   const payload = await runScheduledJobs({
     listGames: () => [],
+    deleteGame: () => undefined,
     saveGame: () => ({ version: 1 }),
     forceEndTurn,
     recoverAiTurnState: async () => ({
@@ -4926,7 +4927,7 @@ register("scheduler entrypoint espone anche il job di recovery AI", async () => 
   assert.equal(payload.ok, true);
   assert.deepEqual(
     payload.jobs.map((job: any) => job.name),
-    ["turn-timeout-enforcement", "ai-turn-recovery"]
+    ["turn-timeout-enforcement", "ai-turn-recovery", "finished-game-retention"]
   );
 });
 
@@ -5449,7 +5450,7 @@ register(
         assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
         assert.deepEqual(
           cronPayload.jobs.map((job: any) => job.name),
-          ["turn-timeout-enforcement", "ai-turn-recovery"]
+          ["turn-timeout-enforcement", "ai-turn-recovery", "finished-game-retention"]
         );
 
         const stateResponse = await fetch(

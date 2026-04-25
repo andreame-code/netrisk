@@ -273,6 +273,7 @@ function createDatastore(options: DatastoreOptions = {}) {
     updateGame: db.prepare(
       "UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?"
     ) as Statement<unknown>,
+    deleteGame: db.prepare("DELETE FROM games WHERE id = ?") as Statement<unknown>,
     getAppState: db.prepare(
       "SELECT value_json FROM app_state WHERE key = ?"
     ) as Statement<AppStateRow | null>,
@@ -514,6 +515,15 @@ function createDatastore(options: DatastoreOptions = {}) {
         );
       });
       return datastore.findGameById(entry.id);
+    },
+    deleteGame(gameId: string) {
+      transaction(() => {
+        statements.deleteGame.run(gameId);
+        const activeGameId = datastore.getActiveGameId();
+        if (activeGameId === gameId) {
+          statements.setAppState.run("activeGameId", JSON.stringify(null));
+        }
+      });
     },
     getActiveGameId() {
       const row = statements.getAppState.get("activeGameId");
