@@ -261,6 +261,22 @@ register("codex PR readiness workflow targets only draft Codex PRs", () => {
   assert.equal(filteredEventReturns.length >= 3, true);
 });
 
+register("codex PR readiness workflow marks fully ready drafts ready for review", () => {
+  const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
+  const workflow = fs.readFileSync(workflowPath, "utf8");
+
+  assert.match(workflow, /async function markReadyForReview\(pr\)/);
+  assert.match(
+    workflow,
+    /markPullRequestReadyForReview\(input: \{ pullRequestId: \$pullRequestId \}\)/
+  );
+  assert.match(workflow, /pullRequestId: pr\.node_id/);
+  assert.match(workflow, /pr\.draft = false;/);
+  assert.match(workflow, /else if \(checkState\.state === "green" && codexOk\) \{/);
+  assert.match(workflow, /action = "mark-ready";/);
+  assert.match(workflow, /await markReadyForReview\(pr\);/);
+});
+
 register("codex PR readiness watchdog ignores non-actionable Codex status comments", () => {
   const workflowPath = path.join(process.cwd(), ".github", "workflows", "codex-pr-readiness.yml");
   const workflow = fs.readFileSync(workflowPath, "utf8");

@@ -861,6 +861,25 @@ jobs:
               return "created";
             }
 
+            async function markReadyForReview(pr) {
+              await github.graphql(
+                `
+                  mutation MarkReady($pullRequestId: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $pullRequestId }) {
+                      pullRequest {
+                        id
+                        isDraft
+                      }
+                    }
+                  }
+                `,
+                {
+                  pullRequestId: pr.node_id,
+                }
+              );
+              pr.draft = false;
+            }
+
             function buildSummary({ pr, sha, freshness, checkState, codexReviewedCurrentHead, codexOk, reviewPromptForHead, problemItems, action, actionReason }) {
               const decision = (() => {
                 if (problemItems.length > 0) return "FIX REQUESTED";
@@ -1058,8 +1077,9 @@ jobs:
                 action = "wait";
                 actionReason = `Checks are ${checkState.state}; waiting.`;
               } else if (checkState.state === "green" && codexOk) {
-                action = "none";
-                actionReason = "CI is green and Codex has reviewed the current head without current findings.";
+                action = "mark-ready";
+                await markReadyForReview(pr);
+                actionReason = "CI is green and Codex has reviewed the current head without current findings; marked this draft PR ready for review.";
               } else if (checkState.state === "green" && !codexOk) {
                 action = "review";
                 actionReason = "CI is green but Codex has not yet given a current-head OK signal.";
