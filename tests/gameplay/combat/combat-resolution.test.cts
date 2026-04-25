@@ -184,3 +184,12 @@ register("combat dice helpers tirano ordinato e confrontano in modo puro", () =>
     ["attacker", "attacker"]
   );
 });
+
+register("combat dice helpers let attackers win ties when configured", () => {
+  const compared = compareCombatDice([5, 3], [5, 2], { defenderWinsTies: false });
+
+  assert.deepEqual(
+    compared.comparisons.map((entry: CombatComparison) => entry.winner),
+    ["attacker", "attacker"]
+  );
+});
