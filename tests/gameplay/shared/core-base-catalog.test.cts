@@ -51,3 +51,8 @@ register("core.base catalog centralizes the built-in new-game rule sets", () => 
   assert.equal(classicDefense3.defaults.mapId, "classic-mini");
   assert.equal(classicDefense3.defaults.diceRuleSetId, "defense-3");
 });
+
+register("core.base catalog returns null for unknown map and rule set ids", () => {
+  assert.equal(findCoreBaseSupportedMap("missing-map"), null);
+  assert.equal(findCoreBaseNewGameRuleSet("missing-rule-set"), null);
+});
