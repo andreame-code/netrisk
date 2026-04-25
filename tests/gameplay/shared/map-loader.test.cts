@@ -52,6 +52,12 @@ register("loadMapDefinitionFromCsv rejects CSV files with missing headers", () =
   });
 });
 
+register("loadMapDefinitionFromCsv rejects header-only CSV files", () => {
+  withCsvFile("id,name,continentId,x,y,neighbors", (filePath) => {
+    assert.throws(() => loadMapDefinitionFromCsv(filePath), /at least one territory row/i);
+  });
+});
+
 register("loadMapDefinitionFromCsv rejects rows that do not match header length", () => {
   withCsvFile(
     ["id,name,continentId,x,y,neighbors", "alpha,Alpha,north,0.1,0.2"].join("\n"),
