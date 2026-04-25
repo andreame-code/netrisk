@@ -27,3 +27,20 @@ register("buildMapDefinition rejects non-bidirectional adjacency", () => {
     /must be bidirectional/i
   );
 });
+
+register("buildMapDefinition rejects unknown neighbors", () => {
+  assert.throws(
+    () =>
+      buildMapDefinition("test-map", [
+        {
+          id: "alpha",
+          name: "Alpha",
+          continentId: "north",
+          x: 0.1,
+          y: 0.2,
+          neighbors: ["missing"]
+        }
+      ]),
+    /unknown neighbor "missing"/i
+  );
+});
