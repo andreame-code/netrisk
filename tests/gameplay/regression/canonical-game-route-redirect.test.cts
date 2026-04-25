@@ -85,14 +85,17 @@ register("GET /game.html without gameId is no longer a supported entrypoint", as
   });
 });
 
-register("GET /legacy/game.html with gameId redirects to the canonical React deep link", async () => {
-  await withApp(async (app: any) => {
-    const response = await callRequest(app, "/legacy/game.html?gameId=g-123");
+register(
+  "GET /legacy/game.html with gameId redirects to the canonical React deep link",
+  async () => {
+    await withApp(async (app: any) => {
+      const response = await callRequest(app, "/legacy/game.html?gameId=g-123");
 
-    assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.Location, "/game/g-123");
-  });
-});
+      assert.equal(response.statusCode, 302);
+      assert.equal(response.headers.Location, "/game/g-123");
+    });
+  }
+);
 
 register("GET /legacy/game.html without gameId redirects to /game", async () => {
   await withApp(async (app: any) => {
