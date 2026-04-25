@@ -234,7 +234,10 @@ register("codex PR readiness workflow is disabled while keeping the file in plac
   const workflow = fs.readFileSync(workflowPath, "utf8");
 
   assert.match(workflow, /Disabled on purpose until the readiness automation is reworked\./);
-  assert.match(workflow, /codex-pr-readiness:\s*\n\s*# Disabled on purpose until the readiness automation is reworked\.\s*\n\s*if: false/);
+  assert.match(
+    workflow,
+    /codex-pr-readiness:\s*\n\s*# Disabled on purpose until the readiness automation is reworked\.\s*\n\s*if: false/
+  );
 });
 
 register("codex PR readiness workflow targets only draft Codex PRs", () => {
