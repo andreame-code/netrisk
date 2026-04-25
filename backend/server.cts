@@ -1664,7 +1664,6 @@ function createApp(options: CreateAppOptions = {}) {
         url.pathname.indexOf("/admin/") === 0 ||
         url.pathname === "/profile" ||
         url.pathname === "/unauthorized" ||
-        url.pathname === "/game.html" ||
         url.pathname === "/game" ||
         url.pathname === "/react" ||
         url.pathname === "/react/" ||
