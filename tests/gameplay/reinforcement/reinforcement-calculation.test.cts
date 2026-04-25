@@ -51,6 +51,24 @@ register("calculateReinforcements uses territory count and continent bonuses", (
   assert.equal(result.totalReinforcements, 5);
 });
 
+register("calculateReinforcements ignores partially controlled continents", () => {
+  const players = makePlayers(["Alice", "Bob"]);
+  const state = makeState({
+    players,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 1 },
+      { id: "b", ownerId: "p1", armies: 1 },
+      { id: "c", ownerId: "p2", armies: 1 }
+    ]),
+    continents: [makeContinent("north", ["a", "b", "c"], 2)]
+  });
+
+  const result = calculateReinforcements(state, "p1");
+  assert.deepEqual(result.continentBonuses, []);
+  assert.equal(result.continentBonusTotal, 0);
+  assert.equal(result.totalReinforcements, 3);
+});
+
 register("calculateReinforcements applica adjustment modulari persistiti nel gameConfig", () => {
   const players = makePlayers(["Alice", "Bob"]);
   const state = makeState({
