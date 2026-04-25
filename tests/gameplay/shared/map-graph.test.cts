@@ -77,6 +77,16 @@ register("buildMapGraph rejects non-bidirectional adjacency", () => {
   );
 });
 
+register("buildMapGraph returns neighbor copies from getNeighbors", () => {
+  const graph = buildMapGraph([makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]);
+  const neighbors = graph.getNeighbors("a");
+
+  neighbors.push("mutated");
+
+  assert.deepEqual(graph.getNeighbors("a"), ["b"]);
+  assert.equal(graph.hasTerritory("mutated"), false);
+});
+
 register("buildMapGraph rejects unknown territories in getNeighbors and areAdjacent", () => {
   const graph = buildMapGraph([makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]);
 
