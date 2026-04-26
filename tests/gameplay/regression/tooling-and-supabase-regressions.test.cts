@@ -82,7 +82,7 @@ register("user-facing backup and e2e scripts rebuild TypeScript output when need
   });
 });
 
-register("sync public assets removes stale retired UI artifacts", () => {
+register("sync public assets removes stale removed UI artifacts", () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-sync-public-assets-"));
   const publicDir = path.join(tempRoot, "public");
   const sourceAssetsDir = path.join(tempRoot, "frontend", "assets");

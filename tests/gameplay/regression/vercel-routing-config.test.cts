@@ -89,31 +89,31 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
 
   assert.ok(
     hasRewriteRule(redirects, "/legacy", "/"),
-    "Expected /legacy to redirect to / for retired document route compatibility."
+    "Expected /legacy to redirect to / for deprecated document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/lobby.html", "/lobby"),
-    "Expected /legacy/lobby.html to redirect to /lobby for retired document route compatibility."
+    "Expected /legacy/lobby.html to redirect to /lobby for deprecated document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/register.html", "/register"),
-    "Expected /legacy/register.html to redirect to /register for retired document route compatibility."
+    "Expected /legacy/register.html to redirect to /register for deprecated document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/new-game.html", "/lobby/new"),
-    "Expected /legacy/new-game.html to redirect to /lobby/new for retired document route compatibility."
+    "Expected /legacy/new-game.html to redirect to /lobby/new for deprecated document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/profile.html", "/profile"),
-    "Expected /legacy/profile.html to redirect to /profile for retired document route compatibility."
+    "Expected /legacy/profile.html to redirect to /profile for deprecated document route compatibility."
   );
 
-  const legacyGameRedirect = findRedirectRule(redirects, "/legacy/game.html", "/game/:gameId");
+  const deprecatedGameRedirect = findRedirectRule(redirects, "/legacy/game.html", "/game/:gameId");
   assert.ok(
-    legacyGameRedirect,
+    deprecatedGameRedirect,
     "Expected /legacy/game.html with a gameId query to redirect to /game/:gameId."
   );
-  assert.deepEqual(legacyGameRedirect?.has, [
+  assert.deepEqual(deprecatedGameRedirect?.has, [
     {
       type: "query",
       key: "gameId",

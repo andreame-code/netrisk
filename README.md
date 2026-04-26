@@ -17,7 +17,7 @@ Today the project includes:
 - user registration, login, logout, and profile
 - shared runtime validation for auth/profile, lobby, and gameplay payloads at backend and frontend boundaries
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
-- canonical React + Vite UI served on clean routes `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`, with `/react/*` kept as a supported alias and the legacy rollback UI removed
+- canonical React + Vite UI served on clean routes `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`, with `/react/*` kept as a supported alias and the old static UI removed
 - admin-only operational console on `/admin` and `/react/admin` with overview, users, games, configuration, maintenance, runtime modules, and audit log sections
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation

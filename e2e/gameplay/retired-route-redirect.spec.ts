@@ -1,12 +1,12 @@
 const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
-test("retired legacy document links redirect into the canonical React game route", async ({
+test("deprecated /legacy document links redirect into the canonical React game route", async ({
   page
 }) => {
   test.slow();
-  const ownerUser = uniqueUser("retired_route_owner");
-  const gameName = uniqueUser("retired_route_game");
+  const ownerUser = uniqueUser("dep_route_owner");
+  const gameName = uniqueUser("dep_route_game");
 
   await resetGame(page);
 
@@ -21,9 +21,9 @@ test("retired legacy document links redirect into the canonical React game route
   const gameMatch = page.url().match(/\/game\/([^/?#]+)/);
   expect(gameMatch).toBeTruthy();
   const gameId = decodeURIComponent(gameMatch[1]);
-  const retiredDocumentUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
+  const deprecatedDocumentUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
 
-  const redirectResponse = await page.goto(retiredDocumentUrl);
+  const redirectResponse = await page.goto(deprecatedDocumentUrl);
   expect(redirectResponse).toBeTruthy();
   expect(redirectResponse.status()).toBe(200);
   await expect(page).toHaveURL(new RegExp(`/game/${encodeURIComponent(gameId)}$`));
