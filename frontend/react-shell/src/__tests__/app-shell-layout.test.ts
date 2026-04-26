@@ -113,4 +113,18 @@ describe("resolveCurrentGameId", () => {
     expect(document.body.dataset.theme).toBe("aurora");
     expect(window.localStorage.getItem("netrisk.theme")).toBe("aurora");
   });
+
+  it("does not overwrite a saved module theme when module options fail to load", async () => {
+    window.localStorage.setItem("netrisk.theme", "aurora");
+    getModuleOptionsMock.mockRejectedValue(new Error("options unavailable"));
+
+    renderLayout();
+
+    await waitFor(() => {
+      expect(getModuleOptionsMock).toHaveBeenCalledTimes(1);
+    });
+    expect(window.localStorage.getItem("netrisk.theme")).toBe("aurora");
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(document.body.dataset.theme).toBeUndefined();
+  });
 });

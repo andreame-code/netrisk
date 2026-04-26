@@ -28,6 +28,10 @@ import {
 import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
 
 type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
+type ModuleOptionsQueryResult = {
+  options: ModuleOptionsResponse;
+  didLoadModuleOptions: boolean;
+};
 
 function resolveAppSection(pathname: string): AppSection {
   if (pathname === "/login" || pathname === "/react/login") {
@@ -142,17 +146,24 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     retry: false,
     queryFn: async () => {
       try {
-        return (
+        const options =
           (await getModuleOptions({
             errorMessage: t("errors.requestFailed"),
             fallbackMessage: t("errors.requestFailed")
-          })) || emptyModuleOptions()
-        );
+          })) || emptyModuleOptions();
+        return {
+          options,
+          didLoadModuleOptions: true
+        } satisfies ModuleOptionsQueryResult;
       } catch {
-        return emptyModuleOptions();
+        return {
+          options: emptyModuleOptions(),
+          didLoadModuleOptions: false
+        } satisfies ModuleOptionsQueryResult;
       }
     }
   });
+  const moduleOptions = moduleOptionsQuery.data?.options;
 
   useEffect(() => {
     document.body.dataset.shellKind = "app";
@@ -164,8 +175,12 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    syncModuleStyleAssets(moduleOptionsQuery.data);
-    setAvailableShellThemes(moduleOptionsQuery.data?.content?.siteThemeIds || null);
+    syncModuleStyleAssets(moduleOptionsQuery.data.options);
+    if (!moduleOptionsQuery.data.didLoadModuleOptions) {
+      return;
+    }
+
+    setAvailableShellThemes(moduleOptionsQuery.data.options.content?.siteThemeIds || null);
     applyShellTheme(null);
   }, [moduleOptionsQuery.data]);
 
@@ -180,7 +195,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     : buildGameIndexPath(namespace);
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";
-  const topNavSlots = (resolvedUiSlots(moduleOptionsQuery.data) as NetRiskUiSlotContribution[])
+  const topNavSlots = (resolvedUiSlots(moduleOptions) as NetRiskUiSlotContribution[])
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
   const visibleTopNavSlots = isAuthenticated ? topNavSlots : [];
