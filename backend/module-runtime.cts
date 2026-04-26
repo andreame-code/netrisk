@@ -1420,29 +1420,47 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   function registerServerModuleContentPacks(
     moduleId: string,
+    manifest: NetRiskModuleManifest,
     serverModule: NetRiskServerModule,
-    sourcePath: string
+    sourcePath: string,
+    modules: NetRiskInstalledModule[]
   ): string[] {
     if (!Array.isArray(serverModule.contentPacks) || !serverModule.contentPacks.length) {
       return [];
     }
 
     const errors: string[] = [];
+    const allowedDependencyIds = new Set(manifest.dependencies.map((dependency) => dependency.id));
+    const usableRuntimeContributionIds = (entries: Map<string, { moduleId: string }>): string[] =>
+      Array.from(entries.entries())
+        .filter(([, runtimeEntry]) => {
+          if (runtimeEntry.moduleId === moduleId) {
+            return true;
+          }
+
+          if (!allowedDependencyIds.has(runtimeEntry.moduleId)) {
+            return false;
+          }
+
+          const ownerModule = modules.find((entry) => entry.id === runtimeEntry.moduleId);
+          return Boolean(ownerModule?.enabled && ownerModule.compatible);
+        })
+        .map(([id]) => id);
     const knownMapIds = new Set([
       ...listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimeMapsById.keys())
+      ...usableRuntimeContributionIds(runtimeMapsById)
     ]);
     const knownThemeIds = new Set([
       ...listSiteThemes().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimeSiteThemesById.keys())
+      ...usableRuntimeContributionIds(runtimeSiteThemesById)
     ]);
     const knownPieceSetIds = new Set([
       ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimePlayerPieceSetsById.keys())
+      ...usableRuntimeContributionIds(runtimePlayerPieceSetsById)
     ]);
     const knownDiceRuleSetIds = new Set([
       ...listDiceRuleSets().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimeDiceRuleSetsById.keys())
+      ...usableRuntimeContributionIds(runtimeDiceRuleSetsById)
     ]);
     const knownCardRuleSetIds = new Set(
       listCardRuleSets().map((entry: { id: string }) => entry.id)
@@ -1888,24 +1906,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
 
     manifestModules.forEach((moduleEntry) => {
-      const serverModule = serverModulesById.get(moduleEntry.id);
-      if (!serverModule) {
-        return;
-      }
-
-      const contentPackErrors = registerServerModuleContentPacks(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (contentPackErrors.length) {
-        moduleEntry.errors.push(...contentPackErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-      }
-    });
-
-    manifestModules.forEach((moduleEntry) => {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
       if (!isEngineVersionCompatible(NETRISK_ENGINE_VERSION, manifest.engineVersion)) {
         moduleEntry.compatible = false;
@@ -1946,7 +1946,29 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           moduleEntry.errors.push(`Conflicts with enabled module "${conflictingModuleId}".`);
         }
       }
+    });
 
+    manifestModules.forEach((moduleEntry) => {
+      const manifest = moduleEntry.manifest as NetRiskModuleManifest;
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const contentPackErrors = registerServerModuleContentPacks(
+        moduleEntry.id,
+        manifest,
+        serverModule,
+        moduleEntry.sourcePath,
+        modules
+      );
+      if (contentPackErrors.length) {
+        moduleEntry.errors.push(...contentPackErrors);
+        moduleEntry.compatible = false;
+      }
+    });
+
+    manifestModules.forEach((moduleEntry) => {
       if (!moduleEntry.errors.length && moduleEntry.enabled) {
         moduleEntry.status = "enabled";
       } else if (!moduleEntry.errors.length && !moduleEntry.enabled) {

@@ -1500,6 +1500,78 @@ register(
               siteThemeIds: ["ghost-theme"]
             }
           }
+        },
+        {
+          dir: "demo.theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Provider theme kept disabled"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "provider-theme",
+      name: "Provider Theme",
+      description: "Theme owned by another module."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.cross-theme-pack",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.cross-theme-pack",
+            version: "1.0.0",
+            displayName: "Demo Cross Theme Pack",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid cross-module content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "cross-theme-pack",
+      name: "Cross Theme Pack",
+      description: "References a theme from a disabled non-dependency module.",
+      defaultSiteThemeId: "provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
         }
       ],
       async ({ app, adminSessionToken }) => {
@@ -1519,6 +1591,21 @@ register(
           authHeaders(adminSessionToken)
         );
         assert.equal(staleEnableResponse.statusCode, 200);
+        const crossThemePackEnableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.cross-theme-pack/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(crossThemePackEnableResponse.statusCode, 400);
+        assert.equal(
+          String(
+            crossThemePackEnableResponse.payload.error ||
+              crossThemePackEnableResponse.payload.message
+          ).includes("provider-theme"),
+          true
+        );
 
         const optionsResponse = await callApp(app, "GET", "/api/game/options");
         assert.equal(optionsResponse.statusCode, 200);
