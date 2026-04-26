@@ -319,10 +319,12 @@ function createApp(options: CreateAppOptions = {}) {
   });
   async function resolveSupportedSiteThemes() {
     const moduleOptions = await moduleRuntime.getModuleOptions();
-    const moduleThemeIds = Array.isArray(moduleOptions.content?.siteThemeIds)
-      ? moduleOptions.content.siteThemeIds.filter(
-          (themeId: unknown): themeId is string => typeof themeId === "string" && Boolean(themeId)
-        )
+    const moduleThemeIds = Array.isArray(moduleOptions.themes)
+      ? moduleOptions.themes
+          .map((theme: unknown) =>
+            typeof theme === "object" && theme && "id" in theme ? String(theme.id || "") : ""
+          )
+          .filter(Boolean)
       : [];
     return new Set([...listSupportedThemeIds(), ...moduleThemeIds]);
   }

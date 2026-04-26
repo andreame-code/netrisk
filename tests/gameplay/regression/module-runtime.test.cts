@@ -1472,6 +1472,34 @@ register(
     ]
   }
 };`
+        },
+        {
+          dir: "demo.stale-theme-manifest",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.stale-theme-manifest",
+            version: "1.0.0",
+            displayName: "Demo Stale Theme Manifest",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Manifest-only stale theme id"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            content: {
+              siteThemeIds: ["ghost-theme"]
+            }
+          }
         }
       ],
       async ({ app, adminSessionToken }) => {
@@ -1483,6 +1511,14 @@ register(
           authHeaders(adminSessionToken)
         );
         assert.equal(enableResponse.statusCode, 200);
+        const staleEnableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.stale-theme-manifest/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(staleEnableResponse.statusCode, 200);
 
         const optionsResponse = await callApp(app, "GET", "/api/game/options");
         assert.equal(optionsResponse.statusCode, 200);
@@ -1500,8 +1536,16 @@ register(
           true
         );
         assert.equal(
+          moduleOptionsResponse.payload.content.siteThemeIds.includes("ghost-theme"),
+          true
+        );
+        assert.equal(
           moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "demo-aurora"),
           true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "ghost-theme"),
+          false
         );
         assert.equal(
           moduleOptionsResponse.payload.modules
@@ -1547,6 +1591,15 @@ register(
         assert.equal(createGameResponse.statusCode, 201);
         assert.equal(createGameResponse.payload.state.gameConfig.themeId, "demo-aurora");
         assert.equal(createGameResponse.payload.state.gameConfig.contentPackId, "demo-theme-pack");
+
+        const stalePreferenceResponse = await callApp(
+          app,
+          "PUT",
+          "/api/profile/preferences/theme",
+          { theme: "ghost-theme" },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(stalePreferenceResponse.statusCode, 400);
 
         const preferenceResponse = await callApp(
           app,
