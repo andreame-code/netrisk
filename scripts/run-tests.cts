@@ -6661,6 +6661,22 @@ register("CSP aggiunge l'origin Sentry solo quando il DSN frontend e configurato
   });
 });
 
+register("security headers espongono policy browser restrittive", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/health`);
+    const csp = response.headers.get("content-security-policy") || "";
+    const cspDirectives = new Set(csp.split(";").map((directive) => directive.trim()));
+
+    assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+    assert.equal(
+      response.headers.get("permissions-policy"),
+      "camera=(), microphone=(), geolocation=()"
+    );
+    assert.equal(cspDirectives.has("font-src 'self'"), true);
+    assert.equal(cspDirectives.has("frame-ancestors 'none'"), true);
+  });
+});
+
 register("datastore supabase espone healthSummary async quando configurato via env", async () => {
   await withMockSupabase(async () => {
     const datastore = createDatastore({
