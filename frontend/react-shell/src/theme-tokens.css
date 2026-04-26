@@ -2020,7 +2020,25 @@ html[data-theme="war-table"] .top-nav-bar .nav-link.is-active {
 }
 
 html[data-theme="war-table"] .top-nav-module-slots {
+  flex: 0 1 min(260px, 22vw);
+  justify-content: flex-end;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+html[data-theme="war-table"] .top-nav-module-slots::-webkit-scrollbar {
   display: none;
+}
+
+html[data-theme="war-table"] .top-nav-module-slots .badge {
+  min-height: 30px;
+  padding: 0 10px;
+  border-color: rgba(124, 151, 160, 0.28);
+  border-radius: 4px;
+  background: rgba(5, 20, 29, 0.82);
+  color: rgba(226, 235, 238, 0.76);
+  white-space: nowrap;
 }
 
 html[data-theme="war-table"] .top-nav-actions {
@@ -2679,6 +2697,15 @@ html[data-theme="war-table"] .admin-metric {
     grid-column: 1 / -1;
     width: 100%;
     justify-content: stretch;
+  }
+
+  html[data-theme="war-table"] .top-nav-module-slots {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    order: 3;
   }
 
   html[data-theme="war-table"] .top-nav-locale,
