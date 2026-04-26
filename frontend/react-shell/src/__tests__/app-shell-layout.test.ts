@@ -7,6 +7,7 @@ import type { ModuleOptionsResponse } from "@frontend-generated/shared-runtime-v
 import { getModuleOptions } from "@frontend-core/api/client.mts";
 
 import { AppShellLayout, resolveCurrentGameId } from "@react-shell/app-shell-layout";
+import type { AuthState } from "@react-shell/auth-store";
 import { setAvailableShellThemes } from "@react-shell/theme";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,7 +19,7 @@ const authMocks = vi.hoisted(() => ({
   state: {
     status: "unauthenticated",
     message: "Sign in to continue."
-  },
+  } as AuthState,
   signIn: vi.fn(),
   signOut: vi.fn()
 }));
