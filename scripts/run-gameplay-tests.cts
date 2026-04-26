@@ -45,6 +45,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/admin-console-routes.test.cjs",
   "../tests/gameplay/regression/admin-content-studio-routes.test.cjs",
   "../tests/gameplay/regression/auth-store.test.cjs",
+  "../tests/gameplay/regression/authorization-rules.test.cjs",
   "../tests/gameplay/regression/authored-modules.test.cjs",
   "../tests/gameplay/regression/codex-pr-readiness.test.cjs",
   "../tests/gameplay/regression/finished-game-retention.test.cjs",
