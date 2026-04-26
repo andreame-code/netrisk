@@ -1343,6 +1343,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
   let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
   let runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+  let runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
   let authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [];
   let authoredVictoryRuleSetRuntimesById = new Map<string, AuthoredVictoryModuleRuntime>();
 
@@ -1552,9 +1553,63 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
   }
 
+  function clearRuntimeSiteThemeErrors(modules: NetRiskInstalledModule[]): void {
+    modules.forEach((moduleEntry) => {
+      const previousErrors = runtimeSiteThemeErrorsByModuleId.get(moduleEntry.id);
+      if (!previousErrors?.length) {
+        return;
+      }
+
+      moduleEntry.errors = moduleEntry.errors.filter((error) => !previousErrors.includes(error));
+      if (moduleEntry.manifest && !moduleEntry.errors.length) {
+        moduleEntry.compatible = true;
+      }
+    });
+    runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
+  }
+
+  function rebuildRuntimeSiteThemesAfterCompatibility(modules: NetRiskInstalledModule[]): boolean {
+    const previousCompatibilityById = new Map(
+      modules.map((moduleEntry) => [moduleEntry.id, moduleEntry.compatible])
+    );
+
+    clearRuntimeSiteThemeErrors(modules);
+    runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+
+    modules.forEach((moduleEntry) => {
+      if (!moduleEntry.manifest || !moduleEntry.compatible) {
+        return;
+      }
+
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const siteThemeErrors = registerServerModuleSiteThemes(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
+      if (siteThemeErrors.length) {
+        runtimeSiteThemeErrorsByModuleId.set(moduleEntry.id, siteThemeErrors);
+        moduleEntry.errors.push(...siteThemeErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+        removeRuntimeContentPacksForModule(moduleEntry.id);
+        removeRuntimeSiteThemesForModule(moduleEntry.id);
+      }
+    });
+
+    return modules.some(
+      (moduleEntry) => previousCompatibilityById.get(moduleEntry.id) !== moduleEntry.compatible
+    );
+  }
+
   function revalidateRuntimeContentPacksAfterCompatibility(
     modules: NetRiskInstalledModule[]
-  ): void {
+  ): boolean {
+    let compatibilityChanged = false;
     let changed = true;
     while (changed) {
       changed = false;
@@ -1588,9 +1643,12 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           removeRuntimeContentPacksForModule(moduleEntry.id);
           removeRuntimeSiteThemesForModule(moduleEntry.id);
           changed = true;
+          compatibilityChanged = true;
         }
       });
     }
+
+    return compatibilityChanged;
   }
 
   function registerServerModuleContentPacks(
@@ -1896,6 +1954,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
     runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
     runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+    runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -2041,8 +2100,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
     });
 
-    revalidateRuntimeContentPacksAfterCompatibility(manifestModules);
-
     manifestModules.forEach((moduleEntry) => {
       if (!moduleEntry.compatible) {
         return;
@@ -2069,31 +2126,15 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
     });
 
-    manifestModules.forEach((moduleEntry) => {
-      if (!moduleEntry.compatible) {
-        return;
-      }
-
-      const serverModule = serverModulesById.get(moduleEntry.id);
-      if (!serverModule) {
-        return;
-      }
-
-      const siteThemeErrors = registerServerModuleSiteThemes(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (siteThemeErrors.length) {
-        moduleEntry.errors.push(...siteThemeErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-        removeRuntimeContentPacksForModule(moduleEntry.id);
-        removeRuntimeSiteThemesForModule(moduleEntry.id);
-      }
-    });
-
     revalidateRuntimeContentPacksAfterCompatibility(manifestModules);
+    while (true) {
+      const siteThemeCompatibilityChanged =
+        rebuildRuntimeSiteThemesAfterCompatibility(manifestModules);
+      const compatibilityChanged = revalidateRuntimeContentPacksAfterCompatibility(manifestModules);
+      if (!siteThemeCompatibilityChanged && !compatibilityChanged) {
+        break;
+      }
+    }
 
     manifestModules.forEach((moduleEntry) => {
       if (!moduleEntry.errors.length && moduleEntry.enabled) {

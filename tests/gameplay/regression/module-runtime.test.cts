@@ -2350,6 +2350,151 @@ register(
 );
 
 register(
+  "module runtime riassegna temi quando la seconda revalidazione libera il proprietario",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-late-dropped-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-late-dropped-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Late Dropped Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.valid-late-theme-owner", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Initial owner that later loses a dependent theme"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a theme from the duplicate loser"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Late Dropped Shared Runtime Theme",
+      description: "This owner is removed after the duplicate loser becomes incompatible."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "late-dropped-theme-pack",
+      name: "Late Dropped Theme Pack",
+      description: "References the helper theme owned by the later duplicate loser.",
+      defaultSiteThemeId: "late-helper-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-late-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-late-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Late Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner after the initial owner drops out"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Late Shared Runtime Theme",
+      description: "This module should be reconsidered after the first owner drops out."
+    },
+    {
+      id: "late-helper-theme",
+      name: "Late Helper Theme",
+      description: "This helper disappears while the module is a duplicate loser."
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-late-dropped-theme-owner": true,
+            "demo.valid-late-theme-owner": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const droppedModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-late-dropped-theme-owner"
+        );
+        assert.equal(droppedModule.status, "incompatible");
+        assert.equal(
+          droppedModule.errors.some((entry: string) => entry.includes("late-helper-theme")),
+          true
+        );
+
+        const validModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-late-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" &&
+              entry.name === "Valid Late Shared Runtime Theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(
