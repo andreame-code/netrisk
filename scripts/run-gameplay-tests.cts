@@ -52,8 +52,12 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/tooling-and-supabase-regressions.test.cjs",
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
   "../tests/gameplay/regression/vercel-routing-config.test.cjs",
+  "../tests/gameplay/regression/account-validation-routes.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
+  "../tests/gameplay/regression/game-actions-basic-route.test.cjs",
   "../tests/gameplay/regression/game-read-routes.test.cjs",
+  "../tests/gameplay/regression/game-overview-route.test.cjs",
+  "../tests/gameplay/regression/modules-routes.test.cjs",
   "../tests/gameplay/regression/event-broadcast.test.cjs"
 ];
 
