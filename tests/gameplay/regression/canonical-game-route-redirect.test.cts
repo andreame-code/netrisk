@@ -85,6 +85,15 @@ register("GET /game.html without gameId is no longer a supported entrypoint", as
   });
 });
 
+register("GET /legacy redirects to the canonical landing route", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/");
+  });
+});
+
 register(
   "GET /legacy/game.html with gameId redirects to the canonical React deep link",
   async () => {
@@ -121,6 +130,15 @@ register("GET /legacy/game.html without gameId redirects to /game", async () => 
   });
 });
 
+register("GET /legacy/game.html without gameId keeps non-gameId query params", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/game.html?lang=en&view=compact");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/game?lang=en&view=compact");
+  });
+});
+
 register("GET /register.html is no longer a supported compatibility entrypoint", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/register.html?next=%2Fprofile");
@@ -135,5 +153,14 @@ register("GET /legacy/lobby.html redirects to the canonical lobby route", async 
 
     assert.equal(response.statusCode, 302);
     assert.equal(response.headers.Location, "/lobby?tab=active");
+  });
+});
+
+register("GET /legacy assets without a canonical route return 404", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/generated/runtime.css");
+
+    assert.equal(response.statusCode, 404);
+    assert.equal(response.body, "Not found");
   });
 });

@@ -75,7 +75,7 @@ describe("syncModuleStyleAssets", () => {
 
   it("does not interpolate href values into a selector lookup", () => {
     const moduleOptions = createModuleOptionsResponse();
-    moduleOptions.modules[0].clientManifest.ui.stylesheets = ['./asset"quoted.css'];
+    moduleOptions.modules[0]!.clientManifest!.ui!.stylesheets = ['./asset"quoted.css'];
 
     expect(() => syncModuleStyleAssets(moduleOptions)).not.toThrow();
 
