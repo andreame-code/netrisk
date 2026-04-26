@@ -48,6 +48,22 @@ function readStoredTheme(): string | null {
   }
 }
 
+export function applyStoredRegisteredShellTheme(): string | null {
+  const storedTheme = readStoredTheme();
+  if (!storedTheme || !registeredThemes.some((theme) => theme.id === storedTheme)) {
+    return null;
+  }
+
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = storedTheme;
+    if (document.body) {
+      document.body.dataset.theme = storedTheme;
+    }
+  }
+
+  return storedTheme;
+}
+
 export function currentShellTheme(): string {
   if (typeof document === "undefined") {
     return normalizeTheme(readStoredTheme() || DEFAULT_THEME, availableShellThemeIds);

@@ -56,4 +56,17 @@ describe("React shell bootstrap", () => {
     expect(reactDomMocks.render).toHaveBeenCalledTimes(1);
     expect(sharedStyleMocks.ensureSharedStyleAssets).toHaveBeenCalledTimes(1);
   });
+
+  it("applies a saved registered theme before rendering routes outside the app layout", async () => {
+    window.localStorage.setItem("netrisk.theme", "midnight");
+
+    await import("@react-shell/main");
+
+    expect(window.localStorage.getItem("netrisk.theme")).toBe("midnight");
+    expect(document.documentElement.dataset.theme).toBe("midnight");
+    expect(document.body.dataset.theme).toBe("midnight");
+    expect(reactDomMocks.createRoot).toHaveBeenCalledTimes(1);
+    expect(reactDomMocks.render).toHaveBeenCalledTimes(1);
+    expect(sharedStyleMocks.ensureSharedStyleAssets).toHaveBeenCalledTimes(1);
+  });
 });
