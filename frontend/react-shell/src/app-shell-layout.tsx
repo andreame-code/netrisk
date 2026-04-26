@@ -180,7 +180,11 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     }
 
     syncModuleStyleAssets(moduleOptionsQuery.data.options);
-    setAvailableShellThemes(moduleOptionsQuery.data.options.content?.siteThemeIds || null);
+    setAvailableShellThemes(
+      moduleOptionsQuery.data.options.themes ||
+        moduleOptionsQuery.data.options.content?.siteThemeIds ||
+        null
+    );
     applyShellTheme(null);
   }, [moduleOptionsQuery.data]);
 

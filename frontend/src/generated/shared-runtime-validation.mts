@@ -728,6 +728,8 @@ export const moduleOptionsResponseSchema = objectSchema({
   playerPieceSets: z.array(playerPieceSetSummarySchema).optional(),
   diceRuleSets: z.array(diceRuleSetSchema).optional(),
   contentPacks: z.array(contentPackSummarySchema).optional(),
+  themes: z.array(visualThemeSchema).optional(),
+  pieceSkins: z.array(pieceSkinSchema).optional(),
   gamePresets: z.array(netRiskGamePresetSchema),
   uiSlots: z.array(netRiskUiSlotContributionSchema),
   contentProfiles: z.array(netRiskModuleProfileSchema),

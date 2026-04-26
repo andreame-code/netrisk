@@ -8,24 +8,52 @@ import { t } from "@frontend-i18n";
 
 const THEME_STORAGE_KEY = "netrisk.theme";
 let availableShellThemeIds = registeredThemes.map((theme) => theme.id);
+let availableShellThemeDefinitions = new Map<
+  string,
+  {
+    labelKey?: string | null;
+    name?: string | null;
+  }
+>();
 type ThemePreferenceUser = { preferences?: { theme?: string | null } | null } | null | undefined;
+type RuntimeThemeDefinition = {
+  id?: string | null;
+  labelKey?: string | null;
+  name?: string | null;
+};
 
-function normalizeThemeIds(
-  themes: Array<string | { id?: string | null }> | null | undefined
-): string[] {
+function normalizeThemeEntries(themes: Array<string | RuntimeThemeDefinition> | null | undefined): {
+  ids: string[];
+  definitions: Map<string, RuntimeThemeDefinition>;
+} {
+  const definitions = new Map<string, RuntimeThemeDefinition>();
   const nextThemes = Array.isArray(themes)
     ? themes
-        .map((entry) => (typeof entry === "string" ? entry : String(entry?.id || "")))
+        .map((entry) => {
+          const id = typeof entry === "string" ? entry : String(entry?.id || "");
+          if (id && typeof entry !== "string") {
+            definitions.set(id, {
+              labelKey: entry.labelKey || null,
+              name: entry.name || null
+            });
+          }
+          return id;
+        })
         .filter(Boolean)
     : [];
 
-  return nextThemes.length ? [...new Set(nextThemes)] : registeredThemes.map((theme) => theme.id);
+  return {
+    ids: nextThemes.length ? [...new Set(nextThemes)] : registeredThemes.map((theme) => theme.id),
+    definitions
+  };
 }
 
 export function setAvailableShellThemes(
-  themes: Array<string | { id?: string | null }> | null | undefined
+  themes: Array<string | RuntimeThemeDefinition> | null | undefined
 ): string[] {
-  availableShellThemeIds = normalizeThemeIds(themes);
+  const normalized = normalizeThemeEntries(themes);
+  availableShellThemeIds = normalized.ids;
+  availableShellThemeDefinitions = normalized.definitions;
   return listAvailableShellThemeIds();
 }
 
@@ -99,7 +127,16 @@ export function applyShellTheme(theme: string | null | undefined): string {
 
 export function themeLabel(theme: string): string {
   const themeDefinition = findTheme(theme);
-  return themeDefinition ? t(themeDefinition.labelKey) : theme;
+  if (themeDefinition) {
+    return t(themeDefinition.labelKey);
+  }
+
+  const runtimeThemeDefinition = availableShellThemeDefinitions.get(theme);
+  if (runtimeThemeDefinition?.labelKey) {
+    return t(runtimeThemeDefinition.labelKey);
+  }
+
+  return runtimeThemeDefinition?.name || theme;
 }
 
 export function installShellThemeBridge(): void {
@@ -109,7 +146,7 @@ export function installShellThemeBridge(): void {
     getThemes() {
       return listAvailableShellThemeIds();
     },
-    setThemes(themes: Array<string | { id?: string | null }>) {
+    setThemes(themes: Array<string | RuntimeThemeDefinition>) {
       return setAvailableShellThemes(themes);
     },
     getCurrentTheme() {

@@ -184,7 +184,7 @@ function logAiRecovery(payload: {
 }
 
 function resolveStoredTheme(theme: unknown): string {
-  return resolveStoredThemeId(theme);
+  return typeof theme === "string" && theme.trim() ? theme.trim() : resolveStoredThemeId(theme);
 }
 
 function extractUserPreferences(user: AppUser | null | undefined) {
@@ -317,6 +317,15 @@ function createApp(options: CreateAppOptions = {}) {
     datastore,
     authoredModules
   });
+  async function resolveSupportedSiteThemes() {
+    const moduleOptions = await moduleRuntime.getModuleOptions();
+    const moduleThemeIds = Array.isArray(moduleOptions.content?.siteThemeIds)
+      ? moduleOptions.content.siteThemeIds.filter(
+          (themeId: unknown): themeId is string => typeof themeId === "string" && Boolean(themeId)
+        )
+      : [];
+    return new Set([...listSupportedThemeIds(), ...moduleThemeIds]);
+  }
   authoredModules.setMapCatalog({
     listMaps: () => moduleRuntime.listSupportedMaps(),
     resolveMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId)
@@ -1440,7 +1449,7 @@ function createApp(options: CreateAppOptions = {}) {
           sendJson,
           sendLocalizedError,
           extractUserPreferences,
-          supportedSiteThemes,
+          supportedSiteThemes: await resolveSupportedSiteThemes(),
           resolveStoredTheme
         },
         body

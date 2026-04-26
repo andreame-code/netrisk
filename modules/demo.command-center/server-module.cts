@@ -1,4 +1,11 @@
 const demoCommandCenterServerModule = {
+  siteThemes: [
+    {
+      id: "command-center",
+      name: "Command Center",
+      description: "Palette modulare tattica distribuita dal modulo Command Center."
+    }
+  ],
   profiles: {
     content: [
       {
@@ -48,7 +55,7 @@ const demoCommandCenterServerModule = {
       {
         id: "demo.command-center.ui",
         defaults: {
-          themeId: "ember",
+          themeId: "command-center",
           pieceSkinId: "command-ring"
         }
       }

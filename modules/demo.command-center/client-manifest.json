@@ -1,5 +1,8 @@
 {
   "ui": {
+    "themeTokens": [
+      "html[data-theme=\"command-center\"] { --bg: #080d14; --panel: rgba(14, 22, 34, 0.94); --panel-strong: rgba(21, 31, 47, 0.98); --text: #f7e9c9; --muted: #c9a76b; --accent: #f4b74f; --accent-2: #4ed3c1; --border: rgba(244, 183, 79, 0.34); --shadow: 0 28px 70px rgba(2, 8, 16, 0.44); }"
+    ],
     "stylesheets": [
       "/modules/demo.command-center/assets/command-center.css"
     ],
@@ -49,7 +52,7 @@
       "uiProfileId": "demo.command-center.ui",
       "defaults": {
         "ruleSetId": "classic-defense-3",
-        "themeId": "ember",
+        "themeId": "command-center",
         "pieceSkinId": "command-ring"
       }
     }
@@ -76,5 +79,8 @@
         "description": "Profilo demo UI esteso."
       }
     ]
+  },
+  "content": {
+    "siteThemeIds": ["command-center"]
   }
 }

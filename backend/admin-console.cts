@@ -161,6 +161,7 @@ type AdminConsoleOptions = {
     findContentPack(contentPackId: string): Record<string, unknown> | null;
     findPlayerPieceSet(pieceSetId: string): Record<string, unknown> | null;
     findDiceRuleSet(diceRuleSetId: string): Record<string, unknown> | null;
+    findSiteTheme?(themeId: string): Record<string, unknown> | null;
     findVictoryRuleSet(victoryRuleSetId: string): Record<string, unknown> | null;
     resolveGamePreset(input?: Record<string, unknown>): Promise<Record<string, unknown> | null>;
     resolveGameConfigDefaults(input?: Record<string, unknown>): Promise<Record<string, unknown>>;
@@ -383,6 +384,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
           typeof options.moduleRuntime.findVictoryRuleSet === "function"
             ? options.moduleRuntime.findVictoryRuleSet(victoryRuleSetId)
             : findVictoryRuleSet(victoryRuleSetId),
+        resolveTheme: (themeId: string) =>
+          typeof options.moduleRuntime.findSiteTheme === "function"
+            ? options.moduleRuntime.findSiteTheme(themeId)
+            : findVisualTheme(themeId),
         resolveGamePreset: (presetInput: Record<string, unknown>) =>
           options.moduleRuntime.resolveGamePreset(presetInput),
         resolveGameModuleConfigDefaults: (selectionInput: Record<string, unknown>) =>
@@ -626,7 +631,13 @@ function createAdminConsole(options: AdminConsoleOptions) {
     }
 
     const themeId = asNonEmptyString(config.themeId);
-    if (themeId && !findVisualTheme(themeId)) {
+    const resolvedTheme =
+      themeId && typeof options.moduleRuntime.findSiteTheme === "function"
+        ? options.moduleRuntime.findSiteTheme(themeId)
+        : themeId
+          ? findVisualTheme(themeId)
+          : null;
+    if (themeId && !resolvedTheme) {
       issues.push({
         code: "missing-theme",
         severity: "error",

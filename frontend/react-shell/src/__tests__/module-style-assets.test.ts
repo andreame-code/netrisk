@@ -21,6 +21,7 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
         errors: [],
         clientManifest: {
           ui: {
+            themeTokens: ['html[data-theme="core-signal"] { --accent: #f0b84f; }'],
             stylesheets: ["/modules/core.base/assets/core.css", "./assets/extra.css"]
           }
         }
@@ -40,6 +41,7 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
         errors: [],
         clientManifest: {
           ui: {
+            themeTokens: ['html[data-theme="disabled-signal"] { --accent: #ff0000; }'],
             stylesheets: ["/modules/disabled.mod/assets/disabled.css"]
           }
         }
@@ -59,7 +61,7 @@ function createModuleOptionsResponse(): ModuleOptionsResponse {
 describe("syncModuleStyleAssets", () => {
   it("injects only enabled module stylesheets and removes stale links", () => {
     document.head.innerHTML =
-      '<link rel="stylesheet" href="/stale.css" data-module-stylesheet="true">';
+      '<link rel="stylesheet" href="/stale.css" data-module-stylesheet="true"><style data-module-theme-tokens="true" data-module-theme-token-key="stale:0">html[data-theme="stale"] { --accent: red; }</style>';
 
     syncModuleStyleAssets(createModuleOptionsResponse());
 
@@ -70,6 +72,20 @@ describe("syncModuleStyleAssets", () => {
     expect(stylesheetHrefs).toEqual([
       "/modules/core.base/assets/core.css",
       "/modules/core.base/assets/extra.css"
+    ]);
+
+    const themeTokenStyles = Array.from(
+      document.head.querySelectorAll<HTMLStyleElement>('style[data-module-theme-tokens="true"]')
+    ).map((styleElement) => ({
+      key: styleElement.dataset.moduleThemeTokenKey,
+      text: styleElement.textContent
+    }));
+
+    expect(themeTokenStyles).toEqual([
+      {
+        key: "core.base:0",
+        text: 'html[data-theme="core-signal"] { --accent: #f0b84f; }'
+      }
     ]);
   });
 

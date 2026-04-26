@@ -21,6 +21,7 @@ const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const {
+  findVisualTheme: findBuiltInVisualTheme,
   findVictoryRuleSet: findBuiltInVictoryRuleSet,
   listPieceSkins,
   listVictoryRuleSets,
@@ -57,7 +58,8 @@ import type {
   NetRiskResolvedGamePreset,
   NetRiskResolvedModuleSetup,
   NetRiskScenarioSetup,
-  NetRiskServerModule
+  NetRiskServerModule,
+  NetRiskModuleSiteThemeDefinition
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
@@ -112,6 +114,11 @@ type RuntimeModulePlayerPieceSetEntry = {
 type RuntimeModuleDiceRuleSetEntry = {
   moduleId: string;
   diceRuleSet: DiceRuleSet;
+};
+
+type RuntimeModuleSiteThemeEntry = {
+  moduleId: string;
+  theme: VisualTheme;
 };
 
 type AuthoredPublishedVictoryRuleSet = {
@@ -342,7 +349,8 @@ function aggregateContentContribution(
   runtimeMapEntries: RuntimeModuleMapEntry[] = [],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = [],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = [],
-  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = []
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = [],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
@@ -388,6 +396,15 @@ function aggregateContentContribution(
       new Set([
         ...(contribution.diceRuleSetIds || []),
         ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
+      ])
+    );
+  }
+
+  if (runtimeSiteThemeEntries.length) {
+    contribution.siteThemeIds = Array.from(
+      new Set([
+        ...(contribution.siteThemeIds || []),
+        ...runtimeSiteThemeEntries.map((entry) => entry.theme.id)
       ])
     );
   }
@@ -561,6 +578,16 @@ function buildRuntimeModuleDiceRuleSet(
     defenderMaxDice: ruleSetDefinition.defenderMaxDice,
     attackerMustLeaveOneArmyBehind: ruleSetDefinition.attackerMustLeaveOneArmyBehind,
     defenderWinsTies: ruleSetDefinition.defenderWinsTies
+  };
+}
+
+function buildRuntimeModuleSiteTheme(
+  themeDefinition: NetRiskModuleSiteThemeDefinition
+): VisualTheme {
+  return {
+    id: themeDefinition.id,
+    name: themeDefinition.name,
+    description: themeDefinition.description
   };
 }
 
@@ -1036,6 +1063,7 @@ function buildResolvedModuleCatalog(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
@@ -1054,12 +1082,16 @@ function buildResolvedModuleCatalog(
   const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) =>
     enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
   );
+  const enabledRuntimeSiteThemeEntries = runtimeSiteThemeEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
   const content = aggregateContentContribution(
     enabled,
     enabledRuntimeMapEntries,
     enabledRuntimeContentPackEntries,
     enabledRuntimePlayerPieceSetEntries,
-    enabledRuntimeDiceRuleSetEntries
+    enabledRuntimeDiceRuleSetEntries,
+    enabledRuntimeSiteThemeEntries
   );
   const authoredVictoryRuleSetIds = authoredVictoryRuleSets.map((entry) => entry.id);
 
@@ -1139,7 +1171,10 @@ function buildResolvedModuleCatalog(
       content.victoryRuleSetIds
     ),
     themes: filterThemesByAllowedIds(
-      listVisualThemes().map(cloneVisualTheme),
+      [
+        ...listVisualThemes().map(cloneVisualTheme),
+        ...enabledRuntimeSiteThemeEntries.map((entry) => cloneVisualTheme(entry.theme))
+      ],
       content.siteThemeIds
     ),
     pieceSkins: filterPieceSkinsByAllowedIds(
@@ -1163,6 +1198,7 @@ function buildModuleOptions(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): ModuleOptionsSnapshot {
   const resolvedCatalog = buildResolvedModuleCatalog(
@@ -1171,6 +1207,7 @@ function buildModuleOptions(
     runtimeContentPackEntries,
     runtimePlayerPieceSetEntries,
     runtimeDiceRuleSetEntries,
+    runtimeSiteThemeEntries,
     authoredVictoryRuleSets
   );
 
@@ -1305,6 +1342,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
   let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
+  let runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
   let authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [];
   let authoredVictoryRuleSetRuntimesById = new Map<string, AuthoredVictoryModuleRuntime>();
 
@@ -1343,6 +1381,43 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
+  function registerServerModuleSiteThemes(
+    moduleId: string,
+    serverModule: NetRiskServerModule,
+    sourcePath: string
+  ): string[] {
+    if (!Array.isArray(serverModule.siteThemes) || !serverModule.siteThemes.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
+    serverModule.siteThemes.forEach((themeDefinition) => {
+      try {
+        if (findBuiltInVisualTheme(themeDefinition.id)) {
+          throw new Error(
+            `Runtime module site theme "${themeDefinition.id}" conflicts with a built-in site theme.`
+          );
+        }
+
+        const existing = runtimeSiteThemesById.get(themeDefinition.id);
+        if (existing && existing.moduleId !== moduleId) {
+          throw new Error(
+            `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
+          );
+        }
+
+        runtimeSiteThemesById.set(themeDefinition.id, {
+          moduleId,
+          theme: buildRuntimeModuleSiteTheme(themeDefinition)
+        });
+      } catch (error: unknown) {
+        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    return errors;
+  }
+
   function registerServerModuleContentPacks(
     moduleId: string,
     serverModule: NetRiskServerModule,
@@ -1357,7 +1432,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       ...listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimeMapsById.keys())
     ]);
-    const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
+    const knownThemeIds = new Set([
+      ...listSiteThemes().map((entry: { id: string }) => entry.id),
+      ...Array.from(runtimeSiteThemesById.keys())
+    ]);
     const knownPieceSetIds = new Set([
       ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
       ...Array.from(runtimePlayerPieceSetsById.keys())
@@ -1573,6 +1651,23 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }));
   }
 
+  function listEnabledRuntimeSiteThemes(
+    modules: NetRiskInstalledModule[]
+  ): RuntimeModuleSiteThemeEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimeSiteThemesById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        theme: cloneVisualTheme(entry.theme)
+      }));
+  }
+
   async function loadCatalogState(): Promise<CatalogState> {
     if (cachedState) {
       return cachedState;
@@ -1671,6 +1766,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
     runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
     runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
+    runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -1750,6 +1846,24 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       );
       if (diceRuleSetErrors.length) {
         moduleEntry.errors.push(...diceRuleSetErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+      }
+    });
+
+    manifestModules.forEach((moduleEntry) => {
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const siteThemeErrors = registerServerModuleSiteThemes(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
+      if (siteThemeErrors.length) {
+        moduleEntry.errors.push(...siteThemeErrors);
         moduleEntry.compatible = false;
         moduleEntry.status = "error";
       }
@@ -1873,6 +1987,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       listEnabledRuntimeContentPacks(modules),
       listEnabledRuntimePlayerPieceSets(modules),
       listEnabledRuntimeDiceRuleSets(modules),
+      listEnabledRuntimeSiteThemes(modules),
       authoredVictoryRuleSets
     );
   }
@@ -2002,6 +2117,26 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return cloneDiceRuleSet(runtimeEntry.diceRuleSet);
+    },
+    findSiteTheme(themeId: string): VisualTheme | null {
+      const builtInTheme = findBuiltInVisualTheme(themeId);
+      if (builtInTheme) {
+        return cloneVisualTheme(builtInTheme);
+      }
+
+      const runtimeEntry = runtimeSiteThemesById.get(themeId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return cloneVisualTheme(runtimeEntry.theme);
     },
     findVictoryRuleSet(victoryRuleSetId: string): VictoryRuleSet | null {
       const builtInVictoryRuleSet = findBuiltInVictoryRuleSet(victoryRuleSetId);
@@ -2343,7 +2478,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         listEnabledRuntimeMaps(selectedModuleEntries),
         listEnabledRuntimeContentPacks(selectedModuleEntries),
         listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
-        listEnabledRuntimeDiceRuleSets(selectedModuleEntries)
+        listEnabledRuntimeDiceRuleSets(selectedModuleEntries),
+        listEnabledRuntimeSiteThemes(selectedModuleEntries)
       );
       if (authoredVictoryRuleSets.length) {
         selectedContent.victoryRuleSetIds = Array.from(

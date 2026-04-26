@@ -1415,6 +1415,164 @@ register(
 );
 
 register(
+  "module runtime espone temi locali e token UI come contributi modulari indipendenti",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.themes",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.themes",
+            version: "1.0.0",
+            displayName: "Demo Themes",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              { kind: "site-theme", scope: "global", description: "Runtime module themes" },
+              { kind: "content-pack", scope: "game", description: "Theme content pack" }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json",
+              server: "server-module.cjs"
+            }
+          },
+          clientManifest: {
+            ui: {
+              themeTokens: ['html[data-theme="demo-aurora"] { --accent: #77ffee; }']
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "demo-aurora",
+      name: "Demo Aurora",
+      description: "Runtime theme supplied by a module."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "demo-theme-pack",
+      name: "Demo Theme Pack",
+      description: "Runtime content pack with a module theme default.",
+      defaultSiteThemeId: "demo-aurora",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ],
+  profiles: {
+    ui: [
+      { id: "demo.themes.ui", defaults: { themeId: "demo-aurora" } }
+    ]
+  }
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.themes/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+
+        const optionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(optionsResponse.statusCode, 200);
+        assert.equal(
+          optionsResponse.payload.themes.some(
+            (entry: any) => entry.id === "demo-aurora" && entry.name === "Demo Aurora"
+          ),
+          true
+        );
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.content.siteThemeIds.includes("demo-aurora"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "demo-aurora"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.modules
+            .find((entry: any) => entry.id === "demo.themes")
+            .clientManifest.ui.themeTokens[0].includes("demo-aurora"),
+          true
+        );
+
+        const missingModuleSelectionResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Missing Theme Module",
+            themeId: "demo-aurora",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(missingModuleSelectionResponse.statusCode, 400);
+        assert.equal(
+          String(
+            missingModuleSelectionResponse.payload.error ||
+              missingModuleSelectionResponse.payload.message
+          ).includes("Selected theme"),
+          true
+        );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Runtime Theme",
+            activeModuleIds: ["demo.themes"],
+            contentPackId: "demo-theme-pack",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "demo-aurora");
+        assert.equal(createGameResponse.payload.state.gameConfig.contentPackId, "demo-theme-pack");
+
+        const preferenceResponse = await callApp(
+          app,
+          "PUT",
+          "/api/profile/preferences/theme",
+          { theme: "demo-aurora" },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(preferenceResponse.statusCode, 200);
+        assert.equal(preferenceResponse.payload.preferences.theme, "demo-aurora");
+
+        const profileResponse = await callApp(
+          app,
+          "GET",
+          "/api/profile",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(profileResponse.statusCode, 200);
+        assert.equal(profileResponse.payload.profile.preferences.theme, "demo-aurora");
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(
