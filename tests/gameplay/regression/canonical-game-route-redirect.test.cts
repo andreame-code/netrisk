@@ -94,6 +94,49 @@ register("GET /legacy redirects to the canonical landing route", async () => {
   });
 });
 
+register("GET deprecated /legacy landing documents redirect to /", async () => {
+  await withApp(async (app: any) => {
+    const cases = ["/legacy/", "/legacy/index.html", "/legacy/landing.html"];
+
+    for (const requestPath of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 302, requestPath);
+      assert.equal(response.headers.Location, "/", requestPath);
+    }
+  });
+});
+
+register("GET deprecated /legacy document routes preserve canonical query params", async () => {
+  await withApp(async (app: any) => {
+    const cases = [
+      {
+        requestPath: "/legacy/register.html?next=%2Fprofile",
+        expectedLocation: "/register?next=%2Fprofile"
+      },
+      {
+        requestPath: "/legacy/lobby.html?tab=active",
+        expectedLocation: "/lobby?tab=active"
+      },
+      {
+        requestPath: "/legacy/new-game.html?preset=quick",
+        expectedLocation: "/lobby/new?preset=quick"
+      },
+      {
+        requestPath: "/legacy/profile.html?tab=stats",
+        expectedLocation: "/profile?tab=stats"
+      }
+    ];
+
+    for (const { requestPath, expectedLocation } of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 302, requestPath);
+      assert.equal(response.headers.Location, expectedLocation, requestPath);
+    }
+  });
+});
+
 register(
   "GET /legacy/game.html with gameId redirects to the canonical React deep link",
   async () => {
@@ -158,9 +201,18 @@ register("GET /legacy/lobby.html redirects to the canonical lobby route", async 
 
 register("GET /legacy assets without a canonical route return 404", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/legacy/generated/runtime.css");
+    const cases = [
+      "/legacy/generated/runtime.css",
+      "/legacy/app.mjs",
+      "/legacy/shell.mjs",
+      "/legacy/style.css"
+    ];
 
-    assert.equal(response.statusCode, 404);
-    assert.equal(response.body, "Not found");
+    for (const requestPath of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 404, requestPath);
+      assert.equal(response.body, "Not found", requestPath);
+    }
   });
 });

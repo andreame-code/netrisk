@@ -131,7 +131,9 @@ describe("React shell routing and session integration", () => {
   it("renders the canonical landing route on the root path", async () => {
     renderReactShell("/");
 
-    expect(await screen.findByText("Frontline Dominion")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
+      "Conquista il Mondo."
+    );
     expect(window.location.pathname).toBe("/");
   });
 
