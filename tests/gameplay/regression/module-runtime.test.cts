@@ -1761,6 +1761,150 @@ register(
 );
 
 register(
+  "module runtime revalida content pack contro temi di dipendenze diventate incompatibili",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-theme-consumer",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-theme-consumer",
+            version: "1.0.0",
+            displayName: "Demo Theme Consumer",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.zzz-theme-provider", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a provider theme"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "dependent-theme-pack",
+      name: "Dependent Theme Pack",
+      description: "References a provider theme that later becomes unavailable.",
+      defaultSiteThemeId: "late-provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.zzz-theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Late Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme provider with invalid content defaults"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid provider content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "late-provider-theme",
+      name: "Late Provider Theme",
+      description: "Theme from a provider that becomes incompatible."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "broken-provider-pack",
+      name: "Broken Provider Pack",
+      description: "Invalidates the provider after dependency checks have started.",
+      defaultSiteThemeId: "late-provider-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-theme-consumer": true,
+            "demo.zzz-theme-provider": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const providerModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.zzz-theme-provider"
+        );
+        assert.equal(providerModule.status, "incompatible");
+        assert.equal(
+          providerModule.errors.some((entry: string) => entry.includes("missing-map")),
+          true
+        );
+
+        const consumerModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-theme-consumer"
+        );
+        assert.equal(consumerModule.status, "incompatible");
+        assert.equal(
+          consumerModule.errors.some((entry: string) => entry.includes("late-provider-theme")),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes("dependent-theme-pack"),
+          false
+        );
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(
