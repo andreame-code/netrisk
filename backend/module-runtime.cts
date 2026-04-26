@@ -1443,6 +1443,38 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       .map(([id]) => id);
   }
 
+  function usableRuntimeSiteThemeIdsForModule(
+    moduleId: string,
+    manifest: NetRiskModuleManifest,
+    modules: NetRiskInstalledModule[]
+  ): string[] {
+    const allowedDependencyIds = new Set(manifest.dependencies.map((dependency) => dependency.id));
+    const themeIds: string[] = [];
+
+    modules.forEach((ownerModule) => {
+      if (ownerModule.id !== moduleId) {
+        if (!allowedDependencyIds.has(ownerModule.id)) {
+          return;
+        }
+
+        if (!ownerModule.enabled || !ownerModule.compatible) {
+          return;
+        }
+      }
+
+      const ownerServerModule = serverModulesById.get(ownerModule.id);
+      if (!Array.isArray(ownerServerModule?.siteThemes)) {
+        return;
+      }
+
+      ownerServerModule.siteThemes.forEach((themeDefinition) => {
+        themeIds.push(themeDefinition.id);
+      });
+    });
+
+    return themeIds;
+  }
+
   function findRuntimeContentPackReferenceError(
     moduleId: string,
     manifest: NetRiskModuleManifest,
@@ -1455,7 +1487,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     ]);
     const knownThemeIds = new Set([
       ...listSiteThemes().map((entry: { id: string }) => entry.id),
-      ...usableRuntimeContributionIdsForModule(moduleId, manifest, modules, runtimeSiteThemesById)
+      ...usableRuntimeSiteThemeIdsForModule(moduleId, manifest, modules)
     ]);
     const knownPieceSetIds = new Set([
       ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
@@ -1554,6 +1586,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           moduleEntry.errors.push(...errors);
           moduleEntry.compatible = false;
           removeRuntimeContentPacksForModule(moduleEntry.id);
+          removeRuntimeSiteThemesForModule(moduleEntry.id);
           changed = true;
         }
       });
@@ -2013,25 +2046,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return;
       }
 
-      const serverModule = serverModulesById.get(moduleEntry.id);
-      if (!serverModule) {
-        return;
-      }
-
-      const siteThemeErrors = registerServerModuleSiteThemes(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (siteThemeErrors.length) {
-        moduleEntry.errors.push(...siteThemeErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-        removeRuntimeSiteThemesForModule(moduleEntry.id);
-      }
-    });
-
-    manifestModules.forEach((moduleEntry) => {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
       const serverModule = serverModulesById.get(moduleEntry.id);
       if (!serverModule) {
@@ -2049,6 +2063,31 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         moduleEntry.errors.push(...contentPackErrors);
         moduleEntry.compatible = false;
         removeRuntimeContentPacksForModule(moduleEntry.id);
+        removeRuntimeSiteThemesForModule(moduleEntry.id);
+      }
+    });
+
+    manifestModules.forEach((moduleEntry) => {
+      if (!moduleEntry.compatible) {
+        return;
+      }
+
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const siteThemeErrors = registerServerModuleSiteThemes(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
+      if (siteThemeErrors.length) {
+        moduleEntry.errors.push(...siteThemeErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+        removeRuntimeContentPacksForModule(moduleEntry.id);
+        removeRuntimeSiteThemesForModule(moduleEntry.id);
       }
     });
 

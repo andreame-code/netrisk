@@ -2020,6 +2020,141 @@ register(
   }
 );
 
+register("module runtime rilascia temi quando content pack invalida il modulo", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "demo.aaa-content-broken-theme-owner",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.aaa-content-broken-theme-owner",
+          version: "1.0.0",
+          displayName: "Demo Content Broken Theme Owner",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            {
+              kind: "site-theme",
+              scope: "global",
+              description: "Theme from a module invalidated by content defaults"
+            },
+            {
+              kind: "content-pack",
+              scope: "game",
+              description: "Invalid content pack that should invalidate the module"
+            }
+          ],
+          entrypoints: {
+            server: "server-module.cjs"
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Broken Content Shared Runtime Theme",
+      description: "This theme must be released when content validation fails."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "broken-content-theme-pack",
+      name: "Broken Content Theme Pack",
+      description: "Invalidates the theme owner after theme defaults are inspected.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+      },
+      {
+        dir: "demo.valid-content-theme-owner",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.valid-content-theme-owner",
+          version: "1.0.0",
+          displayName: "Demo Valid Content Theme Owner",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            {
+              kind: "site-theme",
+              scope: "global",
+              description: "Valid owner after invalid content owner releases the id"
+            }
+          ],
+          entrypoints: {
+            server: "server-module.cjs"
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Content Shared Runtime Theme",
+      description: "This module should own the released theme id."
+    }
+  ]
+};`
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const enableResponse = await callApp(
+        app,
+        "POST",
+        "/api/modules/demo.valid-content-theme-owner/enable",
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(enableResponse.statusCode, 200);
+
+      const brokenModule = enableResponse.payload.modules.find(
+        (entry: any) => entry.id === "demo.aaa-content-broken-theme-owner"
+      );
+      assert.equal(brokenModule.status, "incompatible");
+      assert.equal(
+        brokenModule.errors.some((entry: string) => entry.includes("missing-map")),
+        true
+      );
+
+      const validModule = enableResponse.payload.modules.find(
+        (entry: any) => entry.id === "demo.valid-content-theme-owner"
+      );
+      assert.equal(validModule.status, "enabled");
+      assert.equal(validModule.errors.length, 0);
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.themes.some(
+          (entry: any) =>
+            entry.id === "shared-runtime-theme" &&
+            entry.name === "Valid Content Shared Runtime Theme"
+        ),
+        true
+      );
+      assert.equal(
+        moduleOptionsResponse.payload.themes.some(
+          (entry: any) =>
+            entry.id === "shared-runtime-theme" &&
+            entry.name === "Broken Content Shared Runtime Theme"
+        ),
+        false
+      );
+    }
+  );
+});
+
 register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
