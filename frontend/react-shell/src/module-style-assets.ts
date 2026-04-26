@@ -48,9 +48,7 @@ export function syncModuleStyleAssets(
   });
 
   hrefs.forEach((href) => {
-    const existingLink = document.head.querySelector<HTMLLinkElement>(
-      `link[data-module-stylesheet="true"][href="${href}"]`
-    );
+    const existingLink = existingLinks.find((link) => (link.getAttribute("href") || "") === href);
     if (existingLink) {
       return;
     }

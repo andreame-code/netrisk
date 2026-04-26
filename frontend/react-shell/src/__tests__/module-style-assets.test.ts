@@ -72,4 +72,17 @@ describe("syncModuleStyleAssets", () => {
       "/modules/core.base/assets/extra.css"
     ]);
   });
+
+  it("does not interpolate href values into a selector lookup", () => {
+    const moduleOptions = createModuleOptionsResponse();
+    moduleOptions.modules[0].clientManifest.ui.stylesheets = ['./asset"quoted.css'];
+
+    expect(() => syncModuleStyleAssets(moduleOptions)).not.toThrow();
+
+    const stylesheetHrefs = Array.from(
+      document.head.querySelectorAll<HTMLLinkElement>('link[data-module-stylesheet="true"]')
+    ).map((link) => link.getAttribute("href"));
+
+    expect(stylesheetHrefs).toEqual(['/modules/core.base/asset"quoted.css']);
+  });
 });

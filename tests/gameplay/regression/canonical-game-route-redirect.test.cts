@@ -97,6 +97,21 @@ register(
   }
 );
 
+register(
+  "GET /legacy/game.html preserves non-gameId query params in the canonical React redirect",
+  async () => {
+    await withApp(async (app: any) => {
+      const response = await callRequest(
+        app,
+        "/legacy/game.html?gameId=g-123&lang=en&view=compact"
+      );
+
+      assert.equal(response.statusCode, 302);
+      assert.equal(response.headers.Location, "/game/g-123?lang=en&view=compact");
+    });
+  }
+);
+
 register("GET /legacy/game.html without gameId redirects to /game", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/legacy/game.html");

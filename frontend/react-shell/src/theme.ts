@@ -26,6 +26,10 @@ export function setAvailableShellThemes(
   themes: Array<string | { id?: string | null }> | null | undefined
 ): string[] {
   availableShellThemeIds = normalizeThemeIds(themes);
+  return listAvailableShellThemeIds();
+}
+
+function listAvailableShellThemeIds(): string[] {
   const currentTheme = currentShellTheme();
   return availableShellThemeIds.includes(currentTheme)
     ? [...availableShellThemeIds]
@@ -33,7 +37,7 @@ export function setAvailableShellThemes(
 }
 
 export function listShellThemes(): Array<{ id: string }> {
-  return availableShellThemeIds.map((id) => ({ id }));
+  return listAvailableShellThemeIds().map((id) => ({ id }));
 }
 
 function readStoredTheme(): string | null {
@@ -87,7 +91,7 @@ export function installShellThemeBridge(): void {
     defaultTheme: DEFAULT_THEME,
     storageKey: THEME_STORAGE_KEY,
     getThemes() {
-      return [...availableShellThemeIds];
+      return listAvailableShellThemeIds();
     },
     setThemes(themes: Array<string | { id?: string | null }>) {
       return setAvailableShellThemes(themes);

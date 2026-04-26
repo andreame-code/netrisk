@@ -1785,8 +1785,19 @@ function createApp(options: CreateAppOptions = {}) {
 
         if (req.method === "GET" && url.pathname === "/legacy/game.html") {
           const requestedGameId = url.searchParams.get("gameId");
+          const redirectUrl = new URL(
+            requestedGameId ? "/game/" + encodeURIComponent(requestedGameId) : "/game",
+            "http://localhost"
+          );
+          url.searchParams.forEach((value, key) => {
+            if (key === "gameId") {
+              return;
+            }
+
+            redirectUrl.searchParams.append(key, value);
+          });
           res.writeHead(302, {
-            Location: requestedGameId ? "/game/" + encodeURIComponent(requestedGameId) : "/game"
+            Location: redirectUrl.pathname + redirectUrl.search
           });
           res.end();
           return null;
