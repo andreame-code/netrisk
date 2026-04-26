@@ -60,7 +60,7 @@ async function callRequest(app: any, pathname: string): Promise<MockResponse> {
 async function withApp(run: (app: any) => Promise<void>): Promise<void> {
   const tempRoot = path.join(
     os.tmpdir(),
-    `netrisk-legacy-runtime-assets-${process.pid}-${Date.now()}`
+    `netrisk-retired-runtime-assets-${process.pid}-${Date.now()}`
   );
   const app = createApp({
     projectRoot: process.cwd(),
@@ -78,7 +78,7 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
 }
 
 register(
-  "GET /legacy/generated/shared-runtime-validation.mjs is no longer served after the rollback removal",
+  "GET /legacy/generated/shared-runtime-validation.mjs is no longer served after retiring the UI",
   async () => {
     await withApp(async (app: any) => {
       const response = await callRequest(app, "/legacy/generated/shared-runtime-validation.mjs");

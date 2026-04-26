@@ -89,23 +89,23 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
 
   assert.ok(
     hasRewriteRule(redirects, "/legacy", "/"),
-    "Expected /legacy to redirect to / during the legacy rollback removal."
+    "Expected /legacy to redirect to / for retired document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/lobby.html", "/lobby"),
-    "Expected /legacy/lobby.html to redirect to /lobby during the legacy rollback removal."
+    "Expected /legacy/lobby.html to redirect to /lobby for retired document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/register.html", "/register"),
-    "Expected /legacy/register.html to redirect to /register during the legacy rollback removal."
+    "Expected /legacy/register.html to redirect to /register for retired document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/new-game.html", "/lobby/new"),
-    "Expected /legacy/new-game.html to redirect to /lobby/new during the legacy rollback removal."
+    "Expected /legacy/new-game.html to redirect to /lobby/new for retired document route compatibility."
   );
   assert.ok(
     hasRewriteRule(redirects, "/legacy/profile.html", "/profile"),
-    "Expected /legacy/profile.html to redirect to /profile during the legacy rollback removal."
+    "Expected /legacy/profile.html to redirect to /profile for retired document route compatibility."
   );
 
   const legacyGameRedirect = findRedirectRule(redirects, "/legacy/game.html", "/game/:gameId");

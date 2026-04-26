@@ -8,10 +8,10 @@ test("existing game keeps the same player binding after logout and login again",
   const gameName = uniqueUser("campagna_rebind");
 
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, username);
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await page.locator("#create-game-button").click();
   await expect(page).toHaveURL(/\/lobby\/new$/);
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
@@ -38,8 +38,10 @@ test("existing game keeps the same player binding after logout and login again",
   await page.locator("#header-auth-password").fill("secret123");
   await page.locator("#header-login-button").click();
   await expect(page.locator("#auth-status")).toContainText(username);
+  await expect(page.locator("#identity-status")).toContainText(username, { timeout: 15000 });
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/\/lobby$/);
   const targetRow = page.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   await expect(targetRow).toBeVisible();
   await targetRow.click();
@@ -50,4 +52,3 @@ test("existing game keeps the same player binding after logout and login again",
   await page.getByRole("button", { name: "Aggiungi" }).click();
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 });
-

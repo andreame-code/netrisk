@@ -200,28 +200,28 @@ export function translateGameLogEntries(snapshot: unknown): string[] {
   const snapshotRecord =
     snapshot && typeof snapshot === "object" ? (snapshot as Record<string, unknown>) : null;
   const logEntries = snapshotRecord?.logEntries;
-  const legacyLog = snapshotRecord?.log;
+  const plainTextLog = snapshotRecord?.log;
 
   const localizedEntries = Array.isArray(logEntries)
     ? logEntries
         .map((entry) => translateMessagePayload(entry, entry?.message || ""))
         .filter(Boolean)
     : [];
-  const legacyEntries = Array.isArray(legacyLog)
-    ? legacyLog.filter((entry): entry is string => typeof entry === "string" && Boolean(entry))
+  const plainTextEntries = Array.isArray(plainTextLog)
+    ? plainTextLog.filter((entry): entry is string => typeof entry === "string" && Boolean(entry))
     : [];
 
   if (!localizedEntries.length) {
-    return legacyEntries;
+    return plainTextEntries;
   }
 
-  if (!legacyEntries.length) {
+  if (!plainTextEntries.length) {
     return localizedEntries;
   }
 
   const mergedEntries = localizedEntries.slice();
   const seenEntries = new Set(localizedEntries);
-  for (const entry of legacyEntries) {
+  for (const entry of plainTextEntries) {
     if (seenEntries.has(entry)) {
       continue;
     }

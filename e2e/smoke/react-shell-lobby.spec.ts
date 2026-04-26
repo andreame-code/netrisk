@@ -27,7 +27,7 @@ async function loadGameState(page, sessionToken, gameId) {
   return stateResponse.json();
 }
 
-test("react lobby keeps guest access inline with the legacy auth copy", async ({ page }) => {
+test("react lobby keeps guest access inline with the shared auth copy", async ({ page }) => {
   await resetGame(page);
 
   await page.goto("/react/lobby");

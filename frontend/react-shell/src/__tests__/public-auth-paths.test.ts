@@ -3,7 +3,7 @@ import { normalizeNextPath } from "@react-shell/public-auth-paths";
 import { describe, expect, it } from "vitest";
 
 describe("normalizeNextPath", () => {
-  it("maps deprecated legacy document routes to clean canonical routes", () => {
+  it("maps retired document routes to clean canonical routes", () => {
     expect(normalizeNextPath("/legacy/lobby.html", "/lobby")).toBe("/lobby");
     expect(normalizeNextPath("/legacy/new-game.html?mode=quick", "/lobby")).toBe(
       "/lobby/new?mode=quick"

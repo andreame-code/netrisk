@@ -10,10 +10,6 @@ const reactDomMocks = vi.hoisted(() => {
   };
 });
 
-const sharedStyleMocks = vi.hoisted(() => ({
-  ensureSharedStyleAssets: vi.fn()
-}));
-
 vi.mock("react-dom/client", () => ({
   default: {
     createRoot: reactDomMocks.createRoot
@@ -29,16 +25,11 @@ vi.mock("@react-shell/observability", () => ({
   initReactShellObservability: vi.fn()
 }));
 
-vi.mock("@react-shell/shared-style-assets", () => ({
-  ensureSharedStyleAssets: sharedStyleMocks.ensureSharedStyleAssets
-}));
-
 describe("React shell bootstrap", () => {
   beforeEach(() => {
     vi.resetModules();
     reactDomMocks.createRoot.mockClear();
     reactDomMocks.render.mockClear();
-    sharedStyleMocks.ensureSharedStyleAssets.mockClear();
     document.body.innerHTML = '<div id="root"></div>';
     document.documentElement.removeAttribute("data-theme");
     document.body.removeAttribute("data-theme");
@@ -54,7 +45,6 @@ describe("React shell bootstrap", () => {
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(reactDomMocks.createRoot).toHaveBeenCalledTimes(1);
     expect(reactDomMocks.render).toHaveBeenCalledTimes(1);
-    expect(sharedStyleMocks.ensureSharedStyleAssets).toHaveBeenCalledTimes(1);
   });
 
   it("applies a saved registered theme before rendering routes outside the app layout", async () => {
@@ -67,6 +57,5 @@ describe("React shell bootstrap", () => {
     expect(document.body.dataset.theme).toBe("midnight");
     expect(reactDomMocks.createRoot).toHaveBeenCalledTimes(1);
     expect(reactDomMocks.render).toHaveBeenCalledTimes(1);
-    expect(sharedStyleMocks.ensureSharedStyleAssets).toHaveBeenCalledTimes(1);
   });
 });

@@ -5,7 +5,7 @@ const rootDir = process.cwd();
 const publicDir = path.join(rootDir, "public");
 const sourceDir = path.join(rootDir, "frontend", "assets");
 const targetDir = path.join(publicDir, "assets");
-const staleLegacyPaths = [
+const staleRetiredUiPaths = [
   "legacy",
   "vendor",
   "app.mjs",
@@ -30,7 +30,7 @@ const staleLegacyPaths = [
   path.join("generated", "static-text-assets.mjs")
 ];
 
-staleLegacyPaths.forEach((relativePath) => {
+staleRetiredUiPaths.forEach((relativePath) => {
   fs.rmSync(path.join(publicDir, relativePath), {
     recursive: true,
     force: true

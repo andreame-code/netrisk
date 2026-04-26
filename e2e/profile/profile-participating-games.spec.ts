@@ -35,7 +35,7 @@ test("profile page lists participating games and opens the selected game route",
 
   await attachSessionCookie(page, sessionToken);
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
 
   await expect(page.getByTestId("player-profile-shell")).toBeVisible();
   await expect(page.locator("#profile-feedback")).toBeHidden();

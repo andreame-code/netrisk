@@ -13,19 +13,19 @@ test("auth status and logout stay coherent across Game, Lobby, and Profile", asy
   await expect(page.locator("#header-auth-username")).toBeHidden();
   await expect(page.locator("#header-auth-password")).toBeHidden();
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.locator("#logout-button")).toBeVisible();
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.locator("#logout-button")).toBeVisible();
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   await page.locator("#logout-button").click();
   await expect(page.locator("#auth-status")).toContainText(/session|accedi|log in/i);
 
-  await page.goto("/game.html");
+  await page.goto("/game");
   await expect(page.locator("#header-auth-username")).toBeVisible();
   await expect(page.locator("#header-auth-password")).toBeVisible();
   await expect(page.locator("#header-login-button")).toBeVisible();

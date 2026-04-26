@@ -263,7 +263,7 @@ npm run test:all:e2e
 - `npm run format`: formats the scoped repository sources and docs with Prettier
 - `npm run format:check`: verifies the scoped repository sources and docs match the Prettier baseline
 - `npm run typecheck`: type-checks the backend/shared/frontend TypeScript graph
-- `npm run typecheck:frontend`: type-checks the legacy frontend sources
+- `npm run typecheck:frontend`: type-checks the shared frontend TypeScript modules consumed by the React shell
 - `npm run typecheck:react-shell`: type-checks the React shell sources that back both canonical and `/react/*` routes
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
@@ -276,7 +276,7 @@ npm run test:all:e2e
 ESLint and Prettier are configured as a TypeScript-first quality baseline for `backend`, `frontend`,
 `shared`, `scripts`, `tests`, `api`, and `supabase`.
 
-- `npm run lint` is intentionally warning-first for noisy legacy areas and fails only on higher-value
+- `npm run lint` is intentionally warning-first for noisy migrated areas and fails only on higher-value
   correctness issues.
 - `npm run format:check` is enforced in CI to keep formatting drift out of follow-up migration work.
 - `npm run build:ts` is part of the quality gate, so documentation, generated static output, and the
@@ -312,7 +312,7 @@ The `e2e` suite currently covers:
 - profile invalid payload fallback with controlled UI feedback
 - React shell bootstrap, auth redirects, and protected route handling on `/react/*`
 - new game setup
-- legacy and React gameplay flows
+- canonical React gameplay flows
 - attack dice selection and combat result display
 - card panel, successful trade, inline errors, and reward synchronization
 - React gameplay deep links, join/start, forced trade, and version-conflict recovery
@@ -398,7 +398,7 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `listContentModules`
 
 For runtime contract validation shared by backend and frontend, see `shared/runtime-validation.cts`.
-For the current framework-agnostic frontend transport boundary used by the React shell and migrated legacy pages, see `frontend/src/core/api/`.
+For the current framework-agnostic frontend transport boundary used by the React shell, see `frontend/src/core/api/`.
 
 Game state notably contains:
 

@@ -74,15 +74,22 @@ async function findAttackPairFromControls(page) {
 
   for (const fromId of attackFromValues) {
     await page.locator("#attack-from").selectOption(fromId);
-    const toId = await page.locator("#attack-to").evaluate((select: HTMLSelectElement) => (
-      select.value || Array.from(select.options).find((option) => option.value)?.value || ""
+    const attackToValues = await page.locator("#attack-to option").evaluateAll((options) => (
+      options
+        .map((option) => (option as HTMLOptionElement).value)
+        .filter(Boolean)
     ));
-    if (toId) {
-      return { fromId, toId };
+
+    for (const toId of attackToValues) {
+      await page.locator("#attack-to").selectOption(toId);
+      const hasOneDieAttack = await page.locator('#attack-dice option[value="1"]').count();
+      if (hasOneDieAttack > 0) {
+        return { fromId, toId };
+      }
     }
   }
 
-  throw new Error("Nessuna coppia attacco valida trovata dal pannello attacco.");
+  throw new Error("Nessuna coppia attacco valida con un dado trovata dal pannello attacco.");
 }
 
 test("reinforcement keeps unrelated gameplay panels mounted", async ({ browser }) => {

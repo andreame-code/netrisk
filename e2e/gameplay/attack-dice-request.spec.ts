@@ -95,7 +95,7 @@ test("attack UI sends the selected dice count to the backend", async ({ page }) 
     await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await expect(page.locator("#attack-group")).toBeVisible();
   await page.locator("#attack-from").selectOption("aurora");
@@ -137,7 +137,7 @@ test("attack UI normalizes stale dice values before submit", async ({ page }) =>
     await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await expect(page.locator("#attack-group")).toBeVisible();
   await page.locator("#attack-from").selectOption("cinder");

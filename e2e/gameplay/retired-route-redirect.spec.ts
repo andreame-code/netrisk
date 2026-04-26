@@ -1,12 +1,12 @@
 const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
-test("legacy rollback pages stay available under /legacy after the clean-route cutover", async ({
+test("retired legacy document links redirect into the canonical React game route", async ({
   page
 }) => {
   test.slow();
-  const ownerUser = uniqueUser("legacy_route_owner");
-  const gameName = uniqueUser("legacy_route_game");
+  const ownerUser = uniqueUser("retired_route_owner");
+  const gameName = uniqueUser("retired_route_game");
 
   await resetGame(page);
 
@@ -21,11 +21,12 @@ test("legacy rollback pages stay available under /legacy after the clean-route c
   const gameMatch = page.url().match(/\/game\/([^/?#]+)/);
   expect(gameMatch).toBeTruthy();
   const gameId = decodeURIComponent(gameMatch[1]);
-  const retiredLegacyUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
+  const retiredDocumentUrl = `/legacy/game.html?gameId=${encodeURIComponent(gameId)}`;
 
-  const legacyResponse = await page.goto(retiredLegacyUrl);
-  expect(legacyResponse).toBeTruthy();
-  expect(legacyResponse.status()).toBe(200);
+  const redirectResponse = await page.goto(retiredDocumentUrl);
+  expect(redirectResponse).toBeTruthy();
+  expect(redirectResponse.status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/game/${encodeURIComponent(gameId)}$`));
   await expect(page.getByTestId("app-shell")).toBeVisible();
   await expect(page.locator("#game-status")).toContainText(gameName);
 });

@@ -8,10 +8,10 @@ test("direct game route keeps reinforcement controls working after refresh", asy
   const gameName = uniqueUser("campagna_refresh");
 
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, username);
 
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-game-name").fill(gameName);
   await expect(page.locator("#submit-new-game")).toBeEnabled();

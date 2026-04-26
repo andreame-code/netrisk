@@ -182,7 +182,7 @@ Categorie future da trattare con lo stesso modello:
 - Boundary validation frontend: `frontend/src/core/validated-json.mts` valida le risposte condivise prima del consumo UI.
 - Boundary transport frontend: `frontend/src/core/api/http.mts` e `frontend/src/core/api/client.mts` centralizzano `fetch`, body JSON, validazione runtime, session handling, SSE payload parsing ed error translation per auth, profile, lobby, setup e gameplay.
 - Modular catalog boundary: i consumer frontend e backend che leggono opzioni modulo/setup devono preferire `resolvedCatalog`; i campi flat su `/api/modules/options` e `/api/game/options` esistono per retrocompatibilita, non come nuova source of truth.
-- Frontend observability boundary: il transport layer puo segnalare solo errori inattesi (`network`, `5xx`, payload validi ma fuori schema) tramite il reporter registrato dalla React shell, senza trasformare il frontend legacy in source of truth del monitoraggio.
+- Frontend observability boundary: il transport layer puo segnalare solo errori inattesi (`network`, `5xx`, payload validi ma fuori schema) tramite il reporter registrato dalla React shell, senza trasformare il browser in source of truth del monitoraggio.
 - React server-state ownership: nella shell React le query remote e le mutazioni stanno in TanStack Query; Zustand non sostituisce il backend e resta confinato a stato locale/sessione della shell.
 - Datastore supportati:
   - SQLite locale (default sviluppo)

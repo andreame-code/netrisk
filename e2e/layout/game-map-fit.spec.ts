@@ -3,11 +3,11 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const normalizedSuffix = String(suffix).replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase();
   const owner = uniqueUser(`mf_${normalizedSuffix}`);
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
   await page.locator("#setup-game-name").fill(`Map Fit ${suffix} ${Date.now().toString(36).slice(-4)}`);

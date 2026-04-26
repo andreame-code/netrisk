@@ -31,7 +31,7 @@ test("profile page shows controlled feedback when the profile payload shape is i
     });
   });
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
 
   await expect(page.getByTestId("player-profile-shell")).toBeVisible();
   await expect(page.locator("#auth-status")).toContainText(username);

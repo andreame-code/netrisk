@@ -59,7 +59,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   const sessionToken = await createAuthenticatedSession(page, username, password);
   await attachSessionCookie(page, sessionToken);
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
 
   await expect(page.locator("#profile-preferences")).toBeVisible();
   await expect(page.locator("#profile-theme-select")).toHaveValue("command");
@@ -72,7 +72,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   await expect(page.locator("#profile-theme-status")).toContainText("Tema applicato: Mezzanotte.");
   await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme"))).toBe("midnight");
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "midnight");
 
@@ -87,7 +87,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
     }]);
 
     const secondPage = await secondContext.newPage();
-    await secondPage.goto("/lobby.html");
+    await secondPage.goto("/lobby");
 
     await expect(secondPage.locator("html")).toHaveAttribute("data-theme", "midnight");
   } finally {
@@ -104,7 +104,7 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
   const landingSnapshots = new Map();
 
   for (const theme of ["command", "midnight", "ember"]) {
-    await page.goto("/profile.html");
+    await page.goto("/profile");
     await selectTheme(page, theme);
     profileSnapshots.set(
       theme,
@@ -115,7 +115,7 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
       })
     );
 
-    await page.goto("/index.html");
+    await page.goto("/");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     landingSnapshots.set(
       theme,
