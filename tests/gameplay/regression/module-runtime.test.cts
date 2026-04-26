@@ -1502,6 +1502,44 @@ register(
           }
         },
         {
+          dir: "demo.duplicate-theme",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.duplicate-theme",
+            version: "1.0.0",
+            displayName: "Demo Duplicate Theme",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Malformed duplicate theme definitions"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "duplicate-theme",
+      name: "Duplicate Theme",
+      description: "First duplicate theme definition."
+    },
+    {
+      id: "duplicate-theme",
+      name: "Duplicate Theme Override",
+      description: "Second duplicate theme definition."
+    }
+  ]
+};`
+        },
+        {
           dir: "demo.theme-provider",
           manifest: {
             schemaVersion: 1,
@@ -1633,6 +1671,16 @@ register(
         assert.equal(
           moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "ghost-theme"),
           false
+        );
+        const duplicateThemeModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.duplicate-theme"
+        );
+        assert.equal(duplicateThemeModule.status, "incompatible");
+        assert.equal(
+          duplicateThemeModule.errors.some((entry: string) =>
+            entry.includes('Duplicate runtime module site theme "duplicate-theme"')
+          ),
+          true
         );
         assert.equal(
           moduleOptionsResponse.payload.modules

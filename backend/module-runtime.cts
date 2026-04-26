@@ -1400,9 +1400,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         }
 
         const existing = runtimeSiteThemesById.get(themeDefinition.id);
-        if (existing && existing.moduleId !== moduleId) {
+        if (existing) {
           throw new Error(
-            `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
+            existing.moduleId === moduleId
+              ? `Duplicate runtime module site theme "${themeDefinition.id}" detected.`
+              : `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
           );
         }
 
