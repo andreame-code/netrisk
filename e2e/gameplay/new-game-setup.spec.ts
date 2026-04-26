@@ -4,10 +4,10 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 test("new game setup keeps player 1 locked as creator and creates the configured session", async ({ page }) => {
   test.slow();
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const owner = uniqueUser("setup_owner");
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#setup-ruleset")).toBeVisible();
@@ -57,7 +57,7 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await page.locator('#setup-game-name').fill('Setup Lock Test');
   await page.getByRole('button', { name: 'Crea e apri' }).click();
 
-  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
+  await expect(page).toHaveURL(/\/game\//);
   await expect(page.locator('#game-status')).toContainText('Setup Lock Test');
   await expect(page.locator('#game-map-meta')).toContainText('Classic Mini');
   await expect(page.locator('#game-setup-meta')).toContainText('4 giocatori');
@@ -70,10 +70,10 @@ test("new game setup keeps player 1 locked as creator and creates the configured
 test("new game setup creates and renders the selected Middle-earth map", async ({ page }) => {
   test.slow();
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const owner = uniqueUser("middle_earth_owner");
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#setup-map")).toContainText("Middle-earth");
@@ -83,7 +83,7 @@ test("new game setup creates and renders the selected Middle-earth map", async (
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game(\/|\.html\?gameId=)/);
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\//);
   await expect(page.locator("#game-status")).toContainText("War of the Ring", { timeout: 15000 });
   await expect(page.locator("#game-map-meta")).toContainText("Middle-earth", { timeout: 15000 });
 
@@ -98,10 +98,10 @@ test("new game setup creates and renders the selected Middle-earth map", async (
 test("new game setup creates and renders the selected World Classic map", async ({ page }) => {
   test.slow();
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const owner = uniqueUser("world_classic_owner");
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#setup-map")).toContainText("World Classic");
@@ -111,7 +111,7 @@ test("new game setup creates and renders the selected World Classic map", async 
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game(\/|\.html\?gameId=)/);
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\//);
   await expect(page.locator("#game-status")).toContainText("Global Conflict", { timeout: 15000 });
   await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
   const mapBoard = page.locator(".map-board.has-custom-background");

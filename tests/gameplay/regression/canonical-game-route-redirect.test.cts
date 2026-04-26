@@ -77,40 +77,142 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
   }
 }
 
-register("GET /game.html without gameId serves the React shell bridge document", async () => {
+register("GET /game.html without gameId is no longer a supported entrypoint", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/game.html");
 
-    assert.equal(response.statusCode, 200);
-    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
-    assert.match(response.body, /<div id="root"><\/div>/i);
+    assert.equal(response.statusCode, 404);
   });
 });
 
-register("GET /game.html with gameId preserves the canonical React deep link", async () => {
+register("GET /legacy redirects to the canonical landing route", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/game.html?gameId=g-123");
+    const response = await callRequest(app, "/legacy");
 
     assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.Location, "/game/g-123");
+    assert.equal(response.headers.Location, "/");
   });
 });
 
-register("GET /register.html redirects to the clean React register route", async () => {
+register("GET deprecated /legacy landing documents redirect to /", async () => {
+  await withApp(async (app: any) => {
+    const cases = ["/legacy/", "/legacy/index.html", "/legacy/landing.html"];
+
+    for (const requestPath of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 302, requestPath);
+      assert.equal(response.headers.Location, "/", requestPath);
+    }
+  });
+});
+
+register("GET deprecated /legacy document routes preserve canonical query params", async () => {
+  await withApp(async (app: any) => {
+    const cases = [
+      {
+        requestPath: "/legacy/register.html?next=%2Fprofile",
+        expectedLocation: "/register?next=%2Fprofile"
+      },
+      {
+        requestPath: "/legacy/lobby.html?tab=active",
+        expectedLocation: "/lobby?tab=active"
+      },
+      {
+        requestPath: "/legacy/new-game.html?preset=quick",
+        expectedLocation: "/lobby/new?preset=quick"
+      },
+      {
+        requestPath: "/legacy/profile.html?tab=stats",
+        expectedLocation: "/profile?tab=stats"
+      }
+    ];
+
+    for (const { requestPath, expectedLocation } of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 302, requestPath);
+      assert.equal(response.headers.Location, expectedLocation, requestPath);
+    }
+  });
+});
+
+register(
+  "GET /legacy/game.html with gameId redirects to the canonical React deep link",
+  async () => {
+    await withApp(async (app: any) => {
+      const response = await callRequest(app, "/legacy/game.html?gameId=g-123");
+
+      assert.equal(response.statusCode, 302);
+      assert.equal(response.headers.Location, "/game/g-123");
+    });
+  }
+);
+
+register(
+  "GET /legacy/game.html preserves non-gameId query params in the canonical React redirect",
+  async () => {
+    await withApp(async (app: any) => {
+      const response = await callRequest(
+        app,
+        "/legacy/game.html?gameId=g-123&lang=en&view=compact"
+      );
+
+      assert.equal(response.statusCode, 302);
+      assert.equal(response.headers.Location, "/game/g-123?lang=en&view=compact");
+    });
+  }
+);
+
+register("GET /legacy/game.html without gameId redirects to /game", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/game.html");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/game");
+  });
+});
+
+register("GET /legacy/game.html without gameId keeps non-gameId query params", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/legacy/game.html?lang=en&view=compact");
+
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/game?lang=en&view=compact");
+  });
+});
+
+register("GET /register.html is no longer a supported compatibility entrypoint", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(app, "/register.html?next=%2Fprofile");
 
-    assert.equal(response.statusCode, 302);
-    assert.equal(response.headers.Location, "/register?next=%2Fprofile");
+    assert.equal(response.statusCode, 404);
   });
 });
 
-register("GET /legacy/lobby.html serves the rollback legacy document", async () => {
+register("GET /legacy/lobby.html redirects to the canonical lobby route", async () => {
   await withApp(async (app: any) => {
-    const response = await callRequest(app, "/legacy/lobby.html");
+    const response = await callRequest(app, "/legacy/lobby.html?tab=active");
 
-    assert.equal(response.statusCode, 200);
-    assert.match(response.headers["Content-Type"] || "", /text\/html/i);
-    assert.match(response.body, /game-session-list/i);
+    assert.equal(response.statusCode, 302);
+    assert.equal(response.headers.Location, "/lobby?tab=active");
+  });
+});
+
+register("GET /legacy assets without a canonical route return 404", async () => {
+  await withApp(async (app: any) => {
+    const cases = [
+      "/legacy/generated/runtime.css",
+      "/legacy/app.mjs",
+      "/legacy/shell.mjs",
+      "/legacy/style.css"
+    ];
+
+    for (const requestPath of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 404, requestPath);
+      assert.equal(response.body, "Not found", requestPath);
+    }
   });
 });

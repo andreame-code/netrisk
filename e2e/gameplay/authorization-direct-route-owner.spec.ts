@@ -14,14 +14,14 @@ test("creator can reopen a protected lobby from a direct game route", async ({ p
   await expect(page).toHaveURL(/\/lobby\/new$/);
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
-  await expect(page).toHaveURL(/\/game(\/|\.html\?gameId=)/);
+  await expect(page).toHaveURL(/\/game\//);
 
-  const gameMatch = page.url().match(/\/game(?:\/|\.html\?gameId=)([^/?#]+)/);
+  const gameMatch = page.url().match(/\/game\/([^/?#]+)/);
   expect(gameMatch).toBeTruthy();
   const protectedGameId = decodeURIComponent(gameMatch[1]);
 
   await page.goto("/lobby");
-  await page.goto("/game.html?gameId=" + encodeURIComponent(protectedGameId));
+  await page.goto("/game/" + encodeURIComponent(protectedGameId));
 
   await expect(page).toHaveURL(new RegExp("/game/" + protectedGameId + "$"));
   await expect(page.locator("#game-status")).toContainText(gameName);

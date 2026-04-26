@@ -79,7 +79,7 @@ test("game page shows an inline trade error and clears it on selection change", 
     await route.fulfill({ status: 400, json: { error: "Card set does not match a valid standard trade." } });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await page.locator('[data-card-id="c1"]').click();
   await page.locator('[data-card-id="c2"]').click();

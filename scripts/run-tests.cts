@@ -136,9 +136,9 @@ interface Body {
 
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
-const legacyPublicRoot = path.join(projectRoot, "public", "legacy");
+const frontendPublicRoot = path.join(projectRoot, "public");
 const frontendI18nModulePromise = import(
-  pathToFileURL(path.join(legacyPublicRoot, "i18n.mjs")).href
+  pathToFileURL(path.join(frontendPublicRoot, "i18n.mjs")).href
 );
 let frontendApiClientModulePromise: Promise<any> | null = null;
 
@@ -266,28 +266,8 @@ function getFrontendApiClientModule(): Promise<any> {
     return frontendApiClientModulePromise;
   }
 
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-frontend-client-"));
-  const tempPublicRoot = path.join(tempRoot, "public");
-  fs.cpSync(path.join(legacyPublicRoot, "core"), path.join(tempPublicRoot, "core"), {
-    recursive: true,
-    force: true
-  });
-  fs.cpSync(path.join(projectRoot, "public", "generated"), path.join(tempPublicRoot, "generated"), {
-    recursive: true,
-    force: true
-  });
-  fs.cpSync(path.join(legacyPublicRoot, "locales"), path.join(tempPublicRoot, "locales"), {
-    recursive: true,
-    force: true
-  });
-  fs.cpSync(path.join(projectRoot, "public", "vendor"), path.join(tempRoot, "vendor"), {
-    recursive: true,
-    force: true
-  });
-  fs.copyFileSync(path.join(legacyPublicRoot, "i18n.mjs"), path.join(tempPublicRoot, "i18n.mjs"));
-
   frontendApiClientModulePromise = import(
-    pathToFileURL(path.join(tempPublicRoot, "core", "api", "client.mjs")).href
+    pathToFileURL(path.join(frontendPublicRoot, "core", "api", "client.mjs")).href
   );
   return frontendApiClientModulePromise;
 }
@@ -327,16 +307,33 @@ function authHeaders(sessionToken: string): HeaderMap {
   };
 }
 
-function readPublicHtml(fileName: string): string {
-  return fs.readFileSync(path.join(legacyPublicRoot, fileName), "utf8");
-}
-
 function readProjectJson(fileName: string): any {
   return JSON.parse(fs.readFileSync(path.join(projectRoot, fileName), "utf8"));
 }
 
 register("frontend CSS usa solo token tema fuori dalla sezione definizioni", () => {
   checkThemeTokenization();
+});
+
+register("landing CSS limita i reset document-wide alla route marketing", () => {
+  const css = fs
+    .readFileSync(path.join(projectRoot, "frontend", "react-shell", "src", "landing.css"), "utf8")
+    .replace(/\r\n/g, "\n");
+
+  [
+    /\n\s*\*,\s*\*::before,\s*\*::after\s*\{/,
+    /\n\s*html\s*\{/,
+    /\n\s*a\s*\{/,
+    /\n\s*img\s*\{/,
+    /\n\s*h1,\s*h2,\s*h3\s*\{/,
+    /\n\s*p\s*\{/,
+    /\n\s*ul\s*\{/
+  ].forEach((pattern) => {
+    assert.doesNotMatch(css, pattern);
+  });
+
+  assert.match(css, /body\[data-shell-kind="marketing"\]\s+a\s*\{/);
+  assert.match(css, /html:has\(body\[data-shell-kind="marketing"\]\)\s*\{/);
 });
 
 register("vercel build command compila TypeScript prima della sync degli asset", () => {
@@ -3284,35 +3281,6 @@ register("auth store registra e autentica utenti password", async () => {
   }
   cleanupSqliteFiles(tempDbFile);
 });
-
-register(
-  "i form di login pubblici usano POST per non esporre credenziali nella query string",
-  () => {
-    const headerLoginPages = [
-      "game.html",
-      "lobby.html",
-      "new-game.html",
-      "profile.html",
-      "register.html"
-    ];
-
-    headerLoginPages.forEach((fileName) => {
-      const html = readPublicHtml(fileName);
-      assert.match(
-        html,
-        /<form id="header-login-form"[^>]*method="post"/,
-        `${fileName} deve usare POST per il form di login header`
-      );
-    });
-
-    const gameHtml = readPublicHtml("game.html");
-    assert.match(
-      gameHtml,
-      /<form id="auth-form"[^>]*method="post"/,
-      "game.html deve usare POST per il form login principale"
-    );
-  }
-);
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
   for (let index = 0; index < 32; index += 1) {

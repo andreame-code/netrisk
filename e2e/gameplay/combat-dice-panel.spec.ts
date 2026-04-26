@@ -108,7 +108,7 @@ test("game page shows the latest combat dice result from public state", async ({
     await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
   await expect(page.locator("#game-status")).toContainText("Combat Match", { timeout: 15000 });
 
   await expect(page.locator("#combat-result-group")).toBeVisible();

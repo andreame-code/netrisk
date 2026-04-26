@@ -4,7 +4,7 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 test("lobby shows 15 games initially and loads more on scroll", async ({ page }) => {
   test.slow();
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, uniqueUser("scroll_owner"));
 
   const gameNames = Array.from({ length: 34 }, (_, index) => uniqueUser(`scroll_${String(index + 1).padStart(2, "0")}`));
@@ -15,7 +15,7 @@ test("lobby shows 15 games initially and loads more on scroll", async ({ page })
     await expect(response.ok()).toBeTruthy();
   }
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
 
   const rows = page.locator("#game-session-list [data-game-id]");
   await expect(rows).toHaveCount(15);

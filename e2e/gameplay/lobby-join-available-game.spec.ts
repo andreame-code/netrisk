@@ -14,9 +14,9 @@ test("user can join an available lobby game directly from the lobby list", async
 
   await resetGame(ownerPage);
 
-  await ownerPage.goto("/game.html");
+  await ownerPage.goto("/game");
   await registerAndLogin(ownerPage, ownerUser);
-  await ownerPage.goto("/lobby.html");
+  await ownerPage.goto("/lobby");
   await ownerPage.locator("#create-game-button").click();
   await expect(ownerPage).toHaveURL(/\/lobby\/new$/);
   await ownerPage.locator("#setup-game-name").fill(gameName);
@@ -24,9 +24,9 @@ test("user can join an available lobby game directly from the lobby list", async
   await expect(ownerPage.locator("#game-status")).toContainText(gameName);
   await expect(ownerPage.getByTestId("phase-indicator")).toContainText(/Lobby/i);
 
-  await joinerPage.goto("/game.html");
+  await joinerPage.goto("/game");
   await registerAndLogin(joinerPage, joinerUser);
-  await joinerPage.goto("/lobby.html");
+  await joinerPage.goto("/lobby");
 
   const targetRow = joinerPage.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   await expect(targetRow).toBeVisible();

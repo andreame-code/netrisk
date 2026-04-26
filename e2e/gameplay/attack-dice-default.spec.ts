@@ -65,7 +65,7 @@ test("attack dice default tracks the maximum allowed for the selected territory"
     await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await expect(page.locator("#attack-group")).toBeVisible();
   await expect(page.locator("#attack-from")).toHaveValue("aurora");

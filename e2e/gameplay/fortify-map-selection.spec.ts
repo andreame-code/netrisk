@@ -65,7 +65,7 @@ test("fortify map clicks select origin first and destination second", async ({ p
     await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await expect(page.locator("#fortify-group")).toBeVisible();
   await expect(page.locator("#fortify-from")).toHaveValue("cinder");

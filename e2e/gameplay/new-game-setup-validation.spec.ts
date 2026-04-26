@@ -3,9 +3,9 @@ const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-hel
 
 test("new game setup shows a clear error when the selected map becomes invalid", async ({ page }) => {
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   await registerAndLogin(page, uniqueUser("setup_invalid"));
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
 
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator('#setup-game-name').fill('Setup Invalid Test');

@@ -88,7 +88,7 @@ test("game page refreshes player hand after an action updates card rewards", asy
     await route.fulfill({ json: { ok: true, state: { ...refreshedState, playerHand: [] } } });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await expect(page.locator("#card-trade-group")).toBeHidden();
   await expect(page.locator("#end-turn-button")).toBeEnabled();

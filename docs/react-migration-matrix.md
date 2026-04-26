@@ -1,36 +1,39 @@
-# React Migration Matrix
+# React Route Contract
 
-This matrix tracks the completed clean-route React cutover after the legacy rollback namespace cleanup.
-The canonical user-facing routes are `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`.
-`/react/*` remains a supported alias namespace, the old root `.html` documents are now compatibility redirects, and `/legacy/*` remains the temporary rollback namespace.
+The React cutover is complete. NetRisk now serves a single React shell on the canonical routes:
+`/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`.
 
-## Route Matrix
+`/react/*` remains a supported alias namespace for the same shell.
 
-| Surface | User-facing features | Backend/API boundary | Required UI states | Existing coverage | Current gap to close | Cutover criteria |
-| --- | --- | --- | --- | --- | --- | --- |
-| `/` and `/react/` | marketing shell, top-nav session affordances, route handoff | session restore only | load, unauthenticated, authenticated, locale/theme application | `e2e/smoke/app-load.spec.ts`, layout visuals, shell routing integration | canonical cutover is complete | Canonical landing stays React-served while `/react/*` remains a supported alias |
-| `/login` and `/react/login` | legacy-parity sign-in form, next-path redirect, authenticated redirect, top-nav auth affordances | `/api/auth/login`, `/api/auth/session` | load, validation error, success redirect, already-authenticated redirect | auth navigation E2E, header blueprint layout coverage, shell routing integration | canonical cutover is complete | Canonical login stays React-served while `/react/*` remains a supported alias |
-| `/register` and `/react/register` | register form, login handoff, redirect to profile | `/api/auth/register`, `/api/auth/session` | load, validation error, success redirect, already-authenticated redirect | React register integration + smoke via shared auth flows | canonical cutover is complete | Canonical register stays React-served while `/react/*` remains a supported alias |
-| `/lobby` and `/react/lobby` | list games, infinite scroll, selected-session detail, open/join, reopen active game | `/api/games`, `/api/games/open`, `/api/join` | loading, empty, error, guest inline auth state, refresh | React route tests, lobby smoke and visuals | canonical cutover is complete | Canonical lobby stays React-served and both canonical + `/react/*` paths pass parity checks |
-| `/lobby/new` and `/react/lobby/new` | content packs, presets, profiles, advanced options, player slots, validation | `/api/game/options`, `/api/games` | loading, invalid remote payload, validation error, success redirect, guest inline auth state | React shell smoke, E2E new-game happy path + validation fallback, visual/layout suites | canonical cutover is complete | React route supports module/preset-heavy setup from `resolvedCatalog` without raw fetches and both canonical + `/react/*` paths pass parity checks |
-| `/profile` and `/react/profile` | stats, participating games, theme preference, admin module controls, admin slots | `/api/profile`, `/api/profile/preferences/theme`, `/api/modules`, `/api/modules/options`, `/api/modules/:id/(enable|disable)`, `/api/modules/rescan` | loading, error, empty history, theme save error, admin catalog refresh/toggle states | React profile integration tests, profile E2E states | canonical cutover is complete | React profile covers user and admin surfaces on canonical + `/react/*` routes, with admin module views driven by `resolvedCatalog` plus compatibility mirrors |
-| `/game` or `/game/:id`, plus `/react/game` or `/react/game/:id` | join/start, SSE sync, reinforcement, attack, conquest, move-after-conquest, cards, fortify, surrender, conflict recovery, map controls | `/api/state`, `/api/events`, `/api/start`, `/api/action`, `/api/cards/trade`, `/api/join` | loading, error, reconnecting, version conflict, forced trade, direct route refresh | gameplay E2E, gameplay route smoke, gameplay engine suite | canonical cutover is complete | React gameplay owns the full in-game shell on canonical + `/react/*` routes |
-| Compatibility redirects and rollback namespace: `/index.html`, `/landing.html`, `/register.html`, `/lobby.html`, `/new-game.html`, `/profile.html`, `/game.html`, `/legacy/*.html` | transition redirects, query preservation, rollback HTML availability | redirect/static serving only | query-preserving redirects, `/game.html?gameId=...` handoff, rollback page availability | server routing regressions, Vercel routing config tests, `e2e/gameplay/legacy-route-sticky.spec.ts` | canonical cutover is complete | Old root `.html` entries stop competing with React and `/legacy/*` remains available only as a temporary rollback surface |
+## Supported Surfaces
 
-## Cross-Cutting Guardrails
-
-| Area | Rule | Evidence |
-| --- | --- | --- |
-| HTTP boundary | `frontend/src/core/api/*` stays the only typed HTTP client | New module/admin flows were added there instead of inline `fetch` calls |
-| Shared transport schema | New payloads are added once in `shared/runtime-validation.cts` and consumed by React via generated validation | Module catalog/options payloads expose additive `resolvedCatalog` snapshots with flat mirrors for compatibility |
-| Game rules | React must never reproduce backend rule validation | Gameplay migration rows remain UI/state only; engine coverage stays in `tests/gameplay` |
-| Alias support | Canonical and `/react/*` paths share one React contract, while `/legacy/*` stays non-canonical rollback only | Rows above define the steady-state route contract |
-
-## Validation Gate by Slice
-
-| Slice | Minimum local gate |
+| Surface | Contract |
 | --- | --- |
-| Shared schema or client boundary | `npm test`, `npm run test:react` |
-| React route parity change | `npm run test:react` plus touched-route E2E |
-| Gameplay cutover or legacy removal | `npm run test:all:e2e` |
-| URL cutover | `npm run test:all:e2e` plus green CI/preview |
+| `/` and `/react/` | marketing landing and session bootstrap |
+| `/login` and `/react/login` | sign-in flow with `next` redirect handling |
+| `/register` and `/react/register` | registration and authenticated redirect handling |
+| `/lobby` and `/react/lobby` | lobby list, selection, join/open flows |
+| `/lobby/new` and `/react/lobby/new` | game creation with presets, profiles, and validation |
+| `/profile` and `/react/profile` | player profile, theme preference, admin module controls |
+| `/game`, `/game/:gameId`, `/react/game`, `/react/game/:gameId` | gameplay shell, SSE sync, actions, and recovery flows |
+
+## Deprecated URLs
+
+| URL family | Behavior |
+| --- | --- |
+| Root `*.html` documents such as `/index.html`, `/register.html`, `/lobby.html`, `/game.html` | no longer supported as entrypoints |
+| `/legacy`, `/legacy/`, `/legacy/*.html` | redirected only when a canonical React equivalent exists |
+| `/legacy/*.mjs`, `/legacy/*.css`, `/legacy/generated/*`, and unknown `/legacy/*` paths | return `404` |
+
+## Guardrails
+
+| Area | Rule |
+| --- | --- |
+| HTTP boundary | `frontend/src/core/api/*` remains the only typed client boundary |
+| Shared transport schema | shared payload validation stays centralized in `shared/runtime-validation.cts` |
+| Game rules | rule validation remains exclusively in the backend engine |
+| Alias support | canonical routes and `/react/*` stay behaviorally aligned |
+
+## Validation Gate
+
+Route-contract changes should pass `npm run test:react` and `npm run test:all`.
