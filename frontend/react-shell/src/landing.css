@@ -3,17 +3,43 @@
    Standalone stylesheet, Age of Empires II aesthetic
    ================================================================ */
 
-*, *::before, *::after { box-sizing: border-box; }
+body[data-shell-kind="marketing"] *,
+body[data-shell-kind="marketing"] *::before,
+body[data-shell-kind="marketing"] *::after {
+  box-sizing: border-box;
+}
 
-html {
+html:has(body[data-shell-kind="marketing"]) {
   scroll-behavior: smooth;
 }
 
-a { color: inherit; text-decoration: none; }
-img { display: block; max-width: 100%; }
-h1, h2, h3 { margin: 0; line-height: 1.15; text-wrap: balance; }
-p { margin: 0; }
-ul { margin: 0; padding: 0; list-style: none; }
+body[data-shell-kind="marketing"] a {
+  color: inherit;
+  text-decoration: none;
+}
+
+body[data-shell-kind="marketing"] img {
+  display: block;
+  max-width: 100%;
+}
+
+body[data-shell-kind="marketing"] h1,
+body[data-shell-kind="marketing"] h2,
+body[data-shell-kind="marketing"] h3 {
+  margin: 0;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+body[data-shell-kind="marketing"] p {
+  margin: 0;
+}
+
+body[data-shell-kind="marketing"] ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
 .ld-container {
   width: min(1200px, calc(100% - 48px));
@@ -736,11 +762,13 @@ body[data-landing-menu-open="true"] .ld-menu-toggle-icon::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
+  html:has(body[data-shell-kind="marketing"]) {
     scroll-behavior: auto;
   }
 
-  *, *::before, *::after {
+  body[data-shell-kind="marketing"] *,
+  body[data-shell-kind="marketing"] *::before,
+  body[data-shell-kind="marketing"] *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

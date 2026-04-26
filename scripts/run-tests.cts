@@ -315,6 +315,27 @@ register("frontend CSS usa solo token tema fuori dalla sezione definizioni", () 
   checkThemeTokenization();
 });
 
+register("landing CSS limita i reset document-wide alla route marketing", () => {
+  const css = fs
+    .readFileSync(path.join(projectRoot, "frontend", "react-shell", "src", "landing.css"), "utf8")
+    .replace(/\r\n/g, "\n");
+
+  [
+    /\n\s*\*,\s*\*::before,\s*\*::after\s*\{/,
+    /\n\s*html\s*\{/,
+    /\n\s*a\s*\{/,
+    /\n\s*img\s*\{/,
+    /\n\s*h1,\s*h2,\s*h3\s*\{/,
+    /\n\s*p\s*\{/,
+    /\n\s*ul\s*\{/
+  ].forEach((pattern) => {
+    assert.doesNotMatch(css, pattern);
+  });
+
+  assert.match(css, /body\[data-shell-kind="marketing"\]\s+a\s*\{/);
+  assert.match(css, /html:has\(body\[data-shell-kind="marketing"\]\)\s*\{/);
+});
+
 register("vercel build command compila TypeScript prima della sync degli asset", () => {
   const config = readProjectJson("vercel.json");
   assert.equal(typeof config.buildCommand, "string");

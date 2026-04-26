@@ -117,7 +117,7 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
     {
       type: "query",
       key: "gameId",
-      value: "(?<gameId>.*)"
+      value: "(?<gameId>.+)"
     }
   ]);
 });

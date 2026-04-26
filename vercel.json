@@ -49,7 +49,7 @@
         {
           "type": "query",
           "key": "gameId",
-          "value": "(?<gameId>.*)"
+          "value": "(?<gameId>.+)"
         }
       ],
       "destination": "/game/:gameId",

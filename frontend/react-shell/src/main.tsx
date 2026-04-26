@@ -11,6 +11,7 @@ import { applyStoredRegisteredShellTheme, installShellThemeBridge } from "@react
 import "./styles.css";
 import "./game-layout.css";
 import "./landing.css";
+import "./shell-reset.css";
 import "./theme-tokens.css";
 
 setLocale(resolveLocale());
