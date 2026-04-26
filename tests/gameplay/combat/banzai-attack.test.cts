@@ -92,3 +92,108 @@ register("resolveBanzaiAttack normalizes attack dice as armies drop", () => {
   assert.equal(state.territories.bastion.armies, 0);
   assert.equal(state.pendingConquest.toId, "bastion");
 });
+
+register("resolveBanzaiAttack uses the maximum legal dice when no dice count is requested", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "aurora", ownerId: "p1", armies: 3 },
+      { id: "bastion", ownerId: "p2", armies: 2 }
+    ]),
+    turnPhase: TurnPhase.ATTACK,
+    currentTurnIndex: 0
+  });
+  state.mapTerritories = [
+    { id: "aurora", name: "Aurora", neighbors: ["bastion"], continentId: null },
+    { id: "bastion", name: "Bastion", neighbors: ["aurora"], continentId: null }
+  ];
+  const random = createFixedRandom(rollsToRandomValues([6, 6, 1, 1]));
+
+  const result = resolveBanzaiAttack(state, "p1", "aurora", "bastion", random);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rounds.length, 1);
+  assert.equal(result.rounds[0].attackDiceCount, 2);
+  assert.equal(result.rounds[0].conqueredTerritory, true);
+  assert.equal(state.pendingConquest.toId, "bastion");
+});
+
+register("resolveBanzaiAttack clamps requested dice with persisted runtime dice metadata", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "aurora", ownerId: "p1", armies: 5 },
+      { id: "bastion", ownerId: "p2", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK,
+    currentTurnIndex: 0
+  });
+  state.mapTerritories = [
+    { id: "aurora", name: "Aurora", neighbors: ["bastion"], continentId: null },
+    { id: "bastion", name: "Bastion", neighbors: ["aurora"], continentId: null }
+  ];
+  state.diceRuleSetId = "runtime.duel";
+  state.gameConfig = {
+    diceRuleSetName: "Runtime Duel",
+    diceRuleSetAttackerMaxDice: 1,
+    diceRuleSetDefenderMaxDice: 1,
+    diceRuleSetAttackerMustLeaveOneArmyBehind: true,
+    diceRuleSetDefenderWinsTies: true
+  };
+  const random = createFixedRandom(rollsToRandomValues([6, 1]));
+
+  const result = resolveBanzaiAttack(state, "p1", "aurora", "bastion", random, 3);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rounds.length, 1);
+  assert.equal(result.rounds[0].attackDiceCount, 1);
+  assert.equal(result.rounds[0].defendDiceCount, 1);
+  assert.equal(result.rounds[0].conqueredTerritory, true);
+});
+
+register("resolveBanzaiAttack stops after one round when the attacker cannot continue", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "aurora", ownerId: "p1", armies: 2 },
+      { id: "bastion", ownerId: "p2", armies: 3 }
+    ]),
+    turnPhase: TurnPhase.ATTACK,
+    currentTurnIndex: 0
+  });
+  state.mapTerritories = [
+    { id: "aurora", name: "Aurora", neighbors: ["bastion"], continentId: null },
+    { id: "bastion", name: "Bastion", neighbors: ["aurora"], continentId: null }
+  ];
+  const random = createFixedRandom(rollsToRandomValues([1, 6, 6]));
+
+  const result = resolveBanzaiAttack(state, "p1", "aurora", "bastion", random, 1);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.rounds.length, 1);
+  assert.equal(result.rounds[0].attackerArmiesRemaining, 1);
+  assert.equal(state.pendingConquest, null);
+  assert.equal(state.territories.bastion.ownerId, "p2");
+});
+
+register("resolveBanzaiAttack returns the initial attack failure without synthetic rounds", () => {
+  const state = makeState({
+    players: makePlayers(["Alice", "Bob"]),
+    territories: territoryStates([
+      { id: "aurora", ownerId: "p1", armies: 1 },
+      { id: "bastion", ownerId: "p2", armies: 1 }
+    ]),
+    turnPhase: TurnPhase.ATTACK,
+    currentTurnIndex: 0
+  });
+  state.mapTerritories = [
+    { id: "aurora", name: "Aurora", neighbors: ["bastion"], continentId: null },
+    { id: "bastion", name: "Bastion", neighbors: ["aurora"], continentId: null }
+  ];
+
+  const result = resolveBanzaiAttack(state, "p1", "aurora", "bastion");
+
+  assert.equal(result.ok, false);
+  assert.equal(result.rounds, undefined);
+  assert.equal(state.pendingConquest, null);
+});
