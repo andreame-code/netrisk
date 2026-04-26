@@ -52,54 +52,51 @@ register("handleBasicGameActionRoute returns false for unsupported action types"
   assert.equal(handled, false);
 });
 
-register(
-  "handleBasicGameActionRoute reinforce stops cleanly on version conflicts",
-  async () => {
-    let broadcastCalls = 0;
-    let sendJsonCalls = 0;
-    let versionConflictCalls = 0;
+register("handleBasicGameActionRoute reinforce stops cleanly on version conflicts", async () => {
+  let broadcastCalls = 0;
+  let sendJsonCalls = 0;
+  let versionConflictCalls = 0;
 
-    const handled = await handleBasicGameActionRoute(
-      "reinforce",
-      {},
-      { territoryId: "aurora", amount: 2 },
-      createGameContext(),
-      "player-1",
-      7,
-      { id: "user-1" },
-      () => ({ ok: true }),
-      () => {
-        throw new Error("moveAfterConquest should not run for reinforce.");
-      },
-      () => {
-        throw new Error("applyFortify should not run for reinforce.");
-      },
-      async () => {
-        throw new Error("stale version");
-      },
-      () => {
-        broadcastCalls += 1;
-      },
-      () => ({ ok: true }),
-      (error: unknown) => {
-        versionConflictCalls += 1;
-        return error instanceof Error && error.message === "stale version";
-      },
-      (territoryId: string) => territoryId === "aurora",
-      () => {
-        sendJsonCalls += 1;
-      },
-      () => {
-        throw new Error("sendLocalizedError should not run for version conflicts.");
-      }
-    );
+  const handled = await handleBasicGameActionRoute(
+    "reinforce",
+    {},
+    { territoryId: "aurora", amount: 2 },
+    createGameContext(),
+    "player-1",
+    7,
+    { id: "user-1" },
+    () => ({ ok: true }),
+    () => {
+      throw new Error("moveAfterConquest should not run for reinforce.");
+    },
+    () => {
+      throw new Error("applyFortify should not run for reinforce.");
+    },
+    async () => {
+      throw new Error("stale version");
+    },
+    () => {
+      broadcastCalls += 1;
+    },
+    () => ({ ok: true }),
+    (error: unknown) => {
+      versionConflictCalls += 1;
+      return error instanceof Error && error.message === "stale version";
+    },
+    (territoryId: string) => territoryId === "aurora",
+    () => {
+      sendJsonCalls += 1;
+    },
+    () => {
+      throw new Error("sendLocalizedError should not run for version conflicts.");
+    }
+  );
 
-    assert.equal(handled, true);
-    assert.equal(versionConflictCalls, 1);
-    assert.equal(broadcastCalls, 0);
-    assert.equal(sendJsonCalls, 0);
-  }
-);
+  assert.equal(handled, true);
+  assert.equal(versionConflictCalls, 1);
+  assert.equal(broadcastCalls, 0);
+  assert.equal(sendJsonCalls, 0);
+});
 
 register(
   "handleBasicGameActionRoute returns localized engine errors for move-after-conquest",

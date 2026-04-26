@@ -124,10 +124,7 @@ register("account routes return early when auth is missing", async () => {
   assert.equal(await handleAuthSessionRoute(deps), true);
   assert.equal(await handleProfileRoute(deps), true);
   assert.equal(await handleThemePreferenceRoute(deps, { theme: "command" }), true);
-  assert.equal(
-    await handleAccountSettingsRoute(deps, { currentPassword: "secret123" }),
-    true
-  );
+  assert.equal(await handleAccountSettingsRoute(deps, { currentPassword: "secret123" }), true);
   assert.equal(sendJsonCalls, 0);
   assert.equal(sendLocalizedErrorCalls, 0);
 });

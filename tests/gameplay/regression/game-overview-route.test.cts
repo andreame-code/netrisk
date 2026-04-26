@@ -118,77 +118,83 @@ register("handleGamesListRoute validates outbound list payloads", async () => {
   );
 });
 
-register("handleGameOptionsRoute normalizes empty catalog sections and merges extra options", async () => {
-  const payloads: Array<Record<string, unknown>> = [];
+register(
+  "handleGameOptionsRoute normalizes empty catalog sections and merges extra options",
+  async () => {
+    const payloads: Array<Record<string, unknown>> = [];
 
-  await handleGameOptionsRoute(
-    {},
-    () => null,
-    () => [24, 48, 72],
-    (_res: unknown, _statusCode: number, payload: Record<string, unknown>) => {
-      payloads.push(payload);
-    },
-    async () => ({
-      customFeatureFlags: ["demo"],
-      activeGameId: "game-2"
-    })
-  );
+    await handleGameOptionsRoute(
+      {},
+      () => null,
+      () => [24, 48, 72],
+      (_res: unknown, _statusCode: number, payload: Record<string, unknown>) => {
+        payloads.push(payload);
+      },
+      async () => ({
+        customFeatureFlags: ["demo"],
+        activeGameId: "game-2"
+      })
+    );
 
-  assert.equal(payloads.length, 1);
-  assert.deepEqual(payloads[0].modules, []);
-  assert.deepEqual(payloads[0].maps, []);
-  assert.deepEqual(payloads[0].themes, []);
-  assert.deepEqual(payloads[0].turnTimeoutHoursOptions, [24, 48, 72]);
-  assert.deepEqual(payloads[0].playerRange, { min: 2, max: 4 });
-  assert.deepEqual(payloads[0].customFeatureFlags, ["demo"]);
-  assert.equal(payloads[0].activeGameId, "game-2");
-});
+    assert.equal(payloads.length, 1);
+    assert.deepEqual(payloads[0].modules, []);
+    assert.deepEqual(payloads[0].maps, []);
+    assert.deepEqual(payloads[0].themes, []);
+    assert.deepEqual(payloads[0].turnTimeoutHoursOptions, [24, 48, 72]);
+    assert.deepEqual(payloads[0].playerRange, { min: 2, max: 4 });
+    assert.deepEqual(payloads[0].customFeatureFlags, ["demo"]);
+    assert.equal(payloads[0].activeGameId, "game-2");
+  }
+);
 
-register("handleGameOptionsRoute validates outbound payloads when response validation is enabled", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
+register(
+  "handleGameOptionsRoute validates outbound payloads when response validation is enabled",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
 
-  await handleGameOptionsRoute(
-    {},
-    () => ({
-      modules: [],
-      gameModules: [],
-      enabledModules: [],
-      maps: [],
-      ruleSets: [],
-      playerPieceSets: [],
-      diceRuleSets: [],
-      contentPacks: [],
-      victoryRuleSets: [],
-      themes: [],
-      pieceSkins: [],
-      gamePresets: [],
-      uiSlots: [],
-      contentProfiles: [],
-      gameplayProfiles: [],
-      uiProfiles: [],
-      content: {}
-    }),
-    () => [12, 24],
-    () => {
-      throw new Error("sendJson should not run when options payload validation fails.");
-    },
-    () => ({
-      playerRange: {
-        min: "two",
-        max: 4
+    await handleGameOptionsRoute(
+      {},
+      () => ({
+        modules: [],
+        gameModules: [],
+        enabledModules: [],
+        maps: [],
+        ruleSets: [],
+        playerPieceSets: [],
+        diceRuleSets: [],
+        contentPacks: [],
+        victoryRuleSets: [],
+        themes: [],
+        pieceSkins: [],
+        gamePresets: [],
+        uiSlots: [],
+        contentProfiles: [],
+        gameplayProfiles: [],
+        uiProfiles: [],
+        content: {}
+      }),
+      () => [12, 24],
+      () => {
+        throw new Error("sendJson should not run when options payload validation fails.");
+      },
+      () => ({
+        playerRange: {
+          min: "two",
+          max: 4
+        }
+      }),
+      (...args: LocalizedErrorCall) => {
+        localizedErrorCall = args;
       }
-    }),
-    (...args: LocalizedErrorCall) => {
-      localizedErrorCall = args;
-    }
-  );
+    );
 
-  assert.ok(localizedErrorCall);
-  const call = requireLocalizedErrorCall(localizedErrorCall);
-  assert.equal(call[1], 500);
-  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
-  assert.equal(
-    call[7].validationErrors.some((entry: ValidationIssue) => entry.path === "playerRange.min"),
-    true
-  );
-});
+    assert.ok(localizedErrorCall);
+    const call = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(call[1], 500);
+    assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+    assert.equal(
+      call[7].validationErrors.some((entry: ValidationIssue) => entry.path === "playerRange.min"),
+      true
+    );
+  }
+);
