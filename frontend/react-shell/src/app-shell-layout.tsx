@@ -175,11 +175,11 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    syncModuleStyleAssets(moduleOptionsQuery.data.options);
     if (!moduleOptionsQuery.data.didLoadModuleOptions) {
       return;
     }
 
+    syncModuleStyleAssets(moduleOptionsQuery.data.options);
     setAvailableShellThemes(moduleOptionsQuery.data.options.content?.siteThemeIds || null);
     applyShellTheme(null);
   }, [moduleOptionsQuery.data]);

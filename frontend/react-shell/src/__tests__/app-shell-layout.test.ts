@@ -11,8 +11,16 @@ import { setAvailableShellThemes } from "@react-shell/theme";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const moduleStyleMocks = vi.hoisted(() => ({
+  syncModuleStyleAssets: vi.fn()
+}));
+
 vi.mock("@frontend-core/api/client.mts", () => ({
   getModuleOptions: vi.fn()
+}));
+
+vi.mock("@react-shell/module-style-assets", () => ({
+  syncModuleStyleAssets: moduleStyleMocks.syncModuleStyleAssets
 }));
 
 vi.mock("@react-shell/auth", () => ({
@@ -75,6 +83,7 @@ describe("resolveCurrentGameId", () => {
     window.localStorage.clear();
     setAvailableShellThemes(["command", "midnight", "ember"]);
     getModuleOptionsMock.mockReset();
+    moduleStyleMocks.syncModuleStyleAssets.mockClear();
   });
 
   it("returns the decoded path game id for valid route segments", () => {
@@ -126,5 +135,6 @@ describe("resolveCurrentGameId", () => {
     expect(window.localStorage.getItem("netrisk.theme")).toBe("aurora");
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(document.body.dataset.theme).toBeUndefined();
+    expect(moduleStyleMocks.syncModuleStyleAssets).not.toHaveBeenCalled();
   });
 });
