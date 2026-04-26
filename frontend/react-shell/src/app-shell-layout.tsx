@@ -160,6 +160,10 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   }, [section]);
 
   useEffect(() => {
+    if (!moduleOptionsQuery.data) {
+      return;
+    }
+
     syncModuleStyleAssets(moduleOptionsQuery.data);
     setAvailableShellThemes(moduleOptionsQuery.data?.content?.siteThemeIds || null);
     applyShellTheme(null);
