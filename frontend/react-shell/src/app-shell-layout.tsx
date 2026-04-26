@@ -25,7 +25,7 @@ import {
   buildRegisterPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
-import { setAvailableShellThemes } from "@react-shell/theme";
+import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
 
 type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
 
@@ -162,6 +162,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     syncModuleStyleAssets(moduleOptionsQuery.data);
     setAvailableShellThemes(moduleOptionsQuery.data?.content?.siteThemeIds || null);
+    applyShellTheme(null);
   }, [moduleOptionsQuery.data]);
 
   const isAuthenticated = state.status === "authenticated";
