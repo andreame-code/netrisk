@@ -1,7 +1,7 @@
 {
   "content": {
     "mapIds": ["classic-mini", "middle-earth", "world-classic"],
-    "siteThemeIds": ["command", "midnight", "ember"],
+    "siteThemeIds": ["command", "midnight", "ember", "war-table"],
     "pieceSkinIds": ["classic-color", "command-ring"],
     "playerPieceSetIds": ["classic"],
     "contentPackIds": ["core"],

@@ -426,6 +426,154 @@ html[data-theme="ember"] {
   --parchment: var(--text);
   --parchment-dim: var(--text-muted);
 }
+
+html[data-theme="war-table"] {
+  --bg: #020a0f;
+  --bg-soft: #051722;
+  --panel: rgba(3, 14, 21, 0.9);
+  --panel-strong: rgba(1, 8, 13, 0.97);
+  --overlay: rgba(1, 6, 10, 0.58);
+  --grid: rgba(230, 166, 34, 0.042);
+  --hero-overlay: rgba(230, 166, 34, 0.16);
+  --text: #e9edf0;
+  --text-muted: rgba(198, 208, 214, 0.72);
+  --text-inverse: #ffffff;
+  --heading: #f5f0e6;
+  --caption: rgba(242, 176, 45, 0.92);
+  --accent: #f2a91f;
+  --accent-2: #35739a;
+  --gold: #f2a91f;
+  --gold-hi: #ffc957;
+  --gold-dim: rgba(242, 169, 31, 0.52);
+  --border: rgba(159, 185, 198, 0.24);
+  --border-hi: rgba(242, 169, 31, 0.58);
+  --line: rgba(159, 185, 198, 0.16);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
+  --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.4);
+  --bevel:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.68),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04),
+    inset -1px 0 0 rgba(0, 0, 0, 0.46);
+  --success: #6ede7b;
+  --success-bg: rgba(36, 120, 77, 0.24);
+  --success-border: rgba(110, 222, 123, 0.28);
+  --warning: #ffd889;
+  --warning-bg: rgba(132, 95, 26, 0.24);
+  --warning-border: rgba(242, 169, 31, 0.34);
+  --danger: #ff6b5f;
+  --danger-bg: rgba(130, 34, 32, 0.3);
+  --danger-border: rgba(255, 107, 95, 0.34);
+  --focus-ring: rgba(255, 201, 87, 0.88);
+  --control-bg: linear-gradient(180deg, rgba(14, 32, 44, 0.96), rgba(5, 17, 25, 0.96));
+  --control-bg-hover: linear-gradient(180deg, rgba(23, 47, 61, 0.98), rgba(8, 24, 34, 0.98));
+  --card-bg: linear-gradient(180deg, rgba(13, 31, 42, 0.94), rgba(4, 16, 23, 0.92));
+  --card-bg-hover: linear-gradient(180deg, rgba(17, 39, 52, 0.96), rgba(6, 20, 29, 0.96));
+  --badge-bg: rgba(242, 169, 31, 0.08);
+  --app-shell-bg:
+    radial-gradient(circle at 76% 0%, rgba(242, 169, 31, 0.16), transparent 26%),
+    radial-gradient(circle at 18% 8%, rgba(38, 119, 158, 0.2), transparent 30%),
+    linear-gradient(180deg, #02070b 0%, #03111a 48%, #061f2b 100%);
+  --marketing-shell-bg: linear-gradient(180deg, #020a0f 0%, #041822 100%);
+  --backdrop-grid:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  --shell-surface-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(8, 24, 34, 0.96), rgba(2, 10, 16, 0.94));
+  --shell-top-wash: linear-gradient(180deg, rgba(242, 169, 31, 0.12), transparent);
+  --page-aura-bg:
+    radial-gradient(circle at top center, rgba(242, 169, 31, 0.14), transparent 34%),
+    radial-gradient(circle at 14% 20%, rgba(37, 119, 158, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(2, 10, 15, 0.95), rgba(2, 10, 15, 0.08));
+  --campaign-shell-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(6, 24, 35, 0.92), rgba(2, 11, 17, 0.86));
+  --campaign-shell-overlay:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 34%),
+    linear-gradient(180deg, rgba(242, 169, 31, 0.035), transparent 24%);
+  --hero-panel-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(7, 26, 38, 0.96), rgba(3, 13, 20, 0.92));
+  --hero-text-shadow: 0 3px 18px rgba(0, 0, 0, 0.76);
+  --status-surface: rgba(2, 10, 16, 0.48);
+  --focus-card-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.22), transparent 44%),
+    linear-gradient(180deg, rgba(12, 35, 49, 0.98), rgba(4, 15, 23, 0.98));
+  --nav-surface:
+    linear-gradient(180deg, rgba(5, 17, 25, 0.98), rgba(1, 8, 13, 0.96)),
+    radial-gradient(circle at top, rgba(242, 169, 31, 0.08), transparent 54%);
+  --nav-hover-bg: rgba(242, 169, 31, 0.14);
+  --nav-active-bg: rgba(242, 169, 31, 0.2);
+  --button-primary-bg:
+    radial-gradient(ellipse at top, rgba(255, 215, 116, 0.28) 0%, transparent 58%),
+    linear-gradient(180deg, #c78719 0%, #73500e 100%);
+  --button-primary-bg-hover:
+    radial-gradient(ellipse at top, rgba(255, 223, 142, 0.36) 0%, transparent 58%),
+    linear-gradient(180deg, #e09b20 0%, #8a6112 100%);
+  --button-primary-border: rgba(242, 169, 31, 0.68);
+  --button-primary-border-hover: rgba(255, 201, 87, 0.9);
+  --button-primary-text: #fff6dd;
+  --button-primary-text-hover: #ffffff;
+  --button-primary-shadow: var(--bevel), 0 8px 24px rgba(0, 0, 0, 0.62);
+  --button-primary-shadow-hover: var(--bevel), 0 14px 32px rgba(0, 0, 0, 0.68);
+  --button-ghost-bg: linear-gradient(180deg, rgba(12, 30, 41, 0.96), rgba(4, 16, 23, 0.94));
+  --button-ghost-bg-hover: linear-gradient(180deg, rgba(18, 41, 54, 0.98), rgba(6, 22, 31, 0.96));
+  --button-danger-bg:
+    radial-gradient(ellipse at top, rgba(255, 128, 112, 0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #9d2e27 0%, #5e1513 100%);
+  --button-danger-border: rgba(255, 107, 95, 0.56);
+  --button-danger-text: #ffecea;
+  --field-bg: linear-gradient(180deg, rgba(11, 28, 39, 0.98), rgba(4, 15, 23, 0.96));
+  --field-text: #f1f6f8;
+  --field-placeholder: rgba(198, 208, 214, 0.5);
+  --feature-card-bg: linear-gradient(180deg, rgba(10, 27, 38, 0.98), rgba(4, 15, 22, 0.96));
+  --feature-card-accent-bg:
+    radial-gradient(ellipse at top right, rgba(242, 169, 31, 0.12) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(15, 38, 51, 1), rgba(5, 18, 27, 0.98));
+  --metric-win-bg:
+    radial-gradient(circle at top right, rgba(110, 222, 123, 0.16), transparent 44%),
+    linear-gradient(180deg, rgba(25, 69, 52, 0.96), rgba(8, 28, 24, 0.94));
+  --metric-loss-bg:
+    radial-gradient(circle at top right, rgba(255, 107, 95, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(72, 24, 25, 0.96), rgba(32, 11, 13, 0.94));
+  --metric-neutral-bg:
+    radial-gradient(circle at top right, rgba(111, 161, 187, 0.14), transparent 44%),
+    linear-gradient(180deg, rgba(18, 37, 48, 0.96), rgba(7, 20, 29, 0.94));
+  --metric-gold-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.2), transparent 44%),
+    linear-gradient(180deg, rgba(69, 49, 16, 0.98), rgba(28, 22, 10, 0.96));
+  --owner-color-default: #9fb9c6;
+  --owner-text-default: #07121a;
+  --avatar-bg:
+    radial-gradient(circle at top, rgba(242, 169, 31, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(18, 37, 48, 0.96), rgba(5, 17, 25, 0.94));
+  --footer-shell-bg:
+    radial-gradient(circle at top right, rgba(242, 169, 31, 0.12), transparent 48%),
+    linear-gradient(180deg, rgba(7, 24, 34, 0.98), rgba(1, 8, 13, 0.96));
+  --landing-header-bg: linear-gradient(180deg, rgba(5, 17, 25, 0.98) 0%, rgba(1, 8, 13, 0.96) 100%);
+  --landing-hero-overlay:
+    radial-gradient(ellipse at 50% 40%, rgba(242, 169, 31, 0.13) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(2, 10, 15, 0.48) 0%, rgba(2, 10, 15, 0.08) 42%, rgba(2, 10, 15, 0.16) 60%, rgba(2, 10, 15, 0.9) 100%);
+  --landing-panel-bg: linear-gradient(180deg, rgba(8, 26, 37, 0.9) 0%, rgba(2, 11, 17, 0.92) 100%);
+  --landing-section-bg:
+    radial-gradient(ellipse at 50% 0%, rgba(242, 169, 31, 0.11) 0%, transparent 54%),
+    linear-gradient(180deg, #03111a 0%, #020a0f 100%);
+  --landing-map-section-bg: linear-gradient(180deg, #020a0f 0%, #061f2b 50%, #020a0f 100%);
+  --landing-howto-bg:
+    radial-gradient(ellipse at 50% 100%, rgba(242, 169, 31, 0.1) 0%, transparent 54%),
+    linear-gradient(180deg, #020a0f 0%, #061f2b 100%);
+  --landing-final-overlay: linear-gradient(180deg, rgba(2, 10, 15, 0.9) 0%, transparent 30%, transparent 70%, rgba(2, 10, 15, 0.9) 100%);
+  --landing-footer-bg: linear-gradient(180deg, #020a0f 0%, #010509 100%);
+  --radius: 6px;
+  --campaign-shell-radius: 8px;
+  --campaign-card-radius: 6px;
+  --campaign-control-radius: 4px;
+  --campaign-soft-radius: 8px;
+  --muted: var(--text-muted);
+  --parchment: var(--text);
+  --parchment-dim: var(--text-muted);
+}
 /* Theme token definitions end */
 
 * {
@@ -1341,6 +1489,393 @@ button:disabled,
   .top-nav-auth-form input {
     flex: 1 1 140px;
     width: auto;
+  }
+}
+
+html[data-theme="war-table"] body {
+  font-family:
+    "Segoe UI",
+    "Inter",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  background: var(--app-shell-bg);
+  color: var(--text);
+}
+
+html[data-theme="war-table"] .top-nav-bar {
+  min-height: 50px;
+  margin-bottom: 8px;
+  padding: 6px 16px;
+  border-color: var(--line);
+  background: var(--nav-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="war-table"] .top-nav-title,
+html[data-theme="war-table"] .nav-brand-title {
+  color: var(--gold);
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] .top-nav-brand .eyebrow,
+html[data-theme="war-table"] .status-label,
+html[data-theme="war-table"] .eyebrow {
+  color: var(--caption);
+  letter-spacing: 0.14em;
+}
+
+html[data-theme="war-table"] .top-nav-bar .nav-link {
+  min-height: 34px;
+  padding: 0 14px;
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] .top-nav-bar .nav-link:hover,
+html[data-theme="war-table"] .top-nav-bar .nav-link.is-active {
+  border-bottom-color: var(--gold);
+  background: transparent;
+  color: var(--gold-hi);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+html[data-theme="war-table"] .top-nav-actions,
+html[data-theme="war-table"] .top-nav-auth-form {
+  gap: 6px;
+}
+
+html[data-theme="war-table"] .top-nav-locale-select,
+html[data-theme="war-table"] .top-nav-auth-form input,
+html[data-theme="war-table"] select,
+html[data-theme="war-table"] input,
+html[data-theme="war-table"] textarea {
+  min-height: 34px;
+  border-color: var(--line);
+  background: var(--field-bg);
+  color: var(--field-text);
+}
+
+html[data-theme="war-table"] .campaign-page-shell {
+  width: min(1540px, calc(100% - 16px));
+  padding-bottom: 12px;
+}
+
+html[data-theme="war-table"] .campaign-page-shell::before {
+  inset: 0;
+  height: min(42rem, 68vh);
+  border-radius: var(--campaign-shell-radius);
+  background:
+    var(--backdrop-grid),
+    var(--page-aura-bg);
+  background-size:
+    38px 38px,
+    auto;
+}
+
+html[data-theme="war-table"] .panel,
+html[data-theme="war-table"] .campaign-shell,
+html[data-theme="war-table"] .card-panel,
+html[data-theme="war-table"] .status-panel,
+html[data-theme="war-table"] .admin-sidebar-summary,
+html[data-theme="war-table"] .admin-context-panel,
+html[data-theme="war-table"] .admin-subpanel,
+html[data-theme="war-table"] .admin-callout-panel {
+  border-color: var(--line);
+  background: var(--campaign-shell-bg);
+  box-shadow: var(--bevel), var(--shadow-soft);
+}
+
+html[data-theme="war-table"] .campaign-shell::before,
+html[data-theme="war-table"] .session-browser::before,
+html[data-theme="war-table"] .profile-shell::before,
+html[data-theme="war-table"] .new-game-shell::before,
+html[data-theme="war-table"] .register-shell::before {
+  height: 56px;
+  background: var(--shell-top-wash);
+}
+
+html[data-theme="war-table"] .campaign-hero {
+  padding: 18px 20px;
+  border-color: var(--line);
+  border-radius: var(--campaign-card-radius);
+  background: var(--hero-panel-bg);
+}
+
+html[data-theme="war-table"] .session-browser .campaign-hero {
+  min-height: 220px;
+  align-items: end;
+  background:
+    linear-gradient(90deg, var(--panel-strong), transparent),
+    linear-gradient(180deg, transparent, var(--panel-strong)),
+    url("/assets/maps/world-classic.png") center/cover no-repeat;
+}
+
+html[data-theme="war-table"] .session-browser,
+html[data-theme="war-table"] .profile-shell,
+html[data-theme="war-table"] .new-game-shell,
+html[data-theme="war-table"] .register-shell {
+  padding: 16px;
+  border-radius: var(--campaign-shell-radius);
+}
+
+html[data-theme="war-table"] .campaign-status-line,
+html[data-theme="war-table"] .content-meta-line,
+html[data-theme="war-table"] .game-status-bottom-strip {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-color: var(--line);
+  border-radius: var(--campaign-control-radius);
+  background: var(--status-surface);
+}
+
+html[data-theme="war-table"] .lobby-command-strip,
+html[data-theme="war-table"] .profile-command-strip,
+html[data-theme="war-table"] .profile-metrics-grid,
+html[data-theme="war-table"] .admin-kpi-grid {
+  gap: 10px;
+}
+
+html[data-theme="war-table"] .lobby-command-card,
+html[data-theme="war-table"] .profile-command-card,
+html[data-theme="war-table"] .profile-metric-card,
+html[data-theme="war-table"] .admin-metric,
+html[data-theme="war-table"] .session-detail-item,
+html[data-theme="war-table"] .profile-note-card,
+html[data-theme="war-table"] .profile-summary-card {
+  border: 1px solid var(--line);
+  border-radius: var(--campaign-card-radius);
+  background: var(--card-bg);
+  box-shadow: var(--bevel);
+}
+
+html[data-theme="war-table"] .lobby-command-card,
+html[data-theme="war-table"] .profile-command-card,
+html[data-theme="war-table"] .profile-metric-card,
+html[data-theme="war-table"] .session-detail-item {
+  padding: 12px 14px;
+}
+
+html[data-theme="war-table"] .lobby-command-card-accent,
+html[data-theme="war-table"] .profile-command-card-accent,
+html[data-theme="war-table"] .campaign-focus-card {
+  border-color: var(--border-hi);
+  background: var(--focus-card-bg);
+}
+
+html[data-theme="war-table"] .session-browser-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.36fr);
+  gap: 12px;
+}
+
+html[data-theme="war-table"] .session-list-panel,
+html[data-theme="war-table"] .session-detail-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--campaign-card-radius);
+  background: var(--panel);
+}
+
+html[data-theme="war-table"] .session-row {
+  min-height: 42px;
+  padding: 8px 12px;
+  border-color: var(--line);
+}
+
+html[data-theme="war-table"] .session-row-head {
+  min-height: 34px;
+  color: var(--caption);
+}
+
+html[data-theme="war-table"] .session-row-button:hover,
+html[data-theme="war-table"] .session-row-button.is-selected,
+html[data-theme="war-table"] .admin-list-button:hover,
+html[data-theme="war-table"] .admin-list-button.is-selected {
+  border-color: var(--border-hi);
+  background: var(--card-bg-hover);
+}
+
+html[data-theme="war-table"] .game-battlefield-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(286px, 330px);
+  gap: 10px;
+}
+
+html[data-theme="war-table"] .game-map-stage,
+html[data-theme="war-table"] .game-info-rail,
+html[data-theme="war-table"] .game-actions-rail {
+  padding: 10px;
+  border-color: var(--line);
+}
+
+html[data-theme="war-table"] .game-map-stage {
+  background:
+    var(--backdrop-grid),
+    var(--shell-surface-bg);
+  background-size:
+    34px 34px,
+    auto;
+}
+
+html[data-theme="war-table"] .map-board,
+html[data-theme="war-table"] .map-board-surface {
+  border-color: var(--line);
+  background-color: var(--panel-strong);
+}
+
+html[data-theme="war-table"] .map-board-stage {
+  filter: saturate(1.08) contrast(1.06);
+}
+
+html[data-theme="war-table"] .map-link {
+  stroke: var(--gold-dim);
+}
+
+html[data-theme="war-table"] .territory-node {
+  width: 34px;
+  height: 34px;
+  border-color: var(--line);
+  box-shadow: var(--bevel), 0 0 0 1px var(--panel-strong), 0 8px 18px var(--overlay);
+}
+
+html[data-theme="war-table"] .territory-node.is-mine,
+html[data-theme="war-table"] .territory-node.is-source,
+html[data-theme="war-table"] .territory-node.is-reinforce {
+  border-color: var(--gold-hi);
+  box-shadow: var(--bevel), 0 0 0 2px var(--gold-dim), 0 10px 22px var(--overlay);
+}
+
+html[data-theme="war-table"] .game-actions-rail {
+  position: sticky;
+  top: 68px;
+  gap: 10px;
+}
+
+html[data-theme="war-table"] .rail-section,
+html[data-theme="war-table"] .action-group,
+html[data-theme="war-table"] .game-session-card,
+html[data-theme="war-table"] .combat-result-section,
+html[data-theme="war-table"] .game-roster-section {
+  border: 1px solid var(--line);
+  border-radius: var(--campaign-card-radius);
+  background: var(--card-bg);
+}
+
+html[data-theme="war-table"] .rail-section,
+html[data-theme="war-table"] .action-group {
+  padding: 10px;
+}
+
+html[data-theme="war-table"] .section-title-row h3,
+html[data-theme="war-table"] .action-group > label {
+  color: var(--caption);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] button,
+html[data-theme="war-table"] .ghost-button,
+html[data-theme="war-table"] .lobby-create-button,
+html[data-theme="war-table"] .refresh-button,
+html[data-theme="war-table"] .primary-nav-action {
+  min-height: 36px;
+  border-radius: var(--campaign-control-radius);
+}
+
+html[data-theme="war-table"] .badge,
+html[data-theme="war-table"] .chip,
+html[data-theme="war-table"] .status-pill {
+  border-color: var(--line);
+  border-radius: var(--campaign-control-radius);
+  background: var(--badge-bg);
+  color: var(--heading);
+}
+
+html[data-theme="war-table"] .badge.accent,
+html[data-theme="war-table"] .status-pill.success {
+  color: var(--success);
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+html[data-theme="war-table"] .admin-page {
+  width: min(1500px, calc(100% - 16px));
+}
+
+html[data-theme="war-table"] .admin-shell {
+  grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+html[data-theme="war-table"] .admin-sidebar,
+html[data-theme="war-table"] .admin-main,
+html[data-theme="war-table"] .admin-table-wrap {
+  border-color: var(--line);
+  border-radius: var(--campaign-shell-radius);
+  background: var(--campaign-shell-bg);
+}
+
+html[data-theme="war-table"] .admin-nav-link {
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--campaign-card-radius);
+}
+
+html[data-theme="war-table"] .admin-nav-link.is-active {
+  border-color: var(--border-hi);
+  color: var(--gold-hi);
+}
+
+html[data-theme="war-table"] .admin-table th,
+html[data-theme="war-table"] .admin-table td {
+  padding: 0.72rem 0.8rem;
+  border-bottom-color: var(--line);
+}
+
+@media (max-width: 1100px) {
+  html[data-theme="war-table"] .session-browser-grid,
+  html[data-theme="war-table"] .game-battlefield-layout,
+  html[data-theme="war-table"] .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="war-table"] .game-actions-rail {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="war-table"] .campaign-page-shell {
+    width: min(100% - 8px, 100%);
+  }
+
+  html[data-theme="war-table"] .top-nav-bar {
+    padding: 8px;
+  }
+
+  html[data-theme="war-table"] .session-browser,
+  html[data-theme="war-table"] .profile-shell,
+  html[data-theme="war-table"] .new-game-shell,
+  html[data-theme="war-table"] .register-shell {
+    padding: 10px;
+  }
+
+  html[data-theme="war-table"] .session-browser .campaign-hero {
+    min-height: 172px;
+  }
+
+  html[data-theme="war-table"] .game-map-stage {
+    padding: 6px;
+  }
+
+  html[data-theme="war-table"] .territory-node {
+    width: 30px;
+    height: 30px;
   }
 }
 

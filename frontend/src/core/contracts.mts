@@ -6,7 +6,8 @@ export interface ThemeDefinition {
 export const registeredThemes = Object.freeze<readonly ThemeDefinition[]>([
   Object.freeze({ id: "command", labelKey: "profile.preferences.theme.command" }),
   Object.freeze({ id: "midnight", labelKey: "profile.preferences.theme.midnight" }),
-  Object.freeze({ id: "ember", labelKey: "profile.preferences.theme.ember" })
+  Object.freeze({ id: "ember", labelKey: "profile.preferences.theme.ember" }),
+  Object.freeze({ id: "war-table", labelKey: "profile.preferences.theme.warTable" })
 ]);
 
 export const DEFAULT_THEME = "command";

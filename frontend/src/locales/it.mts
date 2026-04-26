@@ -298,6 +298,7 @@ export const it = Object.freeze({
   "profile.preferences.theme.command": "Comando",
   "profile.preferences.theme.midnight": "Mezzanotte",
   "profile.preferences.theme.ember": "Brace",
+  "profile.preferences.theme.warTable": "Tavolo di guerra",
   "profile.account.eyebrow": "Accesso",
   "profile.account.heading": "Email e password",
   "profile.account.copy":

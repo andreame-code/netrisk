@@ -13,7 +13,7 @@ describe("theme runtime bridge", () => {
     document.documentElement.removeAttribute("data-theme");
     document.body.removeAttribute("data-theme");
     window.localStorage.clear();
-    setAvailableShellThemes(["command", "midnight", "ember"]);
+    setAvailableShellThemes(["command", "midnight", "ember", "war-table"]);
     installShellThemeBridge();
   });
 

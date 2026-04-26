@@ -1,7 +1,8 @@
 :root,
 html[data-theme="command"],
 html[data-theme="midnight"],
-html[data-theme="ember"] {
+html[data-theme="ember"],
+html[data-theme="war-table"] {
   --shell-bg: var(--app-shell-bg);
   --shell-panel-bg: var(--shell-surface-bg);
   --shell-panel-soft: var(--card-bg);

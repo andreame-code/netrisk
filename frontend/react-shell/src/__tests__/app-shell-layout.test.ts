@@ -81,7 +81,7 @@ describe("resolveCurrentGameId", () => {
     document.documentElement.removeAttribute("data-theme");
     document.body.removeAttribute("data-theme");
     window.localStorage.clear();
-    setAvailableShellThemes(["command", "midnight", "ember"]);
+    setAvailableShellThemes(["command", "midnight", "ember", "war-table"]);
     getModuleOptionsMock.mockReset();
     moduleStyleMocks.syncModuleStyleAssets.mockClear();
   });

@@ -296,6 +296,7 @@ export const en = Object.freeze({
   "profile.preferences.theme.command": "Command",
   "profile.preferences.theme.midnight": "Midnight",
   "profile.preferences.theme.ember": "Ember",
+  "profile.preferences.theme.warTable": "War Table",
   "profile.account.eyebrow": "Access",
   "profile.account.heading": "Email and password",
   "profile.account.copy":
