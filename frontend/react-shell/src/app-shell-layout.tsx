@@ -164,6 +164,8 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     }
   });
   const moduleOptions = moduleOptionsQuery.data?.options;
+  const preferredUserTheme =
+    state.status === "authenticated" ? state.user.preferences?.theme || null : null;
 
   useEffect(() => {
     document.body.dataset.shellKind = "app";
@@ -185,8 +187,15 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
         moduleOptionsQuery.data.options.content?.siteThemeIds ||
         null
     );
-    applyShellTheme(null);
   }, [moduleOptionsQuery.data]);
+
+  useEffect(() => {
+    if (!moduleOptionsQuery.data?.didLoadModuleOptions) {
+      return;
+    }
+
+    applyShellTheme(preferredUserTheme);
+  }, [moduleOptionsQuery.data, preferredUserTheme]);
 
   const isAuthenticated = state.status === "authenticated";
   const lobbyHref = buildLobbyPath(namespace);

@@ -14,6 +14,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const moduleStyleMocks = vi.hoisted(() => ({
   syncModuleStyleAssets: vi.fn()
 }));
+const authMocks = vi.hoisted(() => ({
+  state: {
+    status: "unauthenticated",
+    message: "Sign in to continue."
+  },
+  signIn: vi.fn(),
+  signOut: vi.fn()
+}));
 
 vi.mock("@frontend-core/api/client.mts", () => ({
   getModuleOptions: vi.fn()
@@ -25,12 +33,9 @@ vi.mock("@react-shell/module-style-assets", () => ({
 
 vi.mock("@react-shell/auth", () => ({
   useAuth: () => ({
-    state: {
-      status: "unauthenticated",
-      message: "Sign in to continue."
-    },
-    signIn: vi.fn(),
-    signOut: vi.fn()
+    state: authMocks.state,
+    signIn: authMocks.signIn,
+    signOut: authMocks.signOut
   })
 }));
 
@@ -82,6 +87,12 @@ describe("resolveCurrentGameId", () => {
     document.body.removeAttribute("data-theme");
     window.localStorage.clear();
     setAvailableShellThemes(["command", "midnight", "ember"]);
+    authMocks.state = {
+      status: "unauthenticated",
+      message: "Sign in to continue."
+    };
+    authMocks.signIn.mockReset();
+    authMocks.signOut.mockReset();
     getModuleOptionsMock.mockReset();
     moduleStyleMocks.syncModuleStyleAssets.mockClear();
   });
@@ -112,6 +123,31 @@ describe("resolveCurrentGameId", () => {
 
   it("preserves a saved module theme until runtime theme ids are available", async () => {
     window.localStorage.setItem("netrisk.theme", "aurora");
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse(["aurora", "ember"]));
+
+    renderLayout();
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("aurora");
+    });
+    expect(document.body.dataset.theme).toBe("aurora");
+    expect(window.localStorage.getItem("netrisk.theme")).toBe("aurora");
+  });
+
+  it("reapplies an authenticated module theme preference after runtime theme ids load", async () => {
+    document.documentElement.dataset.theme = "command";
+    document.body.dataset.theme = "command";
+    window.localStorage.setItem("netrisk.theme", "command");
+    authMocks.state = {
+      status: "authenticated",
+      user: {
+        id: "user-1",
+        username: "Player",
+        preferences: {
+          theme: "aurora"
+        }
+      }
+    };
     getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse(["aurora", "ember"]));
 
     renderLayout();
