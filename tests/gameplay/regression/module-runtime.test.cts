@@ -2156,6 +2156,200 @@ register("module runtime rilascia temi quando content pack invalida il modulo", 
 });
 
 register(
+  "module runtime ricalcola conflitti tema dopo la revalidazione dei content pack",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-revalidated-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-revalidated-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Revalidated Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.zzz-late-invalid-theme-provider", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme owner invalidated by content-pack revalidation"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Content pack that depends on a provider later invalidated"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Revalidated Broken Shared Runtime Theme",
+      description: "This theme owner becomes incompatible after content-pack revalidation."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "revalidated-theme-pack",
+      name: "Revalidated Theme Pack",
+      description: "References a provider theme that becomes unavailable.",
+      defaultSiteThemeId: "late-invalid-provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-recomputed-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-recomputed-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Recomputed Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner after revalidation removes the first owner"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Recomputed Shared Runtime Theme",
+      description: "This module should own the theme after revalidation."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.zzz-late-invalid-theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-late-invalid-theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Late Invalid Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Provider theme invalidated by its own content pack"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "late-invalid-provider-theme",
+      name: "Late Invalid Provider Theme",
+      description: "This provider becomes incompatible after initial content-pack validation."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "late-invalid-provider-pack",
+      name: "Late Invalid Provider Pack",
+      description: "Invalidates the provider after consumers have been inspected.",
+      defaultSiteThemeId: "late-invalid-provider-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-revalidated-theme-owner": true,
+            "demo.valid-recomputed-theme-owner": true,
+            "demo.zzz-late-invalid-theme-provider": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const revalidatedModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-revalidated-theme-owner"
+        );
+        assert.equal(revalidatedModule.status, "incompatible");
+        assert.equal(
+          revalidatedModule.errors.some((entry: string) =>
+            entry.includes("late-invalid-provider-theme")
+          ),
+          true
+        );
+
+        const validModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-recomputed-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" &&
+              entry.name === "Valid Recomputed Shared Runtime Theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(

@@ -2041,6 +2041,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
     });
 
+    revalidateRuntimeContentPacksAfterCompatibility(manifestModules);
+
     manifestModules.forEach((moduleEntry) => {
       if (!moduleEntry.compatible) {
         return;
