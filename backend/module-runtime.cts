@@ -1512,6 +1512,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
   }
 
+  function removeRuntimeSiteThemesForModule(moduleId: string): void {
+    Array.from(runtimeSiteThemesById.entries()).forEach(([themeId, runtimeEntry]) => {
+      if (runtimeEntry.moduleId === moduleId) {
+        runtimeSiteThemesById.delete(themeId);
+      }
+    });
+  }
+
   function revalidateRuntimeContentPacksAfterCompatibility(
     modules: NetRiskInstalledModule[]
   ): void {
@@ -1945,24 +1953,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         return;
       }
 
-      const siteThemeErrors = registerServerModuleSiteThemes(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (siteThemeErrors.length) {
-        moduleEntry.errors.push(...siteThemeErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-      }
-    });
-
-    manifestModules.forEach((moduleEntry) => {
-      const serverModule = serverModulesById.get(moduleEntry.id);
-      if (!serverModule) {
-        return;
-      }
-
       const pieceSetErrors = registerServerModulePlayerPieceSets(
         moduleEntry.id,
         serverModule,
@@ -2015,6 +2005,29 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           moduleEntry.compatible = false;
           moduleEntry.errors.push(`Conflicts with enabled module "${conflictingModuleId}".`);
         }
+      }
+    });
+
+    manifestModules.forEach((moduleEntry) => {
+      if (!moduleEntry.compatible) {
+        return;
+      }
+
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const siteThemeErrors = registerServerModuleSiteThemes(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath
+      );
+      if (siteThemeErrors.length) {
+        moduleEntry.errors.push(...siteThemeErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+        removeRuntimeSiteThemesForModule(moduleEntry.id);
       }
     });
 

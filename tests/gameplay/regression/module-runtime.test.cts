@@ -1905,6 +1905,122 @@ register(
 );
 
 register(
+  "module runtime non lascia a moduli incompatibili la prenotazione dei temi runtime",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-broken-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-broken-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Broken Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.missing-theme-dependency", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme from an incompatible module"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Broken Shared Runtime Theme",
+      description: "This theme must not reserve the id."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner of the shared theme id"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Shared Runtime Theme",
+      description: "This module should own the theme id."
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.valid-theme-owner/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+
+        const brokenModule = enableResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-broken-theme-owner"
+        );
+        assert.equal(brokenModule.status, "incompatible");
+        assert.equal(
+          brokenModule.errors.some((entry: string) =>
+            entry.includes('Missing dependency "demo.missing-theme-dependency"')
+          ),
+          true
+        );
+
+        const validModule = enableResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" && entry.name === "Valid Shared Runtime Theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(
