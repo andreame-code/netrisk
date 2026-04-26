@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 test("profile page shows a clear error state when no session is available", async ({ page }) => {
-  await page.goto('/profile.html');
+  await page.goto('/profile');
 
   await expect(page.getByTestId('player-profile-shell')).toBeVisible();
   await expect(page.locator('#profile-feedback')).toBeVisible();

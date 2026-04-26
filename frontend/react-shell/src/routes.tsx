@@ -6,20 +6,14 @@ import {
   Outlet,
   Route,
   Routes,
-  useLocation,
   useNavigate,
   useSearchParams
 } from "react-router-dom";
-
-import { useQuery } from "@tanstack/react-query";
-
-import { listGames } from "@frontend-core/api/client.mts";
-import { LegacyAppShell } from "@react-shell/legacy-app-shell";
+import { AppShellLayout } from "@react-shell/app-shell-layout";
 import { useAuth, AuthProvider } from "@react-shell/auth";
 import { LandingRoute } from "@react-shell/landing-route";
 import {
   buildBootstrapPath,
-  buildGamePath,
   buildLobbyPath,
   buildLoginPath,
   buildRegisterHref,
@@ -58,11 +52,6 @@ function LoadingPanel({ title, copy }: { title: string; copy: string }) {
   );
 }
 
-function LegacyDocumentRedirect({ to }: { to: string }) {
-  const location = useLocation();
-  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
-}
-
 function ErrorPanel({
   title,
   message,
@@ -86,18 +75,18 @@ function ErrorPanel({
 
 function ShellLayout() {
   return (
-    <LegacyAppShell>
+    <AppShellLayout>
       <Suspense
         fallback={
           <LoadingPanel
             title="Loading the requested route"
-            copy="Preparing the React shell view and keeping the shared legacy layout contract intact."
+            copy="Preparing the requested view inside the React shell."
           />
         }
       >
         <Outlet />
       </Suspense>
-    </LegacyAppShell>
+    </AppShellLayout>
   );
 }
 
@@ -122,82 +111,6 @@ function BootstrapRoute() {
 
   return (
     <Navigate to={state.status === "authenticated" ? buildLobbyPath(namespace) : "/"} replace />
-  );
-}
-
-function GameHtmlBridge() {
-  const [searchParams] = useSearchParams();
-  const namespace = useShellNamespace();
-  const { state, refresh } = useAuth();
-  const rawGameId = searchParams.get("gameId");
-  const gameId = typeof rawGameId === "string" ? rawGameId.trim() : "";
-  const lobbyQuery = useQuery({
-    queryKey: ["game-html-bridge", "active-game-target"],
-    enabled: !gameId && state.status === "authenticated",
-    retry: false,
-    queryFn: () =>
-      listGames({
-        errorMessage: t("lobby.errors.loadFailed"),
-        fallbackMessage: t("lobby.errors.loadFailed")
-      })
-  });
-
-  if (gameId) {
-    return <Navigate to={buildGamePath(gameId, namespace)} replace />;
-  }
-
-  if (state.status === "loading") {
-    return (
-      <LoadingPanel
-        title="Resolving the active game route"
-        copy="Checking the current browser session before deciding whether to reopen a game or send you back to the lobby."
-      />
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <ErrorPanel
-        title="Unable to resolve the active game route"
-        message={state.message}
-        onRetry={refresh}
-      />
-    );
-  }
-
-  if (state.status !== "authenticated") {
-    return <Navigate to={buildLobbyPath(namespace)} replace />;
-  }
-
-  if (lobbyQuery.isLoading) {
-    return (
-      <LoadingPanel
-        title="Resolving the active game route"
-        copy="Looking up the current session's active game before opening the gameplay route."
-      />
-    );
-  }
-
-  if (lobbyQuery.isError) {
-    return (
-      <ErrorPanel
-        title="Unable to resolve the active game route"
-        message={messageFromError(lobbyQuery.error, t("lobby.errors.loadFailed"))}
-        onRetry={async () => {
-          await refresh();
-          await lobbyQuery.refetch();
-        }}
-      />
-    );
-  }
-
-  const activeGameId = lobbyQuery.data?.activeGameId || null;
-
-  return (
-    <Navigate
-      to={activeGameId ? buildGamePath(activeGameId, namespace) : buildLobbyPath(namespace)}
-      replace
-    />
   );
 }
 
@@ -260,9 +173,7 @@ function LoginPage() {
     <section data-testid="react-shell-login-page">
       <p className="status-label">Accesso</p>
       <h2>Accedi al comando</h2>
-      <p className="status-copy">
-        Usa le stesse credenziali della UI legacy e torna subito sul percorso richiesto.
-      </p>
+      <p className="status-copy">Accedi e torna subito sul percorso richiesto.</p>
 
       <form className="shell-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="shell-field">
@@ -359,29 +270,22 @@ export function AppRoutes() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingRoute />} />
-          <Route path="/index.html" element={<LegacyDocumentRedirect to="/" />} />
-          <Route path="/landing.html" element={<LegacyDocumentRedirect to="/" />} />
           <Route path="/react" element={<BootstrapRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/react/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterRoute />} />
-            <Route path="/register.html" element={<LegacyDocumentRedirect to="/register" />} />
             <Route path="/react/register" element={<RegisterRoute />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
             <Route path="/react/unauthorized" element={<UnauthorizedPage />} />
             <Route path="/lobby" element={<LobbyRoute />} />
-            <Route path="/lobby.html" element={<LegacyDocumentRedirect to="/lobby" />} />
             <Route path="/react/lobby" element={<LobbyRoute />} />
             <Route path="/lobby/new" element={<LobbyCreateRoute />} />
-            <Route path="/new-game.html" element={<LegacyDocumentRedirect to="/lobby/new" />} />
             <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
             <Route path="/admin/*" element={<AdminRoute />} />
             <Route path="/react/admin/*" element={<AdminRoute />} />
             <Route path="/profile" element={<ProfileRoute />} />
-            <Route path="/profile.html" element={<LegacyDocumentRedirect to="/profile" />} />
             <Route path="/react/profile" element={<ProfileRoute />} />
-            <Route path="/game.html" element={<GameHtmlBridge />} />
             <Route path="/game" element={<GameRoute />} />
             <Route path="/game/:gameId" element={<GameRoute />} />
             <Route path="/react/game" element={<GameRoute />} />

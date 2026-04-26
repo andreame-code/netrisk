@@ -91,7 +91,7 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
     await route.fulfill({ json: { ok: true, bonus: 4, state: { ...currentState } } });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
   await expect(page.locator("#game-status")).toContainText("Trade Match", { timeout: 15000 });
 
   await expect(page.locator("#trade-alert")).toBeVisible();

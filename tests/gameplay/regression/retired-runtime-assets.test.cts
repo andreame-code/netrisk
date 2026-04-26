@@ -60,7 +60,7 @@ async function callRequest(app: any, pathname: string): Promise<MockResponse> {
 async function withApp(run: (app: any) => Promise<void>): Promise<void> {
   const tempRoot = path.join(
     os.tmpdir(),
-    `netrisk-legacy-runtime-assets-${process.pid}-${Date.now()}`
+    `netrisk-removed-runtime-assets-${process.pid}-${Date.now()}`
   );
   const app = createApp({
     projectRoot: process.cwd(),
@@ -78,15 +78,12 @@ async function withApp(run: (app: any) => Promise<void>): Promise<void> {
 }
 
 register(
-  "GET /legacy/generated/shared-runtime-validation.mjs serves the rollback boundary runtime",
+  "GET /legacy/generated/shared-runtime-validation.mjs is not served after static UI removal",
   async () => {
     await withApp(async (app: any) => {
       const response = await callRequest(app, "/legacy/generated/shared-runtime-validation.mjs");
 
-      assert.equal(response.statusCode, 200);
-      assert.match(response.headers["Content-Type"] || "", /javascript|ecmascript/i);
-      assert.match(response.body, /SchemaValidationError/);
-      assert.match(response.body, /parseWithSchema/);
+      assert.equal(response.statusCode, 404);
     });
   }
 );

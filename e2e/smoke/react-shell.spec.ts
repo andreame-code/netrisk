@@ -66,7 +66,7 @@ test("authenticated sessions can open a protected react route directly", async (
   await expect(page.getByTestId("react-shell-session-status")).toContainText(/Authenticated/i);
 });
 
-test("react profile shows query loading before resolving into the legacy empty-history state", async ({ page }) => {
+test("react profile shows query loading before resolving into the empty-history state", async ({ page }) => {
   await resetGame(page);
 
   const username = uniqueUser("rsh_prof_load");

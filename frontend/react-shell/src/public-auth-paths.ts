@@ -6,40 +6,12 @@ function isReactShellPath(pathname: string): boolean {
   return pathname === "/react" || pathname.startsWith("/react/");
 }
 
-function normalizeLegacyDocumentPath(pathname: string): string {
-  const url = new URL(pathname, "http://localhost");
-
-  if (url.pathname === "/index.html" || url.pathname === "/landing.html") {
-    url.pathname = "/";
-  } else if (url.pathname === "/register.html") {
-    url.pathname = "/register";
-  } else if (url.pathname === "/lobby.html") {
-    url.pathname = "/lobby";
-  } else if (url.pathname === "/new-game.html") {
-    url.pathname = "/lobby/new";
-  } else if (url.pathname === "/profile.html") {
-    url.pathname = "/profile";
-  } else if (url.pathname === "/game.html") {
-    const gameId = url.searchParams.get("gameId");
-    if (gameId) {
-      url.pathname = `/game/${encodeURIComponent(gameId)}`;
-      url.searchParams.delete("gameId");
-    } else {
-      url.pathname = "/game";
-    }
-  }
-
-  return url.pathname + url.search + url.hash;
-}
-
 function isReservedAuthPath(pathname: string): boolean {
   return (
     pathname === "/login" ||
     pathname.startsWith("/login?") ||
     pathname === "/register" ||
     pathname.startsWith("/register?") ||
-    pathname === "/register.html" ||
-    pathname.startsWith("/register.html?") ||
     pathname === "/unauthorized" ||
     pathname.startsWith("/unauthorized?") ||
     pathname === "/react/login" ||
@@ -74,23 +46,11 @@ function hydrateNamespacePath(
   pathname: string,
   namespace: ShellNamespace = currentShellNamespace()
 ): string {
-  const normalizedPathname = normalizeLegacyDocumentPath(pathname);
-
-  if (
-    namespace !== "react" ||
-    normalizedPathname.startsWith("/react/") ||
-    normalizedPathname === "/react"
-  ) {
-    return normalizedPathname;
+  if (namespace !== "react" || pathname.startsWith("/react/") || pathname === "/react") {
+    return pathname;
   }
 
-  return isReactRelativeShellPath(normalizedPathname)
-    ? `/react${normalizedPathname}`
-    : normalizedPathname;
-}
-
-function normalizeCanonicalShellPath(pathname: string): string {
-  return normalizeLegacyDocumentPath(pathname);
+  return isReactRelativeShellPath(pathname) ? `/react${pathname}` : pathname;
 }
 
 function serializeNextPathForNamespace(
@@ -172,16 +132,14 @@ export function normalizeNextPath(
     return fallback;
   }
 
-  const normalizedNextPath = normalizeLegacyDocumentPath(nextPath);
-
-  if (isReservedAuthPath(normalizedNextPath)) {
+  if (isReservedAuthPath(nextPath)) {
     return fallback;
   }
 
   const namespace = detectShellNamespace(fallback);
-  const hydratedPath = hydrateNamespacePath(normalizedNextPath, namespace);
+  const hydratedPath = hydrateNamespacePath(nextPath, namespace);
 
-  return namespace === "react" ? hydratedPath : normalizeCanonicalShellPath(hydratedPath);
+  return hydratedPath;
 }
 
 export function buildLoginHref(

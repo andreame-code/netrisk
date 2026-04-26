@@ -19,7 +19,7 @@ test("profile page shows a clear empty state for an authenticated user with no h
 
   await attachSessionCookie(page, sessionToken);
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
 
   await expect(page.getByTestId("player-profile-shell")).toBeVisible();
   await expect(page.locator("#auth-status")).toContainText(`Autenticato come ${username}.`);

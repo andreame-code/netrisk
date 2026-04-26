@@ -6,7 +6,7 @@ test("game header follows the single-row blueprint", async ({ page }) => {
 
   await resetGame(page);
   await registerAndLogin(page, username);
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   const header = page.locator(".top-nav-bar");
   await expect(header).toBeVisible();

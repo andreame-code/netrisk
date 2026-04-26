@@ -13,6 +13,7 @@ import { resolvedUiSlots } from "@frontend-core/module-catalog.mts";
 import { getLocale, listSupportedLocales, setLocale, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { syncModuleStyleAssets } from "@react-shell/module-style-assets";
 import { clearCurrentPlayerId } from "@react-shell/player-session";
 import {
   buildAdminPath,
@@ -24,19 +25,24 @@ import {
   buildRegisterPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
+import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
 
 type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
+type ModuleOptionsQueryResult = {
+  options: ModuleOptionsResponse;
+  didLoadModuleOptions: boolean;
+};
 
 function resolveAppSection(pathname: string): AppSection {
   if (pathname === "/login" || pathname === "/react/login") {
     return "login";
   }
 
-  if (pathname === "/register" || pathname === "/register.html" || pathname === "/react/register") {
+  if (pathname === "/register" || pathname === "/react/register") {
     return "register";
   }
 
-  if (pathname === "/profile" || pathname === "/profile.html" || pathname === "/react/profile") {
+  if (pathname === "/profile" || pathname === "/react/profile") {
     return "profile";
   }
 
@@ -51,7 +57,6 @@ function resolveAppSection(pathname: string): AppSection {
 
   if (
     pathname === "/game" ||
-    pathname === "/game.html" ||
     pathname === "/react/game" ||
     /^\/game\/[^/]+$/.test(pathname) ||
     /^\/react\/game\/[^/]+$/.test(pathname)
@@ -62,7 +67,7 @@ function resolveAppSection(pathname: string): AppSection {
   return "lobby";
 }
 
-export function resolveCurrentGameId(pathname: string, search: string): string | null {
+export function resolveCurrentGameId(pathname: string): string | null {
   const pathMatch = pathname.match(/^\/(?:react\/)?game\/([^/?#]+)$/);
   if (pathMatch) {
     const rawGameId = pathMatch[1] || "";
@@ -74,9 +79,7 @@ export function resolveCurrentGameId(pathname: string, search: string): string |
     }
   }
 
-  const searchParams = new URLSearchParams(search);
-  const queryValue = searchParams.get("gameId");
-  return queryValue ? queryValue : null;
+  return null;
 }
 
 function sanitizedCurrentLocation(): string {
@@ -127,12 +130,12 @@ function emptyModuleOptions(): ModuleOptionsResponse {
   };
 }
 
-export function LegacyAppShell({ children }: { children: ReactNode }) {
+export function AppShellLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const namespace = useShellNamespace();
   const { state, signIn, signOut } = useAuth();
   const section = resolveAppSection(location.pathname);
-  const currentGameId = resolveCurrentGameId(location.pathname, location.search);
+  const currentGameId = resolveCurrentGameId(location.pathname);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -143,22 +146,43 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
     retry: false,
     queryFn: async () => {
       try {
-        return (
+        const options =
           (await getModuleOptions({
             errorMessage: t("errors.requestFailed"),
             fallbackMessage: t("errors.requestFailed")
-          })) || emptyModuleOptions()
-        );
+          })) || emptyModuleOptions();
+        return {
+          options,
+          didLoadModuleOptions: true
+        } satisfies ModuleOptionsQueryResult;
       } catch {
-        return emptyModuleOptions();
+        return {
+          options: emptyModuleOptions(),
+          didLoadModuleOptions: false
+        } satisfies ModuleOptionsQueryResult;
       }
     }
   });
+  const moduleOptions = moduleOptionsQuery.data?.options;
 
   useEffect(() => {
     document.body.dataset.shellKind = "app";
     document.body.dataset.appSection = section;
   }, [section]);
+
+  useEffect(() => {
+    if (!moduleOptionsQuery.data) {
+      return;
+    }
+
+    if (!moduleOptionsQuery.data.didLoadModuleOptions) {
+      return;
+    }
+
+    syncModuleStyleAssets(moduleOptionsQuery.data.options);
+    setAvailableShellThemes(moduleOptionsQuery.data.options.content?.siteThemeIds || null);
+    applyShellTheme(null);
+  }, [moduleOptionsQuery.data]);
 
   const isAuthenticated = state.status === "authenticated";
   const lobbyHref = buildLobbyPath(namespace);
@@ -171,7 +195,7 @@ export function LegacyAppShell({ children }: { children: ReactNode }) {
     : buildGameIndexPath(namespace);
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";
-  const topNavSlots = (resolvedUiSlots(moduleOptionsQuery.data) as NetRiskUiSlotContribution[])
+  const topNavSlots = (resolvedUiSlots(moduleOptions) as NetRiskUiSlotContribution[])
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
   const visibleTopNavSlots = isAuthenticated ? topNavSlots : [];

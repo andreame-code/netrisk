@@ -45,15 +45,21 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/admin-console-routes.test.cjs",
   "../tests/gameplay/regression/admin-content-studio-routes.test.cjs",
   "../tests/gameplay/regression/auth-store.test.cjs",
+  "../tests/gameplay/regression/authorization-rules.test.cjs",
   "../tests/gameplay/regression/authored-modules.test.cjs",
+  "../tests/gameplay/regression/canonical-game-route-redirect.test.cjs",
   "../tests/gameplay/regression/codex-pr-readiness.test.cjs",
   "../tests/gameplay/regression/finished-game-retention.test.cjs",
   "../tests/gameplay/regression/startup-init-error.test.cjs",
   "../tests/gameplay/regression/tooling-and-supabase-regressions.test.cjs",
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
   "../tests/gameplay/regression/vercel-routing-config.test.cjs",
+  "../tests/gameplay/regression/account-validation-routes.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
+  "../tests/gameplay/regression/game-actions-basic-route.test.cjs",
   "../tests/gameplay/regression/game-read-routes.test.cjs",
+  "../tests/gameplay/regression/game-overview-route.test.cjs",
+  "../tests/gameplay/regression/modules-routes.test.cjs",
   "../tests/gameplay/regression/event-broadcast.test.cjs"
 ];
 

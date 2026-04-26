@@ -88,7 +88,7 @@ test("game page shows inline success after a valid trade and clears it on resele
     await route.fulfill({ json: { ok: true, bonus: 4, state: { ...currentState } } });
   });
 
-  await page.goto("/game.html");
+  await page.goto("/game");
 
   await page.locator('[data-card-id="c1"]').click();
   await page.locator('[data-card-id="c2"]').click();

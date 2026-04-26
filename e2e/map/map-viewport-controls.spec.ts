@@ -3,10 +3,10 @@ const { registerAndLogin, registerLoginAndJoin, resetGame, uniqueUser } = requir
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
-  await page.goto("/game.html");
+  await page.goto("/game");
   const owner = uniqueUser(`mvp_${suffix}`);
   await registerAndLogin(page, owner);
-  await page.goto("/new-game.html");
+  await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
   await page.locator("#setup-game-name").fill(`Map Viewport ${suffix} ${Date.now().toString(36).slice(-4)}`);

@@ -10,7 +10,7 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(page.getByRole("button", { name: "Esci" })).toBeVisible();
 
-  await page.goto("/lobby.html");
+  await page.goto("/lobby");
   const lobbyHeader = page.locator(".top-nav-bar");
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(lobbyHeader).toBeVisible({ timeout: 15000 });
@@ -27,7 +27,7 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
   await expect(page.locator("#open-game-button")).toBeVisible();
   await expect(page.locator(".content-meta-line.lobby-meta-line")).toBeVisible();
 
-  await page.goto("/profile.html");
+  await page.goto("/profile");
   const profileHeader = page.locator(".top-nav-bar");
   await expect(page.locator("#auth-status")).toContainText(username);
   await expect(profileHeader).toBeVisible({ timeout: 15000 });

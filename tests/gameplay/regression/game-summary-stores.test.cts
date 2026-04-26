@@ -775,3 +775,364 @@ register(
     assert.equal(runtimeCustomMap.mapName, "Runtime Frontier");
   }
 );
+
+register("game session store validates creation inputs and normalizes fallback names", async () => {
+  const games: any[] = [];
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId() {},
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return null;
+      },
+      updateGame(entry: any) {
+        return entry;
+      }
+    }
+  });
+
+  assert.throws(() => gameSessions.createGame(null as any), /stato iniziale valido/);
+  assert.throws(
+    () => gameSessions.createGame({ phase: "lobby", players: [] }, { name: "   " }),
+    /nome della partita non puo essere vuoto/
+  );
+  assert.throws(
+    () => gameSessions.createGame({ phase: "lobby", players: [] }, { name: "Risk <script>" }),
+    /caratteri non consentiti/
+  );
+
+  const created = await gameSessions.createGame(
+    {
+      phase: "lobby",
+      players: [],
+      territories: {},
+      hands: {}
+    },
+    { name: null, creatorUserId: "" }
+  );
+
+  assert.equal(created.game.name, "Partita 1");
+  assert.equal(created.game.creatorUserId, null);
+  assert.equal(created.game.version, 1);
+  assert.equal(games.length, 1);
+});
+
+register("game session store selects active games and surfaces missing-id errors", async () => {
+  const games = [
+    {
+      id: "fallback-game",
+      name: "Fallback Game",
+      version: 1,
+      creatorUserId: "u-1",
+      state: { phase: "lobby", players: [] },
+      createdAt: "2026-04-22T10:00:00.000Z",
+      updatedAt: "2026-04-22T10:00:00.000Z"
+    },
+    {
+      id: "preferred-game",
+      name: "Preferred Game",
+      version: 2,
+      creatorUserId: "u-2",
+      state: { phase: "active", players: [] },
+      createdAt: "2026-04-22T11:00:00.000Z",
+      updatedAt: "2026-04-22T11:00:00.000Z"
+    }
+  ];
+  let activeGameId: string | null = "missing-game";
+
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId(gameId: string) {
+        activeGameId = gameId;
+      },
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return activeGameId;
+      },
+      updateGame(entry: any) {
+        return entry;
+      }
+    }
+  });
+
+  assert.throws(() => gameSessions.setActiveGame(""), /game id valido/);
+  assert.throws(() => gameSessions.setActiveGame("missing-game"), /non trovata/);
+  assert.throws(() => gameSessions.getGame(""), /game id valido/);
+  assert.throws(() => gameSessions.openGame(""), /game id valido/);
+
+  const fallback = await gameSessions.ensureActiveGame(() => {
+    throw new Error("Existing games should be reused before creating a new one.");
+  });
+  assert.equal(fallback.game.id, "fallback-game");
+  assert.equal(activeGameId, "fallback-game");
+
+  activeGameId = "preferred-game";
+  const preferred = await gameSessions.ensureActiveGame(() => {
+    throw new Error("Preferred active game should be opened directly.");
+  });
+  assert.equal(preferred.game.id, "preferred-game");
+});
+
+register("game session store creates an initial game when no active game exists", async () => {
+  const games: any[] = [];
+  let activeGameId: string | null = null;
+  let createInitialStateCalls = 0;
+
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId(gameId: string) {
+        activeGameId = gameId;
+      },
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return activeGameId;
+      },
+      updateGame(entry: any) {
+        return entry;
+      }
+    }
+  });
+
+  const created = await gameSessions.ensureActiveGame(() => {
+    createInitialStateCalls += 1;
+    return {
+      phase: "lobby",
+      players: [],
+      territories: {},
+      hands: {}
+    };
+  });
+
+  assert.equal(createInitialStateCalls, 1);
+  assert.equal(created.game.name, "Partita 1");
+  assert.equal(created.state.phase, "lobby");
+  assert.equal(activeGameId, created.game.id);
+});
+
+register("game session store validates save versions and exposes conflict snapshots", async () => {
+  const games = [
+    {
+      id: "legacy-version",
+      name: "Legacy Version Game",
+      version: 0,
+      creatorUserId: "u-1",
+      state: { phase: "active", players: [{ id: "p-1", name: "commander" }] },
+      createdAt: "2026-04-22T12:00:00.000Z",
+      updatedAt: "2026-04-22T12:00:00.000Z"
+    }
+  ];
+
+  const gameSessions = createGameSessionStore({
+    datastore: {
+      listGames() {
+        return games;
+      },
+      createGame(entry: any) {
+        games.push(entry);
+        return entry;
+      },
+      setActiveGameId() {},
+      findGameById(gameId: string) {
+        return games.find((entry) => entry.id === gameId) || null;
+      },
+      getActiveGameId() {
+        return null;
+      },
+      updateGame(entry: any) {
+        const index = games.findIndex((candidate) => candidate.id === entry.id);
+        if (index >= 0) {
+          games[index] = entry;
+        }
+        return entry;
+      }
+    }
+  });
+
+  assert.throws(() => gameSessions.saveGame("", { phase: "active" }), /game id valido/);
+  assert.throws(() => gameSessions.saveGame("legacy-version", null as any), /stato partita valido/);
+  assert.throws(
+    () => gameSessions.saveGame("legacy-version", { phase: "active" }, 0),
+    /expectedVersion valida/
+  );
+  assert.throws(() => gameSessions.saveGame("missing-game", { phase: "active" }), /non trovata/);
+
+  const saved = await gameSessions.saveGame(
+    "legacy-version",
+    { phase: "finished", players: [{ id: "p-1", name: "commander" }] },
+    1
+  );
+  assert.equal(saved.version, 2);
+  assert.equal(games[0].version, 2);
+  assert.equal(games[0].state.phase, "finished");
+
+  assert.throws(
+    () => gameSessions.saveGame("legacy-version", { phase: "active" }, 1),
+    (error: unknown) =>
+      error instanceof Error &&
+      (error as any).code === "VERSION_CONFLICT" &&
+      (error as any).currentVersion === 2 &&
+      (error as any).currentState.phase === "finished" &&
+      (error as any).game.version === 2
+  );
+});
+
+register("player profile store summarizes wins, losses, labels and active focus", async () => {
+  const games = [
+    {
+      id: "completed-win",
+      name: "Completed Win",
+      updatedAt: "2026-04-22T08:00:00.000Z",
+      state: {
+        phase: "finished",
+        winnerId: "p-1",
+        currentTurnIndex: 0,
+        players: [
+          { id: "p-1", name: "commander", surrendered: false },
+          { id: "p-2", name: "rival", surrendered: false }
+        ],
+        territories: {},
+        hands: {}
+      }
+    },
+    {
+      id: "completed-loss",
+      name: "Completed Loss",
+      updatedAt: "2026-04-22T08:30:00.000Z",
+      state: {
+        phase: "finished",
+        winnerId: "p-2",
+        currentTurnIndex: 0,
+        players: [
+          { id: "p-1", name: "commander", surrendered: false },
+          { id: "p-2", name: "rival", surrendered: false }
+        ],
+        territories: {},
+        hands: {}
+      }
+    },
+    {
+      id: "lobby-game",
+      name: "Lobby Game",
+      updatedAt: "2026-04-22T09:00:00.000Z",
+      state: {
+        phase: "lobby",
+        currentTurnIndex: 0,
+        players: [{ id: "p-1", name: "commander", surrendered: false }],
+        territories: {},
+        hands: { "p-1": [] }
+      }
+    },
+    {
+      id: "active-turn",
+      name: "Active Turn",
+      updatedAt: "2026-04-22T10:00:00.000Z",
+      state: {
+        phase: "active",
+        turnPhase: "reinforcement",
+        currentTurnIndex: 0,
+        players: [
+          { id: "p-1", name: "commander", surrendered: false },
+          { id: "p-2", name: "rival", surrendered: false }
+        ],
+        territories: {
+          alaska: { ownerId: "p-1", armies: 3 },
+          alberta: { ownerId: "p-2", armies: 2 }
+        },
+        hands: { "p-1": [{ id: "card-1" }, { id: "card-2" }] }
+      }
+    },
+    {
+      id: "active-eliminated",
+      name: "Active Eliminated",
+      updatedAt: "2026-04-22T11:00:00.000Z",
+      state: {
+        phase: "active",
+        turnPhase: "fortify",
+        currentTurnIndex: 1,
+        players: [
+          { id: "p-1", name: "commander", surrendered: true },
+          { id: "p-2", name: "rival", surrendered: false }
+        ],
+        territories: {
+          alberta: { ownerId: "p-2", armies: 4 }
+        },
+        hands: { "p-1": [] }
+      }
+    }
+  ];
+
+  const playerProfiles = createPlayerProfileStore({
+    datastore: {
+      listGames() {
+        return games;
+      }
+    }
+  });
+
+  assert.throws(() => playerProfiles.getPlayerProfile("   "), /nome giocatore valido/);
+
+  const profile = await playerProfiles.getPlayerProfile("commander");
+  assert.equal(profile.gamesPlayed, 2);
+  assert.equal(profile.wins, 1);
+  assert.equal(profile.losses, 1);
+  assert.equal(profile.winRate, 50);
+  assert.equal(profile.gamesInProgress, 3);
+  assert.equal(profile.hasHistory, true);
+  assert.deepEqual(
+    profile.participatingGames.map((entry: { id: string }) => entry.id),
+    ["active-eliminated", "active-turn", "lobby-game"]
+  );
+
+  const eliminated = profile.participatingGames[0];
+  assert.equal(eliminated.myLobby.statusLabel, "Eliminato");
+  assert.equal(eliminated.myLobby.focusLabel, "In attesa");
+  assert.equal(eliminated.myLobby.turnPhaseLabel, "Fortifica");
+  assert.equal(eliminated.myLobby.territoryCount, 0);
+
+  const activeTurn = profile.participatingGames[1];
+  assert.equal(activeTurn.myLobby.statusLabel, "Operativo");
+  assert.equal(activeTurn.myLobby.focusLabel, "Tocca a te");
+  assert.equal(activeTurn.myLobby.turnPhaseLabel, "Rinforzi");
+  assert.equal(activeTurn.myLobby.territoryCount, 1);
+  assert.equal(activeTurn.myLobby.cardCount, 2);
+
+  const lobby = profile.participatingGames[2];
+  assert.equal(lobby.myLobby.statusLabel, "In attesa avvio");
+  assert.equal(lobby.myLobby.focusLabel, "Lobby");
+  assert.equal(lobby.myLobby.turnPhaseLabel, "Lobby");
+
+  const emptyProfile = await playerProfiles.getPlayerProfile("observer");
+  assert.equal(emptyProfile.gamesPlayed, 0);
+  assert.equal(emptyProfile.wins, 0);
+  assert.equal(emptyProfile.losses, 0);
+  assert.equal(emptyProfile.winRate, null);
+  assert.equal(emptyProfile.hasHistory, false);
+  assert.deepEqual(emptyProfile.participatingGames, []);
+});

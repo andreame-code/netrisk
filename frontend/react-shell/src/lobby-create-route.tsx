@@ -24,7 +24,7 @@ import {
 import { t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { openReactGame } from "@react-shell/legacy-game-handoff";
+import { openShellGame } from "@react-shell/game-navigation";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildLobbyPath } from "@react-shell/public-auth-paths";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
@@ -548,7 +548,7 @@ export function LobbyCreateRoute() {
         games: payload.games || [],
         activeGameId: payload.activeGameId || payload.game.id
       });
-      openReactGame(payload.game.id);
+      openShellGame(payload.game.id);
     } catch (error) {
       setSubmitError(messageFromError(error, t("errors.requestFailed")));
     }

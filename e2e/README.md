@@ -8,7 +8,7 @@ NetRisk acceptance tests use Playwright and live in `e2e/`, separate from the un
   - `npm run test:e2e`
 - Run the split multi-process suite explicitly:
   - `npm run test:e2e:split`
-- Run the same split runner through the legacy alias:
+- Run the same split runner through the parallel alias:
   - `npm run test:e2e:parallel`
 - Run the E2E suite in a single serial process:
   - `npm run test:e2e:serial`
@@ -37,10 +37,10 @@ Each run also uses a temporary SQLite database dedicated to that E2E instance, a
 - smoke test for app load
 - layout acceptance coverage for main shell, shared headers, and map fit
 - gameplay flows for reinforcement, attack/conquest, fortify handoff, surrender, relogin binding, and version conflict
-- React gameplay flows on `/react/game/:gameId`, including deep links, join/start, forced trade, and version-conflict recovery
+- React gameplay flows on canonical `/game/:gameId` and supported `/react/game/:gameId` links, including join/start, forced trade, and version-conflict recovery
 - authorization flows for protected games, direct game routes, and spectator access
 - profile states: loading, error, empty, invalid payload fallback, participating games, and theme preference
-- React shell bootstrap, protected redirects, and route-level rendering on `/react/*`
+- React shell bootstrap, protected redirects, and route-level rendering on canonical routes plus `/react/*`
 - new game setup happy path plus validation fallback when setup options become invalid
 - granular rendering coverage to catch unnecessary panel remounts during gameplay updates
 - visual baselines for main screen, secondary pages, mobile shells, and World Classic board layouts

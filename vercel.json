@@ -4,43 +4,60 @@
   "outputDirectory": "public",
   "redirects": [
     {
-      "source": "/index.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/landing.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/register.html",
-      "destination": "/register",
-      "permanent": false
-    },
-    {
-      "source": "/lobby.html",
-      "destination": "/lobby",
-      "permanent": false
-    },
-    {
-      "source": "/new-game.html",
-      "destination": "/lobby/new",
-      "permanent": false
-    },
-    {
-      "source": "/profile.html",
-      "destination": "/profile",
-      "permanent": false
-    },
-    {
       "source": "/legacy",
-      "destination": "/legacy/index.html",
+      "destination": "/",
       "permanent": false
     },
     {
       "source": "/legacy/",
-      "destination": "/legacy/index.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/index.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/landing.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/register.html",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/lobby.html",
+      "destination": "/lobby",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/new-game.html",
+      "destination": "/lobby/new",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/profile.html",
+      "destination": "/profile",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/game.html",
+      "has": [
+        {
+          "type": "query",
+          "key": "gameId",
+          "value": "(?<gameId>.+)"
+        }
+      ],
+      "destination": "/game/:gameId",
+      "permanent": false
+    },
+    {
+      "source": "/legacy/game.html",
+      "destination": "/game",
       "permanent": false
     }
   ],
@@ -87,10 +104,6 @@
     },
     {
       "source": "/unauthorized",
-      "destination": "/react/index.html"
-    },
-    {
-      "source": "/game.html",
       "destination": "/react/index.html"
     },
     {

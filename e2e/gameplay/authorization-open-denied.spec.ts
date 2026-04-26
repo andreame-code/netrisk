@@ -14,18 +14,18 @@ test("non-member user can open a lobby game in spectator mode without auto-joini
 
   await resetGame(ownerPage);
 
-  await ownerPage.goto("/game.html");
+  await ownerPage.goto("/game");
   await registerAndLogin(ownerPage, ownerUser);
-  await ownerPage.goto("/lobby.html");
+  await ownerPage.goto("/lobby");
   await ownerPage.locator("#create-game-button").click();
   await expect(ownerPage).toHaveURL(/\/lobby\/new$/);
   await ownerPage.locator("#setup-game-name").fill(gameName);
   await ownerPage.getByRole("button", { name: "Crea e apri" }).click();
   await expect(ownerPage.locator("#game-status")).toContainText(gameName);
 
-  await outsiderPage.goto("/game.html");
+  await outsiderPage.goto("/game");
   await registerAndLogin(outsiderPage, outsiderUser);
-  await outsiderPage.goto("/lobby.html");
+  await outsiderPage.goto("/lobby");
 
   const targetRow = outsiderPage.locator("#game-session-list [data-game-id]", { hasText: gameName }).first();
   await expect(targetRow).toBeVisible();

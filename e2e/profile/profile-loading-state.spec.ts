@@ -30,7 +30,7 @@ test("profile page shows a loading state while the profile payload is still pend
     await route.fulfill({ response });
   });
 
-  const navigation = page.goto("/profile.html");
+  const navigation = page.goto("/profile");
 
   await expect(page.getByTestId("player-profile-shell")).toBeVisible();
   await expect(page.locator("#profile-feedback")).toContainText("Caricamento dati giocatore...");

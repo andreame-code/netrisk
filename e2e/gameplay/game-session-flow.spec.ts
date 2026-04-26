@@ -29,7 +29,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game(?:\/|\.html\?gameId=)/);
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\//);
   await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i, { timeout: 15000 });
 
