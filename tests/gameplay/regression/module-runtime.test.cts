@@ -1420,6 +1420,39 @@ register(
     await withModuleServer(
       [
         {
+          dir: "demo.aaa-disabled-theme-conflict",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-disabled-theme-conflict",
+            version: "1.0.0",
+            displayName: "Demo Disabled Theme Conflict",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Disabled module must not reserve runtime theme IDs"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "demo-aurora",
+      name: "Disabled Aurora",
+      description: "Disabled modules must not own runtime theme IDs."
+    }
+  ]
+};`
+        },
+        {
           dir: "demo.themes",
           manifest: {
             schemaVersion: 1,
@@ -1682,6 +1715,11 @@ register(
           ),
           true
         );
+        const disabledThemeConflictModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-disabled-theme-conflict"
+        );
+        assert.equal(disabledThemeConflictModule.status, "validated");
+        assert.equal(disabledThemeConflictModule.errors.length, 0);
         assert.equal(
           moduleOptionsResponse.payload.modules
             .find((entry: any) => entry.id === "demo.themes")

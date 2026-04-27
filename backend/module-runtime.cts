@@ -1386,13 +1386,16 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   function registerServerModuleSiteThemes(
     moduleId: string,
     serverModule: NetRiskServerModule,
-    sourcePath: string
+    sourcePath: string,
+    options: { reserveRuntimeIds?: boolean } = {}
   ): string[] {
     if (!Array.isArray(serverModule.siteThemes) || !serverModule.siteThemes.length) {
       return [];
     }
 
     const errors: string[] = [];
+    const moduleThemeIds = new Set<string>();
+    const reserveRuntimeIds = options.reserveRuntimeIds !== false;
     serverModule.siteThemes.forEach((themeDefinition) => {
       try {
         if (findBuiltInVisualTheme(themeDefinition.id)) {
@@ -1401,12 +1404,19 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           );
         }
 
+        if (moduleThemeIds.has(themeDefinition.id)) {
+          throw new Error(`Duplicate runtime module site theme "${themeDefinition.id}" detected.`);
+        }
+        moduleThemeIds.add(themeDefinition.id);
+
+        if (!reserveRuntimeIds) {
+          return;
+        }
+
         const existing = runtimeSiteThemesById.get(themeDefinition.id);
         if (existing) {
           throw new Error(
-            existing.moduleId === moduleId
-              ? `Duplicate runtime module site theme "${themeDefinition.id}" detected.`
-              : `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
+            `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
           );
         }
 
@@ -1691,7 +1701,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const siteThemeErrors = registerServerModuleSiteThemes(
         moduleEntry.id,
         serverModule,
-        moduleEntry.sourcePath
+        moduleEntry.sourcePath,
+        { reserveRuntimeIds: moduleEntry.enabled }
       );
       if (siteThemeErrors.length) {
         runtimeSiteThemeErrorsByModuleId.set(moduleEntry.id, siteThemeErrors);

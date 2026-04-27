@@ -19,6 +19,8 @@ type RequireAuthFn = (
   body: Record<string, unknown>
 ) => Promise<{ user: { id: string; username: string } } | null>;
 
+type SupportedSiteThemesSource = Set<string> | (() => Promise<Set<string>> | Set<string>);
+
 interface AccountRouteDeps {
   req: import("node:http").IncomingMessage;
   res: import("node:http").ServerResponse;
@@ -57,8 +59,14 @@ interface AccountRouteDeps {
     extra?: Record<string, unknown>
   ) => void;
   extractUserPreferences: (user: unknown) => Record<string, unknown>;
-  supportedSiteThemes: Set<string>;
+  supportedSiteThemes: SupportedSiteThemesSource;
   resolveStoredTheme: (theme: string) => string;
+}
+
+async function resolveRouteSupportedSiteThemes(deps: AccountRouteDeps): Promise<Set<string>> {
+  return typeof deps.supportedSiteThemes === "function"
+    ? await deps.supportedSiteThemes()
+    : deps.supportedSiteThemes;
 }
 
 export async function handleAuthSessionRoute(deps: AccountRouteDeps): Promise<boolean> {
@@ -134,7 +142,8 @@ export async function handleThemePreferenceRoute(
     return true;
   }
 
-  if (!deps.supportedSiteThemes.has(parsedBody.theme)) {
+  const supportedSiteThemes = await resolveRouteSupportedSiteThemes(deps);
+  if (!supportedSiteThemes.has(parsedBody.theme)) {
     deps.sendLocalizedError(
       deps.res,
       400,

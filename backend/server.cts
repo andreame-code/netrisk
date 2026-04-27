@@ -1451,7 +1451,7 @@ function createApp(options: CreateAppOptions = {}) {
           sendJson,
           sendLocalizedError,
           extractUserPreferences,
-          supportedSiteThemes: await resolveSupportedSiteThemes(),
+          supportedSiteThemes: resolveSupportedSiteThemes,
           resolveStoredTheme
         },
         body
