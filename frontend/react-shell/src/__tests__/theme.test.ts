@@ -7,6 +7,7 @@ import {
   listShellThemes,
   setAvailableShellThemes
 } from "@react-shell/theme";
+import { themeCopy } from "@react-shell/theme-copy";
 
 describe("theme runtime bridge", () => {
   beforeEach(() => {
@@ -26,5 +27,10 @@ describe("theme runtime bridge", () => {
     expect(currentShellTheme()).toBe("command");
     expect(listShellThemes()).toEqual([{ id: "command" }, { id: "ember" }, { id: "aurora" }]);
     expect(window.netriskTheme?.getThemes()).toEqual(["command", "ember", "aurora"]);
+  });
+
+  it("uses War Table copy overrides without changing other theme copy", () => {
+    expect(themeCopy("war-table", "lobby.heading", "lobby.heading")).toBe("Sala campagna");
+    expect(themeCopy("command", "lobby.heading", "lobby.heading")).toBe("Lobby di Comando");
   });
 });

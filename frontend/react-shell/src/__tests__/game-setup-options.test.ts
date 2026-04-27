@@ -19,6 +19,15 @@ describe("game setup option helpers", () => {
     ).toEqual([3, 4, 5, 6]);
   });
 
+  it("falls back to supported player choices when the server range has no candidates", () => {
+    expect(
+      buildPlayerCountChoices({
+        playerRange: { min: 7, max: 8 },
+        turnTimeoutHoursOptions: []
+      })
+    ).toEqual([2, 3, 4]);
+  });
+
   it("uses the default turn timeout choices when options are unavailable", () => {
     expect(buildTurnTimeoutHourChoices(undefined)).toEqual([24, 48, 72]);
   });
@@ -30,5 +39,14 @@ describe("game setup option helpers", () => {
         turnTimeoutHoursOptions: [12, 24, 48, 72]
       })
     ).toEqual([12, 24, 48]);
+  });
+
+  it("filters non-integer turn timeout choices", () => {
+    expect(
+      buildTurnTimeoutHourChoices({
+        playerRange: { min: 2, max: 4 },
+        turnTimeoutHoursOptions: [12, 24.5, 48]
+      })
+    ).toEqual([12, 48]);
   });
 });
