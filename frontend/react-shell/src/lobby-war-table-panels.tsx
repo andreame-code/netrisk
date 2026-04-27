@@ -24,6 +24,7 @@ import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-quer
 
 type WarTableLobbyPanelsProps = {
   activeGame: GameSummary | null;
+  canCreateGame: boolean;
   canJoinSelected: boolean;
   joinDisabled: boolean;
   joinPending: boolean;
@@ -69,6 +70,7 @@ function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | 
 
 export function LobbyWarTablePanels({
   activeGame,
+  canCreateGame,
   canJoinSelected,
   joinDisabled,
   joinPending,
@@ -140,6 +142,10 @@ export function LobbyWarTablePanels({
   }, [options, selectedPlayers, selectedTurnHours]);
 
   async function handleCreateGame(): Promise<void> {
+    if (!canCreateGame || createMutation.isPending) {
+      return;
+    }
+
     const request: CreateGameRequest = {
       name: selectedPreset?.name || t("warTable.lobby.defaultGameName"),
       totalPlayers: selectedPlayers,
@@ -178,7 +184,7 @@ export function LobbyWarTablePanels({
     );
   }
 
-  const createDisabled = optionsQuery.isLoading || createMutation.isPending;
+  const createDisabled = !canCreateGame || optionsQuery.isLoading || createMutation.isPending;
 
   return (
     <div className="war-table-lobby-panels" aria-label={t("warTable.lobby.panelsAria")}>

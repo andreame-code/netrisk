@@ -347,6 +347,7 @@ export function LobbyRoute() {
         {shellTheme === "war-table" ? (
           <LobbyWarTablePanels
             activeGame={activeGame}
+            canCreateGame={Boolean(authenticatedUser)}
             canJoinSelected={selectedGameCanJoin}
             joinDisabled={!selectedGameCanJoin || actionPending}
             joinPending={joinMutation.isPending}

@@ -146,6 +146,7 @@ function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
   const queryClient = createQueryClient();
   const props: WarTablePanelProps = {
     activeGame: null,
+    canCreateGame: true,
     canJoinSelected: false,
     joinDisabled: false,
     joinPending: false,
@@ -372,6 +373,24 @@ describe("LobbyWarTablePanels", () => {
       }),
       expect.any(Object)
     );
+  });
+
+  it("blocks quick-create when the lobby session is unauthenticated", async () => {
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+    createGameMock.mockResolvedValue(createGameResponse());
+
+    const { user } = renderPanels({
+      canCreateGame: false
+    });
+    const createButton = await screen.findByRole("button", { name: "Create Game" });
+
+    await screen.findByRole("button", { name: "Cards" });
+    expect(createButton).toBeDisabled();
+
+    await user.click(createButton);
+
+    expect(createGameMock).not.toHaveBeenCalled();
+    expect(openShellGameMock).not.toHaveBeenCalled();
   });
 
   it("drops stale selected module ids after game options refresh", async () => {
