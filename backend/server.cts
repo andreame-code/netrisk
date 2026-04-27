@@ -262,7 +262,6 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
     "HttpOnly",
     "Path=/",
-    "Max-Age=2592000",
     "SameSite=Lax"
   ];
   if (secureCookieFlag(req)) {

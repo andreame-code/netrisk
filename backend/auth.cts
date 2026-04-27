@@ -459,11 +459,18 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       const expectedSecret = user.credentials.password.secret;
 
       // Use timing-safe comparison for legacy plaintext secrets.
-      // We hash the values first to ensure both buffers have the same length for timingSafeEqual.
-      const expectedHash = crypto.createHash("sha256").update(expectedSecret).digest();
-      const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
+      const expectedBuffer = Buffer.from(expectedSecret);
+      const providedBuffer = Buffer.from(providedSecret);
 
-      if (!crypto.timingSafeEqual(expectedHash, providedHash)) {
+      // If lengths differ, we compare expected with itself to maintain timing parity
+      // and satisfy CodeQL without using SHA-256 on password data.
+      if (expectedBuffer.length !== providedBuffer.length) {
+        crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
+        runDummyPasswordVerification();
+        return null;
+      }
+
+      if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
         runDummyPasswordVerification();
         return null;
       }
