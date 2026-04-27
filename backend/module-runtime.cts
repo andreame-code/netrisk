@@ -1553,19 +1553,57 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
   }
 
-  function clearRuntimeSiteThemeErrors(modules: NetRiskInstalledModule[]): void {
+  function clearRuntimeSiteThemeErrors(modules: NetRiskInstalledModule[]): Set<string> {
+    const recoveredModuleIds = new Set<string>();
     modules.forEach((moduleEntry) => {
       const previousErrors = runtimeSiteThemeErrorsByModuleId.get(moduleEntry.id);
       if (!previousErrors?.length) {
         return;
       }
 
+      const wasCompatible = moduleEntry.compatible;
       moduleEntry.errors = moduleEntry.errors.filter((error) => !previousErrors.includes(error));
       if (moduleEntry.manifest && !moduleEntry.errors.length) {
         moduleEntry.compatible = true;
+        if (!wasCompatible) {
+          recoveredModuleIds.add(moduleEntry.id);
+        }
       }
     });
     runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
+    return recoveredModuleIds;
+  }
+
+  function registerRuntimeContentPacksForModule(
+    moduleEntry: NetRiskInstalledModule,
+    modules: NetRiskInstalledModule[]
+  ): boolean {
+    if (!moduleEntry.manifest || !moduleEntry.compatible) {
+      return false;
+    }
+
+    const serverModule = serverModulesById.get(moduleEntry.id);
+    if (!serverModule) {
+      return false;
+    }
+
+    removeRuntimeContentPacksForModule(moduleEntry.id);
+    const contentPackErrors = registerServerModuleContentPacks(
+      moduleEntry.id,
+      moduleEntry.manifest as NetRiskModuleManifest,
+      serverModule,
+      moduleEntry.sourcePath,
+      modules
+    );
+    if (!contentPackErrors.length) {
+      return false;
+    }
+
+    moduleEntry.errors.push(...contentPackErrors);
+    moduleEntry.compatible = false;
+    removeRuntimeContentPacksForModule(moduleEntry.id);
+    removeRuntimeSiteThemesForModule(moduleEntry.id);
+    return true;
   }
 
   function rebuildRuntimeSiteThemesAfterCompatibility(modules: NetRiskInstalledModule[]): boolean {
@@ -1573,7 +1611,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       modules.map((moduleEntry) => [moduleEntry.id, moduleEntry.compatible])
     );
 
-    clearRuntimeSiteThemeErrors(modules);
+    const recoveredModuleIds = clearRuntimeSiteThemeErrors(modules);
     runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
 
     modules.forEach((moduleEntry) => {
@@ -1601,8 +1639,22 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
     });
 
-    return modules.some(
-      (moduleEntry) => previousCompatibilityById.get(moduleEntry.id) !== moduleEntry.compatible
+    let contentPackCompatibilityChanged = false;
+    modules.forEach((moduleEntry) => {
+      if (!recoveredModuleIds.has(moduleEntry.id)) {
+        return;
+      }
+
+      contentPackCompatibilityChanged =
+        registerRuntimeContentPacksForModule(moduleEntry, modules) ||
+        contentPackCompatibilityChanged;
+    });
+
+    return (
+      contentPackCompatibilityChanged ||
+      modules.some(
+        (moduleEntry) => previousCompatibilityById.get(moduleEntry.id) !== moduleEntry.compatible
+      )
     );
   }
 

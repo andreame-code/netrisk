@@ -2424,6 +2424,11 @@ register(
                 kind: "site-theme",
                 scope: "global",
                 description: "Valid owner after the initial owner drops out"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Valid content pack should return with the recovered module"
               }
             ],
             entrypoints: {
@@ -2442,6 +2447,19 @@ register(
       id: "late-helper-theme",
       name: "Late Helper Theme",
       description: "This helper disappears while the module is a duplicate loser."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "valid-late-owner-pack",
+      name: "Valid Late Owner Pack",
+      description: "This pack should be re-registered after theme conflict recovery.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
     }
   ]
 };`
@@ -2486,6 +2504,21 @@ register(
             (entry: any) =>
               entry.id === "shared-runtime-theme" &&
               entry.name === "Valid Late Shared Runtime Theme"
+          ),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes("valid-late-owner-pack"),
+          true
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(
+          gameOptionsResponse.payload.contentPacks.some(
+            (entry: any) =>
+              entry.id === "valid-late-owner-pack" &&
+              entry.defaultSiteThemeId === "shared-runtime-theme"
           ),
           true
         );
