@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -8,6 +12,29 @@ import {
   setAvailableShellThemes
 } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
+
+const themeTokensPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "theme-tokens.css"
+);
+
+function exactWarTableTopNavModuleSlotRuleBodies(css: string): string[] {
+  const ruleBodies: string[] = [];
+
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectorList = match[1]
+      .split(",")
+      .map((selector) => selector.trim())
+      .filter(Boolean);
+
+    if (selectorList.includes('html[data-theme="war-table"] .top-nav-module-slots')) {
+      ruleBodies.push(match[2]);
+    }
+  }
+
+  return ruleBodies;
+}
 
 describe("theme runtime bridge", () => {
   beforeEach(() => {
@@ -32,5 +59,13 @@ describe("theme runtime bridge", () => {
   it("uses War Table copy overrides without changing other theme copy", () => {
     expect(themeCopy("war-table", "lobby.heading", "lobby.heading")).toBe("Sala campagna");
     expect(themeCopy("command", "lobby.heading", "lobby.heading")).toBe("Lobby di Comando");
+  });
+
+  it("keeps War Table top-nav module slots visible for module links", () => {
+    const css = readFileSync(themeTokensPath, "utf8");
+    const slotRuleBodies = exactWarTableTopNavModuleSlotRuleBodies(css);
+
+    expect(slotRuleBodies.length).toBeGreaterThan(0);
+    expect(slotRuleBodies.join("\n")).not.toMatch(/\bdisplay\s*:\s*none\b/i);
   });
 });
