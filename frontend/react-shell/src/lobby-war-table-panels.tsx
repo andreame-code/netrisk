@@ -54,8 +54,7 @@ export function filterVisibleModuleIds(
 
 function sameModuleIds(first: readonly string[], second: readonly string[]): boolean {
   return (
-    first.length === second.length &&
-    first.every((moduleId, index) => moduleId === second[index])
+    first.length === second.length && first.every((moduleId, index) => moduleId === second[index])
   );
 }
 
