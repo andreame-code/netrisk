@@ -423,8 +423,8 @@ export function validateNewGameConfig(
   const requestedThemeId = String(
     input.themeId ||
       (canPreferFallbackPresentationDefaults ? fallbackConfigInput.themeId : null) ||
-      selectedRuleSet.defaults.themeId ||
       selectedContentPack.defaultSiteThemeId ||
+      selectedRuleSet.defaults.themeId ||
       fallbackConfigInput.themeId ||
       DEFAULT_THEME_ID
   );

@@ -111,6 +111,7 @@ function createAccountDeps(overrides = {}) {
 register("account routes return early when auth is missing", async () => {
   let sendJsonCalls = 0;
   let sendLocalizedErrorCalls = 0;
+  let supportedSiteThemeCalls = 0;
   const deps = createAccountDeps({
     requireAuth: async () => null,
     sendJson() {
@@ -118,6 +119,10 @@ register("account routes return early when auth is missing", async () => {
     },
     sendLocalizedError() {
       sendLocalizedErrorCalls += 1;
+    },
+    async supportedSiteThemes() {
+      supportedSiteThemeCalls += 1;
+      return new Set(["command"]);
     }
   });
 
@@ -127,6 +132,7 @@ register("account routes return early when auth is missing", async () => {
   assert.equal(await handleAccountSettingsRoute(deps, { currentPassword: "secret123" }), true);
   assert.equal(sendJsonCalls, 0);
   assert.equal(sendLocalizedErrorCalls, 0);
+  assert.equal(supportedSiteThemeCalls, 0);
 });
 
 register(

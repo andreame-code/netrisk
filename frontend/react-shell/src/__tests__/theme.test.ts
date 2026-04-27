@@ -5,7 +5,8 @@ import {
   currentShellTheme,
   installShellThemeBridge,
   listShellThemes,
-  setAvailableShellThemes
+  setAvailableShellThemes,
+  themeLabel
 } from "@react-shell/theme";
 
 describe("theme runtime bridge", () => {
@@ -26,5 +27,11 @@ describe("theme runtime bridge", () => {
     expect(currentShellTheme()).toBe("command");
     expect(listShellThemes()).toEqual([{ id: "command" }, { id: "ember" }, { id: "aurora" }]);
     expect(window.netriskTheme?.getThemes()).toEqual(["command", "ember", "aurora"]);
+  });
+
+  it("uses runtime theme metadata for labels", () => {
+    setAvailableShellThemes([{ id: "aurora", name: "Aurora Signal" }]);
+
+    expect(themeLabel("aurora")).toBe("Aurora Signal");
   });
 });

@@ -12,7 +12,8 @@
   "conflicts": [],
   "capabilities": [
     { "kind": "ui-slot", "scope": "global", "description": "Aggiunge pannelli e badge demo." },
-    { "kind": "gameplay-hook", "hook": "setup.profile", "scope": "game", "description": "Espone un profilo demo selezionabile in creazione partita." }
+    { "kind": "gameplay-hook", "hook": "setup.profile", "scope": "game", "description": "Espone un profilo demo selezionabile in creazione partita." },
+    { "kind": "site-theme", "scope": "global", "description": "Registra un tema visuale modulare indipendente." }
   ],
   "entrypoints": {
     "server": "server-module.cts",
