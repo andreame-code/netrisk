@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -52,6 +52,13 @@ export function filterVisibleModuleIds(
   return (moduleIds || []).filter((moduleId) => visibleModuleIds.has(moduleId));
 }
 
+function sameModuleIds(first: readonly string[], second: readonly string[]): boolean {
+  return (
+    first.length === second.length &&
+    first.every((moduleId, index) => moduleId === second[index])
+  );
+}
+
 function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | null): string {
   if (!preset) {
     return t("warTable.lobby.presetFallback");
@@ -87,8 +94,8 @@ export function LobbyWarTablePanels({
   });
 
   const options = optionsQuery.data;
-  const presets = resolvedGamePresets(options);
-  const modules = resolvedGameModules(options).slice(0, 3);
+  const presets = useMemo(() => resolvedGamePresets(options), [options]);
+  const modules = useMemo(() => resolvedGameModules(options).slice(0, 3), [options]);
   const selectedPreset =
     presets.find((preset) => preset.id === selectedPresetId) || presets[0] || null;
   const activeSummary = activeGame || selectedGame;
@@ -109,6 +116,13 @@ export function LobbyWarTablePanels({
     setSelectedPresetId(defaultPreset.id);
     setSelectedModuleIds(filterVisibleModuleIds(defaultPreset.activeModuleIds, modules));
   }, [modules, presets, selectedPresetId]);
+
+  useEffect(() => {
+    setSelectedModuleIds((currentModuleIds) => {
+      const nextModuleIds = filterVisibleModuleIds(currentModuleIds, modules);
+      return sameModuleIds(currentModuleIds, nextModuleIds) ? currentModuleIds : nextModuleIds;
+    });
+  }, [modules]);
 
   useEffect(() => {
     const choices = buildPlayerCountChoices(options);

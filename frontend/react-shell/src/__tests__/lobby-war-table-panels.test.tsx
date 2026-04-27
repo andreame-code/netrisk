@@ -143,6 +143,7 @@ function createGameResponse(gameId = "created-game"): CreateGameResponse {
 }
 
 function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
+  const queryClient = createQueryClient();
   const props: WarTablePanelProps = {
     activeGame: null,
     canJoinSelected: false,
@@ -158,9 +159,10 @@ function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
 
   return {
     props,
+    queryClient,
     user: userEvent.setup(),
     ...render(
-      <QueryClientProvider client={createQueryClient()}>
+      <QueryClientProvider client={queryClient}>
         <LobbyWarTablePanels {...props} />
       </QueryClientProvider>
     )
@@ -315,6 +317,54 @@ describe("LobbyWarTablePanels", () => {
     expect(screen.queryByRole("button", { name: "Advanced Cards" })).not.toBeInTheDocument();
     await waitFor(() => {
       expect(cardsButton).toHaveClass("is-active");
+    });
+    await user.click(await screen.findByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => {
+      expect(createGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(createGameMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeModuleIds: ["cards"]
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it("drops stale selected module ids after game options refresh", async () => {
+    const initialOptions = createGameOptionsResponse({
+      gamePresets: [
+        {
+          id: "classic-risk",
+          name: "Classic Risk",
+          description: "The original experience",
+          activeModuleIds: ["cards", "objectives"]
+        }
+      ]
+    });
+    const refreshedOptions = createGameOptionsResponse({
+      modules: [createModule("cards", "Cards")],
+      gamePresets: [
+        {
+          id: "classic-risk",
+          name: "Classic Risk",
+          description: "The original experience",
+          activeModuleIds: ["cards", "objectives"]
+        }
+      ]
+    });
+    getGameOptionsMock.mockResolvedValueOnce(initialOptions).mockResolvedValue(refreshedOptions);
+    createGameMock.mockResolvedValue(createGameResponse());
+
+    const { queryClient, user } = renderPanels();
+
+    const objectivesButton = await screen.findByRole("button", { name: "Objectives" });
+    await waitFor(() => {
+      expect(objectivesButton).toHaveClass("is-active");
+    });
+    await queryClient.invalidateQueries();
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Objectives" })).not.toBeInTheDocument();
     });
     await user.click(await screen.findByRole("button", { name: "Create Game" }));
 
