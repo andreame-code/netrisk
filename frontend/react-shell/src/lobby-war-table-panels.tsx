@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   CreateGameRequest,
+  CreateGameResponse,
   GameSummary
 } from "@frontend-generated/shared-runtime-validation.mts";
 
@@ -127,7 +128,14 @@ export function LobbyWarTablePanels({
       players: buildHumanPlayerSlots(selectedPlayers)
     };
 
-    const response = await createMutation.mutateAsync(request);
+    let response: CreateGameResponse;
+
+    try {
+      response = await createMutation.mutateAsync(request);
+    } catch {
+      return;
+    }
+
     if (response.playerId) {
       storeCurrentPlayerId(response.playerId, response.game.id);
     }

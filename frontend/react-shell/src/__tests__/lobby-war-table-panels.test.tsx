@@ -250,6 +250,19 @@ describe("LobbyWarTablePanels", () => {
     );
   });
 
+  it("keeps quick-create failures inside the panel error state", async () => {
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+    createGameMock.mockRejectedValue(new Error("create failed"));
+
+    const { user } = renderPanels();
+
+    await user.click(await screen.findByRole("button", { name: "Create Game" }));
+
+    expect(await screen.findByText("create failed")).toBeInTheDocument();
+    expect(storeCurrentPlayerIdMock).not.toHaveBeenCalled();
+    expect(openShellGameMock).not.toHaveBeenCalled();
+  });
+
   it("routes the secondary action through join when the selected lobby is joinable", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
     const onJoinSelected = vi.fn<() => Promise<void>>().mockResolvedValue();
