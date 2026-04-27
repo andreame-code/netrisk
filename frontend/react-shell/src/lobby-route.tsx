@@ -194,6 +194,7 @@ export function LobbyRoute() {
     shellTheme === "war-table" ? t("warTable.lobby.resumeBattle") : t("lobby.openSelected");
   const openingSelectedLabel =
     shellTheme === "war-table" ? t("warTable.lobby.opening") : "Opening...";
+  const selectedGameCanJoin = canJoinGame(selectedGame);
 
   useEffect(() => {
     document.title = t("lobby.title");
@@ -343,13 +344,19 @@ export function LobbyRoute() {
           </div>
         </div>
 
-        <LobbyWarTablePanels
-          activeGame={activeGame}
-          openDisabled={!selectedGame || actionPending}
-          openPending={openMutation.isPending}
-          selectedGame={selectedGame}
-          onOpenSelected={handleOpenSelectedGame}
-        />
+        {shellTheme === "war-table" ? (
+          <LobbyWarTablePanels
+            activeGame={activeGame}
+            canJoinSelected={selectedGameCanJoin}
+            joinDisabled={!selectedGameCanJoin || actionPending}
+            joinPending={joinMutation.isPending}
+            openDisabled={!selectedGame || actionPending}
+            openPending={openMutation.isPending}
+            selectedGame={selectedGame}
+            onJoinSelected={handleJoinSelectedGame}
+            onOpenSelected={handleOpenSelectedGame}
+          />
+        ) : null}
 
         <div className="lobby-command-strip" aria-label={t("lobby.overviewAria")}>
           <article className="lobby-command-card lobby-command-card-accent">

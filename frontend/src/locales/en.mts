@@ -223,6 +223,7 @@ export const en = Object.freeze({
   "warTable.lobby.loadingOptions": "Loading presets...",
   "warTable.lobby.presets.heading": "Game Presets",
   "warTable.lobby.presetFallback": "Ready tactical setup",
+  "warTable.lobby.joinBattle": "Join Battle",
   "warTable.lobby.resumeBattle": "Resume Battle",
   "warTable.lobby.selectBattle": "Select Battle",
   "warTable.lobby.opening": "Opening...",

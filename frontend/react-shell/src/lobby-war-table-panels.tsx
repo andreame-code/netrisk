@@ -19,8 +19,12 @@ import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-quer
 
 type WarTableLobbyPanelsProps = {
   activeGame: GameSummary | null;
+  canJoinSelected: boolean;
+  joinDisabled: boolean;
+  joinPending: boolean;
   openDisabled: boolean;
   openPending: boolean;
+  onJoinSelected(): Promise<void>;
   onOpenSelected(): Promise<void>;
   selectedGame: GameSummary | null;
 };
@@ -55,8 +59,12 @@ function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | 
 
 export function LobbyWarTablePanels({
   activeGame,
+  canJoinSelected,
+  joinDisabled,
+  joinPending,
   openDisabled,
   openPending,
+  onJoinSelected,
   onOpenSelected,
   selectedGame
 }: WarTableLobbyPanelsProps) {
@@ -149,7 +157,7 @@ export function LobbyWarTablePanels({
     );
   }
 
-  const createDisabled = optionsQuery.isLoading || createMutation.isPending || !selectedPreset;
+  const createDisabled = optionsQuery.isLoading || createMutation.isPending;
 
   return (
     <div className="war-table-lobby-panels" aria-label={t("warTable.lobby.panelsAria")}>
@@ -269,18 +277,29 @@ export function LobbyWarTablePanels({
               </button>
             ))}
         </div>
-        <button
-          type="button"
-          className="ghost-button war-table-open-active"
-          disabled={openDisabled}
-          onClick={() => void onOpenSelected()}
-        >
-          {openPending
-            ? t("warTable.lobby.opening")
-            : activeSummary
-              ? t("warTable.lobby.resumeBattle")
-              : t("warTable.lobby.selectBattle")}
-        </button>
+        {canJoinSelected ? (
+          <button
+            type="button"
+            className="ghost-button war-table-open-active"
+            disabled={joinDisabled}
+            onClick={() => void onJoinSelected()}
+          >
+            {joinPending ? t("warTable.lobby.opening") : t("warTable.lobby.joinBattle")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="ghost-button war-table-open-active"
+            disabled={openDisabled}
+            onClick={() => void onOpenSelected()}
+          >
+            {openPending
+              ? t("warTable.lobby.opening")
+              : activeSummary
+                ? t("warTable.lobby.resumeBattle")
+                : t("warTable.lobby.selectBattle")}
+          </button>
+        )}
       </aside>
     </div>
   );
