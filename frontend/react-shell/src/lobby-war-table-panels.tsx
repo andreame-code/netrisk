@@ -1,0 +1,287 @@
+import { useEffect, useState } from "react";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import type {
+  CreateGameRequest,
+  GameOptionsResponse,
+  GameSummary
+} from "@frontend-generated/shared-runtime-validation.mts";
+
+import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
+import { messageFromError } from "@frontend-core/errors.mts";
+import { resolvedGameModules, resolvedGamePresets } from "@frontend-core/module-catalog.mts";
+import { t } from "@frontend-i18n";
+
+import { openShellGame } from "@react-shell/game-navigation";
+import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
+
+type WarTableLobbyPanelsProps = {
+  activeGame: GameSummary | null;
+  openDisabled: boolean;
+  openPending: boolean;
+  onOpenSelected(): Promise<void>;
+  selectedGame: GameSummary | null;
+};
+
+export function buildHumanPlayerSlots(
+  totalPlayers: number
+): NonNullable<CreateGameRequest["players"]> {
+  return Array.from({ length: totalPlayers }, (_, index) => ({
+    slot: index + 1,
+    type: "human"
+  }));
+}
+
+function playerChoices(options: GameOptionsResponse | undefined): number[] {
+  const minimum = options?.playerRange?.min || 2;
+  const maximum = options?.playerRange?.max || 6;
+  return [2, 3, 4, 5, 6].filter((value) => value >= minimum && value <= maximum);
+}
+
+function turnDurationChoices(options: GameOptionsResponse | undefined): number[] {
+  const configured = options?.turnTimeoutHoursOptions?.filter((value) => Number.isInteger(value));
+  return configured?.length ? configured.slice(0, 3) : [24, 48, 72];
+}
+
+function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | null): string {
+  if (!preset) {
+    return t("warTable.lobby.presetFallback");
+  }
+
+  return preset.description || t("warTable.lobby.presetFallback");
+}
+
+export function LobbyWarTablePanels({
+  activeGame,
+  openDisabled,
+  openPending,
+  onOpenSelected,
+  selectedGame
+}: WarTableLobbyPanelsProps) {
+  const queryClient = useQueryClient();
+  const [selectedPresetId, setSelectedPresetId] = useState("");
+  const [selectedPlayers, setSelectedPlayers] = useState(4);
+  const [selectedTurnHours, setSelectedTurnHours] = useState(48);
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+
+  const optionsQuery = useQuery({
+    queryKey: gameOptionsQueryKey(),
+    queryFn: () =>
+      getGameOptions({
+        errorMessage: t("newGame.errors.loadOptions"),
+        fallbackMessage: t("newGame.errors.loadOptions")
+      })
+  });
+
+  const options = optionsQuery.data;
+  const presets = resolvedGamePresets(options);
+  const modules = resolvedGameModules(options).slice(0, 3);
+  const selectedPreset =
+    presets.find((preset) => preset.id === selectedPresetId) || presets[0] || null;
+  const activeSummary = activeGame || selectedGame;
+  const createMutation = useMutation({
+    mutationFn: (request: CreateGameRequest) =>
+      createGame(request, {
+        errorMessage: t("errors.requestFailed"),
+        fallbackMessage: t("errors.requestFailed")
+      })
+  });
+
+  useEffect(() => {
+    if (!presets.length || selectedPresetId) {
+      return;
+    }
+
+    setSelectedPresetId(presets[0].id);
+  }, [presets, selectedPresetId]);
+
+  useEffect(() => {
+    if (!selectedPreset || selectedModuleIds.length) {
+      return;
+    }
+
+    setSelectedModuleIds(selectedPreset.activeModuleIds || []);
+  }, [selectedModuleIds.length, selectedPreset]);
+
+  useEffect(() => {
+    const choices = playerChoices(options);
+    if (choices.length && !choices.includes(selectedPlayers)) {
+      setSelectedPlayers(choices[0]);
+    }
+
+    const durations = turnDurationChoices(options);
+    if (durations.length && !durations.includes(selectedTurnHours)) {
+      setSelectedTurnHours(durations[0]);
+    }
+  }, [options, selectedPlayers, selectedTurnHours]);
+
+  async function handleCreateGame(): Promise<void> {
+    const request: CreateGameRequest = {
+      name: selectedPreset?.name || t("warTable.lobby.defaultGameName"),
+      totalPlayers: selectedPlayers,
+      turnTimeoutHours: selectedTurnHours,
+      gamePresetId: selectedPreset?.id || null,
+      activeModuleIds: selectedModuleIds,
+      players: buildHumanPlayerSlots(selectedPlayers)
+    };
+
+    const response = await createMutation.mutateAsync(request);
+    if (response.playerId) {
+      storeCurrentPlayerId(response.playerId, response.game.id);
+    }
+    await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
+    openShellGame(response.game.id);
+  }
+
+  function handlePresetChange(nextPresetId: string): void {
+    const nextPreset = presets.find((preset) => preset.id === nextPresetId) || null;
+    setSelectedPresetId(nextPresetId);
+    setSelectedModuleIds(nextPreset?.activeModuleIds || []);
+  }
+
+  function toggleModule(moduleId: string): void {
+    setSelectedModuleIds((current) =>
+      current.includes(moduleId)
+        ? current.filter((entry) => entry !== moduleId)
+        : [...current, moduleId]
+    );
+  }
+
+  const createDisabled = optionsQuery.isLoading || createMutation.isPending || !selectedPreset;
+
+  return (
+    <div className="war-table-lobby-panels" aria-label={t("warTable.lobby.panelsAria")}>
+      <section className="war-table-quick-create" aria-label={t("warTable.lobby.create.heading")}>
+        <h3>{t("warTable.lobby.create.heading")}</h3>
+        <label className="war-table-field" htmlFor="war-table-preset">
+          <span>{t("warTable.lobby.preset")}</span>
+          <select
+            id="war-table-preset"
+            value={selectedPreset?.id || ""}
+            disabled={optionsQuery.isLoading}
+            onChange={(event) => handlePresetChange(event.target.value)}
+          >
+            {presets.length ? (
+              presets.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.name || preset.id}
+                </option>
+              ))
+            ) : (
+              <option value="">{t("warTable.lobby.loadingOptions")}</option>
+            )}
+          </select>
+        </label>
+
+        <div className="war-table-control-row">
+          <span>{t("warTable.lobby.players")}</span>
+          <div
+            className="war-table-segmented"
+            role="group"
+            aria-label={t("warTable.lobby.players")}
+          >
+            {playerChoices(options).map((count) => (
+              <button
+                key={count}
+                type="button"
+                className={count === selectedPlayers ? "is-active" : ""}
+                onClick={() => setSelectedPlayers(count)}
+              >
+                {count}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="war-table-control-row">
+          <span>{t("warTable.lobby.turnDuration")}</span>
+          <div
+            className="war-table-segmented"
+            role="group"
+            aria-label={t("warTable.lobby.turnDuration")}
+          >
+            {turnDurationChoices(options).map((hours) => (
+              <button
+                key={hours}
+                type="button"
+                className={hours === selectedTurnHours ? "is-active" : ""}
+                onClick={() => setSelectedTurnHours(hours)}
+              >
+                {t("newGame.turnTimeout.option", { hours })}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="war-table-control-row">
+          <span>{t("warTable.lobby.modules")}</span>
+          <div className="war-table-module-toggles">
+            {modules.length ? (
+              modules.map((moduleEntry) => (
+                <button
+                  key={moduleEntry.id}
+                  type="button"
+                  className={selectedModuleIds.includes(moduleEntry.id) ? "is-active" : ""}
+                  onClick={() => toggleModule(moduleEntry.id)}
+                >
+                  {moduleEntry.displayName || moduleEntry.id}
+                </button>
+              ))
+            ) : (
+              <span className="badge">{t("warTable.lobby.coreOnly")}</span>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="lobby-create-button war-table-create-button"
+          disabled={createDisabled}
+          onClick={() => void handleCreateGame()}
+        >
+          {createMutation.isPending
+            ? t("newGame.feedback.creating")
+            : t("warTable.lobby.createButton")}
+        </button>
+        {createMutation.isError ? (
+          <p className="session-feedback is-error">
+            {messageFromError(createMutation.error, t("errors.requestFailed"))}
+          </p>
+        ) : null}
+      </section>
+
+      <aside className="war-table-preset-panel" aria-label={t("warTable.lobby.presets.heading")}>
+        <h3>{t("warTable.lobby.presets.heading")}</h3>
+        <div className="war-table-preset-list">
+          {(presets.length ? presets.slice(0, 4) : [selectedPreset])
+            .filter(Boolean)
+            .map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                className={preset.id === selectedPreset?.id ? "is-active" : ""}
+                onClick={() => handlePresetChange(preset.id)}
+              >
+                <strong>{preset.name || preset.id}</strong>
+                <span>{presetSummary(preset)}</span>
+              </button>
+            ))}
+        </div>
+        <button
+          type="button"
+          className="ghost-button war-table-open-active"
+          disabled={openDisabled}
+          onClick={() => void onOpenSelected()}
+        >
+          {openPending
+            ? t("warTable.lobby.opening")
+            : activeSummary
+              ? t("warTable.lobby.resumeBattle")
+              : t("warTable.lobby.selectBattle")}
+        </button>
+      </aside>
+    </div>
+  );
+}

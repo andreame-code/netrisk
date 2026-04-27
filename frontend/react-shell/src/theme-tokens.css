@@ -24,10 +24,8 @@ html[data-theme="command"] {
   --shadow: 0 24px 56px rgba(0, 0, 0, 0.45);
   --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.28);
   --bevel:
-    inset 0 2px 0 rgba(255, 230, 140, 0.13),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
-    inset 2px 0 0 rgba(255, 230, 140, 0.06),
-    inset -2px 0 0 rgba(0, 0, 0, 0.35);
+    inset 0 2px 0 rgba(255, 230, 140, 0.13), inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    inset 2px 0 0 rgba(255, 230, 140, 0.06), inset -2px 0 0 rgba(0, 0, 0, 0.35);
   --success: #d8e0b0;
   --success-bg: rgba(80, 96, 44, 0.24);
   --success-border: rgba(164, 194, 91, 0.18);
@@ -123,10 +121,20 @@ html[data-theme="command"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(232, 194, 68, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(30, 26, 19, 0.98), rgba(16, 14, 10, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(31, 28, 17, 0.97) 0%, rgba(19, 17, 11, 0.95) 100%);
+  --landing-header-bg: linear-gradient(
+    180deg,
+    rgba(31, 28, 17, 0.97) 0%,
+    rgba(19, 17, 11, 0.95) 100%
+  );
   --landing-hero-overlay:
     radial-gradient(ellipse at 50% 40%, rgba(194, 170, 92, 0.12) 0%, transparent 56%),
-    linear-gradient(180deg, rgba(14, 12, 9, 0.42) 0%, rgba(14, 12, 9, 0.08) 42%, rgba(14, 12, 9, 0.14) 60%, rgba(14, 12, 9, 0.88) 100%);
+    linear-gradient(
+      180deg,
+      rgba(14, 12, 9, 0.42) 0%,
+      rgba(14, 12, 9, 0.08) 42%,
+      rgba(14, 12, 9, 0.14) 60%,
+      rgba(14, 12, 9, 0.88) 100%
+    );
   --landing-panel-bg: linear-gradient(180deg, rgba(34, 31, 21, 0.9) 0%, rgba(20, 18, 12, 0.9) 100%);
   --landing-section-bg:
     radial-gradient(ellipse at 50% 0%, rgba(194, 170, 92, 0.11) 0%, transparent 52%),
@@ -135,7 +143,13 @@ html[data-theme="command"] {
   --landing-howto-bg:
     radial-gradient(ellipse at 50% 100%, rgba(194, 170, 92, 0.1) 0%, transparent 52%),
     linear-gradient(180deg, #0e0c09 0%, #17140f 100%);
-  --landing-final-overlay: linear-gradient(180deg, rgba(14, 12, 9, 0.85) 0%, transparent 30%, transparent 70%, rgba(14, 12, 9, 0.85) 100%);
+  --landing-final-overlay: linear-gradient(
+    180deg,
+    rgba(14, 12, 9, 0.85) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(14, 12, 9, 0.85) 100%
+  );
   --landing-footer-bg: linear-gradient(180deg, #0e0c09 0%, #080705 100%);
   --radius: 6px;
   --campaign-shell-radius: 6px;
@@ -171,10 +185,8 @@ html[data-theme="midnight"] {
   --shadow: 0 24px 56px rgba(0, 0, 0, 0.54);
   --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.34);
   --bevel:
-    inset 0 2px 0 rgba(173, 217, 255, 0.12),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.58),
-    inset 2px 0 0 rgba(173, 217, 255, 0.06),
-    inset -2px 0 0 rgba(0, 0, 0, 0.38);
+    inset 0 2px 0 rgba(173, 217, 255, 0.12), inset 0 -2px 0 rgba(0, 0, 0, 0.58),
+    inset 2px 0 0 rgba(173, 217, 255, 0.06), inset -2px 0 0 rgba(0, 0, 0, 0.38);
   --success: #c7e5d5;
   --success-bg: rgba(36, 93, 79, 0.32);
   --success-border: rgba(105, 190, 161, 0.22);
@@ -268,10 +280,20 @@ html[data-theme="midnight"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(133, 193, 255, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(17, 28, 43, 0.98), rgba(8, 14, 22, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(12, 25, 42, 0.97) 0%, rgba(8, 16, 28, 0.95) 100%);
+  --landing-header-bg: linear-gradient(
+    180deg,
+    rgba(12, 25, 42, 0.97) 0%,
+    rgba(8, 16, 28, 0.95) 100%
+  );
   --landing-hero-overlay:
     radial-gradient(ellipse at 50% 40%, rgba(93, 164, 245, 0.16) 0%, transparent 58%),
-    linear-gradient(180deg, rgba(7, 17, 29, 0.46) 0%, rgba(7, 17, 29, 0.08) 42%, rgba(7, 17, 29, 0.14) 60%, rgba(7, 17, 29, 0.9) 100%);
+    linear-gradient(
+      180deg,
+      rgba(7, 17, 29, 0.46) 0%,
+      rgba(7, 17, 29, 0.08) 42%,
+      rgba(7, 17, 29, 0.14) 60%,
+      rgba(7, 17, 29, 0.9) 100%
+    );
   --landing-panel-bg: linear-gradient(180deg, rgba(15, 29, 47, 0.9) 0%, rgba(8, 17, 29, 0.92) 100%);
   --landing-section-bg:
     radial-gradient(ellipse at 50% 0%, rgba(93, 164, 245, 0.14) 0%, transparent 54%),
@@ -280,7 +302,13 @@ html[data-theme="midnight"] {
   --landing-howto-bg:
     radial-gradient(ellipse at 50% 100%, rgba(93, 164, 245, 0.12) 0%, transparent 54%),
     linear-gradient(180deg, #07111d 0%, #102336 100%);
-  --landing-final-overlay: linear-gradient(180deg, rgba(7, 17, 29, 0.88) 0%, transparent 30%, transparent 70%, rgba(7, 17, 29, 0.88) 100%);
+  --landing-final-overlay: linear-gradient(
+    180deg,
+    rgba(7, 17, 29, 0.88) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(7, 17, 29, 0.88) 100%
+  );
   --landing-footer-bg: linear-gradient(180deg, #07111d 0%, #040b13 100%);
   --muted: var(--text-muted);
   --parchment: var(--text);
@@ -311,10 +339,8 @@ html[data-theme="ember"] {
   --shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
   --shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.3);
   --bevel:
-    inset 0 2px 0 rgba(255, 176, 136, 0.12),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.56),
-    inset 2px 0 0 rgba(255, 176, 136, 0.06),
-    inset -2px 0 0 rgba(0, 0, 0, 0.36);
+    inset 0 2px 0 rgba(255, 176, 136, 0.12), inset 0 -2px 0 rgba(0, 0, 0, 0.56),
+    inset 2px 0 0 rgba(255, 176, 136, 0.06), inset -2px 0 0 rgba(0, 0, 0, 0.36);
   --success: #d4e1bc;
   --success-bg: rgba(71, 96, 37, 0.28);
   --success-border: rgba(171, 203, 93, 0.2);
@@ -408,11 +434,25 @@ html[data-theme="ember"] {
   --footer-shell-bg:
     radial-gradient(circle at top right, rgba(255, 154, 102, 0.14), transparent 48%),
     linear-gradient(180deg, rgba(34, 20, 17, 0.98), rgba(16, 10, 9, 0.96));
-  --landing-header-bg: linear-gradient(180deg, rgba(38, 19, 14, 0.97) 0%, rgba(22, 11, 9, 0.95) 100%);
+  --landing-header-bg: linear-gradient(
+    180deg,
+    rgba(38, 19, 14, 0.97) 0%,
+    rgba(22, 11, 9, 0.95) 100%
+  );
   --landing-hero-overlay:
     radial-gradient(ellipse at 50% 40%, rgba(226, 104, 55, 0.17) 0%, transparent 58%),
-    linear-gradient(180deg, rgba(20, 11, 9, 0.46) 0%, rgba(20, 11, 9, 0.08) 42%, rgba(20, 11, 9, 0.16) 60%, rgba(20, 11, 9, 0.9) 100%);
-  --landing-panel-bg: linear-gradient(180deg, rgba(44, 22, 16, 0.9) 0%, rgba(23, 12, 10, 0.92) 100%);
+    linear-gradient(
+      180deg,
+      rgba(20, 11, 9, 0.46) 0%,
+      rgba(20, 11, 9, 0.08) 42%,
+      rgba(20, 11, 9, 0.16) 60%,
+      rgba(20, 11, 9, 0.9) 100%
+    );
+  --landing-panel-bg: linear-gradient(
+    180deg,
+    rgba(44, 22, 16, 0.9) 0%,
+    rgba(23, 12, 10, 0.92) 100%
+  );
   --landing-section-bg:
     radial-gradient(ellipse at 50% 0%, rgba(226, 104, 55, 0.14) 0%, transparent 54%),
     linear-gradient(180deg, #21100b 0%, #140b09 100%);
@@ -420,7 +460,13 @@ html[data-theme="ember"] {
   --landing-howto-bg:
     radial-gradient(ellipse at 50% 100%, rgba(226, 104, 55, 0.12) 0%, transparent 54%),
     linear-gradient(180deg, #140b09 0%, #29120b 100%);
-  --landing-final-overlay: linear-gradient(180deg, rgba(20, 11, 9, 0.88) 0%, transparent 30%, transparent 70%, rgba(20, 11, 9, 0.88) 100%);
+  --landing-final-overlay: linear-gradient(
+    180deg,
+    rgba(20, 11, 9, 0.88) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(20, 11, 9, 0.88) 100%
+  );
   --landing-footer-bg: linear-gradient(180deg, #140b09 0%, #090505 100%);
   --muted: var(--text-muted);
   --parchment: var(--text);
@@ -451,10 +497,8 @@ html[data-theme="war-table"] {
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
   --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.4);
   --bevel:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.68),
-    inset 1px 0 0 rgba(255, 255, 255, 0.04),
-    inset -1px 0 0 rgba(0, 0, 0, 0.46);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.68),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04), inset -1px 0 0 rgba(0, 0, 0, 0.46);
   --success: #6ede7b;
   --success-bg: rgba(36, 120, 77, 0.24);
   --success-border: rgba(110, 222, 123, 0.28);
@@ -554,7 +598,13 @@ html[data-theme="war-table"] {
   --landing-header-bg: linear-gradient(180deg, rgba(5, 17, 25, 0.98) 0%, rgba(1, 8, 13, 0.96) 100%);
   --landing-hero-overlay:
     radial-gradient(ellipse at 50% 40%, rgba(242, 169, 31, 0.13) 0%, transparent 58%),
-    linear-gradient(180deg, rgba(2, 10, 15, 0.48) 0%, rgba(2, 10, 15, 0.08) 42%, rgba(2, 10, 15, 0.16) 60%, rgba(2, 10, 15, 0.9) 100%);
+    linear-gradient(
+      180deg,
+      rgba(2, 10, 15, 0.48) 0%,
+      rgba(2, 10, 15, 0.08) 42%,
+      rgba(2, 10, 15, 0.16) 60%,
+      rgba(2, 10, 15, 0.9) 100%
+    );
   --landing-panel-bg: linear-gradient(180deg, rgba(8, 26, 37, 0.9) 0%, rgba(2, 11, 17, 0.92) 100%);
   --landing-section-bg:
     radial-gradient(ellipse at 50% 0%, rgba(242, 169, 31, 0.11) 0%, transparent 54%),
@@ -563,7 +613,13 @@ html[data-theme="war-table"] {
   --landing-howto-bg:
     radial-gradient(ellipse at 50% 100%, rgba(242, 169, 31, 0.1) 0%, transparent 54%),
     linear-gradient(180deg, #020a0f 0%, #061f2b 100%);
-  --landing-final-overlay: linear-gradient(180deg, rgba(2, 10, 15, 0.9) 0%, transparent 30%, transparent 70%, rgba(2, 10, 15, 0.9) 100%);
+  --landing-final-overlay: linear-gradient(
+    180deg,
+    rgba(2, 10, 15, 0.9) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(2, 10, 15, 0.9) 100%
+  );
   --landing-footer-bg: linear-gradient(180deg, #020a0f 0%, #010509 100%);
   --radius: 6px;
   --campaign-shell-radius: 8px;
@@ -1094,7 +1150,12 @@ button,
   font-size: 0.88rem;
   font-weight: 700;
   text-decoration: none;
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
 }
 
 .ld-btn-primary,
@@ -1201,7 +1262,10 @@ button:disabled,
   box-shadow: var(--bevel), var(--shadow);
   position: relative;
   overflow: hidden;
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
 }
 
 .ld-feature-card {
@@ -1493,12 +1557,7 @@ button:disabled,
 }
 
 html[data-theme="war-table"] body {
-  font-family:
-    "Segoe UI",
-    "Inter",
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
   background: var(--app-shell-bg);
   color: var(--text);
 }
@@ -1572,9 +1631,7 @@ html[data-theme="war-table"] .campaign-page-shell::before {
   inset: 0;
   height: min(42rem, 68vh);
   border-radius: var(--campaign-shell-radius);
-  background:
-    var(--backdrop-grid),
-    var(--page-aura-bg);
+  background: var(--backdrop-grid), var(--page-aura-bg);
   background-size:
     38px 38px,
     auto;
@@ -1714,9 +1771,7 @@ html[data-theme="war-table"] .game-actions-rail {
 }
 
 html[data-theme="war-table"] .game-map-stage {
-  background:
-    var(--backdrop-grid),
-    var(--shell-surface-bg);
+  background: var(--backdrop-grid), var(--shell-surface-bg);
   background-size:
     34px 34px,
     auto;
@@ -1740,14 +1795,20 @@ html[data-theme="war-table"] .territory-node {
   width: 34px;
   height: 34px;
   border-color: var(--line);
-  box-shadow: var(--bevel), 0 0 0 1px var(--panel-strong), 0 8px 18px var(--overlay);
+  box-shadow:
+    var(--bevel),
+    0 0 0 1px var(--panel-strong),
+    0 8px 18px var(--overlay);
 }
 
 html[data-theme="war-table"] .territory-node.is-mine,
 html[data-theme="war-table"] .territory-node.is-source,
 html[data-theme="war-table"] .territory-node.is-reinforce {
   border-color: var(--gold-hi);
-  box-shadow: var(--bevel), 0 0 0 2px var(--gold-dim), 0 10px 22px var(--overlay);
+  box-shadow:
+    var(--bevel),
+    0 0 0 2px var(--gold-dim),
+    0 10px 22px var(--overlay);
 }
 
 html[data-theme="war-table"] .game-actions-rail {
@@ -1912,29 +1973,28 @@ html[data-theme="war-table"] {
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 20%),
     linear-gradient(90deg, rgba(242, 169, 31, 0.03), transparent 22%);
   --hero-panel-bg:
-    linear-gradient(90deg, rgba(1, 8, 13, 0.96) 0%, rgba(2, 13, 20, 0.8) 45%, rgba(2, 13, 20, 0.24) 100%),
+    linear-gradient(
+      90deg,
+      rgba(1, 8, 13, 0.96) 0%,
+      rgba(2, 13, 20, 0.8) 45%,
+      rgba(2, 13, 20, 0.24) 100%
+    ),
     radial-gradient(ellipse at 72% 10%, rgba(242, 169, 31, 0.12), transparent 44%);
   --focus-card-bg:
     radial-gradient(ellipse at 70% 16%, rgba(242, 169, 31, 0.22), transparent 42%),
     linear-gradient(180deg, rgba(5, 20, 29, 0.96), rgba(1, 9, 14, 0.96));
-  --card-bg:
-    linear-gradient(180deg, rgba(5, 22, 32, 0.92), rgba(2, 12, 18, 0.94));
-  --card-bg-hover:
-    linear-gradient(180deg, rgba(8, 31, 43, 0.96), rgba(3, 15, 22, 0.96));
-  --field-bg:
-    linear-gradient(180deg, rgba(7, 25, 36, 0.98), rgba(2, 12, 18, 0.98));
+  --card-bg: linear-gradient(180deg, rgba(5, 22, 32, 0.92), rgba(2, 12, 18, 0.94));
+  --card-bg-hover: linear-gradient(180deg, rgba(8, 31, 43, 0.96), rgba(3, 15, 22, 0.96));
+  --field-bg: linear-gradient(180deg, rgba(7, 25, 36, 0.98), rgba(2, 12, 18, 0.98));
   --button-primary-bg:
     linear-gradient(180deg, rgba(255, 207, 92, 0.3), rgba(255, 207, 92, 0) 28%),
     linear-gradient(180deg, #c58a1e 0%, #8f6216 100%);
   --button-primary-bg-hover:
     linear-gradient(180deg, rgba(255, 219, 127, 0.38), rgba(255, 219, 127, 0) 28%),
     linear-gradient(180deg, #dc9d28 0%, #a06f1b 100%);
-  --button-ghost-bg:
-    linear-gradient(180deg, rgba(8, 25, 35, 0.96), rgba(2, 12, 18, 0.96));
-  --button-ghost-bg-hover:
-    linear-gradient(180deg, rgba(12, 35, 48, 0.98), rgba(3, 16, 24, 0.98));
-  --nav-surface:
-    linear-gradient(180deg, rgba(3, 14, 22, 0.99), rgba(1, 7, 12, 0.98));
+  --button-ghost-bg: linear-gradient(180deg, rgba(8, 25, 35, 0.96), rgba(2, 12, 18, 0.96));
+  --button-ghost-bg-hover: linear-gradient(180deg, rgba(12, 35, 48, 0.98), rgba(3, 16, 24, 0.98));
+  --nav-surface: linear-gradient(180deg, rgba(3, 14, 22, 0.99), rgba(1, 7, 12, 0.98));
   --shell-surface-bg:
     radial-gradient(circle at 100% 0%, rgba(242, 169, 31, 0.035), transparent 30%),
     linear-gradient(180deg, rgba(4, 18, 27, 0.96), rgba(1, 8, 13, 0.94));
@@ -1952,8 +2012,7 @@ html[data-theme="war-table"] {
 html[data-theme="war-table"] body {
   background:
     linear-gradient(rgba(120, 174, 194, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(120, 174, 194, 0.032) 1px, transparent 1px),
-    var(--app-shell-bg);
+    linear-gradient(90deg, rgba(120, 174, 194, 0.032) 1px, transparent 1px), var(--app-shell-bg);
   background-size:
     44px 44px,
     44px 44px,
@@ -1967,7 +2026,9 @@ html[data-theme="war-table"] .top-nav-bar {
   border-color: rgba(124, 151, 160, 0.28);
   border-radius: 8px;
   background: var(--nav-surface);
-  box-shadow: var(--bevel), 0 10px 28px rgba(0, 0, 0, 0.46);
+  box-shadow:
+    var(--bevel),
+    0 10px 28px rgba(0, 0, 0, 0.46);
 }
 
 html[data-theme="war-table"] .top-nav-brand {
@@ -2228,8 +2289,7 @@ html[data-theme="war-table"] .session-browser-grid {
 
 html[data-theme="war-table"] .session-list-panel,
 html[data-theme="war-table"] .session-detail-panel {
-  background:
-    linear-gradient(180deg, rgba(3, 16, 24, 0.94), rgba(1, 8, 13, 0.94));
+  background: linear-gradient(180deg, rgba(3, 16, 24, 0.94), rgba(1, 8, 13, 0.94));
 }
 
 html[data-theme="war-table"] .session-list-title-row h3,
@@ -2382,7 +2442,13 @@ html[data-theme="war-table"] .game-map-stage .map-board.has-custom-background .m
 html[data-theme="war-table"] .game-map-stage .map-board.has-custom-background::after {
   background:
     radial-gradient(ellipse at center, transparent 42%, rgba(1, 7, 12, 0.72) 100%),
-    linear-gradient(180deg, rgba(1, 7, 12, 0.38), transparent 18%, transparent 74%, rgba(1, 7, 12, 0.7)),
+    linear-gradient(
+      180deg,
+      rgba(1, 7, 12, 0.38),
+      transparent 18%,
+      transparent 74%,
+      rgba(1, 7, 12, 0.7)
+    ),
     linear-gradient(rgba(120, 174, 194, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120, 174, 194, 0.04) 1px, transparent 1px);
   background-size:
@@ -2409,7 +2475,9 @@ html[data-theme="war-table"] .map-control-button {
   background: rgba(3, 18, 27, 0.82);
 }
 
-html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node {
+html[data-theme="war-table"]
+  .map-board-surface:has(.map-board.has-custom-background)
+  .territory-node {
   width: 28px;
   height: 28px;
   min-width: 28px;
@@ -2423,10 +2491,18 @@ html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-backgr
     0 0 8px rgba(0, 0, 0, 0.95);
 }
 
-html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node:hover,
-html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-source,
-html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-target,
-html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-reinforce {
+html[data-theme="war-table"]
+  .map-board-surface:has(.map-board.has-custom-background)
+  .territory-node:hover,
+html[data-theme="war-table"]
+  .map-board-surface:has(.map-board.has-custom-background)
+  .territory-node.is-source,
+html[data-theme="war-table"]
+  .map-board-surface:has(.map-board.has-custom-background)
+  .territory-node.is-target,
+html[data-theme="war-table"]
+  .map-board-surface:has(.map-board.has-custom-background)
+  .territory-node.is-reinforce {
   border: 1px solid rgba(173, 210, 255, 0.92);
   background: rgba(18, 73, 130, 0.34);
   box-shadow:
@@ -2460,7 +2536,12 @@ html[data-theme="war-table"] .profile-shell::after {
     linear-gradient(rgba(120, 174, 194, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120, 174, 194, 0.025) 1px, transparent 1px),
     radial-gradient(ellipse at 14% 10%, rgba(30, 105, 136, 0.18), transparent 34%),
-    linear-gradient(100deg, rgba(4, 17, 25, 0.99) 0%, rgba(3, 14, 20, 0.985) 46%, rgba(3, 13, 18, 0.985) 100%);
+    linear-gradient(
+      100deg,
+      rgba(4, 17, 25, 0.99) 0%,
+      rgba(3, 14, 20, 0.985) 46%,
+      rgba(3, 13, 18, 0.985) 100%
+    );
   background-size:
     42px 42px,
     42px 42px,
@@ -2497,7 +2578,9 @@ html[data-theme="war-table"] .profile-hero::before {
   background:
     radial-gradient(circle at 50% 30%, rgba(255, 232, 180, 0.16), transparent 42%),
     linear-gradient(180deg, rgba(25, 45, 55, 0.98), rgba(2, 13, 19, 0.98));
-  box-shadow: inset 0 0 0 4px rgba(242, 169, 31, 0.06), 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 0 4px rgba(242, 169, 31, 0.06),
+    0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 html[data-theme="war-table"] .profile-hero h1 {
@@ -2826,12 +2909,308 @@ html[data-theme="war-table"] .admin-metric {
   }
 }
 
+.war-table-lobby-panels {
+  display: none;
+}
+
+html[data-theme="war-table"] .war-table-lobby-panels {
+  display: contents;
+}
+
+html[data-theme="war-table"] .lobby-meta-line,
+html[data-theme="war-table"] .lobby-command-strip,
+html[data-theme="war-table"] .session-detail-panel {
+  display: none;
+}
+
+html[data-theme="war-table"] .session-browser-head {
+  min-height: 78px;
+  align-items: start;
+  padding: 4px 10px 0;
+}
+
+html[data-theme="war-table"] .session-browser-head h1 {
+  font-size: clamp(2.15rem, 3vw, 3.05rem);
+}
+
+html[data-theme="war-table"] .lobby-focus-band,
+html[data-theme="war-table"] .war-table-quick-create,
+html[data-theme="war-table"] .war-table-preset-panel,
+html[data-theme="war-table"] .session-list-panel {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme="war-table"] .lobby-focus-band {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+html[data-theme="war-table"] .war-table-quick-create,
+html[data-theme="war-table"] .war-table-preset-panel {
+  min-height: 232px;
+  padding: 16px;
+  border: 1px solid var(--border-hi);
+  border-radius: var(--campaign-card-radius);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(242, 169, 31, 0.05), transparent 34%),
+    linear-gradient(180deg, rgba(5, 20, 30, 0.94), rgba(1, 9, 14, 0.95));
+  box-shadow: var(--bevel), var(--shadow-soft);
+}
+
+html[data-theme="war-table"] .war-table-quick-create {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+html[data-theme="war-table"] .war-table-preset-panel {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+html[data-theme="war-table"] .war-table-quick-create h3,
+html[data-theme="war-table"] .war-table-preset-panel h3 {
+  margin: 0 0 14px;
+  color: var(--gold);
+  font-size: 1rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] .war-table-field,
+html[data-theme="war-table"] .war-table-control-row {
+  display: grid;
+  gap: 7px;
+  margin: 0 0 12px;
+}
+
+html[data-theme="war-table"] .war-table-field span,
+html[data-theme="war-table"] .war-table-control-row > span {
+  color: rgba(226, 235, 238, 0.72);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] .war-table-field select {
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid rgba(124, 151, 160, 0.34);
+  border-radius: 4px;
+  background: var(--field-bg);
+  color: var(--field-text);
+  padding: 0 12px;
+}
+
+html[data-theme="war-table"] .war-table-segmented,
+html[data-theme="war-table"] .war-table-module-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[data-theme="war-table"] .war-table-segmented button,
+html[data-theme="war-table"] .war-table-module-toggles button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(124, 151, 160, 0.34);
+  border-radius: 4px;
+  background: rgba(4, 18, 27, 0.82);
+  color: rgba(226, 235, 238, 0.82);
+  font-weight: 700;
+}
+
+html[data-theme="war-table"] .war-table-segmented button.is-active,
+html[data-theme="war-table"] .war-table-module-toggles button.is-active,
+html[data-theme="war-table"] .war-table-preset-list button.is-active {
+  border-color: var(--border-hi);
+  background:
+    linear-gradient(180deg, rgba(242, 169, 31, 0.22), rgba(242, 169, 31, 0.06)),
+    rgba(5, 20, 30, 0.95);
+  color: #ffffff;
+}
+
+html[data-theme="war-table"] .war-table-create-button,
+html[data-theme="war-table"] .war-table-open-active {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+html[data-theme="war-table"] .war-table-preset-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+html[data-theme="war-table"] .war-table-preset-list button {
+  display: grid;
+  gap: 3px;
+  min-height: 54px;
+  padding: 9px 12px;
+  border: 1px solid rgba(124, 151, 160, 0.28);
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, rgba(3, 18, 27, 0.92), rgba(11, 30, 34, 0.68)),
+    url("/assets/maps/world-classic.png") right center / 64% auto no-repeat;
+  color: var(--text);
+  text-align: left;
+}
+
+html[data-theme="war-table"] .war-table-preset-list strong {
+  font-size: 0.92rem;
+}
+
+html[data-theme="war-table"] .war-table-preset-list span {
+  color: rgba(226, 235, 238, 0.68);
+  font-size: 0.78rem;
+}
+
+html[data-theme="war-table"] .session-browser-grid {
+  display: contents;
+}
+
+html[data-theme="war-table"] .session-list-panel {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  margin-top: 2px;
+}
+
+html[data-theme="war-table"] .session-list-title-row {
+  min-height: 42px;
+}
+
+html[data-theme="war-table"] .lobby-focus-actions #create-game-button {
+  display: none;
+}
+
+html[data-theme="war-table"] .lobby-focus-actions #open-game-button {
+  flex: 1 1 100%;
+  border-color: var(--button-primary-border);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  box-shadow: var(--button-primary-shadow);
+}
+
+html[data-theme="war-table"] .session-row-head,
+html[data-theme="war-table"] .session-row-button {
+  grid-template-columns: minmax(210px, 1.5fr) minmax(150px, 0.75fr) minmax(120px, 0.7fr) minmax(
+      100px,
+      0.6fr
+    ) minmax(145px, 0.7fr);
+}
+
+html[data-theme="war-table"] .profile-shell {
+  align-items: start;
+}
+
+html[data-theme="war-table"] #profile-modules {
+  grid-column: 1 / -1;
+  grid-row: 5;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel h1 {
+  font-size: clamp(1.45rem, 2.1vw, 2rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel .hero-copy {
+  max-width: 720px;
+  margin-top: 8px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-side {
+  display: grid;
+  gap: 10px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-context-panel {
+  padding: 12px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-layout {
+  gap: 10px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-metric {
+  min-height: 96px;
+}
+
+@media (max-width: 1240px) {
+  html[data-theme="war-table"] .war-table-quick-create {
+    grid-column: 2;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+
+  html[data-theme="war-table"] .session-list-panel {
+    grid-row: 5;
+  }
+}
+
+@media (max-width: 980px) {
+  html[data-theme="war-table"] .lobby-focus-band,
+  html[data-theme="war-table"] .war-table-quick-create,
+  html[data-theme="war-table"] .war-table-preset-panel,
+  html[data-theme="war-table"] .session-list-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="war-table"] .session-browser-head {
+    min-height: 128px;
+    padding: 16px;
+  }
+
+  html[data-theme="war-table"] .lobby-focus-band {
+    min-height: 188px;
+  }
+
+  html[data-theme="war-table"] .war-table-quick-create,
+  html[data-theme="war-table"] .war-table-preset-panel {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  html[data-theme="war-table"] .war-table-segmented button,
+  html[data-theme="war-table"] .war-table-module-toggles button {
+    flex: 1 1 auto;
+  }
+
+  html[data-theme="war-table"] .session-row-button {
+    grid-template-columns: 1fr auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
 
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
