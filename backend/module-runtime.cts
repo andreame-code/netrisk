@@ -21,6 +21,7 @@ const { listReinforcementRuleSets } = require("../shared/reinforcement-rule-sets
 const { listSiteThemes } = require("../shared/site-themes.cjs");
 const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const {
+  findVisualTheme: findBuiltInVisualTheme,
   findVictoryRuleSet: findBuiltInVictoryRuleSet,
   listPieceSkins,
   listVictoryRuleSets,
@@ -57,7 +58,8 @@ import type {
   NetRiskResolvedGamePreset,
   NetRiskResolvedModuleSetup,
   NetRiskScenarioSetup,
-  NetRiskServerModule
+  NetRiskServerModule,
+  NetRiskModuleSiteThemeDefinition
 } from "../shared/netrisk-modules.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
@@ -112,6 +114,11 @@ type RuntimeModulePlayerPieceSetEntry = {
 type RuntimeModuleDiceRuleSetEntry = {
   moduleId: string;
   diceRuleSet: DiceRuleSet;
+};
+
+type RuntimeModuleSiteThemeEntry = {
+  moduleId: string;
+  theme: VisualTheme;
 };
 
 type AuthoredPublishedVictoryRuleSet = {
@@ -342,7 +349,8 @@ function aggregateContentContribution(
   runtimeMapEntries: RuntimeModuleMapEntry[] = [],
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = [],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = [],
-  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = []
+  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = [],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
 
@@ -388,6 +396,15 @@ function aggregateContentContribution(
       new Set([
         ...(contribution.diceRuleSetIds || []),
         ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
+      ])
+    );
+  }
+
+  if (runtimeSiteThemeEntries.length) {
+    contribution.siteThemeIds = Array.from(
+      new Set([
+        ...(contribution.siteThemeIds || []),
+        ...runtimeSiteThemeEntries.map((entry) => entry.theme.id)
       ])
     );
   }
@@ -561,6 +578,16 @@ function buildRuntimeModuleDiceRuleSet(
     defenderMaxDice: ruleSetDefinition.defenderMaxDice,
     attackerMustLeaveOneArmyBehind: ruleSetDefinition.attackerMustLeaveOneArmyBehind,
     defenderWinsTies: ruleSetDefinition.defenderWinsTies
+  };
+}
+
+function buildRuntimeModuleSiteTheme(
+  themeDefinition: NetRiskModuleSiteThemeDefinition
+): VisualTheme {
+  return {
+    id: themeDefinition.id,
+    name: themeDefinition.name,
+    description: themeDefinition.description
   };
 }
 
@@ -1036,6 +1063,7 @@ function buildResolvedModuleCatalog(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
@@ -1054,12 +1082,16 @@ function buildResolvedModuleCatalog(
   const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) =>
     enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
   );
+  const enabledRuntimeSiteThemeEntries = runtimeSiteThemeEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
   const content = aggregateContentContribution(
     enabled,
     enabledRuntimeMapEntries,
     enabledRuntimeContentPackEntries,
     enabledRuntimePlayerPieceSetEntries,
-    enabledRuntimeDiceRuleSetEntries
+    enabledRuntimeDiceRuleSetEntries,
+    enabledRuntimeSiteThemeEntries
   );
   const authoredVictoryRuleSetIds = authoredVictoryRuleSets.map((entry) => entry.id);
 
@@ -1139,7 +1171,10 @@ function buildResolvedModuleCatalog(
       content.victoryRuleSetIds
     ),
     themes: filterThemesByAllowedIds(
-      listVisualThemes().map(cloneVisualTheme),
+      [
+        ...listVisualThemes().map(cloneVisualTheme),
+        ...enabledRuntimeSiteThemeEntries.map((entry) => cloneVisualTheme(entry.theme))
+      ],
       content.siteThemeIds
     ),
     pieceSkins: filterPieceSkinsByAllowedIds(
@@ -1163,6 +1198,7 @@ function buildModuleOptions(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
+  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): ModuleOptionsSnapshot {
   const resolvedCatalog = buildResolvedModuleCatalog(
@@ -1171,6 +1207,7 @@ function buildModuleOptions(
     runtimeContentPackEntries,
     runtimePlayerPieceSetEntries,
     runtimeDiceRuleSetEntries,
+    runtimeSiteThemeEntries,
     authoredVictoryRuleSets
   );
 
@@ -1305,6 +1342,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
   let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
+  let runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+  let runtimeContentPackErrorsByModuleId = new Map<string, string[]>();
+  let runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
   let authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [];
   let authoredVictoryRuleSetRuntimesById = new Map<string, AuthoredVictoryModuleRuntime>();
 
@@ -1343,28 +1383,136 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
-  function registerServerModuleContentPacks(
+  function registerServerModuleSiteThemes(
     moduleId: string,
     serverModule: NetRiskServerModule,
-    sourcePath: string
+    sourcePath: string,
+    options: { reserveRuntimeIds?: boolean } = {}
   ): string[] {
-    if (!Array.isArray(serverModule.contentPacks) || !serverModule.contentPacks.length) {
+    if (!Array.isArray(serverModule.siteThemes) || !serverModule.siteThemes.length) {
       return [];
     }
 
     const errors: string[] = [];
+    const moduleThemeIds = new Set<string>();
+    const reserveRuntimeIds = options.reserveRuntimeIds !== false;
+    serverModule.siteThemes.forEach((themeDefinition) => {
+      try {
+        if (findBuiltInVisualTheme(themeDefinition.id)) {
+          throw new Error(
+            `Runtime module site theme "${themeDefinition.id}" conflicts with a built-in site theme.`
+          );
+        }
+
+        if (moduleThemeIds.has(themeDefinition.id)) {
+          throw new Error(`Duplicate runtime module site theme "${themeDefinition.id}" detected.`);
+        }
+        moduleThemeIds.add(themeDefinition.id);
+
+        if (!reserveRuntimeIds) {
+          return;
+        }
+
+        const existing = runtimeSiteThemesById.get(themeDefinition.id);
+        if (existing) {
+          throw new Error(
+            `Runtime module site theme "${themeDefinition.id}" conflicts with module "${existing.moduleId}".`
+          );
+        }
+
+        runtimeSiteThemesById.set(themeDefinition.id, {
+          moduleId,
+          theme: buildRuntimeModuleSiteTheme(themeDefinition)
+        });
+      } catch (error: unknown) {
+        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+
+    return errors;
+  }
+
+  function usableRuntimeContributionIdsForModule(
+    moduleId: string,
+    manifest: NetRiskModuleManifest,
+    modules: NetRiskInstalledModule[],
+    entries: Map<string, { moduleId: string }>
+  ): string[] {
+    const allowedDependencyIds = new Set(manifest.dependencies.map((dependency) => dependency.id));
+    return Array.from(entries.entries())
+      .filter(([, runtimeEntry]) => {
+        if (runtimeEntry.moduleId === moduleId) {
+          return true;
+        }
+
+        if (!allowedDependencyIds.has(runtimeEntry.moduleId)) {
+          return false;
+        }
+
+        const ownerModule = modules.find((entry) => entry.id === runtimeEntry.moduleId);
+        return Boolean(ownerModule?.enabled && ownerModule.compatible);
+      })
+      .map(([id]) => id);
+  }
+
+  function usableRuntimeSiteThemeIdsForModule(
+    moduleId: string,
+    manifest: NetRiskModuleManifest,
+    modules: NetRiskInstalledModule[]
+  ): string[] {
+    const allowedDependencyIds = new Set(manifest.dependencies.map((dependency) => dependency.id));
+    const themeIds: string[] = [];
+
+    modules.forEach((ownerModule) => {
+      if (ownerModule.id !== moduleId) {
+        if (!allowedDependencyIds.has(ownerModule.id)) {
+          return;
+        }
+
+        if (!ownerModule.enabled || !ownerModule.compatible) {
+          return;
+        }
+      }
+
+      const ownerServerModule = serverModulesById.get(ownerModule.id);
+      if (!Array.isArray(ownerServerModule?.siteThemes)) {
+        return;
+      }
+
+      ownerServerModule.siteThemes.forEach((themeDefinition) => {
+        themeIds.push(themeDefinition.id);
+      });
+    });
+
+    return themeIds;
+  }
+
+  function findRuntimeContentPackReferenceError(
+    moduleId: string,
+    manifest: NetRiskModuleManifest,
+    contentPackDefinition: NetRiskModuleContentPackDefinition,
+    modules: NetRiskInstalledModule[]
+  ): string | null {
     const knownMapIds = new Set([
       ...listCoreBaseMapSummaries().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimeMapsById.keys())
+      ...usableRuntimeContributionIdsForModule(moduleId, manifest, modules, runtimeMapsById)
     ]);
-    const knownThemeIds = new Set(listSiteThemes().map((entry: { id: string }) => entry.id));
+    const knownThemeIds = new Set([
+      ...listSiteThemes().map((entry: { id: string }) => entry.id),
+      ...usableRuntimeSiteThemeIdsForModule(moduleId, manifest, modules)
+    ]);
     const knownPieceSetIds = new Set([
       ...listPlayerPieceSets().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimePlayerPieceSetsById.keys())
+      ...usableRuntimeContributionIdsForModule(
+        moduleId,
+        manifest,
+        modules,
+        runtimePlayerPieceSetsById
+      )
     ]);
     const knownDiceRuleSetIds = new Set([
       ...listDiceRuleSets().map((entry: { id: string }) => entry.id),
-      ...Array.from(runtimeDiceRuleSetsById.keys())
+      ...usableRuntimeContributionIdsForModule(moduleId, manifest, modules, runtimeDiceRuleSetsById)
     ]);
     const knownCardRuleSetIds = new Set(
       listCardRuleSets().map((entry: { id: string }) => entry.id)
@@ -1372,6 +1520,217 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     const knownVictoryRuleSetIds = new Set(
       listVictoryRuleSets().map((entry: { id: string }) => entry.id)
     );
+
+    if (!knownThemeIds.has(contentPackDefinition.defaultSiteThemeId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown site theme "${contentPackDefinition.defaultSiteThemeId}".`;
+    }
+
+    if (!knownMapIds.has(contentPackDefinition.defaultMapId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown map "${contentPackDefinition.defaultMapId}".`;
+    }
+
+    if (!knownDiceRuleSetIds.has(contentPackDefinition.defaultDiceRuleSetId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown dice rule set "${contentPackDefinition.defaultDiceRuleSetId}".`;
+    }
+
+    if (!knownCardRuleSetIds.has(contentPackDefinition.defaultCardRuleSetId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown card rule set "${contentPackDefinition.defaultCardRuleSetId}".`;
+    }
+
+    if (!knownVictoryRuleSetIds.has(contentPackDefinition.defaultVictoryRuleSetId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown victory rule set "${contentPackDefinition.defaultVictoryRuleSetId}".`;
+    }
+
+    if (!knownPieceSetIds.has(contentPackDefinition.defaultPieceSetId)) {
+      return `Runtime module content pack "${contentPackDefinition.id}" references unknown player piece set "${contentPackDefinition.defaultPieceSetId}".`;
+    }
+
+    return null;
+  }
+
+  function removeRuntimeContentPacksForModule(moduleId: string): void {
+    Array.from(runtimeContentPacksById.entries()).forEach(([contentPackId, runtimeEntry]) => {
+      if (runtimeEntry.moduleId === moduleId) {
+        runtimeContentPacksById.delete(contentPackId);
+      }
+    });
+  }
+
+  function removeRuntimeSiteThemesForModule(moduleId: string): void {
+    Array.from(runtimeSiteThemesById.entries()).forEach(([themeId, runtimeEntry]) => {
+      if (runtimeEntry.moduleId === moduleId) {
+        runtimeSiteThemesById.delete(themeId);
+      }
+    });
+  }
+
+  function clearRuntimeSiteThemeErrors(modules: NetRiskInstalledModule[]): void {
+    modules.forEach((moduleEntry) => {
+      const previousErrors = runtimeSiteThemeErrorsByModuleId.get(moduleEntry.id);
+      if (!previousErrors?.length) {
+        return;
+      }
+
+      moduleEntry.errors = moduleEntry.errors.filter((error) => !previousErrors.includes(error));
+      if (moduleEntry.manifest && !moduleEntry.errors.length) {
+        moduleEntry.compatible = true;
+      }
+    });
+    runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
+  }
+
+  function clearRuntimeContentPackErrors(modules: NetRiskInstalledModule[]): void {
+    modules.forEach((moduleEntry) => {
+      const previousErrors = runtimeContentPackErrorsByModuleId.get(moduleEntry.id);
+      if (!previousErrors?.length) {
+        return;
+      }
+
+      moduleEntry.errors = moduleEntry.errors.filter((error) => !previousErrors.includes(error));
+      if (moduleEntry.manifest && !moduleEntry.errors.length) {
+        moduleEntry.compatible = true;
+      }
+    });
+    runtimeContentPackErrorsByModuleId = new Map<string, string[]>();
+  }
+
+  function orderModulesByDependencyPriority(
+    modules: NetRiskInstalledModule[]
+  ): NetRiskInstalledModule[] {
+    const orderedModules: NetRiskInstalledModule[] = [];
+    const modulesById = new Map(modules.map((moduleEntry) => [moduleEntry.id, moduleEntry]));
+    const visitingModuleIds = new Set<string>();
+    const visitedModuleIds = new Set<string>();
+
+    function visit(moduleEntry: NetRiskInstalledModule): void {
+      if (visitedModuleIds.has(moduleEntry.id)) {
+        return;
+      }
+
+      if (visitingModuleIds.has(moduleEntry.id)) {
+        return;
+      }
+
+      visitingModuleIds.add(moduleEntry.id);
+      const manifest = moduleEntry.manifest as NetRiskModuleManifest | null;
+      manifest?.dependencies.forEach((dependency) => {
+        const dependencyModule = modulesById.get(dependency.id);
+        if (dependencyModule) {
+          visit(dependencyModule);
+        }
+      });
+
+      visitingModuleIds.delete(moduleEntry.id);
+      visitedModuleIds.add(moduleEntry.id);
+      orderedModules.push(moduleEntry);
+    }
+
+    modules.forEach(visit);
+    return orderedModules;
+  }
+
+  function registerRuntimeContentPacksForModule(
+    moduleEntry: NetRiskInstalledModule,
+    modules: NetRiskInstalledModule[]
+  ): void {
+    if (!moduleEntry.manifest || !moduleEntry.compatible) {
+      return;
+    }
+
+    const serverModule = serverModulesById.get(moduleEntry.id);
+    if (!serverModule) {
+      return;
+    }
+
+    removeRuntimeContentPacksForModule(moduleEntry.id);
+    const contentPackErrors = registerServerModuleContentPacks(
+      moduleEntry.id,
+      moduleEntry.manifest as NetRiskModuleManifest,
+      serverModule,
+      moduleEntry.sourcePath,
+      modules
+    );
+    if (!contentPackErrors.length) {
+      return;
+    }
+
+    runtimeContentPackErrorsByModuleId.set(moduleEntry.id, contentPackErrors);
+    moduleEntry.errors.push(...contentPackErrors);
+    moduleEntry.compatible = false;
+    removeRuntimeContentPacksForModule(moduleEntry.id);
+    removeRuntimeSiteThemesForModule(moduleEntry.id);
+  }
+
+  function rebuildRuntimeContentPacksAfterCompatibility(
+    modules: NetRiskInstalledModule[]
+  ): boolean {
+    const previousCompatibilityById = new Map(
+      modules.map((moduleEntry) => [moduleEntry.id, moduleEntry.compatible])
+    );
+
+    clearRuntimeContentPackErrors(modules);
+    runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
+
+    orderModulesByDependencyPriority(modules).forEach((moduleEntry) => {
+      registerRuntimeContentPacksForModule(moduleEntry, modules);
+    });
+
+    return modules.some(
+      (moduleEntry) => previousCompatibilityById.get(moduleEntry.id) !== moduleEntry.compatible
+    );
+  }
+
+  function rebuildRuntimeSiteThemesAfterCompatibility(modules: NetRiskInstalledModule[]): boolean {
+    const previousCompatibilityById = new Map(
+      modules.map((moduleEntry) => [moduleEntry.id, moduleEntry.compatible])
+    );
+
+    clearRuntimeSiteThemeErrors(modules);
+    runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+
+    orderModulesByDependencyPriority(modules).forEach((moduleEntry) => {
+      if (!moduleEntry.manifest || !moduleEntry.compatible) {
+        return;
+      }
+
+      const serverModule = serverModulesById.get(moduleEntry.id);
+      if (!serverModule) {
+        return;
+      }
+
+      const siteThemeErrors = registerServerModuleSiteThemes(
+        moduleEntry.id,
+        serverModule,
+        moduleEntry.sourcePath,
+        { reserveRuntimeIds: moduleEntry.enabled }
+      );
+      if (siteThemeErrors.length) {
+        runtimeSiteThemeErrorsByModuleId.set(moduleEntry.id, siteThemeErrors);
+        moduleEntry.errors.push(...siteThemeErrors);
+        moduleEntry.compatible = false;
+        moduleEntry.status = "error";
+        removeRuntimeContentPacksForModule(moduleEntry.id);
+        removeRuntimeSiteThemesForModule(moduleEntry.id);
+      }
+    });
+
+    return modules.some(
+      (moduleEntry) => previousCompatibilityById.get(moduleEntry.id) !== moduleEntry.compatible
+    );
+  }
+
+  function registerServerModuleContentPacks(
+    moduleId: string,
+    manifest: NetRiskModuleManifest,
+    serverModule: NetRiskServerModule,
+    sourcePath: string,
+    modules: NetRiskInstalledModule[]
+  ): string[] {
+    if (!Array.isArray(serverModule.contentPacks) || !serverModule.contentPacks.length) {
+      return [];
+    }
+
+    const errors: string[] = [];
 
     serverModule.contentPacks.forEach((contentPackDefinition) => {
       try {
@@ -1387,40 +1746,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           );
         }
 
-        if (!knownThemeIds.has(contentPackDefinition.defaultSiteThemeId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown site theme "${contentPackDefinition.defaultSiteThemeId}".`
-          );
-        }
-
-        if (!knownMapIds.has(contentPackDefinition.defaultMapId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown map "${contentPackDefinition.defaultMapId}".`
-          );
-        }
-
-        if (!knownDiceRuleSetIds.has(contentPackDefinition.defaultDiceRuleSetId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown dice rule set "${contentPackDefinition.defaultDiceRuleSetId}".`
-          );
-        }
-
-        if (!knownCardRuleSetIds.has(contentPackDefinition.defaultCardRuleSetId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown card rule set "${contentPackDefinition.defaultCardRuleSetId}".`
-          );
-        }
-
-        if (!knownVictoryRuleSetIds.has(contentPackDefinition.defaultVictoryRuleSetId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown victory rule set "${contentPackDefinition.defaultVictoryRuleSetId}".`
-          );
-        }
-
-        if (!knownPieceSetIds.has(contentPackDefinition.defaultPieceSetId)) {
-          throw new Error(
-            `Runtime module content pack "${contentPackDefinition.id}" references unknown player piece set "${contentPackDefinition.defaultPieceSetId}".`
-          );
+        const referenceError = findRuntimeContentPackReferenceError(
+          moduleId,
+          manifest,
+          contentPackDefinition,
+          modules
+        );
+        if (referenceError) {
+          throw new Error(referenceError);
         }
 
         runtimeContentPacksById.set(contentPackDefinition.id, {
@@ -1573,6 +1906,23 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }));
   }
 
+  function listEnabledRuntimeSiteThemes(
+    modules: NetRiskInstalledModule[]
+  ): RuntimeModuleSiteThemeEntry[] {
+    const enabledIds = new Set(
+      modules
+        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
+        .map((moduleEntry) => moduleEntry.id)
+    );
+
+    return Array.from(runtimeSiteThemesById.values())
+      .filter((entry) => enabledIds.has(entry.moduleId))
+      .map((entry) => ({
+        moduleId: entry.moduleId,
+        theme: cloneVisualTheme(entry.theme)
+      }));
+  }
+
   async function loadCatalogState(): Promise<CatalogState> {
     if (cachedState) {
       return cachedState;
@@ -1671,6 +2021,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
     runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
     runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
+    runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
+    runtimeContentPackErrorsByModuleId = new Map<string, string[]>();
+    runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
     const coreManifestPath = path.join(modulesRoot, CORE_MODULE_ID, "module.json");
     let coreManifest = defaultCoreManifest();
     let coreWarnings: string[] = [];
@@ -1774,24 +2127,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     });
 
     manifestModules.forEach((moduleEntry) => {
-      const serverModule = serverModulesById.get(moduleEntry.id);
-      if (!serverModule) {
-        return;
-      }
-
-      const contentPackErrors = registerServerModuleContentPacks(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (contentPackErrors.length) {
-        moduleEntry.errors.push(...contentPackErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-      }
-    });
-
-    manifestModules.forEach((moduleEntry) => {
       const manifest = moduleEntry.manifest as NetRiskModuleManifest;
       if (!isEngineVersionCompatible(NETRISK_ENGINE_VERSION, manifest.engineVersion)) {
         moduleEntry.compatible = false;
@@ -1832,7 +2167,19 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           moduleEntry.errors.push(`Conflicts with enabled module "${conflictingModuleId}".`);
         }
       }
+    });
 
+    while (true) {
+      const siteThemeCompatibilityChanged =
+        rebuildRuntimeSiteThemesAfterCompatibility(manifestModules);
+      const contentPackCompatibilityChanged =
+        rebuildRuntimeContentPacksAfterCompatibility(manifestModules);
+      if (!siteThemeCompatibilityChanged && !contentPackCompatibilityChanged) {
+        break;
+      }
+    }
+
+    manifestModules.forEach((moduleEntry) => {
       if (!moduleEntry.errors.length && moduleEntry.enabled) {
         moduleEntry.status = "enabled";
       } else if (!moduleEntry.errors.length && !moduleEntry.enabled) {
@@ -1873,6 +2220,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       listEnabledRuntimeContentPacks(modules),
       listEnabledRuntimePlayerPieceSets(modules),
       listEnabledRuntimeDiceRuleSets(modules),
+      listEnabledRuntimeSiteThemes(modules),
       authoredVictoryRuleSets
     );
   }
@@ -2002,6 +2350,26 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       return cloneDiceRuleSet(runtimeEntry.diceRuleSet);
+    },
+    findSiteTheme(themeId: string): VisualTheme | null {
+      const builtInTheme = findBuiltInVisualTheme(themeId);
+      if (builtInTheme) {
+        return cloneVisualTheme(builtInTheme);
+      }
+
+      const runtimeEntry = runtimeSiteThemesById.get(themeId);
+      if (!runtimeEntry) {
+        return null;
+      }
+
+      const ownerModule = cachedModules.find(
+        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+      );
+      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
+        return null;
+      }
+
+      return cloneVisualTheme(runtimeEntry.theme);
     },
     findVictoryRuleSet(victoryRuleSetId: string): VictoryRuleSet | null {
       const builtInVictoryRuleSet = findBuiltInVictoryRuleSet(victoryRuleSetId);
@@ -2343,7 +2711,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         listEnabledRuntimeMaps(selectedModuleEntries),
         listEnabledRuntimeContentPacks(selectedModuleEntries),
         listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
-        listEnabledRuntimeDiceRuleSets(selectedModuleEntries)
+        listEnabledRuntimeDiceRuleSets(selectedModuleEntries),
+        listEnabledRuntimeSiteThemes(selectedModuleEntries)
       );
       if (authoredVictoryRuleSets.length) {
         selectedContent.victoryRuleSetIds = Array.from(

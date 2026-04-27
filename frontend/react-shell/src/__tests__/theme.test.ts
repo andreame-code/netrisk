@@ -9,7 +9,8 @@ import {
   currentShellTheme,
   installShellThemeBridge,
   listShellThemes,
-  setAvailableShellThemes
+  setAvailableShellThemes,
+  themeLabel
 } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
 
@@ -67,5 +68,11 @@ describe("theme runtime bridge", () => {
 
     expect(slotRuleBodies.length).toBeGreaterThan(0);
     expect(slotRuleBodies.join("\n")).not.toMatch(/\bdisplay\s*:\s*none\b/i);
+  });
+
+  it("uses runtime theme metadata for labels", () => {
+    setAvailableShellThemes([{ id: "aurora", name: "Aurora Signal" }]);
+
+    expect(themeLabel("aurora")).toBe("Aurora Signal");
   });
 });

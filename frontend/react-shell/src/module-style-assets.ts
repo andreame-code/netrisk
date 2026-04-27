@@ -13,6 +13,11 @@ function resolveModuleStylesheetHref(moduleId: string, stylesheet: string): stri
   return `/modules/${encodeURIComponent(moduleId)}/${trimmed.replace(/^\.?\//, "")}`;
 }
 
+function resolveModuleThemeTokenText(themeTokens: string): string | null {
+  const trimmed = String(themeTokens || "").trim();
+  return trimmed ? trimmed : null;
+}
+
 export function syncModuleStyleAssets(
   moduleOptions: ModuleOptionsResponse | null | undefined
 ): void {
@@ -22,6 +27,7 @@ export function syncModuleStyleAssets(
 
   const enabledIds = new Set((moduleOptions.enabledModules || []).map((moduleRef) => moduleRef.id));
   const hrefs = new Set<string>();
+  const themeTokenBlocks = new Map<string, string>();
 
   (moduleOptions.modules || []).forEach((moduleEntry) => {
     if (!enabledIds.has(moduleEntry.id)) {
@@ -33,6 +39,14 @@ export function syncModuleStyleAssets(
       const href = resolveModuleStylesheetHref(moduleEntry.id, stylesheet);
       if (href) {
         hrefs.add(href);
+      }
+    });
+
+    const themeTokens = moduleEntry.clientManifest?.ui?.themeTokens || [];
+    themeTokens.forEach((tokenText, index) => {
+      const text = resolveModuleThemeTokenText(tokenText);
+      if (text) {
+        themeTokenBlocks.set(`${moduleEntry.id}:${index}`, text);
       }
     });
   });
@@ -58,5 +72,33 @@ export function syncModuleStyleAssets(
     link.href = href;
     link.dataset.moduleStylesheet = "true";
     document.head.appendChild(link);
+  });
+
+  const existingThemeTokenStyles = Array.from(
+    document.head.querySelectorAll<HTMLStyleElement>('style[data-module-theme-tokens="true"]')
+  );
+  existingThemeTokenStyles.forEach((styleElement) => {
+    const key = styleElement.dataset.moduleThemeTokenKey || "";
+    if (!themeTokenBlocks.has(key)) {
+      styleElement.remove();
+    }
+  });
+
+  themeTokenBlocks.forEach((text, key) => {
+    const existingStyle = existingThemeTokenStyles.find(
+      (styleElement) => styleElement.dataset.moduleThemeTokenKey === key
+    );
+    if (existingStyle) {
+      if (existingStyle.textContent !== text) {
+        existingStyle.textContent = text;
+      }
+      return;
+    }
+
+    const styleElement = document.createElement("style");
+    styleElement.dataset.moduleThemeTokens = "true";
+    styleElement.dataset.moduleThemeTokenKey = key;
+    styleElement.textContent = text;
+    document.head.appendChild(styleElement);
   });
 }

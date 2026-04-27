@@ -1415,6 +1415,1217 @@ register(
 );
 
 register(
+  "module runtime espone temi locali e token UI come contributi modulari indipendenti",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-disabled-theme-conflict",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-disabled-theme-conflict",
+            version: "1.0.0",
+            displayName: "Demo Disabled Theme Conflict",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Disabled module must not reserve runtime theme IDs"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "demo-aurora",
+      name: "Disabled Aurora",
+      description: "Disabled modules must not own runtime theme IDs."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.themes",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.themes",
+            version: "1.0.0",
+            displayName: "Demo Themes",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              { kind: "site-theme", scope: "global", description: "Runtime module themes" },
+              { kind: "content-pack", scope: "game", description: "Theme content pack" }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json",
+              server: "server-module.cjs"
+            }
+          },
+          clientManifest: {
+            ui: {
+              themeTokens: ['html[data-theme="demo-aurora"] { --accent: #77ffee; }']
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "demo-aurora",
+      name: "Demo Aurora",
+      description: "Runtime theme supplied by a module."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "demo-theme-pack",
+      name: "Demo Theme Pack",
+      description: "Runtime content pack with a module theme default.",
+      defaultSiteThemeId: "demo-aurora",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ],
+  profiles: {
+    ui: [
+      { id: "demo.themes.ui", defaults: { themeId: "demo-aurora" } }
+    ]
+  }
+};`
+        },
+        {
+          dir: "demo.stale-theme-manifest",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.stale-theme-manifest",
+            version: "1.0.0",
+            displayName: "Demo Stale Theme Manifest",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Manifest-only stale theme id"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            content: {
+              siteThemeIds: ["ghost-theme"]
+            }
+          }
+        },
+        {
+          dir: "demo.duplicate-theme",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.duplicate-theme",
+            version: "1.0.0",
+            displayName: "Demo Duplicate Theme",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Malformed duplicate theme definitions"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "duplicate-theme",
+      name: "Duplicate Theme",
+      description: "First duplicate theme definition."
+    },
+    {
+      id: "duplicate-theme",
+      name: "Duplicate Theme Override",
+      description: "Second duplicate theme definition."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Provider theme kept disabled"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "provider-theme",
+      name: "Provider Theme",
+      description: "Theme owned by another module."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.cross-theme-pack",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.cross-theme-pack",
+            version: "1.0.0",
+            displayName: "Demo Cross Theme Pack",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid cross-module content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "cross-theme-pack",
+      name: "Cross Theme Pack",
+      description: "References a theme from a disabled non-dependency module.",
+      defaultSiteThemeId: "provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.themes/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+        const staleEnableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.stale-theme-manifest/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(staleEnableResponse.statusCode, 200);
+        const crossThemePackEnableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.cross-theme-pack/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(crossThemePackEnableResponse.statusCode, 400);
+        assert.equal(
+          String(
+            crossThemePackEnableResponse.payload.error ||
+              crossThemePackEnableResponse.payload.message
+          ).includes("provider-theme"),
+          true
+        );
+
+        const optionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(optionsResponse.statusCode, 200);
+        assert.equal(
+          optionsResponse.payload.themes.some(
+            (entry: any) => entry.id === "demo-aurora" && entry.name === "Demo Aurora"
+          ),
+          true
+        );
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.content.siteThemeIds.includes("demo-aurora"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.siteThemeIds.includes("ghost-theme"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "demo-aurora"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some((entry: any) => entry.id === "ghost-theme"),
+          false
+        );
+        const duplicateThemeModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.duplicate-theme"
+        );
+        assert.equal(duplicateThemeModule.status, "incompatible");
+        assert.equal(
+          duplicateThemeModule.errors.some((entry: string) =>
+            entry.includes('Duplicate runtime module site theme "duplicate-theme"')
+          ),
+          true
+        );
+        const disabledThemeConflictModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-disabled-theme-conflict"
+        );
+        assert.equal(disabledThemeConflictModule.status, "validated");
+        assert.equal(disabledThemeConflictModule.errors.length, 0);
+        assert.equal(
+          moduleOptionsResponse.payload.modules
+            .find((entry: any) => entry.id === "demo.themes")
+            .clientManifest.ui.themeTokens[0].includes("demo-aurora"),
+          true
+        );
+
+        const missingModuleSelectionResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Missing Theme Module",
+            themeId: "demo-aurora",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(missingModuleSelectionResponse.statusCode, 400);
+        assert.equal(
+          String(
+            missingModuleSelectionResponse.payload.error ||
+              missingModuleSelectionResponse.payload.message
+          ).includes("Selected theme"),
+          true
+        );
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Runtime Theme",
+            activeModuleIds: ["demo.themes"],
+            contentPackId: "demo-theme-pack",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createGameResponse.statusCode, 201);
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "demo-aurora");
+        assert.equal(createGameResponse.payload.state.gameConfig.contentPackId, "demo-theme-pack");
+
+        const stalePreferenceResponse = await callApp(
+          app,
+          "PUT",
+          "/api/profile/preferences/theme",
+          { theme: "ghost-theme" },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(stalePreferenceResponse.statusCode, 400);
+
+        const preferenceResponse = await callApp(
+          app,
+          "PUT",
+          "/api/profile/preferences/theme",
+          { theme: "demo-aurora" },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(preferenceResponse.statusCode, 200);
+        assert.equal(preferenceResponse.payload.preferences.theme, "demo-aurora");
+
+        const profileResponse = await callApp(
+          app,
+          "GET",
+          "/api/profile",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(profileResponse.statusCode, 200);
+        assert.equal(profileResponse.payload.profile.preferences.theme, "demo-aurora");
+      }
+    );
+  }
+);
+
+register(
+  "module runtime revalida content pack contro temi di dipendenze diventate incompatibili",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-theme-consumer",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-theme-consumer",
+            version: "1.0.0",
+            displayName: "Demo Theme Consumer",
+            engineVersion: "1.0.0",
+            kind: "content",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.zzz-theme-provider", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a provider theme"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "dependent-theme-pack",
+      name: "Dependent Theme Pack",
+      description: "References a provider theme that later becomes unavailable.",
+      defaultSiteThemeId: "late-provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.zzz-theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Late Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme provider with invalid content defaults"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid provider content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "late-provider-theme",
+      name: "Late Provider Theme",
+      description: "Theme from a provider that becomes incompatible."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "broken-provider-pack",
+      name: "Broken Provider Pack",
+      description: "Invalidates the provider after dependency checks have started.",
+      defaultSiteThemeId: "late-provider-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-theme-consumer": true,
+            "demo.zzz-theme-provider": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const providerModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.zzz-theme-provider"
+        );
+        assert.equal(providerModule.status, "incompatible");
+        assert.equal(
+          providerModule.errors.some((entry: string) => entry.includes("missing-map")),
+          true
+        );
+
+        const consumerModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-theme-consumer"
+        );
+        assert.equal(consumerModule.status, "incompatible");
+        assert.equal(
+          consumerModule.errors.some((entry: string) => entry.includes("late-provider-theme")),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes("dependent-theme-pack"),
+          false
+        );
+      }
+    );
+  }
+);
+
+register(
+  "module runtime non lascia a moduli incompatibili la prenotazione dei temi runtime",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-broken-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-broken-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Broken Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.missing-theme-dependency", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme from an incompatible module"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Broken Shared Runtime Theme",
+      description: "This theme must not reserve the id."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner of the shared theme id"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Shared Runtime Theme",
+      description: "This module should own the theme id."
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/demo.valid-theme-owner/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200);
+
+        const brokenModule = enableResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-broken-theme-owner"
+        );
+        assert.equal(brokenModule.status, "incompatible");
+        assert.equal(
+          brokenModule.errors.some((entry: string) =>
+            entry.includes('Missing dependency "demo.missing-theme-dependency"')
+          ),
+          true
+        );
+
+        const validModule = enableResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" && entry.name === "Valid Shared Runtime Theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register("module runtime rilascia temi quando content pack invalida il modulo", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "demo.aaa-content-broken-theme-owner",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.aaa-content-broken-theme-owner",
+          version: "1.0.0",
+          displayName: "Demo Content Broken Theme Owner",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            {
+              kind: "site-theme",
+              scope: "global",
+              description: "Theme from a module invalidated by content defaults"
+            },
+            {
+              kind: "content-pack",
+              scope: "game",
+              description: "Invalid content pack that should invalidate the module"
+            }
+          ],
+          entrypoints: {
+            server: "server-module.cjs"
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Broken Content Shared Runtime Theme",
+      description: "This theme must be released when content validation fails."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "broken-content-theme-pack",
+      name: "Broken Content Theme Pack",
+      description: "Invalidates the theme owner after theme defaults are inspected.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+      },
+      {
+        dir: "demo.valid-content-theme-owner",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.valid-content-theme-owner",
+          version: "1.0.0",
+          displayName: "Demo Valid Content Theme Owner",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            {
+              kind: "site-theme",
+              scope: "global",
+              description: "Valid owner after invalid content owner releases the id"
+            }
+          ],
+          entrypoints: {
+            server: "server-module.cjs"
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Content Shared Runtime Theme",
+      description: "This module should own the released theme id."
+    }
+  ]
+};`
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const enableResponse = await callApp(
+        app,
+        "POST",
+        "/api/modules/demo.valid-content-theme-owner/enable",
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(enableResponse.statusCode, 200);
+
+      const brokenModule = enableResponse.payload.modules.find(
+        (entry: any) => entry.id === "demo.aaa-content-broken-theme-owner"
+      );
+      assert.equal(brokenModule.status, "incompatible");
+      assert.equal(
+        brokenModule.errors.some((entry: string) => entry.includes("missing-map")),
+        true
+      );
+
+      const validModule = enableResponse.payload.modules.find(
+        (entry: any) => entry.id === "demo.valid-content-theme-owner"
+      );
+      assert.equal(validModule.status, "enabled");
+      assert.equal(validModule.errors.length, 0);
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.themes.some(
+          (entry: any) =>
+            entry.id === "shared-runtime-theme" &&
+            entry.name === "Valid Content Shared Runtime Theme"
+        ),
+        true
+      );
+      assert.equal(
+        moduleOptionsResponse.payload.themes.some(
+          (entry: any) =>
+            entry.id === "shared-runtime-theme" &&
+            entry.name === "Broken Content Shared Runtime Theme"
+        ),
+        false
+      );
+    }
+  );
+});
+
+register(
+  "module runtime ricalcola conflitti tema dopo la revalidazione dei content pack",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-revalidated-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-revalidated-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Revalidated Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.zzz-late-invalid-theme-provider", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Theme owner invalidated by content-pack revalidation"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Content pack that depends on a provider later invalidated"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Revalidated Broken Shared Runtime Theme",
+      description: "This theme owner becomes incompatible after content-pack revalidation."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "revalidated-theme-pack",
+      name: "Revalidated Theme Pack",
+      description: "References a provider theme that becomes unavailable.",
+      defaultSiteThemeId: "late-invalid-provider-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-recomputed-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-recomputed-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Recomputed Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner after revalidation removes the first owner"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Recomputed Shared Runtime Theme",
+      description: "This module should own the theme after revalidation."
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.zzz-late-invalid-theme-provider",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-late-invalid-theme-provider",
+            version: "1.0.0",
+            displayName: "Demo Late Invalid Theme Provider",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Provider theme invalidated by its own content pack"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Invalid content pack"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "late-invalid-provider-theme",
+      name: "Late Invalid Provider Theme",
+      description: "This provider becomes incompatible after initial content-pack validation."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "late-invalid-provider-pack",
+      name: "Late Invalid Provider Pack",
+      description: "Invalidates the provider after consumers have been inspected.",
+      defaultSiteThemeId: "late-invalid-provider-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-revalidated-theme-owner": true,
+            "demo.valid-recomputed-theme-owner": true,
+            "demo.zzz-late-invalid-theme-provider": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const revalidatedModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-revalidated-theme-owner"
+        );
+        assert.equal(revalidatedModule.status, "incompatible");
+        assert.equal(
+          revalidatedModule.errors.some((entry: string) =>
+            entry.includes("late-invalid-provider-theme")
+          ),
+          true
+        );
+
+        const validModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-recomputed-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" &&
+              entry.name === "Valid Recomputed Shared Runtime Theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register(
+  "module runtime riassegna temi quando la seconda revalidazione libera il proprietario",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.aaa-late-dropped-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.aaa-late-dropped-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Late Dropped Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Initial owner that later loses a dependent theme"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a theme from the duplicate loser"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Late Dropped Shared Runtime Theme",
+      description: "This owner is removed after the duplicate loser becomes incompatible."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "late-dropped-theme-pack",
+      name: "Late Dropped Theme Pack",
+      description: "Invalidates this owner after the duplicate loser has been inspected.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "missing-map",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.valid-late-theme-owner",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.valid-late-theme-owner",
+            version: "1.0.0",
+            displayName: "Demo Valid Late Theme Owner",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "site-theme",
+                scope: "global",
+                description: "Valid owner after the initial owner drops out"
+              },
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Valid content pack should return with the recovered module"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "shared-runtime-theme",
+      name: "Valid Late Shared Runtime Theme",
+      description: "This module should be reconsidered after the first owner drops out."
+    },
+    {
+      id: "late-helper-theme",
+      name: "Late Helper Theme",
+      description: "This helper disappears while the module is a duplicate loser."
+    }
+  ],
+  contentPacks: [
+    {
+      id: "valid-late-owner-pack",
+      name: "Valid Late Owner Pack",
+      description: "This pack should be re-registered after theme conflict recovery.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        },
+        {
+          dir: "demo.zzz-dependent-recovered-pack",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-dependent-recovered-pack",
+            version: "1.0.0",
+            displayName: "Demo Dependent Recovered Pack",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.valid-late-theme-owner", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a provider theme that is temporarily unavailable"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "dependent-late-helper-pack",
+      name: "Dependent Late Helper Pack",
+      description: "This pack should recover after its provider regains the helper theme.",
+      defaultSiteThemeId: "late-helper-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: {
+            "core.base": true,
+            "demo.aaa-late-dropped-theme-owner": true,
+            "demo.valid-late-theme-owner": true,
+            "demo.zzz-dependent-recovered-pack": true
+          },
+          updatedAt: "2026-04-26T00:00:00.000Z"
+        });
+
+        const moduleOptionsResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules/options",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(moduleOptionsResponse.statusCode, 200);
+
+        const droppedModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.aaa-late-dropped-theme-owner"
+        );
+        assert.equal(droppedModule.status, "incompatible");
+        assert.equal(
+          droppedModule.errors.some((entry: string) => entry.includes("missing-map")),
+          true
+        );
+
+        const validModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid-late-theme-owner"
+        );
+        assert.equal(validModule.status, "enabled");
+        assert.equal(validModule.errors.length, 0);
+
+        const dependentModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.zzz-dependent-recovered-pack"
+        );
+        assert.equal(dependentModule.status, "enabled");
+        assert.equal(dependentModule.errors.length, 0);
+
+        assert.equal(
+          moduleOptionsResponse.payload.themes.some(
+            (entry: any) =>
+              entry.id === "shared-runtime-theme" &&
+              entry.name === "Valid Late Shared Runtime Theme"
+          ),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes("valid-late-owner-pack"),
+          true
+        );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes(
+            "dependent-late-helper-pack"
+          ),
+          true
+        );
+
+        const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
+        assert.equal(gameOptionsResponse.statusCode, 200);
+        assert.equal(
+          gameOptionsResponse.payload.contentPacks.some(
+            (entry: any) =>
+              entry.id === "valid-late-owner-pack" &&
+              entry.defaultSiteThemeId === "shared-runtime-theme"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.contentPacks.some(
+            (entry: any) =>
+              entry.id === "dependent-late-helper-pack" &&
+              entry.defaultSiteThemeId === "late-helper-theme"
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register(
   "module runtime espone content pack locali e li usa come defaults in creazione partita",
   async () => {
     await withModuleServer(

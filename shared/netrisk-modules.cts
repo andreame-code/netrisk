@@ -217,6 +217,8 @@ export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {}
 
 export interface NetRiskModuleDiceRuleSetDefinition extends DiceRuleSet {}
 
+export interface NetRiskModuleSiteThemeDefinition extends VisualTheme {}
+
 export interface NetRiskReinforcementAdjustment {
   id?: string | null;
   label: string;
@@ -272,6 +274,7 @@ export interface NetRiskResolvedGamePreset {
 
 export interface NetRiskServerModule {
   maps?: NetRiskModuleMapDefinition[] | null;
+  siteThemes?: NetRiskModuleSiteThemeDefinition[] | null;
   contentPacks?: NetRiskModuleContentPackDefinition[] | null;
   playerPieceSets?: NetRiskModulePlayerPieceSetDefinition[] | null;
   diceRuleSets?: NetRiskModuleDiceRuleSetDefinition[] | null;
@@ -556,6 +559,32 @@ function normalizeModuleContentPacks(
       defaultCardRuleSetId: String(entry.defaultCardRuleSetId).trim(),
       defaultVictoryRuleSetId: String(entry.defaultVictoryRuleSetId).trim(),
       defaultPieceSetId: String(entry.defaultPieceSetId).trim()
+    };
+  });
+}
+
+function normalizeModuleSiteThemes(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleSiteThemeDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (
+      !isObject(entry) ||
+      !isNonEmptyString(entry.id) ||
+      !isNonEmptyString(entry.name) ||
+      !isNonEmptyString(entry.description)
+    ) {
+      throw new Error(`Invalid module site theme definition in "${sourcePath}".`);
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      description: String(entry.description).trim()
     };
   });
 }
@@ -936,6 +965,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
 
   return {
     maps: normalizeModuleMaps(raw.maps, sourcePath),
+    siteThemes: normalizeModuleSiteThemes(raw.siteThemes, sourcePath),
     contentPacks: normalizeModuleContentPacks(raw.contentPacks, sourcePath),
     playerPieceSets: normalizeModulePlayerPieceSets(raw.playerPieceSets, sourcePath),
     diceRuleSets: normalizeModuleDiceRuleSets(raw.diceRuleSets, sourcePath),

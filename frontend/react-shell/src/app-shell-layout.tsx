@@ -164,6 +164,8 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     }
   });
   const moduleOptions = moduleOptionsQuery.data?.options;
+  const preferredUserTheme =
+    state.status === "authenticated" ? state.user.preferences?.theme || null : null;
 
   useEffect(() => {
     document.body.dataset.shellKind = "app";
@@ -180,9 +182,20 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     }
 
     syncModuleStyleAssets(moduleOptionsQuery.data.options);
-    setAvailableShellThemes(moduleOptionsQuery.data.options.content?.siteThemeIds || null);
-    applyShellTheme(null);
+    setAvailableShellThemes(
+      moduleOptionsQuery.data.options.themes ||
+        moduleOptionsQuery.data.options.content?.siteThemeIds ||
+        null
+    );
   }, [moduleOptionsQuery.data]);
+
+  useEffect(() => {
+    if (!moduleOptionsQuery.data?.didLoadModuleOptions) {
+      return;
+    }
+
+    applyShellTheme(preferredUserTheme);
+  }, [moduleOptionsQuery.data, preferredUserTheme]);
 
   const isAuthenticated = state.status === "authenticated";
   const lobbyHref = buildLobbyPath(namespace);
