@@ -455,7 +455,22 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
-      if (user.credentials.password.secret !== String(password || "")) {
+      const providedSecret = String(password || "");
+      const expectedSecret = user.credentials.password.secret;
+
+      // Use timing-safe comparison for legacy plaintext secrets.
+      const expectedBuffer = Buffer.from(expectedSecret);
+      const providedBuffer = Buffer.from(providedSecret);
+
+      // If lengths differ, we compare expected with itself to maintain timing parity
+      // and satisfy CodeQL without using SHA-256 on password data.
+      if (expectedBuffer.length !== providedBuffer.length) {
+        crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
+        runDummyPasswordVerification();
+        return null;
+      }
+
+      if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
         runDummyPasswordVerification();
         return null;
       }
