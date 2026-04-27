@@ -14,7 +14,11 @@ import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
 import { setLocale } from "@frontend-i18n";
 
 import { openShellGame } from "@react-shell/game-navigation";
-import { buildHumanPlayerSlots, LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
+import {
+  buildHumanPlayerSlots,
+  filterVisibleModuleIds,
+  LobbyWarTablePanels
+} from "@react-shell/lobby-war-table-panels";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -183,6 +187,12 @@ describe("LobbyWarTablePanels", () => {
     ]);
   });
 
+  it("filters preset module ids to the visible War Table toggles", () => {
+    expect(
+      filterVisibleModuleIds(["cards", "hidden-module"], [createModule("cards", "Cards")])
+    ).toEqual(["cards"]);
+  });
+
   it("keeps fallback quick-create choices backend-compatible when options fail", async () => {
     getGameOptionsMock.mockRejectedValue(new Error("options offline"));
     createGameMock.mockResolvedValue(createGameResponse());
@@ -273,6 +283,47 @@ describe("LobbyWarTablePanels", () => {
     expect(createGameMock).toHaveBeenCalledWith(
       expect.objectContaining({
         activeModuleIds: []
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it("does not submit preset modules hidden from the quick-create toggles", async () => {
+    getGameOptionsMock.mockResolvedValue(
+      createGameOptionsResponse({
+        modules: [
+          createModule("cards", "Cards"),
+          createModule("objectives", "Objectives"),
+          createModule("fog-of-war", "Fog of War"),
+          createModule("advanced-cards", "Advanced Cards")
+        ],
+        gamePresets: [
+          {
+            id: "advanced-risk",
+            name: "Advanced Risk",
+            description: "Extra module preset",
+            activeModuleIds: ["cards", "advanced-cards"]
+          }
+        ]
+      })
+    );
+    createGameMock.mockResolvedValue(createGameResponse());
+
+    const { user } = renderPanels();
+    const cardsButton = await screen.findByRole("button", { name: "Cards" });
+
+    expect(screen.queryByRole("button", { name: "Advanced Cards" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(cardsButton).toHaveClass("is-active");
+    });
+    await user.click(await screen.findByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => {
+      expect(createGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(createGameMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeModuleIds: ["cards"]
       }),
       expect.any(Object)
     );

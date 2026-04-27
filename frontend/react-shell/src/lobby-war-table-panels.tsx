@@ -33,6 +33,8 @@ type WarTableLobbyPanelsProps = {
   selectedGame: GameSummary | null;
 };
 
+type SelectableModule = ReturnType<typeof resolvedGameModules>[number];
+
 export function buildHumanPlayerSlots(
   totalPlayers: number
 ): NonNullable<CreateGameRequest["players"]> {
@@ -40,6 +42,14 @@ export function buildHumanPlayerSlots(
     slot: index + 1,
     type: "human"
   }));
+}
+
+export function filterVisibleModuleIds(
+  moduleIds: readonly string[] | null | undefined,
+  visibleModules: readonly SelectableModule[]
+): string[] {
+  const visibleModuleIds = new Set(visibleModules.map((moduleEntry) => moduleEntry.id));
+  return (moduleIds || []).filter((moduleId) => visibleModuleIds.has(moduleId));
 }
 
 function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | null): string {
@@ -97,8 +107,8 @@ export function LobbyWarTablePanels({
 
     const defaultPreset = presets[0];
     setSelectedPresetId(defaultPreset.id);
-    setSelectedModuleIds(defaultPreset.activeModuleIds || []);
-  }, [presets, selectedPresetId]);
+    setSelectedModuleIds(filterVisibleModuleIds(defaultPreset.activeModuleIds, modules));
+  }, [modules, presets, selectedPresetId]);
 
   useEffect(() => {
     const choices = buildPlayerCountChoices(options);
@@ -140,7 +150,7 @@ export function LobbyWarTablePanels({
   function handlePresetChange(nextPresetId: string): void {
     const nextPreset = presets.find((preset) => preset.id === nextPresetId) || null;
     setSelectedPresetId(nextPresetId);
-    setSelectedModuleIds(nextPreset?.activeModuleIds || []);
+    setSelectedModuleIds(filterVisibleModuleIds(nextPreset?.activeModuleIds, modules));
   }
 
   function toggleModule(moduleId: string): void {
