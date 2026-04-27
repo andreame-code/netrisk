@@ -70,6 +70,17 @@ describe("theme runtime bridge", () => {
     expect(slotRuleBodies.join("\n")).not.toMatch(/\bdisplay\s*:\s*none\b/i);
   });
 
+  it("keeps War Table visual refinements scoped to reusable shell surfaces", () => {
+    const css = readFileSync(themeTokensPath, "utf8");
+
+    expect(css).toContain("War Table reference-gap pass");
+    expect(css).toContain('html[data-theme="war-table"] .session-browser');
+    expect(css).toContain('html[data-theme="war-table"] .game-main-column');
+    expect(css).toContain('html[data-theme="war-table"] .profile-shell');
+    expect(css).toContain('html[data-theme="war-table"] body[data-app-section="admin"]');
+    expect(css).not.toMatch(/ChatGPT Image|D:\/Andre|Downloads/i);
+  });
+
   it("uses runtime theme metadata for labels", () => {
     setAvailableShellThemes([{ id: "aurora", name: "Aurora Signal" }]);
 

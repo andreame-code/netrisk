@@ -3203,6 +3203,655 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-metric {
   }
 }
 
+/* War Table reference-gap pass: denser command UI, map-first game flow, compact admin. */
+html[data-theme="war-table"] .top-nav-bar,
+html[data-theme="war-table"] .session-browser,
+html[data-theme="war-table"] .profile-shell,
+html[data-theme="war-table"] .admin-sidebar,
+html[data-theme="war-table"] .admin-main,
+html[data-theme="war-table"] .game-info-rail,
+html[data-theme="war-table"] .game-map-stage,
+html[data-theme="war-table"] .game-actions-rail,
+html[data-theme="war-table"] .war-table-quick-create,
+html[data-theme="war-table"] .war-table-preset-panel,
+html[data-theme="war-table"] .session-list-panel {
+  border-color: rgba(136, 158, 164, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 12px 32px rgba(0, 0, 0, 0.44);
+}
+
+html[data-theme="war-table"] .top-nav-bar {
+  min-height: 62px;
+  margin-top: 0;
+  margin-bottom: 8px;
+  padding-inline: 24px;
+  border-radius: 0 0 8px 8px;
+}
+
+html[data-theme="war-table"] .top-nav-title::after {
+  font-size: 1.72rem;
+}
+
+html[data-theme="war-table"] .top-nav-bar .nav-link {
+  min-height: 62px;
+  font-size: 0.74rem;
+}
+
+html[data-theme="war-table"] .campaign-page-shell {
+  width: min(1528px, calc(100% - 8px));
+}
+
+html[data-theme="war-table"] .session-browser {
+  grid-template-columns: minmax(330px, 1.02fr) minmax(360px, 0.92fr) minmax(290px, 0.58fr);
+  gap: 12px;
+  padding: 18px 26px 16px;
+}
+
+html[data-theme="war-table"] .session-browser::after {
+  width: min(900px, 64%);
+  height: 154px;
+  opacity: 0.44;
+  filter: brightness(0.36) saturate(0.78) hue-rotate(170deg);
+}
+
+html[data-theme="war-table"] .session-browser-head {
+  grid-row: 1;
+  min-height: 82px;
+  padding: 0 0 4px;
+}
+
+html[data-theme="war-table"] .session-browser-head h1 {
+  margin: 0;
+  font-size: clamp(2.35rem, 3.25vw, 3.15rem);
+}
+
+html[data-theme="war-table"] .session-browser-head .stage-copy {
+  max-width: 420px;
+  margin-top: 6px;
+  font-size: 0.95rem;
+}
+
+html[data-theme="war-table"] .lobby-focus-band,
+html[data-theme="war-table"] .war-table-quick-create,
+html[data-theme="war-table"] .war-table-preset-panel {
+  grid-row: 2;
+  min-height: 250px;
+}
+
+html[data-theme="war-table"] .lobby-focus-band {
+  padding: 18px;
+  background-position: center 46%;
+  box-shadow:
+    inset 0 0 0 1px rgba(242, 169, 31, 0.24),
+    0 14px 36px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="war-table"] .lobby-focus-card strong {
+  font-size: clamp(1.85rem, 2.8vw, 2.45rem);
+}
+
+html[data-theme="war-table"] .war-table-quick-create,
+html[data-theme="war-table"] .war-table-preset-panel {
+  padding: 18px;
+}
+
+html[data-theme="war-table"] .war-table-field,
+html[data-theme="war-table"] .war-table-control-row {
+  margin-bottom: 10px;
+}
+
+html[data-theme="war-table"] .war-table-segmented button,
+html[data-theme="war-table"] .war-table-module-toggles button {
+  min-width: 46px;
+  min-height: 36px;
+}
+
+html[data-theme="war-table"] .war-table-create-button,
+html[data-theme="war-table"] .war-table-open-active {
+  min-height: 46px;
+}
+
+html[data-theme="war-table"] .session-list-panel {
+  grid-row: 3;
+  overflow: hidden;
+}
+
+html[data-theme="war-table"] .session-list-title-row {
+  min-height: 44px;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(124, 151, 160, 0.2);
+}
+
+html[data-theme="war-table"] .session-list-title-row .stage-copy {
+  display: none;
+}
+
+html[data-theme="war-table"] .session-row {
+  min-height: 39px;
+  padding: 7px 18px;
+}
+
+html[data-theme="war-table"] .session-row-button {
+  border-inline: 0;
+  background:
+    linear-gradient(90deg, rgba(10, 36, 50, 0.48), rgba(3, 16, 24, 0.36)),
+    rgba(3, 16, 24, 0.58);
+}
+
+html[data-theme="war-table"] .game-battlefield-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(292px, 322px);
+  align-items: stretch;
+}
+
+html[data-theme="war-table"] .game-main-column {
+  grid-template-columns: minmax(196px, 216px) minmax(0, 1fr);
+  grid-template-rows: clamp(560px, calc(100vh - 114px), 760px);
+}
+
+html[data-theme="war-table"] .game-info-rail,
+html[data-theme="war-table"] .game-actions-rail {
+  gap: 8px;
+  padding: 8px;
+}
+
+html[data-theme="war-table"] .game-map-stage {
+  min-height: clamp(560px, calc(100vh - 114px), 760px);
+  align-items: stretch;
+  padding: 8px;
+}
+
+html[data-theme="war-table"] .game-map-stage .map,
+html[data-theme="war-table"] .game-map-stage .map-viewport,
+html[data-theme="war-table"] .game-map-stage .map-board-surface {
+  height: 100%;
+  min-height: 100%;
+}
+
+html[data-theme="war-table"] .game-info-bottom .panel-header,
+html[data-theme="war-table"] .rail-section,
+html[data-theme="war-table"] .action-group,
+html[data-theme="war-table"] .combat-result-section,
+html[data-theme="war-table"] .log-section {
+  border-radius: 5px;
+}
+
+html[data-theme="war-table"] .rail-section,
+html[data-theme="war-table"] .action-group {
+  padding: 9px;
+}
+
+html[data-theme="war-table"] .game-actions-rail button,
+html[data-theme="war-table"] .game-actions-rail select,
+html[data-theme="war-table"] .game-actions-rail input {
+  min-height: 34px;
+}
+
+html[data-theme="war-table"] .profile-shell {
+  grid-template-columns: minmax(230px, 282px) minmax(0, 1fr) minmax(270px, 318px);
+  gap: 10px;
+  padding: 14px;
+}
+
+html[data-theme="war-table"] .profile-hero {
+  min-height: 340px;
+  padding: 22px 16px;
+}
+
+html[data-theme="war-table"] .profile-hero::before {
+  width: 112px;
+  height: 112px;
+}
+
+html[data-theme="war-table"] .profile-summary-card {
+  min-height: 0;
+  padding: 12px 14px;
+}
+
+html[data-theme="war-table"] .profile-summary-card .stage-copy {
+  display: none;
+}
+
+html[data-theme="war-table"] .profile-command-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+html[data-theme="war-table"] .profile-command-card,
+html[data-theme="war-table"] .profile-metric-card,
+html[data-theme="war-table"] .profile-note-card,
+html[data-theme="war-table"] .profile-game-row {
+  padding: 10px 12px;
+}
+
+html[data-theme="war-table"] .profile-metrics-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+html[data-theme="war-table"] .profile-metric-card.wide-card {
+  grid-column: auto;
+}
+
+html[data-theme="war-table"] .profile-metric-value {
+  font-size: clamp(1.45rem, 2vw, 2.1rem);
+}
+
+html[data-theme="war-table"] .admin-page {
+  width: min(1518px, calc(100% - 10px));
+}
+
+html[data-theme="war-table"] .admin-shell {
+  grid-template-columns: minmax(206px, 226px) minmax(0, 1fr);
+  gap: 10px;
+}
+
+html[data-theme="war-table"] .admin-sidebar {
+  top: 70px;
+  gap: 10px;
+  padding: 12px;
+}
+
+html[data-theme="war-table"] .admin-sidebar-header {
+  gap: 4px;
+}
+
+html[data-theme="war-table"] .admin-sidebar-header h2 {
+  color: var(--gold);
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+html[data-theme="war-table"] .admin-sidebar-header .status-copy,
+html[data-theme="war-table"] .admin-sidebar-summary,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-breadcrumbs,
+html[data-theme="war-table"] .admin-nav-group-label,
+html[data-theme="war-table"] .admin-nav-link span,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-page-header h1,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-page-header .hero-copy,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-header-status,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-side {
+  display: none;
+}
+
+html[data-theme="war-table"] .admin-nav-shell,
+html[data-theme="war-table"] .admin-nav-group,
+html[data-theme="war-table"] .admin-nav {
+  gap: 6px;
+}
+
+html[data-theme="war-table"] .admin-nav-link {
+  padding: 9px 10px;
+  border-radius: 4px;
+}
+
+html[data-theme="war-table"] .admin-nav-link strong {
+  font-size: 0.88rem;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel {
+  display: block;
+  min-height: 0;
+  padding: 12px 14px 8px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-copy {
+  gap: 3px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel .status-label {
+  color: var(--heading);
+  font-size: clamp(1.22rem, 1.8vw, 1.58rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-layout,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-section-stack {
+  gap: 10px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-layout {
+  grid-template-columns: 1fr;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-band {
+  gap: 10px;
+  padding: 12px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-band .card-header {
+  min-height: 0;
+  padding-bottom: 6px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 8px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-metric {
+  min-height: 88px;
+  padding: 10px 12px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-metric-value {
+  font-size: clamp(1.65rem, 2.4vw, 2.3rem);
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-overview-grid,
+html[data-theme="war-table"] body[data-app-section="admin"] .grid-shell {
+  gap: 10px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .card-panel {
+  padding: 12px;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-table th,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-table td {
+  padding: 0.62rem 0.7rem;
+}
+
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-game-item,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-audit-item,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-player-item,
+html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
+  padding: 0.68rem 0.75rem;
+}
+
+@media (min-width: 1241px) {
+  html[data-theme="war-table"] .lobby-focus-band {
+    grid-column: 1;
+  }
+
+  html[data-theme="war-table"] .war-table-quick-create {
+    grid-column: 2;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel {
+    grid-column: 3;
+  }
+
+  html[data-theme="war-table"] .session-list-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1240px) and (min-width: 981px) {
+  html[data-theme="war-table"] .lobby-focus-band,
+  html[data-theme="war-table"] .war-table-quick-create {
+    grid-row: 2;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  html[data-theme="war-table"] .session-list-panel {
+    grid-row: 4;
+  }
+}
+
+@media (max-width: 980px) {
+  html[data-theme="war-table"] .session-browser {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  html[data-theme="war-table"] .session-browser-head,
+  html[data-theme="war-table"] .lobby-focus-band,
+  html[data-theme="war-table"] .war-table-quick-create,
+  html[data-theme="war-table"] .war-table-preset-panel,
+  html[data-theme="war-table"] .session-list-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  html[data-theme="war-table"] .game-main-column,
+  html[data-theme="war-table"] .game-battlefield-layout {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="war-table"] .game-main-column {
+    grid-template-rows: auto;
+  }
+
+  html[data-theme="war-table"] .game-map-stage {
+    order: -1;
+    min-height: 54vh;
+  }
+
+  html[data-theme="war-table"] .profile-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="war-table"] .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="war-table"] .admin-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  html[data-theme="war-table"] body {
+    padding-bottom: 0;
+  }
+
+  html[data-theme="war-table"] .top-nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    min-height: 54px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 0 0 8px 8px;
+  }
+
+  html[data-theme="war-table"] .top-nav-title::after {
+    font-size: 1.4rem;
+  }
+
+  html[data-theme="war-table"] .top-nav-links {
+    position: static;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    z-index: auto;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    padding: 4px;
+    border: 1px solid rgba(124, 151, 160, 0.28);
+    border-radius: 8px;
+    background: rgba(2, 12, 18, 0.96);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  html[data-theme="war-table"] .top-nav-bar .nav-link {
+    min-height: 38px;
+    border-radius: 5px;
+    font-size: 0.68rem;
+  }
+
+  html[data-theme="war-table"] .top-nav-bar .nav-link.is-active {
+    border-bottom-color: transparent;
+    background: rgba(242, 169, 31, 0.16) !important;
+    box-shadow: inset 0 0 0 1px rgba(242, 169, 31, 0.34);
+  }
+
+  html[data-theme="war-table"] .top-nav-actions,
+  html[data-theme="war-table"] .top-nav-module-slots {
+    grid-column: auto;
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  html[data-theme="war-table"] .top-nav-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  html[data-theme="war-table"] .top-nav-actions .ghost-button {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  html[data-theme="war-table"] .top-nav-locale,
+  html[data-theme="war-table"] .top-nav-locale-select {
+    max-width: 108px;
+  }
+
+  html[data-theme="war-table"] .top-nav-module-slots {
+    position: absolute;
+    top: 108px;
+    left: 10px;
+    max-width: min(128px, calc(100% - 20px));
+    justify-content: flex-start;
+    overflow-x: auto;
+    opacity: 0.74;
+  }
+
+  html[data-theme="war-table"] .top-nav-module-slots .badge {
+    min-height: 28px;
+    max-width: 128px;
+    font-size: 0.68rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  html[data-theme="war-table"] .session-browser-head {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent !important;
+    box-shadow: none;
+  }
+
+  html[data-theme="war-table"] .session-browser-head h1 {
+    font-size: 1.45rem;
+  }
+
+  html[data-theme="war-table"] .session-browser-head .stage-copy,
+  html[data-theme="war-table"] .war-table-preset-panel {
+    display: none;
+  }
+
+  html[data-theme="war-table"] .lobby-focus-band {
+    min-height: 154px;
+    padding: 14px;
+  }
+
+  html[data-theme="war-table"] .lobby-focus-card strong {
+    font-size: 1.35rem;
+  }
+
+  html[data-theme="war-table"] .war-table-quick-create {
+    padding: 14px;
+  }
+
+  html[data-theme="war-table"] .session-row {
+    min-height: 54px;
+    padding: 9px 12px;
+  }
+
+  html[data-theme="war-table"] .game-map-stage {
+    min-height: 360px;
+    padding: 6px;
+  }
+
+  html[data-theme="war-table"] .game-map-stage .map {
+    min-height: 340px;
+  }
+
+  html[data-theme="war-table"] .map-controls {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  html[data-theme="war-table"] .profile-shell,
+  html[data-theme="war-table"] .admin-main,
+  html[data-theme="war-table"] .admin-sidebar {
+    padding: 10px;
+  }
+
+  html[data-theme="war-table"] .profile-hero {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  html[data-theme="war-table"] .profile-hero::before {
+    width: 82px;
+    height: 82px;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-panel {
+    padding: 4px 2px 0;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-page,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-shell,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-main,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-section-stack,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-page-header,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-hero-copy,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar-panel,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-users-grid,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-games-grid,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-table-wrap,
+  html[data-theme="war-table"] body[data-app-section="admin"] .card-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-page,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-main,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-section-stack {
+    overflow-x: hidden;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar .shell-field,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar input,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-toolbar-panel {
+    position: static;
+    padding: 10px;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-table-wrap {
+    border-radius: 6px;
+  }
+
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-table th,
+  html[data-theme="war-table"] body[data-app-section="admin"] .admin-table td {
+    white-space: nowrap;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
