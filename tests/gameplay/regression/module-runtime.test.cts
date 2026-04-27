@@ -2363,10 +2363,7 @@ register(
             displayName: "Demo Late Dropped Theme Owner",
             engineVersion: "1.0.0",
             kind: "hybrid",
-            dependencies: [
-              { id: "core.base", version: "1.x" },
-              { id: "demo.valid-late-theme-owner", version: "1.x" }
-            ],
+            dependencies: [{ id: "core.base", version: "1.x" }],
             conflicts: [],
             capabilities: [
               {
@@ -2397,9 +2394,9 @@ register(
     {
       id: "late-dropped-theme-pack",
       name: "Late Dropped Theme Pack",
-      description: "References the helper theme owned by the later duplicate loser.",
-      defaultSiteThemeId: "late-helper-theme",
-      defaultMapId: "classic-mini",
+      description: "Invalidates this owner after the duplicate loser has been inspected.",
+      defaultSiteThemeId: "shared-runtime-theme",
+      defaultMapId: "missing-map",
       defaultDiceRuleSetId: "standard",
       defaultCardRuleSetId: "standard",
       defaultVictoryRuleSetId: "conquest",
@@ -2463,6 +2460,48 @@ register(
     }
   ]
 };`
+        },
+        {
+          dir: "demo.zzz-dependent-recovered-pack",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.zzz-dependent-recovered-pack",
+            version: "1.0.0",
+            displayName: "Demo Dependent Recovered Pack",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [
+              { id: "core.base", version: "1.x" },
+              { id: "demo.valid-late-theme-owner", version: "1.x" }
+            ],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "content-pack",
+                scope: "game",
+                description: "Depends on a provider theme that is temporarily unavailable"
+              }
+            ],
+            entrypoints: {
+              server: "server-module.cjs"
+            }
+          },
+          serverEntryPath: "server-module.cjs",
+          serverEntrySource: `module.exports = {
+  contentPacks: [
+    {
+      id: "dependent-late-helper-pack",
+      name: "Dependent Late Helper Pack",
+      description: "This pack should recover after its provider regains the helper theme.",
+      defaultSiteThemeId: "late-helper-theme",
+      defaultMapId: "classic-mini",
+      defaultDiceRuleSetId: "standard",
+      defaultCardRuleSetId: "standard",
+      defaultVictoryRuleSetId: "conquest",
+      defaultPieceSetId: "classic"
+    }
+  ]
+};`
         }
       ],
       async ({ app, adminSessionToken }) => {
@@ -2470,7 +2509,8 @@ register(
           enabledById: {
             "core.base": true,
             "demo.aaa-late-dropped-theme-owner": true,
-            "demo.valid-late-theme-owner": true
+            "demo.valid-late-theme-owner": true,
+            "demo.zzz-dependent-recovered-pack": true
           },
           updatedAt: "2026-04-26T00:00:00.000Z"
         });
@@ -2489,7 +2529,7 @@ register(
         );
         assert.equal(droppedModule.status, "incompatible");
         assert.equal(
-          droppedModule.errors.some((entry: string) => entry.includes("late-helper-theme")),
+          droppedModule.errors.some((entry: string) => entry.includes("missing-map")),
           true
         );
 
@@ -2498,6 +2538,12 @@ register(
         );
         assert.equal(validModule.status, "enabled");
         assert.equal(validModule.errors.length, 0);
+
+        const dependentModule = moduleOptionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.zzz-dependent-recovered-pack"
+        );
+        assert.equal(dependentModule.status, "enabled");
+        assert.equal(dependentModule.errors.length, 0);
 
         assert.equal(
           moduleOptionsResponse.payload.themes.some(
@@ -2511,6 +2557,12 @@ register(
           moduleOptionsResponse.payload.content.contentPackIds.includes("valid-late-owner-pack"),
           true
         );
+        assert.equal(
+          moduleOptionsResponse.payload.content.contentPackIds.includes(
+            "dependent-late-helper-pack"
+          ),
+          true
+        );
 
         const gameOptionsResponse = await callApp(app, "GET", "/api/game/options");
         assert.equal(gameOptionsResponse.statusCode, 200);
@@ -2519,6 +2571,14 @@ register(
             (entry: any) =>
               entry.id === "valid-late-owner-pack" &&
               entry.defaultSiteThemeId === "shared-runtime-theme"
+          ),
+          true
+        );
+        assert.equal(
+          gameOptionsResponse.payload.contentPacks.some(
+            (entry: any) =>
+              entry.id === "dependent-late-helper-pack" &&
+              entry.defaultSiteThemeId === "late-helper-theme"
           ),
           true
         );
