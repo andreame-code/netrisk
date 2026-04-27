@@ -3582,6 +3582,10 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
 }
 
 @media (max-width: 1240px) and (min-width: 981px) {
+  html[data-theme="war-table"] .session-browser {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.78fr);
+  }
+
   html[data-theme="war-table"] .lobby-focus-band,
   html[data-theme="war-table"] .war-table-quick-create {
     grid-row: 2;
@@ -3593,6 +3597,7 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
   }
 
   html[data-theme="war-table"] .session-list-panel {
+    grid-column: 1 / -1;
     grid-row: 4;
   }
 }
@@ -3688,27 +3693,48 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
     box-shadow: inset 0 0 0 1px rgba(242, 169, 31, 0.34);
   }
 
-  html[data-theme="war-table"] .top-nav-actions,
-  html[data-theme="war-table"] .top-nav-module-slots {
-    grid-column: auto;
-    width: auto;
-    justify-content: flex-end;
-  }
-
   html[data-theme="war-table"] .top-nav-actions {
-    flex-wrap: nowrap;
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: stretch;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
-  html[data-theme="war-table"] .top-nav-actions .ghost-button {
-    flex: 0 0 auto;
+  html[data-theme="war-table"] .top-nav-auth-form {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
     min-width: 0;
-    padding-inline: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  html[data-theme="war-table"] .top-nav-auth-form[hidden] {
+    display: none !important;
+  }
+
+  html[data-theme="war-table"] .top-nav-auth-form .top-nav-field {
+    flex: 1 1 118px;
+    min-width: 0;
+  }
+
+  html[data-theme="war-table"] .top-nav-auth-form input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html[data-theme="war-table"] .top-nav-actions .ghost-button {
+    flex: 1 1 84px;
+    min-width: 0;
+    padding-inline: 8px;
   }
 
   html[data-theme="war-table"] .top-nav-locale,
   html[data-theme="war-table"] .top-nav-locale-select {
-    max-width: 108px;
+    flex: 1 1 104px;
+    max-width: none;
+    min-width: 0;
   }
 
   html[data-theme="war-table"] .top-nav-module-slots {
@@ -3741,9 +3767,24 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
     font-size: 1.45rem;
   }
 
-  html[data-theme="war-table"] .session-browser-head .stage-copy,
-  html[data-theme="war-table"] .war-table-preset-panel {
+  html[data-theme="war-table"] .session-browser-head .stage-copy {
     display: none;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel {
+    display: grid;
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel h3,
+  html[data-theme="war-table"] .war-table-preset-list {
+    display: none;
+  }
+
+  html[data-theme="war-table"] .war-table-preset-panel .war-table-open-active {
+    width: 100%;
+    margin-top: 0;
   }
 
   html[data-theme="war-table"] .lobby-focus-band {

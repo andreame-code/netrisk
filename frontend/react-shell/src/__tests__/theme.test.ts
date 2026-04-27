@@ -37,6 +37,37 @@ function exactWarTableTopNavModuleSlotRuleBodies(css: string): string[] {
   return ruleBodies;
 }
 
+function warTableReferenceGapCss(css: string): string {
+  const marker = "/* War Table reference-gap pass";
+  const start = css.indexOf(marker);
+
+  if (start === -1) {
+    return "";
+  }
+
+  const reducedMotionStart = css.indexOf("@media (prefers-reduced-motion", start);
+  return css
+    .slice(start, reducedMotionStart === -1 ? undefined : reducedMotionStart)
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+function warTableReferenceGapSelectors(css: string): string[] {
+  return Array.from(warTableReferenceGapCss(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)).flatMap(
+    (match) => {
+      const selectorText = match[1].trim();
+
+      if (!selectorText || selectorText.startsWith("@")) {
+        return [];
+      }
+
+      return selectorText
+        .split(",")
+        .map((selector) => selector.trim().replace(/\s+/g, " "))
+        .filter(Boolean);
+    }
+  );
+}
+
 describe("theme runtime bridge", () => {
   beforeEach(() => {
     document.documentElement.removeAttribute("data-theme");
@@ -72,12 +103,22 @@ describe("theme runtime bridge", () => {
 
   it("keeps War Table visual refinements scoped to reusable shell surfaces", () => {
     const css = readFileSync(themeTokensPath, "utf8");
+    const selectors = warTableReferenceGapSelectors(css);
+    const unscopedSelectors = selectors.filter(
+      (selector) => !selector.startsWith('html[data-theme="war-table"]')
+    );
 
     expect(css).toContain("War Table reference-gap pass");
-    expect(css).toContain('html[data-theme="war-table"] .session-browser');
-    expect(css).toContain('html[data-theme="war-table"] .game-main-column');
-    expect(css).toContain('html[data-theme="war-table"] .profile-shell');
-    expect(css).toContain('html[data-theme="war-table"] body[data-app-section="admin"]');
+    expect(selectors.length).toBeGreaterThan(20);
+    expect(unscopedSelectors).toEqual([]);
+    expect(selectors).toContain('html[data-theme="war-table"] .session-browser');
+    expect(selectors).toContain('html[data-theme="war-table"] .game-main-column');
+    expect(selectors).toContain('html[data-theme="war-table"] .profile-shell');
+    expect(
+      selectors.some((selector) =>
+        selector.startsWith('html[data-theme="war-table"] body[data-app-section="admin"]')
+      )
+    ).toBe(true);
     expect(css).not.toMatch(/ChatGPT Image|D:\/Andre|Downloads/i);
   });
 
