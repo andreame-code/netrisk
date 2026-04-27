@@ -16,7 +16,8 @@ import { t } from "@frontend-i18n";
 import { openShellGame } from "@react-shell/game-navigation";
 import {
   buildPlayerCountChoices,
-  buildTurnTimeoutHourChoices
+  buildTurnTimeoutHourChoices,
+  filterConfigurableGameModules
 } from "@react-shell/game-setup-options";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
@@ -94,7 +95,10 @@ export function LobbyWarTablePanels({
 
   const options = optionsQuery.data;
   const presets = useMemo(() => resolvedGamePresets(options), [options]);
-  const modules = useMemo(() => resolvedGameModules(options).slice(0, 3), [options]);
+  const modules = useMemo(
+    () => filterConfigurableGameModules(resolvedGameModules(options)).slice(0, 3),
+    [options]
+  );
   const selectedPreset =
     presets.find((preset) => preset.id === selectedPresetId) || presets[0] || null;
   const activeSummary = activeGame || selectedGame;

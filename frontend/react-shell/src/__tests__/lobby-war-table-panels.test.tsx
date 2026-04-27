@@ -331,6 +331,49 @@ describe("LobbyWarTablePanels", () => {
     );
   });
 
+  it("does not show or submit the internal core module in quick-create toggles", async () => {
+    getGameOptionsMock.mockResolvedValue(
+      createGameOptionsResponse({
+        modules: [
+          createModule("core.base", "Base"),
+          createModule("cards", "Cards"),
+          createModule("objectives", "Objectives"),
+          createModule("fog-of-war", "Fog of War")
+        ],
+        gamePresets: [
+          {
+            id: "classic-risk",
+            name: "Classic Risk",
+            description: "The original experience",
+            activeModuleIds: ["core.base", "cards"]
+          }
+        ]
+      })
+    );
+    createGameMock.mockResolvedValue(createGameResponse());
+
+    const { user } = renderPanels();
+    const cardsButton = await screen.findByRole("button", { name: "Cards" });
+
+    expect(screen.queryByRole("button", { name: "Base" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Objectives" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Fog of War" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(cardsButton).toHaveClass("is-active");
+    });
+    await user.click(await screen.findByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => {
+      expect(createGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(createGameMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeModuleIds: ["cards"]
+      }),
+      expect.any(Object)
+    );
+  });
+
   it("drops stale selected module ids after game options refresh", async () => {
     const initialOptions = createGameOptionsResponse({
       gamePresets: [

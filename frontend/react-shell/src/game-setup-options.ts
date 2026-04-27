@@ -5,8 +5,13 @@ const fallbackPlayerRange = {
   max: 4
 } as const;
 
+const nonConfigurableGameModuleIds: ReadonlySet<string> = new Set(["core.base"]);
 const playerCountCandidates = [2, 3, 4, 5, 6] as const;
 const fallbackTurnTimeoutHours = [24, 48, 72] as const;
+
+type GameModuleOption = {
+  id: string;
+};
 
 type GameSetupOptions =
   | Pick<GameOptionsResponse, "playerRange" | "turnTimeoutHoursOptions">
@@ -37,4 +42,10 @@ export function buildTurnTimeoutHourChoices(options: GameSetupOptions): number[]
   const configured = options?.turnTimeoutHoursOptions?.filter((value) => Number.isInteger(value));
 
   return configured?.length ? configured.slice(0, 3) : [...fallbackTurnTimeoutHours];
+}
+
+export function filterConfigurableGameModules<TModule extends GameModuleOption>(
+  modules: readonly TModule[] | null | undefined
+): TModule[] {
+  return (modules || []).filter((moduleEntry) => !nonConfigurableGameModuleIds.has(moduleEntry.id));
 }

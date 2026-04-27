@@ -1,6 +1,7 @@
 import {
   buildPlayerCountChoices,
-  buildTurnTimeoutHourChoices
+  buildTurnTimeoutHourChoices,
+  filterConfigurableGameModules
 } from "@react-shell/game-setup-options";
 
 import { describe, expect, it } from "vitest";
@@ -48,5 +49,18 @@ describe("game setup option helpers", () => {
         turnTimeoutHoursOptions: [12, 24.5, 48]
       })
     ).toEqual([12, 48]);
+  });
+
+  it("excludes internal core modules from configurable game modules", () => {
+    expect(
+      filterConfigurableGameModules([
+        { id: "core.base", displayName: "Base" },
+        { id: "cards", displayName: "Cards" },
+        { id: "objectives", displayName: "Objectives" }
+      ])
+    ).toEqual([
+      { id: "cards", displayName: "Cards" },
+      { id: "objectives", displayName: "Objectives" }
+    ]);
   });
 });
