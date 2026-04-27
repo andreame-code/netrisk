@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   CreateGameRequest,
-  GameOptionsResponse,
   GameSummary
 } from "@frontend-generated/shared-runtime-validation.mts";
 
@@ -14,6 +13,10 @@ import { resolvedGameModules, resolvedGamePresets } from "@frontend-core/module-
 import { t } from "@frontend-i18n";
 
 import { openShellGame } from "@react-shell/game-navigation";
+import {
+  buildPlayerCountChoices,
+  buildTurnTimeoutHourChoices
+} from "@react-shell/game-setup-options";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
 
@@ -36,17 +39,6 @@ export function buildHumanPlayerSlots(
     slot: index + 1,
     type: "human"
   }));
-}
-
-function playerChoices(options: GameOptionsResponse | undefined): number[] {
-  const minimum = options?.playerRange?.min || 2;
-  const maximum = options?.playerRange?.max || 6;
-  return [2, 3, 4, 5, 6].filter((value) => value >= minimum && value <= maximum);
-}
-
-function turnDurationChoices(options: GameOptionsResponse | undefined): number[] {
-  const configured = options?.turnTimeoutHoursOptions?.filter((value) => Number.isInteger(value));
-  return configured?.length ? configured.slice(0, 3) : [24, 48, 72];
 }
 
 function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | null): string {
@@ -114,12 +106,12 @@ export function LobbyWarTablePanels({
   }, [selectedModuleIds.length, selectedPreset]);
 
   useEffect(() => {
-    const choices = playerChoices(options);
+    const choices = buildPlayerCountChoices(options);
     if (choices.length && !choices.includes(selectedPlayers)) {
       setSelectedPlayers(choices[0]);
     }
 
-    const durations = turnDurationChoices(options);
+    const durations = buildTurnTimeoutHourChoices(options);
     if (durations.length && !durations.includes(selectedTurnHours)) {
       setSelectedTurnHours(durations[0]);
     }
@@ -190,7 +182,7 @@ export function LobbyWarTablePanels({
             role="group"
             aria-label={t("warTable.lobby.players")}
           >
-            {playerChoices(options).map((count) => (
+            {buildPlayerCountChoices(options).map((count) => (
               <button
                 key={count}
                 type="button"
@@ -210,7 +202,7 @@ export function LobbyWarTablePanels({
             role="group"
             aria-label={t("warTable.lobby.turnDuration")}
           >
-            {turnDurationChoices(options).map((hours) => (
+            {buildTurnTimeoutHourChoices(options).map((hours) => (
               <button
                 key={hours}
                 type="button"
