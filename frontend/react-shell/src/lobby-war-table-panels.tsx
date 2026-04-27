@@ -91,20 +91,14 @@ export function LobbyWarTablePanels({
   });
 
   useEffect(() => {
-    if (!presets.length || selectedPresetId) {
+    if (!presets.length || presets.some((preset) => preset.id === selectedPresetId)) {
       return;
     }
 
-    setSelectedPresetId(presets[0].id);
+    const defaultPreset = presets[0];
+    setSelectedPresetId(defaultPreset.id);
+    setSelectedModuleIds(defaultPreset.activeModuleIds || []);
   }, [presets, selectedPresetId]);
-
-  useEffect(() => {
-    if (!selectedPreset || selectedModuleIds.length) {
-      return;
-    }
-
-    setSelectedModuleIds(selectedPreset.activeModuleIds || []);
-  }, [selectedModuleIds.length, selectedPreset]);
 
   useEffect(() => {
     const choices = buildPlayerCountChoices(options);

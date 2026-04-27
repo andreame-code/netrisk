@@ -250,6 +250,34 @@ describe("LobbyWarTablePanels", () => {
     );
   });
 
+  it("allows users to clear all preset modules before quick-create", async () => {
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+    createGameMock.mockResolvedValue(createGameResponse());
+
+    const { user } = renderPanels();
+    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    const cardsButton = await screen.findByRole("button", { name: "Cards" });
+
+    await waitFor(() => {
+      expect(cardsButton).toHaveClass("is-active");
+    });
+    await user.click(cardsButton);
+    await waitFor(() => {
+      expect(cardsButton).not.toHaveClass("is-active");
+    });
+    await user.click(createButton);
+
+    await waitFor(() => {
+      expect(createGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(createGameMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeModuleIds: []
+      }),
+      expect.any(Object)
+    );
+  });
+
   it("keeps quick-create failures inside the panel error state", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
     createGameMock.mockRejectedValue(new Error("create failed"));
