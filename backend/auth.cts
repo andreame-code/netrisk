@@ -455,7 +455,15 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
-      if (user.credentials.password.secret !== String(password || "")) {
+      const providedSecret = String(password || "");
+      const expectedSecret = user.credentials.password.secret;
+
+      // Use timing-safe comparison for legacy plaintext secrets.
+      // We hash the values first to ensure both buffers have the same length for timingSafeEqual.
+      const expectedHash = crypto.createHash("sha256").update(expectedSecret).digest();
+      const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
+
+      if (!crypto.timingSafeEqual(expectedHash, providedHash)) {
         runDummyPasswordVerification();
         return null;
       }
