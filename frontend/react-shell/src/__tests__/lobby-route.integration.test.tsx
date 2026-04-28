@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -180,7 +180,8 @@ describe("LobbyRoute War Table theme behavior", () => {
       expect(getGameOptionsMock).toHaveBeenCalledTimes(1);
     });
 
-    await user.click(await screen.findByRole("button", { name: "Join Battle" }));
+    const joinableRow = await screen.findByTestId("react-shell-lobby-row-joinable-game");
+    await user.click(within(joinableRow).getByRole("button", { name: "Join" }));
 
     await waitFor(() => {
       expect(joinGameMock).toHaveBeenCalledWith("joinable-game", expect.any(Object));

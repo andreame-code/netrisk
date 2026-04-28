@@ -20,8 +20,11 @@ import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
+import { WarTableIcon } from "@react-shell/war-table-icons";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
+
+type WarTableLobbyFilter = "active" | "all" | "finished" | "my-turn" | "waiting";
 
 function formatUpdatedTime(value: string | null | undefined): string {
   if (!value) {
@@ -114,6 +117,99 @@ function canJoinGame(game: GameSummary | null): boolean {
   return game.playerCount < maxPlayers;
 }
 
+function warTableRulesetLabel(game: GameSummary): string {
+  const moduleIds = new Set((game.activeModules || []).map((entry) => entry.id.toLowerCase()));
+  if (moduleIds.has("objectives")) {
+    return "Objectives";
+  }
+
+  if (moduleIds.has("cards")) {
+    return "Classic + Cards";
+  }
+
+  if (game.gamePresetId?.toLowerCase().includes("objective")) {
+    return "Objectives";
+  }
+
+  if (game.gamePresetId?.toLowerCase().includes("duel")) {
+    return "Duel";
+  }
+
+  return "Classic";
+}
+
+function warTableStatusClass(game: GameSummary): string {
+  if (game.phase === "active") {
+    return "is-active";
+  }
+
+  if (game.phase === "finished") {
+    return "is-finished";
+  }
+
+  return "is-lobby";
+}
+
+function warTableGameIconClass(index: number): string {
+  return ["is-blue", "is-green", "is-gold", "is-red", "is-purple"][index % 5] || "is-blue";
+}
+
+function formatWarTableActivity(value: string | null | undefined): string {
+  if (!value) {
+    return t("common.notAvailable");
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return t("common.notAvailable");
+  }
+
+  const elapsedMilliseconds = Math.max(0, Date.now() - parsed.getTime());
+  const elapsedMinutes = Math.max(1, Math.round(elapsedMilliseconds / 60_000));
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}m ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours}h ago`;
+  }
+
+  return `${Math.round(elapsedHours / 24)}d ago`;
+}
+
+function matchesWarTableFilter(
+  game: GameSummary,
+  activeGameId: string | null,
+  filter: WarTableLobbyFilter
+): boolean {
+  if (filter === "all") {
+    return true;
+  }
+
+  if (filter === "waiting") {
+    return game.phase === "lobby";
+  }
+
+  if (filter === "my-turn") {
+    return game.id === activeGameId || game.phase === "active";
+  }
+
+  return game.phase === filter;
+}
+
+function matchesWarTableSearch(game: GameSummary, query: string): boolean {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return [game.name, phaseLabel(game.phase), warTableRulesetLabel(game), game.mapName, game.mapId]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+}
+
 function setLobbyGamesCache(
   queryClient: ReturnType<typeof useQueryClient>,
   payload: GameListResponse
@@ -131,6 +227,8 @@ export function LobbyRoute() {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [visibleGameCount, setVisibleGameCount] = useState(VISIBLE_GAMES_BATCH_SIZE);
   const [actionError, setActionError] = useState("");
+  const [warTableFilter, setWarTableFilter] = useState<WarTableLobbyFilter>("all");
+  const [warTableSearch, setWarTableSearch] = useState("");
 
   const lobbyQuery = useQuery({
     queryKey: lobbyGamesQueryKey(),
@@ -159,6 +257,15 @@ export function LobbyRoute() {
 
   const games = lobbyQuery.data?.games || [];
   const activeGameId = lobbyQuery.data?.activeGameId || null;
+  const shellTheme = currentShellTheme();
+  const isWarTableTheme = shellTheme === "war-table";
+  const displayGames = isWarTableTheme
+    ? games.filter(
+        (game) =>
+          matchesWarTableFilter(game, activeGameId, warTableFilter) &&
+          matchesWarTableSearch(game, warTableSearch)
+      )
+    : games;
 
   useEffect(() => {
     if (!games.length) {
@@ -180,14 +287,19 @@ export function LobbyRoute() {
     );
   }, [activeGameId, games]);
 
-  const canLoadMoreGames = visibleGameCount < games.length;
-  const visibleGames = games.slice(0, visibleGameCount);
+  useEffect(() => {
+    setVisibleGameCount((current) =>
+      Math.min(displayGames.length, Math.max(VISIBLE_GAMES_BATCH_SIZE, current))
+    );
+  }, [displayGames.length]);
+
+  const canLoadMoreGames = visibleGameCount < displayGames.length;
+  const visibleGames = displayGames.slice(0, visibleGameCount);
   const selectedGame = games.find((game) => game.id === selectedGameId) || null;
   const readyGames = games.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
   const activeGame = games.find((game) => game.id === activeGameId) || null;
   const actionPending = openMutation.isPending || joinMutation.isPending;
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
-  const shellTheme = currentShellTheme();
   const lobbyHeading = themeCopy(shellTheme, "lobby.heading", "lobby.heading");
   const lobbyCopy = themeCopy(shellTheme, "lobby.copy", "lobby.copy");
   const openSelectedLabel =
@@ -214,7 +326,7 @@ export function LobbyRoute() {
         }
 
         setVisibleGameCount((current) =>
-          Math.min(games.length, current + VISIBLE_GAMES_BATCH_SIZE)
+          Math.min(displayGames.length, current + VISIBLE_GAMES_BATCH_SIZE)
         );
       },
       {
@@ -226,45 +338,53 @@ export function LobbyRoute() {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [canLoadMoreGames, games.length]);
+  }, [canLoadMoreGames, displayGames.length]);
 
-  async function handleOpenSelectedGame(): Promise<void> {
-    if (!selectedGame) {
+  async function handleOpenGame(game: GameSummary | null): Promise<void> {
+    if (!game) {
       return;
     }
 
     setActionError("");
 
     try {
-      const payload = await openMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId, selectedGame.id);
+      const payload = await openMutation.mutateAsync(game.id);
+      storeCurrentPlayerId(payload.playerId, game.id);
       if (payload.games) {
         setLobbyGamesCache(queryClient, {
           games: payload.games,
-          activeGameId: payload.activeGameId || selectedGame.id
+          activeGameId: payload.activeGameId || game.id
         });
       }
-      openShellGame(selectedGame.id);
+      openShellGame(game.id);
+    } catch (error) {
+      setActionError(messageFromError(error, t("errors.requestFailed")));
+    }
+  }
+
+  async function handleOpenSelectedGame(): Promise<void> {
+    await handleOpenGame(selectedGame);
+  }
+
+  async function handleJoinGame(game: GameSummary | null): Promise<void> {
+    if (!game || !canJoinGame(game)) {
+      return;
+    }
+
+    setActionError("");
+
+    try {
+      const payload = await joinMutation.mutateAsync(game.id);
+      storeCurrentPlayerId(payload.playerId, game.id);
+      await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
+      openShellGame(game.id);
     } catch (error) {
       setActionError(messageFromError(error, t("errors.requestFailed")));
     }
   }
 
   async function handleJoinSelectedGame(): Promise<void> {
-    if (!selectedGame || !canJoinGame(selectedGame)) {
-      return;
-    }
-
-    setActionError("");
-
-    try {
-      const payload = await joinMutation.mutateAsync(selectedGame.id);
-      storeCurrentPlayerId(payload.playerId, selectedGame.id);
-      await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
-      openShellGame(selectedGame.id);
-    } catch (error) {
-      setActionError(messageFromError(error, t("errors.requestFailed")));
-    }
+    await handleJoinGame(selectedGame);
   }
 
   const renderedGames = visibleGames;
@@ -285,14 +405,16 @@ export function LobbyRoute() {
     : authenticatedUser
       ? t("lobby.focus.selectNote")
       : t("lobby.focus.loginNote");
+  const warTableCampaignName =
+    activeGame?.name || selectedGame?.name || t("warTable.lobby.defaultCampaignName");
   const loadMoreMessage = !games.length
     ? ""
     : canLoadMoreGames
       ? t("lobby.loadMore.partial", {
           visible: renderedGames.length,
-          total: games.length
+          total: displayGames.length
         })
-      : t("lobby.loadMore.complete", { total: games.length });
+      : t("lobby.loadMore.complete", { total: displayGames.length });
 
   return (
     <div data-testid="react-shell-lobby-page">
@@ -319,9 +441,32 @@ export function LobbyRoute() {
 
         <div className="lobby-focus-band campaign-focus-grid">
           <article className="lobby-focus-card campaign-focus-card">
-            <span className="lobby-command-label">{t("lobby.focus.label")}</span>
-            <strong id="lobby-active-focus">{activeGame?.name || t("lobby.focus.value")}</strong>
-            <p id="lobby-focus-note">{focusNote}</p>
+            <span className="lobby-command-label">
+              {isWarTableTheme ? t("warTable.lobby.continueCampaign") : t("lobby.focus.label")}
+            </span>
+            {isWarTableTheme ? (
+              <span className="war-table-campaign-emblem" aria-hidden="true">
+                <WarTableIcon name="shield" />
+              </span>
+            ) : null}
+            <strong id="lobby-active-focus">
+              {isWarTableTheme ? warTableCampaignName : activeGame?.name || t("lobby.focus.value")}
+            </strong>
+            {isWarTableTheme ? (
+              <div id="lobby-focus-note" className="war-table-campaign-meta">
+                <span className="war-table-turn-state">
+                  <span aria-hidden="true" />
+                  {t("warTable.lobby.yourTurn")}
+                </span>
+                <span>{t("warTable.lobby.roundLabel", { round: 6 })}</span>
+                <span>
+                  <WarTableIcon name="clock" />
+                  {t("warTable.lobby.timeLeft")}
+                </span>
+              </div>
+            ) : (
+              <p id="lobby-focus-note">{focusNote}</p>
+            )}
           </article>
           <div className="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
             <Link
@@ -345,52 +490,129 @@ export function LobbyRoute() {
         </div>
 
         {shellTheme === "war-table" ? (
-          <LobbyWarTablePanels
-            activeGame={activeGame}
-            canCreateGame={Boolean(authenticatedUser)}
-            canJoinSelected={selectedGameCanJoin}
-            joinDisabled={!selectedGameCanJoin || actionPending}
-            joinPending={joinMutation.isPending}
-            openDisabled={!selectedGame || actionPending}
-            openPending={openMutation.isPending}
-            selectedGame={selectedGame}
-            onJoinSelected={handleJoinSelectedGame}
-            onOpenSelected={handleOpenSelectedGame}
-          />
+          <LobbyWarTablePanels canCreateGame={Boolean(authenticatedUser)} />
         ) : null}
 
         <div className="lobby-command-strip" aria-label={t("lobby.overviewAria")}>
-          <article className="lobby-command-card lobby-command-card-accent">
-            <span className="lobby-command-label">{t("lobby.visibleSessions.label")}</span>
-            <strong id="lobby-total-games">{renderedGames.length}</strong>
-            <p>{t("lobby.visibleSessions.copy")}</p>
-          </article>
-          <article className="lobby-command-card">
-            <span className="lobby-command-label">{t("lobby.readySessions.label")}</span>
-            <strong id="lobby-ready-games">{readyGames}</strong>
-            <p>{t("lobby.readySessions.copy")}</p>
-          </article>
-          <article className="lobby-command-card">
-            <span className="lobby-command-label">{t("lobby.readiness.label")}</span>
-            <strong>{t("lobby.readiness.value")}</strong>
-            <p>{t("lobby.readiness.copy")}</p>
-          </article>
+          {isWarTableTheme ? (
+            <>
+              <article className="lobby-command-card">
+                <WarTableIcon name="users" />
+                <span>
+                  <strong>Lobby</strong>
+                  <p>Waiting for players</p>
+                </span>
+              </article>
+              <article className="lobby-command-card">
+                <WarTableIcon name="medal" />
+                <span>
+                  <strong>Active</strong>
+                  <p>Game in progress</p>
+                </span>
+              </article>
+              <article className="lobby-command-card">
+                <WarTableIcon name="objective" />
+                <span>
+                  <strong>My Turn</strong>
+                  <p>Action required</p>
+                </span>
+              </article>
+              <article className="lobby-command-card">
+                <WarTableIcon name="crosshair" />
+                <span>
+                  <strong>Finished</strong>
+                  <p>Game ended</p>
+                </span>
+              </article>
+            </>
+          ) : (
+            <>
+              <article className="lobby-command-card lobby-command-card-accent">
+                <span className="lobby-command-label">{t("lobby.visibleSessions.label")}</span>
+                <strong id="lobby-total-games">{renderedGames.length}</strong>
+                <p>{t("lobby.visibleSessions.copy")}</p>
+              </article>
+              <article className="lobby-command-card">
+                <span className="lobby-command-label">{t("lobby.readySessions.label")}</span>
+                <strong id="lobby-ready-games">{readyGames}</strong>
+                <p>{t("lobby.readySessions.copy")}</p>
+              </article>
+              <article className="lobby-command-card">
+                <span className="lobby-command-label">{t("lobby.readiness.label")}</span>
+                <strong>{t("lobby.readiness.value")}</strong>
+                <p>{t("lobby.readiness.copy")}</p>
+              </article>
+            </>
+          )}
         </div>
 
         <div className="session-browser-grid">
           <div className="session-list-panel">
             <div className="section-title-row session-list-title-row">
               <div>
-                <h3>{t("lobby.availableSessions.heading")}</h3>
+                <h3>
+                  {isWarTableTheme
+                    ? t("warTable.lobby.openGames")
+                    : t("lobby.availableSessions.heading")}
+                </h3>
                 <p className="stage-copy">{t("lobby.availableSessions.copy")}</p>
               </div>
+              {isWarTableTheme ? (
+                <div className="war-table-list-tools">
+                  <div className="war-table-filter-tabs" role="tablist" aria-label="Game filters">
+                    {[
+                      ["all", "All"],
+                      ["waiting", "Waiting"],
+                      ["my-turn", "My Turn"],
+                      ["active", "Active"],
+                      ["finished", "Finished"]
+                    ].map(([filterId, label]) => (
+                      <button
+                        key={filterId}
+                        type="button"
+                        className={warTableFilter === filterId ? "is-active" : ""}
+                        role="tab"
+                        aria-selected={warTableFilter === filterId}
+                        onClick={() => setWarTableFilter(filterId as WarTableLobbyFilter)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="war-table-search">
+                    <span className="visually-hidden">{t("warTable.lobby.searchGames")}</span>
+                    <WarTableIcon name="search" />
+                    <input
+                      value={warTableSearch}
+                      placeholder={t("warTable.lobby.searchPlaceholder")}
+                      onChange={(event) => setWarTableSearch(event.target.value)}
+                    />
+                  </label>
+                  <button type="button" className="war-table-filter-button" aria-label="Filter">
+                    <WarTableIcon name="filter" />
+                  </button>
+                </div>
+              ) : null}
             </div>
             <div className="session-list-header session-row session-row-head">
-              <span>{t("lobby.table.game")}</span>
-              <span>{t("lobby.table.map")}</span>
-              <span>{t("lobby.table.status")}</span>
-              <span>{t("lobby.table.players")}</span>
-              <span>{t("lobby.table.updated")}</span>
+              {isWarTableTheme ? (
+                <>
+                  <span>{t("lobby.table.game")}</span>
+                  <span>{t("lobby.table.players")}</span>
+                  <span>{t("lobby.table.status")}</span>
+                  <span>{t("warTable.lobby.table.ruleset")}</span>
+                  <span>{t("warTable.lobby.table.lastActivity")}</span>
+                  <span>{t("warTable.lobby.table.action")}</span>
+                </>
+              ) : (
+                <>
+                  <span>{t("lobby.table.game")}</span>
+                  <span>{t("lobby.table.map")}</span>
+                  <span>{t("lobby.table.status")}</span>
+                  <span>{t("lobby.table.players")}</span>
+                  <span>{t("lobby.table.updated")}</span>
+                </>
+              )}
             </div>
             <div
               id="game-list-state"
@@ -399,37 +621,105 @@ export function LobbyRoute() {
               {listStateMessage}
             </div>
             <div id="game-session-list" className="session-list" data-testid="game-session-list">
-              {renderedGames.map((game) => (
-                <button
-                  key={game.id}
-                  type="button"
-                  className={`session-row session-row-button${selectedGame?.id === game.id ? " is-selected" : ""}`}
-                  onClick={() => setSelectedGameId(game.id)}
-                  data-game-id={game.id}
-                  data-testid={`react-shell-lobby-row-${game.id}`}
-                >
-                  <span className="session-primary" data-cell-label={t("lobby.table.game")}>
-                    <span className="session-name" data-open-game-id={game.id}>
-                      {game.name}
-                    </span>
-                  </span>
-                  <span className="session-cell-muted" data-cell-label={t("lobby.table.map")}>
-                    {game.mapName || game.mapId || t("common.classicMini")}
-                  </span>
-                  <span
-                    className={`badge${game.id === activeGameId ? " accent" : ""}`}
-                    data-cell-label={t("lobby.table.status")}
+              {renderedGames.map((game, index) =>
+                isWarTableTheme ? (
+                  <div
+                    key={game.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`session-row session-row-button war-table-game-row${selectedGame?.id === game.id ? " is-selected" : ""}`}
+                    onClick={() => setSelectedGameId(game.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedGameId(game.id);
+                      }
+                    }}
+                    data-game-id={game.id}
+                    data-testid={`react-shell-lobby-row-${game.id}`}
                   >
-                    {phaseLabel(game.phase)}
-                  </span>
-                  <span className="session-cell-muted" data-cell-label={t("lobby.table.players")}>
-                    {gameCapacityLabel(game)}
-                  </span>
-                  <span className="session-cell-muted" data-cell-label={t("lobby.table.updated")}>
-                    {formatUpdatedTime(game.updatedAt)}
-                  </span>
-                </button>
-              ))}
+                    <span className="session-primary" data-cell-label={t("lobby.table.game")}>
+                      <span
+                        className={`war-table-game-token ${warTableGameIconClass(index)}`}
+                        aria-hidden="true"
+                      >
+                        <WarTableIcon name="soldier" />
+                      </span>
+                      <span className="session-name" data-open-game-id={game.id}>
+                        {game.name}
+                      </span>
+                    </span>
+                    <span className="session-cell-muted" data-cell-label={t("lobby.table.players")}>
+                      {gameCapacityLabel(game).replace("/", " / ")}
+                    </span>
+                    <span
+                      className={`war-table-phase ${warTableStatusClass(game)}`}
+                      data-cell-label={t("lobby.table.status")}
+                    >
+                      {phaseLabel(game.phase)}
+                    </span>
+                    <span
+                      className="session-cell-muted"
+                      data-cell-label={t("warTable.lobby.table.ruleset")}
+                    >
+                      {warTableRulesetLabel(game)}
+                    </span>
+                    <span
+                      className="session-cell-muted"
+                      data-cell-label={t("warTable.lobby.table.lastActivity")}
+                    >
+                      {formatWarTableActivity(game.updatedAt)}
+                    </span>
+                    <span
+                      className="war-table-row-action-cell"
+                      data-cell-label={t("warTable.lobby.table.action")}
+                    >
+                      <button
+                        type="button"
+                        className="war-table-row-action"
+                        disabled={actionPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedGameId(game.id);
+                          void (canJoinGame(game) ? handleJoinGame(game) : handleOpenGame(game));
+                        }}
+                      >
+                        {canJoinGame(game) ? t("warTable.lobby.join") : t("warTable.lobby.view")}
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    key={game.id}
+                    type="button"
+                    className={`session-row session-row-button${selectedGame?.id === game.id ? " is-selected" : ""}`}
+                    onClick={() => setSelectedGameId(game.id)}
+                    data-game-id={game.id}
+                    data-testid={`react-shell-lobby-row-${game.id}`}
+                  >
+                    <span className="session-primary" data-cell-label={t("lobby.table.game")}>
+                      <span className="session-name" data-open-game-id={game.id}>
+                        {game.name}
+                      </span>
+                    </span>
+                    <span className="session-cell-muted" data-cell-label={t("lobby.table.map")}>
+                      {game.mapName || game.mapId || t("common.classicMini")}
+                    </span>
+                    <span
+                      className={`badge${game.id === activeGameId ? " accent" : ""}`}
+                      data-cell-label={t("lobby.table.status")}
+                    >
+                      {phaseLabel(game.phase)}
+                    </span>
+                    <span className="session-cell-muted" data-cell-label={t("lobby.table.players")}>
+                      {gameCapacityLabel(game)}
+                    </span>
+                    <span className="session-cell-muted" data-cell-label={t("lobby.table.updated")}>
+                      {formatUpdatedTime(game.updatedAt)}
+                    </span>
+                  </button>
+                )
+              )}
             </div>
             <div
               id="game-list-load-more-state"
