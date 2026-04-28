@@ -68,6 +68,18 @@ function warTableReferenceGapSelectors(css: string): string[] {
   );
 }
 
+function exactRuleBody(css: string, selector: string): string | null {
+  const normalizedSelector = selector.trim().replace(/\s+/g, " ");
+
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (match[1].trim().replace(/\s+/g, " ") === normalizedSelector) {
+      return match[2];
+    }
+  }
+
+  return null;
+}
+
 describe("theme runtime bridge", () => {
   beforeEach(() => {
     document.documentElement.removeAttribute("data-theme");
@@ -99,6 +111,19 @@ describe("theme runtime bridge", () => {
 
     expect(slotRuleBodies.length).toBeGreaterThan(0);
     expect(slotRuleBodies.join("\n")).not.toMatch(/\bdisplay\s*:\s*none\b/i);
+  });
+
+  it("keeps War Table custom-background map territories colored by owner", () => {
+    const css = readFileSync(themeTokensPath, "utf8");
+    const territoryRuleBody = exactRuleBody(
+      css,
+      'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node'
+    );
+
+    expect(territoryRuleBody).not.toBeNull();
+    expect(territoryRuleBody).toMatch(/background\s*:\s*var\(--owner-color/i);
+    expect(territoryRuleBody).toMatch(/border-radius\s*:\s*999px/i);
+    expect(territoryRuleBody).not.toMatch(/background\s*:\s*transparent/i);
   });
 
   it("keeps War Table visual refinements scoped to reusable shell surfaces", () => {
