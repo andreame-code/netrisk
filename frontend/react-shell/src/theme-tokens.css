@@ -4260,7 +4260,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-focus-actions
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-quick-create {
   grid-column: 2;
   display: grid;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(270px, 1fr);
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
   align-content: start;
   gap: 14px 24px;
   padding: 18px;
@@ -4280,10 +4280,12 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-control-r
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-field {
   grid-column: 1;
+  min-width: 0;
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-players-row {
   grid-column: 2;
+  min-width: 0;
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-turn-row,
@@ -4355,6 +4357,11 @@ html[data-theme="war-table"]
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-create-button {
+  justify-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   min-height: 44px;
   margin-top: 12px;
   color: #fff9ec;
