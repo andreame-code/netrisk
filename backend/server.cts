@@ -11,6 +11,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
+const { SESSION_MAX_AGE_SECONDS } = require("./session-policy.cjs");
 const {
   createConfiguredInitialState,
   listTurnTimeoutHoursOptions
@@ -262,7 +263,8 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
     "HttpOnly",
     "Path=/",
-    "SameSite=Lax"
+    "SameSite=Lax",
+    `Max-Age=${SESSION_MAX_AGE_SECONDS}`
   ];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
@@ -1736,7 +1738,7 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
     );
   }
 
