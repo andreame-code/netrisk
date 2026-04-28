@@ -165,6 +165,7 @@ function resolveProjectRoot() {
 const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
+const sessionCookieMaxAgeSeconds = 30 * 24 * 60 * 60;
 const supportedSiteThemes = new Set(listSupportedThemeIds());
 
 function logAiRecovery(payload: {
@@ -262,7 +263,8 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
     "HttpOnly",
     "Path=/",
-    "SameSite=Lax"
+    "SameSite=Lax",
+    `Max-Age=${sessionCookieMaxAgeSeconds}`
   ];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
