@@ -11,6 +11,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
+const { SESSION_MAX_AGE_SECONDS } = require("./session-policy.cjs");
 const {
   createConfiguredInitialState,
   listTurnTimeoutHoursOptions
@@ -165,7 +166,6 @@ function resolveProjectRoot() {
 const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
-const sessionCookieMaxAgeSeconds = 30 * 24 * 60 * 60;
 const supportedSiteThemes = new Set(listSupportedThemeIds());
 
 function logAiRecovery(payload: {
@@ -264,7 +264,7 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     "HttpOnly",
     "Path=/",
     "SameSite=Lax",
-    `Max-Age=${sessionCookieMaxAgeSeconds}`
+    `Max-Age=${SESSION_MAX_AGE_SECONDS}`
   ];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
@@ -1738,7 +1738,7 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
     );
   }
 
