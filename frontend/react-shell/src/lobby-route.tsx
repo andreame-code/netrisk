@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -127,22 +127,22 @@ function canJoinGame(game: GameSummary | null): boolean {
 function warTableRulesetLabel(game: GameSummary): string {
   const moduleIds = new Set((game.activeModules || []).map((entry) => entry.id.toLowerCase()));
   if (moduleIds.has("objectives")) {
-    return "Objectives";
+    return t("warTable.lobby.rulesets.objectives");
   }
 
   if (moduleIds.has("cards")) {
-    return "Classic + Cards";
+    return t("warTable.lobby.rulesets.classicCards");
   }
 
   if (game.gamePresetId?.toLowerCase().includes("objective")) {
-    return "Objectives";
+    return t("warTable.lobby.rulesets.objectives");
   }
 
   if (game.gamePresetId?.toLowerCase().includes("duel")) {
-    return "Duel";
+    return t("warTable.lobby.rulesets.duel");
   }
 
-  return "Classic";
+  return t("warTable.lobby.rulesets.classic");
 }
 
 function warTableStatusClass(game: GameSummary): string {
@@ -312,43 +312,49 @@ export function LobbyRoute() {
   const activeGameId = lobbyQuery.data?.activeGameId || null;
   const shellTheme = currentShellTheme();
   const isWarTableTheme = shellTheme === "war-table";
-  const displayGames = isWarTableTheme
-    ? games.filter(
-        (game) =>
-          matchesWarTableFilter(game, activeGameId, warTableFilter) &&
-          matchesWarTableSearch(game, warTableSearch)
-      )
-    : games;
+  const displayGames = useMemo(
+    () =>
+      isWarTableTheme
+        ? games.filter(
+            (game) =>
+              matchesWarTableFilter(game, activeGameId, warTableFilter) &&
+              matchesWarTableSearch(game, warTableSearch)
+          )
+        : games,
+    [activeGameId, games, isWarTableTheme, warTableFilter, warTableSearch]
+  );
 
   useEffect(() => {
-    if (!games.length) {
+    const selectableGames = isWarTableTheme ? displayGames : games;
+
+    if (!selectableGames.length) {
       setSelectedGameId(null);
       setVisibleGameCount(VISIBLE_GAMES_BATCH_SIZE);
       return;
     }
 
     setSelectedGameId((current) => {
-      if (current && games.some((game) => game.id === current)) {
+      if (current && selectableGames.some((game) => game.id === current)) {
         return current;
       }
 
-      return activeGameId || games[0]?.id || null;
+      const visibleActiveGameId =
+        activeGameId && selectableGames.some((game) => game.id === activeGameId)
+          ? activeGameId
+          : null;
+
+      return visibleActiveGameId || selectableGames[0]?.id || null;
     });
 
     setVisibleGameCount((current) =>
-      Math.min(games.length, Math.max(VISIBLE_GAMES_BATCH_SIZE, current))
+      Math.min(selectableGames.length, Math.max(VISIBLE_GAMES_BATCH_SIZE, current))
     );
-  }, [activeGameId, games]);
-
-  useEffect(() => {
-    setVisibleGameCount((current) =>
-      Math.min(displayGames.length, Math.max(VISIBLE_GAMES_BATCH_SIZE, current))
-    );
-  }, [displayGames.length]);
+  }, [activeGameId, displayGames, games, isWarTableTheme]);
 
   const canLoadMoreGames = visibleGameCount < displayGames.length;
   const visibleGames = displayGames.slice(0, visibleGameCount);
-  const selectedGame = games.find((game) => game.id === selectedGameId) || null;
+  const selectedGame =
+    (isWarTableTheme ? displayGames : games).find((game) => game.id === selectedGameId) || null;
   const readyGames = games.filter((game) => game.phase === "lobby" && game.playerCount >= 2).length;
   const activeGame = games.find((game) => game.id === activeGameId) || null;
   const actionPending = openMutation.isPending || joinMutation.isPending;
