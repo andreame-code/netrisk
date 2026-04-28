@@ -375,10 +375,7 @@ export function GameplayMapViewport({
         Number.parseFloat(stageStyles.paddingBottom || "0");
       const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
       const stageRect = mapStage.getBoundingClientRect();
-      const availableHeight = Math.max(
-        0,
-        window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0")
-      );
+      const availableHeight = Math.max(0, mapStage.clientHeight - stagePaddingY);
       if (!availableWidth || !availableHeight) {
         return;
       }
@@ -391,7 +388,7 @@ export function GameplayMapViewport({
       const aspectRatio = aspectRatioMatch
         ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
         : 760 / 500;
-      const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
+      const widthFromHeight = Math.max(0, availableHeight * aspectRatio);
       const width = Math.min(availableWidth, widthFromHeight);
       const height = width / aspectRatio;
 

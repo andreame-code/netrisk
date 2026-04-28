@@ -166,3 +166,43 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
   expect(metrics.reinforceAmountInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceButtonInsideActionsRail).toBeTruthy();
 });
+
+test("desktop layout uses a single intentional vertical overflow container", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await openWorldClassicGame(page, "desktop-overflow");
+
+  const overflowReport = await page.evaluate(() => {
+    const checks = [
+      { name: ".game-main-column", allowVerticalScroll: false },
+      { name: ".game-map-stage", allowVerticalScroll: false },
+      { name: ".game-info-bottom", allowVerticalScroll: false },
+      { name: "[data-testid=\"battlefield-layout\"]", allowVerticalScroll: false },
+      { name: "[data-testid=\"actions-panel\"]", allowVerticalScroll: true }
+    ];
+
+    return checks.map(({ name, allowVerticalScroll }) => {
+      const element = document.querySelector(name);
+      if (!element) {
+        return {
+          name,
+          allowVerticalScroll,
+          exists: false,
+          hasVerticalOverflow: true
+        };
+      }
+
+      return {
+        name,
+        allowVerticalScroll,
+        exists: true,
+        computedOverflowY: getComputedStyle(element).overflowY,
+        hasVerticalOverflow: (getComputedStyle(element).overflowY === "auto" || getComputedStyle(element).overflowY === "scroll" || getComputedStyle(element).overflowY === "overlay") &&
+          (element.scrollHeight > element.clientHeight + 1)
+      };
+    });
+  });
+
+  const invalid = overflowReport.filter((entry) => entry.exists && entry.hasVerticalOverflow && !entry.allowVerticalScroll);
+  const invalidNames = invalid.map((entry) => entry.name).join(", ");
+  expect(invalid.length, `Unexpected vertical overflow on: ${invalidNames}`).toBe(0);
+});

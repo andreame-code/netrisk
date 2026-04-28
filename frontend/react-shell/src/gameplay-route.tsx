@@ -33,6 +33,7 @@ import { buildRegisterPath, useShellNamespace } from "@react-shell/public-auth-p
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 
 type StreamStatus = "connecting" | "live" | "reconnecting";
+type BottomInfoTab = "session" | "objective" | "combat" | "players" | "log";
 type SelectionOption = {
   id: string;
 };
@@ -233,6 +234,7 @@ export function GameRoute() {
   const [fortifyArmies, setFortifyArmies] = useState("1");
   const [conquestArmies, setConquestArmies] = useState("");
   const [selectedTradeCardIds, setSelectedTradeCardIds] = useState<string[]>([]);
+  const [activeBottomInfoTab, setActiveBottomInfoTab] = useState<BottomInfoTab>("session");
 
   const gameplayQuery = useQuery({
     queryKey,
@@ -295,6 +297,13 @@ export function GameRoute() {
     isMyTurn && snapshot?.phase === "active" && snapshot?.turnPhase !== "reinforcement"
   );
   const showSurrender = Boolean(myPlayerId && snapshot?.phase === "active");
+
+  useEffect(() => {
+    if (snapshot?.lastCombat && activeBottomInfoTab === "session") {
+      setActiveBottomInfoTab("combat");
+    }
+  }, [activeBottomInfoTab, snapshot?.lastCombat]);
+
   const reinforceTerritoryId = selectOrFallback(
     selectedReinforceTerritoryId,
     myTerritories,
@@ -840,6 +849,18 @@ export function GameRoute() {
     actionMutation.isPending ||
     tradeMutation.isPending;
 
+  const bottomInfoTabs: { id: BottomInfoTab; label: string; hidden?: boolean }[] = [
+    { id: "session", label: t("game.session.heading") },
+    { id: "objective", label: t("game.objective.heading"), hidden: !assignedVictoryObjective },
+    { id: "combat", label: t("game.combat.heading"), hidden: !snapshot.lastCombat },
+    { id: "players", label: t("game.players.heading") },
+    { id: "log", label: t("game.log.heading") }
+  ];
+  const availableBottomInfoTabs = bottomInfoTabs.filter((tab) => !tab.hidden);
+  const resolvedBottomInfoTab = availableBottomInfoTabs.some((tab) => tab.id === activeBottomInfoTab)
+    ? activeBottomInfoTab
+    : availableBottomInfoTabs[0]?.id || "session";
+
   return (
     <section data-testid="react-shell-game-page">
       <section
@@ -847,39 +868,17 @@ export function GameRoute() {
         data-testid="battlefield-layout"
       >
         <section className="game-main-column" data-testid="game-main-column">
-          <section
-            className="center-stage panel map-stage-panel game-map-stage campaign-map-shell"
-            data-testid="map-panel"
-          >
-            <GameplayMapViewport
-              attackFromId={attackFromId}
-              attackToId={attackToId}
-              fortifyFromId={fortifyFromId}
-              fortifyToId={fortifyToId}
-              myPlayerId={myPlayerId}
-              pieceSkinClass={pieceSkinClass}
-              playersById={playersById}
-              reinforceTerritoryId={reinforceTerritoryId}
-              snapshot={snapshot}
-              onTerritorySelect={handleTerritorySelect}
-            />
-          </section>
-
-          <section
-            className="panel game-info-rail game-info-bottom campaign-shell"
-            data-testid="info-panel"
-          >
-            <div className="panel-header tight-header game-compact-heading">
+          <section className="panel game-top-status-bar campaign-map-shell">
+            <div className="game-top-status-bar-row">
               <div>
                 <p className="eyebrow">{t("game.command.eyebrow")}</p>
-                <h1>{t("game.command.heading")}</h1>
+                <h2>{t("game.command.heading")}</h2>
               </div>
               <span id="turn-badge" className="badge" data-testid="phase-indicator">
                 {phaseBadgeLabel}
               </span>
             </div>
-
-            <div className="rail-section map-stage-command-strip game-status-bottom-strip">
+            <div className="map-stage-command-strip game-top-status-summary">
               <div
                 id="status-summary"
                 className="status-summary command-summary map-command-summary"
@@ -918,30 +917,178 @@ export function GameRoute() {
                 {gameFeedbackMessage}
               </div>
             </div>
+          </section>
+          <section
+            className="center-stage panel map-stage-panel game-map-stage campaign-map-shell"
+            data-testid="map-panel"
+          >
+            <GameplayMapViewport
+              attackFromId={attackFromId}
+              attackToId={attackToId}
+              fortifyFromId={fortifyFromId}
+              fortifyToId={fortifyToId}
+              myPlayerId={myPlayerId}
+              pieceSkinClass={pieceSkinClass}
+              playersById={playersById}
+              reinforceTerritoryId={reinforceTerritoryId}
+              snapshot={snapshot}
+              onTerritorySelect={handleTerritorySelect}
+            />
+          </section>
 
-            <div className="rail-section game-meta-stack game-session-card">
-              <div className="game-meta-line">
-                <span>{t("game.meta.player")}</span>
-                <strong id="identity-status" data-testid="current-player-indicator">
-                  {me?.name || t("game.runtime.notConnected")}
-                </strong>
+          <section
+            className="panel game-info-rail game-info-bottom campaign-shell"
+            data-testid="info-panel"
+          >
+            <div className="game-bottom-strip-tabs">
+              <div
+                aria-label={t("game.infoTabs.aria")}
+                className="game-info-tab-list"
+                role="tablist"
+              >
+                {availableBottomInfoTabs.map((tab) => (
+                  <button
+                    aria-selected={resolvedBottomInfoTab === tab.id}
+                    className={`game-info-tab-button${resolvedBottomInfoTab === tab.id ? " is-active" : ""}`}
+                    id={`game-info-tab-${tab.id}`}
+                    key={tab.id}
+                    role="tab"
+                    type="button"
+                    onClick={() => setActiveBottomInfoTab(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.activeGame")}</span>
-                <strong id="game-status">{gameStatusLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.map")}</span>
-                <strong id="game-map-meta">{mapMetaLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.setup")}</span>
-                <strong id="game-setup-meta">{setupMetaLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.access")}</span>
-                <span id="auth-status">{accessStatusLabel}</span>
-              </div>
+
+              <section
+                aria-labelledby="game-info-tab-session"
+                className="game-info-panel game-info-tab-content game-meta-stack game-session-card"
+                hidden={resolvedBottomInfoTab !== "session"}
+                role="tabpanel"
+              >
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.player")}</span>
+                    <strong id="identity-status" data-testid="current-player-indicator">
+                      {me?.name || t("game.runtime.notConnected")}
+                    </strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.activeGame")}</span>
+                    <strong id="game-status">{gameStatusLabel}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.map")}</span>
+                    <strong id="game-map-meta">{mapMetaLabel}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.setup")}</span>
+                    <strong id="game-setup-meta">{setupMetaLabel}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.access")}</span>
+                    <span id="auth-status">{accessStatusLabel}</span>
+                  </div>
+              </section>
+
+              <section
+                aria-labelledby="game-info-tab-objective"
+                className="game-info-panel action-meta-list game-info-tab-content"
+                data-testid="assigned-objective-panel"
+                hidden={resolvedBottomInfoTab !== "objective" || !assignedVictoryObjective}
+                role="tabpanel"
+              >
+                <article>
+                  <strong>{assignedVictoryObjective?.title}</strong>
+                  <p className="action-help">{assignedVictoryObjective?.description}</p>
+                  <p className="action-help">
+                    {t("game.objective.module", {
+                      moduleName: assignedVictoryObjective?.moduleName || ""
+                    })}
+                  </p>
+                </article>
+              </section>
+
+              <section
+                aria-labelledby="game-info-tab-combat"
+                className="game-info-panel game-info-tab-content combat-result-section"
+                hidden={resolvedBottomInfoTab !== "combat" || !snapshot.lastCombat}
+                role="tabpanel"
+              >
+                <div
+                  id="combat-result-group"
+                  hidden={!snapshot.lastCombat}
+                >
+                  <div className="section-title-row">
+                    <h3>{t("game.combat.heading")}</h3>
+                    <span className="badge accent" id="combat-result-badge">
+                      {combatBadgeLabel}
+                    </span>
+                  </div>
+                  <div id="combat-result-summary" className="combat-result-summary">
+                    {combatSummary}
+                  </div>
+                  <div className="combat-result-grid">
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.attacker")}</span>
+                      <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
+                    </div>
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.defender")}</span>
+                      <strong id="combat-defender-rolls">{defenderRollsText}</strong>
+                    </div>
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.comparisons")}</span>
+                      <strong id="combat-comparisons">{comparisonSummary}</strong>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section
+                aria-labelledby="game-info-tab-players"
+                className="game-info-panel players rail-players game-info-tab-content"
+                hidden={resolvedBottomInfoTab !== "players"}
+                id="players"
+                role="tabpanel"
+              >
+                  {snapshot.players.map((player) => (
+                    <article
+                      className={`player-card ${pieceSkinClass}`}
+                      data-player-id={player.id}
+                      key={player.id}
+                      style={{ "--player-color": player.color || "#162033" } as CSSProperties}
+                    >
+                      <strong>{player.name}</strong>
+                      <div>
+                        {t("game.runtime.territories")}: {player.territoryCount || 0}
+                      </div>
+                      <div>
+                        {t("lobby.table.status")}:{" "}
+                        {player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}
+                      </div>
+                      <div className="player-card-token" />
+                    </article>
+                  ))}
+              </section>
+
+              <section
+                aria-labelledby="game-info-tab-log"
+                className="game-info-panel log-list rail-log game-info-tab-content"
+                hidden={resolvedBottomInfoTab !== "log"}
+                id="log"
+                role="tabpanel"
+              >
+                  {localizedLog.length ? (
+                    localizedLog.map((entry, index) => (
+                      <article className="game-log-entry" key={`${index}-${entry}`}>
+                        {entry}
+                      </article>
+                    ))
+                  ) : (
+                    <p className="action-help">{t("game.log.lobbyCreated")}</p>
+                  )}
+              </section>
             </div>
           </section>
         </section>
@@ -966,26 +1113,6 @@ export function GameRoute() {
               <span>{t("game.reinforcementBanner")}</span>{" "}
               <strong id="reinforcement-banner-value">{snapshot.reinforcementPool}</strong>
             </span>
-          </div>
-
-          <div
-            className="rail-section game-objective-section"
-            data-testid="assigned-objective-panel"
-            hidden={!assignedVictoryObjective}
-          >
-            <div className="section-title-row">
-              <h3>{t("game.objective.heading")}</h3>
-              <span className="badge accent">{t("game.objective.badge")}</span>
-            </div>
-            <article className="action-meta-list">
-              <strong>{assignedVictoryObjective?.title}</strong>
-              <p className="action-help">{assignedVictoryObjective?.description}</p>
-              <p className="action-help">
-                {t("game.objective.module", {
-                  moduleName: assignedVictoryObjective?.moduleName || ""
-                })}
-              </p>
-            </article>
           </div>
 
           <div
@@ -1365,81 +1492,6 @@ export function GameRoute() {
             >
               {actionMutation.isPending ? "Updating..." : endTurnLabel}
             </button>
-          </div>
-
-          <div
-            id="combat-result-group"
-            className="rail-section combat-result-section"
-            hidden={!snapshot.lastCombat}
-          >
-            <div className="section-title-row">
-              <h3>{t("game.combat.heading")}</h3>
-              <span className="badge accent" id="combat-result-badge">
-                {combatBadgeLabel}
-              </span>
-            </div>
-            <div id="combat-result-summary" className="combat-result-summary">
-              {combatSummary}
-            </div>
-            <div className="combat-result-grid">
-              <div className="combat-result-line">
-                <span>{t("game.combat.attacker")}</span>
-                <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
-              </div>
-              <div className="combat-result-line">
-                <span>{t("game.combat.defender")}</span>
-                <strong id="combat-defender-rolls">{defenderRollsText}</strong>
-              </div>
-              <div className="combat-result-line">
-                <span>{t("game.combat.comparisons")}</span>
-                <strong id="combat-comparisons">{comparisonSummary}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="rail-section game-roster-section">
-            <div className="section-title-row">
-              <h3>{t("game.players.heading")}</h3>
-              <span className="badge accent">{t("game.players.badge")}</span>
-            </div>
-            <div className="players rail-players" id="players">
-              {snapshot.players.map((player) => (
-                <article
-                  className={`player-card ${pieceSkinClass}`}
-                  data-player-id={player.id}
-                  key={player.id}
-                  style={{ "--player-color": player.color || "#162033" } as CSSProperties}
-                >
-                  <strong>{player.name}</strong>
-                  <div>
-                    {t("game.runtime.territories")}: {player.territoryCount || 0}
-                  </div>
-                  <div>
-                    {t("lobby.table.status")}:{" "}
-                    {player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}
-                  </div>
-                  <div className="player-card-token" />
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="rail-section log-section">
-            <div className="section-title-row">
-              <h3>{t("game.log.heading")}</h3>
-              <span className="badge accent">{t("game.log.badge")}</span>
-            </div>
-            <div className="log-list rail-log" id="log">
-              {localizedLog.length ? (
-                localizedLog.map((entry, index) => (
-                  <article className="game-log-entry" key={`${index}-${entry}`}>
-                    {entry}
-                  </article>
-                ))
-              ) : (
-                <p className="action-help">{t("game.log.lobbyCreated")}</p>
-              )}
-            </div>
           </div>
 
           <div className="rail-section surrender-section">

@@ -25,6 +25,7 @@ async function exhaustReinforcements(page) {
 }
 
 async function captureStableRefs(page) {
+  await page.getByRole("tab", { name: /players|giocatori/i }).click();
   await expect(page.locator("#players .player-card").first()).toBeVisible();
   await expect(page.locator("#players .player-card").nth(1)).toBeVisible();
 
@@ -160,6 +161,7 @@ test("attack preserves selected controls and skips unrelated rerenders", async (
 
   await queueNextAttackRolls(firstPage, 1, 6);
   await firstPage.getByRole("button", { name: "Lancia attacco" }).click();
+  await firstPage.getByRole("tab", { name: /last combat|ultimo combattimento/i }).click();
 
   await expect(firstPage.locator("#combat-result-group")).toBeVisible();
   await expect(firstPage.locator("#attack-from")).toHaveValue(attackFrom);

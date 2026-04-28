@@ -566,6 +566,8 @@ export const it = Object.freeze({
   "game.cards.help": "Seleziona 3 carte valide per lo scambio.",
   "game.cards.tradeSet": "Scambia set",
   "game.actions.endTurn": "Termina turno",
+  "game.infoTabs.aria": "Pannelli informativi della partita",
+  "game.session.heading": "Sessione",
   "game.objective.heading": "Obiettivo assegnato",
   "game.objective.badge": "Privato",
   "game.objective.module": "Modulo: {moduleName}",

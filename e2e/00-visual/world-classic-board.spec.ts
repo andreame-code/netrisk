@@ -9,7 +9,7 @@ async function openWorldClassicGame(page, suffix) {
   await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
-  await page.locator("#setup-game-name").fill(`World Classic Visual ${suffix} ${Date.now().toString(36).slice(-4)}`);
+  await page.locator("#setup-game-name").fill(`World Classic ${suffix}`);
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 

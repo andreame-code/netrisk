@@ -562,6 +562,8 @@ export const en = Object.freeze({
   "game.cards.help": "Select 3 valid cards for the trade.",
   "game.cards.tradeSet": "Trade set",
   "game.actions.endTurn": "End turn",
+  "game.infoTabs.aria": "Game information panels",
+  "game.session.heading": "Session",
   "game.objective.heading": "Assigned objective",
   "game.objective.badge": "Private",
   "game.objective.module": "Module: {moduleName}",

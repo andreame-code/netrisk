@@ -20,6 +20,7 @@ test("surrender keeps territories owned by the surrendered player and awards vic
 
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
   await expect(firstPage.locator("#surrender-button")).toBeVisible({ timeout: 10000 });
+  await firstPage.getByRole("tab", { name: /players|giocatori/i }).click();
 
   const firstPlayerCard = firstPage.locator("#players .player-card").filter({ hasText: firstUser });
   const territoriesBeforeText = await firstPlayerCard.innerText();
@@ -33,6 +34,8 @@ test("surrender keeps territories owned by the surrendered player and awards vic
 
   await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"), { timeout: 15000 });
   await expect(secondPage.getByTestId("status-summary")).toContainText(new RegExp(`Vincitore:\\s*${secondUser}`, "i"), { timeout: 15000 });
+  await firstPage.getByRole("tab", { name: /players|giocatori/i }).click();
+  await secondPage.getByRole("tab", { name: /players|giocatori/i }).click();
 
   const surrenderedCardFirstPage = firstPage.locator("#players .player-card").filter({ hasText: firstUser });
   await expect(surrenderedCardFirstPage).toContainText(/Stato:\s*eliminato/i);
@@ -48,4 +51,3 @@ test("surrender keeps territories owned by the surrendered player and awards vic
   await firstContext.close();
   await secondContext.close();
 });
-

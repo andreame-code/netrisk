@@ -60,11 +60,15 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await currentPage.getByRole("button", { name: "Aggiungi" }).click();
   await expect.poll(() => getReinforcementCount(currentPage)).toBe(initialReinforcements - 1);
 
-  const dialogPromise = stalePage.waitForEvent("dialog");
+  const dialogPromise = new Promise((resolve) => {
+    stalePage.once("dialog", async (dialog) => {
+      const message = dialog.message();
+      await dialog.accept();
+      resolve(message);
+    });
+  });
   await stalePage.getByRole("button", { name: "Aggiungi" }).click();
-  const dialog = await dialogPromise;
-  await expect(dialog.message()).toMatch(/aggiornata|ricaricato|recente/i);
-  await dialog.accept();
+  await expect(await dialogPromise).toMatch(/aggiornata|ricaricato|recente/i);
 
   await expect.poll(() => getReinforcementCount(stalePage)).toBe(initialReinforcements - 1);
 
@@ -74,4 +78,3 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await firstContext.close();
   await secondContext.close();
 });
-
