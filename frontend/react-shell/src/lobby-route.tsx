@@ -193,7 +193,7 @@ function matchesWarTableFilter(
   }
 
   if (filter === "my-turn") {
-    return game.id === activeGameId || game.phase === "active";
+    return Boolean(activeGameId && game.id === activeGameId);
   }
 
   return game.phase === filter;
@@ -559,13 +559,17 @@ export function LobbyRoute() {
               </div>
               {isWarTableTheme ? (
                 <div className="war-table-list-tools">
-                  <div className="war-table-filter-tabs" role="tablist" aria-label="Game filters">
+                  <div
+                    className="war-table-filter-tabs"
+                    role="tablist"
+                    aria-label={t("warTable.lobby.filtersAria")}
+                  >
                     {[
-                      ["all", "All"],
-                      ["waiting", "Waiting"],
-                      ["my-turn", "My Turn"],
-                      ["active", "Active"],
-                      ["finished", "Finished"]
+                      ["all", t("warTable.lobby.filters.all")],
+                      ["waiting", t("warTable.lobby.filters.waiting")],
+                      ["my-turn", t("warTable.lobby.filters.myTurn")],
+                      ["active", t("warTable.lobby.filters.active")],
+                      ["finished", t("warTable.lobby.filters.finished")]
                     ].map(([filterId, label]) => (
                       <button
                         key={filterId}
@@ -588,7 +592,11 @@ export function LobbyRoute() {
                       onChange={(event) => setWarTableSearch(event.target.value)}
                     />
                   </label>
-                  <button type="button" className="war-table-filter-button" aria-label="Filter">
+                  <button
+                    type="button"
+                    className="war-table-filter-button"
+                    aria-label={t("warTable.lobby.filterOptions")}
+                  >
                     <WarTableIcon name="filter" />
                   </button>
                 </div>

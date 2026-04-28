@@ -79,10 +79,13 @@ function createGameSummary(overrides: Partial<GameSummary> = {}): GameSummary {
   };
 }
 
-function createLobbyGames(games: GameSummary[] = []): GameListResponse {
+function createLobbyGames(
+  games: GameSummary[] = [],
+  activeGameId: string | null = null
+): GameListResponse {
   return {
     games,
-    activeGameId: null
+    activeGameId
   };
 }
 
@@ -188,5 +191,38 @@ describe("LobbyRoute War Table theme behavior", () => {
     });
     expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-2", "joinable-game");
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
+  });
+
+  it("keeps the War Table My Turn tab scoped to the active game", async () => {
+    listGamesMock.mockResolvedValue(
+      createLobbyGames(
+        [
+          createGameSummary({
+            id: "player-active-game",
+            name: "Player Active Game",
+            phase: "active"
+          }),
+          createGameSummary({
+            id: "other-active-game",
+            name: "Other Active Game",
+            phase: "active"
+          })
+        ],
+        "player-active-game"
+      )
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    const { user } = renderLobbyRoute("war-table");
+
+    expect(
+      await screen.findByTestId("react-shell-lobby-row-player-active-game")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "My Turn" }));
+
+    expect(screen.getByTestId("react-shell-lobby-row-player-active-game")).toBeInTheDocument();
+    expect(screen.queryByTestId("react-shell-lobby-row-other-active-game")).not.toBeInTheDocument();
   });
 });
