@@ -2482,10 +2482,13 @@ html[data-theme="war-table"]
   height: 28px;
   min-width: 28px;
   min-height: 28px;
-  border: 0;
-  background: transparent;
+  border: 2px solid rgba(243, 247, 248, 0.88);
+  border-radius: 999px;
+  background: var(--owner-color, var(--owner-color-default));
   color: #f3f7f8;
-  box-shadow: none;
+  box-shadow:
+    0 0 0 1px rgba(1, 8, 13, 0.62),
+    0 8px 18px rgba(1, 8, 13, 0.42);
   text-shadow:
     0 1px 3px rgba(0, 0, 0, 0.95),
     0 0 8px rgba(0, 0, 0, 0.95);
@@ -2504,7 +2507,7 @@ html[data-theme="war-table"]
   .map-board-surface:has(.map-board.has-custom-background)
   .territory-node.is-reinforce {
   border: 1px solid rgba(173, 210, 255, 0.92);
-  background: rgba(18, 73, 130, 0.34);
+  background: var(--owner-color, var(--owner-color-default));
   box-shadow:
     0 0 0 2px rgba(91, 161, 255, 0.34),
     0 0 18px rgba(91, 161, 255, 0.58);
