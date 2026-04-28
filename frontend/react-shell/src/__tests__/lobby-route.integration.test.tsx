@@ -15,7 +15,7 @@ import { setLocale } from "@frontend-i18n";
 
 import { openShellGame } from "@react-shell/game-navigation";
 import { LobbyRoute } from "@react-shell/lobby-route";
-import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,6 +47,7 @@ vi.mock("@react-shell/game-navigation", () => ({
 }));
 
 vi.mock("@react-shell/player-session", () => ({
+  readCurrentPlayerId: vi.fn(),
   storeCurrentPlayerId: vi.fn()
 }));
 
@@ -55,6 +56,7 @@ const joinGameMock = vi.mocked(joinGame);
 const listGamesMock = vi.mocked(listGames);
 const openGameMock = vi.mocked(openGame);
 const openShellGameMock = vi.mocked(openShellGame);
+const readCurrentPlayerIdMock = vi.mocked(readCurrentPlayerId);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
 
 function createQueryClient(): QueryClient {
@@ -153,6 +155,7 @@ beforeEach(() => {
   listGamesMock.mockReset();
   openGameMock.mockReset();
   openShellGameMock.mockClear();
+  readCurrentPlayerIdMock.mockReset();
   storeCurrentPlayerIdMock.mockClear();
 });
 
@@ -193,22 +196,25 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
   });
 
-  it("keeps the War Table My Turn tab scoped to the active game", async () => {
+  it("keeps the War Table My Turn tab scoped to the current turn owner", async () => {
+    readCurrentPlayerIdMock.mockReturnValue("player-1");
     listGamesMock.mockResolvedValue(
       createLobbyGames(
         [
           createGameSummary({
             id: "player-active-game",
             name: "Player Active Game",
-            phase: "active"
+            phase: "active",
+            currentPlayerId: "player-1"
           }),
           createGameSummary({
             id: "other-active-game",
             name: "Other Active Game",
-            phase: "active"
+            phase: "active",
+            currentPlayerId: "player-2"
           })
         ],
-        "player-active-game"
+        "other-active-game"
       )
     );
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());

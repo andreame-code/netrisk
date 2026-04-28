@@ -540,6 +540,7 @@ export const gameSummarySchema = objectSchema({
   id: z.string().min(1),
   name: z.string().min(1),
   phase: z.string().min(1),
+  currentPlayerId: z.string().min(1).nullable().optional(),
   playerCount: z.number(),
   updatedAt: z.string().min(1),
   contentPackId: z.string().nullable().optional(),

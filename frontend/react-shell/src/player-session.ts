@@ -3,6 +3,33 @@ type StoredPlayerSession = {
   gameId: string;
   playerId: string;
 };
+type StoredPlayerSessionWithGames = StoredPlayerSession & {
+  games?: Record<string, string>;
+};
+
+function readStoredPlayerSession(): Partial<StoredPlayerSessionWithGames> | null {
+  const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+  if (!rawValue) {
+    return null;
+  }
+
+  const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSessionWithGames> | null;
+  return parsedValue && typeof parsedValue === "object" ? parsedValue : null;
+}
+
+function readPlayerSessionGames(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.entries(value).reduce<Record<string, string>>((games, [gameId, playerId]) => {
+    if (gameId && typeof playerId === "string" && playerId) {
+      games[gameId] = playerId;
+    }
+
+    return games;
+  }, {});
+}
 
 export function storeCurrentPlayerId(
   playerId: string | null | undefined,
@@ -10,12 +37,16 @@ export function storeCurrentPlayerId(
 ): void {
   try {
     if (playerId && gameId) {
+      const games = readPlayerSessionGames(readStoredPlayerSession()?.games);
+      games[gameId] = playerId;
+
       window.localStorage.setItem(
         PLAYER_ID_STORAGE_KEY,
         JSON.stringify({
           gameId,
-          playerId
-        } satisfies StoredPlayerSession)
+          playerId,
+          games
+        } satisfies StoredPlayerSessionWithGames)
       );
       return;
     }
@@ -28,14 +59,19 @@ export function storeCurrentPlayerId(
 
 export function readCurrentPlayerId(gameId?: string | null): string | null {
   try {
-    const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
-    if (!rawValue) {
+    const parsedValue = readStoredPlayerSession();
+    if (!parsedValue) {
       return null;
     }
 
-    const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSession> | null;
+    if (gameId) {
+      const storedPlayerId = readPlayerSessionGames(parsedValue.games)[gameId];
+      if (storedPlayerId) {
+        return storedPlayerId;
+      }
+    }
+
     if (
-      !parsedValue ||
       typeof parsedValue.playerId !== "string" ||
       typeof parsedValue.gameId !== "string"
     ) {

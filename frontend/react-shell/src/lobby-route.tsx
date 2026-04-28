@@ -15,7 +15,7 @@ import { formatDate, t } from "@frontend-i18n";
 import { useAuth } from "@react-shell/auth";
 import { openShellGame } from "@react-shell/game-navigation";
 import { LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
-import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
@@ -232,11 +232,7 @@ function warTableCampaignProgress(game: GameSummary | null): {
   };
 }
 
-function matchesWarTableFilter(
-  game: GameSummary,
-  activeGameId: string | null,
-  filter: WarTableLobbyFilter
-): boolean {
+function matchesWarTableFilter(game: GameSummary, filter: WarTableLobbyFilter): boolean {
   if (filter === "all") {
     return true;
   }
@@ -246,7 +242,10 @@ function matchesWarTableFilter(
   }
 
   if (filter === "my-turn") {
-    return Boolean(activeGameId && game.id === activeGameId);
+    const currentPlayerId = game.phase === "active" ? game.currentPlayerId || null : null;
+    const storedPlayerId = readCurrentPlayerId(game.id);
+
+    return Boolean(currentPlayerId && storedPlayerId === currentPlayerId);
   }
 
   return game.phase === filter;
@@ -317,11 +316,11 @@ export function LobbyRoute() {
       isWarTableTheme
         ? games.filter(
             (game) =>
-              matchesWarTableFilter(game, activeGameId, warTableFilter) &&
+              matchesWarTableFilter(game, warTableFilter) &&
               matchesWarTableSearch(game, warTableSearch)
           )
         : games,
-    [activeGameId, games, isWarTableTheme, warTableFilter, warTableSearch]
+    [games, isWarTableTheme, warTableFilter, warTableSearch]
   );
 
   useEffect(() => {
