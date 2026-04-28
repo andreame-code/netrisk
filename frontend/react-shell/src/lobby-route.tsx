@@ -561,29 +561,29 @@ export function LobbyRoute() {
               <article className="lobby-command-card">
                 <WarTableIcon name="users" />
                 <span>
-                  <strong>Lobby</strong>
-                  <p>Waiting for players</p>
+                  <strong>{t("warTable.lobby.legend.lobby")}</strong>
+                  <p>{t("warTable.lobby.legend.lobbyCopy")}</p>
                 </span>
               </article>
               <article className="lobby-command-card">
                 <WarTableIcon name="medal" />
                 <span>
-                  <strong>Active</strong>
-                  <p>Game in progress</p>
+                  <strong>{t("warTable.lobby.legend.active")}</strong>
+                  <p>{t("warTable.lobby.legend.activeCopy")}</p>
                 </span>
               </article>
               <article className="lobby-command-card">
                 <WarTableIcon name="objective" />
                 <span>
-                  <strong>My Turn</strong>
-                  <p>Action required</p>
+                  <strong>{t("warTable.lobby.legend.myTurn")}</strong>
+                  <p>{t("warTable.lobby.legend.myTurnCopy")}</p>
                 </span>
               </article>
               <article className="lobby-command-card">
                 <WarTableIcon name="crosshair" />
                 <span>
-                  <strong>Finished</strong>
-                  <p>Game ended</p>
+                  <strong>{t("warTable.lobby.legend.finished")}</strong>
+                  <p>{t("warTable.lobby.legend.finishedCopy")}</p>
                 </span>
               </article>
             </>
@@ -700,6 +700,10 @@ export function LobbyRoute() {
                     className={`session-row session-row-button war-table-game-row${selectedGame?.id === game.id ? " is-selected" : ""}`}
                     onClick={() => setSelectedGameId(game.id)}
                     onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) {
+                        return;
+                      }
+
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
                         setSelectedGameId(game.id);
