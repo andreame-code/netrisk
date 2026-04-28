@@ -60,10 +60,7 @@ const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
-const {
-  SESSION_MAX_AGE_MS,
-  SESSION_MAX_AGE_SECONDS
-} = require("../backend/session-policy.cjs");
+const { SESSION_MAX_AGE_MS, SESSION_MAX_AGE_SECONDS } = require("../backend/session-policy.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const {
