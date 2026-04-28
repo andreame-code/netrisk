@@ -25,6 +25,13 @@ import { WarTableIcon } from "@react-shell/war-table-icons";
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
 type WarTableLobbyFilter = "active" | "all" | "finished" | "my-turn" | "waiting";
+type WarTableCampaignProgressGame = GameSummary & {
+  currentRound?: number | null;
+  round?: number | null;
+  turnDeadlineAt?: string | null;
+  turnEndsAt?: string | null;
+  turnExpiresAt?: string | null;
+};
 
 function formatUpdatedTime(value: string | null | undefined): string {
   if (!value) {
@@ -168,15 +175,61 @@ function formatWarTableActivity(value: string | null | undefined): string {
   const elapsedMinutes = Math.max(1, Math.round(elapsedMilliseconds / 60_000));
 
   if (elapsedMinutes < 60) {
-    return `${elapsedMinutes}m ago`;
+    return t("warTable.lobby.activity.minutesAgo", { count: elapsedMinutes });
   }
 
   const elapsedHours = Math.round(elapsedMinutes / 60);
   if (elapsedHours < 24) {
-    return `${elapsedHours}h ago`;
+    return t("warTable.lobby.activity.hoursAgo", { count: elapsedHours });
   }
 
-  return `${Math.round(elapsedHours / 24)}d ago`;
+  return t("warTable.lobby.activity.daysAgo", { count: Math.round(elapsedHours / 24) });
+}
+
+function formatWarTableTimeLeft(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const remainingMinutes = Math.ceil((parsed.getTime() - Date.now()) / 60_000);
+  if (remainingMinutes <= 0) {
+    return null;
+  }
+
+  const hours = Math.floor(remainingMinutes / 60);
+  const minutes = remainingMinutes % 60;
+
+  return hours > 0
+    ? t("warTable.lobby.timeLeftHoursMinutes", { hours, minutes })
+    : t("warTable.lobby.timeLeftMinutes", { minutes });
+}
+
+function warTableCampaignProgress(game: GameSummary | null): {
+  roundLabel: string | null;
+  timeLeftLabel: string | null;
+} {
+  if (!game) {
+    return {
+      roundLabel: null,
+      timeLeftLabel: null
+    };
+  }
+
+  const progressGame = game as WarTableCampaignProgressGame;
+  const round = Number(progressGame.currentRound ?? progressGame.round ?? 0);
+  const deadline =
+    progressGame.turnDeadlineAt || progressGame.turnEndsAt || progressGame.turnExpiresAt || null;
+
+  return {
+    roundLabel:
+      Number.isInteger(round) && round > 0 ? t("warTable.lobby.roundLabel", { round }) : null,
+    timeLeftLabel: formatWarTableTimeLeft(deadline)
+  };
 }
 
 function matchesWarTableFilter(
@@ -407,6 +460,7 @@ export function LobbyRoute() {
       : t("lobby.focus.loginNote");
   const warTableCampaignName =
     activeGame?.name || selectedGame?.name || t("warTable.lobby.defaultCampaignName");
+  const campaignProgress = warTableCampaignProgress(activeGame || selectedGame);
   const loadMoreMessage = !games.length
     ? ""
     : canLoadMoreGames
@@ -458,11 +512,13 @@ export function LobbyRoute() {
                   <span aria-hidden="true" />
                   {t("warTable.lobby.yourTurn")}
                 </span>
-                <span>{t("warTable.lobby.roundLabel", { round: 6 })}</span>
-                <span>
-                  <WarTableIcon name="clock" />
-                  {t("warTable.lobby.timeLeft")}
-                </span>
+                {campaignProgress.roundLabel ? <span>{campaignProgress.roundLabel}</span> : null}
+                {campaignProgress.timeLeftLabel ? (
+                  <span>
+                    <WarTableIcon name="clock" />
+                    {campaignProgress.timeLeftLabel}
+                  </span>
+                ) : null}
               </div>
             ) : (
               <p id="lobby-focus-note">{focusNote}</p>
