@@ -90,7 +90,7 @@ test("react profile shows query loading before resolving into the empty-history 
 
   await expect(page.locator("#profile-name")).toContainText(username);
   await expect(page.getByTestId("react-shell-profile-empty")).toBeVisible();
-  await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("command");
+  await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("war-table");
 });
 
 test("react profile shows the empty-history state for a new authenticated user", async ({ page }) => {
@@ -118,7 +118,7 @@ test("react profile theme mutation keeps shell theme coherent across navigation"
   await page.goto("/react/profile");
 
   const themeSelect = page.getByTestId("react-shell-profile-theme-select");
-  await expect(themeSelect).toHaveValue("command");
+  await expect(themeSelect).toHaveValue("war-table");
 
   await themeSelect.selectOption("midnight");
 
@@ -223,12 +223,12 @@ test("react profile restores the previous theme when the mutation fails", async 
   await page.goto("/react/profile");
 
   const themeSelect = page.getByTestId("react-shell-profile-theme-select");
-  await expect(themeSelect).toHaveValue("command");
+  await expect(themeSelect).toHaveValue("war-table");
 
   await themeSelect.selectOption("ember");
 
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "command");
-  await expect(themeSelect).toHaveValue("command");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "war-table");
+  await expect(themeSelect).toHaveValue("war-table");
   await expect(page.getByTestId("react-shell-profile-theme-status")).toContainText(
     /Save failed|Salvataggio non riuscito|Theme update failed|Richiesta fallita/
   );
