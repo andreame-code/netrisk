@@ -72,9 +72,7 @@ function ruleBodyForSelector(css: string, selector: string): string | null {
   const normalizedSelector = selector.trim().replace(/\s+/g, " ");
 
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    const selectorList = match[1]
-      .split(",")
-      .map((entry) => entry.trim().replace(/\s+/g, " "));
+    const selectorList = match[1].split(",").map((entry) => entry.trim().replace(/\s+/g, " "));
 
     if (selectorList.includes(normalizedSelector)) {
       return match[2];
