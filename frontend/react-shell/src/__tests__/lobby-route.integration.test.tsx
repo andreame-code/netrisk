@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -15,7 +15,11 @@ import { setLocale } from "@frontend-i18n";
 
 import { openShellGame } from "@react-shell/game-navigation";
 import { LobbyRoute } from "@react-shell/lobby-route";
-import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
+import {
+  readCurrentPlayerId,
+  storeCurrentPlayerId,
+  subscribeCurrentPlayerIdChanges
+} from "@react-shell/player-session";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -48,7 +52,8 @@ vi.mock("@react-shell/game-navigation", () => ({
 
 vi.mock("@react-shell/player-session", () => ({
   readCurrentPlayerId: vi.fn(),
-  storeCurrentPlayerId: vi.fn()
+  storeCurrentPlayerId: vi.fn(),
+  subscribeCurrentPlayerIdChanges: vi.fn()
 }));
 
 const getGameOptionsMock = vi.mocked(getGameOptions);
@@ -58,6 +63,7 @@ const openGameMock = vi.mocked(openGame);
 const openShellGameMock = vi.mocked(openShellGame);
 const readCurrentPlayerIdMock = vi.mocked(readCurrentPlayerId);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
+const subscribeCurrentPlayerIdChangesMock = vi.mocked(subscribeCurrentPlayerIdChanges);
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -157,6 +163,8 @@ beforeEach(() => {
   openShellGameMock.mockClear();
   readCurrentPlayerIdMock.mockReset();
   storeCurrentPlayerIdMock.mockClear();
+  subscribeCurrentPlayerIdChangesMock.mockReset();
+  subscribeCurrentPlayerIdChangesMock.mockReturnValue(() => undefined);
 });
 
 describe("LobbyRoute War Table theme behavior", () => {
@@ -197,6 +205,11 @@ describe("LobbyRoute War Table theme behavior", () => {
   });
 
   it("keeps the War Table My Turn tab scoped to the current turn owner", async () => {
+    let playerSessionListener: () => void = () => undefined;
+    subscribeCurrentPlayerIdChangesMock.mockImplementation((listener) => {
+      playerSessionListener = listener;
+      return () => undefined;
+    });
     readCurrentPlayerIdMock.mockReturnValue("player-1");
     listGamesMock.mockResolvedValue(
       createLobbyGames(
@@ -230,5 +243,13 @@ describe("LobbyRoute War Table theme behavior", () => {
 
     expect(screen.getByTestId("react-shell-lobby-row-player-active-game")).toBeInTheDocument();
     expect(screen.queryByTestId("react-shell-lobby-row-other-active-game")).not.toBeInTheDocument();
+
+    readCurrentPlayerIdMock.mockReturnValue("player-2");
+    act(() => {
+      playerSessionListener();
+    });
+
+    expect(screen.queryByTestId("react-shell-lobby-row-player-active-game")).not.toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
   });
 });

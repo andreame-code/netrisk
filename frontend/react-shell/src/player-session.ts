@@ -1,4 +1,5 @@
 const PLAYER_ID_STORAGE_KEY = "frontline-player-id";
+const PLAYER_ID_CHANGE_EVENT = "frontline-player-id-change";
 type StoredPlayerSession = {
   gameId: string;
   playerId: string;
@@ -8,13 +9,17 @@ type StoredPlayerSessionWithGames = StoredPlayerSession & {
 };
 
 function readStoredPlayerSession(): Partial<StoredPlayerSessionWithGames> | null {
-  const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
-  if (!rawValue) {
+  try {
+    const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSessionWithGames> | null;
+    return parsedValue && typeof parsedValue === "object" ? parsedValue : null;
+  } catch {
     return null;
   }
-
-  const parsedValue = JSON.parse(rawValue) as Partial<StoredPlayerSessionWithGames> | null;
-  return parsedValue && typeof parsedValue === "object" ? parsedValue : null;
 }
 
 function readPlayerSessionGames(value: unknown): Record<string, string> {
@@ -29,6 +34,15 @@ function readPlayerSessionGames(value: unknown): Record<string, string> {
 
     return games;
   }, {});
+}
+
+function notifyCurrentPlayerIdChanged(): void {
+  window.dispatchEvent(new Event(PLAYER_ID_CHANGE_EVENT));
+}
+
+export function subscribeCurrentPlayerIdChanges(listener: () => void): () => void {
+  window.addEventListener(PLAYER_ID_CHANGE_EVENT, listener);
+  return () => window.removeEventListener(PLAYER_ID_CHANGE_EVENT, listener);
 }
 
 export function storeCurrentPlayerId(
@@ -48,10 +62,12 @@ export function storeCurrentPlayerId(
           games
         } satisfies StoredPlayerSessionWithGames)
       );
+      notifyCurrentPlayerIdChanged();
       return;
     }
 
     window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
+    notifyCurrentPlayerIdChanged();
   } catch {
     // Preserve navigation behavior even if storage is unavailable.
   }

@@ -15,7 +15,11 @@ import { formatDate, t } from "@frontend-i18n";
 import { useAuth } from "@react-shell/auth";
 import { openShellGame } from "@react-shell/game-navigation";
 import { LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
-import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
+import {
+  readCurrentPlayerId,
+  storeCurrentPlayerId,
+  subscribeCurrentPlayerIdChanges
+} from "@react-shell/player-session";
 import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
@@ -281,6 +285,15 @@ export function LobbyRoute() {
   const [actionError, setActionError] = useState("");
   const [warTableFilter, setWarTableFilter] = useState<WarTableLobbyFilter>("all");
   const [warTableSearch, setWarTableSearch] = useState("");
+  const [playerSessionVersion, setPlayerSessionVersion] = useState(0);
+
+  useEffect(
+    () =>
+      subscribeCurrentPlayerIdChanges(() => {
+        setPlayerSessionVersion((current) => current + 1);
+      }),
+    []
+  );
 
   const lobbyQuery = useQuery({
     queryKey: lobbyGamesQueryKey(),
@@ -320,7 +333,7 @@ export function LobbyRoute() {
               matchesWarTableSearch(game, warTableSearch)
           )
         : games,
-    [games, isWarTableTheme, warTableFilter, warTableSearch]
+    [games, isWarTableTheme, playerSessionVersion, warTableFilter, warTableSearch]
   );
 
   useEffect(() => {
