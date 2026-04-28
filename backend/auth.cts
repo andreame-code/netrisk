@@ -1,6 +1,7 @@
 const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
+const { SESSION_MAX_AGE_MS } = require("./session-policy.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
 interface ThemePreferences {
@@ -561,7 +562,6 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return null;
     }
 
-    const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 giorni
     const createdAt = session.created_at || session.createdAt || 0;
     if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
       await datastore.deleteSession(sessionToken);

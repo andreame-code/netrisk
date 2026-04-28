@@ -11,6 +11,7 @@ const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
+const { SESSION_MAX_AGE_SECONDS } = require("./session-policy.cjs");
 const {
   createConfiguredInitialState,
   listTurnTimeoutHoursOptions
@@ -263,7 +264,7 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     "HttpOnly",
     "Path=/",
     "SameSite=Lax",
-    "Max-Age=2592000"
+    `Max-Age=${SESSION_MAX_AGE_SECONDS}`
   ];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
