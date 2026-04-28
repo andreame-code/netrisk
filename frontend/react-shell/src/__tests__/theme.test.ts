@@ -68,11 +68,15 @@ function warTableReferenceGapSelectors(css: string): string[] {
   );
 }
 
-function exactRuleBody(css: string, selector: string): string | null {
+function ruleBodyForSelector(css: string, selector: string): string | null {
   const normalizedSelector = selector.trim().replace(/\s+/g, " ");
 
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (match[1].trim().replace(/\s+/g, " ") === normalizedSelector) {
+    const selectorList = match[1]
+      .split(",")
+      .map((entry) => entry.trim().replace(/\s+/g, " "));
+
+    if (selectorList.includes(normalizedSelector)) {
       return match[2];
     }
   }
@@ -115,7 +119,7 @@ describe("theme runtime bridge", () => {
 
   it("keeps War Table custom-background map territories colored by owner", () => {
     const css = readFileSync(themeTokensPath, "utf8");
-    const territoryRuleBody = exactRuleBody(
+    const territoryRuleBody = ruleBodyForSelector(
       css,
       'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node'
     );
@@ -124,6 +128,18 @@ describe("theme runtime bridge", () => {
     expect(territoryRuleBody).toMatch(/background\s*:\s*var\(--owner-color/i);
     expect(territoryRuleBody).toMatch(/border-radius\s*:\s*999px/i);
     expect(territoryRuleBody).not.toMatch(/background\s*:\s*transparent/i);
+
+    for (const stateSelector of [
+      'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node:hover',
+      'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-source',
+      'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-target',
+      'html[data-theme="war-table"] .map-board-surface:has(.map-board.has-custom-background) .territory-node.is-reinforce'
+    ]) {
+      const stateRuleBody = ruleBodyForSelector(css, stateSelector);
+
+      expect(stateRuleBody).not.toBeNull();
+      expect(stateRuleBody).toMatch(/background\s*:\s*var\(--owner-color/i);
+    }
   });
 
   it("keeps War Table visual refinements scoped to reusable shell surfaces", () => {

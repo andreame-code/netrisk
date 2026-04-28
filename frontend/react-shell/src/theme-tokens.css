@@ -2507,7 +2507,7 @@ html[data-theme="war-table"]
   .map-board-surface:has(.map-board.has-custom-background)
   .territory-node.is-reinforce {
   border: 1px solid rgba(173, 210, 255, 0.92);
-  background: rgba(18, 73, 130, 0.34);
+  background: var(--owner-color, var(--owner-color-default));
   box-shadow:
     0 0 0 2px rgba(91, 161, 255, 0.34),
     0 0 18px rgba(91, 161, 255, 0.58);
