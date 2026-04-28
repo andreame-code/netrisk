@@ -262,7 +262,8 @@ function buildSessionCookie(req: Request, sessionToken: string): string {
     `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
     "HttpOnly",
     "Path=/",
-    "SameSite=Lax"
+    "SameSite=Lax",
+    "Max-Age=2592000"
   ];
   if (secureCookieFlag(req)) {
     parts.push("Secure");
@@ -1736,7 +1737,7 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
     );
   }
 
