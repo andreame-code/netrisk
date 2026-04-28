@@ -281,6 +281,7 @@ export function validateNewGameConfig(
     resolveSupportedMap?: (mapId: string) => SupportedMap | null;
     resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
     resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolveDefaultTheme?: () => VisualTheme | null;
     resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
   } = {}
 ): ValidatedNewGameConfig {
@@ -420,17 +421,24 @@ export function validateNewGameConfig(
     );
   }
 
-  const requestedThemeId = String(
-    input.themeId ||
-      (canPreferFallbackPresentationDefaults ? fallbackConfigInput.themeId : null) ||
-      selectedContentPack.defaultSiteThemeId ||
-      selectedRuleSet.defaults.themeId ||
-      fallbackConfigInput.themeId ||
-      DEFAULT_THEME_ID
-  );
   const resolveTheme =
     typeof options.resolveTheme === "function" ? options.resolveTheme : findVisualTheme;
-  const selectedTheme = resolveTheme(requestedThemeId);
+  const explicitThemeId =
+    typeof input.themeId === "string" && input.themeId !== "" ? input.themeId : null;
+  const themeCandidateIds = explicitThemeId
+    ? [explicitThemeId]
+    : [
+        canPreferFallbackPresentationDefaults ? fallbackConfigInput.themeId : null,
+        selectedContentPack.defaultSiteThemeId,
+        selectedRuleSet.defaults.themeId,
+        fallbackConfigInput.themeId,
+        DEFAULT_THEME_ID
+      ].filter((themeId): themeId is string => typeof themeId === "string" && themeId !== "");
+  const selectedTheme =
+    themeCandidateIds.map((themeId) => resolveTheme(themeId)).find(Boolean) ||
+    (!explicitThemeId && typeof options.resolveDefaultTheme === "function"
+      ? options.resolveDefaultTheme()
+      : null);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }
@@ -539,6 +547,7 @@ export function createConfiguredInitialState(
     resolveVictoryRuleSet?: (victoryRuleSetId: string) => VictoryRuleSet | null;
     resolveVictoryRuleRuntime?: (victoryRuleSetId: string) => AuthoredVictoryModuleRuntime | null;
     resolveTheme?: (themeId: string) => VisualTheme | null;
+    resolveDefaultTheme?: () => VisualTheme | null;
     resolvePieceSkin?: (pieceSkinId: string) => PieceSkin | null;
     resolveGamePreset?: (input: {
       gamePresetId?: string | null;
@@ -728,6 +737,7 @@ export function createConfiguredInitialState(
         resolveSupportedMap: options.resolveSupportedMap,
         resolveVictoryRuleSet: options.resolveVictoryRuleSet,
         resolveTheme: options.resolveTheme,
+        resolveDefaultTheme: options.resolveDefaultTheme,
         resolvePieceSkin: options.resolvePieceSkin
       });
       const resolvedModuleSelection =
