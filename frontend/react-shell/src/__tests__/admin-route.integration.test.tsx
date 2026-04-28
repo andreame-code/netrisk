@@ -11,6 +11,8 @@ import type {
   AdminGamesResponse,
   AdminMaintenanceReport,
   AdminOverviewResponse,
+  AdminUserInviteCreateResponse,
+  AdminUserInvitesResponse,
   AdminUsersResponse,
   AuthSessionResponse,
   GameOptionsResponse,
@@ -27,7 +29,9 @@ import {
   getAdminGameDetails,
   getAdminMaintenanceReport,
   getAdminOverview,
+  createAdminUserInvite,
   getGameOptions,
+  listAdminUserInvites,
   listAdminAuthoredModules,
   getModuleOptions,
   publishAdminAuthoredModule,
@@ -60,6 +64,8 @@ vi.mock("@frontend-core/api/client.mts", () => ({
   openGame: vi.fn(),
   joinGame: vi.fn(),
   getAdminOverview: vi.fn(),
+  listAdminUserInvites: vi.fn(),
+  createAdminUserInvite: vi.fn(),
   getAdminContentStudioOptions: vi.fn(),
   listAdminAuthoredModules: vi.fn(),
   getAdminAuthoredModule: vi.fn(),
@@ -82,6 +88,8 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 }));
 
 const getAdminOverviewMock = vi.mocked(getAdminOverview);
+const listAdminUserInvitesMock = vi.mocked(listAdminUserInvites);
+const createAdminUserInviteMock = vi.mocked(createAdminUserInvite);
 const getAdminContentStudioOptionsMock = vi.mocked(getAdminContentStudioOptions);
 const listAdminAuthoredModulesMock = vi.mocked(listAdminAuthoredModules);
 const getAdminAuthoredModuleMock = vi.mocked(getAdminAuthoredModule);
@@ -263,6 +271,47 @@ function createUsersResponse(): AdminUsersResponse {
     filteredTotal: 1,
     query: "",
     role: null
+  };
+}
+
+function createUserInvitesResponse(): AdminUserInvitesResponse {
+  return {
+    invites: [
+      {
+        id: "invite-1",
+        label: "Ops invite",
+        emailHint: "ma***@example.com",
+        createdAt: "2026-04-21T10:00:00.000Z",
+        createdBy: {
+          id: "admin-1",
+          username: "Commander",
+          role: "admin",
+          preferences: {
+            theme: "ember"
+          }
+        },
+        expiresAt: "2026-04-28T10:00:00.000Z",
+        consumedAt: null,
+        consumedByUserId: null,
+        consumedByUsername: null,
+        status: "active"
+      }
+    ]
+  };
+}
+
+function createUserInviteCreateResponse(): AdminUserInviteCreateResponse {
+  return {
+    ok: true,
+    invite: createUserInvitesResponse().invites[0],
+    inviteCode: "NR-12345678-90ABCDEF",
+    registrationPath: "/register?invite=NR-12345678-90ABCDEF",
+    audit: createAuditEntry({
+      action: "user.invite.create",
+      targetType: "user-invite",
+      targetId: "invite-1",
+      targetLabel: "Ops invite"
+    })
   };
 }
 
@@ -688,6 +737,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
   getAdminOverviewMock.mockResolvedValue(createOverviewResponse());
+  listAdminUserInvitesMock.mockResolvedValue(createUserInvitesResponse());
+  createAdminUserInviteMock.mockResolvedValue(createUserInviteCreateResponse());
   getAdminContentStudioOptionsMock.mockResolvedValue(createContentStudioOptionsResponse());
   listAdminAuthoredModulesMock.mockResolvedValue(createAuthoredModulesResponse());
   getAdminAuthoredModuleMock.mockResolvedValue(createAuthoredModuleDetail());
@@ -743,13 +794,35 @@ describe("Admin route integration", () => {
     renderReactShell("/react/admin");
 
     expect(await screen.findByTestId("admin-route-page")).toBeInTheDocument();
-    expect(await screen.findByText("Operator console")).toBeInTheDocument();
-    expect(await screen.findByText("Operational command center")).toBeInTheDocument();
-    expect(screen.getByText("Monitor")).toBeInTheDocument();
-    expect(screen.getByText("Operate")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
-    expect(screen.getByText("Current server defaults")).toBeInTheDocument();
+    expect(await screen.findByText("Admin Overview")).toBeInTheDocument();
+    expect(screen.getByText("NETRISK")).toBeInTheDocument();
+    expect(screen.getAllByText("Overview").length).toBeGreaterThan(0);
+    expect(screen.getByText("Runtime modules")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Admin sections" })).toBeInTheDocument();
+    expect(screen.getByText("Runtime defaults")).toBeInTheDocument();
     expect(screen.getByText("Latest admin actions")).toBeInTheDocument();
+  });
+
+  it("creates an invite code from the users view", async () => {
+    listAdminUsersMock.mockResolvedValue(createUsersResponse());
+    createAdminUserInviteMock.mockResolvedValue(createUserInviteCreateResponse());
+    const { user } = renderReactShell("/react/admin/users");
+
+    await screen.findByText("Strategist");
+    await user.click(screen.getByRole("button", { name: /Invite User/i }));
+    await user.type(screen.getByRole("textbox", { name: /Label/i }), "Tournament invite");
+    await user.click(screen.getByRole("button", { name: "Create invite" }));
+
+    await waitFor(() => {
+      expect(createAdminUserInviteMock).toHaveBeenCalledWith(
+        {
+          label: "Tournament invite",
+          expiresInDays: 7
+        },
+        expect.anything()
+      );
+    });
+    expect(await screen.findByText("NR-12345678-90ABCDEF")).toBeInTheDocument();
   });
 
   it("requires confirmation before clearing config overrides and saving the reset", async () => {
@@ -882,7 +955,7 @@ describe("Admin route integration", () => {
       .mockReturnValueOnce("game-1");
     const { user } = renderReactShell("/react/admin/games");
 
-    await screen.findByText("Inspect lobbies and sessions");
+    await screen.findByRole("heading", { name: "Games" });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Close lobby" })).toBeEnabled();
     });

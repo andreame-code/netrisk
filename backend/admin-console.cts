@@ -1,5 +1,10 @@
 const crypto = require("node:crypto");
 const {
+  ADMIN_USER_INVITES_STATE_KEY,
+  createInviteRecord,
+  listInviteSummaries
+} = require("./admin-invites.cjs");
+const {
   findPieceSkin,
   findVictoryRuleSet,
   findVisualTheme,
@@ -887,6 +892,49 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
+  async function listUserInvites() {
+    return {
+      invites: listInviteSummaries(
+        await maybeResolve(options.datastore.getAppState(ADMIN_USER_INVITES_STATE_KEY))
+      )
+    };
+  }
+
+  async function createUserInvite(actor: PublicUser, input: Record<string, unknown> = {}) {
+    const created = createInviteRecord(
+      await maybeResolve(options.datastore.getAppState(ADMIN_USER_INVITES_STATE_KEY)),
+      actor,
+      {
+        label: asNonEmptyString(input.label),
+        email: asNonEmptyString(input.email),
+        expiresInDays: typeof input.expiresInDays === "number" ? Number(input.expiresInDays) : null
+      }
+    );
+    await maybeResolve(
+      options.datastore.setAppState(ADMIN_USER_INVITES_STATE_KEY, created.records)
+    );
+
+    const audit = await recordAuditSafely({
+      actor,
+      action: "user.invite.create",
+      targetType: "user-invite",
+      targetId: created.summary.id,
+      targetLabel: created.summary.label || created.summary.emailHint || "User invite",
+      result: "success",
+      details: {
+        expiresAt: created.summary.expiresAt
+      }
+    });
+
+    return {
+      ok: true,
+      invite: created.summary,
+      inviteCode: created.code,
+      registrationPath: `/register?invite=${encodeURIComponent(created.code)}`,
+      audit
+    };
+  }
+
   async function listGames(filters: { query?: string | null; status?: string | null } = {}) {
     const config = await loadConfigRecord();
     const [games, rawById] = await Promise.all([
@@ -1395,6 +1443,8 @@ function createAdminConsole(options: AdminConsoleOptions) {
     getOverview,
     listUsers,
     updateUserRole,
+    listUserInvites,
+    createUserInvite,
     listGames,
     getGameDetails,
     performGameAction,

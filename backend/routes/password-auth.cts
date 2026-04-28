@@ -20,6 +20,7 @@ type AuthStore = {
     username?: string;
     password?: string;
     email?: string;
+    inviteCode?: string;
   }): Promise<any>;
   loginWithPassword(username?: string, password?: string): Promise<any>;
   logout(sessionToken: string | null): Promise<void> | void;
@@ -56,7 +57,8 @@ async function handleRegisterRoute(
   const result = await auth.registerPasswordUser({
     username: parsedBody.username,
     password: parsedBody.password,
-    email: parsedBody.email
+    email: parsedBody.email,
+    inviteCode: parsedBody.inviteCode
   });
   if (!result.ok) {
     sendLocalizedError(

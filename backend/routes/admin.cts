@@ -11,6 +11,9 @@ const {
   adminMaintenanceActionResponseSchema,
   adminMaintenanceReportSchema,
   adminOverviewResponseSchema,
+  adminUserInviteCreateRequestSchema,
+  adminUserInviteCreateResponseSchema,
+  adminUserInvitesResponseSchema,
   adminUserRoleUpdateRequestSchema,
   adminUserRoleUpdateResponseSchema,
   adminUsersResponseSchema
@@ -50,6 +53,11 @@ type AdminConsole = {
   updateUserRole(
     actor: { id: string; username: string; role?: string },
     input: { userId: string; role: "admin" | "user" }
+  ): Promise<unknown>;
+  listUserInvites(): Promise<unknown>;
+  createUserInvite(
+    actor: { id: string; username: string; role?: string },
+    input: { label?: string | null; email?: string | null; expiresInDays?: number | null }
   ): Promise<unknown>;
   listGames(filters?: { query?: string | null; status?: string | null }): Promise<unknown>;
   getGameDetails(gameId: string): Promise<unknown>;
@@ -257,6 +265,96 @@ async function handleAdminUserRoleRoute(
       error,
       "Aggiornamento ruolo utente non riuscito.",
       "server.admin.userRoleUpdateFailed"
+    );
+  }
+}
+
+async function handleAdminUserInvitesRoute(
+  req: import("node:http").IncomingMessage,
+  res: import("node:http").ServerResponse,
+  requireAuth: RequireAuth,
+  authorize: Authorize,
+  adminConsole: AdminConsole,
+  sendJson: SendJson,
+  sendLocalizedError: SendLocalizedError
+) {
+  try {
+    const authContext = await requireAdminAccess(req, res, {}, requireAuth, authorize);
+    if (!authContext) {
+      return;
+    }
+
+    sendValidatedJson(
+      res,
+      200,
+      await adminConsole.listUserInvites(),
+      adminUserInvitesResponseSchema,
+      sendJson,
+      sendLocalizedError
+    );
+  } catch (error: any) {
+    sendLocalizedError(
+      res,
+      error?.statusCode || 403,
+      error,
+      "Inviti utenti admin non disponibili.",
+      "server.admin.userInvitesUnavailable"
+    );
+  }
+}
+
+async function handleAdminUserInviteCreateRoute(
+  req: import("node:http").IncomingMessage,
+  res: import("node:http").ServerResponse,
+  body: Record<string, unknown>,
+  requireAuth: RequireAuth,
+  authorize: Authorize,
+  adminConsole: AdminConsole,
+  sendJson: SendJson,
+  sendLocalizedError: SendLocalizedError
+) {
+  let authContext: { user: { id: string; username: string; role?: string } } | null = null;
+
+  try {
+    authContext = await requireAdminAccess(req, res, body, requireAuth, authorize);
+    if (!authContext) {
+      return;
+    }
+
+    const parsedBody = parseRequestOrSendError(
+      res,
+      body,
+      adminUserInviteCreateRequestSchema,
+      sendLocalizedError
+    );
+    if (!parsedBody) {
+      return;
+    }
+
+    sendValidatedJson(
+      res,
+      201,
+      await adminConsole.createUserInvite(authContext.user, parsedBody),
+      adminUserInviteCreateResponseSchema,
+      sendJson,
+      sendLocalizedError
+    );
+  } catch (error: any) {
+    await tryRecordFailureAudit(
+      adminConsole,
+      authContext,
+      "user.invite.create",
+      "user-invite",
+      null,
+      null,
+      error
+    );
+    sendLocalizedError(
+      res,
+      error?.statusCode || 400,
+      error,
+      "Creazione invito utente non riuscita.",
+      "server.admin.userInviteCreateFailed"
     );
   }
 }
@@ -614,6 +712,8 @@ module.exports = {
   handleAdminMaintenanceActionRoute,
   handleAdminMaintenanceRoute,
   handleAdminOverviewRoute,
+  handleAdminUserInviteCreateRoute,
+  handleAdminUserInvitesRoute,
   handleAdminUserRoleRoute,
   handleAdminUsersRoute
 };

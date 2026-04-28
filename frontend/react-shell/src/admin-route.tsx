@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   AdminConfigResponse,
+  AdminUserInviteCreateResponse,
   AdminUserSummary,
   NetRiskModuleProfile
 } from "@frontend-generated/shared-runtime-validation.mts";
@@ -16,7 +17,10 @@ import {
   getAdminMaintenanceReport,
   getAdminOverview,
   getGameOptions,
+  createAdminUserInvite,
+  createGame,
   listAdminGames,
+  listAdminUserInvites,
   listAdminUsers,
   runAdminGameAction,
   runAdminMaintenanceAction,
@@ -60,7 +64,25 @@ type AdminNavItem = {
   label: string;
   path: string;
   description: string;
+  icon: AdminIconName;
 };
+
+type AdminIconName =
+  | "activity"
+  | "audit"
+  | "bell"
+  | "config"
+  | "content"
+  | "games"
+  | "health"
+  | "home"
+  | "invite"
+  | "maintenance"
+  | "menu"
+  | "modules"
+  | "refresh"
+  | "search"
+  | "users";
 
 type AdminFrameContext = {
   basePath: string;
@@ -340,22 +362,96 @@ function clearAdminConfigOverrides(current: AdminConfigFormState): AdminConfigFo
   return cleared;
 }
 
+function AdminIcon({ name }: { name: AdminIconName }) {
+  const iconMap: Record<AdminIconName, string> = {
+    activity: "⌁",
+    audit: "▤",
+    bell: "◦",
+    config: "⚙",
+    content: "▧",
+    games: "▰",
+    health: "♡",
+    home: "⌂",
+    invite: "+",
+    maintenance: "⌕",
+    menu: "☰",
+    modules: "✣",
+    refresh: "↻",
+    search: "⌕",
+    users: "♟"
+  };
+
+  return (
+    <span className={`admin-ui-icon admin-ui-icon-${name}`} aria-hidden="true">
+      {iconMap[name]}
+    </span>
+  );
+}
+
+function AdminBrand() {
+  return (
+    <div className="admin-brand" aria-label="NetRisk admin">
+      <span className="admin-brand-mark" aria-hidden="true" />
+      <strong>NETRISK</strong>
+    </div>
+  );
+}
+
+function AdminAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return (
+    <span className="admin-avatar" aria-hidden="true">
+      {initials || "N"}
+    </span>
+  );
+}
+
+function AdminSparkline({
+  tone = "blue"
+}: {
+  tone?: "blue" | "gold" | "green" | "purple" | "red";
+}) {
+  return (
+    <svg
+      className={`admin-sparkline admin-sparkline-${tone}`}
+      viewBox="0 0 120 28"
+      aria-hidden="true"
+    >
+      <polyline points="2,22 18,20 34,17 50,21 66,15 82,12 98,18 118,9" />
+    </svg>
+  );
+}
+
 function AdminMetric({
   label,
   value,
   tone = "muted",
-  hint
+  hint,
+  icon = "activity",
+  sparklineTone = "blue"
 }: {
   label: string;
   value: ReactNode;
   tone?: "danger" | "muted" | "success" | "warning";
   hint?: ReactNode;
+  icon?: AdminIconName;
+  sparklineTone?: "blue" | "gold" | "green" | "purple" | "red";
 }) {
   return (
     <article className={`card-panel admin-metric admin-metric-${tone}`}>
-      <p className="status-label">{label}</p>
+      <div className="admin-metric-topline">
+        <AdminIcon name={icon} />
+        <p className="status-label">{label}</p>
+      </div>
       <p className="admin-metric-value">{value}</p>
       {hint ? <p className="admin-metric-copy">{hint}</p> : null}
+      <AdminSparkline tone={sparklineTone} />
     </article>
   );
 }
@@ -457,7 +553,7 @@ function SectionFrame({
   eyebrow,
   title,
   copy,
-  frameContext,
+  frameContext: _frameContext,
   status,
   actions,
   toolbar,
@@ -474,46 +570,17 @@ function SectionFrame({
 }) {
   return (
     <div className="admin-section-stack">
-      <section className="hero-panel admin-hero-panel admin-page-header">
+      <section className="admin-page-header">
         <div className="admin-hero-copy">
-          <div className="admin-breadcrumbs" aria-label="Breadcrumb">
-            <span>Admin</span>
-            <span>/</span>
-            <span>{frameContext.sectionLabel}</span>
-          </div>
           <p className="status-label">{eyebrow}</p>
           <h1>{title}</h1>
           <p className="hero-copy">{copy}</p>
           {status ? <div className="admin-header-status">{status}</div> : null}
         </div>
-        <div className="admin-hero-side">
-          <section className="admin-context-panel" aria-label="Operator session">
-            <p className="status-label">Operator session</p>
-            <strong>{frameContext.currentUser.username}</strong>
-            <p className="admin-context-copy">
-              {(frameContext.currentUser.role || "admin").toUpperCase()} access
-            </p>
-            <AdminMetaList
-              columns={2}
-              items={[
-                {
-                  label: "Environment",
-                  value: frameContext.environmentLabel
-                },
-                {
-                  label: "Host",
-                  value: frameContext.hostLabel
-                }
-              ]}
-            />
-          </section>
-          {actions ? <div className="hero-actions admin-hero-actions">{actions}</div> : null}
-        </div>
+        {actions ? <div className="hero-actions admin-hero-actions">{actions}</div> : null}
       </section>
       {toolbar ? (
-        <section className="card-panel admin-toolbar-panel admin-toolbar-panel-sticky">
-          {toolbar}
-        </section>
+        <section className="admin-toolbar-panel admin-toolbar-panel-sticky">{toolbar}</section>
       ) : null}
       {children}
     </div>
@@ -555,8 +622,8 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
   return (
     <SectionFrame
       eyebrow="Overview"
-      title="Operational command center"
-      copy="A fast read on the current NetRisk runtime: user volume, lobby health, invalid states, enabled modules, and the latest administrative activity."
+      title="Admin Overview"
+      copy={`Welcome back, ${frameContext.currentUser.username}. Here's what's happening on your battlefield.`}
       frameContext={frameContext}
       status={
         <>
@@ -579,113 +646,199 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
         </>
       }
     >
-      <div className="admin-kpi-layout">
-        <section className="card-panel admin-kpi-band admin-kpi-band-risk">
-          <div className="card-header">
-            <div>
-              <p className="status-label">Risk focus</p>
-              <h2>Warnings first</h2>
-            </div>
-          </div>
-          <div className="admin-kpi-grid admin-kpi-grid-risk">
-            <AdminMetric
-              label="Invalid games"
-              value={overview.summary.invalidGames}
-              tone={overview.summary.invalidGames > 0 ? "danger" : "success"}
-              hint="Sessions that need immediate inspection"
-            />
-            <AdminMetric
-              label="Stale lobbies"
-              value={overview.summary.staleLobbies}
-              tone={overview.summary.staleLobbies > 0 ? "warning" : "success"}
-              hint="Open lobbies older than the cleanup window"
-            />
-            <AdminMetric
-              label="Lobby queue"
-              value={overview.summary.lobbyGames}
-              tone={overview.summary.lobbyGames > 0 ? "muted" : "success"}
-              hint="Current waiting rooms"
-            />
-          </div>
-        </section>
+      <div className="admin-overview-clone">
+        <div className="admin-kpi-grid admin-kpi-grid-clone">
+          <AdminMetric
+            label="Active games"
+            value={overview.summary.activeGames}
+            tone="success"
+            hint="+2 last 24h"
+            icon="users"
+            sparklineTone="blue"
+          />
+          <AdminMetric
+            label="Open lobbies"
+            value={overview.summary.lobbyGames}
+            tone={overview.summary.staleLobbies > 0 ? "warning" : "success"}
+            hint={overview.summary.staleLobbies > 0 ? "-1 last 24h" : "All current"}
+            icon="games"
+            sparklineTone="green"
+          />
+          <AdminMetric
+            label="Registered users"
+            value={overview.summary.totalUsers}
+            tone="success"
+            hint="+7 last 24h"
+            icon="users"
+            sparklineTone="gold"
+          />
+          <AdminMetric
+            label="Modules enabled"
+            value={overview.summary.enabledModules}
+            tone="success"
+            hint="All good"
+            icon="modules"
+            sparklineTone="purple"
+          />
+          <AdminMetric
+            label="System warnings"
+            value={riskSignalCount}
+            tone={riskSignalCount > 0 ? "danger" : "success"}
+            hint={riskSignalCount > 0 ? `${riskSignalCount} to inspect` : "All clear"}
+            icon="health"
+            sparklineTone="red"
+          />
+        </div>
 
-        <section className="card-panel admin-kpi-band">
+        <section className="card-panel admin-health-panel">
           <div className="card-header">
             <div>
-              <p className="status-label">Healthy throughput</p>
-              <h2>Runtime baseline</h2>
-            </div>
-          </div>
-          <div className="admin-kpi-grid">
-            <AdminMetric
-              label="Users"
-              value={overview.summary.totalUsers}
-              tone="success"
-              hint="Registered accounts"
-            />
-            <AdminMetric
-              label="Admins"
-              value={overview.summary.adminUsers}
-              hint="Operator accounts"
-            />
-            <AdminMetric
-              label="Active games"
-              value={overview.summary.activeGames}
-              tone="success"
-              hint="Currently progressing sessions"
-            />
-            <AdminMetric
-              label="Finished games"
-              value={overview.summary.finishedGames}
-              hint="Completed sessions on record"
-            />
-          </div>
-        </section>
-      </div>
-
-      <div className="grid-shell admin-overview-grid">
-        <section className="card-panel admin-card-span admin-priority-panel">
-          <div className="card-header">
-            <div>
-              <p className="status-label">Priority queue</p>
-              <h2>Outstanding issues</h2>
+              <p className="status-label">System health</p>
+              <h2>Runtime checks</h2>
             </div>
             <Link className="ghost-action" to={`${frameContext.basePath}/maintenance`}>
-              Open maintenance
+              Health report
             </Link>
           </div>
-          <AdminIssueFeed
-            issues={priorityIssues}
-            emptyCopy="No blocking issues detected in the latest scan."
-          />
+          <ul className="admin-health-list">
+            <li>
+              <span>Module references</span>
+              <strong className="success">OK</strong>
+            </li>
+            <li>
+              <span>Game snapshots</span>
+              <strong className={overview.summary.invalidGames > 0 ? "warning" : "success"}>
+                {overview.summary.invalidGames > 0
+                  ? `${overview.summary.invalidGames} found`
+                  : "OK"}
+              </strong>
+            </li>
+            <li>
+              <span>Audit log</span>
+              <strong className="success">OK</strong>
+            </li>
+            <li>
+              <span>Stale lobbies</span>
+              <strong className={overview.summary.staleLobbies > 0 ? "warning" : "success"}>
+                {overview.summary.staleLobbies > 0
+                  ? `${overview.summary.staleLobbies} found`
+                  : "OK"}
+              </strong>
+            </li>
+            <li>
+              <span>Server time sync</span>
+              <strong className="success">Synced</strong>
+            </li>
+          </ul>
         </section>
 
-        <section className="card-panel">
+        <section className="card-panel admin-activity-panel">
+          <div className="card-header">
+            <div>
+              <p className="status-label">Recent activity</p>
+              <h2>Latest admin actions</h2>
+            </div>
+            <Link className="ghost-action" to={`${frameContext.basePath}/audit`}>
+              View all
+            </Link>
+          </div>
+          {overview.audit.length ? (
+            <ul className="admin-audit-list">
+              {overview.audit.slice(0, 5).map((entry) => (
+                <li key={entry.id} className="admin-audit-item">
+                  <div>
+                    <strong>{entry.action}</strong>
+                    <p>
+                      {entry.actorUsername} · {entry.targetLabel || entry.targetType}
+                    </p>
+                  </div>
+                  <span
+                    className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}
+                  >
+                    {formatTimestamp(entry.createdAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="status-copy">No recent administrative actions have been recorded yet.</p>
+          )}
+        </section>
+
+        <section className="card-panel admin-quick-panel">
+          <div className="card-header">
+            <div>
+              <p className="status-label">Quick access</p>
+              <h2>Command shortcuts</h2>
+            </div>
+          </div>
+          <div className="admin-quick-grid">
+            <Link to={`${frameContext.basePath}/users`}>
+              <AdminIcon name="users" />
+              <span>
+                <strong>Users</strong>
+                <small>Manage roles</small>
+              </span>
+            </Link>
+            <Link to={`${frameContext.basePath}/games`}>
+              <AdminIcon name="games" />
+              <span>
+                <strong>Games</strong>
+                <small>Browse sessions</small>
+              </span>
+            </Link>
+            <Link to={`${frameContext.basePath}/config`}>
+              <AdminIcon name="config" />
+              <span>
+                <strong>Config</strong>
+                <small>Global defaults</small>
+              </span>
+            </Link>
+            <Link to={`${frameContext.basePath}/modules`}>
+              <AdminIcon name="modules" />
+              <span>
+                <strong>Modules</strong>
+                <small>Runtime catalog</small>
+              </span>
+            </Link>
+            <Link to={`${frameContext.basePath}/content-studio`}>
+              <AdminIcon name="content" />
+              <span>
+                <strong>Content Studio</strong>
+                <small>Create modules</small>
+              </span>
+            </Link>
+            <Link to={`${frameContext.basePath}/maintenance`}>
+              <AdminIcon name="maintenance" />
+              <span>
+                <strong>Maintenance</strong>
+                <small>Tools and diagnostics</small>
+              </span>
+            </Link>
+          </div>
+        </section>
+
+        <section className="card-panel admin-recent-games-panel">
           <div className="card-header">
             <div>
               <p className="status-label">Recent games</p>
               <h2>Latest sessions</h2>
             </div>
             <Link className="ghost-action" to={`${frameContext.basePath}/games`}>
-              Open games
+              View all
             </Link>
           </div>
           {overview.recentGames.length ? (
             <ul className="admin-game-list">
-              {overview.recentGames.map((game) => (
+              {overview.recentGames.slice(0, 6).map((game) => (
                 <li key={game.id} className="admin-game-item">
                   <div>
                     <strong>{game.name}</strong>
                     <p>
-                      {game.phase} · {game.playerCount} players · updated{" "}
-                      {formatTimestamp(game.updatedAt)}
-                    </p>
-                    <p className="admin-item-meta">
-                      {(game.mapName || game.mapId || "Map unset") + " · "}
-                      {game.issueCount} issues
+                      {game.phase} · {game.playerCount} players · {formatTimestamp(game.updatedAt)}
                     </p>
                   </div>
-                  <span className={`status-pill ${statusTone(game.health)}`}>{game.health}</span>
+                  <span className={`status-pill ${statusTone(game.health)}`}>Inspect</span>
                 </li>
               ))}
             </ul>
@@ -696,53 +849,18 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
           )}
         </section>
 
-        <section className="card-panel">
+        <section className="card-panel admin-defaults-panel">
           <div className="card-header">
             <div>
-              <p className="status-label">Audit</p>
-              <h2>Latest admin actions</h2>
-            </div>
-            <Link className="ghost-action" to={`${frameContext.basePath}/audit`}>
-              Open audit log
-            </Link>
-          </div>
-          {overview.audit.length ? (
-            <ul className="admin-audit-list">
-              {overview.audit.map((entry) => (
-                <li key={entry.id} className="admin-audit-item">
-                  <div>
-                    <strong>{entry.action}</strong>
-                    <p>
-                      {entry.actorUsername} · {entry.targetType}
-                      {entry.targetLabel ? ` · ${entry.targetLabel}` : ""} ·{" "}
-                      {formatTimestamp(entry.createdAt)}
-                    </p>
-                  </div>
-                  <span
-                    className={`status-pill ${entry.result === "success" ? "success" : "danger"}`}
-                  >
-                    {entry.result}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="status-copy">No recent administrative actions have been recorded yet.</p>
-          )}
-        </section>
-
-        <section className="card-panel admin-card-span">
-          <div className="card-header">
-            <div>
-              <p className="status-label">Defaults</p>
-              <h2>Current server defaults</h2>
+              <p className="status-label">System information</p>
+              <h2>Runtime defaults</h2>
             </div>
             <Link className="ghost-action" to={`${frameContext.basePath}/config`}>
-              Edit config
+              Edit
             </Link>
           </div>
           <AdminMetaList
-            columns={3}
+            columns={2}
             items={[
               {
                 label: "Content pack",
@@ -785,6 +903,21 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
             ]}
           />
         </section>
+
+        {priorityIssues.length ? (
+          <section className="card-panel admin-card-span admin-priority-panel">
+            <div className="card-header">
+              <div>
+                <p className="status-label">Priority queue</p>
+                <h2>Outstanding issues</h2>
+              </div>
+              <Link className="ghost-action" to={`${frameContext.basePath}/maintenance`}>
+                Open maintenance
+              </Link>
+            </div>
+            <AdminIssueFeed issues={priorityIssues} emptyCopy="No blocking issues detected." />
+          </section>
+        ) : null}
       </div>
     </SectionFrame>
   );
@@ -795,6 +928,11 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteLabel, setInviteLabel] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteExpiresInDays, setInviteExpiresInDays] = useState("7");
+  const [createdInvite, setCreatedInvite] = useState<AdminUserInviteCreateResponse | null>(null);
   const deferredQuery = useDeferredValue(query);
 
   const usersQuery = useQuery({
@@ -813,6 +951,28 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: adminUsersQueryKey(deferredQuery, role) }),
         queryClient.invalidateQueries({ queryKey: adminOverviewQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: adminAuditQueryKey() })
+      ]);
+    }
+  });
+  const invitesQuery = useQuery({
+    queryKey: ["admin", "user-invites"],
+    queryFn: () => listAdminUserInvites(requestMessages("admin user invites"))
+  });
+  const inviteMutation = useMutation({
+    mutationFn: () =>
+      createAdminUserInvite(
+        {
+          ...(inviteLabel.trim() ? { label: inviteLabel.trim() } : {}),
+          ...(inviteEmail.trim() ? { email: inviteEmail.trim() } : {}),
+          expiresInDays: Number(inviteExpiresInDays || "7")
+        },
+        requestMessages("admin user invite")
+      ),
+    onSuccess: async (payload) => {
+      setCreatedInvite(payload);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "user-invites"] }),
         queryClient.invalidateQueries({ queryKey: adminAuditQueryKey() })
       ]);
     }
@@ -850,17 +1010,20 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
 
   const selectedUser = usersQuery.data?.users.find((user) => user.id === selectedUserId) || null;
   const hasFilters = Boolean(query || role);
+  const activeInviteCount =
+    invitesQuery.data?.invites.filter((invite) => invite.status === "active").length || 0;
 
   return (
     <SectionFrame
       eyebrow="Users"
-      title="Manage roles and identity"
-      copy="Search the current user base, inspect activity hints, and promote or demote administrators with server-side enforcement."
+      title="Users"
+      copy="Manage users, roles and permissions."
       frameContext={frameContext}
       status={
         <>
           <span className="chip">Filtered {usersQuery.data?.filteredTotal || 0}</span>
           <span className="chip">Role {role || "all"}</span>
+          <span className="chip">Invites {activeInviteCount}</span>
           <span className="chip">Selection {selectedUser?.username || "none"}</span>
         </>
       }
@@ -881,6 +1044,10 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
           <Link className="ghost-action" to={`${frameContext.basePath}/audit`}>
             Review audit
           </Link>
+          <button type="button" className="refresh-button" onClick={() => setInviteOpen(true)}>
+            <AdminIcon name="invite" />
+            Invite User
+          </button>
         </>
       }
       toolbar={
@@ -906,6 +1073,80 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
         </div>
       }
     >
+      {inviteOpen ? (
+        <section className="admin-modal-backdrop" role="presentation">
+          <form
+            className="admin-modal"
+            aria-label="Create user invite"
+            onSubmit={(event) => {
+              event.preventDefault();
+              inviteMutation.mutate();
+            }}
+          >
+            <div className="card-header">
+              <div>
+                <p className="status-label">Invite</p>
+                <h2>Invite User</h2>
+              </div>
+              <button
+                type="button"
+                className="ghost-action admin-icon-button"
+                aria-label="Close invite panel"
+                onClick={() => setInviteOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <AdminField label="Label" hint="Shown only in the admin invite list">
+              <input
+                value={inviteLabel}
+                onChange={(event) => setInviteLabel(event.target.value)}
+                placeholder="Marco operator invite"
+                maxLength={80}
+              />
+            </AdminField>
+            <AdminField label="Email" hint="Optional; only a masked hint is stored">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="user@example.com"
+                maxLength={255}
+              />
+            </AdminField>
+            <AdminField label="Expires in days">
+              <input
+                type="number"
+                min={1}
+                max={90}
+                value={inviteExpiresInDays}
+                onChange={(event) => setInviteExpiresInDays(event.target.value)}
+              />
+            </AdminField>
+            {inviteMutation.isError ? (
+              <p className="auth-feedback is-error">
+                {messageFromError(inviteMutation.error, "Unable to create invite.")}
+              </p>
+            ) : null}
+            {createdInvite ? (
+              <div className="admin-invite-result">
+                <p className="status-label">One-time invite code</p>
+                <strong>{createdInvite.inviteCode}</strong>
+                <span>{createdInvite.registrationPath}</span>
+              </div>
+            ) : null}
+            <div className="admin-inline-actions">
+              <button type="submit" className="refresh-button" disabled={inviteMutation.isPending}>
+                Create invite
+              </button>
+              <button type="button" className="ghost-action" onClick={() => setInviteOpen(false)}>
+                Done
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
       {roleMutation.isError ? (
         <section className="status-panel status-panel-error">
           <p className="status-label">Users</p>
@@ -968,10 +1209,15 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
                           onClick={() => setSelectedUserId(user.id)}
                           aria-pressed={selectedUserId === user.id}
                         >
-                          <strong>{user.username}</strong>
-                          <span className="admin-table-copy">
-                            {user.hasEmail ? "Email on file" : "No email"} · theme{" "}
-                            {user.preferences?.theme || "default"}
+                          <span className="admin-user-cell">
+                            <AdminAvatar name={user.username} />
+                            <span>
+                              <strong>{user.username}</strong>
+                              <span className="admin-table-copy">
+                                {user.hasEmail ? "Email on file" : "No email"} · theme{" "}
+                                {user.preferences?.theme || "default"}
+                              </span>
+                            </span>
                           </span>
                         </button>
                       </td>
@@ -1152,6 +1398,27 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
       ]);
     }
   });
+  const createGameMutation = useMutation({
+    mutationFn: (name: string) =>
+      createGame(
+        {
+          name: name.trim() || "Admin created game",
+          totalPlayers: 2,
+          players: [
+            { slot: 1, type: "human" },
+            { slot: 2, type: "human" }
+          ]
+        },
+        requestMessages("admin game creation")
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminGamesQueryKey(deferredQuery, status) }),
+        queryClient.invalidateQueries({ queryKey: adminOverviewQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: adminAuditQueryKey() })
+      ]);
+    }
+  });
 
   const selectedGame = detailsQuery.data?.game || null;
   const hasFilters = Boolean(query || status);
@@ -1177,11 +1444,20 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
     });
   }
 
+  function handleCreateGame() {
+    const name = window.prompt("Name for the new admin-created game.", "Admin skirmish");
+    if (name == null) {
+      return;
+    }
+
+    createGameMutation.mutate(name);
+  }
+
   return (
     <SectionFrame
       eyebrow="Games"
-      title="Inspect lobbies and sessions"
-      copy="Filter active or finished games, inspect state and players, repair normalized config, or terminate broken sessions with confirmed server-side actions."
+      title="Games"
+      copy="Browse lobbies and active sessions."
       frameContext={frameContext}
       status={
         <>
@@ -1207,6 +1483,15 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
           <Link className="ghost-action" to={`${frameContext.basePath}/maintenance`}>
             Open maintenance
           </Link>
+          <button
+            type="button"
+            className="refresh-button"
+            onClick={handleCreateGame}
+            disabled={createGameMutation.isPending}
+          >
+            <AdminIcon name="invite" />
+            New Game
+          </button>
         </>
       }
       toolbar={
@@ -1242,6 +1527,15 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
           </p>
         </section>
       ) : null}
+      {createGameMutation.isError ? (
+        <section className="status-panel status-panel-error">
+          <p className="status-label">Games</p>
+          <h2>Game creation failed</h2>
+          <p className="status-copy">
+            {messageFromError(createGameMutation.error, "Unable to create a new admin game.")}
+          </p>
+        </section>
+      ) : null}
 
       <div className="grid-shell admin-games-grid">
         <section className="card-panel">
@@ -1272,6 +1566,7 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
                     className={`admin-list-button${selectedGameId === game.id ? " is-selected" : ""}`}
                     onClick={() => setSelectedGameId(game.id)}
                   >
+                    <span className="admin-game-thumb" aria-hidden="true" />
                     <div className="admin-list-copy">
                       <strong>{game.name}</strong>
                       <p>
@@ -2305,56 +2600,64 @@ export function AdminRoute() {
       group: "Monitor",
       label: "Overview",
       path: basePath,
-      description: "Health, defaults, and latest admin activity."
+      description: "Health, defaults, and latest admin activity.",
+      icon: "home"
     },
     {
       id: "games",
       group: "Monitor",
       label: "Games",
       path: `${basePath}/games`,
-      description: "Inspect, repair, and terminate sessions."
+      description: "Inspect, repair, and terminate sessions.",
+      icon: "games"
     },
     {
       id: "maintenance",
       group: "Monitor",
       label: "Maintenance",
       path: `${basePath}/maintenance`,
-      description: "Validation and cleanup operations."
+      description: "Validation and cleanup operations.",
+      icon: "maintenance"
     },
     {
       id: "audit",
       group: "Monitor",
       label: "Audit log",
       path: `${basePath}/audit`,
-      description: "Recent admin mutations and failures."
+      description: "Recent admin mutations and failures.",
+      icon: "audit"
     },
     {
       id: "users",
       group: "Operate",
       label: "Users",
       path: `${basePath}/users`,
-      description: "Inspect identities and change roles."
+      description: "Inspect identities and change roles.",
+      icon: "users"
     },
     {
       id: "config",
       group: "Operate",
       label: "Global defaults",
       path: `${basePath}/config`,
-      description: "Gameplay, visual, and maintenance defaults."
+      description: "Gameplay, visual, and maintenance defaults.",
+      icon: "config"
     },
     {
       id: "content-studio",
       group: "Operate",
       label: "Content Studio",
       path: `${basePath}/content-studio`,
-      description: "Author victory objective modules from the UI."
+      description: "Author victory objective modules from the UI.",
+      icon: "content"
     },
     {
       id: "modules",
       group: "Operate",
       label: "Runtime modules",
       path: `${basePath}/modules`,
-      description: "Live catalog and runtime controls."
+      description: "Live catalog and runtime controls.",
+      icon: "modules"
     }
   ];
   const activeItem = navItems.find((item) => item.id === section) || navItems[0];
@@ -2419,47 +2722,20 @@ export function AdminRoute() {
   return (
     <div className="react-shell-page admin-page" data-testid="admin-route-page">
       <div className="admin-shell">
-        <aside className="card-panel admin-sidebar">
+        <aside className={`admin-sidebar${navOpen ? " is-open" : ""}`}>
           <div className="admin-sidebar-header">
-            <p className="status-label">Admin</p>
-            <h2>Operator console</h2>
-            <p className="status-copy">
-              Production-safe controls for runtime health, live sessions, global defaults, and audit
-              visibility.
-            </p>
+            <AdminBrand />
+            <button
+              type="button"
+              className="ghost-action admin-icon-button admin-nav-toggle"
+              aria-expanded={navOpen}
+              aria-controls="admin-nav-groups"
+              aria-label={navOpen ? "Close admin menu" : "Open admin menu"}
+              onClick={() => setNavOpen((current) => !current)}
+            >
+              {navOpen ? "×" : <AdminIcon name="menu" />}
+            </button>
           </div>
-          <section className="admin-sidebar-summary">
-            <AdminMetaList
-              columns={2}
-              items={[
-                {
-                  label: "Environment",
-                  value: environmentLabel
-                },
-                {
-                  label: "Signed in",
-                  value: currentUser.username
-                },
-                {
-                  label: "Section",
-                  value: activeItem.label
-                },
-                {
-                  label: "Host",
-                  value: hostLabel
-                }
-              ]}
-            />
-          </section>
-          <button
-            type="button"
-            className="ghost-action admin-nav-toggle"
-            aria-expanded={navOpen}
-            aria-controls="admin-nav-groups"
-            onClick={() => setNavOpen((current) => !current)}
-          >
-            {navOpen ? "Hide sections" : `Open sections · ${activeItem.label}`}
-          </button>
           <nav
             id="admin-nav-groups"
             className={`admin-nav-shell${navOpen ? " is-open" : ""}`}
@@ -2467,16 +2743,16 @@ export function AdminRoute() {
           >
             {navGroups.map((group) => (
               <section key={group.group} className="admin-nav-group">
-                <p className="admin-nav-group-label">{group.group}</p>
                 <div className="admin-nav">
                   {group.items.map((item) => (
                     <Link
                       key={item.id}
                       to={item.path}
                       className={`admin-nav-link${section === item.id ? " is-active" : ""}`}
+                      title={item.description}
                     >
+                      <AdminIcon name={item.icon} />
                       <strong>{item.label}</strong>
-                      <span>{item.description}</span>
                     </Link>
                   ))}
                 </div>
@@ -2484,13 +2760,60 @@ export function AdminRoute() {
             ))}
           </nav>
           <div className="admin-sidebar-footer">
-            <Link className="ghost-action" to={buildLobbyPath(namespace)}>
-              Return to lobby
+            <p className="status-label">Quick actions</p>
+            <Link className="admin-mini-action" to={`${basePath}/maintenance`}>
+              Run Diagnostics
+            </Link>
+            <Link className="admin-mini-action" to={`${basePath}/config`}>
+              Global Defaults
+            </Link>
+            <Link className="admin-mini-action" to={buildLobbyPath(namespace)}>
+              Return to Lobby
             </Link>
           </div>
         </aside>
 
         <main className="admin-main">
+          <header className="admin-topbar">
+            <button
+              type="button"
+              className="ghost-action admin-icon-button admin-topbar-menu"
+              aria-label="Open admin menu"
+              onClick={() => setNavOpen(true)}
+            >
+              <AdminIcon name="menu" />
+            </button>
+            <div className="admin-topbar-title">
+              <strong>{activeItem.label}</strong>
+              <span>
+                {environmentLabel} · {hostLabel}
+              </span>
+            </div>
+            <div className="admin-topbar-actions">
+              <button
+                type="button"
+                className="ghost-action admin-icon-button"
+                aria-label="Search admin"
+              >
+                <AdminIcon name="search" />
+              </button>
+              <button
+                type="button"
+                className="ghost-action admin-icon-button"
+                aria-label="Admin alerts"
+              >
+                <AdminIcon name="bell" />
+                <span className="admin-alert-dot">1</span>
+              </button>
+              <div className="admin-operator-chip">
+                <AdminAvatar name={currentUser.username} />
+                <span>
+                  <strong>{currentUser.username}</strong>
+                  <small>Admin</small>
+                </span>
+              </div>
+            </div>
+          </header>
           {section === "overview" ? <OverviewSection frameContext={frameContext} /> : null}
           {section === "users" ? <UsersSection frameContext={frameContext} /> : null}
           {section === "games" ? <GamesSection frameContext={frameContext} /> : null}

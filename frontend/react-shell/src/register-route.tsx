@@ -28,6 +28,7 @@ export function RegisterRoute() {
   const namespace = useShellNamespace();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite") || "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -88,7 +89,8 @@ export function RegisterRoute() {
         {
           username: trimmedUsername,
           password,
-          ...(trimmedEmail ? { email: trimmedEmail } : {})
+          ...(trimmedEmail ? { email: trimmedEmail } : {}),
+          ...(inviteCode.trim() ? { inviteCode: inviteCode.trim() } : {})
         },
         requestMessages()
       );
@@ -138,6 +140,18 @@ export function RegisterRoute() {
             placeholder={t("register.email.placeholder")}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+
+        <label className="shell-field">
+          <span>Invite code</span>
+          <input
+            name="invite-code"
+            autoComplete="off"
+            maxLength={64}
+            placeholder="NR-00000000-00000000"
+            value={inviteCode}
+            onChange={(event) => setInviteCode(event.target.value)}
           />
         </label>
 

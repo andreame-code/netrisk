@@ -1,5 +1,10 @@
 const path = require("path");
 const crypto = require("crypto");
+const {
+  ADMIN_USER_INVITES_STATE_KEY,
+  consumeInviteRecord,
+  normalizeInviteCode
+} = require("./admin-invites.cjs");
 const { createAuthRepository } = require("./auth-repository.cjs");
 const { SESSION_MAX_AGE_MS } = require("./session-policy.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
@@ -78,6 +83,8 @@ interface AuthRepository {
   createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
   findSession(token: string): Promise<AuthSession | null> | AuthSession | null;
   deleteSession(token: string): Promise<void> | void;
+  getAppState?(key: string): Promise<unknown> | unknown;
+  setAppState?(key: string, value: unknown): Promise<unknown> | unknown;
 }
 
 interface AuthStoreOptions {
@@ -93,10 +100,38 @@ interface AuthStoreOptions {
   encryptionKey?: string;
 }
 
+const inviteRegistrationLocks = new Map<string, Promise<void>>();
+
+async function withInviteRegistrationLock<T>(
+  inviteCode: string,
+  action: () => Promise<T>
+): Promise<T> {
+  const lockKey = normalizeInviteCode(inviteCode);
+  const previousLock = inviteRegistrationLocks.get(lockKey) || Promise.resolve();
+  let releaseCurrentLock = () => {};
+  const currentLock = new Promise<void>((resolve) => {
+    releaseCurrentLock = resolve;
+  });
+  const queuedLock = previousLock.catch(() => undefined).then(() => currentLock);
+  inviteRegistrationLocks.set(lockKey, queuedLock);
+
+  await previousLock.catch(() => undefined);
+
+  try {
+    return await action();
+  } finally {
+    releaseCurrentLock();
+    if (inviteRegistrationLocks.get(lockKey) === queuedLock) {
+      inviteRegistrationLocks.delete(lockKey);
+    }
+  }
+}
+
 interface RegistrationInput {
   username: string;
   password: string;
   email: string;
+  inviteCode: string;
 }
 
 interface AccountSettingsInput {
@@ -243,7 +278,8 @@ function registrationInput(inputOrUsername: unknown, password?: unknown): Regist
         .trim()
         .slice(0, 32),
       password: String(input.password || ""),
-      email: normalizeEmail(input.email)
+      email: normalizeEmail(input.email),
+      inviteCode: String(input.inviteCode || "").trim()
     };
   }
 
@@ -252,7 +288,8 @@ function registrationInput(inputOrUsername: unknown, password?: unknown): Regist
       .trim()
       .slice(0, 32),
     password: String(password || ""),
-    email: ""
+    email: "",
+    inviteCode: ""
   };
 }
 
@@ -517,6 +554,17 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return validationError;
     }
 
+    const getInviteState = datastore.getAppState?.bind(datastore);
+    const setInviteState = datastore.setAppState?.bind(datastore);
+    if (input.inviteCode) {
+      if (!getInviteState || !setInviteState) {
+        return authFailure(
+          "Inviti non disponibili su questo datastore.",
+          "auth.register.invitesUnavailable"
+        );
+      }
+    }
+
     if (await findByUsername(input.username)) {
       return authFailure("Utente gia registrato.", "auth.register.userExists");
     }
@@ -532,7 +580,33 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       createdAt: new Date().toISOString()
     };
 
-    return { ok: true, user: publicUser(await datastore.createUser(user)) };
+    if (input.inviteCode) {
+      return withInviteRegistrationLock(input.inviteCode, async () => {
+        if (await findByUsername(input.username)) {
+          return authFailure("Utente gia registrato.", "auth.register.userExists");
+        }
+
+        const consumed = consumeInviteRecord(
+          await getInviteState?.(ADMIN_USER_INVITES_STATE_KEY),
+          input.inviteCode,
+          {
+            id: user.id,
+            username: user.username
+          }
+        );
+
+        if (!consumed.ok) {
+          return authFailure(consumed.error, consumed.errorKey);
+        }
+
+        await setInviteState?.(ADMIN_USER_INVITES_STATE_KEY, consumed.records);
+        const createdUser = await datastore.createUser(user);
+        return { ok: true, user: publicUser(createdUser) };
+      });
+    }
+
+    const createdUser = await datastore.createUser(user);
+    return { ok: true, user: publicUser(createdUser) };
   }
 
   async function loginWithPassword(username: string, password: unknown) {

@@ -569,6 +569,138 @@ register("admin console can promote a user and grant admin access", async () => 
   });
 });
 
+register("admin invite codes can be created, consumed, and rejected after use", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const inviteResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/users/invites",
+      {
+        label: "Operations onboarding",
+        email: "new-operator@example.com",
+        expiresInDays: 7
+      },
+      authHeaders(adminSessionToken)
+    );
+
+    assert.equal(inviteResponse.statusCode, 201);
+    assert.equal(inviteResponse.payload.ok, true);
+    assert.match(inviteResponse.payload.inviteCode, /^NR-/);
+    assert.equal(inviteResponse.payload.invite.status, "active");
+    assert.equal(inviteResponse.payload.audit.action, "user.invite.create");
+
+    const inviteListResponse = await callApp(
+      app,
+      "GET",
+      "/api/admin/users/invites",
+      undefined,
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(inviteListResponse.statusCode, 200);
+    assert.equal(inviteListResponse.payload.invites.length, 1);
+
+    const registerResponse = await callApp(app, "POST", "/api/auth/register", {
+      username: "invited_operator",
+      password: "secret123",
+      inviteCode: inviteResponse.payload.inviteCode
+    });
+    assert.equal(registerResponse.statusCode, 201);
+    assert.equal(registerResponse.payload.user.username, "invited_operator");
+
+    const consumedListResponse = await callApp(
+      app,
+      "GET",
+      "/api/admin/users/invites",
+      undefined,
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(consumedListResponse.statusCode, 200);
+    assert.equal(consumedListResponse.payload.invites[0].status, "consumed");
+    assert.equal(consumedListResponse.payload.invites[0].consumedByUsername, "invited_operator");
+
+    const reuseResponse = await callApp(app, "POST", "/api/auth/register", {
+      username: "second_operator",
+      password: "secret123",
+      inviteCode: inviteResponse.payload.inviteCode
+    });
+    assert.equal(reuseResponse.statusCode, 400);
+    assert.equal(reuseResponse.payload.messageKey, "auth.register.inviteCodeConsumed");
+  });
+});
+
+register("registration rejects invalid and expired invite codes", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const invalidResponse = await callApp(app, "POST", "/api/auth/register", {
+      username: "invalid_invite_operator",
+      password: "secret123",
+      inviteCode: "NR-INVALID-CODE"
+    });
+    assert.equal(invalidResponse.statusCode, 400);
+    assert.equal(invalidResponse.payload.messageKey, "auth.register.invalidInviteCode");
+
+    const inviteResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/users/invites",
+      {
+        label: "Expired invite"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(inviteResponse.statusCode, 201);
+
+    const storedInvites = await app.datastore.getAppState("adminUserInvites");
+    storedInvites[0].expiresAt = "2020-01-01T00:00:00.000Z";
+    await app.datastore.setAppState("adminUserInvites", storedInvites);
+
+    const expiredResponse = await callApp(app, "POST", "/api/auth/register", {
+      username: "expired_invite_operator",
+      password: "secret123",
+      inviteCode: inviteResponse.payload.inviteCode
+    });
+    assert.equal(expiredResponse.statusCode, 400);
+    assert.equal(expiredResponse.payload.messageKey, "auth.register.inviteCodeExpired");
+  });
+});
+
+register("registration does not persist users when invite consumption cannot be stored", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const inviteResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/users/invites",
+      {
+        label: "Fragile invite"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(inviteResponse.statusCode, 201);
+
+    const originalSetAppState = app.datastore.setAppState.bind(app.datastore);
+    app.datastore.setAppState = async (key: string, value: unknown) => {
+      if (key === "adminUserInvites") {
+        throw new Error("invite store unavailable");
+      }
+      return originalSetAppState(key, value);
+    };
+
+    try {
+      await assert.rejects(
+        () =>
+          callApp(app, "POST", "/api/auth/register", {
+            username: "invite_write_failure",
+            password: "secret123",
+            inviteCode: inviteResponse.payload.inviteCode
+          }),
+        /invite store unavailable/
+      );
+      assert.equal(await app.datastore.findUserByUsername("invite_write_failure"), null);
+    } finally {
+      app.datastore.setAppState = originalSetAppState;
+    }
+  });
+});
+
 register("admin console updates defaults and new game creation consumes them", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const configResponse = await callApp(

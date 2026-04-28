@@ -83,6 +83,8 @@ const {
   handleAdminMaintenanceActionRoute,
   handleAdminMaintenanceRoute,
   handleAdminOverviewRoute,
+  handleAdminUserInviteCreateRoute,
+  handleAdminUserInvitesRoute,
   handleAdminUserRoleRoute,
   handleAdminUsersRoute
 } = require("./routes/admin.cjs");
@@ -975,6 +977,34 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "POST" && url.pathname === "/api/admin/users/role") {
       const body = await parseBody(req);
       await handleAdminUserRoleRoute(
+        req,
+        res,
+        body,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/users/invites") {
+      await handleAdminUserInvitesRoute(
+        req,
+        res,
+        requireAuth,
+        authorize,
+        adminConsole,
+        sendJson,
+        sendLocalizedError
+      );
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/users/invites") {
+      const body = await parseBody(req);
+      await handleAdminUserInviteCreateRoute(
         req,
         res,
         body,

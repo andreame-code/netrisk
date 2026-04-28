@@ -329,6 +329,31 @@ export interface AdminUserRoleUpdateResponseContract {
   audit: AdminAuditEntryContract;
 }
 
+export interface AdminUserInviteSummaryContract {
+  id: string;
+  label?: string | null;
+  emailHint?: string | null;
+  createdAt: string;
+  createdBy?: PublicUserContract | null;
+  expiresAt: string;
+  consumedAt?: string | null;
+  consumedByUserId?: string | null;
+  consumedByUsername?: string | null;
+  status: "active" | "expired" | "consumed";
+}
+
+export interface AdminUserInviteCreateResponseContract {
+  ok: boolean;
+  invite: AdminUserInviteSummaryContract;
+  inviteCode: string;
+  registrationPath: string;
+  audit: AdminAuditEntryContract;
+}
+
+export interface AdminUserInvitesResponseContract {
+  invites: AdminUserInviteSummaryContract[];
+}
+
 export interface AdminGamesResponseContract {
   games: AdminGameSummaryContract[];
   total: number;

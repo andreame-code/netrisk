@@ -166,7 +166,8 @@ export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export const registerRequestSchema = objectSchema({
   username: z.string().min(1).max(32),
   password: passwordSchema,
-  email: z.string().max(255).optional()
+  email: z.string().max(255).optional(),
+  inviteCode: z.string().min(1).max(64).optional()
 });
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
@@ -1346,6 +1347,45 @@ export const adminUserRoleUpdateResponseSchema = objectSchema({
 });
 
 export type AdminUserRoleUpdateResponse = z.infer<typeof adminUserRoleUpdateResponseSchema>;
+
+export const adminUserInviteCreateRequestSchema = objectSchema({
+  label: z.string().min(1).max(80).nullable().optional(),
+  email: z.string().max(255).nullable().optional(),
+  expiresInDays: z.number().int().min(1).max(90).nullable().optional()
+});
+
+export type AdminUserInviteCreateRequest = z.infer<typeof adminUserInviteCreateRequestSchema>;
+
+export const adminUserInviteSummarySchema = objectSchema({
+  id: z.string().min(1),
+  label: z.string().min(1).nullable().optional(),
+  emailHint: z.string().min(1).nullable().optional(),
+  createdAt: z.string().min(1),
+  createdBy: publicUserSchema.nullable().optional(),
+  expiresAt: z.string().min(1),
+  consumedAt: z.string().min(1).nullable().optional(),
+  consumedByUserId: z.string().min(1).nullable().optional(),
+  consumedByUsername: z.string().min(1).nullable().optional(),
+  status: z.enum(["active", "expired", "consumed"])
+});
+
+export type AdminUserInviteSummary = z.infer<typeof adminUserInviteSummarySchema>;
+
+export const adminUserInviteCreateResponseSchema = objectSchema({
+  ok: z.literal(true),
+  invite: adminUserInviteSummarySchema,
+  inviteCode: z.string().min(1),
+  registrationPath: z.string().min(1),
+  audit: adminAuditEntrySchema
+});
+
+export type AdminUserInviteCreateResponse = z.infer<typeof adminUserInviteCreateResponseSchema>;
+
+export const adminUserInvitesResponseSchema = objectSchema({
+  invites: z.array(adminUserInviteSummarySchema)
+});
+
+export type AdminUserInvitesResponse = z.infer<typeof adminUserInvitesResponseSchema>;
 
 export const adminGamesResponseSchema = objectSchema({
   games: z.array(adminGameSummarySchema),

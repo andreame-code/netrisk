@@ -268,6 +268,23 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     section === "game"
       ? "panel shared-bottom-shell game-bottom-shell"
       : "panel shared-bottom-shell";
+
+  if (section === "admin") {
+    return (
+      <div data-testid="react-shell-layout">
+        <a className="skip-link" href="#main-content">
+          {t("common.skipToContent")}
+        </a>
+        <div className="backdrop" />
+        <div className="app-frame admin-app-frame">
+          <main id="main-content" className="page-shell admin-page-shell">
+            {children}
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   const content = (
     <div className="shell-header" style={{ display: "contents" }}>
       <header className="panel top-nav-bar campaign-nav">

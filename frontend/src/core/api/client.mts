@@ -19,6 +19,9 @@ import {
   adminMaintenanceActionResponseSchema,
   adminMaintenanceReportSchema,
   adminOverviewResponseSchema,
+  adminUserInviteCreateRequestSchema,
+  adminUserInviteCreateResponseSchema,
+  adminUserInvitesResponseSchema,
   adminUserRoleUpdateRequestSchema,
   adminUserRoleUpdateResponseSchema,
   adminUsersResponseSchema,
@@ -66,6 +69,9 @@ import type {
   AdminMaintenanceActionResponse,
   AdminMaintenanceReport,
   AdminOverviewResponse,
+  AdminUserInviteCreateRequest,
+  AdminUserInviteCreateResponse,
+  AdminUserInvitesResponse,
   AdminUserRoleUpdateRequest,
   AdminUserRoleUpdateResponse,
   AdminUsersResponse,
@@ -325,6 +331,31 @@ export function updateAdminUserRole(
     requestSchemaName: "AdminUserRoleUpdateRequest",
     responseSchema: adminUserRoleUpdateResponseSchema,
     responseSchemaName: "AdminUserRoleUpdateResponse",
+    ...messages
+  });
+}
+
+export function listAdminUserInvites(messages: ClientMessages): Promise<AdminUserInvitesResponse> {
+  return requestJson({
+    path: "/api/admin/users/invites",
+    responseSchema: adminUserInvitesResponseSchema,
+    responseSchemaName: "AdminUserInvitesResponse",
+    ...messages
+  });
+}
+
+export function createAdminUserInvite(
+  request: AdminUserInviteCreateRequest,
+  messages: ClientMessages
+): Promise<AdminUserInviteCreateResponse> {
+  return requestJson({
+    path: "/api/admin/users/invites",
+    method: "POST",
+    body: request,
+    requestSchema: adminUserInviteCreateRequestSchema,
+    requestSchemaName: "AdminUserInviteCreateRequest",
+    responseSchema: adminUserInviteCreateResponseSchema,
+    responseSchemaName: "AdminUserInviteCreateResponse",
     ...messages
   });
 }
