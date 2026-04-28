@@ -1341,6 +1341,7 @@ function createApp(options: CreateAppOptions = {}) {
               moduleRuntime.findVictoryRuleSetRuntime(victoryRuleSetId),
             resolveTheme: (themeId: string) =>
               resolvedCatalog.themes.find((entry: { id: string }) => entry.id === themeId) || null,
+            resolveDefaultTheme: () => resolvedCatalog.themes[0] || null,
             resolvePieceSkin: (pieceSkinId: string) =>
               resolvedCatalog.pieceSkins.find(
                 (entry: { id: string }) => entry.id === pieceSkinId

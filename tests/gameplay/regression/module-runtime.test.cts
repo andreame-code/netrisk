@@ -954,6 +954,7 @@ register(
         assert.equal(createGameResponse.statusCode, 201);
         assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
         assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "standard");
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "command");
 
         const invalidCreateResponse = await callApp(
           app,
