@@ -962,6 +962,7 @@ register(
           "/api/games",
           {
             name: "Restricted Catalog Game",
+            themeId: "command",
             mapId: "world-classic"
           },
           authHeaders(adminSessionToken)
