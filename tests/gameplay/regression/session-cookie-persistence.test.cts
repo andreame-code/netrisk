@@ -95,8 +95,7 @@ register(
 
       const registerResponse = await callApp(app, "POST", "/api/auth/register", {
         username,
-        password,
-        email: `${username}@example.com`
+        password
       });
 
       assert.equal(registerResponse.statusCode, 201);
