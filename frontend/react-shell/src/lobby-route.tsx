@@ -14,9 +14,12 @@ import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { openShellGame } from "@react-shell/game-navigation";
+import { LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
+import { currentShellTheme } from "@react-shell/theme";
+import { themeCopy } from "@react-shell/theme-copy";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
@@ -184,6 +187,14 @@ export function LobbyRoute() {
   const activeGame = games.find((game) => game.id === activeGameId) || null;
   const actionPending = openMutation.isPending || joinMutation.isPending;
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
+  const shellTheme = currentShellTheme();
+  const lobbyHeading = themeCopy(shellTheme, "lobby.heading", "lobby.heading");
+  const lobbyCopy = themeCopy(shellTheme, "lobby.copy", "lobby.copy");
+  const openSelectedLabel =
+    shellTheme === "war-table" ? t("warTable.lobby.resumeBattle") : t("lobby.openSelected");
+  const openingSelectedLabel =
+    shellTheme === "war-table" ? t("warTable.lobby.opening") : "Opening...";
+  const selectedGameCanJoin = canJoinGame(selectedGame);
 
   useEffect(() => {
     document.title = t("lobby.title");
@@ -289,8 +300,8 @@ export function LobbyRoute() {
         <div className="session-browser-head campaign-hero">
           <div className="session-browser-heading campaign-hero-copy">
             <p className="eyebrow session-eyebrow">{t("lobby.eyebrow")}</p>
-            <h1>{t("lobby.heading")}</h1>
-            <p className="stage-copy">{t("lobby.copy")}</p>
+            <h1>{lobbyHeading}</h1>
+            <p className="stage-copy">{lobbyCopy}</p>
           </div>
         </div>
 
@@ -328,10 +339,25 @@ export function LobbyRoute() {
               disabled={!selectedGame || actionPending}
               data-testid="react-shell-lobby-open-selected"
             >
-              {openMutation.isPending ? "Opening..." : t("lobby.openSelected")}
+              {openMutation.isPending ? openingSelectedLabel : openSelectedLabel}
             </button>
           </div>
         </div>
+
+        {shellTheme === "war-table" ? (
+          <LobbyWarTablePanels
+            activeGame={activeGame}
+            canCreateGame={Boolean(authenticatedUser)}
+            canJoinSelected={selectedGameCanJoin}
+            joinDisabled={!selectedGameCanJoin || actionPending}
+            joinPending={joinMutation.isPending}
+            openDisabled={!selectedGame || actionPending}
+            openPending={openMutation.isPending}
+            selectedGame={selectedGame}
+            onJoinSelected={handleJoinSelectedGame}
+            onOpenSelected={handleOpenSelectedGame}
+          />
+        ) : null}
 
         <div className="lobby-command-strip" aria-label={t("lobby.overviewAria")}>
           <article className="lobby-command-card lobby-command-card-accent">

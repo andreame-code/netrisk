@@ -142,7 +142,8 @@ export {
   findSiteTheme,
   getSiteTheme,
   listSiteThemes,
-  midnightSiteTheme
+  midnightSiteTheme,
+  warTableSiteTheme
 } from "./site-themes.cjs";
 export type { SiteTheme, SiteThemeSummary } from "./site-themes.cjs";
 export {

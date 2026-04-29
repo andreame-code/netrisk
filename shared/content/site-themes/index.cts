@@ -2,6 +2,7 @@ import { createModuleRegistry } from "../../module-registry.cjs";
 import { commandSiteTheme } from "./command.cjs";
 import { emberSiteTheme } from "./ember.cjs";
 import { midnightSiteTheme } from "./midnight.cjs";
+import { warTableSiteTheme } from "./war-table.cjs";
 import type { SiteTheme, SiteThemeSummary } from "./types.cjs";
 
 export const DEFAULT_SITE_THEME_ID = "command";
@@ -9,7 +10,8 @@ export const DEFAULT_SITE_THEME_ID = "command";
 const siteThemeRegistry = createModuleRegistry<SiteTheme>([
   commandSiteTheme,
   midnightSiteTheme,
-  emberSiteTheme
+  emberSiteTheme,
+  warTableSiteTheme
 ]);
 
 export function findSiteTheme(themeId: string | null | undefined): Readonly<SiteTheme> | null {
@@ -28,6 +30,6 @@ export function listSiteThemes(): SiteThemeSummary[] {
   }));
 }
 
-export { commandSiteTheme, emberSiteTheme, midnightSiteTheme };
+export { commandSiteTheme, emberSiteTheme, midnightSiteTheme, warTableSiteTheme };
 
 export type { SiteTheme, SiteThemeSummary };

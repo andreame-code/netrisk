@@ -144,6 +144,11 @@ const visualThemes = Object.freeze<Record<string, Readonly<VisualTheme>>>({
     id: "ember",
     name: "Ember",
     description: "Warm signal-room palette with brighter accents."
+  }),
+  "war-table": Object.freeze({
+    id: "war-table",
+    name: "War Table",
+    description: "Dark tactical table interface with brass accents and dense command panels."
   })
 });
 

@@ -65,16 +65,16 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   await expect(page.locator("#profile-theme-select")).toHaveValue("command");
   await expect.poll(async () => page.locator("#profile-theme-select option").evaluateAll((options) =>
     options.map((option) => option.getAttribute("value")).filter(Boolean)
-  )).toEqual(["command", "midnight", "ember"]);
+  )).toEqual(["command", "midnight", "ember", "war-table"]);
 
-  await selectTheme(page, "midnight");
+  await selectTheme(page, "war-table");
 
-  await expect(page.locator("#profile-theme-status")).toContainText("Tema applicato: Mezzanotte.");
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme"))).toBe("midnight");
+  await expect(page.locator("#profile-theme-status")).toContainText("Tema applicato: Tavolo di guerra.");
+  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme"))).toBe("war-table");
 
   await page.goto("/lobby");
 
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "midnight");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "war-table");
 
   const secondContext = await browser.newContext();
   try {
@@ -89,7 +89,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
     const secondPage = await secondContext.newPage();
     await secondPage.goto("/lobby");
 
-    await expect(secondPage.locator("html")).toHaveAttribute("data-theme", "midnight");
+    await expect(secondPage.locator("html")).toHaveAttribute("data-theme", "war-table");
   } finally {
     await secondContext.close();
   }
@@ -103,7 +103,7 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
   const profileSnapshots = new Map();
   const landingSnapshots = new Map();
 
-  for (const theme of ["command", "midnight", "ember"]) {
+  for (const theme of ["command", "midnight", "ember", "war-table"]) {
     await page.goto("/profile");
     await selectTheme(page, theme);
     profileSnapshots.set(
@@ -127,9 +127,9 @@ test("themes produce distinct visuals on shell, app page and landing", async ({ 
     );
   }
 
-  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.accent)).size).toBe(3);
-  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.shellBg)).size).toBe(3);
-  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(3);
-  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.navBg)).size).toBe(3);
-  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(3);
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.accent)).size).toBe(4);
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.shellBg)).size).toBe(4);
+  expect(new Set(Array.from(profileSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(4);
+  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.navBg)).size).toBe(4);
+  expect(new Set(Array.from(landingSnapshots.values(), (snapshot) => snapshot.primaryBg)).size).toBe(4);
 });
