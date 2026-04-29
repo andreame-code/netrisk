@@ -3063,25 +3063,22 @@ body[data-app-section="admin"] {
 
 @media (max-width: 1180px) {
   .admin-shell {
-    grid-template-columns: 74px minmax(0, 1fr);
+    grid-template-columns: minmax(230px, 260px) minmax(0, 1fr);
   }
 
   .admin-sidebar {
-    padding: 0.7rem 0.55rem;
+    padding: 0.85rem;
   }
 
   .admin-sidebar .admin-brand,
-  .admin-sidebar-actions,
-  .admin-nav-group-label,
-  .admin-nav-link small,
-  .admin-nav-link span {
+  .admin-nav-link small {
     display: none;
   }
 
   .admin-nav-link {
-    justify-content: center;
-    min-height: 48px;
-    padding: 0.5rem;
+    justify-content: flex-start;
+    min-height: 40px;
+    padding: 0.56rem 0.65rem;
   }
 
   .admin-nav-link.is-active {
@@ -3098,8 +3095,7 @@ body[data-app-section="admin"] {
 
   .admin-page.is-nav-open .admin-sidebar-actions,
   .admin-page.is-nav-open .admin-nav-group-label,
-  .admin-page.is-nav-open .admin-nav-link span,
-  .admin-page.is-nav-open .admin-nav-link small {
+  .admin-page.is-nav-open .admin-nav-link span {
     display: grid;
   }
 
@@ -3215,8 +3211,7 @@ body[data-app-section="admin"] {
 
   .admin-sidebar-actions,
   .admin-nav-group-label,
-  .admin-nav-link span,
-  .admin-nav-link small {
+  .admin-nav-link span {
     display: grid;
   }
 
