@@ -212,6 +212,18 @@ function statusTone(health: string | null | undefined): "danger" | "muted" | "su
   return "muted";
 }
 
+function formatAdminPhase(phase: string | null | undefined): string {
+  if (!phase) {
+    return "Unknown";
+  }
+
+  return phase
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 function filterProfilesForSelectedModules(
   profiles: NetRiskModuleProfile[] | null | undefined,
   selectedModuleIds: string[]
@@ -1216,7 +1228,7 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
                     <th>Role</th>
                     <th>Games</th>
                     <th>Win rate</th>
-                    <th>Last seen</th>
+                    <th>Created</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -1253,7 +1265,7 @@ function UsersSection({ frameContext }: { frameContext: AdminFrameContext }) {
                         </td>
                         <td>{user.gamesPlayed}</td>
                         <td>{winRate}%</td>
-                        <td>{online ? "Now" : formatTimestamp(user.createdAt)}</td>
+                        <td>{formatTimestamp(user.createdAt)}</td>
                         <td>
                           <span className={`admin-presence ${online ? "is-online" : "is-offline"}`}>
                             {online ? "Online" : "Offline"}
@@ -1541,8 +1553,7 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
                     <div className="admin-list-copy">
                       <strong>{game.name}</strong>
                       <p>
-                        {game.phase === "active" ? "Round 6" : "Waiting for players"} ·{" "}
-                        {formatTimestamp(game.updatedAt)}
+                        {formatAdminPhase(game.phase)} · {formatTimestamp(game.updatedAt)}
                       </p>
                       <p className="admin-item-meta">
                         {game.mapName || game.mapId || "Map unset"} · {game.playerCount}/
