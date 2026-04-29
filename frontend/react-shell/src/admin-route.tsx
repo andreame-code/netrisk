@@ -760,9 +760,9 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
         <AdminMetric
           label="Open lobbies"
           value={overview.summary.lobbyGames}
-          tone={overview.summary.staleLobbies > 0 ? "success" : "muted"}
+          tone={overview.summary.staleLobbies > 0 ? "warning" : "success"}
           icon="home"
-          trend={overview.summary.staleLobbies > 0 ? "- 1 last 24h" : "All clear"}
+          trend={overview.summary.staleLobbies > 0 ? `+ ${overview.summary.staleLobbies} stale` : "All clear"}
         />
         <AdminMetric
           label="Registered users"
@@ -2452,27 +2452,37 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               <li>
                 <AdminIcon name="modules" />
                 <span>Module references</span>
-                <strong>OK</strong>
+                <strong className={summary?.orphanedModuleReferences ? "status-pill warning" : "status-pill success"}>
+                  {summary?.orphanedModuleReferences ? `${summary.orphanedModuleReferences} orphaned` : "OK"}
+                </strong>
               </li>
               <li>
                 <AdminIcon name="game" />
                 <span>Game snapshots</span>
-                <strong>OK</strong>
+                <strong className={summary?.invalidGames ? "status-pill danger" : "status-pill success"}>
+                  {summary?.invalidGames ? `${summary.invalidGames} invalid` : "OK"}
+                </strong>
               </li>
               <li>
                 <AdminIcon name="audit" />
                 <span>Audit log</span>
-                <strong>OK</strong>
+                <strong className="status-pill success">OK</strong>
               </li>
               <li>
                 <AdminIcon name="shield" />
                 <span>Stale lobbies</span>
-                <strong>{reportQuery.data.summary.staleLobbies} found</strong>
+                <strong className={summary?.staleLobbies ? "status-pill warning" : "status-pill success"}>
+                  {summary?.staleLobbies ? `${summary.staleLobbies} found` : "All clear"}
+                </strong>
               </li>
               <li>
                 <AdminIcon name="activity" />
                 <span>Server time sync</span>
-                <strong>Synced</strong>
+                <strong className={summary?.serverTimeDriftMs && Math.abs(summary.serverTimeDriftMs) > 5000 ? "status-pill warning" : "status-pill success"}>
+                  {summary?.serverTimeDriftMs && Math.abs(summary.serverTimeDriftMs) > 5000 
+                    ? `${(summary.serverTimeDriftMs / 1000).toFixed(1)}s drift` 
+                    : "Synced"}
+                </strong>
               </li>
             </ul>
           </section>
