@@ -249,7 +249,9 @@ describe("LobbyRoute War Table theme behavior", () => {
       playerSessionListener();
     });
 
-    expect(screen.queryByTestId("react-shell-lobby-row-player-active-game")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("react-shell-lobby-row-player-active-game")
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
   });
 

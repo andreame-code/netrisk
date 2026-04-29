@@ -27,8 +27,11 @@ async function loadGameState(page, sessionToken, gameId) {
   return stateResponse.json();
 }
 
-function joinSelectedBattleButton(page) {
-  return page.getByRole("button", { name: /Join Battle|Unisciti alla battaglia/i });
+function joinSelectedBattleButton(page, selectedRow) {
+  return selectedRow
+    .getByRole("button", { name: /^(Join|Entra|Join Battle|Unisciti alla battaglia)$/i })
+    .or(page.getByTestId("react-shell-lobby-join-selected"))
+    .first();
 }
 
 test("react lobby keeps guest access inline with the shared auth copy", async ({ page }) => {
@@ -171,8 +174,8 @@ test("react lobby can join an available game and navigate to the React gameplay 
   await targetRow.click();
 
   await expect(page.getByTestId("react-shell-lobby-details")).toContainText(gameName);
-  await expect(joinSelectedBattleButton(page)).toBeVisible();
-  await joinSelectedBattleButton(page).click();
+  await expect(joinSelectedBattleButton(page, targetRow)).toBeVisible();
+  await joinSelectedBattleButton(page, targetRow).click();
 
   await expect
     .poll(() => page.url(), { timeout: 15000 })
@@ -228,7 +231,7 @@ test("react lobby shows controlled feedback when join fails", async ({ page }) =
   });
   await expect(targetRow).toBeVisible();
   await targetRow.click();
-  await joinSelectedBattleButton(page).click();
+  await joinSelectedBattleButton(page, targetRow).click();
 
   await expect(page).toHaveURL(/\/react\/lobby$/);
   await expect(page.getByTestId("react-shell-lobby-action-error")).toBeVisible();

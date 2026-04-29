@@ -363,7 +363,7 @@ export function LobbyRoute() {
     );
   }, [activeGameId, displayGames, games, isWarTableTheme]);
 
-  const canLoadMoreGames = visibleGameCount < displayGames.length;
+  const canLoadMoreGames = !isWarTableTheme && visibleGameCount < displayGames.length;
   const visibleGames = displayGames.slice(0, visibleGameCount);
   const selectedGame =
     (isWarTableTheme ? displayGames : games).find((game) => game.id === selectedGameId) || null;
@@ -458,7 +458,7 @@ export function LobbyRoute() {
     await handleJoinGame(selectedGame);
   }
 
-  const renderedGames = visibleGames;
+  const renderedGames = isWarTableTheme ? displayGames : visibleGames;
   const hasGames = renderedGames.length > 0;
   const listStateMessage = lobbyQuery.isLoading
     ? t("lobby.loading")
@@ -531,12 +531,12 @@ export function LobbyRoute() {
             {isWarTableTheme ? (
               <div id="lobby-focus-note" className="war-table-campaign-meta">
                 {activeGame?.phase === "active" ? (
-                    <span className="war-table-turn-state">
-                      <span aria-hidden="true" />
-                      {isWarTableMyTurn
-                        ? t("warTable.lobby.yourTurn")
-                        : t("warTable.lobby.theirTurn", {}, { fallback: "Waiting for opponent" })}
-                    </span>
+                  <span className="war-table-turn-state">
+                    <span aria-hidden="true" />
+                    {isWarTableMyTurn
+                      ? t("warTable.lobby.yourTurn")
+                      : t("warTable.lobby.theirTurn", {}, { fallback: "Waiting for opponent" })}
+                  </span>
                 ) : null}
                 {campaignProgress.roundLabel ? <span>{campaignProgress.roundLabel}</span> : null}
                 {campaignProgress.timeLeftLabel ? (
@@ -927,7 +927,11 @@ export function LobbyRoute() {
                         disabled={actionPending}
                         data-testid="react-shell-lobby-join-selected"
                       >
-                        {joinMutation.isPending ? "Joining..." : t("lobby.details.joinOpen")}
+                        {joinMutation.isPending
+                          ? "Joining..."
+                          : isWarTableTheme
+                            ? t("warTable.lobby.joinBattle")
+                            : t("lobby.details.joinOpen")}
                       </button>
                     ) : null}
                   </div>
