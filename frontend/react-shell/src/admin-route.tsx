@@ -2401,6 +2401,10 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
 
   const issues = reportQuery.data?.issues || [];
   const summary = reportQuery.data?.summary;
+  const auditIssue = issues.find((issue) => issue.code.includes("audit"));
+  const serverTimeIssue = issues.find(
+    (issue) => issue.code.includes("server-time") || issue.code.includes("clock")
+  );
 
   return (
     <SectionFrame
@@ -2412,7 +2416,9 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
         <>
           <span className="chip">{summary?.totalGames || 0} games checked</span>
           <span className="chip">{issues.length} findings</span>
-          <span className="chip">Server time synced</span>
+          <span className="chip">
+            {serverTimeIssue ? "Server time issue" : "Server time not reported"}
+          </span>
         </>
       }
       actions={
@@ -2466,7 +2472,13 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               <li>
                 <AdminIcon name="audit" />
                 <span>Audit log</span>
-                <strong className="status-pill success">OK</strong>
+                <strong
+                  className={`status-pill ${
+                    auditIssue ? statusTone(auditIssue.severity) : "muted"
+                  }`}
+                >
+                  {auditIssue ? auditIssue.severity || "info" : "Not reported"}
+                </strong>
               </li>
               <li>
                 <AdminIcon name="shield" />
@@ -2478,10 +2490,12 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               <li>
                 <AdminIcon name="activity" />
                 <span>Server time sync</span>
-                <strong className={summary?.serverTimeDriftMs && Math.abs(summary.serverTimeDriftMs) > 5000 ? "status-pill warning" : "status-pill success"}>
-                  {summary?.serverTimeDriftMs && Math.abs(summary.serverTimeDriftMs) > 5000 
-                    ? `${(summary.serverTimeDriftMs / 1000).toFixed(1)}s drift` 
-                    : "Synced"}
+                <strong
+                  className={`status-pill ${
+                    serverTimeIssue ? statusTone(serverTimeIssue.severity) : "muted"
+                  }`}
+                >
+                  {serverTimeIssue ? serverTimeIssue.severity || "info" : "Not reported"}
                 </strong>
               </li>
             </ul>
