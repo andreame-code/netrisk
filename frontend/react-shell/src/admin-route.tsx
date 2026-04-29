@@ -955,16 +955,16 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
             columns={2}
             items={[
               {
-                label: "Server status",
-                value: "Online"
+                label: "Health findings",
+                value: `${priorityIssues.length} active`
               },
               {
-                label: "Server version",
-                value: "v1.3.0"
+                label: "Invalid games",
+                value: overview.summary.invalidGames
               },
               {
-                label: "Database status",
-                value: "Healthy"
+                label: "Stale lobbies",
+                value: overview.summary.staleLobbies
               },
               {
                 label: "Environment",
@@ -2954,8 +2954,8 @@ export function AdminRoute() {
                 Clear Audit Log
               </Link>
               <Link className="admin-sidebar-action" to={buildLobbyPath(namespace)}>
-                <AdminIcon name="refresh" />
-                Shutdown Server
+                <AdminIcon name="home" />
+                Open Lobby
               </Link>
             </section>
           </aside>
