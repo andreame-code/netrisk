@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -15,7 +15,11 @@ import { setLocale } from "@frontend-i18n";
 
 import { openShellGame } from "@react-shell/game-navigation";
 import { LobbyRoute } from "@react-shell/lobby-route";
-import { storeCurrentPlayerId } from "@react-shell/player-session";
+import {
+  readCurrentPlayerId,
+  storeCurrentPlayerId,
+  subscribeCurrentPlayerIdChanges
+} from "@react-shell/player-session";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,7 +51,9 @@ vi.mock("@react-shell/game-navigation", () => ({
 }));
 
 vi.mock("@react-shell/player-session", () => ({
-  storeCurrentPlayerId: vi.fn()
+  readCurrentPlayerId: vi.fn(),
+  storeCurrentPlayerId: vi.fn(),
+  subscribeCurrentPlayerIdChanges: vi.fn()
 }));
 
 const getGameOptionsMock = vi.mocked(getGameOptions);
@@ -55,7 +61,9 @@ const joinGameMock = vi.mocked(joinGame);
 const listGamesMock = vi.mocked(listGames);
 const openGameMock = vi.mocked(openGame);
 const openShellGameMock = vi.mocked(openShellGame);
+const readCurrentPlayerIdMock = vi.mocked(readCurrentPlayerId);
 const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
+const subscribeCurrentPlayerIdChangesMock = vi.mocked(subscribeCurrentPlayerIdChanges);
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -79,10 +87,13 @@ function createGameSummary(overrides: Partial<GameSummary> = {}): GameSummary {
   };
 }
 
-function createLobbyGames(games: GameSummary[] = []): GameListResponse {
+function createLobbyGames(
+  games: GameSummary[] = [],
+  activeGameId: string | null = null
+): GameListResponse {
   return {
     games,
-    activeGameId: null
+    activeGameId
   };
 }
 
@@ -150,7 +161,10 @@ beforeEach(() => {
   listGamesMock.mockReset();
   openGameMock.mockReset();
   openShellGameMock.mockClear();
+  readCurrentPlayerIdMock.mockReset();
   storeCurrentPlayerIdMock.mockClear();
+  subscribeCurrentPlayerIdChangesMock.mockReset();
+  subscribeCurrentPlayerIdChangesMock.mockReturnValue(() => undefined);
 });
 
 describe("LobbyRoute War Table theme behavior", () => {
@@ -180,12 +194,84 @@ describe("LobbyRoute War Table theme behavior", () => {
       expect(getGameOptionsMock).toHaveBeenCalledTimes(1);
     });
 
-    await user.click(await screen.findByRole("button", { name: "Join Battle" }));
+    const joinableRow = await screen.findByTestId("react-shell-lobby-row-joinable-game");
+    await user.click(within(joinableRow).getByRole("button", { name: "Join" }));
 
     await waitFor(() => {
       expect(joinGameMock).toHaveBeenCalledWith("joinable-game", expect.any(Object));
     });
     expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-2", "joinable-game");
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
+  });
+
+  it("keeps the War Table My Turn tab scoped to the current turn owner", async () => {
+    let playerSessionListener: () => void = () => undefined;
+    subscribeCurrentPlayerIdChangesMock.mockImplementation((listener) => {
+      playerSessionListener = listener;
+      return () => undefined;
+    });
+    readCurrentPlayerIdMock.mockReturnValue("player-1");
+    listGamesMock.mockResolvedValue(
+      createLobbyGames(
+        [
+          createGameSummary({
+            id: "player-active-game",
+            name: "Player Active Game",
+            phase: "active",
+            currentPlayerId: "player-1"
+          }),
+          createGameSummary({
+            id: "other-active-game",
+            name: "Other Active Game",
+            phase: "active",
+            currentPlayerId: "player-2"
+          })
+        ],
+        "other-active-game"
+      )
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    const { user } = renderLobbyRoute("war-table");
+
+    expect(
+      await screen.findByTestId("react-shell-lobby-row-player-active-game")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "My Turn" }));
+
+    expect(screen.getByTestId("react-shell-lobby-row-player-active-game")).toBeInTheDocument();
+    expect(screen.queryByTestId("react-shell-lobby-row-other-active-game")).not.toBeInTheDocument();
+
+    readCurrentPlayerIdMock.mockReturnValue("player-2");
+    act(() => {
+      playerSessionListener();
+    });
+
+    expect(screen.queryByTestId("react-shell-lobby-row-player-active-game")).not.toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
+  });
+
+  it("renders the opponent turn label with localized War Table copy", async () => {
+    readCurrentPlayerIdMock.mockReturnValue("player-2");
+    listGamesMock.mockResolvedValue(
+      createLobbyGames(
+        [
+          createGameSummary({
+            id: "player-active-game",
+            name: "Player Active Game",
+            phase: "active",
+            currentPlayerId: "player-1"
+          })
+        ],
+        "player-active-game"
+      )
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("war-table");
+
+    expect(await screen.findByText("Waiting for opponent")).toBeInTheDocument();
   });
 });
