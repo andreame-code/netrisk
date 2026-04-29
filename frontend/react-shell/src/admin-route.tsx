@@ -762,7 +762,11 @@ function OverviewSection({ frameContext }: { frameContext: AdminFrameContext }) 
           value={overview.summary.lobbyGames}
           tone={overview.summary.staleLobbies > 0 ? "warning" : "success"}
           icon="home"
-          trend={overview.summary.staleLobbies > 0 ? `+ ${overview.summary.staleLobbies} stale` : "All clear"}
+          trend={
+            overview.summary.staleLobbies > 0
+              ? `+ ${overview.summary.staleLobbies} stale`
+              : "All clear"
+          }
         />
         <AdminMetric
           label="Registered users"
@@ -2458,14 +2462,24 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               <li>
                 <AdminIcon name="modules" />
                 <span>Module references</span>
-                <strong className={summary?.orphanedModuleReferences ? "status-pill warning" : "status-pill success"}>
-                  {summary?.orphanedModuleReferences ? `${summary.orphanedModuleReferences} orphaned` : "OK"}
+                <strong
+                  className={
+                    summary?.orphanedModuleReferences
+                      ? "status-pill warning"
+                      : "status-pill success"
+                  }
+                >
+                  {summary?.orphanedModuleReferences
+                    ? `${summary.orphanedModuleReferences} orphaned`
+                    : "OK"}
                 </strong>
               </li>
               <li>
                 <AdminIcon name="game" />
                 <span>Game snapshots</span>
-                <strong className={summary?.invalidGames ? "status-pill danger" : "status-pill success"}>
+                <strong
+                  className={summary?.invalidGames ? "status-pill danger" : "status-pill success"}
+                >
                   {summary?.invalidGames ? `${summary.invalidGames} invalid` : "OK"}
                 </strong>
               </li>
@@ -2483,7 +2497,9 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               <li>
                 <AdminIcon name="shield" />
                 <span>Stale lobbies</span>
-                <strong className={summary?.staleLobbies ? "status-pill warning" : "status-pill success"}>
+                <strong
+                  className={summary?.staleLobbies ? "status-pill warning" : "status-pill success"}
+                >
                   {summary?.staleLobbies ? `${summary.staleLobbies} found` : "All clear"}
                 </strong>
               </li>
