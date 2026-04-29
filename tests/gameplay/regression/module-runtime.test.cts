@@ -956,13 +956,26 @@ register(
         assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
         assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "standard");
 
+        const defaultThemeCreateResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Catalog Default Theme",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(defaultThemeCreateResponse.statusCode, 201);
+        assert.equal(defaultThemeCreateResponse.payload.state.gameConfig.themeId, "command");
+
         const invalidCreateResponse = await callApp(
           app,
           "POST",
           "/api/games",
           {
             name: "Restricted Catalog Game",
-            themeId: "command",
             mapId: "world-classic"
           },
           authHeaders(adminSessionToken)
