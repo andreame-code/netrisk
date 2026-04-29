@@ -946,6 +946,7 @@ register(
             name: "Restricted Catalog Override",
             ruleSetId: "classic-defense-3",
             diceRuleSetId: "standard",
+            themeId: "command",
             totalPlayers: 2,
             players: [{ type: "human" }, { type: "human" }]
           },

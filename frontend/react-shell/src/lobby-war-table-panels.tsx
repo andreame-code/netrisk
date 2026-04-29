@@ -310,6 +310,7 @@ export function LobbyWarTablePanels({
             className="ghost-button war-table-open-active"
             disabled={joinDisabled}
             onClick={() => void onJoinSelected()}
+            data-testid="react-shell-lobby-war-table-action"
           >
             {joinPending ? t("warTable.lobby.opening") : t("warTable.lobby.joinBattle")}
           </button>
@@ -319,6 +320,7 @@ export function LobbyWarTablePanels({
             className="ghost-button war-table-open-active"
             disabled={openDisabled}
             onClick={() => void onOpenSelected()}
+            data-testid="react-shell-lobby-war-table-action"
           >
             {openPending
               ? t("warTable.lobby.opening")
