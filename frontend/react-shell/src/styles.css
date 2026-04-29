@@ -3088,6 +3088,27 @@ body[data-app-section="admin"] {
     box-shadow: inset 3px 0 0 var(--admin-gold);
   }
 
+  .admin-page.is-nav-open .admin-shell {
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  }
+
+  .admin-page.is-nav-open .admin-sidebar {
+    padding: 1rem;
+  }
+
+  .admin-page.is-nav-open .admin-sidebar-actions,
+  .admin-page.is-nav-open .admin-nav-group-label,
+  .admin-page.is-nav-open .admin-nav-link span,
+  .admin-page.is-nav-open .admin-nav-link small {
+    display: grid;
+  }
+
+  .admin-page.is-nav-open .admin-nav-link {
+    justify-content: flex-start;
+    min-height: 37px;
+    padding: 0.6rem 0.7rem;
+  }
+
   .admin-overview-kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
