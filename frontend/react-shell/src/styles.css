@@ -3349,7 +3349,7 @@ body[data-app-section="admin"] {
   }
 
   .admin-users-table td:nth-child(5)::before {
-    content: "Last seen ";
+    content: "Created ";
     color: var(--admin-muted);
   }
 

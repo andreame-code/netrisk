@@ -2416,24 +2416,18 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
 
   const issues = reportQuery.data?.issues || [];
   const summary = reportQuery.data?.summary;
-  const auditIssue = issues.find((issue) => issue.code.includes("audit"));
-  const serverTimeIssue = issues.find(
-    (issue) => issue.code.includes("server-time") || issue.code.includes("clock")
-  );
 
   return (
     <SectionFrame
       eyebrow=""
       title="System Health"
-      copy="Monitor module references, game snapshots, audit storage, stale lobbies, and server sync."
+      copy="Monitor module references, game snapshots, stale lobbies, and maintenance findings."
       frameContext={frameContext}
       status={
         <>
           <span className="chip">{summary?.totalGames || 0} games checked</span>
           <span className="chip">{issues.length} findings</span>
-          <span className="chip">
-            {serverTimeIssue ? "Server time issue" : "Server time not reported"}
-          </span>
+          <span className="chip">{summary?.staleLobbies || 0} stale lobbies</span>
         </>
       }
       actions={
@@ -2495,17 +2489,6 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
                 </strong>
               </li>
               <li>
-                <AdminIcon name="audit" />
-                <span>Audit log</span>
-                <strong
-                  className={`status-pill ${
-                    auditIssue ? statusTone(auditIssue.severity) : "muted"
-                  }`}
-                >
-                  {auditIssue ? auditIssue.severity || "info" : "Not reported"}
-                </strong>
-              </li>
-              <li>
                 <AdminIcon name="shield" />
                 <span>Stale lobbies</span>
                 <strong
@@ -2516,13 +2499,9 @@ function SystemHealthSection({ frameContext }: { frameContext: AdminFrameContext
               </li>
               <li>
                 <AdminIcon name="activity" />
-                <span>Server time sync</span>
-                <strong
-                  className={`status-pill ${
-                    serverTimeIssue ? statusTone(serverTimeIssue.severity) : "muted"
-                  }`}
-                >
-                  {serverTimeIssue ? serverTimeIssue.severity || "info" : "Not reported"}
+                <span>Health findings</span>
+                <strong className={issues.length ? "status-pill warning" : "status-pill success"}>
+                  {issues.length ? `${issues.length} found` : "All clear"}
                 </strong>
               </li>
             </ul>
