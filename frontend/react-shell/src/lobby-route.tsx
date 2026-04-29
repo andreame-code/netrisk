@@ -479,6 +479,10 @@ export function LobbyRoute() {
   const warTableCampaignName =
     activeGame?.name || selectedGame?.name || t("warTable.lobby.defaultCampaignName");
   const campaignProgress = warTableCampaignProgress(activeGame || selectedGame);
+  const isWarTableMyTurn =
+    activeGame?.phase === "active" && activeGame.currentPlayerId
+      ? readCurrentPlayerId(activeGame.id) === activeGame.currentPlayerId
+      : false;
   const loadMoreMessage = !games.length
     ? ""
     : canLoadMoreGames
@@ -526,10 +530,14 @@ export function LobbyRoute() {
             </strong>
             {isWarTableTheme ? (
               <div id="lobby-focus-note" className="war-table-campaign-meta">
-                <span className="war-table-turn-state">
-                  <span aria-hidden="true" />
-                  {t("warTable.lobby.yourTurn")}
-                </span>
+                {activeGame?.phase === "active" ? (
+                  <span className="war-table-turn-state">
+                    <span aria-hidden="true" />
+                    {isWarTableMyTurn
+                      ? t("warTable.lobby.yourTurn")
+                      : (t("warTable.lobby.theirTurn") || "Waiting for opponent")}
+                  </span>
+                ) : null}
                 {campaignProgress.roundLabel ? <span>{campaignProgress.roundLabel}</span> : null}
                 {campaignProgress.timeLeftLabel ? (
                   <span>

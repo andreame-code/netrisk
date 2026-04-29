@@ -66,6 +66,33 @@ export function storeCurrentPlayerId(
       return;
     }
 
+    // When playerId is null/undefined, remove only the specific game mapping if gameId is provided,
+    // otherwise clear everything. Do not clear all stored mappings when one game is opened as spectator.
+    if (gameId) {
+      const storedSession = readStoredPlayerSession();
+      if (storedSession) {
+        const games = readPlayerSessionGames(storedSession.games);
+        delete games[gameId];
+
+        const remainingGameIds = Object.keys(games);
+        if (remainingGameIds.length > 0) {
+          // Keep other game mappings but clear current gameId/playerId
+          window.localStorage.setItem(
+            PLAYER_ID_STORAGE_KEY,
+            JSON.stringify({
+              gameId: "",
+              playerId: "",
+              games
+            } satisfies StoredPlayerSessionWithGames)
+          );
+        } else {
+          window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
+        }
+        notifyCurrentPlayerIdChanged();
+      }
+      return;
+    }
+
     window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
     notifyCurrentPlayerIdChanged();
   } catch {
@@ -87,9 +114,12 @@ export function readCurrentPlayerId(gameId?: string | null): string | null {
       }
     }
 
+    // Ignore empty strings from partial cleanup cases.
     if (
       typeof parsedValue.playerId !== "string" ||
-      typeof parsedValue.gameId !== "string"
+      !parsedValue.playerId ||
+      typeof parsedValue.gameId !== "string" ||
+      !parsedValue.gameId
     ) {
       return null;
     }
