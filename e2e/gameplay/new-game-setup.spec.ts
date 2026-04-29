@@ -28,6 +28,7 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(page.locator("#setup-victory-ruleset")).toContainText("Majority Control");
   await expect(page.locator("#setup-theme")).toContainText("Midnight");
   await expect(page.locator("#setup-theme")).toContainText("Ember");
+  await expect(page.locator("#setup-theme")).toContainText("War Table");
   await expect(page.locator("#setup-piece-skin")).toContainText("Command Ring");
   await expect(page.locator("#setup-map")).toBeEnabled();
   await page.locator("#setup-victory-ruleset").selectOption("majority-control");

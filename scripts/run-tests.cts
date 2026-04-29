@@ -4467,7 +4467,7 @@ register("publicState espone modelli condivisi e stato corrente", () => {
   assert.equal(snapshot.gameConfig?.mapId, "classic-mini");
   assert.equal(snapshot.gameConfig?.diceRuleSetId, "standard");
   assert.equal(snapshot.gameConfig?.victoryRuleSetId, "conquest");
-  assert.equal(snapshot.gameConfig?.themeId, "command");
+  assert.equal(snapshot.gameConfig?.themeId, "war-table");
   assert.equal(snapshot.gameConfig?.pieceSkinId, "classic-color");
 });
 

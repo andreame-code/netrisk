@@ -5,7 +5,8 @@ export {
   findSiteTheme,
   getSiteTheme,
   listSiteThemes,
-  midnightSiteTheme
+  midnightSiteTheme,
+  warTableSiteTheme
 } from "./content/site-themes/index.cjs";
 
 export type { SiteTheme, SiteThemeSummary } from "./content/site-themes/index.cjs";

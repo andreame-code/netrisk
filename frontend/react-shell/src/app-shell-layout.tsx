@@ -26,6 +26,7 @@ import {
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
+import { WarTableAvatar, WarTableIcon } from "@react-shell/war-table-icons";
 
 type AppSection = "admin" | "game" | "lobby" | "login" | "profile" | "register";
 type ModuleOptionsQueryResult = {
@@ -140,6 +141,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const moduleOptionsQuery = useQuery({
     queryKey: ["shell", "module-options"],
@@ -206,13 +208,14 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const gameHref = currentGameId
     ? buildGamePath(currentGameId, namespace)
     : buildGameIndexPath(namespace);
+  const currentLocale = getLocale();
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";
+  const localeCode = currentLocale.toUpperCase();
   const topNavSlots = (resolvedUiSlots(moduleOptions) as NetRiskUiSlotContribution[])
     .filter((slot) => slot.slotId === "top-nav-bar")
     .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
   const visibleTopNavSlots = isAuthenticated ? topNavSlots : [];
-  const currentLocale = getLocale();
 
   async function handleHeaderLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -328,6 +331,9 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="top-nav-zone top-nav-actions">
+          <span className="war-nav-locale-icon" aria-hidden="true">
+            <WarTableIcon name="globe" />
+          </span>
           <label className="top-nav-locale">
             <span className="shell-locale-label visually-hidden">{t("nav.localeLabel")}</span>
             <select
@@ -343,6 +349,17 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
               ))}
             </select>
           </label>
+          <span className="war-nav-locale-code" aria-hidden="true">
+            {localeCode}
+          </span>
+          <button
+            type="button"
+            className="war-nav-icon-button war-nav-notifications"
+            aria-label="Notifications"
+            hidden={!isAuthenticated}
+          >
+            <WarTableIcon name="bell" />
+          </button>
           <form
             id="header-login-form"
             className="top-nav-auth-form"
@@ -418,6 +435,35 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           >
             {t("auth.logout")}
           </button>
+          <button
+            type="button"
+            className="war-nav-user"
+            aria-expanded={isUserMenuOpen}
+            aria-haspopup="menu"
+            hidden={!isAuthenticated}
+            onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+          >
+            <WarTableAvatar label={avatarLabel} />
+            <span className="war-nav-user-name">{avatarLabel}</span>
+            <WarTableIcon name="chevronDown" />
+          </button>
+          {isAuthenticated ? (
+            <div className={`war-nav-user-menu${isUserMenuOpen ? " is-open" : ""}`} role="menu">
+              <Link role="menuitem" to={profileHref} onClick={() => setIsUserMenuOpen(false)}>
+                {t("nav.profile")}
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  void handleLogout();
+                }}
+              >
+                {t("auth.logout")}
+              </button>
+            </div>
+          ) : null}
           <div className="nav-avatar" id="nav-avatar" aria-label={t("auth.userProfile")}>
             {avatar}
           </div>

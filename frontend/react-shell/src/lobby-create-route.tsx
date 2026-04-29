@@ -24,6 +24,7 @@ import {
 import { t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { filterConfigurableGameModules } from "@react-shell/game-setup-options";
 import { openShellGame } from "@react-shell/game-navigation";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildLobbyPath } from "@react-shell/public-auth-paths";
@@ -429,8 +430,7 @@ export function LobbyCreateRoute() {
 
   const options = gameOptionsQuery.data;
   const gamePresets = resolvedGamePresets(options);
-  const availableModules =
-    resolvedGameModules(options).filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
+  const availableModules = filterConfigurableGameModules(resolvedGameModules(options));
   const contentProfiles = filterProfilesForSelectedModules(
     resolvedContentProfiles(options),
     formState?.selectedModuleIds || []
