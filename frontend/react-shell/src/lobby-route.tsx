@@ -531,12 +531,12 @@ export function LobbyRoute() {
             {isWarTableTheme ? (
               <div id="lobby-focus-note" className="war-table-campaign-meta">
                 {activeGame?.phase === "active" ? (
-                  <span className="war-table-turn-state">
-                    <span aria-hidden="true" />
-                    {isWarTableMyTurn
-                      ? t("warTable.lobby.yourTurn")
-                      : (t("warTable.lobby.theirTurn") || "Waiting for opponent")}
-                  </span>
+                    <span className="war-table-turn-state">
+                      <span aria-hidden="true" />
+                      {isWarTableMyTurn
+                        ? t("warTable.lobby.yourTurn")
+                        : t("warTable.lobby.theirTurn", {}, { fallback: "Waiting for opponent" })}
+                    </span>
                 ) : null}
                 {campaignProgress.roundLabel ? <span>{campaignProgress.roundLabel}</span> : null}
                 {campaignProgress.timeLeftLabel ? (

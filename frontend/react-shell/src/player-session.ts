@@ -8,6 +8,50 @@ type StoredPlayerSessionWithGames = StoredPlayerSession & {
   games?: Record<string, string>;
 };
 
+function readStoredPlayerSessionMap(
+  storedSession: Partial<StoredPlayerSessionWithGames> | null
+): Record<string, string> {
+  const games = readPlayerSessionGames(storedSession?.games);
+  if (
+    storedSession &&
+    typeof storedSession.gameId === "string" &&
+    storedSession.gameId &&
+    typeof storedSession.playerId === "string" &&
+    storedSession.playerId
+  ) {
+    games[storedSession.gameId] = storedSession.playerId;
+  }
+
+  return games;
+}
+
+function persistStoredPlayerSessionMap(
+  games: Record<string, string>,
+  preferredGameId?: string | null
+): void {
+  const gameIds = Object.keys(games);
+  if (!gameIds.length) {
+    window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
+    return;
+  }
+
+  const primaryGameId =
+    preferredGameId && games[preferredGameId] ? preferredGameId : gameIds[0] || null;
+  if (!primaryGameId) {
+    window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(
+    PLAYER_ID_STORAGE_KEY,
+    JSON.stringify({
+      gameId: primaryGameId,
+      playerId: games[primaryGameId],
+      games
+    } satisfies StoredPlayerSessionWithGames)
+  );
+}
+
 function readStoredPlayerSession(): Partial<StoredPlayerSessionWithGames> | null {
   try {
     const rawValue = window.localStorage.getItem(PLAYER_ID_STORAGE_KEY);
@@ -50,18 +94,12 @@ export function storeCurrentPlayerId(
   gameId?: string | null
 ): void {
   try {
-    if (playerId && gameId) {
-      const games = readPlayerSessionGames(readStoredPlayerSession()?.games);
-      games[gameId] = playerId;
+    const storedSession = readStoredPlayerSession();
 
-      window.localStorage.setItem(
-        PLAYER_ID_STORAGE_KEY,
-        JSON.stringify({
-          gameId,
-          playerId,
-          games
-        } satisfies StoredPlayerSessionWithGames)
-      );
+    if (playerId && gameId) {
+      const games = readStoredPlayerSessionMap(storedSession);
+      games[gameId] = playerId;
+      persistStoredPlayerSessionMap(games, gameId);
       notifyCurrentPlayerIdChanged();
       return;
     }
@@ -69,25 +107,10 @@ export function storeCurrentPlayerId(
     // When playerId is null/undefined, remove only the specific game mapping if gameId is provided,
     // otherwise clear everything. Do not clear all stored mappings when one game is opened as spectator.
     if (gameId) {
-      const storedSession = readStoredPlayerSession();
       if (storedSession) {
-        const games = readPlayerSessionGames(storedSession.games);
+        const games = readStoredPlayerSessionMap(storedSession);
         delete games[gameId];
-
-        const remainingGameIds = Object.keys(games);
-        if (remainingGameIds.length > 0) {
-          // Keep other game mappings but clear current gameId/playerId
-          window.localStorage.setItem(
-            PLAYER_ID_STORAGE_KEY,
-            JSON.stringify({
-              gameId: "",
-              playerId: "",
-              games
-            } satisfies StoredPlayerSessionWithGames)
-          );
-        } else {
-          window.localStorage.removeItem(PLAYER_ID_STORAGE_KEY);
-        }
+        persistStoredPlayerSessionMap(games, storedSession.gameId || null);
         notifyCurrentPlayerIdChanged();
       }
       return;

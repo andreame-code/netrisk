@@ -223,6 +223,7 @@ export const en = Object.freeze({
   "warTable.lobby.defaultCampaignName": "European Conquest",
   "warTable.lobby.continueCampaign": "Continue Campaign",
   "warTable.lobby.yourTurn": "Your Turn",
+  "warTable.lobby.theirTurn": "Waiting for opponent",
   "warTable.lobby.roundLabel": "Round {round}",
   "warTable.lobby.timeLeft": "17h 42m left",
   "warTable.lobby.timeLeftHoursMinutes": "{hours}h {minutes}m left",

@@ -252,4 +252,26 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(screen.queryByTestId("react-shell-lobby-row-player-active-game")).not.toBeInTheDocument();
     expect(screen.getByTestId("react-shell-lobby-row-other-active-game")).toBeInTheDocument();
   });
+
+  it("renders the opponent turn label with localized War Table copy", async () => {
+    readCurrentPlayerIdMock.mockReturnValue("player-2");
+    listGamesMock.mockResolvedValue(
+      createLobbyGames(
+        [
+          createGameSummary({
+            id: "player-active-game",
+            name: "Player Active Game",
+            phase: "active",
+            currentPlayerId: "player-1"
+          })
+        ],
+        "player-active-game"
+      )
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("war-table");
+
+    expect(await screen.findByText("Waiting for opponent")).toBeInTheDocument();
+  });
 });

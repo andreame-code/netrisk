@@ -36,4 +36,14 @@ describe("player-session", () => {
 
     expect(listener).toHaveBeenCalledTimes(2);
   });
+
+  it("removes only the requested game mapping when playerId is missing", () => {
+    storeCurrentPlayerId("player-1", "game-1");
+    storeCurrentPlayerId("player-2", "game-2");
+
+    storeCurrentPlayerId(null, "game-1");
+
+    expect(readCurrentPlayerId("game-1")).toBeNull();
+    expect(readCurrentPlayerId("game-2")).toBe("player-2");
+  });
 });
