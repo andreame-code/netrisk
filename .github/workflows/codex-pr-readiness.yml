@@ -67,7 +67,7 @@ jobs:
 
     steps:
       - name: Wait for older watchdog runs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -109,7 +109,7 @@ jobs:
             }
 
       - name: Evaluate PR readiness and trigger Codex when needed
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           # Use the workflow GITHUB_TOKEN here so the readiness mutation can
           # mark draft PRs ready for review without PAT permission mismatches.
