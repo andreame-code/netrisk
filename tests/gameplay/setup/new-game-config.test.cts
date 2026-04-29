@@ -103,7 +103,7 @@ register("validateNewGameConfig derives modular defaults from the selected exten
   assert.equal(config.ruleSetId, "classic-defense-3");
   assert.equal(config.diceRuleSetId, "defense-3");
   assert.equal(config.victoryRuleSetId, "conquest");
-  assert.equal(config.themeId, "command");
+  assert.equal(config.themeId, "war-table");
   assert.equal(config.pieceSkinId, "classic-color");
   assert.equal(config.extensionSchemaVersion, 1);
 });
@@ -135,7 +135,7 @@ register(
     assert.equal(config.mapId, "classic-mini");
     assert.equal(config.diceRuleSetId, "defense-3");
     assert.equal(config.victoryRuleSetId, "conquest");
-    assert.equal(config.themeId, "command");
+    assert.equal(config.themeId, "war-table");
     assert.equal(config.pieceSkinId, "classic-color");
   }
 );

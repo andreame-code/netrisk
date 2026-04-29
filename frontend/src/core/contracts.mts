@@ -10,7 +10,7 @@ export const registeredThemes = Object.freeze<readonly ThemeDefinition[]>([
   Object.freeze({ id: "war-table", labelKey: "profile.preferences.theme.warTable" })
 ]);
 
-export const DEFAULT_THEME = "command";
+export const DEFAULT_THEME = "war-table";
 export const SUPPORTED_THEMES = registeredThemes.map((theme) => theme.id);
 
 export type ThemeName = string;
