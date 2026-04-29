@@ -28,6 +28,7 @@ import { formatDate } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { AdminContentStudioSection } from "@react-shell/admin-content-studio";
+import { filterConfigurableGameModules } from "@react-shell/game-setup-options";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import {
   buildAdminPath,
@@ -1472,8 +1473,7 @@ function ConfigSection({ frameContext }: { frameContext: AdminFrameContext }) {
   });
 
   const gameOptions = optionsQuery.data;
-  const availableModules =
-    gameOptions?.modules?.filter((moduleEntry) => moduleEntry.id !== "core.base") || [];
+  const availableModules = filterConfigurableGameModules(gameOptions?.modules);
   const availableContentProfiles = filterProfilesForSelectedModules(
     gameOptions?.contentProfiles,
     formState?.activeModuleIds || []

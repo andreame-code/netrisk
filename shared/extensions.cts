@@ -18,7 +18,7 @@ export const EXTENSION_SCHEMA_VERSION = 1;
 export const DEFAULT_EXTENSION_PACK_ID = "classic";
 export const DEFAULT_VICTORY_RULE_SET_ID = "conquest";
 export const MAJORITY_CONTROL_VICTORY_RULE_SET_ID = "majority-control";
-export const DEFAULT_THEME_ID = "command";
+export const DEFAULT_THEME_ID = "war-table";
 export const DEFAULT_PIECE_SKIN_ID = "classic-color";
 
 export interface MapDefinition {
@@ -144,6 +144,11 @@ const visualThemes = Object.freeze<Record<string, Readonly<VisualTheme>>>({
     id: "ember",
     name: "Ember",
     description: "Warm signal-room palette with brighter accents."
+  }),
+  "war-table": Object.freeze({
+    id: "war-table",
+    name: "War Table",
+    description: "Dark tactical table interface with brass accents and dense command panels."
   })
 });
 

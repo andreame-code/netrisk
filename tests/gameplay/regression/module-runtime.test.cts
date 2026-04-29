@@ -946,6 +946,7 @@ register(
             name: "Restricted Catalog Override",
             ruleSetId: "classic-defense-3",
             diceRuleSetId: "standard",
+            themeId: "command",
             totalPlayers: 2,
             players: [{ type: "human" }, { type: "human" }]
           },
@@ -961,6 +962,7 @@ register(
           "/api/games",
           {
             name: "Restricted Catalog Game",
+            themeId: "command",
             mapId: "world-classic"
           },
           authHeaders(adminSessionToken)

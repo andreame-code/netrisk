@@ -87,7 +87,7 @@ describe("resolveCurrentGameId", () => {
     document.documentElement.removeAttribute("data-theme");
     document.body.removeAttribute("data-theme");
     window.localStorage.clear();
-    setAvailableShellThemes(["command", "midnight", "ember"]);
+    setAvailableShellThemes(["command", "midnight", "ember", "war-table"]);
     authMocks.state = {
       status: "unauthenticated",
       message: "Sign in to continue."
@@ -116,10 +116,10 @@ describe("resolveCurrentGameId", () => {
     renderLayout();
 
     await waitFor(() => {
-      expect(document.documentElement.dataset.theme).toBe("command");
+      expect(document.documentElement.dataset.theme).toBe("war-table");
     });
-    expect(document.body.dataset.theme).toBe("command");
-    expect(window.localStorage.getItem("netrisk.theme")).toBe("command");
+    expect(document.body.dataset.theme).toBe("war-table");
+    expect(window.localStorage.getItem("netrisk.theme")).toBe("war-table");
   });
 
   it("preserves a saved module theme until runtime theme ids are available", async () => {
