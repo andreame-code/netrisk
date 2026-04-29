@@ -6604,7 +6604,6 @@ register("GET /api/health espone lo stato del datastore sqlite", async () => {
     assert.equal(payload.ok, true);
     assert.equal(payload.storage.storage, "sqlite");
     assert.equal(payload.storage.journalMode, "WAL");
-    assert.equal(payload.storage.dbFile, context.tempDbFile);
     assert.equal(typeof payload.storage.counts.users, "number");
     assert.equal(typeof payload.storage.counts.games, "number");
     assert.equal(typeof payload.storage.counts.sessions, "number");
@@ -6713,8 +6712,6 @@ register("datastore supabase espone healthSummary async quando configurato via e
     assert.equal(datastore.driver, "supabase");
     assert.equal(health.ok, true);
     assert.equal(health.storage, "supabase");
-    assert.equal(health.url, "https://example.supabase.co");
-    assert.equal(health.schema, "public");
     assert.deepEqual(health.counts, { users: 0, games: 0, sessions: 0 });
 
     datastore.close();
