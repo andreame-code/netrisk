@@ -158,7 +158,7 @@ export function sendLocalizedError(
     ? localizedPayload(null, fallbackMessage, fallbackKey, fallbackParams)
     : rawPayload;
 
-  const sanitizedCode = isInternalError ? (code || null) : rawCode;
+  const sanitizedCode = isInternalError ? code || null : rawCode;
 
   sendJson(res, statusCode, {
     ...sanitizedPayload,
