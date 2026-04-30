@@ -219,6 +219,7 @@ export function GameRoute() {
   const namespace = useShellNamespace();
   const queryClient = useQueryClient();
   const routeGameId = typeof gameId === "string" ? gameId : "";
+  const lobbyHref = buildLobbyPath(namespace);
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting");
   const [actionError, setActionError] = useState("");
@@ -830,7 +831,7 @@ export function GameRoute() {
           >
             Retry game
           </button>
-          <Link className="ghost-action" to={buildLobbyPath(namespace)}>
+          <Link className="ghost-action" to={lobbyHref}>
             {t("nav.lobby")}
           </Link>
         </div>
@@ -964,6 +965,12 @@ export function GameRoute() {
               <span>{t("game.phaseBanner")}</span>{" "}
               <strong id="phase-banner-value">{phaseBadgeLabel}</strong>
             </span>
+          </div>
+
+          <div className="rail-section game-navigation-actions">
+            <Link className="ghost-button full-width" to={lobbyHref}>
+              {t("nav.lobby")}
+            </Link>
           </div>
 
           <div
