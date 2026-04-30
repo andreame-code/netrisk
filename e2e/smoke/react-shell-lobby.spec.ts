@@ -31,6 +31,7 @@ function joinSelectedBattleButton(page, selectedRow) {
   return selectedRow
     .getByRole("button", { name: /^(Join|Entra|Join Battle|Unisciti alla battaglia)$/i })
     .or(page.getByTestId("react-shell-lobby-join-selected"))
+    .or(page.getByTestId("react-shell-lobby-war-table-action"))
     .first();
 }
 

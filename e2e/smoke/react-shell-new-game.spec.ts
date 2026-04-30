@@ -3,6 +3,13 @@ const { DatabaseSync } = require("node:sqlite");
 
 const { attachSessionCookie, resetGame, uniqueUser } = require("../support/game-helpers");
 
+const SITE_THEMES = [
+  { id: "command", name: "Command", slug: "cmd" },
+  { id: "midnight", name: "Midnight", slug: "mid" },
+  { id: "ember", name: "Ember", slug: "emb" },
+  { id: "war-table", name: "War Table", slug: "war" }
+];
+
 async function createAuthenticatedSession(page, username, password = "secret123") {
   const registerResponse = await page.request.post("/api/auth/register", {
     data: { username, password }
@@ -204,4 +211,37 @@ test("react new game supports advanced module, profile, and option selections", 
   expect(statePayload.gameConfig.activeModules.map((entry) => entry.id)).toContain(
     "demo.command-center"
   );
+});
+
+test.describe("react new game built-in themes", () => {
+  for (const theme of SITE_THEMES) {
+    test(`creates a session with the ${theme.name} theme`, async ({ page }) => {
+      await resetGame(page);
+
+      const commander = uniqueUser(`rsh_theme_${theme.slug}`);
+      const sessionToken = await createAuthenticatedSession(page, commander);
+      const gameName = uniqueUser(`react_theme_${theme.slug}`);
+
+      await attachSessionCookie(page, sessionToken);
+      await page.goto("/react/lobby/new");
+
+      await expect(page.getByTestId("react-shell-lobby-create-page")).toBeVisible();
+      await page.getByTestId("react-shell-new-game-name").fill(gameName);
+      await page.getByTestId("react-shell-new-game-customize-options").check();
+      await page.getByTestId("react-shell-new-game-theme").selectOption(theme.id);
+      await expect(page.getByTestId("react-shell-new-game-theme")).toHaveValue(theme.id);
+      await page.getByTestId("react-shell-new-game-submit").click();
+
+      await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/react\/game\/[^/?#]+$/);
+      await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
+      await expect(page.getByText(gameName)).toBeVisible();
+
+      const gameId = currentGameId(page.url());
+      expect(gameId).toBeTruthy();
+
+      const statePayload = await loadGameState(page, sessionToken, gameId);
+      expect(statePayload.gameName).toBe(gameName);
+      expect(statePayload.gameConfig.themeId).toBe(theme.id);
+    });
+  }
 });
