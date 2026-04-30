@@ -13,12 +13,14 @@ core.base baseline + enabled runtime modules -> backend/module-runtime.cts -> re
 
 Both endpoints now include an additive `resolvedCatalog` field. New consumers should treat `resolvedCatalog` as the canonical source of truth. The flat top-level arrays (`maps`, `ruleSets`, `themes`, and so on) remain available as backward-compatible mirrors derived from that catalog.
 
-NetRisk still supports two authoring paths:
+NetRisk supports three authoring paths:
 
 - shared baseline content under `shared` when the feature becomes part of the default product
 - optional runtime modules under `modules` when the feature should stay discoverable, enable/disable-friendly, and packageable for admins
+- constrained admin-authored content through Content Studio when the feature can be represented as validated data
 
 Choose the shared baseline path when the feature should ship with `core.base`. Choose a runtime module when the feature should remain optional or be rolled out incrementally.
+Choose Content Studio when admins should author validated gameplay content without editing files or executing arbitrary module code.
 
 ## Path 1: built-in maps and rule registries
 
@@ -168,6 +170,13 @@ Use runtime modules when:
 - you need presets, profiles, or UI slot packaging
 - you want to ship content without rewriting the base registries
 
+Use Content Studio when:
+
+- the authored content fits a supported schema such as `victory-objectives`
+- admins need draft/validate/publish/enable/disable flows
+- generated runtime data can be persisted into `gameConfig`
+- the engine can consume that resolved payload directly
+
 ## Guardrails
 
 - Keep game rules in `backend/engine`, not in React components.
@@ -176,3 +185,4 @@ Use runtime modules when:
 - Prefer `resolvedCatalog` in new consumers and keep flat option fields only for compatibility bridges.
 - Prefer additive modules and registries over broad refactors.
 - Back every new map, rule, or module path with focused tests.
+- Keep Content Studio authoring schema-driven and server-validated; do not turn it into an arbitrary code upload path.

@@ -4,7 +4,7 @@
 
 NetRisk separa in modo netto presentazione, orchestrazione e regole. Il browser non decide mai le regole della partita: il backend valida ogni azione e il motore di gioco contiene la logica pura.
 
-## Stato attuale (aprile 2026)
+## Stato attuale (maggio 2026)
 
 L'applicazione include già:
 
@@ -25,6 +25,7 @@ L'applicazione include già:
 - sincronizzazione stato/eventi e controlli di autorizzazione lato route
 - gestione conflitti di versione in azioni concorrenti
 - runtime moduli con `core.base` come baseline provider, catalogo admin `resolvedCatalog`, enable/disable, content pack, preset e defaults server-side
+- Content Studio admin per moduli autoriali `victory-objectives`, con draft validation, publish/enable/disable e merge nel catalogo runtime
 - persistenza dei metadata modulari di setup, cosi moduli attivi, preset/profili, `scenarioSetup`, `gameplayEffects` e timeout turno sopravvivono ai round trip create/open/save
 
 Mappe correnti: `classic-mini`, `middle-earth`, `world-classic`.
@@ -54,10 +55,13 @@ Output build della shell React, servito dal backend statico come bundle condivis
 Server HTTP, autenticazione, autorizzazione, datastore, sessioni di gioco e route API.
 
 `/backend/engine`  
-Motore di gioco puro: setup, turn flow, rinforzi, attacchi, combattimento, conquista, carte, fortifica, vittoria, AI.
+Motore di gioco puro: setup, turn flow, rinforzi, attacchi, combattimento, conquista, carte, fortifica, timeout turno, vittoria, obiettivi autoriali, AI.
 
 `/backend/routes`  
-Handler route specializzati (auth/account, setup partita, azioni turno/attacco/carte, lettura stato/eventi, overview e management).
+Handler route specializzati (auth/account, setup partita, azioni turno/attacco/carte, lettura stato/eventi, admin, Content Studio, overview e management).
+
+`/backend/scheduler` e `/backend/services`
+Job e servizi applicativi server-side per enforcement timeout turno, recupero turni AI bloccati e retention delle partite concluse.
 
 `/shared`  
 Tipi, modelli dominio, contratti API, mappe e regole condivise tra frontend e backend.
@@ -89,7 +93,10 @@ Suite Playwright per flussi end-to-end UI + API.
 - `conquest-resolution.cts`: gestione conquista e movimento obbligatorio
 - `fortify-movement.cts`: validazione/esecuzione fortifica
 - `victory-detection.cts`: eliminazione player e determinazione vincitore
+- `victory-objectives.cts`: valutazione di obiettivi vittoria autoriali persistiti nello stato partita
+- `turn-timeout.cts`: risoluzione timeout turno configurabili
 - `ai-player.cts`: strategia turno automatica bot
+- `ai-turn-resume.cts`: ripresa sicura di turni AI pendenti
 - `banzai-attack.cts`: variante/utility specifica per attacchi ripetuti
 
 ## Moduli shared rilevanti
@@ -108,6 +115,7 @@ Suite Playwright per flussi end-to-end UI + API.
 - `victory-rule-sets.cts`: registry condizioni di vittoria
 - `site-themes.cts`: registry temi supportati
 - `player-piece-sets.cts`: registry palette/set pedine giocatore
+- `turn-timeouts.cts`: registry timeout turno selezionabili
 - `content-packs.cts`: manifest compositi che raggruppano moduli compatibili
 - `content-catalog.cts`: riepilogo built-in dei contenuti registrati, utile come sorgente shared ma non come snapshot canonico runtime/admin
 - `core-base-catalog.cts`: baseline catalog condiviso del modulo `core.base` per setup e admin surfaces
@@ -189,6 +197,7 @@ Categorie future da trattare con lo stesso modello:
   - Supabase (quando configurato via env)
 - La logica datastore è incapsulata dietro `backend/datastore.cts`.
 - Event stream partita via endpoint dedicato e broadcast server-side.
+- Scheduler applicativo: `/api/cron/scheduled-jobs` esegue timeout turno, recovery AI e retention delle partite concluse dietro `CRON_SECRET`.
 - Correlazione runtime: le risposte `/api/*` espongono `X-Request-Id`; gli errori backend inattesi vengono loggati con `requestId`, route e `release` per facilitare la diagnosi dei problemi emersi dalla shell React.
 - Routing statico: `backend/server.cts` risolve le route React canoniche pulite e gli alias `/react/*`, tratta i documenti deprecati `/legacy/*.html` noti come redirect verso le route canoniche e restituisce `404` per gli asset o i path `/legacy/*` senza equivalente supportato.
 - Guardrail repository/deploy: controllo env richieste, fallback senza `.git` per i check repository, `outputDirectory: public` su Vercel, `.vercelignore` per evitare upload di artefatti locali e `check-no-js-sources` per la TS-complete allowlist.

@@ -32,6 +32,7 @@ Useful local commands:
 ```bash
 npm start
 npm run dev:react-shell
+npm run build:ts
 npm run format:check
 npm run lint
 npm run typecheck
@@ -67,6 +68,8 @@ Run the smallest relevant validation set for your change, then broaden when the 
 - Shared types, routes, or engine logic: `npm run typecheck` and `npm test`
 - Turn rules, setup rules, or combat/reinforcement changes: `npm run test:gameplay`
 - UI, routing, or end-to-end behavior changes: `npm run test:e2e:smoke` or the most relevant Playwright subset
+- Admin Content Studio or authored gameplay content changes: `npm run test:react` plus `npm run test:gameplay`, with the focused admin/content-studio regression tests when possible
+- Scheduler, datastore, or deployment-surface changes: `npm run typecheck`, `npm test`, and the focused gameplay regression that covers the touched service
 
 If you change public API payloads or shared validation, verify the implementation against `shared/runtime-validation.cts` and `shared/api-contracts.cts`.
 
@@ -112,6 +115,20 @@ Default product content belongs in shared registries plus `shared/core-base-cata
 8. Add or extend regression coverage in `tests/gameplay/regression/module-runtime.test.cts`.
 
 Use the existing `modules/demo.command-center` fixture as the baseline shape for manifests and slot declarations.
+
+## Adding authored Content Studio modules
+
+Admin-authored gameplay content should go through Content Studio when the feature can be expressed as constrained data rather than executable code.
+
+The current authored module type is `victory-objectives`.
+
+1. Keep transport schemas in `shared/runtime-validation.cts`.
+2. Keep persistence behind `backend/authored-modules.cts`.
+3. Keep admin route handling in `backend/routes/admin-content-studio.cts`.
+4. Merge published runtime output through `backend/module-runtime.cts`.
+5. Persist resolved runtime data into `gameConfig` when the game is created.
+6. Let `backend/engine` consume the resolved payload directly instead of performing admin lookups during a turn.
+7. Update `docs/content-studio-victory-objectives.md` or add a sibling document for a new authored module type.
 
 ## API and validation guardrails
 

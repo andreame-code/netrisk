@@ -4,6 +4,8 @@
 
 This companion guide covers public endpoints that are intentionally snapshot-driven, stream-based, or not yet modeled as first-class OpenAPI schemas.
 
+The OpenAPI artifact currently covers the stable schema-backed auth/login/logout/session, profile/theme, games, module catalog, module mutation, game options, and cron endpoints. This file keeps the broader operational notes close to the snapshot and admin surfaces that are easier to understand in prose.
+
 ## Transport rules
 
 - Session auth uses the `netrisk_session` cookie.
@@ -159,7 +161,7 @@ Success responses return:
 }
 ```
 
-- This route is public, but it is not yet backed by a shared runtime response schema, so it is documented here instead of in `docs/openapi.json`.
+- This route is public and uses shared runtime validation, but it is not yet represented in `docs/openapi.json`.
 
 ### `GET /api/health`
 
@@ -178,5 +180,10 @@ Success responses return:
 - The route answers with `200` when `ok` is true and `503` otherwise.
 
 ## Internal endpoints excluded from public docs
+
+Admin and operator-only JSON endpoints are protected by the `admin:manage` capability and are intentionally documented in their feature guides instead of the public OpenAPI artifact:
+
+- `/api/admin/*`: overview, users, games, config, maintenance, audit
+- `/api/admin/content-studio/*`: authored gameplay module options, CRUD-like draft operations, validate, publish, enable, disable
 
 `/api/test/reset` and `/api/test/next-attack-rolls` exist only for E2E support when `E2E=true`. They are intentionally excluded from the public API reference.

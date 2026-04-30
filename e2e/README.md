@@ -39,6 +39,7 @@ Each run also uses a temporary SQLite database dedicated to that E2E instance, a
 - gameplay flows for reinforcement, attack/conquest, fortify handoff, surrender, relogin binding, and version conflict
 - React gameplay flows on canonical `/game/:gameId` and supported `/react/game/:gameId` links, including join/start, forced trade, and version-conflict recovery
 - authorization flows for protected games, direct game routes, and spectator access
+- map viewport controls and territory selection flows
 - profile states: loading, error, empty, invalid payload fallback, participating games, and theme preference
 - React shell bootstrap, protected redirects, and route-level rendering on canonical routes plus `/react/*`
 - new game setup happy path plus validation fallback when setup options become invalid
