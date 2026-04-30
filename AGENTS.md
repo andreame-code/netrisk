@@ -119,3 +119,19 @@ NetRisk should be built incrementally in this order:
 - Do not mix transport, persistence, and game rules in one file.
 - Do not replace working code just because another design seems cleaner.
 - Respect backward compatibility with the current project unless explicitly told otherwise.
+
+## Agent skills
+
+These skill settings only configure how Matt Pocock's skills find issue-tracker, triage-label, and domain-doc information. They do not override the NetRisk agent instructions above. If there is any conflict, the existing NetRisk guardrails, current user request, and repository-specific instructions take precedence.
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues for `andreame-code/netrisk`, inferred from the configured `origin` remote. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default GitHub Issue label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context domain docs layout with root `CONTEXT.md` and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
