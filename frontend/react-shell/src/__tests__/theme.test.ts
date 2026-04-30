@@ -63,7 +63,7 @@ function warTableReferenceGapSelectors(css: string): string[] {
       return selectorText
         .split(",")
         .map((selector) => selector.trim().replace(/\s+/g, " "))
-      .filter(Boolean);
+        .filter(Boolean);
     }
   );
 }
