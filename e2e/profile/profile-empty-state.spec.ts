@@ -1,5 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { attachSessionCookie, uniqueUser } = require("../support/game-helpers");
+const {
+  attachSessionCookie,
+  preferCommandTheme,
+  setSessionThemePreference,
+  uniqueUser
+} = require("../support/game-helpers");
 
 test("profile page shows a clear empty state for an authenticated user with no history", async ({ page }) => {
   const username = uniqueUser("profile_empty");
@@ -17,6 +22,8 @@ test("profile page shows a clear empty state for an authenticated user with no h
   const sessionToken = loginResponse.headers()["set-cookie"]?.match(/netrisk_session=([^;]+)/)?.[1];
   expect(sessionToken).toBeTruthy();
 
+  await setSessionThemePreference(page, sessionToken, "command");
+  await preferCommandTheme(page);
   await attachSessionCookie(page, sessionToken);
 
   await page.goto("/profile");

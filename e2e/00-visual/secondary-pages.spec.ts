@@ -1,9 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame } = require("../support/game-helpers");
+const { preferCommandTheme, resetGame } = require("../support/game-helpers");
 
 test("lobby layout matches the baseline", async ({ page }) => {
   test.slow();
   await resetGame(page);
+  await preferCommandTheme(page);
   await page.goto("/lobby");
   await expect(page.getByTestId("game-lobby-shell")).toBeVisible();
   await expect(page.locator("#game-list-state")).toContainText("Nessuna partita disponibile.");
@@ -16,6 +17,7 @@ test("lobby layout matches the baseline", async ({ page }) => {
 
 test("new game setup layout matches the baseline", async ({ page }) => {
   test.slow();
+  await preferCommandTheme(page);
   await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#setup-player-slots [data-slot-index]")).toHaveCount(2);
@@ -27,6 +29,7 @@ test("new game setup layout matches the baseline", async ({ page }) => {
 
 test("profile layout matches the baseline without a session", async ({ page }) => {
   test.slow();
+  await preferCommandTheme(page);
   await page.goto("/profile");
   await expect(page.getByTestId("player-profile-shell")).toBeVisible();
   await expect(page.locator("#profile-feedback")).toContainText("Accedi prima di consultare il profilo giocatore.");
