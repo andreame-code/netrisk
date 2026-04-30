@@ -39,6 +39,7 @@ register("handleOpenGameRoute returns the per-user snapshot for the opener", asy
       }
     }),
     async () => [],
+    async () => undefined,
     () => ({
       id: "p-1"
     }),
@@ -55,7 +56,12 @@ register("handleOpenGameRoute returns the per-user snapshot for the opener", asy
       gameName,
       playerId: "p-1",
       assignedVictoryObjective: {
-        id: "mission-a"
+        moduleId: "victory.module",
+        moduleName: "Victory Module",
+        id: "mission-a",
+        title: "Mission A",
+        description: "Complete mission A.",
+        type: "control-territory-count"
       },
       user
     }),
@@ -85,7 +91,12 @@ register("handleOpenGameRoute returns the per-user snapshot for the opener", asy
       gameName: "Open Route",
       playerId: "p-1",
       assignedVictoryObjective: {
-        id: "mission-a"
+        moduleId: "victory.module",
+        moduleName: "Victory Module",
+        id: "mission-a",
+        title: "Mission A",
+        description: "Complete mission A.",
+        type: "control-territory-count"
       },
       user: {
         id: "u-1",
