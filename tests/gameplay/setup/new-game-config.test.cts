@@ -16,6 +16,14 @@ const {
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
+function testTheme(themeId: string) {
+  return {
+    id: themeId,
+    name: `Test ${themeId}`,
+    description: "Theme resolved by a test catalog"
+  };
+}
+
 register("new game rule set lookups expose only the minimal built-in adapter shape", () => {
   const listedRuleSet = listNewGameRuleSets().find(
     (ruleSet: { id: string }) => ruleSet.id === "classic-defense-3"
@@ -103,7 +111,7 @@ register("validateNewGameConfig derives modular defaults from the selected exten
   assert.equal(config.ruleSetId, "classic-defense-3");
   assert.equal(config.diceRuleSetId, "defense-3");
   assert.equal(config.victoryRuleSetId, "conquest");
-  assert.equal(config.themeId, "command");
+  assert.equal(config.themeId, "war-table");
   assert.equal(config.pieceSkinId, "classic-color");
   assert.equal(config.extensionSchemaVersion, 1);
 });
@@ -135,7 +143,7 @@ register(
     assert.equal(config.mapId, "classic-mini");
     assert.equal(config.diceRuleSetId, "defense-3");
     assert.equal(config.victoryRuleSetId, "conquest");
-    assert.equal(config.themeId, "command");
+    assert.equal(config.themeId, "war-table");
     assert.equal(config.pieceSkinId, "classic-color");
   }
 );
@@ -184,6 +192,48 @@ register("validateNewGameConfig supports injected victory, theme, and piece skin
   assert.equal(config.themeId, "runtime-theme");
   assert.equal(config.pieceSkinId, "runtime-skin");
 });
+
+register(
+  "validateNewGameConfig falls back to the default resolved theme for implicit selections",
+  () => {
+    const config = validateNewGameConfig(
+      {
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      },
+      {
+        random: () => 0,
+        resolveTheme: (themeId: string) => (themeId === "command" ? testTheme("command") : null),
+        resolveDefaultTheme: () => testTheme("command")
+      }
+    );
+
+    assert.equal(config.themeId, "command");
+  }
+);
+
+register(
+  "validateNewGameConfig rejects explicit unsupported themes before default fallback",
+  () => {
+    assert.throws(
+      () =>
+        validateNewGameConfig(
+          {
+            themeId: "war-table",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          },
+          {
+            random: () => 0,
+            resolveTheme: (themeId: string) =>
+              themeId === "command" ? testTheme("command") : null,
+            resolveDefaultTheme: () => testTheme("command")
+          }
+        ),
+      (error: { messageKey?: string }) => error.messageKey === "newGame.invalidTheme"
+    );
+  }
+);
 
 register(
   "createConfiguredInitialState forwards runtime preset victory, theme and piece skin defaults",

@@ -6,7 +6,6 @@ import type { ComponentProps } from "react";
 import type {
   CreateGameResponse,
   GameOptionsResponse,
-  GameSummary,
   InstalledModuleSummary
 } from "@frontend-generated/shared-runtime-validation.mts";
 
@@ -51,18 +50,6 @@ function createQueryClient(): QueryClient {
       }
     }
   });
-}
-
-function createGameSummary(overrides: Partial<GameSummary> = {}): GameSummary {
-  return {
-    id: "selected-game",
-    name: "Baltic War",
-    phase: "lobby",
-    playerCount: 1,
-    updatedAt: "2026-04-20T06:00:00.000Z",
-    totalPlayers: 4,
-    ...overrides
-  };
 }
 
 function createModule(id: string, displayName: string): InstalledModuleSummary {
@@ -145,16 +132,7 @@ function createGameResponse(gameId = "created-game"): CreateGameResponse {
 function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
   const queryClient = createQueryClient();
   const props: WarTablePanelProps = {
-    activeGame: null,
     canCreateGame: true,
-    canJoinSelected: false,
-    joinDisabled: false,
-    joinPending: false,
-    openDisabled: false,
-    openPending: false,
-    onJoinSelected: vi.fn(),
-    onOpenSelected: vi.fn(),
-    selectedGame: createGameSummary(),
     ...overrides
   };
 
@@ -454,38 +432,52 @@ describe("LobbyWarTablePanels", () => {
     expect(openShellGameMock).not.toHaveBeenCalled();
   });
 
-  it("routes the secondary action through join when the selected lobby is joinable", async () => {
-    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    const onJoinSelected = vi.fn<() => Promise<void>>().mockResolvedValue();
-    const onOpenSelected = vi.fn<() => Promise<void>>().mockResolvedValue();
+  it("expands the preset panel through the view-all action", async () => {
+    getGameOptionsMock.mockResolvedValue(
+      createGameOptionsResponse({
+        gamePresets: [
+          {
+            id: "classic-risk",
+            name: "Classic Risk",
+            description: "The original experience",
+            activeModuleIds: ["cards"]
+          },
+          {
+            id: "fast-duel",
+            name: "Fast Duel",
+            description: "Quick 1v1 battles",
+            activeModuleIds: ["objectives"]
+          },
+          {
+            id: "objective-mode",
+            name: "Objective Mode",
+            description: "Play with mission goals",
+            activeModuleIds: ["objectives"]
+          },
+          {
+            id: "world-domination",
+            name: "World Domination",
+            description: "Large map, epic game",
+            activeModuleIds: ["cards"]
+          },
+          {
+            id: "continental-war",
+            name: "Continental War",
+            description: "Extended campaign",
+            activeModuleIds: ["cards", "objectives"]
+          }
+        ]
+      })
+    );
 
-    const { user } = renderPanels({
-      canJoinSelected: true,
-      onJoinSelected,
-      onOpenSelected
-    });
+    const { user } = renderPanels();
 
-    await user.click(await screen.findByRole("button", { name: "Join Battle" }));
+    expect(await screen.findByRole("button", { name: "View All Presets" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Continental War/ })).not.toBeInTheDocument();
 
-    expect(onJoinSelected).toHaveBeenCalledTimes(1);
-    expect(onOpenSelected).not.toHaveBeenCalled();
-  });
+    await user.click(screen.getByRole("button", { name: "View All Presets" }));
 
-  it("routes the secondary action through open when there is no joinable lobby", async () => {
-    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    const onJoinSelected = vi.fn<() => Promise<void>>().mockResolvedValue();
-    const onOpenSelected = vi.fn<() => Promise<void>>().mockResolvedValue();
-
-    const { user } = renderPanels({
-      activeGame: createGameSummary({ id: "active-game", phase: "active" }),
-      canJoinSelected: false,
-      onJoinSelected,
-      onOpenSelected
-    });
-
-    await user.click(await screen.findByRole("button", { name: "Resume Battle" }));
-
-    expect(onOpenSelected).toHaveBeenCalledTimes(1);
-    expect(onJoinSelected).not.toHaveBeenCalled();
+    expect(await screen.findByRole("button", { name: /Continental War/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show Fewer Presets" })).toBeInTheDocument();
   });
 });

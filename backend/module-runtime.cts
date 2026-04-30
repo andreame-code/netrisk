@@ -676,7 +676,7 @@ function defaultCoreClientManifest(): NetRiskModuleClientManifest {
           mapId: "classic-mini",
           diceRuleSetId: "standard",
           victoryRuleSetId: "conquest",
-          themeId: "command",
+          themeId: "war-table",
           pieceSkinId: "classic-color"
         }
       }

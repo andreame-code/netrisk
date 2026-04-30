@@ -96,10 +96,10 @@ describe("theme runtime bridge", () => {
 
     const availableThemes = setAvailableShellThemes(["ember", "aurora"]);
 
-    expect(availableThemes).toEqual(["command", "ember", "aurora"]);
-    expect(currentShellTheme()).toBe("command");
-    expect(listShellThemes()).toEqual([{ id: "command" }, { id: "ember" }, { id: "aurora" }]);
-    expect(window.netriskTheme?.getThemes()).toEqual(["command", "ember", "aurora"]);
+    expect(availableThemes).toEqual(["war-table", "ember", "aurora"]);
+    expect(currentShellTheme()).toBe("war-table");
+    expect(listShellThemes()).toEqual([{ id: "war-table" }, { id: "ember" }, { id: "aurora" }]);
+    expect(window.netriskTheme?.getThemes()).toEqual(["war-table", "ember", "aurora"]);
   });
 
   it("uses War Table copy overrides without changing other theme copy", () => {
