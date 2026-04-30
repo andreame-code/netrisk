@@ -62,7 +62,7 @@ test("profile page lets the authenticated user choose a site theme", async ({ pa
   await page.goto("/profile");
 
   await expect(page.locator("#profile-preferences")).toBeVisible();
-  await expect(page.locator("#profile-theme-select")).toHaveValue("command");
+  await expect(page.locator("#profile-theme-select")).toHaveValue("war-table");
   await expect.poll(async () => page.locator("#profile-theme-select option").evaluateAll((options) =>
     options.map((option) => option.getAttribute("value")).filter(Boolean)
   )).toEqual(["command", "midnight", "ember", "war-table"]);

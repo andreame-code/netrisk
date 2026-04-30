@@ -1,15 +1,19 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
   GameStateResponse,
+  GameListResponse,
+  GameOptionsResponse,
   ModuleOptionsResponse
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import {
+  getGameOptions,
   getGameState,
   getModuleOptions,
   getSession,
+  listGames,
   subscribeToGameEvents
 } from "@frontend-core/api/client.mts";
 
@@ -43,8 +47,10 @@ vi.mock("@react-shell/gameplay-map-viewport", () => ({
 }));
 
 const getGameStateMock = vi.mocked(getGameState);
+const getGameOptionsMock = vi.mocked(getGameOptions);
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getSessionMock = vi.mocked(getSession);
+const listGamesMock = vi.mocked(listGames);
 const subscribeToGameEventsMock = vi.mocked(subscribeToGameEvents);
 
 type StreamHandlers = Parameters<typeof subscribeToGameEvents>[0];
@@ -64,6 +70,12 @@ function createSession(theme = "command"): AuthSessionResponse {
   };
 }
 
+function createAuthRequiredError(): Error & { code: string } {
+  const error = new Error("Sign in to continue.") as Error & { code: string };
+  error.code = "AUTH_REQUIRED";
+  return error;
+}
+
 function emptyModuleOptions(): ModuleOptionsResponse {
   return {
     modules: [],
@@ -75,6 +87,38 @@ function emptyModuleOptions(): ModuleOptionsResponse {
     contentProfiles: [],
     gameplayProfiles: [],
     uiProfiles: []
+  };
+}
+
+function createLobbyGames(): GameListResponse {
+  return {
+    games: [],
+    activeGameId: null
+  };
+}
+
+function createGameOptionsResponse(): GameOptionsResponse {
+  return {
+    ruleSets: [],
+    maps: [],
+    diceRuleSets: [],
+    victoryRuleSets: [],
+    themes: [],
+    pieceSkins: [],
+    modules: [],
+    enabledModules: [],
+    gamePresets: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [],
+    uiSlots: [],
+    playerPieceSets: [],
+    contentPacks: [],
+    turnTimeoutHoursOptions: [24, 48],
+    playerRange: {
+      min: 2,
+      max: 4
+    }
   };
 }
 
@@ -174,6 +218,8 @@ describe("GameRoute canonical root", () => {
 
     getSessionMock.mockResolvedValue(createSession());
     getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+    listGamesMock.mockResolvedValue(createLobbyGames());
     getGameStateMock.mockResolvedValue(createGameplayState());
     subscribeToGameEventsMock.mockImplementation((handlers) => {
       streamHandlers = handlers;
@@ -222,5 +268,38 @@ describe("GameRoute canonical root", () => {
     unmount();
 
     expect(closeStreamMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns unauthenticated game-root traffic to the lobby without loading current game", async () => {
+    getSessionMock.mockRejectedValue(createAuthRequiredError());
+
+    renderReactShell("/react/game");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/react/lobby");
+    expect(getGameStateMock).not.toHaveBeenCalled();
+    expect(subscribeToGameEventsMock).not.toHaveBeenCalled();
+  });
+
+  it("shows recovery UI when session bootstrap fails on the game root", async () => {
+    getSessionMock.mockRejectedValue(new Error("Session service unavailable."));
+    getGameStateMock.mockRejectedValue(new Error("Unable to load active game."));
+
+    renderReactShell("/react/game");
+
+    const errorPanel = await screen.findByTestId("react-shell-game-error");
+    expect(errorPanel).toBeInTheDocument();
+    expect(getGameStateMock).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        errorMessage: expect.any(String),
+        fallbackMessage: expect.any(String)
+      })
+    );
+    expect(within(errorPanel).getByRole("link", { name: "Lobby" })).toHaveAttribute(
+      "href",
+      "/react/lobby"
+    );
+    expect(subscribeToGameEventsMock).not.toHaveBeenCalled();
   });
 });

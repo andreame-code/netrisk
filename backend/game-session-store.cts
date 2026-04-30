@@ -33,6 +33,7 @@ interface GameConfig {
 interface GameStateRecord {
   phase?: string;
   players?: Array<Record<string, unknown>>;
+  currentTurnIndex?: number;
   gameConfig?: GameConfig | null;
   [key: string]: unknown;
 }
@@ -53,6 +54,7 @@ interface GameSummary {
   version: number;
   creatorUserId: string | null;
   phase: string;
+  currentPlayerId: string | null;
   playerCount: number;
   contentPackId: string | null;
   mapId: string | null;
@@ -183,6 +185,16 @@ function summarizeGameWithMapName(
   const version =
     Number.isInteger(entry.version) && Number(entry.version) > 0 ? Number(entry.version) : 1;
   const activeModules = normalizeActiveModules(config?.activeModules);
+  const currentTurnPlayer =
+    state.phase === "active" &&
+    Array.isArray(state.players) &&
+    Number.isInteger(state.currentTurnIndex)
+      ? state.players[Number(state.currentTurnIndex)]
+      : null;
+  const currentPlayerId =
+    typeof currentTurnPlayer?.id === "string" && currentTurnPlayer.id.trim()
+      ? currentTurnPlayer.id
+      : null;
 
   return {
     id: entry.id,
@@ -190,6 +202,7 @@ function summarizeGameWithMapName(
     version,
     creatorUserId: entry.creatorUserId || null,
     phase: state?.phase || "lobby",
+    currentPlayerId,
     playerCount: Array.isArray(state?.players) ? state.players.length : 0,
     contentPackId: config?.contentPackId || null,
     mapId: config?.mapId || null,

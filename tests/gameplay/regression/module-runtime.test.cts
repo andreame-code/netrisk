@@ -938,6 +938,22 @@ register(
           ["classic", "classic-defense-3"]
         );
 
+        const adminConfigResponse = await callApp(
+          app,
+          "PUT",
+          "/api/admin/config",
+          {
+            defaults: {
+              mapId: "classic-mini",
+              ruleSetId: "classic-defense-3",
+              diceRuleSetId: "standard"
+            }
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(adminConfigResponse.statusCode, 200);
+        assert.equal(adminConfigResponse.payload.config.defaults.themeId, "command");
+
         const createGameResponse = await callApp(
           app,
           "POST",
@@ -946,6 +962,7 @@ register(
             name: "Restricted Catalog Override",
             ruleSetId: "classic-defense-3",
             diceRuleSetId: "standard",
+            themeId: "command",
             totalPlayers: 2,
             players: [{ type: "human" }, { type: "human" }]
           },
@@ -954,6 +971,21 @@ register(
         assert.equal(createGameResponse.statusCode, 201);
         assert.equal(createGameResponse.payload.state.gameConfig.ruleSetId, "classic-defense-3");
         assert.equal(createGameResponse.payload.state.gameConfig.diceRuleSetId, "standard");
+        assert.equal(createGameResponse.payload.state.gameConfig.themeId, "command");
+
+        const defaultThemeCreateResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Restricted Catalog Default Theme",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "human" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(defaultThemeCreateResponse.statusCode, 201);
+        assert.equal(defaultThemeCreateResponse.payload.state.gameConfig.themeId, "command");
 
         const invalidCreateResponse = await callApp(
           app,

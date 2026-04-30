@@ -360,17 +360,30 @@ async function maybeResolve<T>(value: Promise<T> | T): Promise<T> {
   return value;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function asRecordArray(value: unknown): Array<Record<string, unknown>> | null {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is Record<string, unknown> => Boolean(asRecord(entry)))
+    : null;
+}
+
 function createAdminConsole(options: AdminConsoleOptions) {
-  async function ensureRuntimeCatalogReady(): Promise<void> {
+  async function ensureRuntimeCatalogReady(): Promise<Record<string, unknown> | null> {
     if (typeof options.moduleRuntime.getModuleOptions !== "function") {
-      return;
+      return null;
     }
 
-    await maybeResolve(options.moduleRuntime.getModuleOptions());
+    return asRecord(await maybeResolve(options.moduleRuntime.getModuleOptions()));
   }
 
   async function resolveAdminDefaults(input: Record<string, unknown> = {}) {
-    await ensureRuntimeCatalogReady();
+    const moduleOptions = await ensureRuntimeCatalogReady();
+    const resolvedCatalog =
+      asRecord(moduleOptions?.resolvedCatalog) || asRecord(moduleOptions) || null;
+    const resolvedThemes = asRecordArray(resolvedCatalog?.themes);
     const configured = await maybeResolve(
       options.createConfiguredInitialState(input, {
         resolveContentPack: (contentPackId: string) =>
@@ -385,9 +398,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
             ? options.moduleRuntime.findVictoryRuleSet(victoryRuleSetId)
             : findVictoryRuleSet(victoryRuleSetId),
         resolveTheme: (themeId: string) =>
-          typeof options.moduleRuntime.findSiteTheme === "function"
-            ? options.moduleRuntime.findSiteTheme(themeId)
-            : findVisualTheme(themeId),
+          resolvedThemes
+            ? resolvedThemes.find((entry) => entry.id === themeId) || null
+            : typeof options.moduleRuntime.findSiteTheme === "function"
+              ? options.moduleRuntime.findSiteTheme(themeId)
+              : findVisualTheme(themeId),
+        resolveDefaultTheme: () =>
+          resolvedThemes
+            ? resolvedThemes.find((entry) => typeof entry.id === "string") || null
+            : null,
         resolveGamePreset: (presetInput: Record<string, unknown>) =>
           options.moduleRuntime.resolveGamePreset(presetInput),
         resolveGameModuleConfigDefaults: (selectionInput: Record<string, unknown>) =>

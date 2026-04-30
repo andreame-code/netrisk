@@ -56,8 +56,26 @@ async function createAuthenticatedSession(page, username, password = "secret123"
   return sessionToken;
 }
 
+async function preferCommandTheme(page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("netrisk.theme", "command");
+  });
+}
+
+async function setSessionThemePreference(page, sessionToken, theme = "command") {
+  const response = await page.request.put("/api/profile/preferences/theme", {
+    headers: {
+      Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
+    },
+    data: { theme }
+  });
+  await expect(response.ok()).toBeTruthy();
+}
+
 async function registerAndLogin(page, username, password = "secret123") {
   const sessionToken = await createAuthenticatedSession(page, username, password);
+  await setSessionThemePreference(page, sessionToken, "command");
+  await preferCommandTheme(page);
   await attachSessionCookie(page, sessionToken);
   await page.goto("/lobby");
   await expect(page.locator(".shell-header #auth-status")).toContainText(username, {
@@ -177,9 +195,11 @@ module.exports = {
   findAttackPair,
   getReinforcementCount,
   getE2EBaseURL,
+  preferCommandTheme,
   queueNextAttackRolls,
   registerAndLogin,
   registerLoginAndJoin,
   resetGame,
+  setSessionThemePreference,
   uniqueUser
 };

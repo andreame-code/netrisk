@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState, type CSSProperties } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -30,7 +30,11 @@ import { useAuth } from "@react-shell/auth";
 import { GameplayMapViewport } from "@react-shell/gameplay-map-viewport";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
-import { buildRegisterPath, useShellNamespace } from "@react-shell/public-auth-paths";
+import {
+  buildLobbyPath,
+  buildRegisterPath,
+  useShellNamespace
+} from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 
 type StreamStatus = "connecting" | "live" | "reconnecting";
@@ -215,6 +219,10 @@ export function GameRoute() {
   const namespace = useShellNamespace();
   const queryClient = useQueryClient();
   const routeGameId = typeof gameId === "string" ? gameId : "";
+  const lobbyHref = buildLobbyPath(namespace);
+  const shouldLoadGameState =
+    Boolean(routeGameId) || state.status === "authenticated" || state.status === "error";
+  const shouldRedirectGuestGameRoot = !routeGameId && state.status === "unauthenticated";
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting");
   const [actionError, setActionError] = useState("");
@@ -244,7 +252,8 @@ export function GameRoute() {
       }),
     // Keep the board in sync while the event stream is still handshaking or reconnecting.
     refetchInterval: streamStatus === "live" ? false : 1500,
-    refetchIntervalInBackground: true
+    refetchIntervalInBackground: true,
+    enabled: shouldLoadGameState
   });
 
   const snapshot = gameplayQuery.data || null;
@@ -406,9 +415,20 @@ export function GameRoute() {
   }, [snapshot?.turnPhase]);
 
   useEffect(() => {
-    setSelectedTradeCardIds((current) =>
-      current.filter((cardId) => playerHand.some((card) => card.id === cardId)).slice(0, 3)
-    );
+    setSelectedTradeCardIds((current) => {
+      const next = current
+        .filter((cardId) => playerHand.some((card) => card.id === cardId))
+        .slice(0, 3);
+
+      if (
+        next.length === current.length &&
+        next.every((cardId, index) => cardId === current[index])
+      ) {
+        return current;
+      }
+
+      return next;
+    });
   }, [playerHand]);
 
   const applyMutationPayload = useEffectEvent(
@@ -547,6 +567,10 @@ export function GameRoute() {
       eventSource.close();
     };
   }, [resolvedGameId]);
+
+  if (shouldRedirectGuestGameRoot) {
+    return <Navigate to={lobbyHref} replace />;
+  }
 
   function submitGameAction(request: Parameters<typeof sendGameAction>[0]): Promise<void> {
     return actionMutation.mutateAsync(request).then(() => undefined);
@@ -826,6 +850,9 @@ export function GameRoute() {
           >
             Retry game
           </button>
+          <Link className="ghost-action" to={lobbyHref}>
+            {t("nav.lobby")}
+          </Link>
         </div>
       </section>
     );
@@ -957,6 +984,12 @@ export function GameRoute() {
               <span>{t("game.phaseBanner")}</span>{" "}
               <strong id="phase-banner-value">{phaseBadgeLabel}</strong>
             </span>
+          </div>
+
+          <div className="rail-section game-navigation-actions">
+            <Link className="ghost-button full-width" to={lobbyHref}>
+              {t("nav.lobby")}
+            </Link>
           </div>
 
           <div

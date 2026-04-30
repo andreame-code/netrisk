@@ -2,11 +2,18 @@ import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
+  GameOptionsResponse,
   GameListResponse,
   ModuleOptionsResponse
 } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { getModuleOptions, getSession, listGames } from "@frontend-core/api/client.mts";
+import {
+  getGameOptions,
+  getModuleOptions,
+  getSession,
+  listGames,
+  logout
+} from "@frontend-core/api/client.mts";
 
 import { createDeferred } from "../../test/deferred";
 import { renderReactShell } from "../../test/render-react-shell";
@@ -29,8 +36,10 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 }));
 
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
+const getGameOptionsMock = vi.mocked(getGameOptions);
 const getSessionMock = vi.mocked(getSession);
 const listGamesMock = vi.mocked(listGames);
+const logoutMock = vi.mocked(logout);
 
 function createAuthRequiredError(): Error & { code: string } {
   const error = new Error("Sign in to continue.") as Error & { code: string };
@@ -70,6 +79,31 @@ function createActiveLobbyGames(activeGameId = "game-42"): GameListResponse {
       }
     ],
     activeGameId
+  };
+}
+
+function createGameOptionsResponse(): GameOptionsResponse {
+  return {
+    ruleSets: [],
+    maps: [],
+    diceRuleSets: [],
+    victoryRuleSets: [],
+    themes: [],
+    pieceSkins: [],
+    modules: [],
+    enabledModules: [],
+    gamePresets: [],
+    contentProfiles: [],
+    gameplayProfiles: [],
+    uiProfiles: [],
+    uiSlots: [],
+    playerPieceSets: [],
+    contentPacks: [],
+    turnTimeoutHoursOptions: [24, 48],
+    playerRange: {
+      min: 2,
+      max: 4
+    }
   };
 }
 
@@ -125,6 +159,8 @@ function resolvedCatalogModuleOptions(): ModuleOptionsResponse {
 
 beforeEach(() => {
   getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
+  getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+  logoutMock.mockResolvedValue({ ok: true });
 });
 
 describe("React shell routing and session integration", () => {
@@ -215,5 +251,38 @@ describe("React shell routing and session integration", () => {
 
     const opsCenterLink = await screen.findByRole("link", { name: "Ops Center" });
     expect(opsCenterLink).toHaveAttribute("href", "/ops-center");
+  });
+
+  it("keeps guest game navigation on the lobby", async () => {
+    getSessionMock.mockRejectedValue(createAuthRequiredError());
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderReactShell("/react/lobby");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("react-shell-nav")).getByRole("link", { name: "Game" })
+    ).toHaveAttribute("href", "/react/lobby");
+  });
+
+  it("exposes logout from the authenticated war-table user menu", async () => {
+    getSessionMock.mockResolvedValue(createSession("war-table"));
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    const { user } = renderReactShell("/react/lobby");
+
+    expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Commander/i }));
+
+    const userMenu = screen.getByRole("menu");
+    const logoutItem = within(userMenu).getByRole("menuitem", { name: "Esci" });
+
+    expect(logoutItem).toBeVisible();
+
+    await user.click(logoutItem);
+
+    await waitFor(() => {
+      expect(logoutMock).toHaveBeenCalledTimes(1);
+    });
   });
 });

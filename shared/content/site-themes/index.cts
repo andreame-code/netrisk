@@ -5,7 +5,7 @@ import { midnightSiteTheme } from "./midnight.cjs";
 import { warTableSiteTheme } from "./war-table.cjs";
 import type { SiteTheme, SiteThemeSummary } from "./types.cjs";
 
-export const DEFAULT_SITE_THEME_ID = "command";
+export const DEFAULT_SITE_THEME_ID = "war-table";
 
 const siteThemeRegistry = createModuleRegistry<SiteTheme>([
   commandSiteTheme,
