@@ -413,7 +413,6 @@ function createDatastore(options: DatastoreOptions = {}) {
       return {
         ok: Boolean(probe && probe.ok === 1),
         storage: "sqlite",
-        dbFile,
         journalMode: "WAL",
         counts: {
           users: Number(statements.countUsers.get().count) || 0,

@@ -60,6 +60,7 @@ const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
+const { SESSION_MAX_AGE_MS, SESSION_MAX_AGE_SECONDS } = require("../backend/session-policy.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const {
@@ -3337,6 +3338,29 @@ register("auth store mantiene la sessione dopo il riavvio del processo", async (
   }
 });
 
+register("cookie di sessione e scadenza server restano allineati", async () => {
+  await withServer(async (baseUrl) => {
+    const username = uniqueName("session_alignment");
+    const registerResponse = await fetch(baseUrl + "/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: TEST_PASSWORD })
+    });
+    assert.equal(registerResponse.status, 201);
+
+    const loginResponse = await fetch(baseUrl + "/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password: TEST_PASSWORD })
+    });
+    assert.equal(loginResponse.status, 200);
+
+    const setCookie = loginResponse.headers.get("set-cookie") || "";
+    assert.equal(setCookie.includes(`Max-Age=${SESSION_MAX_AGE_SECONDS}`), true);
+    assert.equal(SESSION_MAX_AGE_MS, SESSION_MAX_AGE_SECONDS * 1000);
+  });
+});
+
 register("auth store migra password legacy in hash al login riuscito", async () => {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
@@ -6580,7 +6604,6 @@ register("GET /api/health espone lo stato del datastore sqlite", async () => {
     assert.equal(payload.ok, true);
     assert.equal(payload.storage.storage, "sqlite");
     assert.equal(payload.storage.journalMode, "WAL");
-    assert.equal(payload.storage.dbFile, context.tempDbFile);
     assert.equal(typeof payload.storage.counts.users, "number");
     assert.equal(typeof payload.storage.counts.games, "number");
     assert.equal(typeof payload.storage.counts.sessions, "number");
@@ -6689,8 +6712,6 @@ register("datastore supabase espone healthSummary async quando configurato via e
     assert.equal(datastore.driver, "supabase");
     assert.equal(health.ok, true);
     assert.equal(health.storage, "supabase");
-    assert.equal(health.url, "https://example.supabase.co");
-    assert.equal(health.schema, "public");
     assert.deepEqual(health.counts, { users: 0, games: 0, sessions: 0 });
 
     datastore.close();

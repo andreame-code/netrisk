@@ -488,8 +488,6 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       return {
         ok: true,
         storage: "supabase",
-        url: supabaseUrl,
-        schema,
         counts: {
           users: await countRows("users", "id"),
           games: await countRows("games", "id"),

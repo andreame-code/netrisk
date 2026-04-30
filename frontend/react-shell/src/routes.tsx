@@ -12,6 +12,7 @@ import {
 import { AppShellLayout } from "@react-shell/app-shell-layout";
 import { useAuth, AuthProvider } from "@react-shell/auth";
 import { LandingRoute } from "@react-shell/landing-route";
+import { LoadingAnimation } from "@react-shell/loading-animation";
 import {
   buildBootstrapPath,
   buildLobbyPath,
@@ -44,7 +45,8 @@ const GameRoute = lazy(async () => ({
 
 function LoadingPanel({ title, copy }: { title: string; copy: string }) {
   return (
-    <section className="status-panel" data-testid="react-shell-loading">
+    <section className="status-panel status-panel-loading" data-testid="react-shell-loading">
+      <LoadingAnimation />
       <p className="status-label">Loading</p>
       <h2>{title}</h2>
       <p className="status-copy">{copy}</p>
