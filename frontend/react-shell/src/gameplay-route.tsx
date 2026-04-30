@@ -30,7 +30,11 @@ import { useAuth } from "@react-shell/auth";
 import { GameplayMapViewport } from "@react-shell/gameplay-map-viewport";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
-import { buildRegisterPath, useShellNamespace } from "@react-shell/public-auth-paths";
+import {
+  buildLobbyPath,
+  buildRegisterPath,
+  useShellNamespace
+} from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 
 type StreamStatus = "connecting" | "live" | "reconnecting";
@@ -826,6 +830,9 @@ export function GameRoute() {
           >
             Retry game
           </button>
+          <Link className="ghost-action" to={buildLobbyPath(namespace)}>
+            {t("nav.lobby")}
+          </Link>
         </div>
       </section>
     );
