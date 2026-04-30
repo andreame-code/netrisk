@@ -31,5 +31,11 @@ export function normalizeTheme(
   theme: string | null | undefined,
   supportedThemes: readonly string[] = SUPPORTED_THEMES
 ): ThemeName {
-  return supportedThemes.includes(String(theme || "")) ? String(theme) : DEFAULT_THEME;
+  if (supportedThemes.includes(String(theme || ""))) {
+    return String(theme);
+  }
+
+  return supportedThemes.includes(DEFAULT_THEME)
+    ? DEFAULT_THEME
+    : supportedThemes[0] || DEFAULT_THEME;
 }

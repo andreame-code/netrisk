@@ -116,10 +116,10 @@ describe("resolveCurrentGameId", () => {
     renderLayout();
 
     await waitFor(() => {
-      expect(document.documentElement.dataset.theme).toBe("war-table");
+      expect(document.documentElement.dataset.theme).toBe("ember");
     });
-    expect(document.body.dataset.theme).toBe("war-table");
-    expect(window.localStorage.getItem("netrisk.theme")).toBe("war-table");
+    expect(document.body.dataset.theme).toBe("ember");
+    expect(window.localStorage.getItem("netrisk.theme")).toBe("ember");
   });
 
   it("preserves a saved module theme until runtime theme ids are available", async () => {
