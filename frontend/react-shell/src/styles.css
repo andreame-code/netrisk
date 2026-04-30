@@ -168,8 +168,138 @@ html[data-theme="war-table"] {
   padding: 1.5rem;
 }
 
+.status-panel-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-animation {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  margin: 0 0 1rem;
+  border: 1px solid var(--shell-border);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, var(--shell-status-surface) 0 24%, transparent 25%),
+    radial-gradient(
+      circle at center,
+      transparent 0 52%,
+      var(--shell-status-surface) 53% 59%,
+      transparent 60%
+    );
+  box-shadow:
+    inset 0 0 22px var(--overlay),
+    0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+.loading-animation-orbit,
+.loading-animation-path,
+.loading-animation-node {
+  position: absolute;
+  display: block;
+}
+
+.loading-animation-orbit {
+  inset: 12px;
+  border: 1px dashed var(--shell-border-hi);
+  border-radius: 50%;
+  animation: loading-orbit-spin 2600ms linear infinite;
+}
+
+.loading-animation-path {
+  inset: 8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 62%,
+    var(--gold-dim) 72%,
+    var(--gold-hi) 78%,
+    transparent 88%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 62%, #000 63% 68%, transparent 69%);
+  mask: radial-gradient(circle, transparent 0 62%, #000 63% 68%, transparent 69%);
+  animation: loading-path-sweep 1800ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.loading-animation-node {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--shell-border-hi);
+  border-radius: 50%;
+  background: var(--shell-node-bg);
+  box-shadow: 0 0 16px var(--gold-dim);
+  animation: loading-node-pulse 1800ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.loading-animation-node-a {
+  top: 8px;
+  left: 36px;
+}
+
+.loading-animation-node-b {
+  top: 36px;
+  right: 8px;
+  animation-delay: 180ms;
+}
+
+.loading-animation-node-c {
+  bottom: 8px;
+  left: 36px;
+  animation-delay: 360ms;
+}
+
+.loading-animation-node-d {
+  top: 36px;
+  left: 8px;
+  animation-delay: 540ms;
+}
+
+@keyframes loading-orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-path-sweep {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.55;
+  }
+
+  48% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.55;
+  }
+}
+
+@keyframes loading-node-pulse {
+  0%,
+  100% {
+    transform: scale(0.88);
+    opacity: 0.72;
+  }
+
+  45% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+}
+
 .status-panel-error {
   border-color: var(--shell-danger-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-animation-orbit,
+  .loading-animation-path,
+  .loading-animation-node {
+    animation: none;
+  }
 }
 
 .grid-shell {

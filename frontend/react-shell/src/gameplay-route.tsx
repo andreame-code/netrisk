@@ -28,6 +28,7 @@ import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i1
 
 import { useAuth } from "@react-shell/auth";
 import { GameplayMapViewport } from "@react-shell/gameplay-map-viewport";
+import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import { buildRegisterPath, useShellNamespace } from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
@@ -800,7 +801,8 @@ export function GameRoute() {
 
   if (gameplayQuery.isLoading && !snapshot) {
     return (
-      <section className="status-panel" data-testid="react-shell-game-loading">
+      <section className="status-panel status-panel-loading" data-testid="react-shell-game-loading">
+        <LoadingAnimation />
         <p className="status-label">Game</p>
         <h2>{t("game.runtime.loadingState")}</h2>
         <p className="status-copy">{t("game.errors.loadActiveGame")}</p>
