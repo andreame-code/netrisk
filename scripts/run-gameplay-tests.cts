@@ -61,7 +61,8 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/game-read-routes.test.cjs",
   "../tests/gameplay/regression/game-overview-route.test.cjs",
   "../tests/gameplay/regression/modules-routes.test.cjs",
-  "../tests/gameplay/regression/event-broadcast.test.cjs"
+  "../tests/gameplay/regression/event-broadcast.test.cjs",
+  "../tests/gameplay/verify_error_masking.test.cjs"
 ];
 
 gameplayTestModules.forEach((relativePath) => {

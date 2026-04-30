@@ -145,12 +145,24 @@ export function sendLocalizedError(
   code: string | null = null,
   extra: Record<string, unknown> = {}
 ): void {
-  const payload = localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams);
-  const resolvedCode = code || input?.code || null;
-  logUnexpectedServerError(res, statusCode, payload, resolvedCode, input);
+  const isInternalError = statusCode >= 500;
+
+  // We always compute the "raw" payload and code for server-side logging first.
+  const rawPayload = localizedPayload(input, fallbackMessage, fallbackKey, fallbackParams);
+  const rawCode = code || input?.code || null;
+  logUnexpectedServerError(res, statusCode, rawPayload, rawCode, input);
+
+  // For internal errors, we MUST NOT leak the raw input details to the client.
+  // We compute a sanitized version of the payload and code for the response.
+  const sanitizedPayload = isInternalError
+    ? localizedPayload(null, fallbackMessage, fallbackKey, fallbackParams)
+    : rawPayload;
+
+  const sanitizedCode = isInternalError ? (code || null) : rawCode;
+
   sendJson(res, statusCode, {
-    ...payload,
-    code: resolvedCode,
-    ...extra
+    ...sanitizedPayload,
+    code: sanitizedCode,
+    ...(isInternalError ? {} : extra)
   });
 }
