@@ -14,7 +14,7 @@ It does not post noisy comments on unrelated pull requests.
 
 ## Workflow
 
-The automation lives in [`.github/workflows/codex-pr-readiness.yml`](/D:/Andre/Documents/Playground/.github/workflows/codex-pr-readiness.yml) and runs on:
+The automation lives in [`.github/workflows/codex-pr-readiness.yml`](../.github/workflows/codex-pr-readiness.yml) and runs on:
 
 - Codex-relevant draft PR events
 - Codex-relevant review activity
@@ -23,7 +23,7 @@ The automation lives in [`.github/workflows/codex-pr-readiness.yml`](/D:/Andre/D
 - a recurring schedule every 30 minutes
 - manual dispatch
 
-The heavy logic is centralized in [`scripts/evaluate-codex-pr-readiness.cts`](/D:/Andre/Documents/Playground/scripts/evaluate-codex-pr-readiness.cts).
+The heavy logic is centralized in [`scripts/evaluate-codex-pr-readiness.cts`](../scripts/evaluate-codex-pr-readiness.cts).
 
 ## Hard blockers
 
@@ -79,7 +79,7 @@ It updates that comment in place and avoids duplicate status comments. If the bo
 
 ## Allowlists and tuning
 
-Behavior is tuned in [`.github/codex-pr-readiness.json`](/D:/Andre/Documents/Playground/.github/codex-pr-readiness.json), including:
+Behavior is tuned in [`.github/codex-pr-readiness.json`](../.github/codex-pr-readiness.json), including:
 
 - target label and branch prefix
 - Codex actor list

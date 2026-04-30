@@ -19,6 +19,7 @@ Today the project includes:
 - typed frontend API client helpers for auth, profile, lobby, setup, and gameplay flows
 - canonical React + Vite UI served on clean routes `/`, `/login`, `/register`, `/lobby`, `/lobby/new`, `/profile`, `/game`, and `/game/:gameId`, with `/react/*` kept as a supported alias and the old static UI removed
 - admin-only operational console on `/admin` and `/react/admin` with overview, users, games, configuration, maintenance, runtime modules, and audit log sections
+- admin Content Studio for authored `victory-objectives` modules, with draft validation, publish/enable/disable flows, and runtime catalog integration
 - TanStack Query + Zustand conventions in the React shell, with protected login, lobby, new game, profile, and gameplay routes shared by the canonical URLs and their `/react/*` aliases
 - minimal React shell production observability with Sentry, release tagging, and API request-id correlation
 - initial lobby and reopening saved games
@@ -54,8 +55,13 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 - [Admin console guide](docs/admin-console.md)
 - [Admin console execution plan](docs/admin-console-plan.md)
 - [Admin console handoff](docs/admin-console-handoff.md)
+- [Content Studio victory objectives](docs/content-studio-victory-objectives.md)
 - [React migration matrix](docs/react-migration-matrix.md)
 - [Extending NetRisk](docs/extending-netrisk.md)
+- [Codex PR readiness gate](docs/codex-pr-readiness-gate.md)
+- [E2E test guide](e2e/README.md)
+- [Gameplay test guide](tests/gameplay/README.md)
+- [React shell testing guide](frontend/react-shell/TESTING.md)
 - [Contributing](CONTRIBUTING.md)
 - [Architecture background](ARCHITECTURE.md)
 
@@ -153,7 +159,7 @@ Production deployments on Vercel execute scheduled checks through `vercel.json`:
 
 The endpoint is protected with `Authorization: Bearer ${CRON_SECRET}` and is intended for Vercel Cron invocations.
 Missing `CRON_SECRET` does not block the rest of the application from booting, but it does disable the cron endpoint until the secret is configured.
-The current scheduled jobs enforce configured turn time limits for active games and recover stuck AI turns. They are structured so additional jobs can be added under the same scheduler entrypoint.
+The current scheduled jobs enforce configured turn time limits for active games, recover stuck AI turns, and prune expired finished games according to the configured retention window. They are structured so additional jobs can be added under the same scheduler entrypoint.
 When an AI recovery is intercepted server-side, the backend also emits a structured `ai_turn_recovery` log event so recovery frequency can be monitored from runtime logs.
 
 ## Vercel deployment notes
@@ -245,9 +251,15 @@ npm run typecheck:react-shell
 npm test
 npm run test:gameplay
 npm run test:e2e
+npm run test:e2e:smoke
+npm run test:e2e:split
+npm run test:e2e:parallel
+npm run test:e2e:serial
+npm run test:e2e:headed
 npm run test:e2e:update
 npm run test:all
 npm run test:all:e2e
+npm run test:all:e2e:split
 ```
 
 - `npm test`: standard repository suite
@@ -267,9 +279,14 @@ npm run test:all:e2e
 - `npm run typecheck:react-shell`: type-checks the React shell sources that back both canonical and `/react/*` routes
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
+- `npm run test:e2e:smoke`: fast Playwright smoke coverage
+- `npm run test:e2e:split` / `npm run test:e2e:parallel`: isolated Playwright shard runners
+- `npm run test:e2e:serial`: explicit single-process Playwright runner
+- `npm run test:e2e:headed`: headed Playwright run for local debugging
 - `npm run test:e2e:update`: intentionally updates Playwright visual baselines after an approved UI change
 - `npm run test:all`: repository + gameplay tests
 - `npm run test:all:e2e`: repository + gameplay + e2e tests
+- `npm run test:all:e2e:split`: repository + gameplay tests plus split E2E shards
 
 ## Code quality
 
@@ -301,6 +318,8 @@ The `tests/gameplay` suite currently covers areas such as:
 - card helpers and trade bonus
 - shared runtime validation schemas and deterministic validation errors
 - multi-module regression flows
+- admin console and Content Studio route regressions
+- scheduler regressions for turn timeout, AI turn recovery, and finished-game retention
 - repository guardrails such as the TS-complete allowlist for tracked sources
 
 The `e2e` suite currently covers:
@@ -429,7 +448,10 @@ Main frontend screens currently available:
 - `/register`: canonical React register route
 - `/lobby`: canonical React lobby
 - `/lobby/new`: canonical React new game setup
+- `/admin`: canonical React admin console
+- `/admin/*`: canonical React admin sections
 - `/profile`: canonical React profile
+- `/unauthorized`: canonical React authorization fallback
 - `/game`: canonical React gameplay index/start shell
 - `/game/:gameId`: canonical React gameplay route
 - `/react/`: supported alias for the React landing/bootstrap route
@@ -437,7 +459,10 @@ Main frontend screens currently available:
 - `/react/register`: supported alias for the React register route
 - `/react/lobby`: supported alias for the React lobby route
 - `/react/lobby/new`: supported alias for the React new game route
+- `/react/admin`: supported alias for the admin console
+- `/react/admin/*`: supported alias for admin sections
 - `/react/profile`: supported alias for the React profile route
+- `/react/unauthorized`: supported alias for the authorization fallback
 - `/react/game`: supported alias for the React gameplay index/start shell
 - `/react/game/:gameId`: supported alias for the React gameplay route
 

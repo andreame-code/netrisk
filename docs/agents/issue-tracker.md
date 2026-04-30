@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Issues and PRDs for this repo live as GitHub Issues in `andreame-code/netrisk`. Use the `gh` CLI for all operations.
+Issues and PRDs for this repo live as GitHub Issues in `andreame-code/netrisk`. Use the `gh` CLI for direct issue operations unless a task-specific GitHub connector workflow is explicitly in use.
 
 ## Conventions
 

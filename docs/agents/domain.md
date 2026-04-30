@@ -4,10 +4,10 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Layout
 
-NetRisk uses a single-context domain docs layout.
+NetRisk uses a single-context domain docs layout when domain context files are present.
 
-- `CONTEXT.md` at the repo root contains NetRisk domain and project language.
-- `docs/adr/` contains architecture decision records.
+- `CONTEXT.md` at the repo root contains NetRisk domain and project language when created.
+- `docs/adr/` contains architecture decision records when created.
 - `CONTEXT-MAP.md` is not used because this repo is not a monorepo.
 
 ## Before exploring, read these
@@ -15,11 +15,11 @@ NetRisk uses a single-context domain docs layout.
 - **`CONTEXT.md`** at the repo root.
 - **`docs/adr/`** -- read ADRs that touch the area you're about to work in.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skill (`/grill-with-docs`) creates them lazily when terms or decisions actually get resolved.
+If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. This repository currently allows those files to be created lazily when terms or decisions actually get resolved.
 
 ## File structure
 
-Single-context repo:
+Single-context repo, once the optional domain docs have been created:
 
 ```
 /

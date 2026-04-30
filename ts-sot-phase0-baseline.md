@@ -1,6 +1,7 @@
 # Baseline Fase 0 - Source of Truth in TypeScript
 
 Nota: questo file descrive un checkpoint storico della fase 0 sul branch `codex/ts-sot-phase0`. Non rappresenta il gate corrente del repository; per lo stato attuale fare riferimento a `README.md`, `ARCHITECTURE.md` e ai check della PR attiva.
+Il gate corrente include anche `npm run check:ts-sources`, che rifiuta nuove sorgenti non TypeScript fuori allowlist.
 
 Data: 2026-04-12
 

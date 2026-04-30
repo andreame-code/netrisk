@@ -1,5 +1,7 @@
 # Admin Console Handoff
 
+This handoff is a historical snapshot for the first admin-console PR. For the current admin surface, see `docs/admin-console.md` and `docs/content-studio-victory-objectives.md`.
+
 ## What Was Implemented
 
 - a protected admin React route at `/admin` with sidebar navigation and section-based admin shell
@@ -8,6 +10,7 @@
 - persistent audit logging for core admin mutations
 - guarded admin actions for user role changes, lobby close, game termination, game config repair, and stale lobby cleanup
 - maintenance and diagnostics flows for broken references, stale lobbies, and snapshot/config inspection
+- later follow-up work added Content Studio for authored `victory-objectives` modules and a System Health admin section
 
 ## Routes And Pages Added
 
@@ -27,6 +30,7 @@
 - `GET /api/admin/maintenance`
 - `POST /api/admin/maintenance`
 - `GET /api/admin/audit`
+- follow-up Content Studio APIs are documented in `docs/content-studio-victory-objectives.md`
 
 ## Database Model And Config Changes
 
@@ -68,7 +72,7 @@
 3. richer admin UX for destructive confirmations and bulk operations
 4. pagination, sorting, and larger-scale operational filters
 
-## PR Status
+## Historical PR Status
 
 - branch: `codex/admin-console`
 - selected implementation commits in this PR:

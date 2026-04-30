@@ -1,5 +1,7 @@
 # Admin Console Execution Plan
 
+This is a historical execution plan for the first admin-console delivery slice. The shipped console has since grown to include Content Studio and system-health surfaces; use `docs/admin-console.md` for the current operator guide.
+
 ## Discovery Summary
 
 - Auth uses cookie-backed sessions via `netrisk_session` and persists `user.role` in the datastore.
@@ -31,5 +33,6 @@
 
 - delivery slices 1 through 6 are now implemented on `codex/admin-console`
 - the shipped console includes `Overview`, `Users`, `Games`, `Configurations`, `Runtime / Modules`, `Maintenance`, and `Audit Log`
+- later documentation reflects the current console including `Content Studio` and `System Health`
 - the latest hardening pass added regression coverage for anonymous/non-admin protection on admin mutations, destructive confirmation failures with audit logging, and admin-default preservation when `ruleSetId` is explicit but `pieceSetId` is omitted
 - the remaining work is now operational hardening rather than missing first-slice functionality: durable audit retention, richer bulk UX, and deeper runtime repair/remap tooling

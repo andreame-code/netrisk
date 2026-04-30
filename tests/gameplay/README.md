@@ -20,10 +20,11 @@ The command builds the current TypeScript sources first and then runs the gamepl
 - `fortify`: fortification movement
 - `victory`: elimination and victory
 - `shared`: shared runtime validation and cross-layer contract helpers
-- `regression`: representative multi-module flows, route regressions, and repository guardrails such as the TS source allowlist
+- `regression`: representative multi-module flows, admin/Content Studio routes, scheduler services, route regressions, and repository guardrails such as the TS source allowlist
 
 ## Notes for contributors
 
 - Gameplay tests are registered explicitly by the harness, so adding a new test file also requires wiring it into `scripts/run-gameplay-tests.cts`.
 - This suite is the right place for engine rules, module-runtime regressions, and deterministic repository checks that do not need a browser.
+- Admin APIs, authored content, scheduler services, and datastore-sensitive route behavior belong here when they can be verified without Playwright.
 - Browser-independent frontend/backend contract tests for the typed HTTP client live in `scripts/run-tests.cts`, not in this gameplay harness.

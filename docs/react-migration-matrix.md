@@ -14,7 +14,9 @@ The React cutover is complete. NetRisk now serves a single React shell on the ca
 | `/register` and `/react/register` | registration and authenticated redirect handling |
 | `/lobby` and `/react/lobby` | lobby list, selection, join/open flows |
 | `/lobby/new` and `/react/lobby/new` | game creation with presets, profiles, and validation |
+| `/admin/*` and `/react/admin/*` | admin console, Content Studio, modules, maintenance, audit, and system-health sections |
 | `/profile` and `/react/profile` | player profile, theme preference, admin module controls |
+| `/unauthorized` and `/react/unauthorized` | predictable fallback for protected routes |
 | `/game`, `/game/:gameId`, `/react/game`, `/react/game/:gameId` | gameplay shell, SSE sync, actions, and recovery flows |
 
 ## Deprecated URLs

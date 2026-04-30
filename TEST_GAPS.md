@@ -40,6 +40,8 @@
 - Gameplay E2E: granular rendering reinforcement flow stabilized against async control population
 - React shell routes: bootstrap, auth redirects, lobby/profile/new game, and gameplay route rendering
 - TS-complete allowlist regression: React shell sources are allowed and tracked stray `.js` sources are rejected
+- Admin Content Studio route and runtime integration regressions
+- Scheduler services: turn timeout, AI turn recovery, and finished-game retention
 
 ## Missing
 

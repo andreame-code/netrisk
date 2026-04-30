@@ -30,6 +30,8 @@ The admin UI supports:
 - disabling or re-enabling a published module
 - inspecting the generated runtime JSON
 
+The section is available from the admin console at `/admin/content-studio` and `/react/admin/content-studio`.
+
 Published or disabled modules are read-only in this phase. If later revisioning is needed, the
 next step should introduce explicit draft-from-published versioning rather than in-place mutation.
 
@@ -124,6 +126,7 @@ Current endpoints:
 - `POST /api/admin/content-studio/modules/:id/disable`
 
 These routes reuse the existing admin authorization and audit flow through `backend/admin-console.cts`.
+They are intentionally excluded from the public OpenAPI artifact because they are operator-only workflows, but they still use shared runtime validation schemas.
 
 ## UI structure
 
@@ -143,6 +146,11 @@ The authoring screen owns:
 - live validation
 - player-facing preview
 - generated runtime JSON
+
+Regression coverage lives in:
+
+- `tests/gameplay/regression/admin-content-studio-routes.test.cts`
+- `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx`
 
 ## Extension path for future module types
 
