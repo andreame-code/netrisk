@@ -220,7 +220,8 @@ export function GameRoute() {
   const queryClient = useQueryClient();
   const routeGameId = typeof gameId === "string" ? gameId : "";
   const lobbyHref = buildLobbyPath(namespace);
-  const shouldLoadGameState = Boolean(routeGameId) || state.status === "authenticated";
+  const shouldLoadGameState =
+    Boolean(routeGameId) || state.status === "authenticated" || state.status === "error";
   const shouldRedirectGuestGameRoot = !routeGameId && state.status === "unauthenticated";
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting");

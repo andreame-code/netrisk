@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
@@ -278,6 +278,28 @@ describe("GameRoute canonical root", () => {
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/react/lobby");
     expect(getGameStateMock).not.toHaveBeenCalled();
+    expect(subscribeToGameEventsMock).not.toHaveBeenCalled();
+  });
+
+  it("shows recovery UI when session bootstrap fails on the game root", async () => {
+    getSessionMock.mockRejectedValue(new Error("Session service unavailable."));
+    getGameStateMock.mockRejectedValue(new Error("Unable to load active game."));
+
+    renderReactShell("/react/game");
+
+    const errorPanel = await screen.findByTestId("react-shell-game-error");
+    expect(errorPanel).toBeInTheDocument();
+    expect(getGameStateMock).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        errorMessage: expect.any(String),
+        fallbackMessage: expect.any(String)
+      })
+    );
+    expect(within(errorPanel).getByRole("link", { name: "Lobby" })).toHaveAttribute(
+      "href",
+      "/react/lobby"
+    );
     expect(subscribeToGameEventsMock).not.toHaveBeenCalled();
   });
 });
