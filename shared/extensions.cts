@@ -133,7 +133,7 @@ const visualThemes = Object.freeze<Record<string, Readonly<VisualTheme>>>({
   command: Object.freeze({
     id: "command",
     name: "Command",
-    description: "Operational default theme with high-contrast military styling."
+    description: "Operational command theme with high-contrast military styling."
   }),
   midnight: Object.freeze({
     id: "midnight",
@@ -148,7 +148,8 @@ const visualThemes = Object.freeze<Record<string, Readonly<VisualTheme>>>({
   "war-table": Object.freeze({
     id: "war-table",
     name: "War Table",
-    description: "Dark tactical table interface with brass accents and dense command panels."
+    description:
+      "Default dark tactical table interface with brass accents and dense command panels."
   })
 });
 

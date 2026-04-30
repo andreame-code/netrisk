@@ -137,6 +137,7 @@ export interface GameSummaryContract {
   id: string;
   name: string;
   phase: string;
+  currentPlayerId?: string | null;
   playerCount: number;
   updatedAt: string;
   activeModules?: NetRiskModuleReferenceContract[];

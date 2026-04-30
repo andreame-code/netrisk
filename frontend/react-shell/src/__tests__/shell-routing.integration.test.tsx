@@ -137,6 +137,17 @@ describe("React shell routing and session integration", () => {
     expect(window.location.pathname).toBe("/");
   });
 
+  it("shows the loading animation while the shell bootstrap is pending", async () => {
+    const sessionRequest = createDeferred<AuthSessionResponse>();
+
+    getSessionMock.mockReturnValue(sessionRequest.promise);
+
+    renderReactShell("/react/");
+
+    expect(await screen.findByTestId("react-shell-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("loading-animation")).toBeInTheDocument();
+  });
+
   it("shows the profile loading state while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 

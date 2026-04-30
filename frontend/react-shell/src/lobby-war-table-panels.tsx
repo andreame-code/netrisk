@@ -4,8 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   CreateGameRequest,
-  CreateGameResponse,
-  GameSummary
+  CreateGameResponse
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
@@ -21,18 +20,10 @@ import {
 } from "@react-shell/game-setup-options";
 import { storeCurrentPlayerId } from "@react-shell/player-session";
 import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
+import { WarTableIcon, type WarTableIconName } from "@react-shell/war-table-icons";
 
 type WarTableLobbyPanelsProps = {
-  activeGame: GameSummary | null;
   canCreateGame: boolean;
-  canJoinSelected: boolean;
-  joinDisabled: boolean;
-  joinPending: boolean;
-  openDisabled: boolean;
-  openPending: boolean;
-  onJoinSelected(): Promise<void>;
-  onOpenSelected(): Promise<void>;
-  selectedGame: GameSummary | null;
 };
 
 type SelectableModule = ReturnType<typeof resolvedGameModules>[number];
@@ -68,23 +59,52 @@ function presetSummary(preset: ReturnType<typeof resolvedGamePresets>[number] | 
   return preset.description || t("warTable.lobby.presetFallback");
 }
 
-export function LobbyWarTablePanels({
-  activeGame,
-  canCreateGame,
-  canJoinSelected,
-  joinDisabled,
-  joinPending,
-  openDisabled,
-  openPending,
-  onJoinSelected,
-  onOpenSelected,
-  selectedGame
-}: WarTableLobbyPanelsProps) {
+function presetArtClassName(
+  preset: ReturnType<typeof resolvedGamePresets>[number],
+  index: number
+): string {
+  const presetText = `${preset.id} ${preset.name || ""}`.toLowerCase();
+
+  if (presetText.includes("duel")) {
+    return "is-duel";
+  }
+
+  if (presetText.includes("objective") || presetText.includes("mission")) {
+    return "is-objective";
+  }
+
+  if (presetText.includes("world") || presetText.includes("domination")) {
+    return "is-world";
+  }
+
+  return index % 2 === 0 ? "is-classic" : "is-command";
+}
+
+function moduleIconName(moduleId: string): WarTableIconName {
+  const normalizedModuleId = moduleId.toLowerCase();
+
+  if (normalizedModuleId.includes("objective") || normalizedModuleId.includes("mission")) {
+    return "objective";
+  }
+
+  if (normalizedModuleId.includes("fog") || normalizedModuleId.includes("stealth")) {
+    return "stealth";
+  }
+
+  if (normalizedModuleId.includes("card")) {
+    return "cards";
+  }
+
+  return "medal";
+}
+
+export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps) {
   const queryClient = useQueryClient();
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState(4);
   const [selectedTurnHours, setSelectedTurnHours] = useState(48);
   const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([]);
+  const [showAllPresets, setShowAllPresets] = useState(false);
 
   const optionsQuery = useQuery({
     queryKey: gameOptionsQueryKey(),
@@ -103,7 +123,7 @@ export function LobbyWarTablePanels({
   );
   const selectedPreset =
     presets.find((preset) => preset.id === selectedPresetId) || presets[0] || null;
-  const activeSummary = activeGame || selectedGame;
+  const visiblePresets = showAllPresets ? presets : presets.slice(0, 4);
   const createMutation = useMutation({
     mutationFn: (request: CreateGameRequest) =>
       createGame(request, {
@@ -210,7 +230,7 @@ export function LobbyWarTablePanels({
           </select>
         </label>
 
-        <div className="war-table-control-row">
+        <div className="war-table-control-row war-table-players-row">
           <span>{t("warTable.lobby.players")}</span>
           <div
             className="war-table-segmented"
@@ -230,7 +250,7 @@ export function LobbyWarTablePanels({
           </div>
         </div>
 
-        <div className="war-table-control-row">
+        <div className="war-table-control-row war-table-turn-row">
           <span>{t("warTable.lobby.turnDuration")}</span>
           <div
             className="war-table-segmented"
@@ -244,13 +264,13 @@ export function LobbyWarTablePanels({
                 className={hours === selectedTurnHours ? "is-active" : ""}
                 onClick={() => setSelectedTurnHours(hours)}
               >
-                {t("newGame.turnTimeout.option", { hours })}
+                {`${hours}h`}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="war-table-control-row">
+        <div className="war-table-control-row war-table-modules-row">
           <span>{t("warTable.lobby.modules")}</span>
           <div className="war-table-module-toggles">
             {modules.length ? (
@@ -261,7 +281,8 @@ export function LobbyWarTablePanels({
                   className={selectedModuleIds.includes(moduleEntry.id) ? "is-active" : ""}
                   onClick={() => toggleModule(moduleEntry.id)}
                 >
-                  {moduleEntry.displayName || moduleEntry.id}
+                  <WarTableIcon name={moduleIconName(moduleEntry.id)} />
+                  <span>{moduleEntry.displayName || moduleEntry.id}</span>
                 </button>
               ))
             ) : (
@@ -290,45 +311,34 @@ export function LobbyWarTablePanels({
       <aside className="war-table-preset-panel" aria-label={t("warTable.lobby.presets.heading")}>
         <h3>{t("warTable.lobby.presets.heading")}</h3>
         <div className="war-table-preset-list">
-          {(presets.length ? presets.slice(0, 4) : [selectedPreset])
+          {(presets.length ? visiblePresets : [selectedPreset])
             .filter(Boolean)
-            .map((preset) => (
+            .map((preset, index) => (
               <button
                 key={preset.id}
                 type="button"
                 className={preset.id === selectedPreset?.id ? "is-active" : ""}
                 onClick={() => handlePresetChange(preset.id)}
               >
-                <strong>{preset.name || preset.id}</strong>
-                <span>{presetSummary(preset)}</span>
+                <span
+                  className={`war-table-preset-art ${presetArtClassName(preset, index)}`}
+                  aria-hidden="true"
+                />
+                <span className="war-table-preset-copy">
+                  <strong>{preset.name || preset.id}</strong>
+                  <span>{presetSummary(preset)}</span>
+                </span>
               </button>
             ))}
         </div>
-        {canJoinSelected ? (
-          <button
-            type="button"
-            className="ghost-button war-table-open-active"
-            disabled={joinDisabled}
-            onClick={() => void onJoinSelected()}
-            data-testid="react-shell-lobby-war-table-action"
-          >
-            {joinPending ? t("warTable.lobby.opening") : t("warTable.lobby.joinBattle")}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="ghost-button war-table-open-active"
-            disabled={openDisabled}
-            onClick={() => void onOpenSelected()}
-            data-testid="react-shell-lobby-war-table-action"
-          >
-            {openPending
-              ? t("warTable.lobby.opening")
-              : activeSummary
-                ? t("warTable.lobby.resumeBattle")
-                : t("warTable.lobby.selectBattle")}
-          </button>
-        )}
+        <button
+          type="button"
+          className="ghost-button war-table-open-active"
+          disabled={optionsQuery.isLoading || !presets.length}
+          onClick={() => setShowAllPresets((currentValue) => !currentValue)}
+        >
+          {showAllPresets ? t("warTable.lobby.hidePresets") : t("warTable.lobby.viewAllPresets")}
+        </button>
       </aside>
     </div>
   );

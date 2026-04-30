@@ -423,29 +423,22 @@ export function validateNewGameConfig(
 
   const resolveTheme =
     typeof options.resolveTheme === "function" ? options.resolveTheme : findVisualTheme;
-  const hasExplicitThemeId = typeof input.themeId === "string" && input.themeId !== "";
-  const requestedThemeIds = hasExplicitThemeId
-    ? [input.themeId as string]
+  const explicitThemeId =
+    typeof input.themeId === "string" && input.themeId !== "" ? input.themeId : null;
+  const themeCandidateIds = explicitThemeId
+    ? [explicitThemeId]
     : [
         canPreferFallbackPresentationDefaults ? fallbackConfigInput.themeId : null,
         selectedContentPack.defaultSiteThemeId,
         selectedRuleSet.defaults.themeId,
         fallbackConfigInput.themeId,
         DEFAULT_THEME_ID
-      ];
-  let selectedTheme: VisualTheme | null = null;
-  for (const requestedThemeId of requestedThemeIds) {
-    if (typeof requestedThemeId !== "string" || requestedThemeId === "") {
-      continue;
-    }
-    selectedTheme = resolveTheme(requestedThemeId);
-    if (selectedTheme) {
-      break;
-    }
-  }
-  if (!selectedTheme && !hasExplicitThemeId && typeof options.resolveDefaultTheme === "function") {
-    selectedTheme = options.resolveDefaultTheme();
-  }
+      ].filter((themeId): themeId is string => typeof themeId === "string" && themeId !== "");
+  const selectedTheme =
+    themeCandidateIds.map((themeId) => resolveTheme(themeId)).find(Boolean) ||
+    (!explicitThemeId && typeof options.resolveDefaultTheme === "function"
+      ? options.resolveDefaultTheme()
+      : null);
   if (!selectedTheme) {
     throw createLocalizedError("Il tema selezionato non e supportato.", "newGame.invalidTheme");
   }

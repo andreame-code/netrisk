@@ -7,6 +7,7 @@ import { validateRegistrationInput } from "@frontend-core/register-validation.mt
 import { t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { LoadingAnimation } from "@react-shell/loading-animation";
 import {
   buildLoginHref,
   buildProfilePath,
@@ -37,7 +38,8 @@ export function RegisterRoute() {
 
   if (state.status === "loading") {
     return (
-      <section className="status-panel" data-testid="react-shell-loading">
+      <section className="status-panel status-panel-loading" data-testid="react-shell-loading">
+        <LoadingAnimation />
         <p className="status-label">Loading</p>
         <h2>Preparing the registration route</h2>
         <p className="status-copy">
