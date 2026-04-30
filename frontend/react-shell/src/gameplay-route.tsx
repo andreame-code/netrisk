@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState, type CSSProperties } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -220,6 +220,8 @@ export function GameRoute() {
   const queryClient = useQueryClient();
   const routeGameId = typeof gameId === "string" ? gameId : "";
   const lobbyHref = buildLobbyPath(namespace);
+  const shouldLoadGameState = Boolean(routeGameId) || state.status === "authenticated";
+  const shouldRedirectGuestGameRoot = !routeGameId && state.status === "unauthenticated";
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting");
   const [actionError, setActionError] = useState("");
@@ -249,7 +251,8 @@ export function GameRoute() {
       }),
     // Keep the board in sync while the event stream is still handshaking or reconnecting.
     refetchInterval: streamStatus === "live" ? false : 1500,
-    refetchIntervalInBackground: true
+    refetchIntervalInBackground: true,
+    enabled: shouldLoadGameState
   });
 
   const snapshot = gameplayQuery.data || null;
@@ -411,9 +414,20 @@ export function GameRoute() {
   }, [snapshot?.turnPhase]);
 
   useEffect(() => {
-    setSelectedTradeCardIds((current) =>
-      current.filter((cardId) => playerHand.some((card) => card.id === cardId)).slice(0, 3)
-    );
+    setSelectedTradeCardIds((current) => {
+      const next = current
+        .filter((cardId) => playerHand.some((card) => card.id === cardId))
+        .slice(0, 3);
+
+      if (
+        next.length === current.length &&
+        next.every((cardId, index) => cardId === current[index])
+      ) {
+        return current;
+      }
+
+      return next;
+    });
   }, [playerHand]);
 
   const applyMutationPayload = useEffectEvent(
@@ -552,6 +566,10 @@ export function GameRoute() {
       eventSource.close();
     };
   }, [resolvedGameId]);
+
+  if (shouldRedirectGuestGameRoot) {
+    return <Navigate to={lobbyHref} replace />;
+  }
 
   function submitGameAction(request: Parameters<typeof sendGameAction>[0]): Promise<void> {
     return actionMutation.mutateAsync(request).then(() => undefined);

@@ -205,9 +205,11 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const profileHref = buildProfilePath(namespace);
   const registerHref = buildRegisterPath(namespace);
   const bootstrapHref = buildBootstrapPath(namespace);
-  const gameHref = currentGameId
-    ? buildGamePath(currentGameId, namespace)
-    : buildGameIndexPath(namespace);
+  const gameHref = isAuthenticated
+    ? currentGameId
+      ? buildGamePath(currentGameId, namespace)
+      : buildGameIndexPath(namespace)
+    : lobbyHref;
   const currentLocale = getLocale();
   const avatarLabel = isAuthenticated ? state.user.username : "C";
   const avatar = avatarLabel.trim().charAt(0).toUpperCase() || "C";

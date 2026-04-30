@@ -3925,6 +3925,8 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .shared-bottom-shell
 }
 
 html[data-theme="war-table"] .top-nav-bar {
+  position: relative;
+  z-index: 20;
   min-height: 68px;
   width: 100%;
   margin: 0;
@@ -3976,6 +3978,7 @@ html[data-theme="war-table"] .top-nav-bar .nav-link.is-active::after {
 
 html[data-theme="war-table"] .top-nav-actions {
   position: relative;
+  z-index: 120;
   gap: 13px;
 }
 
@@ -4798,6 +4801,12 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
 }
 
 @media (max-width: 760px) {
+  html[data-theme="war-table"] .top-nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
   html[data-theme="war-table"] .war-nav-user-name,
   html[data-theme="war-table"] .war-nav-locale-code {
     display: none;
