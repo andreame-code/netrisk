@@ -14,7 +14,13 @@ type RewriteRule = {
   }>;
 };
 
-function loadVercelConfig(): { rewrites?: RewriteRule[] } {
+type VercelConfig = {
+  functions?: Record<string, { includeFiles?: string | string[] }>;
+  redirects?: RewriteRule[];
+  rewrites?: RewriteRule[];
+};
+
+function loadVercelConfig(): VercelConfig {
   const configPath = path.join(process.cwd(), "vercel.json");
   return JSON.parse(fs.readFileSync(configPath, "utf8"));
 }
@@ -34,10 +40,17 @@ function findRedirectRule(
 register("vercel preview rewrites React shell deep links to the shell entry document", () => {
   const config = loadVercelConfig();
   const rewrites = Array.isArray(config.rewrites) ? config.rewrites : [];
-  const redirects = Array.isArray((config as { redirects?: RewriteRule[] }).redirects)
-    ? (config as { redirects?: RewriteRule[] }).redirects || []
-    : [];
+  const redirects = Array.isArray(config.redirects) ? config.redirects : [];
 
+  assert.ok(
+    hasRewriteRule(rewrites, "/api/(.*)", "/api/index"),
+    "Expected /api/* to rewrite to the Vercel function route."
+  );
+  assert.equal(
+    config.functions?.["api/index.ts"]?.includeFiles,
+    ".tsbuild/**",
+    "Expected the Vercel API function to include compiled backend output."
+  );
   assert.ok(
     hasRewriteRule(rewrites, "/react/:path*", "/react/index.html"),
     "Expected /react/:path* to rewrite to /react/index.html for SPA deep links."
