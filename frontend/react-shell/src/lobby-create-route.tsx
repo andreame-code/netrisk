@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -334,6 +334,98 @@ function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
   );
 }
 
+function pickSetupPlayerCount(
+  requestedValue: string | null,
+  playerRange: GameOptionsResponse["playerRange"]
+): number | null {
+  const parsedValue = Number(requestedValue);
+  const minimumPlayers = playerRange?.min || 2;
+  const maximumPlayers = playerRange?.max || 4;
+
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < minimumPlayers ||
+    parsedValue > maximumPlayers
+  ) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
+function pickSetupTurnTimeoutHours(
+  requestedValue: string | null,
+  options: GameOptionsResponse
+): string | null {
+  const parsedValue = Number(requestedValue);
+  if (
+    !Number.isInteger(parsedValue) ||
+    !options.turnTimeoutHoursOptions.some((hours) => hours === parsedValue)
+  ) {
+    return null;
+  }
+
+  return String(parsedValue);
+}
+
+function parseSetupModuleIds(requestedValue: string | null): string[] | null {
+  if (requestedValue === null) {
+    return null;
+  }
+
+  const seenModuleIds = new Set<string>();
+  return requestedValue
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => {
+      if (!entry || seenModuleIds.has(entry)) {
+        return false;
+      }
+      seenModuleIds.add(entry);
+      return true;
+    });
+}
+
+function applySetupSearchParams(
+  formState: NewGameFormState,
+  options: GameOptionsResponse,
+  searchParams: URLSearchParams
+): NewGameFormState {
+  const presetId = pickExplicitId(searchParams.get("preset"), resolvedGamePresets(options));
+  const requestedPlayerCount = pickSetupPlayerCount(
+    searchParams.get("players"),
+    options.playerRange
+  );
+  const requestedTurnTimeoutHours = pickSetupTurnTimeoutHours(
+    searchParams.get("turnHours"),
+    options
+  );
+  const requestedModuleIds = parseSetupModuleIds(searchParams.get("modules"));
+  const availableModuleIds = new Set(
+    filterConfigurableGameModules(resolvedGameModules(options)).map((moduleEntry) => moduleEntry.id)
+  );
+  const nextModuleIds =
+    requestedModuleIds === null
+      ? null
+      : requestedModuleIds.filter((moduleId) => availableModuleIds.has(moduleId));
+  const presetState = presetId ? applyGamePreset(formState, options, presetId) : formState;
+
+  return sanitizeProfiles(
+    {
+      ...presetState,
+      ...(requestedPlayerCount
+        ? {
+            totalPlayers: requestedPlayerCount,
+            playerTypes: ensurePlayerTypes(presetState.playerTypes, requestedPlayerCount)
+          }
+        : {}),
+      ...(requestedTurnTimeoutHours ? { turnTimeoutHours: requestedTurnTimeoutHours } : {}),
+      ...(nextModuleIds !== null ? { selectedModuleIds: nextModuleIds } : {})
+    },
+    options
+  );
+}
+
 function applyGamePreset(
   formState: NewGameFormState,
   options: GameOptionsResponse,
@@ -407,6 +499,7 @@ function setLobbyGamesCache(
 export function LobbyCreateRoute() {
   const { state } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const mapSelectRef = useRef<HTMLSelectElement | null>(null);
   const [formState, setFormState] = useState<NewGameFormState | null>(null);
   const [submitError, setSubmitError] = useState("");
@@ -481,8 +574,8 @@ export function LobbyCreateRoute() {
       return;
     }
 
-    setFormState(buildInitialForm(options));
-  }, [formState, options]);
+    setFormState(applySetupSearchParams(buildInitialForm(options), options, searchParams));
+  }, [formState, options, searchParams]);
 
   function updateFormState(nextState: NewGameFormState): void {
     setFormState(options ? sanitizeProfiles(nextState, options) : nextState);
@@ -586,6 +679,23 @@ export function LobbyCreateRoute() {
               <li>{t("newGame.sequence.step3")}</li>
             </ul>
           </article>
+          {options && formState ? (
+            <article className="new-game-brief-card">
+              <span className="lobby-command-label">{t("newGame.quickConfirm.label")}</span>
+              <strong>{t("newGame.quickConfirm.title")}</strong>
+              <button
+                type="submit"
+                form="new-game-form"
+                className="ghost-button"
+                disabled={submitDisabled}
+                data-testid="react-shell-new-game-confirm-default"
+              >
+                {createMutation.isPending
+                  ? t("newGame.feedback.creating")
+                  : t("newGame.quickConfirm.action")}
+              </button>
+            </article>
+          ) : null}
         </div>
 
         <div

@@ -244,8 +244,8 @@ function createResolvedCatalogGameOptionsResponse(): GameOptionsResponse {
   };
 }
 
-async function renderLobbyCreateRoute() {
-  const rendered = renderReactShell("/react/lobby/new");
+async function renderLobbyCreateRoute(path = "/react/lobby/new") {
+  const rendered = renderReactShell(path);
   const createPage = await screen.findByTestId("react-shell-lobby-create-page");
   const route = within(createPage);
   const customizeOptionsToggle = (await route.findByTestId(
@@ -459,6 +459,47 @@ describe("LobbyCreateRoute integration", () => {
           contentProfileId: "content-resolved",
           gameplayProfileId: "gameplay-resolved",
           uiProfileId: "ui-resolved"
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "applies lobby setup params and submits the prefilled setup from the quick confirm action",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=preset-resolved&players=2&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gamePresetId: "preset-resolved",
+          contentProfileId: "content-resolved",
+          gameplayProfileId: "gameplay-resolved",
+          uiProfileId: "ui-resolved",
+          totalPlayers: 2,
+          turnTimeoutHours: 48,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            }
+          ]
         }),
         expect.any(Object)
       );
