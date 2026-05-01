@@ -5112,7 +5112,7 @@ register("API state e mutazioni restano isolate tra partite diverse tramite game
 
     const aiJoinA = await fetch(baseUrl + "/api/ai/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerA.sessionToken),
       body: JSON.stringify({ name: "CPU A", gameId: payloadA.game.id })
     });
     assert.equal(aiJoinA.status, 201);
@@ -5907,7 +5907,7 @@ register(
 
       const joinAi = await fetch(baseUrl + "/api/ai/join", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(ownerSession.sessionToken),
         body: JSON.stringify({ name: "CPU Rebind" })
       });
       assert.equal(joinAi.status, 201);
@@ -6152,7 +6152,7 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
 
     const joinAi = await fetch(baseUrl + "/api/ai/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(humanSession.sessionToken),
       body: JSON.stringify({ name: "CPU Basic" })
     });
     assert.equal(joinAi.status, 201);
@@ -6247,7 +6247,7 @@ register("API games open riprende automaticamente una partita salvata sul turno 
 
     const joinAi = await fetch(baseUrl + "/api/ai/join", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(ownerSession.sessionToken),
       body: JSON.stringify({ name: "CPU Resume" })
     });
     assert.equal(joinAi.status, 201);
