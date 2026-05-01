@@ -1,3 +1,5 @@
+const { persistBroadcastAndSendMutation } = require("./game-mutation.cjs");
+
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -135,25 +137,20 @@ async function handleAttackGameActionRoute(
     return true;
   }
 
-  try {
-    await persistGameContext(gameContext, expectedVersion);
-  } catch (error) {
-    if (handleVersionConflict(error)) {
-      return true;
+  await persistBroadcastAndSendMutation({
+    res,
+    gameContext,
+    expectedVersion,
+    user,
+    persistGameContext,
+    broadcastGame,
+    snapshotForUser,
+    handleVersionConflict,
+    sendJson,
+    sendLocalizedError,
+    payload: {
+      rounds: Array.isArray(result.rounds) ? result.rounds : undefined
     }
-    throw error;
-  }
-  broadcastGame(gameContext);
-  sendJson(res, 200, {
-    ok: true,
-    state: snapshotForUser(
-      gameContext.state,
-      gameContext.gameId,
-      gameContext.version,
-      gameContext.gameName,
-      user
-    ),
-    rounds: Array.isArray(result.rounds) ? result.rounds : undefined
   });
   return true;
 }

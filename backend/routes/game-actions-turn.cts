@@ -1,3 +1,5 @@
+const { persistBroadcastAndSendMutation } = require("./game-mutation.cjs");
+
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -51,24 +53,17 @@ async function handleTurnGameActionRoute(
       return true;
     }
 
-    try {
-      await persistWithAiTurns(gameContext, expectedVersion);
-    } catch (error) {
-      if (handleVersionConflict(error)) {
-        return true;
-      }
-      throw error;
-    }
-    broadcastGame(gameContext);
-    sendJson(res, 200, {
-      ok: true,
-      state: snapshotForUser(
-        gameContext.state,
-        gameContext.gameId,
-        gameContext.version,
-        gameContext.gameName,
-        user
-      )
+    await persistBroadcastAndSendMutation({
+      res,
+      gameContext,
+      expectedVersion,
+      user,
+      persistGameContext: persistWithAiTurns,
+      broadcastGame,
+      snapshotForUser,
+      handleVersionConflict,
+      sendJson,
+      sendLocalizedError
     });
     return true;
   }
@@ -80,24 +75,17 @@ async function handleTurnGameActionRoute(
       return true;
     }
 
-    try {
-      await persistWithAiTurns(gameContext, expectedVersion);
-    } catch (error) {
-      if (handleVersionConflict(error)) {
-        return true;
-      }
-      throw error;
-    }
-    broadcastGame(gameContext);
-    sendJson(res, 200, {
-      ok: true,
-      state: snapshotForUser(
-        gameContext.state,
-        gameContext.gameId,
-        gameContext.version,
-        gameContext.gameName,
-        user
-      )
+    await persistBroadcastAndSendMutation({
+      res,
+      gameContext,
+      expectedVersion,
+      user,
+      persistGameContext: persistWithAiTurns,
+      broadcastGame,
+      snapshotForUser,
+      handleVersionConflict,
+      sendJson,
+      sendLocalizedError
     });
     return true;
   }
