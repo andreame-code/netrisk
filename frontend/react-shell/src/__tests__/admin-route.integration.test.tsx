@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AdminAuthoredModuleDetailResponse,
@@ -747,32 +747,36 @@ describe("Admin route integration", () => {
     expect(await screen.findByText("Operational command center")).toBeInTheDocument();
     expect(screen.getByText("Monitor")).toBeInTheDocument();
     expect(screen.getByText("Operate")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Admin" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Current server defaults")).toBeInTheDocument();
     expect(screen.getByText("Latest admin actions")).toBeInTheDocument();
   });
 
-  it("toggles the mobile admin navigation from the top bar menu button", async () => {
+  it("opens the main navigation from the admin top bar menu button", async () => {
     getSessionMock.mockResolvedValue(createSession("war-table", "admin"));
     const { user } = renderReactShell("/react/admin");
 
-    const page = await screen.findByTestId("admin-route-page");
-    const openButton = screen.getByRole("button", { name: "Open admin navigation" });
+    await screen.findByTestId("admin-route-page");
+    const primaryNav = screen.getByTestId("admin-primary-nav");
+    const topbarMenuButton = screen.getByRole("button", { name: "Open main navigation" });
 
-    expect(openButton).toHaveAttribute("aria-expanded", "false");
-    expect(page).not.toHaveClass("is-nav-open");
+    expect(primaryNav).not.toHaveClass("is-open");
+    expect(topbarMenuButton).toHaveAttribute("aria-expanded", "false");
 
-    await user.click(openButton);
+    await user.click(topbarMenuButton);
 
-    expect(openButton).toHaveAccessibleName("Close admin navigation");
-    expect(openButton).toHaveAttribute("aria-expanded", "true");
-    expect(page).toHaveClass("is-nav-open");
+    const navLinks = within(primaryNav);
+    expect(primaryNav).toHaveClass("is-open");
+    expect(topbarMenuButton).toHaveAccessibleName("Close main navigation");
+    expect(topbarMenuButton).toHaveAttribute("aria-expanded", "true");
+    expect(navLinks.getByRole("link", { name: "Lobby" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Game" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Profile" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Admin" })).toBeInTheDocument();
 
-    await user.click(openButton);
+    await user.click(navLinks.getByRole("link", { name: "Game" }));
 
-    expect(openButton).toHaveAccessibleName("Open admin navigation");
-    expect(openButton).toHaveAttribute("aria-expanded", "false");
-    expect(page).not.toHaveClass("is-nav-open");
+    expect(primaryNav).not.toHaveClass("is-open");
   });
 
   it("requires confirmation before clearing config overrides and saving the reset", async () => {

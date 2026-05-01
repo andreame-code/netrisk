@@ -2340,6 +2340,45 @@ body[data-app-section="admin"] {
   outline: none;
 }
 
+.admin-menu-button.is-active {
+  border-color: var(--admin-border-hi);
+  background: rgba(240, 165, 27, 0.16);
+}
+
+.admin-primary-nav {
+  grid-column: 1 / -1;
+  display: none;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0.65rem 0 0;
+  border-top: 1px solid var(--admin-border);
+}
+
+.admin-primary-nav.is-open {
+  display: grid;
+}
+
+.admin-primary-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  background: rgba(6, 25, 39, 0.76);
+}
+
+.admin-primary-nav a:hover,
+.admin-primary-nav a:focus-visible {
+  border-color: var(--admin-border-hi);
+  color: var(--admin-gold-hi);
+  outline: none;
+}
+
 .admin-icon {
   width: 1.12rem;
   height: 1.12rem;
@@ -3262,19 +3301,8 @@ body[data-app-section="admin"] {
 
   .admin-topbar {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    z-index: 40;
     min-height: 58px;
     padding: 0 0.75rem;
-  }
-
-  .admin-menu-button {
-    position: relative;
-    z-index: 45;
-  }
-
-  .admin-menu-button.is-active {
-    border-color: var(--admin-border-hi);
-    background: rgba(240, 165, 27, 0.16);
   }
 
   .admin-topbar > .admin-brand {
