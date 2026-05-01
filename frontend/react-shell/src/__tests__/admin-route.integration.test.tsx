@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AdminAuthoredModuleDetailResponse,
@@ -747,9 +747,36 @@ describe("Admin route integration", () => {
     expect(await screen.findByText("Operational command center")).toBeInTheDocument();
     expect(screen.getByText("Monitor")).toBeInTheDocument();
     expect(screen.getByText("Operate")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Admin" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Current server defaults")).toBeInTheDocument();
     expect(screen.getByText("Latest admin actions")).toBeInTheDocument();
+  });
+
+  it("opens the main navigation from the admin top bar menu button", async () => {
+    getSessionMock.mockResolvedValue(createSession("war-table", "admin"));
+    const { user } = renderReactShell("/react/admin");
+
+    await screen.findByTestId("admin-route-page");
+    const primaryNav = screen.getByTestId("admin-primary-nav");
+    const topbarMenuButton = screen.getByRole("button", { name: "Open main navigation" });
+
+    expect(primaryNav).not.toHaveClass("is-open");
+    expect(topbarMenuButton).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(topbarMenuButton);
+
+    const navLinks = within(primaryNav);
+    expect(primaryNav).toHaveClass("is-open");
+    expect(topbarMenuButton).toHaveAccessibleName("Close main navigation");
+    expect(topbarMenuButton).toHaveAttribute("aria-expanded", "true");
+    expect(navLinks.getByRole("link", { name: "Lobby" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Game" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Profile" })).toBeInTheDocument();
+    expect(navLinks.getByRole("link", { name: "Admin" })).toBeInTheDocument();
+
+    await user.click(navLinks.getByRole("link", { name: "Game" }));
+
+    expect(primaryNav).not.toHaveClass("is-open");
   });
 
   it("requires confirmation before clearing config overrides and saving the reset", async () => {
