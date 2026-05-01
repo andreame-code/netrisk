@@ -3653,6 +3653,14 @@ html[data-theme="war-table"] body[data-app-section="admin"] .admin-list-button {
   }
 }
 
+@media (max-width: 900px) {
+  html[data-theme="war-table"] .admin-sidebar {
+    position: fixed;
+    top: 0.5rem;
+    padding: 1rem;
+  }
+}
+
 @media (max-width: 760px) {
   html[data-theme="war-table"] body {
     padding-bottom: 0;

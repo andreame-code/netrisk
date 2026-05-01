@@ -140,6 +140,14 @@ describe("theme runtime bridge", () => {
     }
   });
 
+  it("keeps War Table mobile admin navigation as an off-canvas drawer", () => {
+    const css = readFileSync(themeTokensPath, "utf8");
+
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*900px\)\s*\{[\s\S]*html\[data-theme="war-table"\]\s+\.admin-sidebar\s*\{[\s\S]*position\s*:\s*fixed/i
+    );
+  });
+
   it("keeps War Table visual refinements scoped to reusable shell surfaces", () => {
     const css = readFileSync(themeTokensPath, "utf8");
     const selectors = warTableReferenceGapSelectors(css);
