@@ -5,9 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createSupabaseDatastore } = require("../../../backend/datastore-supabase.cjs");
-const {
-  checkSupabaseConnection
-} = require("../../../scripts/check-supabase-connection.cjs");
+const { checkSupabaseConnection } = require("../../../scripts/check-supabase-connection.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
