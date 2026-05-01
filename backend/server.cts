@@ -730,8 +730,6 @@ function createApp(options: CreateAppOptions = {}) {
     return {
       ok: storage.ok,
       storage,
-      activeGameId,
-      activeGameVersion,
       hasActiveGame: Boolean(activeGameId)
     };
   }
@@ -1535,11 +1533,15 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "POST" && url.pathname === "/api/ai/join") {
       const body = await parseBody(req);
       await handleAiJoinRoute(
+        req,
         res,
         body,
         url,
+        requireAuth,
         loadGameContext,
         getTargetGameId,
+        gameSessions.getGame,
+        authorize,
         addPlayer,
         persistGameContext,
         broadcastGame,

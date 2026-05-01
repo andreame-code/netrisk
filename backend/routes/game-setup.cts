@@ -61,11 +61,15 @@ const {
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleAiJoinRoute(
+  req: unknown,
   res: unknown,
   body: Record<string, any>,
   url: URL,
+  requireAuth: RequireAuth,
   loadGameContext: LoadGameContext,
   getTargetGameId: GetTargetGameId,
+  getGame: GetGame,
+  authorize: Authorize,
   addPlayer: AddPlayer,
   persistGameContext: PersistGameContext,
   broadcastGame: BroadcastGame,
@@ -73,7 +77,28 @@ async function handleAiJoinRoute(
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
-  const gameContext = await loadGameContext(getTargetGameId(body, url));
+  const authContext = await requireAuth(req, res, body);
+  if (!authContext) {
+    return;
+  }
+
+  const gameId = getTargetGameId(body, url);
+  try {
+    const activeGame = await getGame(gameId);
+    authorize("game:start", { user: authContext.user, game: activeGame.game });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 403;
+    sendLocalizedError(
+      res,
+      statusCode,
+      error,
+      "Aggiunta AI non autorizzata.",
+      "server.game.aiJoinUnauthorized"
+    );
+    return;
+  }
+
+  const gameContext = await loadGameContext(gameId);
   const result = addPlayer(gameContext.state, body.name, { isAi: true });
   if (!result.ok) {
     sendLocalizedError(
