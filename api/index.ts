@@ -8,4 +8,4 @@ function handleRequest(req: IncomingMessage, res: ServerResponse) {
   return app.handleRequest(req, res);
 }
 
-export = handleRequest;
+export default handleRequest;
