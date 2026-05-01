@@ -752,6 +752,29 @@ describe("Admin route integration", () => {
     expect(screen.getByText("Latest admin actions")).toBeInTheDocument();
   });
 
+  it("toggles the mobile admin navigation from the top bar menu button", async () => {
+    getSessionMock.mockResolvedValue(createSession("war-table", "admin"));
+    const { user } = renderReactShell("/react/admin");
+
+    const page = await screen.findByTestId("admin-route-page");
+    const openButton = screen.getByRole("button", { name: "Open admin navigation" });
+
+    expect(openButton).toHaveAttribute("aria-expanded", "false");
+    expect(page).not.toHaveClass("is-nav-open");
+
+    await user.click(openButton);
+
+    expect(openButton).toHaveAccessibleName("Close admin navigation");
+    expect(openButton).toHaveAttribute("aria-expanded", "true");
+    expect(page).toHaveClass("is-nav-open");
+
+    await user.click(openButton);
+
+    expect(openButton).toHaveAccessibleName("Open admin navigation");
+    expect(openButton).toHaveAttribute("aria-expanded", "false");
+    expect(page).not.toHaveClass("is-nav-open");
+  });
+
   it("requires confirmation before clearing config overrides and saving the reset", async () => {
     getAdminConfigMock.mockResolvedValue(createAdminConfigResponse());
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());

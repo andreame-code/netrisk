@@ -2709,8 +2709,8 @@ export function AdminRoute() {
         <header className="admin-topbar">
           <button
             type="button"
-            className="admin-topbar-button admin-menu-button"
-            aria-label="Open admin navigation"
+            className={`admin-topbar-button admin-menu-button${navOpen ? " is-active" : ""}`}
+            aria-label={navOpen ? "Close admin navigation" : "Open admin navigation"}
             aria-expanded={navOpen}
             aria-controls="admin-nav-groups"
             onClick={() => setNavOpen((current) => !current)}

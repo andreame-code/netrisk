@@ -3262,8 +3262,19 @@ body[data-app-section="admin"] {
 
   .admin-topbar {
     grid-template-columns: auto minmax(0, 1fr) auto;
+    z-index: 40;
     min-height: 58px;
     padding: 0 0.75rem;
+  }
+
+  .admin-menu-button {
+    position: relative;
+    z-index: 45;
+  }
+
+  .admin-menu-button.is-active {
+    border-color: var(--admin-border-hi);
+    background: rgba(240, 165, 27, 0.16);
   }
 
   .admin-topbar > .admin-brand {
