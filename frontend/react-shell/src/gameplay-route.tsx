@@ -921,12 +921,6 @@ export function GameRoute() {
             </span>
           </div>
 
-          <div className="rail-section game-navigation-actions">
-            <Link className="ghost-button full-width" to={lobbyHref}>
-              {t("nav.lobby")}
-            </Link>
-          </div>
-
           <div
             className="rail-section game-reinforcement-banner"
             id="reinforcement-banner"
