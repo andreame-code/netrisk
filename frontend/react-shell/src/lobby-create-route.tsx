@@ -391,6 +391,7 @@ function applySetupSearchParams(
   options: GameOptionsResponse,
   searchParams: URLSearchParams
 ): NewGameFormState {
+  const hasPresetParam = searchParams.has("preset");
   const presetId = pickExplicitId(searchParams.get("preset"), resolvedGamePresets(options));
   const requestedPlayerCount = pickSetupPlayerCount(
     searchParams.get("players"),
@@ -408,7 +409,7 @@ function applySetupSearchParams(
     requestedModuleIds === null
       ? null
       : requestedModuleIds.filter((moduleId) => availableModuleIds.has(moduleId));
-  const presetState = presetId ? applyGamePreset(formState, options, presetId) : formState;
+  const presetState = hasPresetParam ? applyGamePreset(formState, options, presetId) : formState;
 
   return sanitizeProfiles(
     {

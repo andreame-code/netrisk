@@ -506,4 +506,41 @@ describe("LobbyCreateRoute integration", () => {
     },
     lobbyCreateRouteTimeoutMs
   );
+
+  it(
+    "clears admin default presets when lobby setup explicitly has no preset",
+    async () => {
+      getGameOptionsMock.mockResolvedValue({
+        ...createResolvedCatalogGameOptionsResponse(),
+        adminDefaults: {
+          gamePresetId: "preset-resolved"
+        }
+      });
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=2&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      const submittedRequest = createGameMock.mock.calls[0]?.[0];
+      expect(submittedRequest).toEqual(
+        expect.objectContaining({
+          totalPlayers: 2,
+          turnTimeoutHours: 48
+        })
+      );
+      expect(submittedRequest).not.toEqual(
+        expect.objectContaining({
+          gamePresetId: "preset-resolved"
+        })
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
 });

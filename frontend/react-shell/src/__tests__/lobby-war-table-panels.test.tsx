@@ -152,7 +152,7 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(createLink).toHaveAttribute(
         "href",
-        expect.stringContaining("/react/lobby/new?players=3&turnHours=48&modules=")
+        expect.stringContaining("/react/lobby/new?preset=&players=3&turnHours=48&modules=")
       );
     });
   });

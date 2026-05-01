@@ -108,9 +108,7 @@ function buildCreateGameFormPath({
   turnTimeoutHours: number;
 }): string {
   const searchParams = new URLSearchParams();
-  if (presetId) {
-    searchParams.set("preset", presetId);
-  }
+  searchParams.set("preset", presetId || "");
   searchParams.set("players", String(playerCount));
   searchParams.set("turnHours", String(turnTimeoutHours));
   searchParams.set("modules", moduleIds.join(","));
