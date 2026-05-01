@@ -135,3 +135,30 @@ Use the default GitHub Issue label vocabulary: `needs-triage`, `needs-info`, `re
 ### Domain docs
 
 This repo uses a single-context domain docs layout with root `CONTEXT.md` and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+## Skill invocation gate
+
+When the user explicitly asks to use Matt Pocock skills, the agent must invoke the requested slash skills explicitly before editing files.
+
+For architecture work, the minimum required sequence is:
+
+1. `/zoom-out`
+2. `/improve-codebase-architecture`
+3. `/grill-with-docs`
+4. `/tdd` before implementation
+5. `/diagnose` if validation fails for unclear reasons
+
+The agent must provide visible evidence sections for every requested skill:
+
+- Skill evidence: `/zoom-out`
+- Skill evidence: `/improve-codebase-architecture`
+- Skill evidence: `/grill-with-docs`
+- Skill evidence: `/tdd`
+- Skill evidence: `/diagnose`, if used
+
+If a requested slash skill is unavailable, stop and say:
+
+“Requested skill unavailable: /<skill-name>”
+
+Do not silently simulate a skill.
+Do not continue with ordinary implementation when the user asked for a skill-driven workflow.
