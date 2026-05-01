@@ -5,6 +5,9 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createSupabaseDatastore } = require("../../../backend/datastore-supabase.cjs");
+const {
+  checkSupabaseConnection
+} = require("../../../scripts/check-supabase-connection.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -55,6 +58,53 @@ register("Supabase auth lookup uses a case-insensitive exact filter", async () =
     globalThis.fetch = originalFetch;
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+register("Supabase connection check probes core REST tables without exposing secrets", async () => {
+  const requestedUrls: string[] = [];
+  const requestedHeaders: Array<Record<string, string>> = [];
+  const fetchImpl = async (input: unknown, init: RequestInit = {}) => {
+    requestedUrls.push(String(input || ""));
+    requestedHeaders.push(init.headers as Record<string, string>);
+    return new Response("[]", { status: 200 });
+  };
+
+  const result = await checkSupabaseConnection({
+    env: {
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "secret-service-role",
+      SUPABASE_DB_SCHEMA: "public"
+    },
+    fetchImpl,
+    tables: ["users", "sessions", "app_state"]
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.urlHost, "example.supabase.co");
+  assert.deepEqual(result.checkedTables, ["users", "sessions", "app_state"]);
+  assert.equal(requestedUrls.length, 3);
+  assert.match(requestedUrls[0], /^https:\/\/example\.supabase\.co\/rest\/v1\/users/);
+  assert.match(requestedUrls[1], /sessions\?select=token&limit=1$/);
+  assert.match(requestedUrls[2], /app_state\?select=key&limit=1$/);
+  assert.equal(requestedHeaders[0].Authorization, "Bearer secret-service-role");
+});
+
+register("Supabase connection check fails clearly when REST auth is invalid", async () => {
+  const fetchImpl = async () =>
+    new Response(JSON.stringify({ message: "Invalid API key" }), { status: 401 });
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co",
+          SUPABASE_SERVICE_ROLE_KEY: "bad-key"
+        },
+        fetchImpl,
+        tables: ["users"]
+      }),
+    /Supabase connection check failed for table users \(401\)/
+  );
 });
 
 register("user-facing backup and e2e scripts rebuild TypeScript output when needed", () => {
