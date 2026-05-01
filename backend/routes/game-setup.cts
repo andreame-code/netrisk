@@ -55,10 +55,10 @@ type StartGame = (state: any) => any;
 const {
   gameIdRequestSchema,
   gameMutationResponseSchema,
-  gameVersionConflictResponseSchema,
   startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
 
 async function handleAiJoinRoute(
   res: unknown,
@@ -261,28 +261,17 @@ async function handleStartRoute(
   }
 
   if (expectedVersion != null && expectedVersion !== gameContext.version) {
-    sendValidatedJson(
-      nodeResponse,
-      409,
-      {
-        error:
-          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
-        messageKey: "server.versionConflict",
-        messageParams: {},
-        code: "VERSION_CONFLICT",
-        currentVersion: gameContext.version,
-        state: snapshotForUser(
-          gameContext.state,
-          gameContext.gameId,
-          gameContext.version,
-          gameContext.gameName,
-          authContext.user
-        )
-      },
-      gameVersionConflictResponseSchema,
-      sendJson as SendJson,
-      sendLocalizedError as SendLocalizedError
-    );
+    sendVersionConflict({
+      res: nodeResponse,
+      gameContext,
+      currentUser: authContext.user,
+      snapshotForUser,
+      sendJson,
+      sendLocalizedError,
+      fallbackMessage:
+        "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+      fallbackMessageKey: "server.versionConflict"
+    });
     return;
   }
 
@@ -294,55 +283,20 @@ async function handleStartRoute(
 
   gameContext.state = structuredClone(gameContext.state);
   startGame(gameContext.state);
-  try {
-    await persistWithAiTurns(gameContext, expectedVersion);
-  } catch (error: any) {
-    if (error && error.code === "VERSION_CONFLICT") {
-      sendValidatedJson(
-        nodeResponse,
-        409,
-        {
-          error: error.message,
-          messageKey: error.messageKey || "server.versionConflict",
-          messageParams: {},
-          code: error.code,
-          currentVersion: error.currentVersion,
-          state: snapshotForUser(
-            error.currentState,
-            gameContext.gameId,
-            error.currentVersion,
-            error.game?.name || gameContext.gameName,
-            authContext.user
-          )
-        },
-        gameVersionConflictResponseSchema,
-        sendJson as SendJson,
-        sendLocalizedError as SendLocalizedError
-      );
-      return;
+  await persistBroadcastAndSendMutation({
+    res: nodeResponse,
+    gameContext,
+    expectedVersion,
+    user: authContext.user,
+    persistGameContext: persistWithAiTurns,
+    broadcastGame,
+    snapshotForUser,
+    sendJson,
+    sendLocalizedError,
+    payload: {
+      playerId: parsedBody.playerId
     }
-
-    throw error;
-  }
-  broadcastGame(gameContext);
-  sendValidatedJson(
-    nodeResponse,
-    200,
-    {
-      ok: true,
-      playerId: parsedBody.playerId,
-      state: snapshotForUser(
-        gameContext.state,
-        gameContext.gameId,
-        gameContext.version,
-        gameContext.gameName,
-        authContext.user
-      )
-    },
-    gameMutationResponseSchema,
-    sendJson as SendJson,
-    sendLocalizedError as SendLocalizedError
-  );
+  });
 }
 
 module.exports = {

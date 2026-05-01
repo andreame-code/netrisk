@@ -7,6 +7,7 @@ const { loadLocalEnv } = require("./load-local-env.cjs");
 const { createDatastore } = require("./datastore.cjs");
 const { createAuthoredModulesService } = require("./authored-modules.cjs");
 const { createModuleRuntime } = require("./module-runtime.cjs");
+const { createSetupCatalogResolver } = require("./setup-catalog-resolver.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
@@ -1314,7 +1315,7 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "POST" && url.pathname === "/api/games") {
       const body = await parseBody(req);
       const moduleOptions = await moduleRuntime.getModuleOptions();
-      const resolvedCatalog = moduleOptions.resolvedCatalog || moduleOptions;
+      const setupCatalogResolver = createSetupCatalogResolver(moduleRuntime, moduleOptions);
       const adminDefaults = await getSafeAdminDefaults();
       await handleCreateGameRoute(
         req,
@@ -1325,52 +1326,7 @@ function createApp(options: CreateAppOptions = {}) {
         (body: Record<string, unknown>) =>
           createConfiguredInitialState(body, {
             defaultConfigInput: deepClone(adminDefaults || {}),
-            resolveRuleSet: (ruleSetId: string) =>
-              resolvedCatalog.ruleSets.find((entry: { id: string }) => entry.id === ruleSetId) ||
-              null,
-            resolveContentPack: (contentPackId: string) =>
-              moduleRuntime.findContentPack(contentPackId),
-            resolveDiceRuleSet: (diceRuleSetId: string) =>
-              moduleRuntime.findDiceRuleSet(diceRuleSetId),
-            resolvePlayerPieceSet: (pieceSetId: string) =>
-              moduleRuntime.findPlayerPieceSet(pieceSetId),
-            resolveSupportedMap: (mapId: string) => moduleRuntime.findSupportedMap(mapId),
-            resolveVictoryRuleSet: (victoryRuleSetId: string) =>
-              resolvedCatalog.victoryRuleSets.find(
-                (entry: { id: string }) => entry.id === victoryRuleSetId
-              ) || null,
-            resolveVictoryRuleRuntime: (victoryRuleSetId: string) =>
-              moduleRuntime.findVictoryRuleSetRuntime(victoryRuleSetId),
-            resolveTheme: (themeId: string) =>
-              resolvedCatalog.themes.find((entry: { id: string }) => entry.id === themeId) || null,
-            resolveDefaultTheme: () => resolvedCatalog.themes[0] || null,
-            resolvePieceSkin: (pieceSkinId: string) =>
-              resolvedCatalog.pieceSkins.find(
-                (entry: { id: string }) => entry.id === pieceSkinId
-              ) || null,
-            resolveGamePreset: (input: {
-              gamePresetId?: string | null;
-              activeModuleIds?: string[];
-            }) => moduleRuntime.resolveGamePreset(input),
-            resolveGameModuleConfigDefaults: (input: {
-              activeModuleIds?: string[];
-              contentProfileId?: string | null;
-              gameplayProfileId?: string | null;
-              uiProfileId?: string | null;
-            }) => moduleRuntime.resolveGameConfigDefaults(input),
-            resolveGameModuleSelection: (input: {
-              activeModuleIds?: string[];
-              contentProfileId?: string | null;
-              gameplayProfileId?: string | null;
-              uiProfileId?: string | null;
-              contentPackId?: string | null;
-              pieceSetId?: string | null;
-              mapId?: string | null;
-              diceRuleSetId?: string | null;
-              victoryRuleSetId?: string | null;
-              themeId?: string | null;
-              pieceSkinId?: string | null;
-            }) => moduleRuntime.resolveGameSelection(input)
+            ...setupCatalogResolver
           }),
         addPlayer,
         async (state: any, options: Record<string, any>) => {

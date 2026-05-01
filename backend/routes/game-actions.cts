@@ -1,11 +1,11 @@
 const { handleAttackGameActionRoute } = require("./game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./game-actions-basic.cjs");
+const { sendVersionConflict } = require("./game-mutation.cjs");
 const { handleTurnGameActionRoute } = require("./game-actions-turn.cjs");
 const {
   gameActionEnvelopeSchema,
   gameActionRequestSchema,
-  gameMutationResponseSchema,
-  gameVersionConflictResponseSchema
+  gameMutationResponseSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const {
@@ -166,52 +166,32 @@ async function handleGameActionRoute({
       return false;
     }
 
-    sendValidatedJson(
-      nodeResponse,
-      409,
-      {
-        ...localizedPayload(error, error.message, error.messageKey || "server.versionConflict"),
-        code: error.code,
-        currentVersion: error.currentVersion,
-        state: snapshotForUser(
-          error.currentState,
-          gameContext.gameId,
-          error.currentVersion,
-          error.game?.name || gameContext.gameName,
-          currentUser
-        )
-      },
-      gameVersionConflictResponseSchema,
-      sendJson as SendJson,
-      sendLocalizedError as SendLocalizedError
-    );
+    sendVersionConflict({
+      res: nodeResponse,
+      error,
+      gameContext,
+      currentUser,
+      snapshotForUser,
+      sendJson,
+      sendLocalizedError,
+      localizedPayload
+    });
     return true;
   }
 
   if (expectedVersion != null && expectedVersion !== gameContext.version) {
-    sendValidatedJson(
-      nodeResponse,
-      409,
-      {
-        ...localizedPayload(
-          null,
-          "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
-          "server.versionConflict"
-        ),
-        code: "VERSION_CONFLICT",
-        currentVersion: gameContext.version,
-        state: snapshotForUser(
-          gameContext.state,
-          gameContext.gameId,
-          gameContext.version,
-          gameContext.gameName,
-          currentUser
-        )
-      },
-      gameVersionConflictResponseSchema,
-      sendJson as SendJson,
-      sendLocalizedError as SendLocalizedError
-    );
+    sendVersionConflict({
+      res: nodeResponse,
+      gameContext,
+      currentUser,
+      snapshotForUser,
+      sendJson,
+      sendLocalizedError,
+      localizedPayload,
+      fallbackMessage:
+        "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+      fallbackMessageKey: "server.versionConflict"
+    });
     return;
   }
 

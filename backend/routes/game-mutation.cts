@@ -1,0 +1,165 @@
+const {
+  gameMutationResponseSchema,
+  gameVersionConflictResponseSchema
+} = require("../../shared/runtime-validation.cjs");
+const { sendValidatedJson } = require("../route-validation.cjs");
+
+type SendJson = (
+  res: unknown,
+  statusCode: number,
+  payload: unknown,
+  headers?: Record<string, string>
+) => void;
+type SendLocalizedError = (
+  res: unknown,
+  statusCode: number,
+  error: any,
+  message?: string,
+  messageKey?: string,
+  messageParams?: Record<string, unknown>,
+  code?: string,
+  extraPayload?: Record<string, unknown>
+) => void;
+type PersistGameContext = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
+type BroadcastGame = (gameContext: any) => void;
+type SnapshotForUser = (
+  state: any,
+  gameId: string | null,
+  version: number | null,
+  gameName: string | null,
+  user: unknown
+) => unknown;
+type LocalizedPayload = (
+  error: any,
+  fallbackMessage: string,
+  fallbackMessageKey?: string
+) => Record<string, unknown>;
+type HandleVersionConflict = (error: unknown) => boolean;
+
+type VersionConflictOptions = {
+  res: unknown;
+  error?: any;
+  gameContext: any;
+  currentUser: unknown;
+  snapshotForUser: SnapshotForUser;
+  sendJson: SendJson;
+  sendLocalizedError: SendLocalizedError;
+  localizedPayload?: LocalizedPayload;
+  fallbackMessage?: string;
+  fallbackMessageKey?: string;
+};
+
+type MutationOptions = {
+  res: unknown;
+  gameContext: any;
+  expectedVersion: number | null;
+  user: unknown;
+  persistGameContext: PersistGameContext;
+  broadcastGame: BroadcastGame;
+  snapshotForUser: SnapshotForUser;
+  sendJson: SendJson;
+  sendLocalizedError: SendLocalizedError;
+  localizedPayload?: LocalizedPayload;
+  handleVersionConflict?: HandleVersionConflict;
+  payload?: Record<string, unknown>;
+};
+
+function conflictPayload(options: VersionConflictOptions): Record<string, unknown> {
+  const error = options.error || null;
+  const currentVersion =
+    error && typeof error.currentVersion === "number"
+      ? error.currentVersion
+      : options.gameContext.version;
+  const currentState =
+    error && "currentState" in error ? error.currentState : options.gameContext.state;
+  const gameName =
+    error?.game?.name || options.gameContext.gameName || options.gameContext.game?.name || null;
+  const fallbackMessage =
+    options.fallbackMessage ||
+    error?.message ||
+    "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.";
+  const fallbackMessageKey =
+    options.fallbackMessageKey || error?.messageKey || "server.versionConflict";
+  const localized = options.localizedPayload
+    ? options.localizedPayload(error, fallbackMessage, fallbackMessageKey)
+    : {
+        error: fallbackMessage,
+        messageKey: fallbackMessageKey,
+        messageParams: {}
+      };
+
+  return {
+    ...localized,
+    code: "VERSION_CONFLICT",
+    currentVersion,
+    state: options.snapshotForUser(
+      currentState,
+      options.gameContext.gameId,
+      currentVersion,
+      gameName,
+      options.currentUser
+    )
+  };
+}
+
+function sendVersionConflict(options: VersionConflictOptions): void {
+  sendValidatedJson(
+    options.res as import("node:http").ServerResponse,
+    409,
+    conflictPayload(options),
+    gameVersionConflictResponseSchema,
+    options.sendJson as SendJson,
+    options.sendLocalizedError as SendLocalizedError
+  );
+}
+
+async function persistBroadcastAndSendMutation(options: MutationOptions): Promise<void> {
+  try {
+    await options.persistGameContext(options.gameContext, options.expectedVersion);
+  } catch (error: any) {
+    if (options.handleVersionConflict?.(error)) {
+      return;
+    }
+
+    if (error && error.code === "VERSION_CONFLICT") {
+      sendVersionConflict({
+        res: options.res,
+        error,
+        gameContext: options.gameContext,
+        currentUser: options.user,
+        snapshotForUser: options.snapshotForUser,
+        sendJson: options.sendJson,
+        sendLocalizedError: options.sendLocalizedError,
+        localizedPayload: options.localizedPayload
+      });
+      return;
+    }
+
+    throw error;
+  }
+
+  options.broadcastGame(options.gameContext);
+  sendValidatedJson(
+    options.res as import("node:http").ServerResponse,
+    200,
+    {
+      ok: true,
+      ...(options.payload || {}),
+      state: options.snapshotForUser(
+        options.gameContext.state,
+        options.gameContext.gameId,
+        options.gameContext.version,
+        options.gameContext.gameName,
+        options.user
+      )
+    },
+    gameMutationResponseSchema,
+    options.sendJson as SendJson,
+    options.sendLocalizedError as SendLocalizedError
+  );
+}
+
+module.exports = {
+  persistBroadcastAndSendMutation,
+  sendVersionConflict
+};

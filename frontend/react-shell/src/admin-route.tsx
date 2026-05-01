@@ -28,6 +28,14 @@ import { formatDate } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { AdminContentStudioSection } from "@react-shell/admin-content-studio";
+import {
+  formatAdminPhase,
+  resolveAdminSection,
+  sortBySeverity,
+  statusTone,
+  type AdminIconName,
+  type AdminNavItem
+} from "@react-shell/admin-route-sections";
 import { filterConfigurableGameModules } from "@react-shell/game-setup-options";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import {
@@ -44,46 +52,6 @@ import {
   adminOverviewQueryKey,
   adminUsersQueryKey
 } from "@react-shell/react-query";
-
-type AdminSection =
-  | "audit"
-  | "config"
-  | "content-studio"
-  | "games"
-  | "maintenance"
-  | "modules"
-  | "overview"
-  | "system-health"
-  | "users";
-
-type AdminNavItem = {
-  id: AdminSection;
-  group: "Monitor" | "Operate";
-  icon: AdminIconName;
-  label: string;
-  path: string;
-  description: string;
-};
-
-type AdminIconName =
-  | "activity"
-  | "audit"
-  | "bell"
-  | "close"
-  | "config"
-  | "content"
-  | "danger"
-  | "game"
-  | "health"
-  | "home"
-  | "maintenance"
-  | "menu"
-  | "modules"
-  | "plus"
-  | "refresh"
-  | "search"
-  | "shield"
-  | "users";
 
 type AdminFrameContext = {
   basePath: string;
@@ -142,42 +110,6 @@ function requestMessages(scope: string) {
   };
 }
 
-function resolveAdminSection(pathname: string): AdminSection {
-  if (pathname.endsWith("/users")) {
-    return "users";
-  }
-
-  if (pathname.endsWith("/games")) {
-    return "games";
-  }
-
-  if (pathname.endsWith("/config")) {
-    return "config";
-  }
-
-  if (pathname.endsWith("/content-studio")) {
-    return "content-studio";
-  }
-
-  if (pathname.endsWith("/modules")) {
-    return "modules";
-  }
-
-  if (pathname.endsWith("/maintenance")) {
-    return "maintenance";
-  }
-
-  if (pathname.endsWith("/system-health")) {
-    return "system-health";
-  }
-
-  if (pathname.endsWith("/audit")) {
-    return "audit";
-  }
-
-  return "overview";
-}
-
 function formatTimestamp(value: string | null | undefined): string {
   if (!value) {
     return "n/a";
@@ -194,34 +126,6 @@ function formatTimestamp(value: string | null | undefined): string {
     hour: "2-digit",
     minute: "2-digit"
   });
-}
-
-function statusTone(health: string | null | undefined): "danger" | "muted" | "success" | "warning" {
-  if (health === "error") {
-    return "danger";
-  }
-
-  if (health === "warning") {
-    return "warning";
-  }
-
-  if (health === "ok") {
-    return "success";
-  }
-
-  return "muted";
-}
-
-function formatAdminPhase(phase: string | null | undefined): string {
-  if (!phase) {
-    return "Unknown";
-  }
-
-  return phase
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-    .join(" ");
 }
 
 function filterProfilesForSelectedModules(
@@ -313,32 +217,6 @@ function resolveEnvironmentLabel(): string {
   }
 
   return "Production";
-}
-
-function severityRank(value: string | null | undefined): number {
-  if (value === "error") {
-    return 0;
-  }
-
-  if (value === "warning") {
-    return 1;
-  }
-
-  if (value === "info") {
-    return 2;
-  }
-
-  if (value === "ok") {
-    return 3;
-  }
-
-  return 4;
-}
-
-function sortBySeverity<T extends { severity: string | null | undefined }>(items: T[]): T[] {
-  return [...items].sort(
-    (left, right) => severityRank(left.severity) - severityRank(right.severity)
-  );
 }
 
 function countConfigDifferences(

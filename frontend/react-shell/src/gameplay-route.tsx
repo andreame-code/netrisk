@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useState, type CSSProperties } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   GameMutationResponse,
@@ -16,17 +16,13 @@ import type { ApiClientError } from "@frontend-core/api/http.mts";
 import {
   extractGameVersionConflict,
   getGameState,
-  joinGame,
-  sendGameAction,
-  startGame,
-  subscribeToGameEvents,
-  tradeCards
+  subscribeToGameEvents
 } from "@frontend-core/api/client.mts";
-import type { GameActionRequest, TradeCardsRequest } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
+import { useGameplayCommands } from "@react-shell/gameplay-commands";
 import { GameplayMapViewport } from "@react-shell/gameplay-map-viewport";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
@@ -488,59 +484,15 @@ export function GameRoute() {
     setStreamStatus("live");
   });
 
-  const joinMutation = useMutation({
-    mutationFn: () =>
-      joinGame(resolvedGameId || "", {
-        errorMessage: t("errors.requestFailed"),
-        fallbackMessage: t("errors.requestFailed")
-      }),
-    onSuccess: (payload) => applyMutationPayload(payload),
-    onError: handleMutationError
-  });
-
-  const startMutation = useMutation({
-    mutationFn: () => {
-      if (!resolvedGameId || !myPlayerId) {
-        throw new Error(t("game.invalidPlayer"));
-      }
-
-      return startGame(
-        {
-          gameId: resolvedGameId,
-          playerId: myPlayerId,
-          ...(currentVersion ? { expectedVersion: currentVersion } : {})
-        },
-        {
-          errorMessage: t("errors.requestFailed"),
-          fallbackMessage: t("errors.requestFailed")
-        }
-      );
-    },
-    onSuccess: (payload) => applyMutationPayload(payload),
-    onError: handleMutationError
-  });
-
-  const actionClientMessages = {
-    errorMessage: t("errors.requestFailed"),
-    fallbackMessage: t("errors.requestFailed")
-  };
-
-  const actionMutation = useMutation({
-    mutationFn: (request: GameActionRequest) => sendGameAction(request, actionClientMessages),
-    onSuccess: (payload) => applyMutationPayload(payload),
-    onError: handleMutationError
-  });
-
-  const tradeMutation = useMutation({
-    mutationFn: (request: TradeCardsRequest) => tradeCards(request, actionClientMessages),
-    onSuccess: (payload) =>
-      applyMutationPayload(payload, {
-        feedback:
-          typeof payload.bonus === "number"
-            ? t("game.runtime.tradeSuccess", { bonus: payload.bonus })
-            : ""
-      }),
-    onError: handleMutationError
+  const gameplayCommands = useGameplayCommands({
+    gameId: resolvedGameId,
+    playerId: myPlayerId,
+    currentVersion: currentVersion ?? null,
+    requestFailedMessage: t("errors.requestFailed"),
+    invalidPlayerMessage: t("game.invalidPlayer"),
+    tradeSuccessFeedback: (bonus) => t("game.runtime.tradeSuccess", { bonus }),
+    applyMutationPayload,
+    handleMutationError
   });
 
   useEffect(() => {
@@ -572,20 +524,16 @@ export function GameRoute() {
     return <Navigate to={lobbyHref} replace />;
   }
 
-  function submitGameAction(request: Parameters<typeof sendGameAction>[0]): Promise<void> {
-    return actionMutation.mutateAsync(request).then(() => undefined);
-  }
-
   async function handleJoinLobby(): Promise<void> {
     if (!resolvedGameId) {
       return;
     }
 
-    await joinMutation.mutateAsync();
+    await gameplayCommands.join();
   }
 
   async function handleStartGame(): Promise<void> {
-    await startMutation.mutateAsync();
+    await gameplayCommands.start();
   }
 
   async function handleReinforce(): Promise<void> {
@@ -598,13 +546,12 @@ export function GameRoute() {
       1,
       Math.max(1, Number(snapshot?.reinforcementPool || 1))
     );
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "reinforce",
       territoryId: reinforceTerritoryId,
-      amount,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      amount
     });
   }
 
@@ -613,13 +560,12 @@ export function GameRoute() {
       return;
     }
 
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "reinforce",
       territoryId: reinforceTerritoryId,
-      amount: Math.max(1, Number(snapshot?.reinforcementPool || 1)),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      amount: Math.max(1, Number(snapshot?.reinforcementPool || 1))
     });
   }
 
@@ -628,14 +574,13 @@ export function GameRoute() {
       return;
     }
 
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type,
       fromId: attackFromId,
       toId: attackToId,
-      attackDice: Number(attackDiceCount),
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      attackDice: Number(attackDiceCount)
     });
   }
 
@@ -649,12 +594,11 @@ export function GameRoute() {
       pendingConquestMin,
       pendingConquestMax
     );
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "moveAfterConquest",
-      armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      armies
     });
   }
 
@@ -663,12 +607,11 @@ export function GameRoute() {
       return;
     }
 
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "moveAfterConquest",
-      armies: pendingConquestMax,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      armies: pendingConquestMax
     });
   }
 
@@ -678,14 +621,13 @@ export function GameRoute() {
     }
 
     const armies = clamp(parsePositiveInteger(fortifyArmies, 1), 1, maxFortifyArmies);
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
       type: "fortify",
       fromId: fortifyFromId,
       toId: fortifyToId,
-      armies,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      armies
     });
   }
 
@@ -694,11 +636,10 @@ export function GameRoute() {
       return;
     }
 
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
-      type: "endTurn",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      type: "endTurn"
     });
   }
 
@@ -707,11 +648,10 @@ export function GameRoute() {
       return;
     }
 
-    await tradeMutation.mutateAsync({
+    await gameplayCommands.trade({
       gameId: resolvedGameId,
       playerId: myPlayerId,
-      cardIds: selectedTradeCardIds,
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      cardIds: selectedTradeCardIds
     });
   }
 
@@ -751,11 +691,10 @@ export function GameRoute() {
       return;
     }
 
-    await submitGameAction({
+    await gameplayCommands.submitAction({
       gameId: resolvedGameId,
       playerId: myPlayerId,
-      type: "surrender",
-      ...(currentVersion ? { expectedVersion: currentVersion } : {})
+      type: "surrender"
     });
   }
 
@@ -862,12 +801,8 @@ export function GameRoute() {
     return null;
   }
 
-  const canTradeCards = selectedTradeCardIds.length === 3 && !tradeMutation.isPending;
-  const actionPending =
-    joinMutation.isPending ||
-    startMutation.isPending ||
-    actionMutation.isPending ||
-    tradeMutation.isPending;
+  const canTradeCards = selectedTradeCardIds.length === 3 && !gameplayCommands.isTrading;
+  const actionPending = gameplayCommands.isAnyPending;
 
   return (
     <section data-testid="react-shell-game-page">
@@ -1102,7 +1037,7 @@ export function GameRoute() {
                 onClick={() => void handleJoinLobby()}
                 disabled={!showJoinLobby || actionPending}
               >
-                {joinMutation.isPending ? "Joining..." : t("game.join")}
+                {gameplayCommands.isJoining ? "Joining..." : t("game.join")}
               </button>
               <button
                 id="start-button"
@@ -1111,7 +1046,7 @@ export function GameRoute() {
                 onClick={() => void handleStartGame()}
                 disabled={!showStartGame || actionPending || snapshot.players.length < 2}
               >
-                {startMutation.isPending ? "Starting..." : t("game.start")}
+                {gameplayCommands.isStarting ? "Starting..." : t("game.start")}
               </button>
             </div>
           </div>
@@ -1149,7 +1084,7 @@ export function GameRoute() {
                     onClick={() => void handleReinforce()}
                     disabled={!reinforceTerritoryId || actionPending}
                   >
-                    {actionMutation.isPending ? "Applying..." : t("game.actions.add")}
+                    {gameplayCommands.isActionPending ? "Applying..." : t("game.actions.add")}
                   </button>
                   <button
                     id="reinforce-all-button"
@@ -1217,7 +1152,9 @@ export function GameRoute() {
                     onClick={() => void handleAttack("attack")}
                     disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
                   >
-                    {actionMutation.isPending ? "Attacking..." : t("game.actions.launchAttack")}
+                    {gameplayCommands.isActionPending
+                      ? "Attacking..."
+                      : t("game.actions.launchAttack")}
                   </button>
                   <button
                     id="attack-banzai-button"
@@ -1225,7 +1162,7 @@ export function GameRoute() {
                     onClick={() => void handleAttack("attackBanzai")}
                     disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
                   >
-                    {actionMutation.isPending
+                    {gameplayCommands.isActionPending
                       ? t("game.runtime.banzaiLoading")
                       : t("game.actions.banzai")}
                   </button>
@@ -1254,7 +1191,7 @@ export function GameRoute() {
                     onClick={() => void handleMoveAfterConquest()}
                     disabled={actionPending}
                   >
-                    {actionMutation.isPending ? "Moving..." : t("game.actions.moveArmies")}
+                    {gameplayCommands.isActionPending ? "Moving..." : t("game.actions.moveArmies")}
                   </button>
                   <button
                     id="conquest-all-button"
@@ -1324,7 +1261,9 @@ export function GameRoute() {
                     Boolean(snapshot.fortifyUsed)
                   }
                 >
-                  {actionMutation.isPending ? "Fortifying..." : t("game.actions.moveArmies")}
+                  {gameplayCommands.isActionPending
+                    ? "Fortifying..."
+                    : t("game.actions.moveArmies")}
                 </button>
               </div>
             </div>
@@ -1387,7 +1326,7 @@ export function GameRoute() {
                 onClick={() => void handleTradeCards()}
                 disabled={!canTradeCards}
               >
-                {tradeMutation.isPending ? "Trading..." : t("game.cards.tradeSet")}
+                {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
               </button>
             </div>
 
@@ -1398,7 +1337,7 @@ export function GameRoute() {
               onClick={() => void handleEndTurn()}
               disabled={actionPending || Boolean(snapshot.pendingConquest)}
             >
-              {actionMutation.isPending ? "Updating..." : endTurnLabel}
+              {gameplayCommands.isActionPending ? "Updating..." : endTurnLabel}
             </button>
           </div>
 

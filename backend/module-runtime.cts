@@ -1,5 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const {
+  aggregateContentContribution,
+  ensureAllowedContentId,
+  moduleEntriesForSelection
+} = require("./module-runtime-contributions.cjs");
 const { listCardRuleSets } = require("../shared/cards.cjs");
 const {
   findCoreBaseSupportedMap,
@@ -133,18 +138,6 @@ type AuthoredPublishedVictoryRuleSet = {
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
-const CONTENT_CONTRIBUTION_KEYS = [
-  "mapIds",
-  "siteThemeIds",
-  "pieceSkinIds",
-  "playerPieceSetIds",
-  "contentPackIds",
-  "diceRuleSetIds",
-  "cardRuleSetIds",
-  "victoryRuleSetIds",
-  "fortifyRuleSetIds",
-  "reinforcementRuleSetIds"
-] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -182,21 +175,6 @@ function toGamePresetArray(
     activeModuleIds: Array.isArray(preset.activeModuleIds) ? [...preset.activeModuleIds] : [],
     defaults: preset.defaults ? { ...preset.defaults } : null
   }));
-}
-
-function emptyContentContribution(): NetRiskContentContribution {
-  return {
-    mapIds: [],
-    siteThemeIds: [],
-    pieceSkinIds: [],
-    playerPieceSetIds: [],
-    contentPackIds: [],
-    diceRuleSetIds: [],
-    cardRuleSetIds: [],
-    victoryRuleSetIds: [],
-    fortifyRuleSetIds: [],
-    reinforcementRuleSetIds: []
-  };
 }
 
 function cloneMapSummary(summary: MapSummary): MapSummary {
@@ -342,96 +320,6 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
         }
       : map.mapDefinition
   };
-}
-
-function aggregateContentContribution(
-  modules: NetRiskInstalledModule[],
-  runtimeMapEntries: RuntimeModuleMapEntry[] = [],
-  runtimeContentPackEntries: RuntimeModuleContentPackEntry[] = [],
-  runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[] = [],
-  runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[] = [],
-  runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[] = []
-): NetRiskContentContribution {
-  const contribution = emptyContentContribution();
-
-  modules.forEach((moduleEntry) => {
-    const content = moduleEntry.clientManifest?.content;
-    if (!content) {
-      return;
-    }
-
-    CONTENT_CONTRIBUTION_KEYS.forEach((key) => {
-      const currentValues = contribution[key] || [];
-      const nextValues = Array.isArray(content[key]) ? content[key] : [];
-      contribution[key] = Array.from(new Set([...currentValues, ...nextValues]));
-    });
-  });
-
-  if (runtimeMapEntries.length) {
-    contribution.mapIds = Array.from(
-      new Set([...(contribution.mapIds || []), ...runtimeMapEntries.map((entry) => entry.map.id)])
-    );
-  }
-
-  if (runtimeContentPackEntries.length) {
-    contribution.contentPackIds = Array.from(
-      new Set([
-        ...(contribution.contentPackIds || []),
-        ...runtimeContentPackEntries.map((entry) => entry.contentPack.id)
-      ])
-    );
-  }
-
-  if (runtimePlayerPieceSetEntries.length) {
-    contribution.playerPieceSetIds = Array.from(
-      new Set([
-        ...(contribution.playerPieceSetIds || []),
-        ...runtimePlayerPieceSetEntries.map((entry) => entry.pieceSet.id)
-      ])
-    );
-  }
-
-  if (runtimeDiceRuleSetEntries.length) {
-    contribution.diceRuleSetIds = Array.from(
-      new Set([
-        ...(contribution.diceRuleSetIds || []),
-        ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
-      ])
-    );
-  }
-
-  if (runtimeSiteThemeEntries.length) {
-    contribution.siteThemeIds = Array.from(
-      new Set([
-        ...(contribution.siteThemeIds || []),
-        ...runtimeSiteThemeEntries.map((entry) => entry.theme.id)
-      ])
-    );
-  }
-
-  return contribution;
-}
-
-function moduleEntriesForSelection(
-  modules: NetRiskInstalledModule[],
-  moduleIds: string[]
-): NetRiskInstalledModule[] {
-  const requestedIds = new Set([CORE_MODULE_ID, ...moduleIds]);
-  return modules.filter((moduleEntry) => requestedIds.has(moduleEntry.id));
-}
-
-function ensureAllowedContentId(
-  kind: string,
-  requestedId: string | null | undefined,
-  availableIds: string[] | null | undefined
-): void {
-  if (!isNonEmptyString(requestedId) || !Array.isArray(availableIds) || !availableIds.length) {
-    return;
-  }
-
-  if (!availableIds.includes(requestedId)) {
-    throw new Error(`Selected ${kind} "${requestedId}" is not exposed by the active modules.`);
-  }
 }
 
 function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInstalledModule {
@@ -2476,7 +2364,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
-      const selectedModuleEntries = moduleEntriesForSelection(
+      const selectedModuleEntries: NetRiskInstalledModule[] = moduleEntriesForSelection(
         optionsSnapshot.gameModules,
         requestedIds
       );
