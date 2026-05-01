@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:ts",
+  "buildCommand": "npm run build:ts && node .tsbuild/scripts/check-supabase-connection.cjs",
   "outputDirectory": "public",
   "redirects": [
     {
