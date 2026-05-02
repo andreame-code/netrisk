@@ -283,15 +283,12 @@ describe("LobbyWarTablePanels", () => {
     const { user } = renderPanels({
       canCreateGame: false
     });
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const createButton = await screen.findByRole("button", { name: "Create Game" });
 
     await screen.findByRole("button", { name: "Cards" });
-    expect(createLink).toHaveAttribute("aria-disabled", "true");
-    await user.click(createLink);
-    expect(createLink).toHaveAttribute(
-      "href",
-      expect.stringContaining("/react/lobby/new?preset=classic-risk")
-    );
+    expect(createButton).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
+    await user.click(createButton);
   });
 
   it("drops stale selected module ids after game options refresh", async () => {

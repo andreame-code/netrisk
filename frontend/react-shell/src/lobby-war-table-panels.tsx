@@ -280,18 +280,15 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
           </div>
         </div>
 
-        <Link
-          className="lobby-create-button war-table-create-button"
-          to={createGameFormPath}
-          aria-disabled={createDisabled}
-          onClick={(event) => {
-            if (createDisabled) {
-              event.preventDefault();
-            }
-          }}
-        >
-          {t("warTable.lobby.createButton")}
-        </Link>
+        {createDisabled ? (
+          <button type="button" className="lobby-create-button war-table-create-button" disabled>
+            {t("warTable.lobby.createButton")}
+          </button>
+        ) : (
+          <Link className="lobby-create-button war-table-create-button" to={createGameFormPath}>
+            {t("warTable.lobby.createButton")}
+          </Link>
+        )}
       </section>
 
       <aside className="war-table-preset-panel" aria-label={t("warTable.lobby.presets.heading")}>
