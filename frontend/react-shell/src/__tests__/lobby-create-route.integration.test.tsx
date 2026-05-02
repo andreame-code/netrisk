@@ -543,4 +543,62 @@ describe("LobbyCreateRoute integration", () => {
     },
     lobbyCreateRouteTimeoutMs
   );
+
+  it(
+    "forces lobby-prefilled player slots to human seats",
+    async () => {
+      getGameOptionsMock.mockResolvedValue({
+        ...createResolvedCatalogGameOptionsResponse(),
+        adminDefaults: {
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "ai"
+            },
+            {
+              slot: 3,
+              type: "ai"
+            }
+          ]
+        }
+      });
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=3&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            },
+            {
+              slot: 3,
+              type: "human"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
 });

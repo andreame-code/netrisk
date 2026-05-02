@@ -417,7 +417,7 @@ function applySetupSearchParams(
       ...(requestedPlayerCount
         ? {
             totalPlayers: requestedPlayerCount,
-            playerTypes: ensurePlayerTypes(presetState.playerTypes, requestedPlayerCount)
+            playerTypes: ensurePlayerTypes([], requestedPlayerCount)
           }
         : {}),
       ...(requestedTurnTimeoutHours ? { turnTimeoutHours: requestedTurnTimeoutHours } : {}),
