@@ -48,6 +48,25 @@ The project must be safe to extend over time without rewriting existing work.
 4. Backend routes must validate inbound payloads and critical outbound responses.
 5. Validation schemas must define transport shape only and must not duplicate game-rule logic.
 
+## Versioning and compatibility
+
+NetRisk should use a central Version and Compatibility Registry as the source of truth for compatibility-related versions.
+
+1. Do not add version constants in random files.
+2. Keep app, engine, API, datastore, save-game, and module API versions centralized.
+3. Saved game state changes must consider save-game schema compatibility.
+4. Module manifest changes must consider module API compatibility.
+5. API response shape changes must consider API versioning and runtime validation.
+6. Backward compatibility must be preserved unless the task explicitly says to introduce a breaking change.
+7. If a change may break existing saved games or modules, call it out explicitly in the PR summary.
+8. Do not create a full migration framework unless explicitly requested.
+
+Expected central files once they exist:
+
+- `shared/version-manifest.cts`
+- `shared/compatibility.cts`
+- `shared/save-game-migrations.cts`
+
 ## Change safety rules
 
 1. Always inspect relevant files before editing.
@@ -118,6 +137,7 @@ NetRisk should be built incrementally in this order:
 - Do not move business logic into React components.
 - Do not mix transport, persistence, and game rules in one file.
 - Do not replace working code just because another design seems cleaner.
+- Do not introduce scattered version constants; use the central Version and Compatibility Registry.
 - Respect backward compatibility with the current project unless explicitly told otherwise.
 
 ## Agent skills
