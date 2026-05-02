@@ -262,4 +262,19 @@ describe("GameRoute integration", () => {
 
     expect(closeStreamMock).toHaveBeenCalledTimes(1);
   }, 20_000);
+
+  it("hides the empty action section while the game is still in the lobby", async () => {
+    getGameStateMock.mockResolvedValue(
+      createGameplayState({
+        phase: "lobby",
+        turnPhase: "lobby",
+        reinforcementPool: 0
+      })
+    );
+
+    const { container } = renderReactShell("/react/game/g-1");
+
+    expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
+    expect(container.querySelector(".actions-section")).toHaveAttribute("hidden");
+  });
 });
