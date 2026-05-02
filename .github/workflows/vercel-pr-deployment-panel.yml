@@ -89,22 +89,22 @@ jobs:
               const vercelScopeSlug = statusPathParts[0] || "";
               const vercelProjectName = statusPathParts[1] || "netrisk";
               const baseUrl = "https://api.vercel.com/v6/deployments";
-              const queryBase = new URLSearchParams({
+              const queryBaseValues = {
                 app: vercelProjectName,
                 branch: ref,
                 limit: "20",
                 sha,
                 state: "READY",
-              });
+              };
               const urls = [];
               const seen = new Set();
 
-              if (process.env.VERCEL_PROJECT_ID) {
-                queryBase.set("projectId", process.env.VERCEL_PROJECT_ID);
-              }
+              function add(scopeKey, scopeValue, includeProjectId) {
+                const query = new URLSearchParams(queryBaseValues);
+                if (includeProjectId && process.env.VERCEL_PROJECT_ID) {
+                  query.set("projectId", process.env.VERCEL_PROJECT_ID);
+                }
 
-              function add(scopeKey, scopeValue) {
-                const query = new URLSearchParams(queryBase);
                 if (scopeKey && scopeValue) {
                   query.set(scopeKey, scopeValue);
                 }
@@ -115,19 +115,27 @@ jobs:
                 urls.push(url);
               }
 
+              const includeProjectIds = process.env.VERCEL_PROJECT_ID ? [true, false] : [false];
+
               if (process.env.VERCEL_ORG_ID) {
-                add("teamId", process.env.VERCEL_ORG_ID);
+                includeProjectIds.forEach((includeProjectId) =>
+                  add("teamId", process.env.VERCEL_ORG_ID, includeProjectId)
+                );
               }
 
               if (process.env.VERCEL_TEAM_SLUG) {
-                add("slug", process.env.VERCEL_TEAM_SLUG);
+                includeProjectIds.forEach((includeProjectId) =>
+                  add("slug", process.env.VERCEL_TEAM_SLUG, includeProjectId)
+                );
               }
 
               if (vercelScopeSlug) {
-                add("slug", vercelScopeSlug);
+                includeProjectIds.forEach((includeProjectId) =>
+                  add("slug", vercelScopeSlug, includeProjectId)
+                );
               }
 
-              add("", "");
+              includeProjectIds.forEach((includeProjectId) => add("", "", includeProjectId));
               return urls;
             }
 
