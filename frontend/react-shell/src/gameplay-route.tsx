@@ -220,6 +220,9 @@ export function GameRoute() {
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
+  const activePlayer = snapshot?.currentPlayerId
+    ? playersById[snapshot.currentPlayerId] || null
+    : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
@@ -775,8 +778,7 @@ export function GameRoute() {
             >
               <div className="panel-header tight-header game-compact-heading game-hud-heading">
                 <div>
-                  <p className="eyebrow">{t("game.command.eyebrow")}</p>
-                  <h1>{t("game.command.heading")}</h1>
+                  <p className="eyebrow">{t("game.command.heading")}</p>
                 </div>
                 <span id="turn-badge" className="badge" data-testid="phase-indicator">
                   {phaseBadgeLabel}
@@ -789,10 +791,14 @@ export function GameRoute() {
                 data-testid="status-summary"
               >
                 <div>
-                  Fase: <strong>{snapshot.phase}</strong>
+                  {t("game.reinforcementBanner")} <strong>{snapshot.reinforcementPool}</strong>
                 </div>
                 <div>
-                  {t("game.reinforcementBanner")} <strong>{snapshot.reinforcementPool}</strong>
+                  <strong>
+                    {t("game.runtime.turnOf", {
+                      name: activePlayer?.name || t("game.runtime.noneLower")
+                    })}
+                  </strong>
                 </div>
                 <div>
                   {t("game.meta.player")}:{" "}
@@ -800,9 +806,8 @@ export function GameRoute() {
                     {me?.name || t("game.runtime.notConnected")}
                   </strong>
                 </div>
-                <div>
-                  {t("game.runtime.winner")}:{" "}
-                  <strong>{winner ? winner.name : t("game.runtime.noneLower")}</strong>
+                <div hidden={!winner}>
+                  {t("game.runtime.winner")}: <strong>{winner?.name}</strong>
                 </div>
               </div>
 
