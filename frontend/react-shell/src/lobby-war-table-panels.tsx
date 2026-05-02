@@ -186,7 +186,7 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
     );
   }
 
-  const createDisabled = !canCreateGame;
+  const createDisabled = !canCreateGame || optionsQuery.isLoading;
   const createGameFormPath = buildCreateGameFormPath({
     moduleIds: selectedModuleIds,
     namespace,

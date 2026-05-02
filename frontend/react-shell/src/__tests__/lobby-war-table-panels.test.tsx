@@ -157,6 +157,16 @@ describe("LobbyWarTablePanels", () => {
     });
   });
 
+  it("keeps create-form navigation disabled while setup options are loading", async () => {
+    getGameOptionsMock.mockReturnValue(new Promise(() => undefined));
+
+    renderPanels();
+
+    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    expect(createButton).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
+  });
+
   it("links selected presets, player counts and module toggles to the full create form", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
 
