@@ -24,6 +24,7 @@ jobs:
         uses: actions/github-script@v9
         env:
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_PROJECT_ID: prj_R61andzsXOZjOAfvj9GSOjS35aLv
           VERCEL_TEAM_SLUG: ${{ vars.VERCEL_TEAM_SLUG }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
@@ -82,10 +83,91 @@ jobs:
               return urls;
             }
 
+            function uniqueDeploymentListUrls(statusUrl) {
+              const statusUrlObject = new URL(statusUrl);
+              const statusPathParts = statusUrlObject.pathname.split("/").filter(Boolean);
+              const vercelScopeSlug = statusPathParts[0] || "";
+              const vercelProjectName = statusPathParts[1] || "netrisk";
+              const baseUrl = "https://api.vercel.com/v6/deployments";
+              const queryBase = new URLSearchParams({
+                app: vercelProjectName,
+                branch: ref,
+                limit: "20",
+                sha,
+                state: "READY",
+              });
+              const urls = [];
+              const seen = new Set();
+
+              if (process.env.VERCEL_PROJECT_ID) {
+                queryBase.set("projectId", process.env.VERCEL_PROJECT_ID);
+              }
+
+              function add(scopeKey, scopeValue) {
+                const query = new URLSearchParams(queryBase);
+                if (scopeKey && scopeValue) {
+                  query.set(scopeKey, scopeValue);
+                }
+
+                const url = `${baseUrl}?${query.toString()}`;
+                if (seen.has(url)) return;
+                seen.add(url);
+                urls.push(url);
+              }
+
+              if (process.env.VERCEL_ORG_ID) {
+                add("teamId", process.env.VERCEL_ORG_ID);
+              }
+
+              if (process.env.VERCEL_TEAM_SLUG) {
+                add("slug", process.env.VERCEL_TEAM_SLUG);
+              }
+
+              if (vercelScopeSlug) {
+                add("slug", vercelScopeSlug);
+              }
+
+              add("", "");
+              return urls;
+            }
+
+            async function resolvePreviewUrlFromDeploymentList(statusUrl) {
+              for (const lookupUrl of uniqueDeploymentListUrls(statusUrl)) {
+                const response = await fetch(lookupUrl, {
+                  headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                  },
+                });
+
+                if (!response.ok) {
+                  core.info(`Vercel deployment list lookup failed at ${lookupUrl}: ${response.status}`);
+                  continue;
+                }
+
+                const deploymentList = await response.json();
+                const deployment = (deploymentList.deployments || [])
+                  .filter((item) => item.url && item.readyState === "READY")
+                  .sort((a, b) => Number(b.createdAt || b.created || 0) - Number(a.createdAt || a.created || 0))[0];
+
+                if (deployment?.url) {
+                  const previewUrl = `https://${deployment.url}`;
+                  core.info(`Resolved Vercel preview URL from deployment list: ${previewUrl}`);
+                  return previewUrl;
+                }
+              }
+
+              return null;
+            }
+
             async function resolvePreviewUrl(statusUrl) {
               if (!process.env.VERCEL_TOKEN) {
                 core.info("VERCEL_TOKEN is unavailable; using the Vercel status URL as the deployment link.");
                 return statusUrl;
+              }
+
+              const deploymentListPreviewUrl = await resolvePreviewUrlFromDeploymentList(statusUrl);
+              if (deploymentListPreviewUrl) {
+                return deploymentListPreviewUrl;
               }
 
               for (const lookupUrl of uniqueDeploymentLookupUrls(statusUrl)) {
