@@ -181,6 +181,18 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(screen.queryByRole("heading", { name: "Create New Game" })).not.toBeInTheDocument();
   });
 
+  it("links the top game creation action to the default setup route", async () => {
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderLobbyRoute("command");
+
+    expect(await screen.findByRole("heading", { name: "Command Lobby" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create game" })).toHaveAttribute(
+      "href",
+      "/react/lobby/new"
+    );
+  });
+
   it("renders War Table campaign copy and keeps join wired to the lobby action", async () => {
     listGamesMock.mockResolvedValue(createLobbyGames([createGameSummary()]));
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());

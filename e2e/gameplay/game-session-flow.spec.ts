@@ -56,4 +56,3 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await expect(page.locator("#game-status")).toContainText(gameName, { timeout: 15000 });
   await expect(page.getByTestId("phase-indicator")).toContainText(/Lobby/i, { timeout: 15000 });
 });
-

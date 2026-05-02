@@ -119,6 +119,14 @@ function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
   };
 }
 
+async function findSinglePlayerCreateLink() {
+  return screen.findByRole("link", { name: "Single player" });
+}
+
+async function findMultiplayerCreateLink() {
+  return screen.findByRole("link", { name: "Multiplayer" });
+}
+
 beforeEach(() => {
   setLocale("en", {
     storage: window.localStorage,
@@ -138,7 +146,8 @@ describe("LobbyWarTablePanels", () => {
     getGameOptionsMock.mockRejectedValue(new Error("options offline"));
 
     const { user } = renderPanels();
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const singlePlayerCreateLink = await findSinglePlayerCreateLink();
+    const multiplayerCreateLink = await findMultiplayerCreateLink();
 
     const playerGroup = screen.getByRole("group", { name: "Players" });
     expect(within(playerGroup).getByRole("button", { name: "2" })).toBeInTheDocument();
@@ -150,9 +159,17 @@ describe("LobbyWarTablePanels", () => {
     await user.click(within(playerGroup).getByRole("button", { name: "3" }));
 
     await waitFor(() => {
-      expect(createLink).toHaveAttribute(
+      expect(singlePlayerCreateLink).toHaveAttribute(
         "href",
-        expect.stringContaining("/react/lobby/new?preset=&players=3&turnHours=48&modules=")
+        expect.stringContaining(
+          "/react/lobby/new?preset=&players=3&turnHours=48&modules=&mode=single-player"
+        )
+      );
+      expect(multiplayerCreateLink).toHaveAttribute(
+        "href",
+        expect.stringContaining(
+          "/react/lobby/new?preset=&players=3&turnHours=48&modules=&mode=multiplayer"
+        )
       );
     });
   });
@@ -162,16 +179,19 @@ describe("LobbyWarTablePanels", () => {
 
     renderPanels();
 
-    const createButton = await screen.findByRole("button", { name: "Create Game" });
-    expect(createButton).toBeDisabled();
-    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
+    const singlePlayerCreateButton = await screen.findByRole("button", { name: "Single player" });
+    const multiplayerCreateButton = await screen.findByRole("button", { name: "Multiplayer" });
+    expect(singlePlayerCreateButton).toBeDisabled();
+    expect(multiplayerCreateButton).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Single player" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Multiplayer" })).not.toBeInTheDocument();
   });
 
   it("links selected presets, player counts and module toggles to the full create form", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
 
     const { user } = renderPanels();
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const multiplayerCreateLink = await findMultiplayerCreateLink();
     const playerGroup = screen.getByRole("group", { name: "Players" });
 
     await user.click(await screen.findByRole("button", { name: /Fast Duel/ }));
@@ -179,10 +199,10 @@ describe("LobbyWarTablePanels", () => {
     await user.click(within(playerGroup).getByRole("button", { name: "2" }));
 
     await waitFor(() => {
-      expect(createLink).toHaveAttribute(
+      expect(multiplayerCreateLink).toHaveAttribute(
         "href",
         expect.stringContaining(
-          "/react/lobby/new?preset=fast-duel&players=2&turnHours=48&modules=objectives%2Ccards"
+          "/react/lobby/new?preset=fast-duel&players=2&turnHours=48&modules=objectives%2Ccards&mode=multiplayer"
         )
       );
     });
@@ -192,7 +212,7 @@ describe("LobbyWarTablePanels", () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
 
     const { user } = renderPanels();
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const multiplayerCreateLink = await findMultiplayerCreateLink();
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
 
     await waitFor(() => {
@@ -204,10 +224,10 @@ describe("LobbyWarTablePanels", () => {
     });
 
     await waitFor(() => {
-      expect(createLink).toHaveAttribute(
+      expect(multiplayerCreateLink).toHaveAttribute(
         "href",
         expect.stringContaining(
-          "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules="
+          "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=&mode=multiplayer"
         )
       );
     });
@@ -235,16 +255,16 @@ describe("LobbyWarTablePanels", () => {
 
     renderPanels();
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const multiplayerCreateLink = await findMultiplayerCreateLink();
 
     expect(screen.queryByRole("button", { name: "Advanced Cards" })).not.toBeInTheDocument();
     await waitFor(() => {
       expect(cardsButton).toHaveClass("is-active");
     });
-    expect(createLink).toHaveAttribute(
+    expect(multiplayerCreateLink).toHaveAttribute(
       "href",
       expect.stringContaining(
-        "/react/lobby/new?preset=advanced-risk&players=4&turnHours=48&modules=cards"
+        "/react/lobby/new?preset=advanced-risk&players=4&turnHours=48&modules=cards&mode=multiplayer"
       )
     );
   });
@@ -271,7 +291,7 @@ describe("LobbyWarTablePanels", () => {
 
     renderPanels();
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
-    const createLink = await screen.findByRole("link", { name: "Create Game" });
+    const multiplayerCreateLink = await findMultiplayerCreateLink();
 
     expect(screen.queryByRole("button", { name: "Base" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Objectives" })).toBeInTheDocument();
@@ -279,10 +299,10 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(cardsButton).toHaveClass("is-active");
     });
-    expect(createLink).toHaveAttribute(
+    expect(multiplayerCreateLink).toHaveAttribute(
       "href",
       expect.stringContaining(
-        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards"
+        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards&mode=multiplayer"
       )
     );
   });
@@ -293,12 +313,15 @@ describe("LobbyWarTablePanels", () => {
     const { user } = renderPanels({
       canCreateGame: false
     });
-    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    const singlePlayerCreateButton = await screen.findByRole("button", { name: "Single player" });
+    const multiplayerCreateButton = await screen.findByRole("button", { name: "Multiplayer" });
 
     await screen.findByRole("button", { name: "Cards" });
-    expect(createButton).toBeDisabled();
-    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
-    await user.click(createButton);
+    expect(singlePlayerCreateButton).toBeDisabled();
+    expect(multiplayerCreateButton).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Single player" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Multiplayer" })).not.toBeInTheDocument();
+    await user.click(singlePlayerCreateButton);
   });
 
   it("drops stale selected module ids after game options refresh", async () => {
@@ -335,10 +358,10 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Objectives" })).not.toBeInTheDocument();
     });
-    expect(await screen.findByRole("link", { name: "Create Game" })).toHaveAttribute(
+    expect(await findMultiplayerCreateLink()).toHaveAttribute(
       "href",
       expect.stringContaining(
-        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards"
+        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards&mode=multiplayer"
       )
     );
   });

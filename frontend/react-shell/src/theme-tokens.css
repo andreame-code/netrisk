@@ -3050,6 +3050,17 @@ html[data-theme="war-table"] .war-table-open-active {
   margin-top: 8px;
 }
 
+html[data-theme="war-table"] .war-table-create-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+html[data-theme="war-table"] .war-table-create-actions .war-table-create-button {
+  margin-top: 0;
+}
+
 html[data-theme="war-table"] .war-table-preset-list {
   display: grid;
   gap: 8px;
@@ -4304,7 +4315,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-players-r
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-turn-row,
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-modules-row,
-html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-create-button,
+html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-create-actions,
 html[data-theme="war-table"]
   body[data-app-section="lobby"]
   .war-table-quick-create
@@ -4380,6 +4391,17 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-create-bu
   margin-top: 12px;
   color: #fff9ec;
   font-size: 1rem;
+}
+
+html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-create-actions {
+  margin-top: 12px;
+}
+
+html[data-theme="war-table"]
+  body[data-app-section="lobby"]
+  .war-table-create-actions
+  .war-table-create-button {
+  margin-top: 0;
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-preset-panel {

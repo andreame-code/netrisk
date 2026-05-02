@@ -603,6 +603,86 @@ describe("LobbyCreateRoute integration", () => {
   );
 
   it(
+    "prefills single-player setup params with AI opponent seats",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?mode=single-player&players=3&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "ai"
+            },
+            {
+              slot: 3,
+              type: "ai"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "prefills multiplayer setup params with human seats",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?mode=multiplayer&players=3&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            },
+            {
+              slot: 3,
+              type: "human"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
     "reapplies lobby setup params when the URL query changes",
     async () => {
       getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
