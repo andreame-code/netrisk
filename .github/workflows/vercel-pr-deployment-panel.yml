@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Register Vercel status as PR deployment
         uses: actions/github-script@v9
+        env:
+          VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_TEAM_SLUG: ${{ vars.VERCEL_TEAM_SLUG }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -39,6 +43,73 @@ jobs:
 
             function statusTime(status) {
               return Date.parse(status.updated_at || status.created_at || "0");
+            }
+
+            function uniqueDeploymentLookupUrls(statusUrl) {
+              const statusUrlObject = new URL(statusUrl);
+              const statusPathParts = statusUrlObject.pathname.split("/").filter(Boolean);
+              const deploymentKey = statusPathParts.pop();
+              const vercelScopeSlug = statusPathParts[0] || "";
+
+              if (!deploymentKey) {
+                return [];
+              }
+
+              const baseUrl = `https://api.vercel.com/v13/deployments/${deploymentKey}`;
+              const urls = [];
+              const seen = new Set();
+
+              function add(query) {
+                const url = query ? `${baseUrl}?${query}` : baseUrl;
+                if (seen.has(url)) return;
+                seen.add(url);
+                urls.push(url);
+              }
+
+              if (process.env.VERCEL_ORG_ID) {
+                add(`teamId=${encodeURIComponent(process.env.VERCEL_ORG_ID)}`);
+              }
+
+              if (process.env.VERCEL_TEAM_SLUG) {
+                add(`slug=${encodeURIComponent(process.env.VERCEL_TEAM_SLUG)}`);
+              }
+
+              if (vercelScopeSlug) {
+                add(`slug=${encodeURIComponent(vercelScopeSlug)}`);
+              }
+
+              add("");
+              return urls;
+            }
+
+            async function resolvePreviewUrl(statusUrl) {
+              if (!process.env.VERCEL_TOKEN) {
+                core.info("VERCEL_TOKEN is unavailable; using the Vercel status URL as the deployment link.");
+                return statusUrl;
+              }
+
+              for (const lookupUrl of uniqueDeploymentLookupUrls(statusUrl)) {
+                const response = await fetch(lookupUrl, {
+                  headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                  },
+                });
+
+                if (!response.ok) {
+                  core.info(`Vercel deployment lookup failed at ${lookupUrl}: ${response.status}`);
+                  continue;
+                }
+
+                const vercelDeployment = await response.json();
+                if (vercelDeployment.url) {
+                  const previewUrl = `https://${vercelDeployment.url}`;
+                  core.info(`Resolved Vercel preview URL: ${previewUrl}`);
+                  return previewUrl;
+                }
+              }
+
+              core.info("Unable to resolve a direct Vercel preview URL; using the Vercel status URL.");
+              return statusUrl;
             }
 
             async function latestVercelStatus() {
@@ -79,7 +150,8 @@ jobs:
               return;
             }
 
-            const targetUrl = String(vercelStatus.target_url || "");
+            const statusUrl = String(vercelStatus.target_url || "");
+            const previewUrl = await resolvePreviewUrl(statusUrl);
             const deployments = await github.paginate(github.rest.repos.listDeployments, {
               owner,
               repo,
@@ -98,10 +170,30 @@ jobs:
               const latestStatus = statuses.data[0];
 
               if (
-                latestStatus?.environment_url === targetUrl ||
-                latestStatus?.log_url === targetUrl ||
-                latestStatus?.target_url === targetUrl
+                latestStatus?.environment_url === previewUrl ||
+                latestStatus?.environment_url === statusUrl ||
+                latestStatus?.log_url === statusUrl ||
+                latestStatus?.target_url === previewUrl ||
+                latestStatus?.target_url === statusUrl
               ) {
+                if (
+                  latestStatus?.environment_url !== previewUrl ||
+                  latestStatus?.target_url !== previewUrl ||
+                  latestStatus?.log_url !== statusUrl
+                ) {
+                  await github.rest.repos.createDeploymentStatus({
+                    owner,
+                    repo,
+                    deployment_id: deployment.id,
+                    state: "success",
+                    environment_url: previewUrl,
+                    target_url: previewUrl,
+                    log_url: statusUrl,
+                    description: "Vercel deployment ready",
+                    auto_inactive: false,
+                  });
+                }
+
                 core.info(`GitHub deployment already exists: ${deployment.id}`);
                 return;
               }
@@ -125,10 +217,11 @@ jobs:
               repo,
               deployment_id: deployment.data.id,
               state: "success",
-              environment_url: targetUrl,
-              log_url: targetUrl,
+              environment_url: previewUrl,
+              target_url: previewUrl,
+              log_url: statusUrl,
               description: "Vercel deployment ready",
               auto_inactive: false,
             });
 
-            core.info(`Created GitHub deployment ${deployment.data.id}: ${targetUrl}`);
+            core.info(`Created GitHub deployment ${deployment.data.id}: ${previewUrl}`);
