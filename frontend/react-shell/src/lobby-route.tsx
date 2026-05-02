@@ -552,18 +552,11 @@ export function LobbyRoute() {
           </article>
           <div className="page-header-actions compact-actions lobby-head-actions lobby-focus-actions">
             <Link
-              id="create-single-player-game-button"
-              className="ghost-button lobby-create-button"
-              to={`${buildNewGamePath()}?mode=single-player`}
-            >
-              {t("lobby.createSinglePlayerGame")}
-            </Link>
-            <Link
               id="create-game-button"
               className="ghost-button lobby-create-button"
-              to={`${buildNewGamePath()}?mode=multiplayer`}
+              to={buildNewGamePath()}
             >
-              {t("lobby.createMultiplayerGame")}
+              {t("lobby.createGame")}
             </Link>
             <button
               type="button"

@@ -4,7 +4,7 @@ const { getE2EBaseURL, registerAndLogin, resetGame, uniqueUser } = require("../s
 async function createAndOpenGame(page, gameName) {
   await page.goto("/lobby");
   await page.locator("#create-game-button").click();
-  await expect(page).toHaveURL(/\/lobby\/new\?mode=multiplayer$/);
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await page.locator("#setup-game-name").fill(gameName);
   await page.getByRole("button", { name: "Crea e apri" }).click();
   await expect(page).toHaveURL(/\/game\//);

@@ -23,7 +23,7 @@ test("user can create a new game, see it in the list, and open it immediately", 
   await loginAgainIfNeeded();
 
   await page.locator("#create-game-button").click();
-  await expect(page).toHaveURL(/\/lobby\/new\?mode=multiplayer$/);
+  await expect(page).toHaveURL(/\/lobby\/new$/);
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.locator("#setup-game-name").fill(gameName);

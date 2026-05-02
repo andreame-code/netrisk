@@ -22,6 +22,8 @@ type WarTableLobbyPanelsProps = {
   canCreateGame: boolean;
 };
 
+type QuickCreateMode = "multiplayer" | "single-player";
+
 type SelectableModule = ReturnType<typeof resolvedGameModules>[number];
 
 export function buildHumanPlayerSlots(
@@ -95,12 +97,14 @@ function moduleIconName(moduleId: string): WarTableIconName {
 }
 
 function buildCreateGameFormPath({
+  mode,
   moduleIds,
   namespace,
   playerCount,
   presetId,
   turnTimeoutHours
 }: {
+  mode?: QuickCreateMode;
   moduleIds: readonly string[];
   namespace: ReturnType<typeof useShellNamespace>;
   playerCount: number;
@@ -112,6 +116,9 @@ function buildCreateGameFormPath({
   searchParams.set("players", String(playerCount));
   searchParams.set("turnHours", String(turnTimeoutHours));
   searchParams.set("modules", moduleIds.join(","));
+  if (mode) {
+    searchParams.set("mode", mode);
+  }
 
   return `${buildNewGamePath(namespace)}?${searchParams.toString()}`;
 }
@@ -187,7 +194,16 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
   }
 
   const createDisabled = !canCreateGame || optionsQuery.isLoading;
-  const createGameFormPath = buildCreateGameFormPath({
+  const singlePlayerCreateGameFormPath = buildCreateGameFormPath({
+    mode: "single-player",
+    moduleIds: selectedModuleIds,
+    namespace,
+    playerCount: selectedPlayers,
+    presetId: selectedPreset?.id || null,
+    turnTimeoutHours: selectedTurnHours
+  });
+  const multiplayerCreateGameFormPath = buildCreateGameFormPath({
+    mode: "multiplayer",
     moduleIds: selectedModuleIds,
     namespace,
     playerCount: selectedPlayers,
@@ -280,15 +296,41 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
           </div>
         </div>
 
-        {createDisabled ? (
-          <button type="button" className="lobby-create-button war-table-create-button" disabled>
-            {t("warTable.lobby.createButton")}
-          </button>
-        ) : (
-          <Link className="lobby-create-button war-table-create-button" to={createGameFormPath}>
-            {t("warTable.lobby.createButton")}
-          </Link>
-        )}
+        <div className="war-table-create-actions">
+          {createDisabled ? (
+            <>
+              <button
+                type="button"
+                className="lobby-create-button war-table-create-button"
+                disabled
+              >
+                {t("lobby.createSinglePlayerGame")}
+              </button>
+              <button
+                type="button"
+                className="lobby-create-button war-table-create-button"
+                disabled
+              >
+                {t("lobby.createMultiplayerGame")}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                className="lobby-create-button war-table-create-button"
+                to={singlePlayerCreateGameFormPath}
+              >
+                {t("lobby.createSinglePlayerGame")}
+              </Link>
+              <Link
+                className="lobby-create-button war-table-create-button"
+                to={multiplayerCreateGameFormPath}
+              >
+                {t("lobby.createMultiplayerGame")}
+              </Link>
+            </>
+          )}
+        </div>
       </section>
 
       <aside className="war-table-preset-panel" aria-label={t("warTable.lobby.presets.heading")}>
