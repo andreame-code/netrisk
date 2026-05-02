@@ -8,6 +8,10 @@ permissions:
   deployments: write
   statuses: read
 
+concurrency:
+  group: vercel-deployment-${{ github.event.sha || github.sha }}
+  cancel-in-progress: false
+
 jobs:
   register-vercel-deployment:
     if: ${{ github.event.context == 'Vercel' && github.event.state == 'success' }}
@@ -18,6 +22,7 @@ jobs:
         uses: actions/github-script@v9
         env:
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_TEAM_SLUG: ${{ vars.VERCEL_TEAM_SLUG }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
           script: |
@@ -36,10 +41,10 @@ jobs:
               return;
             }
 
-            const branchName = Array.isArray(status.branches) && status.branches.length
-              ? status.branches[0].name
-              : sha;
-            const deploymentKey = new URL(statusUrl).pathname.split("/").filter(Boolean).pop();
+            const statusUrlObject = new URL(statusUrl);
+            const statusPathParts = statusUrlObject.pathname.split("/").filter(Boolean);
+            const deploymentKey = statusPathParts.pop();
+            const vercelScopeSlug = statusPathParts[0] || "";
 
             if (!deploymentKey) {
               core.setFailed(`Unable to parse Vercel deployment id from ${statusUrl}.`);
@@ -51,22 +56,73 @@ jobs:
               return;
             }
 
-            const deploymentResponse = await fetch(
-              `https://api.vercel.com/v13/deployments/${deploymentKey}?teamId=${process.env.VERCEL_ORG_ID}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-                },
-              }
-            );
+            function uniqueDeploymentLookupUrls() {
+              const deploymentKeys = deploymentKey.startsWith("dpl_")
+                ? [deploymentKey]
+                : [`dpl_${deploymentKey}`, deploymentKey];
+              const baseUrls = deploymentKeys.map(
+                (key) => `https://api.vercel.com/v13/deployments/${key}`
+              );
+              const urls = [];
+              const seen = new Set();
 
-            if (!deploymentResponse.ok) {
-              const body = await deploymentResponse.text();
-              core.setFailed(`Unable to fetch Vercel deployment ${deploymentKey}: ${deploymentResponse.status} ${body}`);
+              function add(baseUrl, query) {
+                const url = query ? `${baseUrl}?${query}` : baseUrl;
+                if (seen.has(url)) return;
+                seen.add(url);
+                urls.push(url);
+              }
+
+              for (const baseUrl of baseUrls) {
+                if (process.env.VERCEL_ORG_ID) {
+                  add(baseUrl, `teamId=${encodeURIComponent(process.env.VERCEL_ORG_ID)}`);
+                }
+
+                if (process.env.VERCEL_TEAM_SLUG) {
+                  add(baseUrl, `slug=${encodeURIComponent(process.env.VERCEL_TEAM_SLUG)}`);
+                }
+
+                if (vercelScopeSlug) {
+                  add(baseUrl, `slug=${encodeURIComponent(vercelScopeSlug)}`);
+                }
+
+                add(baseUrl, "");
+              }
+              return urls;
+            }
+
+            async function fetchVercelDeployment() {
+              const failures = [];
+
+              for (const lookupUrl of uniqueDeploymentLookupUrls()) {
+                const response = await fetch(lookupUrl, {
+                  headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                  },
+                });
+
+                if (response.ok) {
+                  core.info(`Resolved Vercel deployment from ${lookupUrl}.`);
+                  return await response.json();
+                }
+
+                const body = await response.text();
+                failures.push(`${response.status} ${body}`);
+                core.info(`Vercel deployment lookup failed at ${lookupUrl}: ${response.status}`);
+              }
+
+              core.setFailed(
+                `Unable to fetch Vercel deployment ${deploymentKey}: ${failures.join(" | ")}`
+              );
+              return null;
+            }
+
+            const vercelDeployment = await fetchVercelDeployment();
+
+            if (!vercelDeployment) {
               return;
             }
 
-            const vercelDeployment = await deploymentResponse.json();
             const deploymentUrl = vercelDeployment.url ? `https://${vercelDeployment.url}` : "";
 
             if (!deploymentUrl) {
@@ -105,7 +161,7 @@ jobs:
             const deployment = await github.rest.repos.createDeployment({
               owner,
               repo,
-              ref: branchName,
+              ref: sha,
               task: "deploy",
               auto_merge: false,
               required_contexts: [],

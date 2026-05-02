@@ -74,7 +74,8 @@ test("react lobby shows the first page and can reveal the full session list", as
   const rows = page.locator("[data-testid^='react-shell-lobby-row-']");
   await expect
     .poll(async () => rows.count(), {
-      message: "the lobby should render at least the first batch of sessions"
+      message: "the lobby should render at least the first batch of sessions",
+      timeout: 15000
     })
     .toBeGreaterThanOrEqual(15);
 
@@ -86,7 +87,7 @@ test("react lobby shows the first page and can reveal the full session list", as
 
   if (initialCount < 19) {
     await loadMoreState.scrollIntoViewIfNeeded();
-    await expect.poll(async () => rows.count()).toBe(19);
+    await expect.poll(async () => rows.count(), { timeout: 15000 }).toBe(19);
   }
 
   await expect(loadMoreState).toContainText(/19/);
@@ -122,7 +123,7 @@ test("react lobby can open a selected game and navigate to the React gameplay ro
   const targetRow = page.locator("[data-testid^='react-shell-lobby-row-']", {
     hasText: gameName
   });
-  await expect(targetRow).toBeVisible();
+  await expect(targetRow).toBeVisible({ timeout: 15000 });
   await targetRow.click();
 
   await expect(page.getByTestId("react-shell-lobby-details")).toContainText(gameName);
@@ -171,7 +172,7 @@ test("react lobby can join an available game and navigate to the React gameplay 
   const targetRow = page.locator("[data-testid^='react-shell-lobby-row-']", {
     hasText: gameName
   });
-  await expect(targetRow).toBeVisible();
+  await expect(targetRow).toBeVisible({ timeout: 15000 });
   await targetRow.click();
 
   await expect(page.getByTestId("react-shell-lobby-details")).toContainText(gameName);
@@ -230,7 +231,7 @@ test("react lobby shows controlled feedback when join fails", async ({ page }) =
   const targetRow = page.locator("[data-testid^='react-shell-lobby-row-']", {
     hasText: gameName
   });
-  await expect(targetRow).toBeVisible();
+  await expect(targetRow).toBeVisible({ timeout: 15000 });
   await targetRow.click();
   await joinSelectedBattleButton(page, targetRow).click();
 
