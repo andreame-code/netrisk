@@ -340,10 +340,7 @@ register("landing CSS limita i reset document-wide alla route marketing", () => 
 register("vercel build command compila TypeScript prima della sync degli asset", () => {
   const config = readProjectJson("vercel.json");
   assert.equal(typeof config.buildCommand, "string");
-  assert.equal(
-    config.buildCommand,
-    "npm run build:ts && node .tsbuild/scripts/check-supabase-connection.cjs"
-  );
+  assert.equal(config.buildCommand, "npm run build:ts");
 });
 
 register(
