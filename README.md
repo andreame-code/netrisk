@@ -51,6 +51,7 @@ Currently supported maps are `classic-mini`, `middle-earth`, and `world-classic`
 
 - [OpenAPI reference](docs/openapi.json)
 - [API transport notes](docs/api.md)
+- [Player and admin wiki](docs/player-admin-wiki.md)
 - [Gameplay flows](docs/gameplay-flows.md)
 - [Admin console guide](docs/admin-console.md)
 - [Admin console execution plan](docs/admin-console-plan.md)
