@@ -17,7 +17,11 @@ type ModuleRuntime = {
   resolveGameSelection: (input: unknown) => unknown;
 };
 
-const { findCatalogEntry, listFromCatalog, resolvedCatalogFromCarrier } = require("./catalog-view.cjs");
+const {
+  findCatalogEntry,
+  listFromCatalog,
+  resolvedCatalogFromCarrier
+} = require("./catalog-view.cjs");
 
 function createSetupCatalogResolver(moduleRuntime: ModuleRuntime, moduleOptions: any) {
   const resolvedCatalog = resolvedCatalogFromCarrier(moduleOptions) as ResolvedCatalog;

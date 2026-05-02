@@ -70,7 +70,9 @@ async function handleGameOptionsRoute(
   getExtraGameOptions?: GetExtraGameOptions,
   sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
-  const resolvedCatalog = resolvedCatalogFromCarrier(await getResolvedCatalog()) as GameOptionsResolvedCatalog;
+  const resolvedCatalog = resolvedCatalogFromCarrier(
+    await getResolvedCatalog()
+  ) as GameOptionsResolvedCatalog;
   const payload = {
     ruleSets: listEntries(resolvedCatalog.ruleSets),
     maps: listEntries(resolvedCatalog.maps),
