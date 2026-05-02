@@ -90,6 +90,28 @@ register("check-no-js-sources consente docs/openapi.json nel repo tracciato", ()
   });
 });
 
+register("check-no-js-sources consente immagini docs/assets nel repo tracciato", () => {
+  withTrackedTempRepo((repoDir) => {
+    writeFile(
+      repoDir,
+      "package.json",
+      JSON.stringify({
+        name: "allowlist-docs-assets",
+        private: true
+      })
+    );
+    writeFile(repoDir, "docs/assets/player-admin-wiki-login.png", "png placeholder");
+    runGit(["add", "."], repoDir);
+
+    const output = execFileSync(process.execPath, [builtScriptPath], {
+      cwd: repoDir,
+      encoding: "utf8"
+    });
+
+    assert.match(output, /Tracked repository sources satisfy the TS-complete allowlist\./);
+  });
+});
+
 register("check-no-js-sources consente config JSON in .github nel repo tracciato", () => {
   withTrackedTempRepo((repoDir) => {
     writeFile(
