@@ -40,8 +40,10 @@ import { filterConfigurableGameModules } from "@react-shell/game-setup-options";
 import { ProfileAdminModules } from "@react-shell/profile-admin-modules";
 import {
   buildAdminPath,
+  buildGameIndexPath,
   buildLobbyPath,
   buildLoginHref,
+  buildProfilePath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import {
@@ -2565,6 +2567,7 @@ export function AdminRoute() {
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
   const basePath = buildAdminPath(namespace);
   const [navOpen, setNavOpen] = useState(false);
+  const [primaryNavOpen, setPrimaryNavOpen] = useState(false);
   const environmentLabel = resolveEnvironmentLabel();
   const hostLabel = typeof window === "undefined" ? "unknown" : window.location.host || "localhost";
   const navItems: AdminNavItem[] = [
@@ -2649,6 +2652,7 @@ export function AdminRoute() {
 
   useEffect(() => {
     setNavOpen(false);
+    setPrimaryNavOpen(false);
   }, [section]);
 
   if (state.status === "loading") {
@@ -2688,6 +2692,12 @@ export function AdminRoute() {
     group,
     items: navItems.filter((item) => item.group === group)
   }));
+  const primaryNavItems = [
+    { label: "Lobby", path: buildLobbyPath(namespace) },
+    { label: "Game", path: buildGameIndexPath(namespace) },
+    { label: "Profile", path: buildProfilePath(namespace) },
+    { label: "Admin", path: basePath }
+  ];
   const frameContext: AdminFrameContext = {
     basePath,
     currentUser: {
@@ -2709,11 +2719,11 @@ export function AdminRoute() {
         <header className="admin-topbar">
           <button
             type="button"
-            className="admin-topbar-button admin-menu-button"
-            aria-label="Open admin navigation"
-            aria-expanded={navOpen}
-            aria-controls="admin-nav-groups"
-            onClick={() => setNavOpen((current) => !current)}
+            className={`admin-topbar-button admin-menu-button${primaryNavOpen ? " is-active" : ""}`}
+            aria-label={primaryNavOpen ? "Close main navigation" : "Open main navigation"}
+            aria-expanded={primaryNavOpen}
+            aria-controls="admin-primary-nav"
+            onClick={() => setPrimaryNavOpen((current) => !current)}
           >
             <AdminIcon name="menu" />
           </button>
@@ -2742,6 +2752,18 @@ export function AdminRoute() {
               </span>
             </div>
           </div>
+          <nav
+            id="admin-primary-nav"
+            className={`admin-primary-nav${primaryNavOpen ? " is-open" : ""}`}
+            aria-label="Main navigation"
+            data-testid="admin-primary-nav"
+          >
+            {primaryNavItems.map((item) => (
+              <Link key={item.label} to={item.path} onClick={() => setPrimaryNavOpen(false)}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </header>
 
         <div className="admin-shell">
