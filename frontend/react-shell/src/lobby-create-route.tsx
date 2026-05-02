@@ -501,6 +501,7 @@ export function LobbyCreateRoute() {
   const { state } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const appliedSetupSearchParamsRef = useRef<string | null>(null);
   const mapSelectRef = useRef<HTMLSelectElement | null>(null);
   const [formState, setFormState] = useState<NewGameFormState | null>(null);
   const [submitError, setSubmitError] = useState("");
@@ -571,10 +572,16 @@ export function LobbyCreateRoute() {
   }, []);
 
   useEffect(() => {
-    if (!options || formState) {
+    if (!options) {
       return;
     }
 
+    const setupSearchParamsKey = searchParams.toString();
+    if (formState && appliedSetupSearchParamsRef.current === setupSearchParamsKey) {
+      return;
+    }
+
+    appliedSetupSearchParamsRef.current = setupSearchParamsKey;
     setFormState(applySetupSearchParams(buildInitialForm(options), options, searchParams));
   }, [formState, options, searchParams]);
 

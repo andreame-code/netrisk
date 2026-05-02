@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
@@ -573,6 +573,65 @@ describe("LobbyCreateRoute integration", () => {
       const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
 
       await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            },
+            {
+              slot: 3,
+              type: "human"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "reapplies lobby setup params when the URL query changes",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=2&turnHours=48&modules="
+      );
+      const totalPlayersSelect = (await route.findByTestId(
+        "react-shell-new-game-total-players"
+      )) as HTMLSelectElement;
+
+      await waitFor(() => {
+        expect(totalPlayersSelect).toHaveValue("2");
+      });
+
+      act(() => {
+        window.history.pushState(
+          {},
+          "",
+          "/react/lobby/new?preset=&players=3&turnHours=48&modules="
+        );
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+
+      await waitFor(() => {
+        expect(totalPlayersSelect).toHaveValue("3");
+      });
+
+      await user.click(await route.findByTestId("react-shell-new-game-confirm-default"));
 
       await waitFor(() => {
         expect(createGameMock).toHaveBeenCalledTimes(1);
