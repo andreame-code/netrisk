@@ -391,6 +391,14 @@ export function GameRoute() {
       ? t("game.runtime.combat.defenseBroken")
       : t("game.runtime.combat.resolved");
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
+  const showActionsSection = Boolean(
+    showReinforceGroup ||
+    showAttackGroup ||
+    showConquestGroup ||
+    showFortifyGroup ||
+    showTradePanel ||
+    showEndTurn
+  );
   const gameFeedbackMessage = feedbackMessage || actionError;
   const gameFeedbackIsError = !feedbackMessage && Boolean(actionError);
 
@@ -1045,7 +1053,7 @@ export function GameRoute() {
             </div>
           </div>
 
-          <div className="rail-section actions-section">
+          <div className="rail-section actions-section" hidden={!showActionsSection}>
             <div
               className="action-group compact-group"
               id="reinforce-group"
