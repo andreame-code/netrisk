@@ -964,17 +964,12 @@ register("http response helpers normalizzano payload localizzati e codici extra"
 
 register("health route usa 503 quando lo snapshot segnala errore", async () => {
   const res = makeMockResponse();
-  const handled = await handleHealthRoute(
-    res,
-    async () => ({ ok: false, storage: { storage: "sqlite" } }),
-    sendJson
-  );
+  const handled = await handleHealthRoute(res, async () => ({ ok: false }), sendJson);
 
   assert.equal(handled, true);
   assert.equal(res.statusCode, 503);
   assert.deepEqual(JSON.parse(res.body), {
-    ok: false,
-    storage: { storage: "sqlite" }
+    ok: false
   });
 });
 
@@ -6599,17 +6594,13 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
   });
 });
 
-register("GET /api/health espone lo stato del datastore sqlite", async () => {
+register("GET /api/health espone lo stato sintetico del server", async () => {
   await withServer(async (baseUrl, context) => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.equal(payload.ok, true);
-    assert.equal(payload.storage.storage, "sqlite");
-    assert.equal(payload.storage.journalMode, "WAL");
-    assert.equal(typeof payload.storage.counts.users, "number");
-    assert.equal(typeof payload.storage.counts.games, "number");
-    assert.equal(typeof payload.storage.counts.sessions, "number");
+    assert.equal(typeof payload.storage, "undefined");
     assert.equal(payload.hasActiveGame, true);
   });
 });
@@ -6757,7 +6748,8 @@ register(
 
         const healthResponse = await callApp(app, "GET", "/api/health");
         assert.equal(healthResponse.statusCode, 200);
-        assert.equal(healthResponse.payload.storage.storage, "supabase");
+        assert.equal(healthResponse.payload.ok, true);
+        assert.equal(typeof healthResponse.payload.storage, "undefined");
 
         assert.equal(mock.tables.users.length, 1);
         assert.equal(mock.tables.sessions.length, 1);
