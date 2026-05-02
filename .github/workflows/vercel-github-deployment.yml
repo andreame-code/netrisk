@@ -6,6 +6,8 @@ on:
 permissions:
   contents: read
   deployments: write
+  issues: write
+  pull-requests: read
   statuses: read
 
 jobs:
@@ -25,6 +27,69 @@ jobs:
             const status = context.payload;
             const statusUrl = String(status.target_url || "");
             const sha = String(status.sha || "");
+            const PREVIEW_COMMENT_MARKER = "<!-- netrisk-vercel-preview-deployment -->";
+
+            async function upsertPreviewComment(deploymentUrl, environment) {
+              if (environment === "Production") {
+                core.info("Skipping PR comment for production deployment.");
+                return;
+              }
+
+              const pullRequests = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+                owner,
+                repo,
+                commit_sha: sha,
+                per_page: 100,
+              });
+              const openPullRequests = pullRequests.filter((pullRequest) => pullRequest.state === "open");
+
+              if (!openPullRequests.length) {
+                core.info(`No open PRs are associated with ${sha}.`);
+                return;
+              }
+
+              const body = [
+                PREVIEW_COMMENT_MARKER,
+                "## Vercel Preview",
+                "",
+                `Preview deploy: [${deploymentUrl}](${deploymentUrl})`,
+                "",
+                `- Environment: ${environment}`,
+                `- Commit: \`${sha.slice(0, 12)}\``,
+                statusUrl ? `- Vercel status: [deployment details](${statusUrl})` : null,
+              ].filter(Boolean).join("\n");
+
+              for (const pullRequest of openPullRequests) {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner,
+                  repo,
+                  issue_number: pullRequest.number,
+                  per_page: 100,
+                });
+                const existingComment = [...comments]
+                  .reverse()
+                  .find((comment) => String(comment.body || "").includes(PREVIEW_COMMENT_MARKER));
+
+                if (existingComment) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existingComment.id,
+                    body,
+                  });
+                  core.info(`Updated Vercel preview comment on PR #${pullRequest.number}.`);
+                  continue;
+                }
+
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: pullRequest.number,
+                  body,
+                });
+                core.info(`Created Vercel preview comment on PR #${pullRequest.number}.`);
+              }
+            }
 
             if (!sha) {
               core.setFailed("Vercel status payload did not include a commit SHA.");
@@ -98,6 +163,7 @@ jobs:
                 latestStatus?.target_url === statusUrl
               ) {
                 core.info(`GitHub deployment already exists: ${deployment.id}`);
+                await upsertPreviewComment(deploymentUrl, environment);
                 return;
               }
             }
@@ -125,5 +191,7 @@ jobs:
               description: "Vercel deployment ready",
               auto_inactive: false,
             });
+
+            await upsertPreviewComment(deploymentUrl, environment);
 
             core.info(`Created GitHub deployment ${deployment.data.id}: ${deploymentUrl}`);
