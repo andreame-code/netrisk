@@ -6,24 +6,25 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameMutationResponse,
   GameSnapshot,
-  GameStateResponse,
   SnapshotCard,
   SnapshotPlayer,
   SnapshotTerritory
 } from "@frontend-generated/shared-runtime-validation.mts";
 
 import type { ApiClientError } from "@frontend-core/api/http.mts";
-import {
-  extractGameVersionConflict,
-  getGameState,
-  subscribeToGameEvents
-} from "@frontend-core/api/client.mts";
+import { extractGameVersionConflict, getGameState } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { useGameplayCommands } from "@react-shell/gameplay-commands";
 import { GameplayMapViewport } from "@react-shell/gameplay-map-viewport";
+import {
+  clamp,
+  normalizeSelectNumber,
+  parsePositiveInteger,
+  selectOrFallback
+} from "@react-shell/gameplay-selections";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import {
@@ -32,11 +33,7 @@ import {
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
-
-type StreamStatus = "connecting" | "live" | "reconnecting";
-type SelectionOption = {
-  id: string;
-};
+import { useGameEventStream } from "@react-shell/use-game-event-stream";
 
 function phaseLabel(phase: string | null | undefined): string {
   if (phase === "active") {
@@ -64,58 +61,6 @@ function turnPhaseLabel(turnPhase: string | null | undefined): string {
   }
 
   return phaseLabel(turnPhase);
-}
-
-function selectOrFallback(
-  selectedId: string | null | undefined,
-  options: SelectionOption[],
-  fallbackId: string | null = null
-): string {
-  if (selectedId && options.some((option) => option.id === selectedId)) {
-    return selectedId;
-  }
-
-  if (fallbackId && options.some((option) => option.id === fallbackId)) {
-    return fallbackId;
-  }
-
-  return options[0]?.id || "";
-}
-
-function parsePositiveInteger(value: string, fallbackValue: number): number {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    return fallbackValue;
-  }
-
-  return parsed;
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.max(minimum, Math.min(maximum, value));
-}
-
-function normalizeSelectNumber(
-  value: string,
-  minimum: number,
-  maximum: number,
-  fallbackValue: number
-): string {
-  if (maximum < minimum) {
-    return "";
-  }
-
-  const normalizedValue = value.trim();
-  if (!normalizedValue) {
-    return String(fallbackValue);
-  }
-
-  const parsed = Number(normalizedValue);
-  if (!Number.isInteger(parsed)) {
-    return String(fallbackValue);
-  }
-
-  return String(clamp(parsed, minimum, maximum));
 }
 
 function territoryOwnerName(
@@ -220,7 +165,11 @@ export function GameRoute() {
     Boolean(routeGameId) || state.status === "authenticated" || state.status === "error";
   const shouldRedirectGuestGameRoot = !routeGameId && state.status === "unauthenticated";
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
-  const [streamStatus, setStreamStatus] = useState<StreamStatus>("connecting");
+  const streamStatus = useGameEventStream({
+    enabled: shouldLoadGameState,
+    gameId: routeGameId,
+    queryKey
+  });
   const [actionError, setActionError] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [inlineUsername, setInlineUsername] = useState("");
@@ -483,15 +432,6 @@ export function GameRoute() {
     setActionError(translateGameplayError(error, t("errors.requestFailed")));
   });
 
-  const handleEventMessage = useEffectEvent((nextPayload: GameStateResponse) => {
-    setStreamStatus("live");
-    queryClient.setQueryData(queryKey, nextPayload);
-    if (nextPayload.playerId) {
-      storeCurrentPlayerId(nextPayload.playerId, nextPayload.gameId || resolvedGameId || null);
-    }
-    setStreamStatus("live");
-  });
-
   const gameplayCommands = useGameplayCommands({
     gameId: resolvedGameId,
     playerId: myPlayerId,
@@ -502,31 +442,6 @@ export function GameRoute() {
     applyMutationPayload,
     handleMutationError
   });
-
-  useEffect(() => {
-    if (!resolvedGameId) {
-      return;
-    }
-
-    setStreamStatus("connecting");
-    const eventSource = subscribeToGameEvents({
-      gameId: resolvedGameId,
-      onOpen: () => {
-        setStreamStatus("live");
-      },
-      onMessage: handleEventMessage,
-      onInvalidPayload: () => {
-        setStreamStatus("reconnecting");
-      },
-      onError: () => {
-        setStreamStatus((current) => (current === "live" ? "reconnecting" : current));
-      }
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, [resolvedGameId]);
 
   if (shouldRedirectGuestGameRoot) {
     return <Navigate to={lobbyHref} replace />;
