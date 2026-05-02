@@ -1,0 +1,134 @@
+name: Vercel PR Deployment Panel
+
+on:
+  pull_request:
+    branches: ["main"]
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: read
+
+jobs:
+  register-vercel-pr-deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Register Vercel status as PR deployment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request;
+
+            if (!pr) {
+              core.info("No pull request payload found; skipping.");
+              return;
+            }
+
+            const sha = pr.head.sha;
+            const ref = pr.head.ref;
+            const environment = "Preview";
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            function statusTime(status) {
+              return Date.parse(status.updated_at || status.created_at || "0");
+            }
+
+            async function latestVercelStatus() {
+              const response = await github.rest.repos.getCombinedStatusForRef({
+                owner,
+                repo,
+                ref: sha,
+              });
+
+              return response.data.statuses
+                .filter((status) =>
+                  status.context === "Vercel" &&
+                  String(status.target_url || "").startsWith("https://vercel.com/")
+                )
+                .sort((a, b) => statusTime(b) - statusTime(a))[0] || null;
+            }
+
+            let vercelStatus = null;
+
+            for (let attempt = 1; attempt <= 30; attempt += 1) {
+              vercelStatus = await latestVercelStatus();
+
+              if (vercelStatus?.state === "success") {
+                break;
+              }
+
+              if (["error", "failure"].includes(vercelStatus?.state)) {
+                core.setFailed(`Vercel status is ${vercelStatus.state}: ${vercelStatus.target_url}`);
+                return;
+              }
+
+              core.info(`Waiting for Vercel status on ${sha}; attempt ${attempt}/30.`);
+              await sleep(10 * 1000);
+            }
+
+            if (vercelStatus?.state !== "success") {
+              core.setFailed(`Timed out waiting for a successful Vercel status on ${sha}.`);
+              return;
+            }
+
+            const targetUrl = String(vercelStatus.target_url || "");
+            const deployments = await github.paginate(github.rest.repos.listDeployments, {
+              owner,
+              repo,
+              sha,
+              environment,
+              per_page: 100,
+            });
+
+            for (const deployment of deployments) {
+              const statuses = await github.rest.repos.listDeploymentStatuses({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                per_page: 1,
+              });
+              const latestStatus = statuses.data[0];
+
+              if (
+                latestStatus?.environment_url === targetUrl ||
+                latestStatus?.log_url === targetUrl ||
+                latestStatus?.target_url === targetUrl
+              ) {
+                core.info(`GitHub deployment already exists: ${deployment.id}`);
+                return;
+              }
+            }
+
+            const deployment = await github.rest.repos.createDeployment({
+              owner,
+              repo,
+              ref,
+              task: "deploy",
+              auto_merge: false,
+              required_contexts: [],
+              environment,
+              description: "Vercel preview deployment",
+              transient_environment: true,
+              production_environment: false,
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner,
+              repo,
+              deployment_id: deployment.data.id,
+              state: "success",
+              environment_url: targetUrl,
+              log_url: targetUrl,
+              description: "Vercel deployment ready",
+              auto_inactive: false,
+            });
+
+            core.info(`Created GitHub deployment ${deployment.data.id}: ${targetUrl}`);
