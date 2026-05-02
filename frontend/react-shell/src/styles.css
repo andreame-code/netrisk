@@ -558,6 +558,66 @@ html[data-theme="war-table"] {
   color: var(--shell-danger);
 }
 
+.setup-route {
+  display: grid;
+  gap: 1rem;
+}
+
+.setup-route h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.setup-steps {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--shell-border);
+  border-radius: var(--campaign-card-radius);
+  background: var(--shell-card-bg);
+  box-shadow: var(--bevel);
+}
+
+.setup-step > span:last-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.setup-step small {
+  color: var(--shell-muted);
+}
+
+.setup-step-done .status-pill {
+  color: var(--shell-success);
+}
+
+.setup-step-ready .status-pill {
+  color: var(--shell-warning);
+}
+
+.setup-step-blocked .status-pill {
+  color: var(--shell-danger);
+}
+
+.setup-form {
+  margin-top: 0.5rem;
+}
+
+.setup-complete-panel,
+.setup-final-actions {
+  margin-top: 0.5rem;
+}
+
 .profile-pilot-grid {
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);

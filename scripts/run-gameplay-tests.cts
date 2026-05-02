@@ -60,6 +60,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/check-no-js-sources.test.cjs",
   "../tests/gameplay/regression/vercel-routing-config.test.cjs",
   "../tests/gameplay/regression/account-validation-routes.test.cjs",
+  "../tests/gameplay/regression/setup-service.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
   "../tests/gameplay/regression/game-actions-basic-route.test.cjs",
   "../tests/gameplay/regression/game-read-routes.test.cjs",

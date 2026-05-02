@@ -11,6 +11,7 @@ import {
   getGameOptions,
   getModuleOptions,
   getSession,
+  getSetupStatus,
   listGames,
   logout
 } from "@frontend-core/api/client.mts";
@@ -26,6 +27,7 @@ vi.mock("@frontend-core/api/client.mts", () => ({
   register: vi.fn(),
   logout: vi.fn(),
   getProfile: vi.fn(),
+  getSetupStatus: vi.fn(),
   updateThemePreference: vi.fn(),
   listGames: vi.fn(),
   getModuleOptions: vi.fn(),
@@ -38,6 +40,7 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getGameOptionsMock = vi.mocked(getGameOptions);
 const getSessionMock = vi.mocked(getSession);
+const getSetupStatusMock = vi.mocked(getSetupStatus);
 const listGamesMock = vi.mocked(listGames);
 const logoutMock = vi.mocked(logout);
 
@@ -160,6 +163,12 @@ function resolvedCatalogModuleOptions(): ModuleOptionsResponse {
 beforeEach(() => {
   getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
   getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+  getSetupStatusMock.mockResolvedValue({
+    setupRequired: false,
+    setupCompleted: true,
+    hasAdminUser: true,
+    datastoreOk: true
+  });
   logoutMock.mockResolvedValue({ ok: true });
 });
 

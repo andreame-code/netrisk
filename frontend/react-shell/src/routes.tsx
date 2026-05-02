@@ -27,6 +27,9 @@ import { t } from "@frontend-i18n";
 const RegisterRoute = lazy(async () => ({
   default: (await import("@react-shell/register-route")).RegisterRoute
 }));
+const SetupRoute = lazy(async () => ({
+  default: (await import("@react-shell/setup-route")).SetupRoute
+}));
 const LobbyRoute = lazy(async () => ({
   default: (await import("@react-shell/lobby-route")).LobbyRoute
 }));
@@ -276,6 +279,8 @@ export function AppRoutes() {
           <Route element={<ShellLayout />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/react/login" element={<LoginPage />} />
+            <Route path="/setup" element={<SetupRoute />} />
+            <Route path="/react/setup" element={<SetupRoute />} />
             <Route path="/register" element={<RegisterRoute />} />
             <Route path="/react/register" element={<RegisterRoute />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />

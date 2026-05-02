@@ -510,7 +510,11 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return user;
   }
 
-  async function registerPasswordUser(inputOrUsername: unknown, password?: unknown) {
+  async function registerPasswordUserWithRole(
+    inputOrUsername: unknown,
+    password: unknown,
+    role: "admin" | "user"
+  ) {
     const input = registrationInput(inputOrUsername, password);
     const validationError = registrationValidationError(input, protector);
     if (validationError) {
@@ -527,12 +531,20 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       credentials: {
         password: passwordRecord(input.password)
       },
-      role: "user",
+      role,
       profile: buildProfile(input.username, input.email, protector),
       createdAt: new Date().toISOString()
     };
 
     return { ok: true, user: publicUser(await datastore.createUser(user)) };
+  }
+
+  async function registerPasswordUser(inputOrUsername: unknown, password?: unknown) {
+    return registerPasswordUserWithRole(inputOrUsername, password, "user");
+  }
+
+  async function registerAdminPasswordUser(inputOrUsername: unknown, password?: unknown) {
+    return registerPasswordUserWithRole(inputOrUsername, password, "admin");
   }
 
   async function loginWithPassword(username: string, password: unknown) {
@@ -654,6 +666,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     loginWithPassword,
     logout,
     publicUser,
+    registerAdminPasswordUser,
     registerPasswordUser,
     updateUserAccountSettings,
     updateUserProfile,
