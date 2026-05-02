@@ -43,6 +43,11 @@ const {
   validateNetRiskModuleClientManifest,
   validateNetRiskModuleManifest
 } = require("../shared/netrisk-modules.cjs");
+const {
+  isModuleApiCompatible,
+  isSaveGameSchemaRangeCompatible
+} = require("../shared/compatibility.cjs");
+const { moduleApiVersion, saveGameSchemaVersion } = require("../shared/version-manifest.cjs");
 
 import type {
   NetRiskGameplayEffects,
@@ -488,6 +493,9 @@ function defaultCoreManifest(): NetRiskModuleManifest {
     description:
       "Built-in core module that exposes the default NetRisk gameplay, content and UI foundations.",
     engineVersion: NETRISK_ENGINE_VERSION,
+    moduleApiVersion,
+    minimumCompatibleSaveGameSchemaVersion: 1,
+    maximumCompatibleSaveGameSchemaVersion: saveGameSchemaVersion,
     kind: "hybrid",
     dependencies: [],
     conflicts: [],
@@ -2020,6 +2028,25 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         moduleEntry.compatible = false;
         moduleEntry.errors.push(
           `Engine version mismatch: requires ${manifest.engineVersion}, current engine is ${NETRISK_ENGINE_VERSION}.`
+        );
+      }
+
+      if (!isModuleApiCompatible(manifest.moduleApiVersion)) {
+        moduleEntry.compatible = false;
+        moduleEntry.errors.push(
+          `Module API version mismatch: requires ${manifest.moduleApiVersion}, current module API is ${moduleApiVersion}.`
+        );
+      }
+
+      if (
+        !isSaveGameSchemaRangeCompatible(
+          manifest.minimumCompatibleSaveGameSchemaVersion,
+          manifest.maximumCompatibleSaveGameSchemaVersion
+        )
+      ) {
+        moduleEntry.compatible = false;
+        moduleEntry.errors.push(
+          `Save-game schema mismatch: supports ${manifest.minimumCompatibleSaveGameSchemaVersion}-${manifest.maximumCompatibleSaveGameSchemaVersion}, current save-game schema is ${saveGameSchemaVersion}.`
         );
       }
 

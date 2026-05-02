@@ -406,6 +406,87 @@ register(
   }
 );
 
+register("module runtime enforces module API and save-game manifest compatibility", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "bad.module-api",
+        manifest: {
+          schemaVersion: 1,
+          id: "bad.module-api",
+          version: "1.0.0",
+          displayName: "Bad Module API",
+          engineVersion: "1.0.0",
+          moduleApiVersion: "0.0.0",
+          minimumCompatibleSaveGameSchemaVersion: 1,
+          maximumCompatibleSaveGameSchemaVersion: 1,
+          kind: "hybrid",
+          dependencies: [],
+          conflicts: [],
+          capabilities: [{ kind: "ui-slot", scope: "global" }]
+        }
+      },
+      {
+        dir: "bad.save-schema",
+        manifest: {
+          schemaVersion: 1,
+          id: "bad.save-schema",
+          version: "1.0.0",
+          displayName: "Bad Save Schema",
+          engineVersion: "1.0.0",
+          moduleApiVersion: "1.0.0",
+          minimumCompatibleSaveGameSchemaVersion: 2,
+          maximumCompatibleSaveGameSchemaVersion: 2,
+          kind: "hybrid",
+          dependencies: [],
+          conflicts: [],
+          capabilities: [{ kind: "ui-slot", scope: "global" }]
+        }
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const catalogResponse = await callApp(
+        app,
+        "GET",
+        "/api/modules",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+
+      assert.equal(catalogResponse.statusCode, 200);
+      const badModuleApi = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "bad.module-api"
+      );
+      const badSaveSchema = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "bad.save-schema"
+      );
+
+      assert.equal(badModuleApi.compatible, false);
+      assert.equal(badModuleApi.status, "incompatible");
+      assert.equal(
+        badModuleApi.errors.some((error: string) => error.includes("Module API version mismatch")),
+        true
+      );
+      assert.equal(badSaveSchema.compatible, false);
+      assert.equal(badSaveSchema.status, "incompatible");
+      assert.equal(
+        badSaveSchema.errors.some((error: string) => error.includes("Save-game schema mismatch")),
+        true
+      );
+
+      const enableResponse = await callApp(
+        app,
+        "POST",
+        "/api/modules/bad.module-api/enable",
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(enableResponse.statusCode, 400);
+      assert.equal(enableResponse.payload.error.includes("not compatible"), true);
+    }
+  );
+});
+
 register(
   "module runtime espone maps e built-in new-game rule sets dal catalogo shared core.base",
   async () => {

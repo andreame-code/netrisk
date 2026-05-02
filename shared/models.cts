@@ -14,7 +14,8 @@ export {
   buildGameStateVersionMetadata,
   buildVersionSnapshot,
   isModuleApiCompatible,
-  isSaveGameSchemaCompatible
+  isSaveGameSchemaCompatible,
+  isSaveGameSchemaRangeCompatible
 } from "./compatibility.cjs";
 export type { GameStateVersionMetadata, VersionSnapshot } from "./compatibility.cjs";
 export {

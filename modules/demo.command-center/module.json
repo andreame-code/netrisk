@@ -5,6 +5,9 @@
   "displayName": "Command Center Demo",
   "description": "Modulo demo installabile per testare catalogo, profili e slot UI esterni.",
   "engineVersion": "1.0.0",
+  "moduleApiVersion": "1.0.0",
+  "minimumCompatibleSaveGameSchemaVersion": 1,
+  "maximumCompatibleSaveGameSchemaVersion": 1,
   "kind": "hybrid",
   "dependencies": [
     { "id": "core.base", "version": "1.x" }

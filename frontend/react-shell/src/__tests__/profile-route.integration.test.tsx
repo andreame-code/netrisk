@@ -187,6 +187,9 @@ function createModuleCatalogResponse(enabled = false): ModulesCatalogResponse {
           displayName: "Demo Module",
           description: "Adds admin controls.",
           engineVersion: "1.0.0",
+          moduleApiVersion: "1.0.0",
+          minimumCompatibleSaveGameSchemaVersion: 1,
+          maximumCompatibleSaveGameSchemaVersion: 1,
           kind: "ui",
           dependencies: [
             {
