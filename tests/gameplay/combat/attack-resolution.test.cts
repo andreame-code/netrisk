@@ -90,7 +90,7 @@ register("resolveAttack incrementa il contatore e blocca attacchi oltre il limit
     "p1",
     "aurora",
     "bastion",
-    createFixedRandom(rollsToRandomValues([6, 1])),
+    createFixedRandom(rollsToRandomValues([6, 1, 1])),
     1
   );
   assert.equal(firstAttack.ok, true);
