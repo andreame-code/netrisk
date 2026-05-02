@@ -6,6 +6,8 @@ on:
 permissions:
   contents: read
   deployments: write
+  issues: write
+  pull-requests: read
   statuses: read
 
 jobs:
@@ -75,6 +77,62 @@ jobs:
             }
 
             const environment = vercelDeployment.target === "production" ? "Production" : "Preview";
+            const prCommentMarker = `<!-- vercel-build-link:${deploymentKey} -->`;
+
+            async function commentPullRequestsForDeployment() {
+              const pullRequests = await github.paginate(
+                github.rest.repos.listPullRequestsAssociatedWithCommit,
+                {
+                  owner,
+                  repo,
+                  commit_sha: sha,
+                  per_page: 100,
+                }
+              );
+
+              const openPullRequests = pullRequests.filter((pr) => pr.state === "open");
+
+              if (openPullRequests.length === 0) {
+                core.info(`No open pull requests are associated with ${sha}.`);
+                return;
+              }
+
+              const body = [
+                prCommentMarker,
+                "## Vercel build ready",
+                "",
+                `- Environment: ${environment}`,
+                `- Commit: \`${sha.slice(0, 12)}\``,
+                `- Preview: ${deploymentUrl}`,
+                `- Build details: ${statusUrl}`,
+              ].join("\n");
+
+              for (const pullRequest of openPullRequests) {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner,
+                  repo,
+                  issue_number: pullRequest.number,
+                  per_page: 100,
+                });
+
+                if (comments.some((comment) => String(comment.body || "").includes(prCommentMarker))) {
+                  core.info(`PR #${pullRequest.number} already has a comment for ${deploymentKey}.`);
+                  continue;
+                }
+
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: pullRequest.number,
+                  body,
+                });
+
+                core.info(`Commented on PR #${pullRequest.number}: ${deploymentUrl}`);
+              }
+            }
+
+            await commentPullRequestsForDeployment();
+
             const deployments = await github.paginate(github.rest.repos.listDeployments, {
               owner,
               repo,
