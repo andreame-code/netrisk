@@ -115,6 +115,19 @@ describe("theme runtime bridge", () => {
     expect(slotRuleBodies.join("\n")).not.toMatch(/\bdisplay\s*:\s*none\b/i);
   });
 
+  it("keeps native select menu options readable on themed backgrounds", () => {
+    const css = readFileSync(themeTokensPath, "utf8");
+    const optionRuleBody = ruleBodyForSelector(css, "select option");
+    const checkedOptionRuleBody = ruleBodyForSelector(css, "select option:checked");
+
+    expect(optionRuleBody).not.toBeNull();
+    expect(optionRuleBody).toMatch(/background-color\s*:\s*var\(--bg-soft\)/i);
+    expect(optionRuleBody).toMatch(/color\s*:\s*var\(--field-text\)/i);
+    expect(checkedOptionRuleBody).not.toBeNull();
+    expect(checkedOptionRuleBody).toMatch(/background-color\s*:\s*var\(--accent-2\)/i);
+    expect(checkedOptionRuleBody).toMatch(/color\s*:\s*var\(--text-inverse\)/i);
+  });
+
   it("keeps War Table custom-background map territories colored by owner", () => {
     const css = readFileSync(themeTokensPath, "utf8");
     const territoryRuleBody = ruleBodyForSelector(

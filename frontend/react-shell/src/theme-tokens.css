@@ -1016,6 +1016,16 @@ select {
   color: var(--field-text);
 }
 
+select option {
+  background-color: var(--bg-soft);
+  color: var(--field-text);
+}
+
+select option:checked {
+  background-color: var(--accent-2);
+  color: var(--text-inverse);
+}
+
 input::placeholder {
   color: var(--field-placeholder);
 }
