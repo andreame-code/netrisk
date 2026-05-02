@@ -17,17 +17,10 @@ type ModuleRuntime = {
   resolveGameSelection: (input: unknown) => unknown;
 };
 
-function listFromCatalog(catalog: ResolvedCatalog, key: keyof ResolvedCatalog): CatalogEntry[] {
-  const entries = catalog[key];
-  return Array.isArray(entries) ? entries : [];
-}
-
-function findCatalogEntry(catalog: ResolvedCatalog, key: keyof ResolvedCatalog, id: string) {
-  return listFromCatalog(catalog, key).find((entry) => entry.id === id) || null;
-}
+const { findCatalogEntry, listFromCatalog, resolvedCatalogFromCarrier } = require("./catalog-view.cjs");
 
 function createSetupCatalogResolver(moduleRuntime: ModuleRuntime, moduleOptions: any) {
-  const resolvedCatalog = moduleOptions?.resolvedCatalog || moduleOptions || {};
+  const resolvedCatalog = resolvedCatalogFromCarrier(moduleOptions) as ResolvedCatalog;
 
   return {
     resolveRuleSet: (ruleSetId: string) => findCatalogEntry(resolvedCatalog, "ruleSets", ruleSetId),

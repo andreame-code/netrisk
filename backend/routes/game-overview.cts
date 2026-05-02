@@ -38,6 +38,7 @@ const {
   gameListResponseSchema,
   gameOptionsResponseSchema
 } = require("../../shared/runtime-validation.cjs");
+const { listEntries, resolvedCatalogFromCarrier } = require("../catalog-view.cjs");
 const { sendValidatedJson } = require("../route-validation.cjs");
 
 async function handleGamesListRoute(
@@ -69,7 +70,7 @@ async function handleGameOptionsRoute(
   getExtraGameOptions?: GetExtraGameOptions,
   sendLocalizedError?: SendLocalizedError
 ): Promise<void> {
-  const resolvedCatalog = (await getResolvedCatalog()) || {};
+  const resolvedCatalog = resolvedCatalogFromCarrier(await getResolvedCatalog()) as GameOptionsResolvedCatalog;
   const payload = {
     ruleSets: listEntries(resolvedCatalog.ruleSets),
     maps: listEntries(resolvedCatalog.maps),
@@ -105,10 +106,6 @@ async function handleGameOptionsRoute(
     sendJson as SendJson,
     sendLocalizedError
   );
-}
-
-function listEntries<T>(entries: T[] | null | undefined): T[] {
-  return Array.isArray(entries) ? entries : [];
 }
 
 module.exports = {
