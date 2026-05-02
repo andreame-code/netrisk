@@ -207,20 +207,33 @@ register("setup status includes datastore health", async () => {
 });
 
 register("setup mutating routes require a trusted local request", async () => {
-  assert.equal(isTrustedSetupRequest({ socket: { remoteAddress: "::1" }, headers: {} }), true);
   assert.equal(
     isTrustedSetupRequest({
       socket: { remoteAddress: "::1" },
-      headers: { "x-forwarded-for": "203.0.113.10" }
+      headers: { host: "localhost:3000" }
+    }),
+    true
+  );
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "::1" },
+      headers: { host: "localhost:3000", "x-forwarded-for": "203.0.113.10" }
     }),
     false
   );
   assert.equal(
     isTrustedSetupRequest({
-      socket: { remoteAddress: "203.0.113.10" },
-      headers: { "x-forwarded-for": "127.0.0.1" }
+      socket: { remoteAddress: "127.0.0.1" },
+      headers: { host: "127.0.0.1:3000", "x-forwarded-for": "127.0.0.1" }
     }),
     true
+  );
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "203.0.113.10" },
+      headers: { host: "localhost:3000", "x-forwarded-for": "127.0.0.1" }
+    }),
+    false
   );
   assert.equal(
     isTrustedSetupRequest({ socket: { remoteAddress: "203.0.113.10" }, headers: {} }),
@@ -229,7 +242,7 @@ register("setup mutating routes require a trusted local request", async () => {
 
   let localizedErrorCall: any[] | null = null;
   await handleSetupCreateAdminRoute(
-    { socket: { remoteAddress: "203.0.113.10" }, headers: {} },
+    { socket: { remoteAddress: "203.0.113.10" }, headers: { host: "localhost:3000" } },
     {},
     { username: "founder", password: "secure-passphrase" },
     {

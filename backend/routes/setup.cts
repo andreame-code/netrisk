@@ -54,6 +54,16 @@ function isLoopbackAddress(value: unknown): boolean {
   );
 }
 
+function hostnameFromHostHeader(value: unknown): string {
+  const host = firstHeaderValue(value).toLowerCase();
+  if (host.startsWith("[")) {
+    const closingBracketIndex = host.indexOf("]");
+    return closingBracketIndex >= 0 ? host.slice(0, closingBracketIndex + 1) : host;
+  }
+
+  return host.split(":")[0] || "";
+}
+
 function isTrustedSetupRequest(req: unknown): boolean {
   const request = req as
     | {
@@ -65,12 +75,14 @@ function isTrustedSetupRequest(req: unknown): boolean {
     | null
     | undefined;
   const forwardedFor = firstHeaderValue(request?.headers?.["x-forwarded-for"]);
+  const remoteAddress = request?.socket?.remoteAddress;
+  const host = hostnameFromHostHeader(request?.headers?.host);
 
-  if (forwardedFor) {
-    return isLoopbackAddress(forwardedFor);
+  if (!isLoopbackAddress(remoteAddress) || !isLoopbackAddress(host)) {
+    return false;
   }
 
-  return isLoopbackAddress(request?.socket?.remoteAddress);
+  return !forwardedFor || isLoopbackAddress(forwardedFor);
 }
 
 function sendUntrustedSetupError(res: unknown, sendLocalizedError: SendLocalizedError): boolean {
