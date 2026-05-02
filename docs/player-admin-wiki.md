@@ -4,6 +4,30 @@ Questa guida spiega come usare il gioco come giocatore o amministratore. Non des
 
 Nel sito il gioco puo apparire con il titolo visibile `Frontline Dominion`, mentre la documentazione tecnica puo usare il nome interno del progetto.
 
+## Printscreen rapidi
+
+Questi printscreen mostrano i passaggi principali dell'esperienza giocatore e admin.
+
+### Accesso
+
+![Schermata di accesso](assets/player-admin-wiki-login.png)
+
+### Lobby
+
+![Lobby con partite e azioni principali](assets/player-admin-wiki-lobby.png)
+
+### Creazione partita
+
+![Creazione di una nuova partita](assets/player-admin-wiki-new-game.png)
+
+### Plancia di gioco
+
+![Plancia durante una partita](assets/player-admin-wiki-gameplay.png)
+
+### Console admin
+
+![Console admin](assets/player-admin-wiki-admin.png)
+
 ## Primi passi
 
 1. Apri l'applicazione.
@@ -55,6 +79,104 @@ Ogni turno segue tre fasi principali:
 - fortificazione
 
 Il gioco mostra solo le azioni valide per la fase corrente. Se un'azione non e consentita, il server la rifiuta e la schermata si riallinea allo stato corretto della partita.
+
+## Regole complete
+
+Questa sezione riepiloga le regole operative che un giocatore o un admin devono conoscere per usare correttamente il gioco.
+
+### Setup partita
+
+- Una nuova partita richiede da 2 a 4 giocatori.
+- Il primo slot deve essere occupato da un giocatore umano.
+- Gli altri slot possono essere occupati da giocatori umani o bot, se la configurazione lo consente.
+- La partita puo iniziare solo quando la configurazione e valida.
+- All'avvio, i territori vengono assegnati ai giocatori e ogni territorio parte con una armata.
+- Il primo giocatore attivo inizia in fase di rinforzo.
+- Le mappe definiscono territori, collegamenti, continenti e bonus continente.
+- I limiti di tempo turno disponibili sono 24, 48 o 72 ore, quando abilitati.
+
+### Preset e opzioni
+
+- `Classic` usa dadi standard, obiettivo conquista, tema tavolo di guerra e pedine classiche.
+- `Classic Defense 3` usa le stesse basi di `Classic`, ma permette al difensore fino a 3 dadi.
+- `Conquest` termina la partita quando resta un solo giocatore attivo con territori.
+- `Majority Control` termina la partita quando un giocatore controlla almeno il 70% dei territori.
+- Gli admin possono pubblicare obiettivi configurabili; quando una partita ne usa uno, l'obiettivo resta quello per tutta la partita.
+
+### Rinforzi
+
+- A inizio turno ricevi rinforzi in base ai territori controllati.
+- Il calcolo standard e `territori controllati / 3`, arrotondato per difetto.
+- Il minimo standard e sempre 3 rinforzi.
+- I bonus continente si aggiungono quando controlli tutti i territori di un continente.
+- I rinforzi devono essere piazzati su territori che controlli.
+- Non puoi passare all'attacco finche hai rinforzi obbligatori ancora da piazzare.
+- Se hai troppe carte in mano, devi risolvere lo scambio obbligatorio prima di proseguire.
+
+### Carte
+
+- Puoi ricevere al massimo una carta a fine turno, solo se hai conquistato almeno un territorio durante quel turno.
+- Le carte possono essere di tipo fanteria, cavalleria, artiglieria o jolly.
+- Un set valido contiene esattamente 3 carte.
+- Sono validi tre simboli uguali, oppure un set con un simbolo per tipo.
+- I jolly possono completare un set valido.
+- I bonus standard degli scambi sono 4, 6, 8, 10, 12 e 15 rinforzi.
+- Dopo il sesto scambio, ogni scambio successivo aumenta di 5 rinforzi.
+- Se hai piu di 5 carte, lo scambio diventa obbligatorio.
+
+### Attacchi
+
+- Puoi attaccare solo durante la fase di attacco.
+- Puoi attaccare solo dal tuo turno.
+- Il territorio attaccante deve essere tuo.
+- Il territorio difensore deve appartenere a un avversario.
+- I due territori devono essere collegati dalla mappa.
+- Il territorio attaccante deve avere almeno 2 armate, perche una armata deve restare indietro.
+- Devi avere piazzato tutti i rinforzi obbligatori prima di attaccare.
+- Il set standard permette all'attaccante fino a 3 dadi.
+- Il set standard permette al difensore fino a 2 dadi.
+- Il set `Defense 3 Dice` permette al difensore fino a 3 dadi.
+- Il difensore non puo tirare piu dadi delle armate presenti nel territorio difeso.
+- I dadi vengono ordinati dal valore piu alto al piu basso e confrontati in coppie.
+- Ogni confronto fa perdere una armata al lato con il risultato piu basso.
+- In caso di pareggio, vince il difensore.
+- Alcune configurazioni possono imporre un numero minimo o massimo di attacchi nel turno; l'interfaccia mostra solo le azioni disponibili.
+
+### Attacco rapido
+
+- L'attacco rapido ripete automaticamente lo stesso attacco finche e ancora valido.
+- Si ferma se il territorio viene conquistato.
+- Si ferma se l'attaccante non ha piu abbastanza armate.
+- Si ferma se il bersaglio non e piu un territorio avversario.
+- Si ferma se serve risolvere uno spostamento dopo conquista.
+
+### Conquista e spostamento
+
+- Quando un territorio difeso arriva a 0 armate, passa al giocatore attaccante.
+- Dopo una conquista devi spostare armate nel territorio appena conquistato.
+- Devi spostare almeno il minimo richiesto dalla partita.
+- Devi sempre lasciare almeno una armata nel territorio di partenza.
+- Finche lo spostamento di conquista non e risolto, non puoi continuare con altre azioni di turno.
+
+### Fortificazione
+
+- La fortificazione avviene dopo la fase di attacco.
+- Puoi spostare armate solo tra territori che controlli.
+- Con le regole standard, i territori devono essere adiacenti.
+- Con le regole standard, puoi fare una sola fortificazione per turno.
+- Devi spostare un numero intero positivo di armate.
+- Devi lasciare almeno una armata nel territorio di partenza.
+- Dopo la fortificazione, o dopo averla saltata quando permesso, il turno passa al giocatore successivo.
+
+### Fine turno, resa e vittoria
+
+- Se conquisti almeno un territorio durante il turno, puoi ricevere una carta quando il turno si chiude.
+- Un giocatore senza territori attivi e eliminato dalla contesa.
+- Un giocatore puo arrendersi quando l'azione e disponibile.
+- La resa scarta le carte del giocatore e lo rimuove dalla contesa.
+- Se non resta nessun giocatore umano attivo, la partita puo chiudersi senza vincitore umano.
+- Il gioco controlla automaticamente la vittoria dopo azioni importanti come conquista, resa e avanzamento turno.
+- In caso di turno scaduto o recupero automatico, il gioco puo risolvere lo stato pendente e passare avanti in modo sicuro.
 
 ## Rinforzo
 
