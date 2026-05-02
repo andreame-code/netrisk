@@ -845,7 +845,7 @@ register("public game options ignore stale invalid admin defaults instead of fai
       authHeaders(adminSessionToken)
     );
     assert.equal(createGameResponse.statusCode, 201);
-    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "classic-mini");
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
   });
 });
 

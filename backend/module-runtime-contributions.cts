@@ -3,6 +3,8 @@ import type {
   NetRiskInstalledModule
 } from "../shared/netrisk-modules.cjs";
 
+const { CORE_MODULE_ID } = require("../shared/netrisk-modules.cjs");
+
 const CONTENT_CONTRIBUTION_KEYS = [
   "mapIds",
   "siteThemeIds",
@@ -108,9 +110,10 @@ function aggregateContentContribution(
 
 function moduleEntriesForSelection(
   modules: NetRiskInstalledModule[],
-  moduleIds: string[]
+  moduleIds: string[],
+  baselineModuleIds: string[] = [CORE_MODULE_ID]
 ): NetRiskInstalledModule[] {
-  const requestedIds = new Set(["core.base", ...moduleIds]);
+  const requestedIds = new Set([...baselineModuleIds, ...moduleIds]);
   return modules.filter((moduleEntry) => requestedIds.has(moduleEntry.id));
 }
 

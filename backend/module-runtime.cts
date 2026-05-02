@@ -561,7 +561,7 @@ function defaultCoreClientManifest(): NetRiskModuleClientManifest {
         defaults: {
           contentPackId: "core",
           ruleSetId: "classic",
-          mapId: "classic-mini",
+          mapId: "world-classic",
           diceRuleSetId: "standard",
           victoryRuleSetId: "conquest",
           themeId: "war-table",

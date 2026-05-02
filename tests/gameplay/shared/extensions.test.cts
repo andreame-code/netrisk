@@ -184,8 +184,8 @@ register(
       }
     );
 
-    assert.equal(migrated.mapId, "classic-mini");
-    assert.equal(migrated.mapName, "Classic Mini");
+    assert.equal(migrated.mapId, "world-classic");
+    assert.equal(migrated.mapName, "World Classic");
   }
 );
 
@@ -221,7 +221,7 @@ register(
       pieceSkinId: "missing-piece-skin"
     });
 
-    assert.equal(normalized.mapId, "classic-mini");
+    assert.equal(normalized.mapId, "world-classic");
     assert.equal(normalized.diceRuleSetId, "defense-3");
     assert.equal(normalized.victoryRuleSetId, DEFAULT_VICTORY_RULE_SET_ID);
     assert.equal(normalized.themeId, DEFAULT_THEME_ID);

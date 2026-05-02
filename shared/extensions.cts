@@ -179,7 +179,7 @@ const rawExtensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackMan
     name: "Classic",
     version: 1,
     defaults: {
-      mapId: "classic-mini",
+      mapId: "world-classic",
       diceRuleSetId: STANDARD_DICE_RULE_SET_ID,
       victoryRuleSetId: DEFAULT_VICTORY_RULE_SET_ID,
       themeId: DEFAULT_THEME_ID,
@@ -196,7 +196,7 @@ const rawExtensionPacks = Object.freeze<Record<string, Readonly<ExtensionPackMan
     name: "Classic Defense 3",
     version: 1,
     defaults: {
-      mapId: "classic-mini",
+      mapId: "world-classic",
       diceRuleSetId: DEFENSE_THREE_DICE_RULE_SET_ID,
       victoryRuleSetId: DEFAULT_VICTORY_RULE_SET_ID,
       themeId: DEFAULT_THEME_ID,
