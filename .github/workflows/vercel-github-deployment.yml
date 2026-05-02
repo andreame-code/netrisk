@@ -8,6 +8,10 @@ permissions:
   deployments: write
   statuses: read
 
+concurrency:
+  group: vercel-deployment-${{ github.event.sha || github.sha }}
+  cancel-in-progress: false
+
 jobs:
   register-vercel-deployment:
     if: ${{ github.event.context == 'Vercel' && github.event.state == 'success' }}
@@ -39,9 +43,6 @@ jobs:
 
             const statusUrlObject = new URL(statusUrl);
             const statusPathParts = statusUrlObject.pathname.split("/").filter(Boolean);
-            const branchName = Array.isArray(status.branches) && status.branches.length
-              ? status.branches[0].name
-              : sha;
             const deploymentKey = statusPathParts.pop();
             const vercelScopeSlug = statusPathParts[0] || "";
 
@@ -160,7 +161,7 @@ jobs:
             const deployment = await github.rest.repos.createDeployment({
               owner,
               repo,
-              ref: branchName,
+              ref: sha,
               task: "deploy",
               auto_merge: false,
               required_contexts: [],
