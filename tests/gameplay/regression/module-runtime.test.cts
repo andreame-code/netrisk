@@ -4,10 +4,12 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createApp } = require("../../../backend/server.cjs");
+const { moduleEntriesForSelection } = require("../../../backend/module-runtime-contributions.cjs");
 const {
   listCoreBaseMapSummaries,
   listCoreBaseNewGameRuleSets
 } = require("../../../shared/core-base-catalog.cjs");
+const { CORE_MODULE_ID } = require("../../../shared/netrisk-modules.cjs");
 
 type HeaderMap = Record<string, string>;
 
@@ -38,6 +40,35 @@ function register(name: string, fn: () => unknown | Promise<unknown>) {
     }
   ).register?.(name, fn);
 }
+
+function moduleStub(id: string): any {
+  return { id };
+}
+
+register("module runtime selection include la baseline core predefinita centralizzata", () => {
+  const selectedModules = moduleEntriesForSelection(
+    [moduleStub(CORE_MODULE_ID), moduleStub("demo.extra")],
+    ["demo.extra"]
+  );
+
+  assert.deepEqual(
+    selectedModules.map((moduleEntry: { id: string }) => moduleEntry.id),
+    [CORE_MODULE_ID, "demo.extra"]
+  );
+});
+
+register("module runtime selection accetta una baseline core configurabile", () => {
+  const selectedModules = moduleEntriesForSelection(
+    [moduleStub(CORE_MODULE_ID), moduleStub("core.alt"), moduleStub("demo.extra")],
+    ["demo.extra"],
+    ["core.alt"]
+  );
+
+  assert.deepEqual(
+    selectedModules.map((moduleEntry: { id: string }) => moduleEntry.id),
+    ["core.alt", "demo.extra"]
+  );
+});
 
 function makeMockResponse(): MockResponse {
   const headers: HeaderMap = {};
@@ -960,6 +991,7 @@ register(
           "/api/games",
           {
             name: "Restricted Catalog Override",
+            mapId: "classic-mini",
             ruleSetId: "classic-defense-3",
             diceRuleSetId: "standard",
             themeId: "command",

@@ -48,7 +48,8 @@ import {
   startGameRequestSchema,
   themePreferenceRequestSchema,
   themePreferenceResponseSchema,
-  tradeCardsRequestSchema
+  tradeCardsRequestSchema,
+  versionInfoResponseSchema
 } from "../../generated/shared-runtime-validation.mjs";
 import type {
   AccountSettingsRequest,
@@ -96,7 +97,8 @@ import type {
   SetupStatusResponse,
   StartGameRequest,
   TradeCardsRequest,
-  ThemePreferenceResponse
+  ThemePreferenceResponse,
+  VersionInfoResponse
 } from "../../generated/shared-runtime-validation.mjs";
 import type { ApiClientError } from "./http.mjs";
 import { requestJson } from "./http.mjs";
@@ -134,7 +136,7 @@ type GameEventSubscriptionOptions = {
 };
 
 export type { GameActionRequest, GameEventPayload, GameStateResponse, StartGameRequest };
-export type { TradeCardsRequest };
+export type { TradeCardsRequest, VersionInfoResponse };
 
 export function getSession(messages: ClientMessages): Promise<AuthSessionResponse> {
   return requestJson({
@@ -252,6 +254,15 @@ export function getModuleOptions(messages: ClientMessages): Promise<ModuleOption
     path: "/api/modules/options",
     responseSchema: moduleOptionsResponseSchema,
     responseSchemaName: "ModuleOptionsResponse",
+    ...messages
+  });
+}
+
+export function getVersionInfo(messages: ClientMessages): Promise<VersionInfoResponse> {
+  return requestJson({
+    path: "/api/version",
+    responseSchema: versionInfoResponseSchema,
+    responseSchemaName: "VersionInfoResponse",
     ...messages
   });
 }

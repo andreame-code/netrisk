@@ -69,6 +69,18 @@ function ensurePlayerTypes(playerTypes: string[], totalPlayers: number): string[
   });
 }
 
+function playerTypesForGameMode(mode: string | null, totalPlayers: number): string[] | null {
+  if (mode === "single-player") {
+    return Array.from({ length: totalPlayers }, (_, index) => (index === 0 ? "human" : "ai"));
+  }
+
+  if (mode === "multiplayer") {
+    return ensurePlayerTypes([], totalPlayers);
+  }
+
+  return null;
+}
+
 function pickAvailableId<T extends { id: string }>(
   preferredId: string | null | undefined,
   entries: T[] | null | undefined
@@ -410,6 +422,8 @@ function applySetupSearchParams(
       ? null
       : requestedModuleIds.filter((moduleId) => availableModuleIds.has(moduleId));
   const presetState = hasPresetParam ? applyGamePreset(formState, options, presetId) : formState;
+  const totalPlayers = requestedPlayerCount || presetState.totalPlayers;
+  const requestedPlayerTypes = playerTypesForGameMode(searchParams.get("mode"), totalPlayers);
 
   return sanitizeProfiles(
     {
@@ -417,8 +431,11 @@ function applySetupSearchParams(
       ...(requestedPlayerCount
         ? {
             totalPlayers: requestedPlayerCount,
-            playerTypes: ensurePlayerTypes([], requestedPlayerCount)
+            playerTypes: requestedPlayerTypes || ensurePlayerTypes([], requestedPlayerCount)
           }
+        : {}),
+      ...(!requestedPlayerCount && requestedPlayerTypes
+        ? { playerTypes: requestedPlayerTypes }
         : {}),
       ...(requestedTurnTimeoutHours ? { turnTimeoutHours: requestedTurnTimeoutHours } : {}),
       ...(nextModuleIds !== null ? { selectedModuleIds: nextModuleIds } : {})

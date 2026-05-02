@@ -11,7 +11,7 @@ export const coreContentPack: Readonly<ContentPack> = Object.freeze({
   description:
     "Baseline NetRisk module pack with the default map, rules, theme, and player pieces.",
   defaultSiteThemeId: DEFAULT_SITE_THEME_ID,
-  defaultMapId: "classic-mini",
+  defaultMapId: "world-classic",
   defaultDiceRuleSetId: STANDARD_DICE_RULE_SET_ID,
   defaultCardRuleSetId: STANDARD_CARD_RULE_SET_ID,
   defaultVictoryRuleSetId: STANDARD_VICTORY_RULE_SET_ID,

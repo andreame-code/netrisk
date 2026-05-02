@@ -45,4 +45,3 @@ test("non-member user can open a lobby game in spectator mode without auto-joini
   await ownerContext.close();
   await outsiderContext.close();
 });
-

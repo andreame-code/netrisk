@@ -1,4 +1,6 @@
-export const NETRISK_ENGINE_VERSION = "1.0.0";
+import { engineVersion } from "./version-manifest.cjs";
+
+export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
 export const NETRISK_MODULE_SCHEMA_VERSION = 1;
 export const CORE_MODULE_ID = "core.base";

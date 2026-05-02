@@ -74,6 +74,20 @@ export const transportErrorPayloadSchema = messagePayloadSchema.extend({
 
 export type TransportErrorPayload = z.infer<typeof transportErrorPayloadSchema>;
 
+export const versionInfoResponseSchema = objectSchema({
+  appVersion: z.string().min(1),
+  engineVersion: z.string().min(1),
+  apiVersion: z.string().min(1),
+  datastoreSchemaVersion: z.number().int(),
+  saveGameSchemaVersion: z.number().int(),
+  moduleApiVersion: z.string().min(1),
+  minimumCompatibleSaveGameSchemaVersion: z.number().int(),
+  minimumCompatibleModuleApiVersion: z.string().min(1),
+  compatible: z.literal(true)
+});
+
+export type VersionInfoResponse = z.infer<typeof versionInfoResponseSchema>;
+
 function objectSchema<T extends z.ZodRawShape>(shape: T) {
   return z.object(shape).passthrough();
 }

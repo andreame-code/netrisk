@@ -148,6 +148,8 @@ export const en = Object.freeze({
   "lobby.focus.value": "None",
   "lobby.focus.note": "Open a game to continue from the current theater.",
   "lobby.createGame": "Create game",
+  "lobby.createSinglePlayerGame": "Single player",
+  "lobby.createMultiplayerGame": "Multiplayer",
   "lobby.openSelected": "Open selected",
   "lobby.overviewAria": "Lobby overview",
   "lobby.visibleSessions.label": "Visible sessions",

@@ -57,6 +57,7 @@ const { handleGamesListRoute, handleGameOptionsRoute } = require("./routes/game-
 const { handleEventsRoute, handleStateRoute } = require("./routes/game-read.cjs");
 const { handleAiJoinRoute, handleJoinRoute, handleStartRoute } = require("./routes/game-setup.cjs");
 const { handleHealthRoute } = require("./routes/health.cjs");
+const { handleVersionRoute } = require("./routes/version.cjs");
 const {
   handleDisableModuleRoute,
   handleEnableModuleRoute,
@@ -790,6 +791,11 @@ function createApp(options: CreateAppOptions = {}) {
     if (req.method === "POST" && url.pathname === "/api/setup/complete") {
       const body = await parseBody(req);
       await handleSetupCompleteRoute(req, res, body, setup, sendJson, sendLocalizedError);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/version") {
+      await handleVersionRoute(res, sendJson, sendLocalizedError);
       return;
     }
 
