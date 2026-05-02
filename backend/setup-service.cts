@@ -63,6 +63,8 @@ function hasAdmin(users: Array<StoredUser | null | undefined>): boolean {
 }
 
 function createSetupService({ auth, datastore }: SetupServiceOptions) {
+  let adminCreationLock: Promise<void> | null = null;
+
   async function getSetupStatus(): Promise<SetupStatus> {
     let datastoreOk = true;
     let adminExists = false;
@@ -96,42 +98,59 @@ function createSetupService({ auth, datastore }: SetupServiceOptions) {
   }
 
   async function createFirstAdmin(input: { username?: string; password?: string }) {
-    const status = await getSetupStatus();
-    if (!status.setupRequired) {
-      return setupFailure(
-        409,
-        "SETUP_ALREADY_COMPLETED",
-        "Setup gia completato.",
-        "setup.alreadyCompleted"
-      );
+    while (adminCreationLock) {
+      await adminCreationLock;
     }
 
-    if (status.hasAdminUser) {
-      return setupFailure(
-        409,
-        "SETUP_ADMIN_EXISTS",
-        "Esiste gia un amministratore.",
-        "setup.adminExists"
-      );
-    }
-
-    const result = await auth.registerAdminPasswordUser({
-      username: input.username,
-      password: input.password
+    let releaseLock: () => void = () => undefined;
+    adminCreationLock = new Promise((resolve) => {
+      releaseLock = resolve;
     });
-    if (!result.ok) {
-      return {
-        ...result,
-        statusCode: 400,
-        code: "SETUP_ADMIN_INVALID"
-      };
-    }
 
-    return {
-      ok: true,
-      user: result.user,
-      status: await getSetupStatus()
-    };
+    try {
+      const status = await getSetupStatus();
+      if (!status.setupRequired) {
+        return setupFailure(
+          409,
+          "SETUP_ALREADY_COMPLETED",
+          "Setup gia completato.",
+          "setup.alreadyCompleted"
+        );
+      }
+
+      if (status.hasAdminUser) {
+        return setupFailure(
+          409,
+          "SETUP_ADMIN_EXISTS",
+          "Esiste gia un amministratore.",
+          "setup.adminExists"
+        );
+      }
+
+      const result = await auth.registerAdminPasswordUser({
+        username: input.username,
+        password: input.password
+      });
+      if (!result.ok) {
+        return {
+          ...result,
+          statusCode: 400,
+          code: "SETUP_ADMIN_INVALID"
+        };
+      }
+
+      return {
+        ok: true,
+        user: result.user,
+        status: await getSetupStatus()
+      };
+    } finally {
+      const lockToRelease = adminCreationLock;
+      releaseLock();
+      if (adminCreationLock === lockToRelease) {
+        adminCreationLock = null;
+      }
+    }
   }
 
   async function completeSetup() {

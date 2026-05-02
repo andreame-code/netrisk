@@ -783,13 +783,13 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/setup/create-admin") {
       const body = await parseBody(req);
-      await handleSetupCreateAdminRoute(res, body, setup, sendJson, sendLocalizedError);
+      await handleSetupCreateAdminRoute(req, res, body, setup, sendJson, sendLocalizedError);
       return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/setup/complete") {
       const body = await parseBody(req);
-      await handleSetupCompleteRoute(res, body, setup, sendJson, sendLocalizedError);
+      await handleSetupCompleteRoute(req, res, body, setup, sendJson, sendLocalizedError);
       return;
     }
 

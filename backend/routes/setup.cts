@@ -30,6 +30,62 @@ type SetupService = {
   completeSetup(): Promise<any>;
 };
 
+function firstHeaderValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return String(value[0] || "").trim();
+  }
+
+  return String(value || "")
+    .split(",")[0]
+    .trim();
+}
+
+function isLoopbackAddress(value: unknown): boolean {
+  const address = String(value || "")
+    .trim()
+    .toLowerCase();
+  return (
+    address === "::1" ||
+    address === "[::1]" ||
+    address === "0:0:0:0:0:0:0:1" ||
+    address === "localhost" ||
+    address === "::ffff:127.0.0.1" ||
+    /^127(?:\.\d{1,3}){3}$/.test(address)
+  );
+}
+
+function isTrustedSetupRequest(req: unknown): boolean {
+  const request = req as
+    | {
+        headers?: Record<string, unknown>;
+        socket?: {
+          remoteAddress?: string;
+        };
+      }
+    | null
+    | undefined;
+  const forwardedFor = firstHeaderValue(request?.headers?.["x-forwarded-for"]);
+
+  if (forwardedFor) {
+    return isLoopbackAddress(forwardedFor);
+  }
+
+  return isLoopbackAddress(request?.socket?.remoteAddress);
+}
+
+function sendUntrustedSetupError(res: unknown, sendLocalizedError: SendLocalizedError): boolean {
+  sendLocalizedError(
+    res,
+    403,
+    null,
+    "Setup admin disponibile solo da localhost.",
+    "setup.localOnly",
+    {},
+    "SETUP_LOCAL_ONLY"
+  );
+  return true;
+}
+
 async function handleSetupStatusRoute(
   res: unknown,
   setup: SetupService,
@@ -47,12 +103,18 @@ async function handleSetupStatusRoute(
 }
 
 async function handleSetupCreateAdminRoute(
+  req: unknown,
   res: unknown,
   body: Record<string, any>,
   setup: SetupService,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
+  if (!isTrustedSetupRequest(req)) {
+    sendUntrustedSetupError(res, sendLocalizedError);
+    return;
+  }
+
   const parsedBody = parseRequestOrSendError(
     res as import("node:http").ServerResponse,
     body,
@@ -88,12 +150,18 @@ async function handleSetupCreateAdminRoute(
 }
 
 async function handleSetupCompleteRoute(
+  req: unknown,
   res: unknown,
   body: Record<string, any>,
   setup: SetupService,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
+  if (!isTrustedSetupRequest(req)) {
+    sendUntrustedSetupError(res, sendLocalizedError);
+    return;
+  }
+
   const parsedBody = parseRequestOrSendError(
     res as import("node:http").ServerResponse,
     body,
@@ -131,5 +199,6 @@ async function handleSetupCompleteRoute(
 module.exports = {
   handleSetupCompleteRoute,
   handleSetupCreateAdminRoute,
-  handleSetupStatusRoute
+  handleSetupStatusRoute,
+  isTrustedSetupRequest
 };

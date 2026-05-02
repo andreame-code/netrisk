@@ -1,5 +1,9 @@
 const assert = require("node:assert/strict");
 const { createAuthStore } = require("../../../backend/auth.cjs");
+const {
+  handleSetupCreateAdminRoute,
+  isTrustedSetupRequest
+} = require("../../../backend/routes/setup.cjs");
 const { createSetupService } = require("../../../backend/setup-service.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -14,7 +18,12 @@ type StoredUser = {
 };
 
 function createSetupHarness(
-  options: { users?: StoredUser[]; setupCompleted?: boolean; healthOk?: boolean } = {}
+  options: {
+    users?: StoredUser[];
+    setupCompleted?: boolean;
+    healthOk?: boolean;
+    createUserDelayMs?: number;
+  } = {}
 ) {
   const users = [...(options.users || [])];
   const appState = new Map<string, unknown>();
@@ -40,6 +49,9 @@ function createSetupHarness(
       return users.find((user) => user.id === userId) || null;
     },
     async createUser(user: StoredUser) {
+      if (options.createUserDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, options.createUserDelayMs));
+      }
       users.push(user);
       return user;
     },
@@ -133,6 +145,29 @@ register("setup create first admin is rejected after setup completed", async () 
   assert.equal(result.code, "SETUP_ALREADY_COMPLETED");
 });
 
+register("setup create first admin serializes concurrent bootstrap attempts", async () => {
+  const { setup, users } = createSetupHarness({ createUserDelayMs: 10 });
+
+  const results = await Promise.all([
+    setup.createFirstAdmin({
+      username: "founder",
+      password: "secure-passphrase"
+    }),
+    setup.createFirstAdmin({
+      username: "racer",
+      password: "secure-passphrase"
+    })
+  ]);
+
+  const successful = results.filter((result: { ok: boolean }) => result.ok);
+  const rejected = results.filter((result: { ok: boolean }) => !result.ok);
+
+  assert.equal(successful.length, 1);
+  assert.equal(rejected.length, 1);
+  assert.equal(rejected[0].code, "SETUP_ADMIN_EXISTS");
+  assert.equal(users.filter((user) => user.role === "admin").length, 1);
+});
+
 register("setup completion is rejected when no admin exists", async () => {
   const { setup } = createSetupHarness();
 
@@ -169,4 +204,53 @@ register("setup status includes datastore health", async () => {
     hasAdminUser: false,
     datastoreOk: false
   });
+});
+
+register("setup mutating routes require a trusted local request", async () => {
+  assert.equal(isTrustedSetupRequest({ socket: { remoteAddress: "::1" }, headers: {} }), true);
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "::1" },
+      headers: { "x-forwarded-for": "203.0.113.10" }
+    }),
+    false
+  );
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "203.0.113.10" },
+      headers: { "x-forwarded-for": "127.0.0.1" }
+    }),
+    true
+  );
+  assert.equal(
+    isTrustedSetupRequest({ socket: { remoteAddress: "203.0.113.10" }, headers: {} }),
+    false
+  );
+
+  let localizedErrorCall: any[] | null = null;
+  await handleSetupCreateAdminRoute(
+    { socket: { remoteAddress: "203.0.113.10" }, headers: {} },
+    {},
+    { username: "founder", password: "secure-passphrase" },
+    {
+      async getSetupStatus() {
+        throw new Error("Status should not be checked for untrusted setup requests.");
+      },
+      async createFirstAdmin() {
+        throw new Error("Admin creation should not run for untrusted setup requests.");
+      },
+      async completeSetup() {
+        throw new Error("Completion should not run for this test.");
+      }
+    },
+    () => {
+      throw new Error("sendJson should not run for untrusted setup requests.");
+    },
+    (...args: any[]) => {
+      localizedErrorCall = args;
+    }
+  );
+
+  assert.equal(localizedErrorCall?.[1], 403);
+  assert.equal(localizedErrorCall?.[6], "SETUP_LOCAL_ONLY");
 });
