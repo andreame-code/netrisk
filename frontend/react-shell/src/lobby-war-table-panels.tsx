@@ -1,25 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
-import type {
-  CreateGameRequest,
-  CreateGameResponse
-} from "@frontend-generated/shared-runtime-validation.mts";
+import type { CreateGameRequest } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
-import { messageFromError } from "@frontend-core/errors.mts";
+import { getGameOptions } from "@frontend-core/api/client.mts";
 import { resolvedGameModules, resolvedGamePresets } from "@frontend-core/module-catalog.mts";
 import { t } from "@frontend-i18n";
 
-import { openShellGame } from "@react-shell/game-navigation";
 import {
   buildPlayerCountChoices,
   buildTurnTimeoutHourChoices,
   filterConfigurableGameModules
 } from "@react-shell/game-setup-options";
-import { storeCurrentPlayerId } from "@react-shell/player-session";
-import { gameOptionsQueryKey, lobbyGamesQueryKey } from "@react-shell/react-query";
+import { buildNewGamePath, useShellNamespace } from "@react-shell/public-auth-paths";
+import { gameOptionsQueryKey } from "@react-shell/react-query";
 import { WarTableIcon, type WarTableIconName } from "@react-shell/war-table-icons";
 
 type WarTableLobbyPanelsProps = {
@@ -98,8 +94,30 @@ function moduleIconName(moduleId: string): WarTableIconName {
   return "medal";
 }
 
+function buildCreateGameFormPath({
+  moduleIds,
+  namespace,
+  playerCount,
+  presetId,
+  turnTimeoutHours
+}: {
+  moduleIds: readonly string[];
+  namespace: ReturnType<typeof useShellNamespace>;
+  playerCount: number;
+  presetId: string | null;
+  turnTimeoutHours: number;
+}): string {
+  const searchParams = new URLSearchParams();
+  searchParams.set("preset", presetId || "");
+  searchParams.set("players", String(playerCount));
+  searchParams.set("turnHours", String(turnTimeoutHours));
+  searchParams.set("modules", moduleIds.join(","));
+
+  return `${buildNewGamePath(namespace)}?${searchParams.toString()}`;
+}
+
 export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps) {
-  const queryClient = useQueryClient();
+  const namespace = useShellNamespace();
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState(4);
   const [selectedTurnHours, setSelectedTurnHours] = useState(48);
@@ -124,13 +142,6 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
   const selectedPreset =
     presets.find((preset) => preset.id === selectedPresetId) || presets[0] || null;
   const visiblePresets = showAllPresets ? presets : presets.slice(0, 4);
-  const createMutation = useMutation({
-    mutationFn: (request: CreateGameRequest) =>
-      createGame(request, {
-        errorMessage: t("errors.requestFailed"),
-        fallbackMessage: t("errors.requestFailed")
-      })
-  });
 
   useEffect(() => {
     if (!presets.length || presets.some((preset) => preset.id === selectedPresetId)) {
@@ -161,35 +172,6 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
     }
   }, [options, selectedPlayers, selectedTurnHours]);
 
-  async function handleCreateGame(): Promise<void> {
-    if (!canCreateGame || createMutation.isPending) {
-      return;
-    }
-
-    const request: CreateGameRequest = {
-      name: selectedPreset?.name || t("warTable.lobby.defaultGameName"),
-      totalPlayers: selectedPlayers,
-      turnTimeoutHours: selectedTurnHours,
-      gamePresetId: selectedPreset?.id || null,
-      activeModuleIds: selectedModuleIds,
-      players: buildHumanPlayerSlots(selectedPlayers)
-    };
-
-    let response: CreateGameResponse;
-
-    try {
-      response = await createMutation.mutateAsync(request);
-    } catch {
-      return;
-    }
-
-    if (response.playerId) {
-      storeCurrentPlayerId(response.playerId, response.game.id);
-    }
-    await queryClient.invalidateQueries({ queryKey: lobbyGamesQueryKey() });
-    openShellGame(response.game.id);
-  }
-
   function handlePresetChange(nextPresetId: string): void {
     const nextPreset = presets.find((preset) => preset.id === nextPresetId) || null;
     setSelectedPresetId(nextPresetId);
@@ -204,7 +186,14 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
     );
   }
 
-  const createDisabled = !canCreateGame || optionsQuery.isLoading || createMutation.isPending;
+  const createDisabled = !canCreateGame || optionsQuery.isLoading;
+  const createGameFormPath = buildCreateGameFormPath({
+    moduleIds: selectedModuleIds,
+    namespace,
+    playerCount: selectedPlayers,
+    presetId: selectedPreset?.id || null,
+    turnTimeoutHours: selectedTurnHours
+  });
 
   return (
     <div className="war-table-lobby-panels" aria-label={t("warTable.lobby.panelsAria")}>
@@ -291,21 +280,15 @@ export function LobbyWarTablePanels({ canCreateGame }: WarTableLobbyPanelsProps)
           </div>
         </div>
 
-        <button
-          type="button"
-          className="lobby-create-button war-table-create-button"
-          disabled={createDisabled}
-          onClick={() => void handleCreateGame()}
-        >
-          {createMutation.isPending
-            ? t("newGame.feedback.creating")
-            : t("warTable.lobby.createButton")}
-        </button>
-        {createMutation.isError ? (
-          <p className="session-feedback is-error">
-            {messageFromError(createMutation.error, t("errors.requestFailed"))}
-          </p>
-        ) : null}
+        {createDisabled ? (
+          <button type="button" className="lobby-create-button war-table-create-button" disabled>
+            {t("warTable.lobby.createButton")}
+          </button>
+        ) : (
+          <Link className="lobby-create-button war-table-create-button" to={createGameFormPath}>
+            {t("warTable.lobby.createButton")}
+          </Link>
+        )}
       </section>
 
       <aside className="war-table-preset-panel" aria-label={t("warTable.lobby.presets.heading")}>

@@ -2,43 +2,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router-dom";
 
 import type {
-  CreateGameResponse,
   GameOptionsResponse,
   InstalledModuleSummary
 } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { createGame, getGameOptions } from "@frontend-core/api/client.mts";
+import { getGameOptions } from "@frontend-core/api/client.mts";
 import { setLocale } from "@frontend-i18n";
 
-import { openShellGame } from "@react-shell/game-navigation";
-import {
-  buildHumanPlayerSlots,
-  filterVisibleModuleIds,
-  LobbyWarTablePanels
-} from "@react-shell/lobby-war-table-panels";
-import { storeCurrentPlayerId } from "@react-shell/player-session";
+import { filterVisibleModuleIds, LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@frontend-core/api/client.mts", () => ({
-  createGame: vi.fn(),
   getGameOptions: vi.fn()
 }));
 
-vi.mock("@react-shell/game-navigation", () => ({
-  openShellGame: vi.fn()
-}));
-
-vi.mock("@react-shell/player-session", () => ({
-  storeCurrentPlayerId: vi.fn()
-}));
-
-const createGameMock = vi.mocked(createGame);
 const getGameOptionsMock = vi.mocked(getGameOptions);
-const openShellGameMock = vi.mocked(openShellGame);
-const storeCurrentPlayerIdMock = vi.mocked(storeCurrentPlayerId);
 
 type WarTablePanelProps = ComponentProps<typeof LobbyWarTablePanels>;
 
@@ -116,19 +98,6 @@ function createGameOptionsResponse(
   };
 }
 
-function createGameResponse(gameId = "created-game"): CreateGameResponse {
-  return {
-    ok: true,
-    playerId: "player-1",
-    game: {
-      id: gameId,
-      name: "Created Game"
-    },
-    games: [],
-    activeGameId: gameId
-  };
-}
-
 function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
   const queryClient = createQueryClient();
   const props: WarTablePanelProps = {
@@ -142,7 +111,9 @@ function renderPanels(overrides: Partial<WarTablePanelProps> = {}) {
     user: userEvent.setup(),
     ...render(
       <QueryClientProvider client={queryClient}>
-        <LobbyWarTablePanels {...props} />
+        <MemoryRouter initialEntries={["/react/lobby"]}>
+          <LobbyWarTablePanels {...props} />
+        </MemoryRouter>
       </QueryClientProvider>
     )
   };
@@ -154,36 +125,20 @@ beforeEach(() => {
     applyDocument: true
   });
   getGameOptionsMock.mockReset();
-  createGameMock.mockReset();
-  openShellGameMock.mockClear();
-  storeCurrentPlayerIdMock.mockClear();
 });
 
 describe("LobbyWarTablePanels", () => {
-  it("builds human player slots for create-game requests", () => {
-    expect(buildHumanPlayerSlots(3)).toEqual([
-      { slot: 1, type: "human" },
-      { slot: 2, type: "human" },
-      { slot: 3, type: "human" }
-    ]);
-  });
-
   it("filters preset module ids to the visible War Table toggles", () => {
     expect(
       filterVisibleModuleIds(["cards", "hidden-module"], [createModule("cards", "Cards")])
     ).toEqual(["cards"]);
   });
 
-  it("keeps fallback quick-create choices backend-compatible when options fail", async () => {
+  it("keeps fallback setup choices in the full create form link when options fail", async () => {
     getGameOptionsMock.mockRejectedValue(new Error("options offline"));
-    createGameMock.mockResolvedValue(createGameResponse());
 
     const { user } = renderPanels();
-    const createButton = await screen.findByRole("button", { name: "Create Game" });
-
-    await waitFor(() => {
-      expect(createButton).toBeEnabled();
-    });
+    const createLink = await screen.findByRole("link", { name: "Create Game" });
 
     const playerGroup = screen.getByRole("group", { name: "Players" });
     expect(within(playerGroup).getByRole("button", { name: "2" })).toBeInTheDocument();
@@ -193,60 +148,51 @@ describe("LobbyWarTablePanels", () => {
     expect(within(playerGroup).queryByRole("button", { name: "6" })).not.toBeInTheDocument();
 
     await user.click(within(playerGroup).getByRole("button", { name: "3" }));
-    await user.click(createButton);
 
     await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
+      expect(createLink).toHaveAttribute(
+        "href",
+        expect.stringContaining("/react/lobby/new?preset=&players=3&turnHours=48&modules=")
+      );
     });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: [],
-        gamePresetId: null,
-        name: "Classic Risk",
-        players: buildHumanPlayerSlots(3),
-        totalPlayers: 3,
-        turnTimeoutHours: 48
-      }),
-      expect.any(Object)
-    );
-    expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-1", "created-game");
-    expect(openShellGameMock).toHaveBeenCalledWith("created-game");
   });
 
-  it("submits selected presets, player counts and module toggles", async () => {
+  it("keeps create-form navigation disabled while setup options are loading", async () => {
+    getGameOptionsMock.mockReturnValue(new Promise(() => undefined));
+
+    renderPanels();
+
+    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    expect(createButton).toBeDisabled();
+    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
+  });
+
+  it("links selected presets, player counts and module toggles to the full create form", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    createGameMock.mockResolvedValue(createGameResponse());
 
     const { user } = renderPanels();
-    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    const createLink = await screen.findByRole("link", { name: "Create Game" });
     const playerGroup = screen.getByRole("group", { name: "Players" });
 
     await user.click(await screen.findByRole("button", { name: /Fast Duel/ }));
     await user.click(screen.getByRole("button", { name: "Cards" }));
     await user.click(within(playerGroup).getByRole("button", { name: "2" }));
-    await user.click(createButton);
 
     await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
+      expect(createLink).toHaveAttribute(
+        "href",
+        expect.stringContaining(
+          "/react/lobby/new?preset=fast-duel&players=2&turnHours=48&modules=objectives%2Ccards"
+        )
+      );
     });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: ["objectives", "cards"],
-        gamePresetId: "fast-duel",
-        name: "Fast Duel",
-        players: buildHumanPlayerSlots(2),
-        totalPlayers: 2
-      }),
-      expect.any(Object)
-    );
   });
 
-  it("allows users to clear all preset modules before quick-create", async () => {
+  it("allows users to clear all preset modules before opening the full form", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    createGameMock.mockResolvedValue(createGameResponse());
 
     const { user } = renderPanels();
-    const createButton = await screen.findByRole("button", { name: "Create Game" });
+    const createLink = await screen.findByRole("link", { name: "Create Game" });
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
 
     await waitFor(() => {
@@ -256,20 +202,18 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(cardsButton).not.toHaveClass("is-active");
     });
-    await user.click(createButton);
 
     await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
+      expect(createLink).toHaveAttribute(
+        "href",
+        expect.stringContaining(
+          "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules="
+        )
+      );
     });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: []
-      }),
-      expect.any(Object)
-    );
   });
 
-  it("does not submit preset modules hidden from the quick-create toggles", async () => {
+  it("does not pass preset modules hidden from the lobby toggles", async () => {
     getGameOptionsMock.mockResolvedValue(
       createGameOptionsResponse({
         modules: [
@@ -288,29 +232,24 @@ describe("LobbyWarTablePanels", () => {
         ]
       })
     );
-    createGameMock.mockResolvedValue(createGameResponse());
 
-    const { user } = renderPanels();
+    renderPanels();
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
+    const createLink = await screen.findByRole("link", { name: "Create Game" });
 
     expect(screen.queryByRole("button", { name: "Advanced Cards" })).not.toBeInTheDocument();
     await waitFor(() => {
       expect(cardsButton).toHaveClass("is-active");
     });
-    await user.click(await screen.findByRole("button", { name: "Create Game" }));
-
-    await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
-    });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: ["cards"]
-      }),
-      expect.any(Object)
+    expect(createLink).toHaveAttribute(
+      "href",
+      expect.stringContaining(
+        "/react/lobby/new?preset=advanced-risk&players=4&turnHours=48&modules=cards"
+      )
     );
   });
 
-  it("does not show or submit the internal core module in quick-create toggles", async () => {
+  it("does not show or pass the internal core module in lobby toggles", async () => {
     getGameOptionsMock.mockResolvedValue(
       createGameOptionsResponse({
         modules: [
@@ -329,10 +268,10 @@ describe("LobbyWarTablePanels", () => {
         ]
       })
     );
-    createGameMock.mockResolvedValue(createGameResponse());
 
-    const { user } = renderPanels();
+    renderPanels();
     const cardsButton = await screen.findByRole("button", { name: "Cards" });
+    const createLink = await screen.findByRole("link", { name: "Create Game" });
 
     expect(screen.queryByRole("button", { name: "Base" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Objectives" })).toBeInTheDocument();
@@ -340,22 +279,16 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(cardsButton).toHaveClass("is-active");
     });
-    await user.click(await screen.findByRole("button", { name: "Create Game" }));
-
-    await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
-    });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: ["cards"]
-      }),
-      expect.any(Object)
+    expect(createLink).toHaveAttribute(
+      "href",
+      expect.stringContaining(
+        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards"
+      )
     );
   });
 
-  it("blocks quick-create when the lobby session is unauthenticated", async () => {
+  it("blocks create-form navigation when the lobby session is unauthenticated", async () => {
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    createGameMock.mockResolvedValue(createGameResponse());
 
     const { user } = renderPanels({
       canCreateGame: false
@@ -364,11 +297,8 @@ describe("LobbyWarTablePanels", () => {
 
     await screen.findByRole("button", { name: "Cards" });
     expect(createButton).toBeDisabled();
-
+    expect(screen.queryByRole("link", { name: "Create Game" })).not.toBeInTheDocument();
     await user.click(createButton);
-
-    expect(createGameMock).not.toHaveBeenCalled();
-    expect(openShellGameMock).not.toHaveBeenCalled();
   });
 
   it("drops stale selected module ids after game options refresh", async () => {
@@ -394,9 +324,8 @@ describe("LobbyWarTablePanels", () => {
       ]
     });
     getGameOptionsMock.mockResolvedValueOnce(initialOptions).mockResolvedValue(refreshedOptions);
-    createGameMock.mockResolvedValue(createGameResponse());
 
-    const { queryClient, user } = renderPanels();
+    const { queryClient } = renderPanels();
 
     const objectivesButton = await screen.findByRole("button", { name: "Objectives" });
     await waitFor(() => {
@@ -406,30 +335,12 @@ describe("LobbyWarTablePanels", () => {
     await waitFor(() => {
       expect(screen.queryByRole("button", { name: "Objectives" })).not.toBeInTheDocument();
     });
-    await user.click(await screen.findByRole("button", { name: "Create Game" }));
-
-    await waitFor(() => {
-      expect(createGameMock).toHaveBeenCalledTimes(1);
-    });
-    expect(createGameMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        activeModuleIds: ["cards"]
-      }),
-      expect.any(Object)
+    expect(await screen.findByRole("link", { name: "Create Game" })).toHaveAttribute(
+      "href",
+      expect.stringContaining(
+        "/react/lobby/new?preset=classic-risk&players=4&turnHours=48&modules=cards"
+      )
     );
-  });
-
-  it("keeps quick-create failures inside the panel error state", async () => {
-    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
-    createGameMock.mockRejectedValue(new Error("create failed"));
-
-    const { user } = renderPanels();
-
-    await user.click(await screen.findByRole("button", { name: "Create Game" }));
-
-    expect(await screen.findByText("create failed")).toBeInTheDocument();
-    expect(storeCurrentPlayerIdMock).not.toHaveBeenCalled();
-    expect(openShellGameMock).not.toHaveBeenCalled();
   });
 
   it("expands the preset panel through the view-all action", async () => {

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 
 import type {
   AuthSessionResponse,
@@ -244,8 +244,8 @@ function createResolvedCatalogGameOptionsResponse(): GameOptionsResponse {
   };
 }
 
-async function renderLobbyCreateRoute() {
-  const rendered = renderReactShell("/react/lobby/new");
+async function renderLobbyCreateRoute(path = "/react/lobby/new") {
+  const rendered = renderReactShell(path);
   const createPage = await screen.findByTestId("react-shell-lobby-create-page");
   const route = within(createPage);
   const customizeOptionsToggle = (await route.findByTestId(
@@ -459,6 +459,201 @@ describe("LobbyCreateRoute integration", () => {
           contentProfileId: "content-resolved",
           gameplayProfileId: "gameplay-resolved",
           uiProfileId: "ui-resolved"
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "applies lobby setup params and submits the prefilled setup from the quick confirm action",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=preset-resolved&players=2&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gamePresetId: "preset-resolved",
+          contentProfileId: "content-resolved",
+          gameplayProfileId: "gameplay-resolved",
+          uiProfileId: "ui-resolved",
+          totalPlayers: 2,
+          turnTimeoutHours: 48,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "clears admin default presets when lobby setup explicitly has no preset",
+    async () => {
+      getGameOptionsMock.mockResolvedValue({
+        ...createResolvedCatalogGameOptionsResponse(),
+        adminDefaults: {
+          gamePresetId: "preset-resolved"
+        }
+      });
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=2&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      const submittedRequest = createGameMock.mock.calls[0]?.[0];
+      expect(submittedRequest).toEqual(
+        expect.objectContaining({
+          totalPlayers: 2,
+          turnTimeoutHours: 48
+        })
+      );
+      expect(submittedRequest).not.toEqual(
+        expect.objectContaining({
+          gamePresetId: "preset-resolved"
+        })
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "forces lobby-prefilled player slots to human seats",
+    async () => {
+      getGameOptionsMock.mockResolvedValue({
+        ...createResolvedCatalogGameOptionsResponse(),
+        adminDefaults: {
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "ai"
+            },
+            {
+              slot: 3,
+              type: "ai"
+            }
+          ]
+        }
+      });
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=3&turnHours=48&modules="
+      );
+      const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
+
+      await user.click(quickConfirmButton);
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            },
+            {
+              slot: 3,
+              type: "human"
+            }
+          ]
+        }),
+        expect.any(Object)
+      );
+    },
+    lobbyCreateRouteTimeoutMs
+  );
+
+  it(
+    "reapplies lobby setup params when the URL query changes",
+    async () => {
+      getGameOptionsMock.mockResolvedValue(createResolvedCatalogGameOptionsResponse());
+
+      const { user, route } = await renderLobbyCreateRoute(
+        "/react/lobby/new?preset=&players=2&turnHours=48&modules="
+      );
+      const totalPlayersSelect = (await route.findByTestId(
+        "react-shell-new-game-total-players"
+      )) as HTMLSelectElement;
+
+      await waitFor(() => {
+        expect(totalPlayersSelect).toHaveValue("2");
+      });
+
+      act(() => {
+        window.history.pushState(
+          {},
+          "",
+          "/react/lobby/new?preset=&players=3&turnHours=48&modules="
+        );
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      });
+
+      await waitFor(() => {
+        expect(totalPlayersSelect).toHaveValue("3");
+      });
+
+      await user.click(await route.findByTestId("react-shell-new-game-confirm-default"));
+
+      await waitFor(() => {
+        expect(createGameMock).toHaveBeenCalledTimes(1);
+      });
+
+      expect(createGameMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          totalPlayers: 3,
+          players: [
+            {
+              slot: 1,
+              type: "human"
+            },
+            {
+              slot: 2,
+              type: "human"
+            },
+            {
+              slot: 3,
+              type: "human"
+            }
+          ]
         }),
         expect.any(Object)
       );
