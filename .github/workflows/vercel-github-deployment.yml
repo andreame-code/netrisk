@@ -6,8 +6,6 @@ on:
 permissions:
   contents: read
   deployments: write
-  issues: write
-  pull-requests: read
   statuses: read
 
 jobs:
@@ -20,6 +18,7 @@ jobs:
         uses: actions/github-script@v9
         env:
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
+          VERCEL_TEAM_SLUG: ${{ vars.VERCEL_TEAM_SLUG }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         with:
           script: |
@@ -38,10 +37,13 @@ jobs:
               return;
             }
 
+            const statusUrlObject = new URL(statusUrl);
+            const statusPathParts = statusUrlObject.pathname.split("/").filter(Boolean);
             const branchName = Array.isArray(status.branches) && status.branches.length
               ? status.branches[0].name
               : sha;
-            const deploymentKey = new URL(statusUrl).pathname.split("/").filter(Boolean).pop();
+            const deploymentKey = statusPathParts.pop();
+            const vercelScopeSlug = statusPathParts[0] || "";
 
             if (!deploymentKey) {
               core.setFailed(`Unable to parse Vercel deployment id from ${statusUrl}.`);
@@ -53,22 +55,66 @@ jobs:
               return;
             }
 
-            const deploymentResponse = await fetch(
-              `https://api.vercel.com/v13/deployments/${deploymentKey}?teamId=${process.env.VERCEL_ORG_ID}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
-                },
-              }
-            );
+            function uniqueDeploymentLookupUrls() {
+              const baseUrl = `https://api.vercel.com/v13/deployments/${deploymentKey}`;
+              const urls = [];
+              const seen = new Set();
 
-            if (!deploymentResponse.ok) {
-              const body = await deploymentResponse.text();
-              core.setFailed(`Unable to fetch Vercel deployment ${deploymentKey}: ${deploymentResponse.status} ${body}`);
+              function add(query) {
+                const url = query ? `${baseUrl}?${query}` : baseUrl;
+                if (seen.has(url)) return;
+                seen.add(url);
+                urls.push(url);
+              }
+
+              if (process.env.VERCEL_ORG_ID) {
+                add(`teamId=${encodeURIComponent(process.env.VERCEL_ORG_ID)}`);
+              }
+
+              if (process.env.VERCEL_TEAM_SLUG) {
+                add(`slug=${encodeURIComponent(process.env.VERCEL_TEAM_SLUG)}`);
+              }
+
+              if (vercelScopeSlug) {
+                add(`slug=${encodeURIComponent(vercelScopeSlug)}`);
+              }
+
+              add("");
+              return urls;
+            }
+
+            async function fetchVercelDeployment() {
+              const failures = [];
+
+              for (const lookupUrl of uniqueDeploymentLookupUrls()) {
+                const response = await fetch(lookupUrl, {
+                  headers: {
+                    Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+                  },
+                });
+
+                if (response.ok) {
+                  core.info(`Resolved Vercel deployment from ${lookupUrl}.`);
+                  return await response.json();
+                }
+
+                const body = await response.text();
+                failures.push(`${response.status} ${body}`);
+                core.info(`Vercel deployment lookup failed at ${lookupUrl}: ${response.status}`);
+              }
+
+              core.setFailed(
+                `Unable to fetch Vercel deployment ${deploymentKey}: ${failures.join(" | ")}`
+              );
+              return null;
+            }
+
+            const vercelDeployment = await fetchVercelDeployment();
+
+            if (!vercelDeployment) {
               return;
             }
 
-            const vercelDeployment = await deploymentResponse.json();
             const deploymentUrl = vercelDeployment.url ? `https://${vercelDeployment.url}` : "";
 
             if (!deploymentUrl) {
@@ -77,62 +123,6 @@ jobs:
             }
 
             const environment = vercelDeployment.target === "production" ? "Production" : "Preview";
-            const prCommentMarker = `<!-- vercel-build-link:${deploymentKey} -->`;
-
-            async function commentPullRequestsForDeployment() {
-              const pullRequests = await github.paginate(
-                github.rest.repos.listPullRequestsAssociatedWithCommit,
-                {
-                  owner,
-                  repo,
-                  commit_sha: sha,
-                  per_page: 100,
-                }
-              );
-
-              const openPullRequests = pullRequests.filter((pr) => pr.state === "open");
-
-              if (openPullRequests.length === 0) {
-                core.info(`No open pull requests are associated with ${sha}.`);
-                return;
-              }
-
-              const body = [
-                prCommentMarker,
-                "## Vercel build ready",
-                "",
-                `- Environment: ${environment}`,
-                `- Commit: \`${sha.slice(0, 12)}\``,
-                `- Preview: ${deploymentUrl}`,
-                `- Build details: ${statusUrl}`,
-              ].join("\n");
-
-              for (const pullRequest of openPullRequests) {
-                const comments = await github.paginate(github.rest.issues.listComments, {
-                  owner,
-                  repo,
-                  issue_number: pullRequest.number,
-                  per_page: 100,
-                });
-
-                if (comments.some((comment) => String(comment.body || "").includes(prCommentMarker))) {
-                  core.info(`PR #${pullRequest.number} already has a comment for ${deploymentKey}.`);
-                  continue;
-                }
-
-                await github.rest.issues.createComment({
-                  owner,
-                  repo,
-                  issue_number: pullRequest.number,
-                  body,
-                });
-
-                core.info(`Commented on PR #${pullRequest.number}: ${deploymentUrl}`);
-              }
-            }
-
-            await commentPullRequestsForDeployment();
-
             const deployments = await github.paginate(github.rest.repos.listDeployments, {
               owner,
               repo,
