@@ -93,7 +93,7 @@ register("validateNewGameConfig supports injected rule set resolvers", () => {
 
   assert.equal(config.ruleSetId, "runtime.classic");
   assert.equal(config.ruleSetName, "Runtime Classic");
-  assert.equal(config.mapId, "classic-mini");
+  assert.equal(config.mapId, "world-classic");
   assert.equal(config.diceRuleSetId, "standard");
   assert.equal(config.victoryRuleSetId, "conquest");
 });
@@ -140,7 +140,7 @@ register(
 
     assert.equal(config.ruleSetId, "classic-defense-3");
     assert.equal(config.ruleSetName, "Classic Defense 3");
-    assert.equal(config.mapId, "classic-mini");
+    assert.equal(config.mapId, "world-classic");
     assert.equal(config.diceRuleSetId, "defense-3");
     assert.equal(config.victoryRuleSetId, "conquest");
     assert.equal(config.themeId, "war-table");

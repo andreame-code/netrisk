@@ -991,6 +991,7 @@ register(
           "/api/games",
           {
             name: "Restricted Catalog Override",
+            mapId: "classic-mini",
             ruleSetId: "classic-defense-3",
             diceRuleSetId: "standard",
             themeId: "command",

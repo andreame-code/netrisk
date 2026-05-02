@@ -60,12 +60,37 @@ test("new game setup keeps player 1 locked as creator and creates the configured
 
   await expect(page).toHaveURL(/\/game\//);
   await expect(page.locator('#game-status')).toContainText('Setup Lock Test');
-  await expect(page.locator('#game-map-meta')).toContainText('Classic Mini');
+  await expect(page.locator('#game-map-meta')).toContainText('World Classic');
   await expect(page.locator('#game-setup-meta')).toContainText('4 giocatori');
   await expect(page.locator('#game-setup-meta')).toContainText('2 AI');
   await expect(page.getByTestId('current-player-indicator')).toContainText(owner);
   await expect(page.locator('#join-button')).toBeDisabled();
   await expect(page.locator('.territory-node').first()).toHaveClass(/piece-skin-style-ring-core/);
+});
+
+test("new game setup creates and renders the selected Classic Mini map", async ({ page }) => {
+  test.slow();
+  await resetGame(page);
+  await page.goto("/game");
+  const owner = uniqueUser("classic_mini_owner");
+  await registerAndLogin(page, owner);
+  await page.goto("/lobby/new");
+
+  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expect(page.locator("#setup-map")).toContainText("Classic Mini");
+
+  await page.locator("#setup-map").selectOption("classic-mini");
+  await page.locator("#setup-game-name").fill("Compact Front");
+  await expect(page.locator("#submit-new-game")).toBeEnabled();
+  await page.getByRole("button", { name: "Crea e apri" }).click();
+
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\//);
+  await expect(page.locator("#game-status")).toContainText("Compact Front", { timeout: 15000 });
+  await expect(page.locator("#game-map-meta")).toContainText("Classic Mini", { timeout: 15000 });
+  await expect(page.locator(".map-board")).toBeVisible();
+  await expect(page.locator('[data-territory-id="aurora"]')).toHaveAttribute("title", "Aurora");
+  await expect(page.locator('[data-territory-id="bastion"]')).toBeVisible();
+  await expect(page.locator('[data-territory-id="ion"]')).toBeVisible();
 });
 
 test("new game setup creates and renders the selected Middle-earth map", async ({ page }) => {

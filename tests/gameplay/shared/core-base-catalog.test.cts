@@ -48,7 +48,7 @@ register("core.base catalog centralizes the built-in new-game rule sets", () => 
   }
   assert.equal(classicDefense3.id, "classic-defense-3");
   assert.equal(classicDefense3.name, "Classic Defense 3");
-  assert.equal(classicDefense3.defaults.mapId, "classic-mini");
+  assert.equal(classicDefense3.defaults.mapId, "world-classic");
   assert.equal(classicDefense3.defaults.diceRuleSetId, "defense-3");
 });
 
