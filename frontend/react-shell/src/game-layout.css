@@ -2595,7 +2595,7 @@ body[data-app-section="game"] .shared-bottom-shell {
 
 .game-map-first-page {
   min-height: calc(100vh - 64px);
-  padding-bottom: 132px;
+  padding-bottom: 104px;
 }
 
 .game-map-first-page .game-battlefield-layout {
@@ -2636,11 +2636,11 @@ body[data-app-section="game"] .shared-bottom-shell {
 
 .game-floating-hud {
   position: absolute;
-  top: 18px;
-  left: 18px;
+  top: 14px;
+  left: 14px;
   z-index: 8;
-  width: min(360px, calc(100% - 36px));
-  padding: 12px 14px;
+  width: min(320px, calc(100% - 28px));
+  padding: 9px 10px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--accent) 58%, var(--border));
   background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
@@ -2650,23 +2650,23 @@ body[data-app-section="game"] .shared-bottom-shell {
 }
 
 .game-floating-hud .game-hud-heading {
-  margin-bottom: 10px;
+  margin-bottom: 7px;
 }
 
 .game-floating-hud h1 {
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1.05;
 }
 
 .game-floating-hud .eyebrow {
-  margin-bottom: 3px;
-  font-size: 0.62rem;
+  margin-bottom: 0;
+  font-size: 0.58rem;
 }
 
 .game-hud-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  gap: 6px 9px;
 }
 
 .game-hud-summary > div {
@@ -2674,43 +2674,43 @@ body[data-app-section="game"] .shared-bottom-shell {
   gap: 2px;
   min-width: 0;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.66rem;
 }
 
 .game-hud-summary strong {
   color: var(--heading);
-  font-size: 0.96rem;
+  font-size: 0.82rem;
   line-height: 1.05;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .game-floating-hud .map-trade-alert {
-  margin-top: 10px;
-  padding: 9px 10px;
+  margin-top: 7px;
+  padding: 7px 8px;
   border-radius: 6px;
 }
 
 .game-floating-hud .action-help {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
 }
 
 .game-secondary-drawers {
   position: absolute;
-  right: 18px;
-  bottom: 210px;
+  right: 14px;
+  bottom: 144px;
   z-index: 31;
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  max-width: min(720px, calc(100% - 36px));
+  gap: 5px;
+  max-width: min(680px, calc(100% - 28px));
   pointer-events: none;
 }
 
 .game-secondary-drawer {
   pointer-events: auto;
   position: relative;
-  min-width: 132px;
+  min-width: 102px;
   max-width: min(420px, calc(100vw - 36px));
   border: 1px solid color-mix(in srgb, var(--border-hi) 72%, transparent);
   border-radius: 8px;
@@ -2725,16 +2725,16 @@ body[data-app-section="game"] .shared-bottom-shell {
 }
 
 .game-secondary-drawer summary {
-  min-height: 42px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 0 12px;
+  gap: 7px;
+  padding: 0 9px;
   cursor: pointer;
   list-style: none;
   color: var(--heading);
-  font-size: 0.76rem;
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -2747,7 +2747,7 @@ body[data-app-section="game"] .shared-bottom-shell {
 .game-secondary-drawer summary::after {
   content: "+";
   color: var(--accent);
-  font-size: 1rem;
+  font-size: 0.86rem;
   line-height: 1;
 }
 
@@ -2758,12 +2758,12 @@ body[data-app-section="game"] .shared-bottom-shell {
 .game-secondary-drawer[open] {
   display: flex;
   flex-direction: column-reverse;
-  min-width: min(420px, calc(100vw - 36px));
+  min-width: min(360px, calc(100vw - 28px));
 }
 
 .game-secondary-drawer .rail-section {
   margin: 0;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 }
 
 .game-readonly-drawer .rail-players,
@@ -2787,18 +2787,18 @@ body[data-app-section="game"] .shared-bottom-shell {
 
 .game-secondary-drawer .player-card {
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px;
 }
 
 .game-command-dock {
   position: fixed;
   left: 50%;
-  bottom: 18px;
+  bottom: 14px;
   z-index: 30;
-  width: min(1120px, calc(100vw - 44px));
-  max-height: min(42vh, 360px);
+  width: min(980px, calc(100vw - 36px));
+  max-height: min(30vh, 260px);
   overflow: auto;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--accent) 46%, var(--border-hi));
   background: color-mix(in srgb, var(--panel-strong) 92%, transparent);
@@ -2808,19 +2808,11 @@ body[data-app-section="game"] .shared-bottom-shell {
 }
 
 .game-command-dock .rail-section + .rail-section {
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .game-command-dock .game-dock-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 0 10px;
-  border-bottom: 1px solid var(--line);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  display: none;
 }
 
 .game-command-dock .game-dock-heading strong {
@@ -2830,7 +2822,7 @@ body[data-app-section="game"] .shared-bottom-shell {
 .game-command-dock .actions-section {
   display: grid;
   grid-template-columns: minmax(260px, 1.35fr) minmax(220px, 0.9fr);
-  gap: 12px 16px;
+  gap: 8px 12px;
   align-items: end;
 }
 
@@ -2843,9 +2835,9 @@ body[data-app-section="game"] .shared-bottom-shell {
 }
 
 .game-command-dock .compact-group label {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: var(--accent);
-  font-size: 0.74rem;
+  font-size: 0.66rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2854,7 +2846,7 @@ body[data-app-section="game"] .shared-bottom-shell {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .game-command-dock #attack-group .action-stack,
@@ -2869,26 +2861,26 @@ body[data-app-section="game"] .shared-bottom-shell {
 
 .game-command-dock .action-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: stretch;
 }
 
 .game-command-dock select,
 .game-command-dock input,
 .game-command-dock button {
-  min-height: 40px;
+  min-height: 34px;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
 }
 
 .game-command-dock #end-turn-button,
 .game-command-dock #surrender-button {
-  min-width: 160px;
+  min-width: 132px;
 }
 
 .game-command-dock .card-trade-list {
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  max-height: 116px;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  max-height: 86px;
   overflow: auto;
 }
 
@@ -2903,9 +2895,24 @@ body[data-app-section="game"] .shared-bottom-shell {
 }
 
 .game-command-dock .surrender-section {
-  margin-top: 10px;
+  margin-top: 4px;
   display: flex;
   justify-content: flex-end;
+}
+
+.game-command-dock #surrender-button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-color: color-mix(in srgb, #ef4444 52%, var(--border));
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  color: color-mix(in srgb, #fecaca 86%, var(--text));
+  font-size: 0.66rem;
+  opacity: 0.76;
+}
+
+.game-command-dock #surrender-button:hover:not(:disabled),
+.game-command-dock #surrender-button:focus-visible {
+  opacity: 1;
 }
 
 @media (max-width: 1180px) {
@@ -2960,7 +2967,7 @@ body[data-app-section="game"] .shared-bottom-shell {
 
   .game-map-first-page {
     min-height: calc(100vh - 92px);
-    padding-bottom: 210px;
+    padding-bottom: 170px;
   }
 
   .game-map-first-page .game-battlefield-layout,
@@ -2970,29 +2977,29 @@ body[data-app-section="game"] .shared-bottom-shell {
   }
 
   .game-floating-hud {
-    top: 10px;
-    left: 10px;
-    width: min(330px, calc(100% - 20px));
-    padding: 10px;
+    top: 8px;
+    left: 8px;
+    width: min(310px, calc(100% - 16px));
+    padding: 8px;
   }
 
   .game-hud-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    gap: 5px 7px;
   }
 
   .game-hud-summary > div {
-    font-size: 0.66rem;
+    font-size: 0.6rem;
   }
 
   .game-hud-summary strong {
-    font-size: 0.86rem;
+    font-size: 0.74rem;
   }
 
   .game-secondary-drawers {
     left: 10px;
     right: 10px;
-    bottom: 188px;
+    bottom: calc(min(40vh, 300px) + 8px);
     max-width: none;
     overflow-x: auto;
     align-items: flex-end;
@@ -3001,7 +3008,7 @@ body[data-app-section="game"] .shared-bottom-shell {
 
   .game-secondary-drawer {
     flex: 0 0 auto;
-    min-width: 118px;
+    min-width: 94px;
   }
 
   .game-secondary-drawer[open] {
@@ -3013,8 +3020,8 @@ body[data-app-section="game"] .shared-bottom-shell {
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: 48vh;
-    padding: 10px;
+    max-height: 40vh;
+    padding: 8px;
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
@@ -3023,19 +3030,13 @@ body[data-app-section="game"] .shared-bottom-shell {
   }
 
   .game-command-dock .game-dock-heading {
-    position: sticky;
-    top: -10px;
-    z-index: 2;
-    margin: -10px -10px 10px;
-    padding: 10px;
-    background: color-mix(in srgb, var(--panel-strong) 94%, transparent);
-    backdrop-filter: blur(18px);
+    display: none;
   }
 
   .game-command-dock select,
   .game-command-dock input,
   .game-command-dock button {
-    min-height: 42px;
+    min-height: 36px;
   }
 }
 
@@ -3092,30 +3093,30 @@ html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-sur
 
 html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
   position: absolute !important;
-  top: 18px !important;
-  left: 18px !important;
+  top: 14px !important;
+  left: 14px !important;
   right: auto !important;
   bottom: auto !important;
   z-index: 8 !important;
   grid-column: auto !important;
   grid-row: auto !important;
-  width: min(360px, calc(100% - 36px)) !important;
+  width: min(320px, calc(100% - 28px)) !important;
   height: auto !important;
   min-height: 0 !important;
-  padding: 12px 14px !important;
+  padding: 9px 10px !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-secondary-drawers {
   position: absolute !important;
-  right: 18px !important;
-  bottom: 210px !important;
+  right: 14px !important;
+  bottom: 144px !important;
   left: auto !important;
   z-index: 31 !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-hud-summary {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 8px 12px !important;
+  gap: 6px 9px !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-hud-summary > div {
@@ -3124,27 +3125,27 @@ html[data-theme="war-table"] .game-map-first-page .game-hud-summary > div {
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-floating-hud .game-hud-heading {
-  margin-bottom: 10px !important;
+  margin-bottom: 7px !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-floating-hud h1 {
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-floating-hud .badge {
-  min-height: 34px !important;
-  padding: 6px 10px !important;
+  min-height: 30px !important;
+  padding: 5px 8px !important;
 }
 
 html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   position: fixed !important;
   top: auto !important;
   right: auto !important;
-  bottom: 18px !important;
+  bottom: 14px !important;
   left: 50% !important;
   z-index: 30 !important;
-  width: min(1120px, calc(100vw - 44px)) !important;
-  max-height: min(42vh, 360px) !important;
+  width: min(980px, calc(100vw - 36px)) !important;
+  max-height: min(30vh, 260px) !important;
   overflow: auto !important;
   transform: translateX(-50%) !important;
 }
@@ -3174,29 +3175,29 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
-    top: 10px !important;
-    left: 10px !important;
-    width: min(330px, calc(100% - 20px)) !important;
-    padding: 10px !important;
+    top: 8px !important;
+    left: 8px !important;
+    width: min(310px, calc(100% - 16px)) !important;
+    padding: 8px !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-secondary-drawers {
     right: 10px !important;
-    bottom: calc(min(48vh, 360px) + 12px) !important;
+    bottom: calc(min(40vh, 300px) + 8px) !important;
     left: 10px !important;
     max-width: none !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
-    max-width: calc(100% - 20px) !important;
+    max-width: calc(100% - 16px) !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud .game-hud-heading {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 8px !important;
-    margin-bottom: 8px !important;
+    gap: 6px !important;
+    margin-bottom: 6px !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud h1 {
@@ -3212,11 +3213,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-hud-summary > div {
-    font-size: 0.62rem !important;
+    font-size: 0.6rem !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-hud-summary strong {
-    font-size: 0.8rem !important;
+    font-size: 0.74rem !important;
   }
 
   html[data-theme="war-table"] .game-map-first-page .game-command-dock {
@@ -3224,7 +3225,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
     bottom: 0 !important;
     left: 0 !important;
     width: auto !important;
-    max-height: 48vh !important;
+    max-height: 40vh !important;
     transform: none !important;
   }
 }
