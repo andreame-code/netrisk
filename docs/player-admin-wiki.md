@@ -1,354 +1,357 @@
-# Wiki giocatore e admin
+# Player and admin wiki
 
-Questa guida spiega come usare il gioco come giocatore o amministratore. Non descrive codice, API o flussi di sviluppo.
+This guide explains how to use the game as a player or as an administrator. It does not describe code, APIs, or development workflows.
 
-Nel sito il gioco puo apparire con il titolo visibile `Frontline Dominion`, mentre la documentazione tecnica puo usare il nome interno del progetto.
+In the web interface the game can appear with the visible title `Frontline Dominion`. Technical documentation can still use the internal project name, but this player-facing guide avoids external franchise references.
 
-## Printscreen rapidi
+## Guided walkthrough
 
-Questi printscreen mostrano i passaggi principali dell'esperienza giocatore e admin.
+### 1. Sign in
 
-### Accesso
+![Sign-in screen](assets/player-admin-wiki-login.png)
 
-![Schermata di accesso](assets/player-admin-wiki-login.png)
+Use the sign-in screen to enter an existing account. New players can move to registration from the same entry flow. After signing in, the app opens the authenticated experience and lets you reach the lobby, profile, active games, and, for authorized users, the admin console.
 
-### Lobby
+### 2. Use the lobby
 
-![Lobby con partite e azioni principali](assets/player-admin-wiki-lobby.png)
+![Lobby with open games and main actions](assets/player-admin-wiki-lobby.png)
 
-### Creazione partita
+The lobby is the player hub. Use it to create a game, join an open lobby, return to a saved or active game, or add available bot players while setting up a match. A game can start only when its setup is valid, and the first player slot must be human.
 
-![Creazione di una nuova partita](assets/player-admin-wiki-new-game.png)
+### 3. Create a game
 
-### Plancia di gioco
+![New game setup screen](assets/player-admin-wiki-new-game.png)
 
-![Plancia durante una partita](assets/player-admin-wiki-gameplay.png)
+The new game screen is where the host chooses the map, rule preset, dice rule, victory condition, theme, piece style, player slots, bot slots, and turn timeout when those options are available. Confirm the setup, wait for the required players or bots, then start the game from the lobby.
 
-### Console admin
+### 4. Play on the board
 
-![Console admin](assets/player-admin-wiki-admin.png)
+![Gameplay board during an active match](assets/player-admin-wiki-gameplay.png)
 
-## Primi passi
+The game board shows the current phase, territories, armies, players, available actions, combat results, cards, and turn controls. The server decides which actions are legal; the interface should only offer actions that match the current game state.
 
-1. Apri l'applicazione.
-2. Registra un account o accedi con un account esistente.
-3. Dopo l'accesso, entra nella lobby per creare una partita, unirti a una partita aperta o riaprire una partita salvata.
-4. Usa il profilo per controllare statistiche personali come partite giocate, vittorie, sconfitte e partite in corso.
+### 5. Manage the game as an admin
+
+![Admin console overview](assets/player-admin-wiki-admin.png)
+
+Authorized admins can open `/admin` to inspect users, games, active configuration, modules, Content Studio items, maintenance tools, health information, and audit logs. Admin tools manage the live game experience; they are not a code-editing interface.
+
+## Player quick start
+
+1. Open the application.
+2. Register an account or sign in with an existing one.
+3. Enter the lobby.
+4. Create a game, join an open lobby, or reopen a saved game.
+5. Use the profile page to check played games, wins, losses, ongoing games, and win rate.
 
 ## Lobby
 
-La lobby e il punto di partenza delle partite.
+The lobby is the starting point for matches.
 
-Puoi:
+You can:
 
-- creare una nuova partita
-- scegliere tra le mappe disponibili
-- selezionare il set di regole consentito dal server
-- impostare un limite di tempo per turno, se disponibile
-- unirti a una partita gia creata
-- aggiungere bot gestiti dal gioco quando la configurazione lo permette
-- riaprire partite salvate o in corso
+- create a new game
+- choose from the available maps
+- select rule options allowed by the server
+- set a turn timeout when available
+- join an existing lobby
+- add game-managed bots when the setup allows them
+- reopen saved or active games
 
-Una partita puo iniziare solo quando la configurazione e valida. Il primo slot deve essere occupato da un giocatore umano.
+A game can start only when the setup is valid. The first slot must be occupied by a human player.
+
+## Creating a game
+
+When you create a game:
+
+1. Choose the map.
+2. Choose the available rule preset and options.
+3. Choose human or bot slots.
+4. Set the turn timeout, if available.
+5. Confirm the setup.
+6. Wait for the required players or add bots when allowed.
+7. Start the game when all required slots are ready.
+
+When the game starts, territories are assigned and the first turn begins.
 
-## Creare una partita
+## Match objective
+
+The standard objective is to control the board by eliminating opponents or by completing the active victory condition.
+
+The game detects eliminations, victory, and match completion automatically. If a game uses admin-authored objectives, the active objective is selected at game creation and remains stable for that match.
+
+## Turn structure
+
+Each turn follows three main phases:
+
+- reinforcement
+- attack
+- fortify
+
+The game shows only actions that are valid for the current phase. If an action is no longer allowed, the server rejects it and the screen refreshes to the correct match state.
+
+## Complete rules
+
+This section lists the operating rules players and admins need to understand the game.
+
+### Game setup
+
+- A new game requires 2 to 4 players.
+- The first player slot must be human.
+- Other slots can be human or bot-controlled when the setup allows them.
+- The game can start only when the setup is valid.
+- At game start, territories are distributed among players.
+- Each territory starts with one army.
+- The first active player starts in the reinforcement phase.
+- Maps define territories, links between territories, continents, and continent bonuses.
+- Available turn timeouts are 24, 48, or 72 hours when timeout selection is enabled.
 
-Quando crei una partita:
+### Presets and options
 
-1. Scegli la mappa.
-2. Scegli le opzioni di regole disponibili.
-3. Imposta eventuali limiti di turno.
-4. Conferma la creazione.
-5. Attendi che gli altri giocatori entrino o aggiungi bot, se ammessi.
-6. Avvia la partita quando tutti gli slot richiesti sono pronti.
+- `Classic` uses standard dice, conquest victory, the war-table theme, and classic-color pieces.
+- `Classic Defense 3` uses the same base setup as `Classic`, but allows the defender to roll up to 3 dice.
+- `Conquest` victory ends the match when only one active player still controls territories.
+- `Majority Control` victory ends the match when one player controls at least 70% of the map territories.
+- Admin-authored victory objectives can be published through Content Studio. Once used by a match, the selected objective stays fixed for that match.
 
-All'avvio, il gioco assegna i territori iniziali e passa al primo turno.
+### Reinforcements
 
-## Obiettivo della partita
+- At the start of your turn, you receive reinforcements based on controlled territories.
+- The standard calculation is `controlled territories / 3`, rounded down.
+- The standard minimum is always 3 reinforcements.
+- Continent bonuses are added when you control every territory in a continent.
+- Reinforcements must be placed on territories you control.
+- You cannot attack until all required reinforcements have been placed.
+- If your hand is above the forced-trade limit, you must trade cards before continuing.
 
-L'obiettivo standard e controllare la plancia eliminando gli avversari o completando l'obiettivo di vittoria attivo nella partita.
-
-Il gioco determina automaticamente eliminazioni, vittoria e fine partita. Se una partita usa obiettivi speciali creati dagli admin, l'obiettivo attivo viene scelto alla creazione della partita e resta stabile per tutta la sessione.
+### Cards
 
-## Turno di gioco
+- You can receive at most one card at the end of a turn.
+- You receive that card only if you conquered at least one territory during the turn.
+- Card types are infantry, cavalry, artillery, and wild.
+- A valid trade set contains exactly 3 cards.
+- A valid set can be three cards of the same type.
+- A valid set can also be one infantry, one cavalry, and one artillery.
+- Wild cards can complete either valid set shape.
+- Standard trade bonuses are 4, 6, 8, 10, 12, and 15 reinforcements.
+- After the sixth trade, each later trade adds 5 more reinforcements than the previous one.
+- If you have more than 5 cards, trading becomes mandatory.
 
-Ogni turno segue tre fasi principali:
+### Attacks
 
-- rinforzo
-- attacco
-- fortificazione
-
-Il gioco mostra solo le azioni valide per la fase corrente. Se un'azione non e consentita, il server la rifiuta e la schermata si riallinea allo stato corretto della partita.
-
-## Regole complete
+- You can attack only during the attack phase.
+- You can attack only on your own turn.
+- The attacking territory must be yours.
+- The defending territory must belong to an opponent.
+- The territories must be linked by the map.
+- The attacking territory must have at least 2 armies because one army must stay behind.
+- You must place all required reinforcements before attacking.
+- Standard dice allow the attacker to roll up to 3 dice.
+- Standard dice allow the defender to roll up to 2 dice.
+- `Defense 3 Dice` allows the defender to roll up to 3 dice.
+- The defender cannot roll more dice than the armies in the defending territory.
+- Dice are sorted from highest to lowest and compared in pairs.
+- Each comparison removes one army from the side with the lower result.
+- Ties are won by the defender.
+- Some configurations can require a minimum number of attacks or enforce a per-turn attack limit. The interface exposes only currently valid actions.
 
-Questa sezione riepiloga le regole operative che un giocatore o un admin devono conoscere per usare correttamente il gioco.
+### Quick attack
 
-### Setup partita
+- Quick attack repeats the same attack automatically while it remains legal.
+- It stops when the territory is conquered.
+- It stops when the attacker no longer has enough armies.
+- It stops when the target is no longer enemy-controlled.
+- It stops when a conquest move must be resolved.
 
-- Una nuova partita richiede da 2 a 4 giocatori.
-- Il primo slot deve essere occupato da un giocatore umano.
-- Gli altri slot possono essere occupati da giocatori umani o bot, se la configurazione lo consente.
-- La partita puo iniziare solo quando la configurazione e valida.
-- All'avvio, i territori vengono assegnati ai giocatori e ogni territorio parte con una armata.
-- Il primo giocatore attivo inizia in fase di rinforzo.
-- Le mappe definiscono territori, collegamenti, continenti e bonus continente.
-- I limiti di tempo turno disponibili sono 24, 48 o 72 ore, quando abilitati.
+### Conquest movement
 
-### Preset e opzioni
+- When a defending territory reaches 0 armies, ownership moves to the attacker.
+- After conquest, you must move armies into the captured territory.
+- You must move at least the match-required minimum.
+- You must always leave at least one army in the source territory.
+- You cannot continue the turn until the conquest movement is resolved.
 
-- `Classic` usa dadi standard, obiettivo conquista, tema tavolo di guerra e pedine classiche.
-- `Classic Defense 3` usa le stesse basi di `Classic`, ma permette al difensore fino a 3 dadi.
-- `Conquest` termina la partita quando resta un solo giocatore attivo con territori.
-- `Majority Control` termina la partita quando un giocatore controlla almeno il 70% dei territori.
-- Gli admin possono pubblicare obiettivi configurabili; quando una partita ne usa uno, l'obiettivo resta quello per tutta la partita.
+### Fortify
 
-### Rinforzi
+- Fortify happens after the attack phase.
+- You can move armies only between territories you control.
+- Under standard rules, the territories must be adjacent.
+- Under standard rules, you can fortify once per turn.
+- You must move a positive whole number of armies.
+- You must leave at least one army in the source territory.
+- After fortifying, or after skipping fortify when allowed, the turn passes to the next player.
 
-- A inizio turno ricevi rinforzi in base ai territori controllati.
-- Il calcolo standard e `territori controllati / 3`, arrotondato per difetto.
-- Il minimo standard e sempre 3 rinforzi.
-- I bonus continente si aggiungono quando controlli tutti i territori di un continente.
-- I rinforzi devono essere piazzati su territori che controlli.
-- Non puoi passare all'attacco finche hai rinforzi obbligatori ancora da piazzare.
-- Se hai troppe carte in mano, devi risolvere lo scambio obbligatorio prima di proseguire.
+### End of turn, surrender, and victory
 
-### Carte
+- If you conquered at least one territory during your turn, you can receive one card when the turn closes.
+- A player with no active territories is eliminated from the match.
+- A player can surrender when the action is available.
+- Surrender discards that player's hand and removes the player from the active contest.
+- If no human player remains active, the match can close without a human winner.
+- The game checks victory after important actions such as conquest, surrender, and turn advancement.
+- If a turn expires or an automated recovery is needed, the game can resolve pending state safely and advance the match.
 
-- Puoi ricevere al massimo una carta a fine turno, solo se hai conquistato almeno un territorio durante quel turno.
-- Le carte possono essere di tipo fanteria, cavalleria, artiglieria o jolly.
-- Un set valido contiene esattamente 3 carte.
-- Sono validi tre simboli uguali, oppure un set con un simbolo per tipo.
-- I jolly possono completare un set valido.
-- I bonus standard degli scambi sono 4, 6, 8, 10, 12 e 15 rinforzi.
-- Dopo il sesto scambio, ogni scambio successivo aumenta di 5 rinforzi.
-- Se hai piu di 5 carte, lo scambio diventa obbligatorio.
+## Phase guide
 
-### Attacchi
+### Reinforcement phase
 
-- Puoi attaccare solo durante la fase di attacco.
-- Puoi attaccare solo dal tuo turno.
-- Il territorio attaccante deve essere tuo.
-- Il territorio difensore deve appartenere a un avversario.
-- I due territori devono essere collegati dalla mappa.
-- Il territorio attaccante deve avere almeno 2 armate, perche una armata deve restare indietro.
-- Devi avere piazzato tutti i rinforzi obbligatori prima di attaccare.
-- Il set standard permette all'attaccante fino a 3 dadi.
-- Il set standard permette al difensore fino a 2 dadi.
-- Il set `Defense 3 Dice` permette al difensore fino a 3 dadi.
-- Il difensore non puo tirare piu dadi delle armate presenti nel territorio difeso.
-- I dadi vengono ordinati dal valore piu alto al piu basso e confrontati in coppie.
-- Ogni confronto fa perdere una armata al lato con il risultato piu basso.
-- In caso di pareggio, vince il difensore.
-- Alcune configurazioni possono imporre un numero minimo o massimo di attacchi nel turno; l'interfaccia mostra solo le azioni disponibili.
+During reinforcement, place armies on territories you control.
 
-### Attacco rapido
+You can:
 
-- L'attacco rapido ripete automaticamente lo stesso attacco finche e ancora valido.
-- Si ferma se il territorio viene conquistato.
-- Si ferma se l'attaccante non ha piu abbastanza armate.
-- Si ferma se il bersaglio non e piu un territorio avversario.
-- Si ferma se serve risolvere uno spostamento dopo conquista.
+- place reinforcements on your territories
+- trade a valid card set for extra reinforcements
+- complete the phase after all required reinforcements are placed
 
-### Conquista e spostamento
+If you have too many cards, the game can require a trade before you proceed.
 
-- Quando un territorio difeso arriva a 0 armate, passa al giocatore attaccante.
-- Dopo una conquista devi spostare armate nel territorio appena conquistato.
-- Devi spostare almeno il minimo richiesto dalla partita.
-- Devi sempre lasciare almeno una armata nel territorio di partenza.
-- Finche lo spostamento di conquista non e risolto, non puoi continuare con altre azioni di turno.
+### Attack phase
 
-### Fortificazione
+During attack, choose one of your territories with enough armies and attack a linked enemy territory.
 
-- La fortificazione avviene dopo la fase di attacco.
-- Puoi spostare armate solo tra territori che controlli.
-- Con le regole standard, i territori devono essere adiacenti.
-- Con le regole standard, puoi fare una sola fortificazione per turno.
-- Devi spostare un numero intero positivo di armate.
-- Devi lasciare almeno una armata nel territorio di partenza.
-- Dopo la fortificazione, o dopo averla saltata quando permesso, il turno passa al giocatore successivo.
+You can:
 
-### Fine turno, resa e vittoria
+- choose the attacking territory
+- choose the defending territory
+- select the available dice count or attack option
+- resolve combat
+- keep attacking while you have valid attacks
+- end the attack phase
 
-- Se conquisti almeno un territorio durante il turno, puoi ricevere una carta quando il turno si chiude.
-- Un giocatore senza territori attivi e eliminato dalla contesa.
-- Un giocatore puo arrendersi quando l'azione e disponibile.
-- La resa scarta le carte del giocatore e lo rimuove dalla contesa.
-- Se non resta nessun giocatore umano attivo, la partita puo chiudersi senza vincitore umano.
-- Il gioco controlla automaticamente la vittoria dopo azioni importanti come conquista, resa e avanzamento turno.
-- In caso di turno scaduto o recupero automatico, il gioco puo risolvere lo stato pendente e passare avanti in modo sicuro.
+If you conquer a territory, the game can require you to move armies into that territory before allowing other actions.
 
-## Rinforzo
+### Fortify phase
 
-Durante il rinforzo ricevi armate da piazzare sui territori che controlli.
+During fortify, move armies between territories you control when the connection is valid for the match rules.
 
-In questa fase puoi:
+You can:
 
-- piazzare rinforzi sui tuoi territori
-- scambiare carte valide per ottenere rinforzi extra
-- completare la fase quando tutti i rinforzi obbligatori sono stati piazzati
+- choose the source territory
+- choose a valid destination territory
+- choose how many armies to move
+- confirm the move
+- skip fortify when it is not mandatory
 
-Se hai troppe carte in mano, il gioco puo richiedere uno scambio obbligatorio prima di procedere.
+After fortify, the turn passes to the next player.
 
-## Attacco
+## Synchronization and conflicts
 
-Durante l'attacco puoi scegliere un tuo territorio con abbastanza armate e attaccare un territorio avversario collegato.
+The server is the source of truth for the match. If two updates happen close together, the game can show a newer state and cancel a local action that is no longer valid.
 
-In questa fase puoi:
+In practice:
 
-- scegliere il territorio attaccante
-- scegliere il territorio difensore
-- selezionare il numero di dadi o l'opzione di attacco disponibile
-- risolvere il combattimento
-- continuare ad attaccare, se hai ancora attacchi validi
-- terminare la fase di attacco
+- if the screen refreshes after your action, check the current state before trying again
+- if an action is no longer visible, the match has advanced or the phase has changed
+- manual reload is usually unnecessary
 
-Se conquisti un territorio, il gioco puo chiederti di spostare armate nel territorio appena conquistato prima di permettere altre azioni.
+## Player profile
 
-## Fortificazione
+The profile page summarizes your activity.
 
-Durante la fortificazione puoi spostare armate tra territori che controlli, quando il collegamento e valido per le regole della partita.
+You can check:
 
-Puoi:
+- games played
+- wins
+- losses
+- ongoing games
+- win rate
 
-- scegliere un territorio di partenza
-- scegliere un territorio di destinazione valido
-- indicare quante armate spostare
-- confermare lo spostamento
-- saltare la fortificazione quando non e obbligatoria
+## Admin guide
 
-Dopo la fortificazione, il turno passa al giocatore successivo.
+Admins can access the console at `/admin`. The admin entry is visible only to authorized users.
 
-## Carte
+The console manages the game experience, users, content, modules, and operational state. It does not modify code.
 
-Le carte rappresentano bonus di rinforzo.
+## Admin sections
 
-Puoi ottenere carte quando conquisti almeno un territorio durante il tuo turno. Durante la fase di rinforzo puoi selezionare un set valido e scambiarlo per ricevere rinforzi aggiuntivi. Il valore dei bonus puo aumentare nel corso della partita, in base alle regole attive.
+The console includes:
 
-## Resa e fine partita
+- `Overview`: operational summary, recent games, active configuration, and possible issues
+- `Users`: user search, role inspection, admin promotion, and admin role removal
+- `Games`: game list, status, players, setup, and management actions
+- `Configurations`: global settings, enabled modules, profiles, and runtime defaults
+- `Runtime / Modules`: available modules and their status
+- `Content Studio`: controlled creation of supported gameplay content
+- `Maintenance`: guided checks, cleanup, and repair actions
+- `System Health`: diagnostics for games, modules, and configuration
+- `Audit Log`: history of relevant admin actions
 
-In una partita attiva puoi arrenderti se l'interfaccia mostra l'azione disponibile. La resa rimuove il giocatore dalla contesa secondo le regole del gioco.
+## Managing users
 
-La partita termina quando il gioco rileva un vincitore. Al termine, lo stato passa a concluso e il profilo dei giocatori viene aggiornato.
+In `Users`, an admin can:
 
-## Sincronizzazione e conflitti
+- search accounts
+- check assigned roles
+- promote a user to admin
+- remove the admin role when it is no longer needed
 
-La partita e sincronizzata dal server. Se due aggiornamenti arrivano quasi nello stesso momento, il gioco puo mostrare una versione piu recente dello stato e annullare l'azione locale non piu valida.
+Role changes can require a fresh sign-in or session refresh before they appear in the interface.
 
-In pratica:
+## Managing games
 
-- se la schermata si aggiorna dopo una tua azione, controlla lo stato corrente prima di riprovare
-- se un'azione non appare piu disponibile, significa che la partita e avanzata o che la fase e cambiata
-- non serve ricaricare manualmente nella maggior parte dei casi
+In `Games`, an admin can inspect matches and lobbies.
 
-## Profilo giocatore
+Available actions depend on the game state. Sensitive actions require explicit confirmation and are recorded in the audit log.
 
-La pagina profilo riepiloga la tua attivita.
+Use this section to:
 
-Puoi consultare:
+- inspect stuck or obsolete games
+- close or terminate games when the tool allows it
+- verify setup and players
+- gather details for player support
 
-- partite giocate
-- vittorie
-- sconfitte
-- partite ancora in corso
-- percentuale di vittorie
+## Configurations and modules
 
-## Guida admin
+Admin configuration affects the options available when players create new games.
 
-Gli admin possono accedere alla console da `/admin`. La voce admin e visibile solo agli utenti autorizzati.
+Admins can manage:
 
-La console serve a gestire l'esperienza di gioco, non a modificare codice.
+- available maps
+- selectable rule sets
+- profiles and presets
+- enabled modules
+- maintenance settings
 
-## Sezioni admin
-
-La console include:
-
-- `Overview`: riepilogo operativo, partite recenti, configurazioni attive e possibili problemi
-- `Users`: ricerca utenti, controllo ruoli, promozione o rimozione del ruolo admin
-- `Games`: elenco partite, stato, giocatori, configurazione e azioni di gestione
-- `Configurations`: impostazioni globali, moduli abilitati, profili e default runtime
-- `Runtime / Modules`: catalogo dei moduli disponibili e relativo stato
-- `Content Studio`: creazione controllata di contenuti di gameplay supportati
-- `Maintenance`: controlli, pulizia e riparazioni guidate
-- `System Health`: diagnostica su partite, moduli e configurazioni
-- `Audit Log`: cronologia delle azioni admin rilevanti
-
-## Gestire utenti
-
-Nella sezione `Users`, un admin puo:
-
-- cercare account
-- verificare il ruolo assegnato
-- promuovere un utente ad admin
-- rimuovere il ruolo admin quando non serve piu
-
-Le modifiche ai ruoli possono richiedere un nuovo accesso o un refresh della sessione per diventare visibili nell'interfaccia.
-
-## Gestire partite
-
-Nella sezione `Games`, un admin puo controllare partite e lobby.
-
-Le azioni disponibili dipendono dallo stato della partita. Le azioni delicate richiedono conferma esplicita e vengono registrate nell'audit log.
-
-Usa questa sezione per:
-
-- controllare partite bloccate o obsolete
-- chiudere o terminare partite quando previsto
-- verificare configurazioni e giocatori
-- consultare dettagli utili per assistenza agli utenti
-
-## Configurazioni e moduli
-
-Le configurazioni admin influenzano le opzioni disponibili quando i giocatori creano nuove partite.
-
-Gli admin possono gestire:
-
-- mappe disponibili
-- set di regole selezionabili
-- profili e preset
-- moduli abilitati
-- impostazioni di manutenzione
-
-Le partite gia create mantengono la configurazione con cui sono nate. Cambiare un default admin non deve essere interpretato come modifica retroattiva delle partite in corso.
+Already-created games keep the configuration they started with. Changing an admin default does not retroactively change active games.
 
 ## Content Studio
 
-Il `Content Studio` permette agli admin di creare contenuti di gameplay supportati dall'app, come obiettivi di vittoria configurabili.
+`Content Studio` lets admins create supported gameplay content, such as configurable victory objectives.
 
-Il flusso tipico e:
+The typical flow is:
 
-1. creare una bozza
-2. completare i campi richiesti
-3. validare la bozza
-4. pubblicarla
-5. abilitarla per renderla disponibile nelle nuove partite
+1. Create a draft.
+2. Complete the required fields.
+3. Validate the draft.
+4. Publish it.
+5. Enable it so it becomes available for new games.
 
-I contenuti creati in questa area sono dati validati dall'applicazione. Non sono script liberi e non eseguono codice personalizzato.
+Content created here is validated application data. It is not free-form scripting and does not run custom code.
 
-## Manutenzione e sicurezza
+## Maintenance and safety
 
-Le sezioni di manutenzione aiutano gli admin a mantenere ordinato il sistema.
+Maintenance sections help admins keep the system orderly.
 
-Prima di confermare azioni distruttive o di riparazione:
+Before confirming destructive or repair actions:
 
-- controlla quale partita, modulo o configurazione verra modificata
-- verifica che l'azione riguardi davvero il problema segnalato
-- preferisci azioni mirate rispetto a interventi generici
-- controlla l'audit log dopo operazioni importanti
+- check which game, module, or configuration will change
+- verify that the action matches the reported problem
+- prefer targeted actions over broad cleanup
+- review the audit log after important operations
 
-Il gioco applica controlli server-side anche quando un'azione e avviata dall'interfaccia admin.
+The game still applies server-side checks when an action starts from the admin interface.
 
-## Buone pratiche per giocatori
+## Player best practices
 
-- Completa il turno quando hai finito, cosi la partita resta fluida.
-- Controlla sempre la fase corrente prima di scegliere un'azione.
-- Usa la resa solo quando vuoi davvero uscire dalla contesa.
-- Se il gioco aggiorna la schermata, fidati dello stato piu recente mostrato.
+- Finish your turn when you are done so the match keeps moving.
+- Check the current phase before choosing an action.
+- Use surrender only when you truly want to leave the contest.
+- If the game refreshes the screen, trust the latest server state.
 
-## Buone pratiche per admin
+## Admin best practices
 
-- Cambia i default con parsimonia, soprattutto durante partite attive.
-- Usa l'audit log per ricostruire chi ha fatto cosa.
-- Pubblica nuovi contenuti solo dopo averli validati.
-- Evita di disabilitare moduli che potrebbero essere ancora usati da configurazioni attive.
-- Comunica ai giocatori quando cambi opzioni disponibili per le nuove partite.
+- Change defaults sparingly, especially while games are active.
+- Use the audit log to reconstruct who did what.
+- Publish new content only after validation.
+- Avoid disabling modules that may still be used by active configurations.
+- Tell players when available options for new games change.
