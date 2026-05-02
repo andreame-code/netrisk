@@ -56,30 +56,37 @@ jobs:
                 return [];
               }
 
-              const baseUrl = `https://api.vercel.com/v13/deployments/${deploymentKey}`;
+              const deploymentKeys = deploymentKey.startsWith("dpl_")
+                ? [deploymentKey]
+                : [`dpl_${deploymentKey}`, deploymentKey];
+              const baseUrls = deploymentKeys.map(
+                (key) => `https://api.vercel.com/v13/deployments/${key}`
+              );
               const urls = [];
               const seen = new Set();
 
-              function add(query) {
+              function add(baseUrl, query) {
                 const url = query ? `${baseUrl}?${query}` : baseUrl;
                 if (seen.has(url)) return;
                 seen.add(url);
                 urls.push(url);
               }
 
-              if (process.env.VERCEL_ORG_ID) {
-                add(`teamId=${encodeURIComponent(process.env.VERCEL_ORG_ID)}`);
-              }
+              for (const baseUrl of baseUrls) {
+                if (process.env.VERCEL_ORG_ID) {
+                  add(baseUrl, `teamId=${encodeURIComponent(process.env.VERCEL_ORG_ID)}`);
+                }
 
-              if (process.env.VERCEL_TEAM_SLUG) {
-                add(`slug=${encodeURIComponent(process.env.VERCEL_TEAM_SLUG)}`);
-              }
+                if (process.env.VERCEL_TEAM_SLUG) {
+                  add(baseUrl, `slug=${encodeURIComponent(process.env.VERCEL_TEAM_SLUG)}`);
+                }
 
-              if (vercelScopeSlug) {
-                add(`slug=${encodeURIComponent(vercelScopeSlug)}`);
-              }
+                if (vercelScopeSlug) {
+                  add(baseUrl, `slug=${encodeURIComponent(vercelScopeSlug)}`);
+                }
 
-              add("");
+                add(baseUrl, "");
+              }
               return urls;
             }
 
