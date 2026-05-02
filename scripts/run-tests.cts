@@ -95,6 +95,14 @@ const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
 const { listSupportedMaps } = require("../shared/maps/index.cjs");
+const { createGameState } = require("../shared/models.cjs");
+const {
+  buildVersionSnapshot,
+  isModuleApiCompatible,
+  isSaveGameSchemaCompatible
+} = require("../shared/compatibility.cjs");
+const versionManifest = require("../shared/version-manifest.cjs");
+const { versionInfoResponseSchema } = require("../shared/runtime-validation.cjs");
 
 type TestFn = () => void | Promise<void>;
 type TestCase = {
@@ -967,6 +975,46 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
   assert.equal(res.statusCode, 503);
   assert.deepEqual(JSON.parse(res.body), {
     ok: false
+  });
+});
+
+register("version registry espone manifest e compatibilita baseline", () => {
+  const expectedManifest = {
+    appVersion: "0.1.0",
+    engineVersion: "1.0.0",
+    apiVersion: "1.0.0",
+    datastoreSchemaVersion: 1,
+    saveGameSchemaVersion: 1,
+    moduleApiVersion: "1.0.0",
+    minimumCompatibleSaveGameSchemaVersion: 1,
+    minimumCompatibleModuleApiVersion: "1.0.0"
+  };
+
+  assert.deepEqual(versionManifest.versionManifest, expectedManifest);
+  assert.deepEqual(buildVersionSnapshot(), {
+    ...expectedManifest,
+    compatible: true
+  });
+  assert.equal(versionInfoResponseSchema.safeParse(buildVersionSnapshot()).success, true);
+  assert.equal(versionManifest.unversionedSaveGameSchemaVersion, 1);
+  assert.equal(isSaveGameSchemaCompatible(versionManifest.saveGameSchemaVersion), true);
+  assert.equal(isSaveGameSchemaCompatible(undefined), true);
+  assert.equal(isSaveGameSchemaCompatible(0), false);
+  assert.equal(isSaveGameSchemaCompatible(versionManifest.saveGameSchemaVersion + 1), false);
+  assert.equal(isSaveGameSchemaCompatible("invalid"), false);
+  assert.equal(isModuleApiCompatible(versionManifest.moduleApiVersion), true);
+  assert.equal(isModuleApiCompatible("0.0.0"), false);
+  assert.equal(isModuleApiCompatible("1.0.1"), false);
+  assert.equal(isModuleApiCompatible("invalid"), false);
+});
+
+register("new game states include version metadata from the registry", () => {
+  const state = createGameState();
+
+  assert.deepEqual(state.versionMetadata, {
+    schemaVersion: versionManifest.saveGameSchemaVersion,
+    engineVersion: versionManifest.engineVersion,
+    createdWithAppVersion: versionManifest.appVersion
   });
 });
 
@@ -2612,6 +2660,15 @@ register("frontend API client valida sessione, profilo e lobby list al boundary"
         };
       }
 
+      if (input === "/api/version") {
+        return {
+          ok: true,
+          async json() {
+            return buildVersionSnapshot();
+          }
+        };
+      }
+
       return {
         ok: true,
         async json() {
@@ -2643,16 +2700,22 @@ register("frontend API client valida sessione, profilo e lobby list al boundary"
         errorMessage: "Lobby non disponibile",
         fallbackMessage: "Lobby non valida"
       });
+      const versionInfo = await client.getVersionInfo({
+        errorMessage: "Versione non disponibile",
+        fallbackMessage: "Versione non valida"
+      });
 
       assert.equal(session.user.username, "Alice");
       assert.equal(profile.profile.gamesPlayed, 3);
       assert.equal(games.games[0].id, "game-1");
+      assert.equal(versionInfo.compatible, true);
+      assert.equal(versionInfo.apiVersion, "1.0.0");
     }
   );
 
   assert.deepEqual(
     calls.map((entry) => entry.input),
-    ["/api/auth/session", "/api/profile", "/api/games"]
+    ["/api/auth/session", "/api/profile", "/api/games", "/api/version"]
   );
   assert.ok(
     calls.every((entry) => entry.init?.credentials === "same-origin"),
@@ -4958,6 +5021,7 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
 
   const legacyState = createInitialState();
   legacyState.log.push("Migrata da json");
+  delete (legacyState as Record<string, unknown>).versionMetadata;
 
   fs.writeFileSync(
     tempGames,
@@ -4989,6 +5053,8 @@ register("game session store importa partite legacy da JSON al primo avvio", () 
     assert.equal(reopened.game.name, "Legacy match");
     assert.equal(reopened.game.version, 3);
     assert.equal(reopened.state.log.includes("Migrata da json"), true);
+    assert.equal(typeof reopened.state.versionMetadata, "undefined");
+    assert.equal(isSaveGameSchemaCompatible(reopened.state.versionMetadata?.schemaVersion), true);
     assert.equal(store.datastore.getActiveGameId(), "legacy-game");
   } finally {
     store.datastore.close();
@@ -6599,6 +6665,18 @@ register("GET /api/health espone lo stato sintetico del server", async () => {
     assert.equal(payload.ok, true);
     assert.equal(typeof payload.storage, "undefined");
     assert.equal(payload.hasActiveGame, true);
+  });
+});
+
+register("GET /api/version espone il registry validato", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/version`);
+    assert.equal(response.status, 200);
+    const payload: any = await readJson(response);
+    const parsed = versionInfoResponseSchema.safeParse(payload);
+
+    assert.equal(parsed.success, true);
+    assert.deepEqual(payload, buildVersionSnapshot());
   });
 });
 

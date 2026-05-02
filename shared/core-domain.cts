@@ -1,4 +1,5 @@
 import type { Card } from "./cards.cjs";
+import { buildGameStateVersionMetadata, type GameStateVersionMetadata } from "./compatibility.cjs";
 import type { LogEntry } from "./messages.cjs";
 import type { NetRiskGameplayEffects, NetRiskModuleReference } from "./netrisk-modules.cjs";
 
@@ -73,6 +74,7 @@ export interface GameConfig {
 }
 
 export interface GameState {
+  versionMetadata: GameStateVersionMetadata;
   phase: string;
   turnPhase: TurnPhaseValue;
   turnStartedAt: string | null;
@@ -149,6 +151,10 @@ export function createContinent(input: CreateContinentInput = {}): Continent {
 
 export function createGameState(input: CreateGameStateInput = {}): GameState {
   return {
+    versionMetadata:
+      input.versionMetadata && typeof input.versionMetadata === "object"
+        ? input.versionMetadata
+        : buildGameStateVersionMetadata(),
     phase: input.phase || "lobby",
     turnPhase: input.turnPhase || TurnPhase.LOBBY,
     turnStartedAt: typeof input.turnStartedAt === "string" ? input.turnStartedAt : null,

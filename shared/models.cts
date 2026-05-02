@@ -1,4 +1,23 @@
 export {
+  appVersion,
+  engineVersion,
+  apiVersion,
+  datastoreSchemaVersion,
+  saveGameSchemaVersion,
+  moduleApiVersion,
+  minimumCompatibleSaveGameSchemaVersion,
+  minimumCompatibleModuleApiVersion,
+  versionManifest
+} from "./version-manifest.cjs";
+export type { VersionManifest } from "./version-manifest.cjs";
+export {
+  buildGameStateVersionMetadata,
+  buildVersionSnapshot,
+  isModuleApiCompatible,
+  isSaveGameSchemaCompatible
+} from "./compatibility.cjs";
+export type { GameStateVersionMetadata, VersionSnapshot } from "./compatibility.cjs";
+export {
   TurnPhase,
   createContinent,
   createGameState,
