@@ -730,7 +730,6 @@ function createApp(options: CreateAppOptions = {}) {
     const storage = await datastore.healthSummary();
     return {
       ok: storage.ok,
-      storage,
       hasActiveGame: Boolean(activeGameId)
     };
   }

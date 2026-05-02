@@ -170,9 +170,6 @@ Success responses return:
 ```json
 {
   "ok": true,
-  "storage": {},
-  "activeGameId": "optional-id",
-  "activeGameVersion": 1,
   "hasActiveGame": true
 }
 ```
