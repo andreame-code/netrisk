@@ -13,7 +13,7 @@ test("existing game keeps the same player binding after logout and login again",
 
   await page.goto("/lobby");
   await page.locator("#create-game-button").click();
-  await expect(page).toHaveURL(/\/lobby\/new$/);
+  await expect(page).toHaveURL(/\/lobby\/new\?mode=multiplayer$/);
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.locator("#setup-game-name").fill(gameName);

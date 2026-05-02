@@ -149,6 +149,8 @@ export const it = Object.freeze({
   "lobby.focus.value": "Nessuna",
   "lobby.focus.note": "Apri una partita per continuare dal teatro corrente.",
   "lobby.createGame": "Crea partita",
+  "lobby.createSinglePlayerGame": "Single player",
+  "lobby.createMultiplayerGame": "Multiplayer",
   "lobby.openSelected": "Apri selezionata",
   "lobby.overviewAria": "Panoramica lobby",
   "lobby.visibleSessions.label": "Sessioni visibili",

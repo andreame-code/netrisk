@@ -181,6 +181,22 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(screen.queryByRole("heading", { name: "Create New Game" })).not.toBeInTheDocument();
   });
 
+  it("links game creation actions to single-player and multiplayer setup modes", async () => {
+    listGamesMock.mockResolvedValue(createLobbyGames());
+
+    renderLobbyRoute("command");
+
+    expect(await screen.findByRole("heading", { name: "Command Lobby" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Single player" })).toHaveAttribute(
+      "href",
+      "/react/lobby/new?mode=single-player"
+    );
+    expect(screen.getByRole("link", { name: "Multiplayer" })).toHaveAttribute(
+      "href",
+      "/react/lobby/new?mode=multiplayer"
+    );
+  });
+
   it("renders War Table campaign copy and keeps join wired to the lobby action", async () => {
     listGamesMock.mockResolvedValue(createLobbyGames([createGameSummary()]));
     getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
