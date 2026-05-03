@@ -2,7 +2,8 @@ const assert = require("node:assert/strict");
 const {
   buildVersionSnapshot,
   isModuleApiCompatible,
-  isSaveGameSchemaCompatible
+  isSaveGameSchemaCompatible,
+  isSaveGameSchemaRangeCompatible
 } = require("../../../shared/compatibility.cjs");
 const {
   apiVersion,
@@ -53,6 +54,9 @@ register("save-game and module compatibility checks use the registry baseline", 
   assert.equal(isSaveGameSchemaCompatible(0), false);
   assert.equal(isSaveGameSchemaCompatible(saveGameSchemaVersion + 1), false);
   assert.equal(isSaveGameSchemaCompatible("invalid"), false);
+  assert.equal(isSaveGameSchemaRangeCompatible(1, 1), true);
+  assert.equal(isSaveGameSchemaRangeCompatible(2, 2), false);
+  assert.equal(isSaveGameSchemaRangeCompatible(0, 0), false);
 
   assert.equal(isModuleApiCompatible(moduleApiVersion), true);
   assert.equal(isModuleApiCompatible("0.0.0"), false);

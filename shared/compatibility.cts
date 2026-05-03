@@ -59,6 +59,22 @@ export function isSaveGameSchemaCompatible(version: unknown): boolean {
   );
 }
 
+export function isSaveGameSchemaRangeCompatible(
+  minimumVersion: unknown,
+  maximumVersion: unknown
+): boolean {
+  const minimum =
+    minimumVersion == null ? minimumCompatibleSaveGameSchemaVersion : Number(minimumVersion);
+  const maximum = maximumVersion == null ? saveGameSchemaVersion : Number(maximumVersion);
+
+  return (
+    Number.isInteger(minimum) &&
+    Number.isInteger(maximum) &&
+    minimum <= saveGameSchemaVersion &&
+    maximum >= saveGameSchemaVersion
+  );
+}
+
 function parseVersionParts(version: string): [number, number, number] | null {
   const match = version.trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
   if (!match) {

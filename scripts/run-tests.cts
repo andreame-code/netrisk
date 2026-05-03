@@ -99,7 +99,8 @@ const { createGameState } = require("../shared/models.cjs");
 const {
   buildVersionSnapshot,
   isModuleApiCompatible,
-  isSaveGameSchemaCompatible
+  isSaveGameSchemaCompatible,
+  isSaveGameSchemaRangeCompatible
 } = require("../shared/compatibility.cjs");
 const versionManifest = require("../shared/version-manifest.cjs");
 const { versionInfoResponseSchema } = require("../shared/runtime-validation.cjs");
@@ -1002,6 +1003,9 @@ register("version registry espone manifest e compatibilita baseline", () => {
   assert.equal(isSaveGameSchemaCompatible(0), false);
   assert.equal(isSaveGameSchemaCompatible(versionManifest.saveGameSchemaVersion + 1), false);
   assert.equal(isSaveGameSchemaCompatible("invalid"), false);
+  assert.equal(isSaveGameSchemaRangeCompatible(1, 1), true);
+  assert.equal(isSaveGameSchemaRangeCompatible(2, 2), false);
+  assert.equal(isSaveGameSchemaRangeCompatible(0, 0), false);
   assert.equal(isModuleApiCompatible(versionManifest.moduleApiVersion), true);
   assert.equal(isModuleApiCompatible("0.0.0"), false);
   assert.equal(isModuleApiCompatible("1.0.1"), false);

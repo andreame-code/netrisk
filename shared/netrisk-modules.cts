@@ -1,4 +1,9 @@
-import { engineVersion } from "./version-manifest.cjs";
+import {
+  engineVersion,
+  minimumCompatibleSaveGameSchemaVersion,
+  moduleApiVersion,
+  saveGameSchemaVersion
+} from "./version-manifest.cjs";
 
 export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
@@ -82,6 +87,9 @@ export interface NetRiskModuleManifest {
   displayName: string;
   description?: string | null;
   engineVersion: string;
+  moduleApiVersion: string;
+  minimumCompatibleSaveGameSchemaVersion: number;
+  maximumCompatibleSaveGameSchemaVersion: number;
   kind: NetRiskModuleKind;
   dependencies: NetRiskModuleDependency[];
   conflicts: string[];
@@ -437,6 +445,15 @@ function normalizeStringArray(raw: unknown): string[] {
   return Array.isArray(raw)
     ? raw.filter((value) => isNonEmptyString(value)).map((value) => String(value).trim())
     : [];
+}
+
+function normalizeInteger(raw: unknown, fallback: number): number {
+  if (typeof raw !== "number" && !isNonEmptyString(raw)) {
+    return fallback;
+  }
+
+  const value = Number(raw);
+  return Number.isInteger(value) ? value : fallback;
 }
 
 function normalizeModuleConfigDefaults(raw: unknown): NetRiskModuleConfigDefaults | null {
@@ -870,6 +887,17 @@ export function validateNetRiskModuleManifest(
     displayName: String(raw.displayName).trim(),
     description: isNonEmptyString(raw.description) ? String(raw.description).trim() : null,
     engineVersion: String(raw.engineVersion).trim(),
+    moduleApiVersion: isNonEmptyString(raw.moduleApiVersion)
+      ? String(raw.moduleApiVersion).trim()
+      : moduleApiVersion,
+    minimumCompatibleSaveGameSchemaVersion: normalizeInteger(
+      raw.minimumCompatibleSaveGameSchemaVersion,
+      minimumCompatibleSaveGameSchemaVersion
+    ),
+    maximumCompatibleSaveGameSchemaVersion: normalizeInteger(
+      raw.maximumCompatibleSaveGameSchemaVersion,
+      saveGameSchemaVersion
+    ),
     kind,
     dependencies: Array.isArray(raw.dependencies)
       ? raw.dependencies.map((entry) => normalizeDependency(entry, sourcePath))
