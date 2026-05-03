@@ -7,6 +7,39 @@ const {
   uniqueUser
 } = require("../support/game-helpers");
 
+async function loadGameState(page, sessionToken, gameId) {
+  const stateResponse = await page.request.get(`/api/state?gameId=${encodeURIComponent(gameId)}`, {
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` }
+  });
+  await expect(stateResponse.ok()).toBeTruthy();
+  return stateResponse.json();
+}
+
+function findAttackPairFromState(state) {
+  const currentPlayerId = state.currentPlayerId;
+  const territories = Array.isArray(state.map) ? state.map : [];
+  const territoriesById = new Map(territories.map((territory) => [territory.id, territory]));
+
+  for (const territory of territories) {
+    if (territory.ownerId !== currentPlayerId) {
+      continue;
+    }
+
+    const target = territory.neighbors
+      .map((neighborId) => territoriesById.get(neighborId))
+      .find((neighbor) => neighbor && neighbor.ownerId !== currentPlayerId);
+
+    if (target) {
+      return {
+        fromId: territory.id,
+        toId: target.id
+      };
+    }
+  }
+
+  throw new Error("Nessuna coppia attacco valida trovata nello stato pubblico.");
+}
+
 async function exhaustReinforcements(page) {
   const reinforceButton = page.getByRole("button", { name: "Aggiungi" });
   await expect(page.getByTestId("status-summary")).toContainText(
@@ -67,33 +100,6 @@ async function expectStableRefs(page) {
   expect(refs.secondPlayerCard).toBeTruthy();
 }
 
-async function findAttackPairFromControls(page) {
-  const attackFromValues = await page
-    .locator("#attack-from option")
-    .evaluateAll((options) =>
-      options.map((option) => (option as HTMLOptionElement).value).filter(Boolean)
-    );
-
-  for (const fromId of attackFromValues) {
-    await page.locator("#attack-from").selectOption(fromId);
-    const attackToValues = await page
-      .locator("#attack-to option")
-      .evaluateAll((options) =>
-        options.map((option) => (option as HTMLOptionElement).value).filter(Boolean)
-      );
-
-    for (const toId of attackToValues) {
-      await page.locator("#attack-to").selectOption(toId);
-      const hasOneDieAttack = await page.locator('#attack-dice option[value="1"]').count();
-      if (hasOneDieAttack > 0) {
-        return { fromId, toId };
-      }
-    }
-  }
-
-  throw new Error("Nessuna coppia attacco valida con un dado trovata dal pannello attacco.");
-}
-
 test("reinforcement keeps unrelated gameplay panels mounted", async ({ browser }) => {
   test.slow();
   const firstContext = await browser.newContext();
@@ -147,13 +153,15 @@ test("attack preserves selected controls and skips unrelated rerenders", async (
   await firstPage.goto("/");
   await secondPage.goto("/");
 
-  await registerLoginAndJoin(firstPage, firstUser);
+  const firstJoin = await registerLoginAndJoin(firstPage, firstUser);
   await registerLoginAndJoin(secondPage, secondUser);
 
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
+  const gameState = await loadGameState(firstPage, firstJoin.sessionToken, firstJoin.gameId);
+  const attackPair = findAttackPairFromState(gameState);
+  await firstPage.locator("#reinforce-select").selectOption(attackPair.fromId);
   await exhaustReinforcements(firstPage);
 
-  const attackPair = await findAttackPairFromControls(firstPage);
   const attackFrom = attackPair.fromId;
   const attackTo = attackPair.toId;
 

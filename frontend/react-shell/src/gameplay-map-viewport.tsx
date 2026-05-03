@@ -127,6 +127,11 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
   return "760 / 500";
 }
 
+function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
+  const value = Number.parseFloat(styles.getPropertyValue(propertyName) || "0");
+  return Number.isFinite(value) ? value : 0;
+}
+
 function territoryOwnerName(
   territory: SnapshotTerritory,
   playersById: Record<string, SnapshotPlayer>
@@ -373,11 +378,17 @@ export function GameplayMapViewport({
       const stagePaddingY =
         Number.parseFloat(stageStyles.paddingTop || "0") +
         Number.parseFloat(stageStyles.paddingBottom || "0");
+      const safeTop = readCssPixelValue(stageStyles, "--game-map-safe-top");
+      const safeBottom = readCssPixelValue(stageStyles, "--game-map-safe-bottom");
       const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
       const stageRect = mapStage.getBoundingClientRect();
       const availableHeight = Math.max(
         0,
-        window.innerHeight - stageRect.top - Number.parseFloat(stageStyles.paddingBottom || "0")
+        window.innerHeight -
+          stageRect.top -
+          Number.parseFloat(stageStyles.paddingBottom || "0") -
+          safeTop -
+          safeBottom
       );
       if (!availableWidth || !availableHeight) {
         return;
@@ -420,7 +431,14 @@ export function GameplayMapViewport({
       observer.disconnect();
       window.removeEventListener("resize", fitBoardToViewport);
     };
-  }, [snapshot.mapVisual?.aspectRatio?.height, snapshot.mapVisual?.aspectRatio?.width]);
+  }, [
+    snapshot.cardState?.currentPlayerMustTrade,
+    snapshot.mapVisual?.aspectRatio?.height,
+    snapshot.mapVisual?.aspectRatio?.width,
+    snapshot.pendingConquest?.toTerritoryId,
+    snapshot.phase,
+    snapshot.turnPhase
+  ]);
 
   useEffect(() => {
     dragStateRef.current = {

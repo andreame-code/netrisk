@@ -37,7 +37,7 @@ const viewports = [
 ];
 
 for (const viewport of viewports) {
-  test(`world classic map board fills the map-first surface at ${viewport.name}`, async ({
+  test(`world classic map board stays fully visible above the command dock at ${viewport.name}`, async ({
     page
   }) => {
     test.slow();
@@ -54,8 +54,10 @@ for (const viewport of viewports) {
       const stageRect = stage.getBoundingClientRect();
       const mapRect = mapRegion.getBoundingClientRect();
       const boardRect = mapBoard.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
+      const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+      const actionsRect = actionsPanel?.getBoundingClientRect();
+      const safeMapBottom = actionsRect ? actionsRect.top - 8 : mapRect.bottom;
+      const visibleMapHeight = Math.max(0, safeMapBottom - mapRect.top);
 
       return {
         stageWidth: stageRect.width,
@@ -66,14 +68,14 @@ for (const viewport of viewports) {
         boardHeight: boardRect.height,
         mapOccupiesMostStageWidth: mapRect.width >= stageRect.width * 0.72,
         mapOccupiesMostStageHeight: mapRect.height >= stageRect.height * 0.72,
-        boardCoversMapWidth: boardRect.width >= mapRect.width - 2,
-        boardCoversMapHeight: boardRect.height >= mapRect.height - 2,
-        noBlankTop: boardRect.top <= mapRect.top + 1,
-        noBlankRight: boardRect.right >= mapRect.right - 1,
-        noBlankBottom: boardRect.bottom >= mapRect.bottom - 1,
-        noBlankLeft: boardRect.left <= mapRect.left + 1,
-        viewportOverflowRight: boardRect.left > viewportWidth + 1,
-        viewportOverflowBottom: boardRect.top > viewportHeight + 1
+        boardOccupiesMostSafeWidth: boardRect.width >= mapRect.width * 0.6,
+        boardOccupiesMostSafeHeight: boardRect.height >= visibleMapHeight * 0.92,
+        boardInsideMapTop: boardRect.top >= mapRect.top - 1,
+        boardInsideMapRight: boardRect.right <= mapRect.right + 1,
+        boardInsideSafeBottom: boardRect.bottom <= safeMapBottom + 1,
+        boardInsideMapLeft: boardRect.left >= mapRect.left - 1,
+        dockTop: actionsRect?.top || null,
+        boardBottom: boardRect.bottom
       };
     });
 
@@ -82,14 +84,13 @@ for (const viewport of viewports) {
     expect(metrics.mapHeight).toBeGreaterThan(0);
     expect(metrics.mapOccupiesMostStageWidth).toBeTruthy();
     expect(metrics.mapOccupiesMostStageHeight).toBeTruthy();
-    expect(metrics.boardCoversMapWidth).toBeTruthy();
-    expect(metrics.boardCoversMapHeight).toBeTruthy();
-    expect(metrics.noBlankTop).toBeTruthy();
-    expect(metrics.noBlankRight).toBeTruthy();
-    expect(metrics.noBlankBottom).toBeTruthy();
-    expect(metrics.noBlankLeft).toBeTruthy();
-    expect(metrics.viewportOverflowRight).toBeFalsy();
-    expect(metrics.viewportOverflowBottom).toBeFalsy();
+    expect(metrics.boardOccupiesMostSafeWidth).toBeTruthy();
+    expect(metrics.boardOccupiesMostSafeHeight).toBeTruthy();
+    expect(metrics.boardInsideMapTop).toBeTruthy();
+    expect(metrics.boardInsideMapRight).toBeTruthy();
+    expect(metrics.boardInsideSafeBottom).toBeTruthy();
+    expect(metrics.boardInsideMapLeft).toBeTruthy();
+    expect(metrics.dockTop).toBeGreaterThan(metrics.boardBottom);
   });
 
   test(`turn HUD and command dock stay inside the map-first viewport at ${viewport.name}`, async ({
