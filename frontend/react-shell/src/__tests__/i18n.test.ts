@@ -17,4 +17,19 @@ describe("frontend i18n", () => {
     expect(t("nav.localeLabel")).toBe("Sprache");
     expect(t("locale.label.de")).toBe("Deutsch");
   });
+
+  it("supports Spanish locale selection and regional Spanish codes", () => {
+    expect(listSupportedLocales()).toContain("es");
+
+    const resolvedLocale = setLocale("es-ES", {
+      storage: window.localStorage,
+      applyDocument: true
+    });
+
+    expect(resolvedLocale).toBe("es");
+    expect(getLocale()).toBe("es");
+    expect(document.documentElement.lang).toBe("es");
+    expect(t("nav.localeLabel")).toBe("Idioma");
+    expect(t("locale.label.es")).toBe("Espanol");
+  });
 });

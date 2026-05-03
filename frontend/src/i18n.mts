@@ -3,15 +3,17 @@ import type { MessagePayload, TranslationParams } from "./core/types.mjs";
 import { it } from "./locales/it.mjs";
 import { en } from "./locales/en.mjs";
 import { de } from "./locales/de.mjs";
+import { es } from "./locales/es.mjs";
 
-export const SUPPORTED_LOCALES = Object.freeze(["it", "en", "de"]);
+export const SUPPORTED_LOCALES = Object.freeze(["it", "en", "de", "es"]);
 export const DEFAULT_LOCALE = "it";
 export const LOCALE_STORAGE_KEY = "netrisk.locale";
 
 const dictionaries = Object.freeze({
   it,
   en,
-  de
+  de,
+  es
 });
 
 type LocaleCode = keyof typeof dictionaries;
