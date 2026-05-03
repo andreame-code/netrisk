@@ -8,6 +8,7 @@ const { createDatastore } = require("./datastore.cjs");
 const { createAuthoredModulesService } = require("./authored-modules.cjs");
 const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createSetupCatalogResolver } = require("./setup-catalog-resolver.cjs");
+const { createSetupService } = require("./setup-service.cjs");
 const { createAuthStore } = require("./auth.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
@@ -93,6 +94,11 @@ const {
   handleLogoutRoute,
   handleRegisterRoute
 } = require("./routes/password-auth.cjs");
+const {
+  handleSetupCompleteRoute,
+  handleSetupCreateAdminRoute,
+  handleSetupStatusRoute
+} = require("./routes/setup.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
 const { gameEventPayloadSchema } = require("../shared/runtime-validation.cjs");
@@ -288,14 +294,16 @@ function createApp(options: CreateAppOptions = {}) {
   const runtimeModulesDir = path.join(runtimeProjectRoot, "modules");
   const runtimeRelease = resolveObservabilityRelease(process.env);
   const sentryConnectOrigin = parseSentryOrigin(process.env.VITE_SENTRY_DSN);
+  const missingDeployEnvKeys = shouldValidateDeployEnv(process.env)
+    ? missingRequiredDeployEnv(process.env)
+    : [];
 
   if (shouldValidateDeployEnv(process.env)) {
-    const missingEnvKeys = missingRequiredDeployEnv(process.env);
-    if (missingEnvKeys.length) {
+    if (missingDeployEnvKeys.length) {
       throw createLocalizedError(
         "Configurazione Vercel incompleta.",
         "server.deploy.missingEnv",
-        { keys: missingEnvKeys.join(", ") },
+        { keys: missingDeployEnvKeys.join(", ") },
         "MISSING_DEPLOY_ENV"
       );
     }
@@ -359,6 +367,11 @@ function createApp(options: CreateAppOptions = {}) {
     datastore,
     dataFile: options.dataFile || path.join(runtimeProjectRoot, "data", "users.json"),
     sessionsFile: options.sessionsFile || path.join(runtimeProjectRoot, "data", "sessions.json")
+  });
+  const setup = createSetupService({
+    auth,
+    datastore,
+    missingRequiredSecrets: missingDeployEnvKeys.length > 0
   });
   const adminConsole = createAdminConsole({
     datastore,
@@ -764,6 +777,23 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "GET" && url.pathname === "/api/health") {
       await handleHealthRoute(res, healthSnapshot, sendJson);
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/setup/status") {
+      await handleSetupStatusRoute(req, res, setup, sendJson, sendLocalizedError);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/setup/create-admin") {
+      const body = await parseBody(req);
+      await handleSetupCreateAdminRoute(req, res, body, setup, sendJson, sendLocalizedError);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/setup/complete") {
+      const body = await parseBody(req);
+      await handleSetupCompleteRoute(req, res, body, setup, sendJson, sendLocalizedError);
       return;
     }
 
@@ -1633,6 +1663,7 @@ function createApp(options: CreateAppOptions = {}) {
     const isReactShellDocumentRoute =
       !isModuleAssetRequest &&
       (url.pathname === "/" ||
+        url.pathname === "/setup" ||
         url.pathname === "/login" ||
         url.pathname === "/register" ||
         url.pathname === "/lobby" ||

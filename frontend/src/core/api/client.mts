@@ -40,6 +40,11 @@ import {
   modulesCatalogResponseSchema,
   profileResponseSchema,
   registerRequestSchema,
+  setupCompleteRequestSchema,
+  setupCompleteResponseSchema,
+  setupCreateAdminRequestSchema,
+  setupCreateAdminResponseSchema,
+  setupStatusResponseSchema,
   startGameRequestSchema,
   themePreferenceRequestSchema,
   themePreferenceResponseSchema,
@@ -86,6 +91,10 @@ import type {
   ModulesCatalogResponse,
   ProfileResponse,
   RegisterRequest,
+  SetupCompleteResponse,
+  SetupCreateAdminRequest,
+  SetupCreateAdminResponse,
+  SetupStatusResponse,
   StartGameRequest,
   TradeCardsRequest,
   ThemePreferenceResponse,
@@ -180,6 +189,44 @@ export function logout(messages: ClientMessages): Promise<LogoutResponse> {
     body: {},
     responseSchema: logoutResponseSchema,
     responseSchemaName: "LogoutResponse",
+    ...messages
+  });
+}
+
+export function getSetupStatus(messages: ClientMessages): Promise<SetupStatusResponse> {
+  return requestJson({
+    path: "/api/setup/status",
+    responseSchema: setupStatusResponseSchema,
+    responseSchemaName: "SetupStatusResponse",
+    ...messages
+  });
+}
+
+export function createSetupAdmin(
+  request: SetupCreateAdminRequest,
+  messages: ClientMessages
+): Promise<SetupCreateAdminResponse> {
+  return requestJson({
+    path: "/api/setup/create-admin",
+    method: "POST",
+    body: request,
+    requestSchema: setupCreateAdminRequestSchema,
+    requestSchemaName: "SetupCreateAdminRequest",
+    responseSchema: setupCreateAdminResponseSchema,
+    responseSchemaName: "SetupCreateAdminResponse",
+    ...messages
+  });
+}
+
+export function completeSetup(messages: ClientMessages): Promise<SetupCompleteResponse> {
+  return requestJson({
+    path: "/api/setup/complete",
+    method: "POST",
+    body: {},
+    requestSchema: setupCompleteRequestSchema,
+    requestSchemaName: "SetupCompleteRequest",
+    responseSchema: setupCompleteResponseSchema,
+    responseSchemaName: "SetupCompleteResponse",
     ...messages
   });
 }

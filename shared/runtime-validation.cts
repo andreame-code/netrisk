@@ -184,6 +184,44 @@ export const registerRequestSchema = objectSchema({
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
+export const setupStatusResponseSchema = objectSchema({
+  setupRequired: z.boolean(),
+  setupCompleted: z.boolean(),
+  hasAdminUser: z.boolean(),
+  datastoreOk: z.boolean(),
+  missingRequiredSecrets: z.boolean(),
+  setupActionsAllowed: z.boolean(),
+  setupPageAvailable: z.boolean()
+});
+
+export type SetupStatusResponse = z.infer<typeof setupStatusResponseSchema>;
+
+export const setupCreateAdminRequestSchema = objectSchema({
+  username: z.string().min(1).max(32),
+  password: passwordSchema
+});
+
+export type SetupCreateAdminRequest = z.infer<typeof setupCreateAdminRequestSchema>;
+
+export const setupCreateAdminResponseSchema = objectSchema({
+  ok: z.literal(true),
+  user: publicUserSchema,
+  status: setupStatusResponseSchema
+});
+
+export type SetupCreateAdminResponse = z.infer<typeof setupCreateAdminResponseSchema>;
+
+export const setupCompleteRequestSchema = objectSchema({});
+
+export type SetupCompleteRequest = z.infer<typeof setupCompleteRequestSchema>;
+
+export const setupCompleteResponseSchema = objectSchema({
+  ok: z.literal(true),
+  status: setupStatusResponseSchema
+});
+
+export type SetupCompleteResponse = z.infer<typeof setupCompleteResponseSchema>;
+
 export const loginResponseSchema = objectSchema({
   ok: z.literal(true),
   user: publicUserSchema,

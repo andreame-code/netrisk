@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
+import { getSetupStatus } from "@frontend-core/api/client.mjs";
 import { getLocale, listSupportedLocales, setLocale, t } from "@frontend-i18n";
 
 import {
@@ -17,6 +18,7 @@ const landingNavLinks = [
 
 export function LandingRoute() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [setupPageAvailable, setSetupPageAvailable] = useState(false);
   const currentLocale = getLocale();
 
   useEffect(() => {
@@ -71,6 +73,29 @@ export function LandingRoute() {
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("resize", closeOnDesktopResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getSetupStatus({
+      errorMessage: "Unable to load setup status.",
+      fallbackMessage: "Unable to load setup status."
+    })
+      .then((status) => {
+        if (isMounted) {
+          setSetupPageAvailable(status.setupPageAvailable);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setSetupPageAvailable(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -130,6 +155,11 @@ export function LandingRoute() {
                 ))}
               </select>
             </label>
+            {setupPageAvailable ? (
+              <Link className="ld-btn-ghost" to="/setup">
+                Setup
+              </Link>
+            ) : null}
             <Link className="ld-btn-ghost" to={buildLobbyPath("canonical")}>
               {t("auth.login")}
             </Link>
