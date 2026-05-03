@@ -89,6 +89,8 @@ function mockState() {
 test("fortify map clicks select origin first and destination second", async ({ page }) => {
   const currentState = mockState();
 
+  await page.setViewportSize({ width: 1440, height: 960 });
+
   await page.addInitScript(() => {
     window.localStorage.setItem("frontline-player-id", "p1");
   });
@@ -134,18 +136,12 @@ test("fortify map clicks select origin first and destination second", async ({ p
   await expect(page.locator("#fortify-from")).toHaveValue("cinder");
   await expect(page.locator("#fortify-to")).toHaveValue("delta");
 
-  await page.locator('[data-territory-id="delta"]').dispatchEvent("click", {
-    bubbles: true,
-    cancelable: true
-  });
+  await page.locator('[data-territory-id="delta"]').click();
   await expect(page.locator("#fortify-from")).toHaveValue("delta");
   await expect(page.locator("#fortify-to")).toHaveValue("cinder");
   await expect(page.locator('[data-territory-id="delta"]')).toHaveClass(/is-source/);
 
-  await page.locator('[data-territory-id="harbor"]').dispatchEvent("click", {
-    bubbles: true,
-    cancelable: true
-  });
+  await page.locator('[data-territory-id="harbor"]').click();
   await expect(page.locator("#fortify-from")).toHaveValue("delta");
   await expect(page.locator("#fortify-to")).toHaveValue("harbor");
   await expect(page.locator('[data-territory-id="harbor"]')).toHaveClass(/is-target/);
