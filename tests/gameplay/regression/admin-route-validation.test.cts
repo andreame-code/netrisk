@@ -367,41 +367,44 @@ register("handleAdminUserRoleRoute rejects invalid inbound payloads", async () =
   );
 });
 
-register("handleAdminContentStudioValidateRoute rejects invalid drafts before service calls", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
-  let validateCalls = 0;
+register(
+  "handleAdminContentStudioValidateRoute rejects invalid drafts before service calls",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
+    let validateCalls = 0;
 
-  await handleAdminContentStudioValidateRoute(
-    {},
-    {},
-    { id: "", content: { mapId: 7, objectives: "invalid" } },
-    async () => createAuthContext(),
-    () => undefined,
-    {
-      async validateAuthoredModuleDraft() {
-        validateCalls += 1;
-        throw new Error("validateAuthoredModuleDraft should not run for invalid payloads.");
+    await handleAdminContentStudioValidateRoute(
+      {},
+      {},
+      { id: "", content: { mapId: 7, objectives: "invalid" } },
+      async () => createAuthContext(),
+      () => undefined,
+      {
+        async validateAuthoredModuleDraft() {
+          validateCalls += 1;
+          throw new Error("validateAuthoredModuleDraft should not run for invalid payloads.");
+        }
+      },
+      () => {
+        throw new Error("sendJson should not run for invalid content studio payloads.");
+      },
+      (...args: LocalizedErrorCall) => {
+        localizedErrorCall = args;
       }
-    },
-    () => {
-      throw new Error("sendJson should not run for invalid content studio payloads.");
-    },
-    (...args: LocalizedErrorCall) => {
-      localizedErrorCall = args;
-    }
-  );
+    );
 
-  const localizedError = requireLocalizedErrorCall(localizedErrorCall);
-  const validationPaths = localizedError[7].validationErrors.map(
-    (entry: { path: string }) => entry.path
-  );
-  assert.equal(validateCalls, 0);
-  assert.equal(localizedError[1], 400);
-  assert.equal(localizedError[6], "REQUEST_VALIDATION_FAILED");
-  assert.equal(validationPaths.includes("id"), true);
-  assert.equal(validationPaths.includes("content.mapId"), true);
-  assert.equal(validationPaths.includes("content.objectives"), true);
-});
+    const localizedError = requireLocalizedErrorCall(localizedErrorCall);
+    const validationPaths = localizedError[7].validationErrors.map(
+      (entry: { path: string }) => entry.path
+    );
+    assert.equal(validateCalls, 0);
+    assert.equal(localizedError[1], 400);
+    assert.equal(localizedError[6], "REQUEST_VALIDATION_FAILED");
+    assert.equal(validationPaths.includes("id"), true);
+    assert.equal(validationPaths.includes("content.mapId"), true);
+    assert.equal(validationPaths.includes("content.objectives"), true);
+  }
+);
 
 register("handleAdminGameActionRoute maps failures and swallows failure audit errors", async () => {
   let localizedErrorCall: LocalizedErrorCall | null = null;
@@ -498,38 +501,41 @@ register(
   }
 );
 
-register("handleAdminContentStudioPublishRoute keeps the primary error when audit persistence fails", async () => {
-  let localizedErrorCall: LocalizedErrorCall | null = null;
-  let recordAuditCalls = 0;
+register(
+  "handleAdminContentStudioPublishRoute keeps the primary error when audit persistence fails",
+  async () => {
+    let localizedErrorCall: LocalizedErrorCall | null = null;
+    let recordAuditCalls = 0;
 
-  await handleAdminContentStudioPublishRoute(
-    {},
-    {},
-    "victory.publish-failure",
-    async () => createAuthContext(),
-    () => undefined,
-    {
-      async publishAuthoredModule() {
-        const error = new Error("module unavailable") as Error & { statusCode?: number };
-        error.statusCode = 503;
-        throw error;
+    await handleAdminContentStudioPublishRoute(
+      {},
+      {},
+      "victory.publish-failure",
+      async () => createAuthContext(),
+      () => undefined,
+      {
+        async publishAuthoredModule() {
+          const error = new Error("module unavailable") as Error & { statusCode?: number };
+          error.statusCode = 503;
+          throw error;
+        },
+        async recordAudit() {
+          recordAuditCalls += 1;
+          throw new Error("audit unavailable");
+        }
       },
-      async recordAudit() {
-        recordAuditCalls += 1;
-        throw new Error("audit unavailable");
+      () => {
+        throw new Error("sendJson should not run when publishing fails.");
+      },
+      (...args: LocalizedErrorCall) => {
+        localizedErrorCall = args;
       }
-    },
-    () => {
-      throw new Error("sendJson should not run when publishing fails.");
-    },
-    (...args: LocalizedErrorCall) => {
-      localizedErrorCall = args;
-    }
-  );
+    );
 
-  assert.equal(recordAuditCalls, 1);
-  const localizedError = requireLocalizedErrorCall(localizedErrorCall);
-  assert.equal(localizedError[1], 503);
-  assert.equal(localizedError[3], "Unable to publish the module.");
-  assert.equal(localizedError[4], "server.admin.contentStudio.publishFailed");
-});
+    assert.equal(recordAuditCalls, 1);
+    const localizedError = requireLocalizedErrorCall(localizedErrorCall);
+    assert.equal(localizedError[1], 503);
+    assert.equal(localizedError[3], "Unable to publish the module.");
+    assert.equal(localizedError[4], "server.admin.contentStudio.publishFailed");
+  }
+);
