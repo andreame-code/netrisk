@@ -1151,7 +1151,9 @@ export function GameRoute() {
             className="game-command-dock-toggle"
             aria-expanded={isCommandDockExpanded}
             aria-controls="game-command-actions"
-            aria-label={isCommandDockExpanded ? "Comprimi comandi" : "Espandi comandi"}
+            aria-label={
+              isCommandDockExpanded ? t("game.commandDock.collapse") : t("game.commandDock.expand")
+            }
             onClick={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
           >
             <span aria-hidden="true">{isCommandDockExpanded ? "v" : "^"}</span>

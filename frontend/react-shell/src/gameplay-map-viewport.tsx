@@ -483,7 +483,7 @@ export function GameplayMapViewport({
     snapshot.cardState?.currentPlayerMustTrade,
     snapshot.mapVisual?.aspectRatio?.height,
     snapshot.mapVisual?.aspectRatio?.width,
-    snapshot.pendingConquest?.toTerritoryId,
+    snapshot.pendingConquest?.toId,
     snapshot.phase,
     snapshot.turnPhase
   ]);

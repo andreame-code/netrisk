@@ -582,6 +582,8 @@ export const it = Object.freeze({
   "game.commandMode.moveReinforcements": "Sposta rinforzi",
   "game.commandMode.otherActions": "Altre azioni",
   "game.commandMode.tradeCards": "Scambia carte",
+  "game.commandDock.collapse": "Comprimi comandi",
+  "game.commandDock.expand": "Espandi comandi",
   "game.drawer.activityLog": "Registro attivita",
   "game.drawer.gameInfo": "Info partita",
   "game.hud.activePlayer": "Giocatore attivo",

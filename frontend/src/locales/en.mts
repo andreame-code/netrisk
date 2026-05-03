@@ -578,6 +578,8 @@ export const en = Object.freeze({
   "game.commandMode.moveReinforcements": "Move reinforcements",
   "game.commandMode.otherActions": "Other actions",
   "game.commandMode.tradeCards": "Trade cards",
+  "game.commandDock.collapse": "Collapse commands",
+  "game.commandDock.expand": "Expand commands",
   "game.drawer.activityLog": "Activity log",
   "game.drawer.gameInfo": "Game info",
   "game.hud.activePlayer": "Active player",
