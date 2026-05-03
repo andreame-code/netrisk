@@ -3247,10 +3247,16 @@ body[data-app-section="game"] .game-app-frame,
 body[data-app-section="game"] .top-nav-page-frame {
   width: 100% !important;
   max-width: none !important;
+  padding: 0 !important;
+}
+
+body[data-app-section="game"] .shared-top-shell {
+  margin-bottom: 0 !important;
 }
 
 body[data-app-section="game"] .top-nav-bar,
 html[data-theme="war-table"] body[data-app-section="game"] .top-nav-bar {
+  position: relative !important;
   min-height: 56px !important;
   margin: 0 !important;
   padding: 0 28px !important;
@@ -3281,6 +3287,35 @@ body[data-app-section="game"] .top-nav-bar .nav-link {
 body[data-app-section="game"] .top-nav-bar .nav-link.is-active {
   color: #f8b50f !important;
   box-shadow: inset 0 -3px 0 #f8b50f !important;
+}
+
+@media (min-width: 761px) {
+  body[data-app-section="game"] .top-nav-links,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-links {
+    position: absolute !important;
+    top: 0 !important;
+    left: 232px !important;
+    display: flex !important;
+    gap: 34px !important;
+    height: 56px !important;
+  }
+
+  body[data-app-section="game"] .top-nav-links .nav-link:first-child {
+    display: none !important;
+  }
+
+  body[data-app-section="game"] .top-nav-module-slots,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-module-slots {
+    position: absolute !important;
+    top: 13px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  body[data-app-section="game"] .top-nav-actions,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-actions {
+    margin-left: auto !important;
+  }
 }
 
 body[data-app-section="game"] .top-nav-module-slots .badge {
@@ -3356,8 +3391,48 @@ html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-sur
   box-shadow: none;
 }
 
+.game-map-first-page .game-map-stage .map-board-anchor,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-anchor {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+}
+
+.game-map-first-page .game-map-stage .map-board-transform,
+.game-map-first-page .game-map-stage .map-board,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-transform,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .game-map-first-page .game-map-stage .map-board-stage {
   background-size: cover;
+}
+
+.game-map-first-page .map-controls,
+html[data-theme="war-table"] .game-map-first-page .map-controls {
+  top: 40px !important;
+  right: 162px !important;
+  bottom: auto !important;
+  z-index: 12 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  transform: none !important;
+}
+
+.game-map-first-page .map-control-button,
+html[data-theme="war-table"] .game-map-first-page .map-control-button {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  background: rgba(3, 16, 25, 0.86) !important;
 }
 
 .game-floating-hud,
@@ -3389,6 +3464,7 @@ html[data-theme="war-table"] .game-map-first-page .game-floating-hud h1 {
   font-size: 0.78rem !important;
   font-weight: 950 !important;
   letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
 }
 
 .game-floating-hud .badge[data-testid="phase-indicator"],
@@ -3418,13 +3494,16 @@ html[data-theme="war-table"] .game-map-first-page .game-hud-summary > div {
 }
 
 .game-hud-summary .game-hud-identity {
-  grid-column: 1 / -1;
-  min-height: 30px !important;
-  margin-top: 8px;
-  padding-top: 8px;
-  padding-left: 0;
-  border-top: 1px solid rgba(117, 142, 158, 0.22);
-  border-left: 0;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .game-hud-summary > div[hidden] {
@@ -3595,22 +3674,22 @@ html[data-theme="war-table"] .game-map-first-page .game-secondary-drawers {
 
 .game-roster-drawer {
   left: 15px;
-  bottom: 158px;
+  bottom: 282px;
 }
 
 .game-cards-drawer {
   left: 15px;
-  bottom: 106px;
+  bottom: 230px;
 }
 
 .game-info-drawer {
   left: 15px;
-  bottom: 54px;
+  bottom: 178px;
 }
 
 .game-objective-drawer {
   left: 15px;
-  bottom: 210px;
+  bottom: 334px;
 }
 
 .game-combat-drawer {
@@ -3681,8 +3760,8 @@ html[data-theme="war-table"] .game-map-first-page .game-secondary-drawers {
 .game-command-dock,
 html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   right: auto !important;
-  bottom: 64px !important;
-  left: 50% !important;
+  bottom: 82px !important;
+  left: min(50vw, 755px) !important;
   display: grid !important;
   grid-template-columns: 270px minmax(420px, 1fr) 240px !important;
   width: min(930px, calc(100vw - 420px)) !important;
@@ -3981,38 +4060,127 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock:has(#card-t
     padding: 0 12px !important;
   }
 
+  body[data-app-section="game"] .top-nav-links,
+  body[data-app-section="game"] .top-nav-module-slots,
+  body[data-app-section="game"] .war-nav-locale-icon,
+  body[data-app-section="game"] .top-nav-locale,
+  body[data-app-section="game"] .war-nav-locale-code,
+  body[data-app-section="game"] .war-nav-icon-button,
+  body[data-app-section="game"] .war-nav-user-name,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-links,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-module-slots,
+  html[data-theme="war-table"] body[data-app-section="game"] .war-nav-locale-icon,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-locale,
+  html[data-theme="war-table"] body[data-app-section="game"] .war-nav-locale-code,
+  html[data-theme="war-table"] body[data-app-section="game"] .war-nav-icon-button,
+  html[data-theme="war-table"] body[data-app-section="game"] .war-nav-user-name {
+    display: none !important;
+  }
+
+  body[data-app-section="game"] .top-nav-actions,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-actions {
+    margin-left: auto !important;
+  }
+
+  body[data-app-section="game"] .war-nav-user,
+  html[data-theme="war-table"] body[data-app-section="game"] .war-nav-user {
+    min-height: 48px !important;
+    padding-left: 8px !important;
+  }
+
+  .game-map-first-page .map-controls,
+  html[data-theme="war-table"] .game-map-first-page .map-controls {
+    top: 62px !important;
+    right: 10px !important;
+    bottom: auto !important;
+    flex-direction: column !important;
+  }
+
   .game-floating-hud,
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
-    top: 9px !important;
+    top: auto !important;
+    bottom: 188px !important;
     left: 9px !important;
-    width: min(300px, calc(100% - 18px)) !important;
-    padding: 10px 11px !important;
+    width: min(236px, calc(100% - 18px)) !important;
+    padding: 9px 10px !important;
   }
 
   .game-map-first-page .game-map-stage .map-board-anchor,
   html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-anchor {
-    top: 27% !important;
+    top: 0 !important;
   }
 
-  .game-secondary-drawers {
-    right: 10px;
-    bottom: calc(min(44vh, 214px) + 10px);
-    left: 10px;
-    max-width: none;
-    overflow-x: auto;
-    padding-bottom: 2px;
+  .game-secondary-drawers,
+  html[data-theme="war-table"] .game-map-first-page .game-secondary-drawers {
+    top: auto !important;
+    right: 10px !important;
+    bottom: 306px !important;
+    left: 10px !important;
+    display: flex !important;
+    gap: 6px !important;
+    max-width: none !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
   }
 
-  .game-secondary-drawer {
-    flex: 0 0 auto;
-    min-width: 54px;
-    max-width: min(340px, calc(100vw - 20px));
+  .game-secondary-drawer,
+  html[data-theme="war-table"] .game-map-first-page .game-secondary-drawer {
+    position: relative !important;
+    inset: auto !important;
+    flex: 0 0 auto !important;
+    min-width: 42px !important;
+    max-width: min(320px, calc(100vw - 20px)) !important;
   }
 
-  .game-secondary-drawer summary {
+  .game-secondary-drawer summary,
+  html[data-theme="war-table"] .game-map-first-page .game-secondary-drawer summary {
+    display: grid;
+    grid-template-columns: 42px;
     min-height: 34px;
-    padding: 0 8px;
+    padding: 0;
     font-size: 0.56rem;
+  }
+
+  .game-secondary-drawer summary > span:not(.game-drawer-icon):not(.badge) {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    min-height: 0 !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
+  .game-secondary-drawer .game-drawer-icon,
+  html[data-theme="war-table"] .game-map-first-page .game-secondary-drawer .game-drawer-icon {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 6px !important;
+  }
+
+  .game-secondary-drawer summary .badge {
+    position: absolute;
+    right: -8px;
+    bottom: -8px;
+  }
+
+  .game-log-drawer summary {
+    width: 42px;
+    min-height: 42px;
+  }
+
+  .game-log-drawer .game-drawer-icon {
+    width: 42px;
+    height: 42px;
+    margin-top: 0;
+  }
+
+  .game-secondary-drawer .rail-section {
+    bottom: calc(100% + 8px);
+    width: min(300px, calc(100vw - 20px));
   }
 
   .game-command-dock,
