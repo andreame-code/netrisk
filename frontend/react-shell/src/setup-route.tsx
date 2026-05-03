@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 import { completeSetup, createSetupAdmin, getSetupStatus } from "@frontend-core/api/client.mjs";
 import type { SetupStatusResponse } from "@frontend-generated/shared-runtime-validation.mjs";
@@ -141,8 +141,14 @@ export function SetupRoute() {
   }
 
   const setup = loadState.setup;
-  const canCreateAdmin = setup.setupRequired && setup.datastoreOk && !setup.hasAdminUser;
-  const canCompleteSetup = setup.setupRequired && setup.datastoreOk && setup.hasAdminUser;
+  if (!setup.setupPageAvailable) {
+    return <Navigate to={loginPath} replace />;
+  }
+
+  const canCreateAdmin =
+    setup.setupRequired && setup.datastoreOk && setup.setupActionsAllowed && !setup.hasAdminUser;
+  const canCompleteSetup =
+    setup.setupRequired && setup.datastoreOk && setup.setupActionsAllowed && setup.hasAdminUser;
   const isComplete = !setup.setupRequired && setup.setupCompleted && setup.hasAdminUser;
 
   return (
@@ -172,7 +178,11 @@ export function SetupRoute() {
           state={setup.hasAdminUser ? "done" : canCreateAdmin ? "ready" : "blocked"}
           title="Admin user"
           copy={
-            setup.hasAdminUser ? "At least one admin user exists." : "Create the first admin user."
+            setup.hasAdminUser
+              ? "At least one admin user exists."
+              : setup.setupActionsAllowed
+                ? "Create the first admin user."
+                : "Admin creation is available only from a trusted local setup request."
           }
         />
         <SetupStep

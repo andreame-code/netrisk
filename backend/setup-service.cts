@@ -15,6 +15,7 @@ type SetupStatus = {
   setupCompleted: boolean;
   hasAdminUser: boolean;
   datastoreOk: boolean;
+  missingRequiredSecrets: boolean;
 };
 
 type AuthFailure = {
@@ -46,6 +47,7 @@ type Datastore = {
 type SetupServiceOptions = {
   auth: AuthStore;
   datastore: Datastore;
+  missingRequiredSecrets?: boolean;
 };
 
 function setupFailure(
@@ -62,38 +64,47 @@ function hasAdmin(users: Array<StoredUser | null | undefined>): boolean {
   return users.some((user) => user?.role === "admin");
 }
 
-function createSetupService({ auth, datastore }: SetupServiceOptions) {
+function createSetupService({
+  auth,
+  datastore,
+  missingRequiredSecrets = false
+}: SetupServiceOptions) {
   let adminCreationLock: Promise<void> | null = null;
 
   async function getSetupStatus(): Promise<SetupStatus> {
-    let datastoreOk = true;
+    let datastoreHealthy: boolean;
+    let usersReadable: boolean;
+    let appStateReadable: boolean;
     let adminExists = false;
     let setupCompleted = false;
 
     try {
       const health = await datastore.healthSummary?.();
-      datastoreOk = health ? Boolean(health.ok) : true;
+      datastoreHealthy = health ? Boolean(health.ok) : true;
     } catch {
-      datastoreOk = false;
+      datastoreHealthy = false;
     }
 
     try {
       adminExists = hasAdmin(await auth.listUsers());
+      usersReadable = true;
     } catch {
-      datastoreOk = false;
+      usersReadable = false;
     }
 
     try {
       setupCompleted = (await datastore.getAppState("setupCompleted")) === true;
+      appStateReadable = true;
     } catch {
-      datastoreOk = false;
+      appStateReadable = false;
     }
 
     return {
       setupRequired: !adminExists || !setupCompleted,
       setupCompleted,
       hasAdminUser: adminExists,
-      datastoreOk
+      datastoreOk: datastoreHealthy && usersReadable && appStateReadable,
+      missingRequiredSecrets
     };
   }
 

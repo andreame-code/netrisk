@@ -188,7 +188,10 @@ export const setupStatusResponseSchema = objectSchema({
   setupRequired: z.boolean(),
   setupCompleted: z.boolean(),
   hasAdminUser: z.boolean(),
-  datastoreOk: z.boolean()
+  datastoreOk: z.boolean(),
+  missingRequiredSecrets: z.boolean(),
+  setupActionsAllowed: z.boolean(),
+  setupPageAvailable: z.boolean()
 });
 
 export type SetupStatusResponse = z.infer<typeof setupStatusResponseSchema>;

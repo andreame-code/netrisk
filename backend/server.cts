@@ -294,14 +294,16 @@ function createApp(options: CreateAppOptions = {}) {
   const runtimeModulesDir = path.join(runtimeProjectRoot, "modules");
   const runtimeRelease = resolveObservabilityRelease(process.env);
   const sentryConnectOrigin = parseSentryOrigin(process.env.VITE_SENTRY_DSN);
+  const missingDeployEnvKeys = shouldValidateDeployEnv(process.env)
+    ? missingRequiredDeployEnv(process.env)
+    : [];
 
   if (shouldValidateDeployEnv(process.env)) {
-    const missingEnvKeys = missingRequiredDeployEnv(process.env);
-    if (missingEnvKeys.length) {
+    if (missingDeployEnvKeys.length) {
       throw createLocalizedError(
         "Configurazione Vercel incompleta.",
         "server.deploy.missingEnv",
-        { keys: missingEnvKeys.join(", ") },
+        { keys: missingDeployEnvKeys.join(", ") },
         "MISSING_DEPLOY_ENV"
       );
     }
@@ -368,7 +370,8 @@ function createApp(options: CreateAppOptions = {}) {
   });
   const setup = createSetupService({
     auth,
-    datastore
+    datastore,
+    missingRequiredSecrets: missingDeployEnvKeys.length > 0
   });
   const adminConsole = createAdminConsole({
     datastore,
@@ -778,7 +781,7 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/setup/status") {
-      await handleSetupStatusRoute(res, setup, sendJson, sendLocalizedError);
+      await handleSetupStatusRoute(req, res, setup, sendJson, sendLocalizedError);
       return;
     }
 

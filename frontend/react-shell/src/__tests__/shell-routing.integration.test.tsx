@@ -167,7 +167,10 @@ beforeEach(() => {
     setupRequired: false,
     setupCompleted: true,
     hasAdminUser: true,
-    datastoreOk: true
+    datastoreOk: true,
+    missingRequiredSecrets: false,
+    setupActionsAllowed: false,
+    setupPageAvailable: false
   });
   logoutMock.mockResolvedValue({ ok: true });
 });

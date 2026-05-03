@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { createAuthStore } = require("../../../backend/auth.cjs");
 const {
+  handleSetupStatusRoute,
   handleSetupCreateAdminRoute,
   isTrustedSetupRequest
 } = require("../../../backend/routes/setup.cjs");
@@ -23,6 +24,7 @@ function createSetupHarness(
     setupCompleted?: boolean;
     healthOk?: boolean;
     createUserDelayMs?: number;
+    missingRequiredSecrets?: boolean;
   } = {}
 ) {
   const users = [...(options.users || [])];
@@ -78,7 +80,11 @@ function createSetupHarness(
   };
 
   const auth = createAuthStore({ datastore });
-  const setup = createSetupService({ auth, datastore });
+  const setup = createSetupService({
+    auth,
+    datastore,
+    missingRequiredSecrets: options.missingRequiredSecrets === true
+  });
 
   return { appState, setup, users };
 }
@@ -90,7 +96,8 @@ register("setup status is required when no admin exists", async () => {
     setupRequired: true,
     setupCompleted: false,
     hasAdminUser: false,
-    datastoreOk: true
+    datastoreOk: true,
+    missingRequiredSecrets: false
   });
 });
 
@@ -104,7 +111,8 @@ register("setup status is complete when an admin exists and setupCompleted is tr
     setupRequired: false,
     setupCompleted: true,
     hasAdminUser: true,
-    datastoreOk: true
+    datastoreOk: true,
+    missingRequiredSecrets: false
   });
 });
 
@@ -125,7 +133,8 @@ register("setup create first admin succeeds only during setup", async () => {
     setupRequired: true,
     setupCompleted: false,
     hasAdminUser: true,
-    datastoreOk: true
+    datastoreOk: true,
+    missingRequiredSecrets: false
   });
 });
 
@@ -191,7 +200,8 @@ register("setup completion marks app state after an admin exists", async () => {
     setupRequired: false,
     setupCompleted: true,
     hasAdminUser: true,
-    datastoreOk: true
+    datastoreOk: true,
+    missingRequiredSecrets: false
   });
 });
 
@@ -202,8 +212,126 @@ register("setup status includes datastore health", async () => {
     setupRequired: true,
     setupCompleted: false,
     hasAdminUser: false,
-    datastoreOk: false
+    datastoreOk: false,
+    missingRequiredSecrets: false
   });
+});
+
+register("setup status includes required secret availability", async () => {
+  const { setup } = createSetupHarness({ missingRequiredSecrets: true });
+
+  assert.deepEqual(await setup.getSetupStatus(), {
+    setupRequired: true,
+    setupCompleted: false,
+    hasAdminUser: false,
+    datastoreOk: true,
+    missingRequiredSecrets: true
+  });
+});
+
+register("setup status exposes setup page only for actionable setup conditions", async () => {
+  let payload: any = null;
+  await handleSetupStatusRoute(
+    {
+      socket: { remoteAddress: "203.0.113.10" },
+      headers: { host: "netrisk.example" }
+    },
+    {},
+    {
+      async getSetupStatus() {
+        return {
+          setupRequired: true,
+          setupCompleted: false,
+          hasAdminUser: true,
+          datastoreOk: true,
+          missingRequiredSecrets: false
+        };
+      },
+      async createFirstAdmin() {
+        throw new Error("not used");
+      },
+      async completeSetup() {
+        throw new Error("not used");
+      }
+    },
+    (_res: unknown, _statusCode: number, body: unknown) => {
+      payload = body;
+    },
+    () => {
+      throw new Error("setup status should validate.");
+    }
+  );
+
+  assert.equal(payload.setupPageAvailable, false);
+  assert.equal(payload.setupActionsAllowed, false);
+
+  await handleSetupStatusRoute(
+    {
+      socket: { remoteAddress: "::1" },
+      headers: { host: "localhost:3000" }
+    },
+    {},
+    {
+      async getSetupStatus() {
+        return {
+          setupRequired: true,
+          setupCompleted: false,
+          hasAdminUser: false,
+          datastoreOk: true,
+          missingRequiredSecrets: false
+        };
+      },
+      async createFirstAdmin() {
+        throw new Error("not used");
+      },
+      async completeSetup() {
+        throw new Error("not used");
+      }
+    },
+    (_res: unknown, _statusCode: number, body: unknown) => {
+      payload = body;
+    },
+    () => {
+      throw new Error("setup status should validate.");
+    }
+  );
+
+  assert.equal(payload.setupPageAvailable, true);
+  assert.equal(payload.setupActionsAllowed, true);
+
+  await handleSetupStatusRoute(
+    {
+      socket: { remoteAddress: "::1" },
+      headers: { host: "localhost:3000" }
+    },
+    {},
+    {
+      async getSetupStatus() {
+        return {
+          setupRequired: true,
+          setupCompleted: false,
+          hasAdminUser: true,
+          datastoreOk: true,
+          missingRequiredSecrets: false
+        };
+      },
+      async createFirstAdmin() {
+        throw new Error("not used");
+      },
+      async completeSetup() {
+        throw new Error("not used");
+      }
+    },
+    (_res: unknown, _statusCode: number, body: unknown) => {
+      payload = body;
+    },
+    () => {
+      throw new Error("setup status should validate.");
+    }
+  );
+
+  assert.equal(payload.setupPageAvailable, true);
+  assert.equal(payload.setupActionsAllowed, true);
 });
 
 register("setup mutating routes require a trusted local request", async () => {

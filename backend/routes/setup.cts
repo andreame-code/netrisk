@@ -30,6 +30,14 @@ type SetupService = {
   completeSetup(): Promise<any>;
 };
 
+type SetupStatus = {
+  setupRequired?: boolean;
+  setupCompleted?: boolean;
+  hasAdminUser?: boolean;
+  datastoreOk?: boolean;
+  missingRequiredSecrets?: boolean;
+};
+
 function firstHeaderValue(value: unknown): string {
   if (Array.isArray(value)) {
     return String(value[0] || "").trim();
@@ -106,7 +114,24 @@ function sendUntrustedSetupError(res: unknown, sendLocalizedError: SendLocalized
   return true;
 }
 
+function withSetupRouteAvailability(req: unknown, status: unknown): unknown {
+  const setupStatus = status as SetupStatus;
+  const setupActionsAllowed = isTrustedSetupRequest(req);
+  const setupPageAvailable =
+    setupStatus.setupCompleted !== true &&
+    (setupStatus.datastoreOk === false ||
+      setupStatus.missingRequiredSecrets === true ||
+      (setupStatus.setupRequired === true && setupActionsAllowed));
+
+  return {
+    ...(status as Record<string, unknown>),
+    setupActionsAllowed,
+    setupPageAvailable
+  };
+}
+
 async function handleSetupStatusRoute(
+  req: unknown,
   res: unknown,
   setup: SetupService,
   sendJson: SendJson,
@@ -115,7 +140,7 @@ async function handleSetupStatusRoute(
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     200,
-    await setup.getSetupStatus(),
+    withSetupRouteAvailability(req, await setup.getSetupStatus()),
     setupStatusResponseSchema,
     sendJson as SendJson,
     sendLocalizedError as SendLocalizedError
@@ -159,10 +184,15 @@ async function handleSetupCreateAdminRoute(
     return;
   }
 
+  const responsePayload = {
+    ...result,
+    status: withSetupRouteAvailability(req, result.status)
+  };
+
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     201,
-    result,
+    responsePayload,
     setupCreateAdminResponseSchema,
     sendJson as SendJson,
     sendLocalizedError as SendLocalizedError
@@ -206,10 +236,15 @@ async function handleSetupCompleteRoute(
     return;
   }
 
+  const responsePayload = {
+    ...result,
+    status: withSetupRouteAvailability(req, result.status)
+  };
+
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     200,
-    result,
+    responsePayload,
     setupCompleteResponseSchema,
     sendJson as SendJson,
     sendLocalizedError as SendLocalizedError

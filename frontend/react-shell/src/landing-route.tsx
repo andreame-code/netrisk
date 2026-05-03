@@ -18,7 +18,7 @@ const landingNavLinks = [
 
 export function LandingRoute() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [setupRequired, setSetupRequired] = useState(false);
+  const [setupPageAvailable, setSetupPageAvailable] = useState(false);
   const currentLocale = getLocale();
 
   useEffect(() => {
@@ -85,12 +85,12 @@ export function LandingRoute() {
     })
       .then((status) => {
         if (isMounted) {
-          setSetupRequired(status.setupRequired);
+          setSetupPageAvailable(status.setupPageAvailable);
         }
       })
       .catch(() => {
         if (isMounted) {
-          setSetupRequired(false);
+          setSetupPageAvailable(false);
         }
       });
 
@@ -155,7 +155,7 @@ export function LandingRoute() {
                 ))}
               </select>
             </label>
-            {setupRequired ? (
+            {setupPageAvailable ? (
               <Link className="ld-btn-ghost" to="/setup">
                 Setup
               </Link>
