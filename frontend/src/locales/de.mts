@@ -7,6 +7,7 @@ export const de = Object.freeze({
   "locale.label.it": "Italiano",
   "locale.label.en": "English",
   "locale.label.de": "Deutsch",
+  "locale.label.es": "Espanol",
   "common.notAvailable": "n. v.",
   "common.phase.active": "Aktiv",
   "common.phase.finished": "Beendet",
