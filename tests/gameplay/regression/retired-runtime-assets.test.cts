@@ -87,3 +87,30 @@ register(
     });
   }
 );
+
+register("GET /modules serves declared public module assets", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(
+      app,
+      "/modules/demo.command-center/assets/command-center.css"
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["Content-Type"], "text/css; charset=utf-8");
+  });
+});
+
+register("GET /modules does not serve module manifests or server entrypoints", async () => {
+  await withApp(async (app: any) => {
+    const cases = [
+      "/modules/demo.command-center/module.json",
+      "/modules/demo.command-center/server-module.cts"
+    ];
+
+    for (const requestPath of cases) {
+      const response = await callRequest(app, requestPath);
+
+      assert.equal(response.statusCode, 404, requestPath);
+    }
+  });
+});

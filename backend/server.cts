@@ -1668,7 +1668,6 @@ function createApp(options: CreateAppOptions = {}) {
 
   function serveStatic(res: Response, url: URL) {
     const isModuleAssetRequest = url.pathname.indexOf("/modules/") === 0;
-    const staticRoot = isModuleAssetRequest ? runtimeModulesDir : runtimePublicDir;
     const isReactShellDocumentRoute =
       !isModuleAssetRequest &&
       (url.pathname === "/" ||
@@ -1686,11 +1685,18 @@ function createApp(options: CreateAppOptions = {}) {
         url.pathname === "/react/" ||
         (url.pathname.indexOf("/react/") === 0 && path.extname(url.pathname) === "") ||
         /^\/game\/[^/]+$/.test(url.pathname));
-    const relativePath = isModuleAssetRequest
-      ? url.pathname.replace(/^\/modules\//, "")
-      : isReactShellDocumentRoute
-        ? "/react/index.html"
-        : url.pathname;
+    let staticRoot = runtimePublicDir;
+    let relativePath = isReactShellDocumentRoute ? "/react/index.html" : url.pathname;
+    if (isModuleAssetRequest) {
+      const moduleAssetPath = resolveModuleAssetPath(url);
+      if (!moduleAssetPath) {
+        sendLocalizedError(res, 404, null, "File non trovato.", "server.static.fileNotFound");
+        return;
+      }
+
+      staticRoot = moduleAssetPath.staticRoot;
+      relativePath = moduleAssetPath.relativePath;
+    }
     const resolvedStaticRoot = path.resolve(staticRoot);
     const filePath = path.resolve(path.join(staticRoot, relativePath));
     if (filePath !== resolvedStaticRoot && !filePath.startsWith(resolvedStaticRoot + path.sep)) {
@@ -1726,6 +1732,60 @@ function createApp(options: CreateAppOptions = {}) {
       });
       res.end(data);
     });
+  }
+
+  function resolveModuleAssetPath(url: URL): { staticRoot: string; relativePath: string } | null {
+    const relativeModulePath = url.pathname.replace(/^\/modules\//, "");
+    const separatorIndex = relativeModulePath.indexOf("/");
+    if (separatorIndex <= 0) {
+      return null;
+    }
+
+    const moduleId = relativeModulePath.slice(0, separatorIndex);
+    const requestedAssetPath = relativeModulePath.slice(separatorIndex + 1);
+    if (!moduleId || !requestedAssetPath) {
+      return null;
+    }
+
+    const resolvedModulesRoot = path.resolve(runtimeModulesDir);
+    const moduleRoot = path.resolve(path.join(runtimeModulesDir, moduleId));
+    if (
+      moduleRoot !== resolvedModulesRoot &&
+      !moduleRoot.startsWith(resolvedModulesRoot + path.sep)
+    ) {
+      return null;
+    }
+
+    const manifestPath = path.join(moduleRoot, "module.json");
+    let manifest: Record<string, unknown>;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+
+    const assetsDir =
+      typeof manifest.assetsDir === "string" && manifest.assetsDir.trim()
+        ? manifest.assetsDir.trim()
+        : null;
+    if (!assetsDir || path.isAbsolute(assetsDir)) {
+      return null;
+    }
+
+    const assetsRoot = path.resolve(path.join(moduleRoot, assetsDir));
+    if (assetsRoot !== moduleRoot && !assetsRoot.startsWith(moduleRoot + path.sep)) {
+      return null;
+    }
+
+    const requestedFile = path.resolve(path.join(moduleRoot, requestedAssetPath));
+    if (requestedFile !== assetsRoot && !requestedFile.startsWith(assetsRoot + path.sep)) {
+      return null;
+    }
+
+    return {
+      staticRoot: assetsRoot,
+      relativePath: path.relative(assetsRoot, requestedFile)
+    };
   }
 
   function addSecurityHeaders(res: Response) {
