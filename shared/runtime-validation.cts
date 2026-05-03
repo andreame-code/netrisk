@@ -532,7 +532,7 @@ export const playerSlotConfigSchema = objectSchema({
 export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
 
 export const createGameRequestSchema = objectSchema({
-  name: z.string().min(1).nullable().optional(),
+  name: z.string().min(1).max(64).nullable().optional(),
   totalPlayers: z.number().int().nullable().optional(),
   contentPackId: z.string().min(1).nullable().optional(),
   ruleSetId: z.string().min(1).nullable().optional(),
@@ -581,6 +581,14 @@ export const gameIdRequestSchema = objectSchema({
 });
 
 export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
+
+export const aiJoinRequestSchema = objectSchema({
+  gameId: z.string().min(1).nullable().optional(),
+  playerId: z.string().min(1).nullable().optional(),
+  name: z.string().min(1).max(24)
+});
+
+export type AiJoinRequest = z.infer<typeof aiJoinRequestSchema>;
 
 const gameplayRequestBaseSchema = objectSchema({
   gameId: z.string().min(1).nullable().optional(),
