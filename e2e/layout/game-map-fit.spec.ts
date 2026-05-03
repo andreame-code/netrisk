@@ -162,6 +162,7 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
     const reinforceSelect = document.querySelector("#reinforce-select");
     const reinforceAmount = document.querySelector("#reinforce-amount");
     const reinforceButton = document.querySelector("#reinforce-multi-button");
+    const cardTradeListInDock = actionsPanel.querySelector("#card-trade-list");
     if (
       !battlefield ||
       !mapRegion ||
@@ -190,6 +191,9 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
       controlsInsideMapLeft: controlsRect.left >= mapRect.left - 1,
       actionsInsideBattlefieldTop: actionsRect.top >= battlefieldRect.top - 1,
       actionsInsideBattlefieldRight: actionsRect.right <= battlefieldRect.right + 1,
+      actionsRailCompactHeight: actionsRect.height <= 86,
+      commandDockCollapsed: actionsPanel.getAttribute("data-command-dock-expanded") === "false",
+      cardTradeAbsentFromDock: cardTradeListInDock === null,
       reinforceGroupInsideActionsRail: reinforceRect.right <= actionsRect.right + 1,
       reinforceSelectInsideActionsRail: reinforceSelectRect.right <= actionsRect.right + 1,
       reinforceAmountInsideActionsRail: reinforceAmountRect.right <= actionsRect.right + 1,
@@ -203,6 +207,9 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
   expect(metrics.controlsInsideMapLeft).toBeTruthy();
   expect(metrics.actionsInsideBattlefieldTop).toBeTruthy();
   expect(metrics.actionsInsideBattlefieldRight).toBeTruthy();
+  expect(metrics.actionsRailCompactHeight).toBeTruthy();
+  expect(metrics.commandDockCollapsed).toBeTruthy();
+  expect(metrics.cardTradeAbsentFromDock).toBeTruthy();
   expect(metrics.reinforceGroupInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceSelectInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceAmountInsideActionsRail).toBeTruthy();

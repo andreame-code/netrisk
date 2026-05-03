@@ -190,6 +190,7 @@ export function GameRoute() {
   const [selectedTradeCardIds, setSelectedTradeCardIds] = useState<string[]>([]);
   const [isRosterDrawerOpen, setIsRosterDrawerOpen] = useState(false);
   const [isCombatDrawerOpen, setIsCombatDrawerOpen] = useState(false);
+  const [isCommandDockExpanded, setIsCommandDockExpanded] = useState(false);
 
   const gameplayQuery = useQuery({
     queryKey,
@@ -362,12 +363,7 @@ export function GameRoute() {
       : t("game.runtime.combat.resolved");
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
   const showActionsSection = Boolean(
-    showReinforceGroup ||
-    showAttackGroup ||
-    showConquestGroup ||
-    showFortifyGroup ||
-    showTradePanel ||
-    showEndTurn
+    showReinforceGroup || showAttackGroup || showConquestGroup || showFortifyGroup || showEndTurn
   );
   const gameFeedbackMessage = feedbackMessage || actionError;
   const gameFeedbackIsError = !feedbackMessage && Boolean(actionError);
@@ -394,11 +390,9 @@ export function GameRoute() {
         ? t("game.commandMode.moveConquestArmies")
         : showFortifyGroup
           ? t("game.commandMode.fortify")
-          : showTradePanel
-            ? t("game.commandMode.tradeCards")
-            : showEndTurn
-              ? t("game.commandMode.otherActions")
-              : t("game.commandMode.commands");
+          : showEndTurn
+            ? t("game.commandMode.otherActions")
+            : t("game.commandMode.commands");
 
   useEffect(() => {
     if (snapshot?.playerId && resolvedGameId) {
@@ -997,7 +991,9 @@ export function GameRoute() {
                 </div>
               </details>
 
-              <details className="game-secondary-drawer game-cards-drawer">
+              <details
+                className={`game-secondary-drawer game-cards-drawer${mustTradeCards ? " is-attention" : ""}`}
+              >
                 <summary>
                   <span className="game-drawer-icon" aria-hidden="true">
                     <WarTableIcon name="cards" />
@@ -1005,19 +1001,78 @@ export function GameRoute() {
                   <span>{t("game.actions.cards")}</span>
                   <span className="badge accent">{playerHand.length}</span>
                 </summary>
-                <div className="rail-section action-meta-list">
-                  <p className="action-help">
-                    {playerHand.length
-                      ? t("game.runtime.cardsInHand", { count: playerHand.length })
-                      : t("game.runtime.noCardsAvailable")}
-                  </p>
-                  <p className="action-help">
-                    {snapshot.cardState?.nextTradeBonus != null
-                      ? t("game.runtime.nextTradeBonus", {
-                          bonus: snapshot.cardState.nextTradeBonus
-                        })
-                      : t("game.runtime.none")}
-                  </p>
+                <div className="rail-section action-meta-list game-card-trade-drawer-panel">
+                  <div
+                    className="action-group compact-group"
+                    id="card-trade-group"
+                    hidden={!showTradePanel}
+                  >
+                    <label htmlFor="card-trade-list">{t("game.actions.cards")}</label>
+                    <div id="card-trade-alert" className="trade-emphasis" hidden={!mustTradeCards}>
+                      <span>{t("game.cards.alert")}</span>
+                    </div>
+                    <div className="action-meta-list">
+                      <p id="card-trade-summary" className="action-help">
+                        {playerHand.length
+                          ? t("game.runtime.cardsInHand", { count: playerHand.length })
+                          : t("game.runtime.noCardsAvailable")}
+                      </p>
+                      <p id="card-trade-bonus" className="action-help">
+                        {snapshot.cardState?.nextTradeBonus != null
+                          ? t("game.runtime.nextTradeBonus", {
+                              bonus: snapshot.cardState.nextTradeBonus
+                            })
+                          : t("game.runtime.none")}
+                      </p>
+                      <p id="card-trade-help" className="action-help">
+                        {mustTradeCards
+                          ? t("game.runtime.tradeHelp.mustTrade", {
+                              limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
+                            })
+                          : t("game.runtime.tradeHelp.selected", {
+                              selected: selectedTradeCardIds.length
+                            })}
+                      </p>
+                    </div>
+                    <div id="card-trade-list" className="card-trade-list">
+                      {playerHand.map((card) => (
+                        <button
+                          key={card.id}
+                          type="button"
+                          className={`game-card-pill${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                          data-card-id={card.id}
+                          onClick={() => toggleTradeCard(card.id)}
+                        >
+                          <strong>{card.territoryId || card.id}</strong>
+                          <span>{cardTypeLabel(card)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p id="card-trade-success" className="action-help" hidden={!feedbackMessage}>
+                      {feedbackMessage}
+                    </p>
+                    <p id="card-trade-error" className="action-help" hidden={!actionError}>
+                      {actionError}
+                    </p>
+                    <button
+                      id="card-trade-button"
+                      type="button"
+                      onClick={() => void handleTradeCards()}
+                      disabled={!canTradeCards}
+                    >
+                      {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
+                    </button>
+                  </div>
+                  <div className="action-meta-list" hidden={showTradePanel}>
+                    <p className="action-help">{t("game.runtime.noCardsAvailable")}</p>
+                    <p className="action-help">
+                      {snapshot.cardState?.nextTradeBonus != null
+                        ? t("game.runtime.nextTradeBonus", {
+                            bonus: snapshot.cardState.nextTradeBonus
+                          })
+                        : t("game.runtime.none")}
+                    </p>
+                  </div>
                 </div>
               </details>
 
@@ -1087,9 +1142,20 @@ export function GameRoute() {
         </section>
 
         <aside
-          className="right-rail panel game-actions-rail game-command-dock campaign-shell"
+          className={`right-rail panel game-actions-rail game-command-dock campaign-shell${isCommandDockExpanded ? " is-expanded" : " is-collapsed"}`}
           data-testid="actions-panel"
+          data-command-dock-expanded={isCommandDockExpanded ? "true" : "false"}
         >
+          <button
+            type="button"
+            className="game-command-dock-toggle"
+            aria-expanded={isCommandDockExpanded}
+            aria-controls="game-command-actions"
+            aria-label={isCommandDockExpanded ? "Comprimi comandi" : "Espandi comandi"}
+            onClick={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
+          >
+            <span aria-hidden="true">{isCommandDockExpanded ? "v" : "^"}</span>
+          </button>
           <div className="game-command-context" hidden={!commandTerritory}>
             <section className="game-command-territory" aria-label="Selected territory">
               <div className="game-command-territory-heading">
@@ -1234,7 +1300,11 @@ export function GameRoute() {
             </div>
           </div>
 
-          <div className="rail-section actions-section" hidden={!showActionsSection}>
+          <div
+            className="rail-section actions-section"
+            id="game-command-actions"
+            hidden={!showActionsSection}
+          >
             <div
               className="action-group compact-group"
               id="reinforce-group"
@@ -1272,6 +1342,7 @@ export function GameRoute() {
                   <button
                     id="reinforce-all-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleReinforceAll()}
                     disabled={!reinforceTerritoryId || actionPending}
                   >
@@ -1342,6 +1413,7 @@ export function GameRoute() {
                   <button
                     id="attack-banzai-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleAttack("attackBanzai")}
                     disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
                   >
@@ -1379,6 +1451,7 @@ export function GameRoute() {
                   <button
                     id="conquest-all-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleMoveAllAfterConquest()}
                     disabled={actionPending}
                   >
@@ -1449,68 +1522,6 @@ export function GameRoute() {
                     : t("game.actions.moveArmies")}
                 </button>
               </div>
-            </div>
-
-            <div
-              className="action-group compact-group"
-              id="card-trade-group"
-              hidden={!showTradePanel}
-            >
-              <label htmlFor="card-trade-list">{t("game.actions.cards")}</label>
-              <div id="card-trade-alert" className="trade-emphasis" hidden={!mustTradeCards}>
-                <span>{t("game.cards.alert")}</span>
-              </div>
-              <div className="action-meta-list">
-                <p id="card-trade-summary" className="action-help">
-                  {playerHand.length
-                    ? t("game.runtime.cardsInHand", { count: playerHand.length })
-                    : t("game.runtime.noCardsAvailable")}
-                </p>
-                <p id="card-trade-bonus" className="action-help">
-                  {snapshot.cardState?.nextTradeBonus != null
-                    ? t("game.runtime.nextTradeBonus", {
-                        bonus: snapshot.cardState.nextTradeBonus
-                      })
-                    : t("game.runtime.none")}
-                </p>
-                <p id="card-trade-help" className="action-help">
-                  {mustTradeCards
-                    ? t("game.runtime.tradeHelp.mustTrade", {
-                        limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
-                      })
-                    : t("game.runtime.tradeHelp.selected", {
-                        selected: selectedTradeCardIds.length
-                      })}
-                </p>
-              </div>
-              <div id="card-trade-list" className="card-trade-list">
-                {playerHand.map((card) => (
-                  <button
-                    key={card.id}
-                    type="button"
-                    className={`game-card-pill${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
-                    data-card-id={card.id}
-                    onClick={() => toggleTradeCard(card.id)}
-                  >
-                    <strong>{card.territoryId || card.id}</strong>
-                    <span>{cardTypeLabel(card)}</span>
-                  </button>
-                ))}
-              </div>
-              <p id="card-trade-success" className="action-help" hidden={!feedbackMessage}>
-                {feedbackMessage}
-              </p>
-              <p id="card-trade-error" className="action-help" hidden={!actionError}>
-                {actionError}
-              </p>
-              <button
-                id="card-trade-button"
-                type="button"
-                onClick={() => void handleTradeCards()}
-                disabled={!canTradeCards}
-              >
-                {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
-              </button>
             </div>
 
             <button

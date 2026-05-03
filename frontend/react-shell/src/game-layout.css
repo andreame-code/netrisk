@@ -429,6 +429,7 @@ h1 {
 .territory-node {
   --territory-node-size: calc(clamp(34px, 4.5vw, 42px) * var(--map-territory-node-scale, 1));
   position: absolute;
+  scroll-margin: 88px 96px 180px;
   width: var(--territory-node-size);
   height: var(--territory-node-size);
   min-width: var(--territory-node-size);
@@ -2595,16 +2596,16 @@ body[data-app-section="game"] .shared-bottom-shell {
 
 .game-map-first-page {
   --game-command-dock-bottom: 42px;
-  --game-command-dock-height: 96px;
-  --game-map-safe-bottom: 162px;
-  --game-map-safe-top: 0px;
+  --game-command-dock-height: 80px;
+  --game-map-safe-bottom: 136px;
+  --game-map-safe-top: 34px;
   min-height: calc(100vh - 64px);
   padding-bottom: 0;
 }
 
-.game-map-first-page:has(#card-trade-group:not([hidden])) {
-  --game-command-dock-height: 170px;
-  --game-map-safe-bottom: 236px;
+.game-map-first-page:has(.game-command-dock.is-expanded) {
+  --game-command-dock-height: 142px;
+  --game-map-safe-bottom: 198px;
 }
 
 .game-map-first-page .game-battlefield-layout {
@@ -3789,6 +3790,26 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   transform: translateX(-50%) !important;
 }
 
+.game-command-dock-toggle {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  min-width: 26px !important;
+  height: 26px;
+  min-height: 26px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(105, 135, 158, 0.5);
+  border-radius: 5px;
+  background: rgba(5, 18, 27, 0.82);
+  color: rgba(233, 242, 248, 0.86);
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
 .game-command-dock .rail-section {
   padding: 0;
   border: 0;
@@ -3804,7 +3825,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   position: relative;
   grid-column: 1;
   min-width: 0;
-  padding: 11px 14px;
+  padding: 8px 12px;
   border-right: 1px solid rgba(99, 126, 146, 0.32);
 }
 
@@ -3824,7 +3845,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 }
 
 .game-command-territory p {
-  margin: 5px 0 8px;
+  margin: 3px 0 5px;
   color: rgba(213, 226, 235, 0.8);
   font-size: 0.68rem;
   letter-spacing: 0.04em;
@@ -3845,8 +3866,8 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   bottom: 10px;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   border: 1px solid rgba(242, 171, 21, 0.24);
   background: radial-gradient(circle at 45% 35%, rgba(58, 86, 104, 0.78), rgba(11, 18, 24, 0.92));
@@ -3855,8 +3876,8 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 }
 
 .game-command-emblem svg {
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
 }
 
 .game-command-mode {
@@ -3865,7 +3886,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   grid-row: 1;
   z-index: 2;
   min-width: 0;
-  padding: 12px 14px 0;
+  padding: 10px 14px 0;
   pointer-events: none;
 }
 
@@ -3908,11 +3929,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   z-index: 1;
   align-self: stretch;
   display: grid;
-  grid-template-columns: minmax(290px, 1fr) 188px;
-  gap: 8px 12px;
+  grid-template-columns: minmax(280px, 1fr) 172px;
+  gap: 6px 10px;
   align-items: end;
   margin: 0 !important;
-  padding: 31px 12px 10px 14px;
+  padding: 28px 42px 8px 12px;
 }
 
 .game-command-dock .actions-section[hidden] {
@@ -3929,7 +3950,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 
 .game-command-dock .action-stack {
   grid-template-columns: minmax(128px, 1fr) 54px minmax(132px, auto);
-  gap: 6px;
+  gap: 5px;
 }
 
 .game-command-dock #attack-group .action-stack,
@@ -3938,77 +3959,15 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 }
 
 .game-command-dock #attack-group,
-.game-command-dock #fortify-group,
-.game-command-dock #card-trade-group {
+.game-command-dock #fortify-group {
   min-width: 0;
   overflow: hidden;
-}
-
-.game-command-dock #card-trade-group {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(240px, 1fr) minmax(122px, auto);
-  gap: 8px;
-  align-items: stretch;
-  overflow: visible;
-}
-
-.game-command-dock:has(#card-trade-group:not([hidden])),
-html[data-theme="war-table"]
-  .game-map-first-page
-  .game-command-dock:has(#card-trade-group:not([hidden])) {
-  --game-command-dock-height: 170px;
-  height: var(--game-command-dock-height) !important;
-  min-height: var(--game-command-dock-height) !important;
-  max-height: var(--game-command-dock-height) !important;
-}
-
-.game-command-dock:has(#card-trade-group:not([hidden])) .actions-section {
-  grid-template-columns: 1fr;
-  padding-top: 34px;
-}
-
-.game-command-dock #card-trade-group #card-trade-alert {
-  grid-column: 1;
-  margin: 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 0.74rem;
-  line-height: 1.25;
-}
-
-.game-command-dock #card-trade-group .action-meta-list {
-  grid-column: 1;
-  display: grid;
-  align-content: start;
-  gap: 2px;
-  min-width: 0;
-}
-
-.game-command-dock #card-trade-group .action-help {
-  margin: 0;
-  font-size: 0.68rem;
-  line-height: 1.25;
-}
-
-.game-command-dock #card-trade-group .card-trade-list {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  max-height: 88px;
-  overflow: auto;
-}
-
-.game-command-dock #card-trade-group #card-trade-button {
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: stretch;
 }
 
 .game-command-dock select,
 .game-command-dock input,
 .game-command-dock button {
-  min-height: 30px;
+  min-height: 28px;
   border-radius: 5px;
   font-size: 0.68rem;
   font-weight: 900;
@@ -4020,13 +3979,29 @@ html[data-theme="war-table"]
   font-weight: 950;
 }
 
+.game-command-dock.is-collapsed .game-command-secondary-action {
+  display: none;
+}
+
+.game-command-dock.is-collapsed .game-command-mode-stats,
+.game-command-dock.is-collapsed .game-command-owner {
+  display: none;
+}
+
+.game-command-dock.is-expanded .game-command-mode-stats {
+  display: flex;
+}
+
+.game-command-dock.is-expanded .actions-section {
+  padding-top: 46px;
+}
+
 .game-command-dock .action-row {
   gap: 6px;
 }
 
 .game-command-dock #reinforce-multi-button,
-.game-command-dock #conquest-button,
-.game-command-dock #card-trade-button {
+.game-command-dock #conquest-button {
   min-width: 96px;
   background: linear-gradient(180deg, #d99b2d, #9b650c);
   color: #fff8dc;
@@ -4057,6 +4032,59 @@ html[data-theme="war-table"]
   letter-spacing: 0.04em;
 }
 
+.game-cards-drawer.is-attention summary {
+  border-color: rgba(239, 83, 80, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(239, 83, 80, 0.18);
+}
+
+.game-card-trade-drawer-panel {
+  width: min(390px, calc(100vw - 28px));
+}
+
+.game-card-trade-drawer-panel #card-trade-group {
+  display: grid;
+  gap: 8px;
+}
+
+.game-card-trade-drawer-panel #card-trade-group[hidden] {
+  display: none;
+}
+
+.game-card-trade-drawer-panel #card-trade-alert {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.game-card-trade-drawer-panel #card-trade-group .action-meta-list {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.game-card-trade-drawer-panel #card-trade-group .action-help {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.game-card-trade-drawer-panel #card-trade-list {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  max-height: 172px;
+  overflow: auto;
+}
+
+.game-card-trade-drawer-panel #card-trade-button {
+  min-height: 32px;
+  background: linear-gradient(180deg, #d99b2d, #9b650c);
+  color: #fff8dc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    0 8px 18px rgba(0, 0, 0, 0.26);
+}
+
 @media (max-width: 1180px) {
   .game-command-dock,
   html[data-theme="war-table"] .game-map-first-page .game-command-dock {
@@ -4069,14 +4097,15 @@ html[data-theme="war-table"]
   .game-map-first-page,
   html[data-theme="war-table"] .game-map-first-page {
     --game-command-dock-bottom: 0px;
-    --game-command-dock-height: 136px;
-    --game-map-safe-bottom: 158px;
+    --game-command-dock-height: 122px;
+    --game-map-safe-bottom: 144px;
+    --game-map-safe-top: 12px;
   }
 
-  .game-map-first-page:has(#card-trade-group:not([hidden])),
-  html[data-theme="war-table"] .game-map-first-page:has(#card-trade-group:not([hidden])) {
-    --game-command-dock-height: 188px;
-    --game-map-safe-bottom: 212px;
+  .game-map-first-page:has(.game-command-dock.is-expanded),
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock.is-expanded) {
+    --game-command-dock-height: 218px;
+    --game-map-safe-bottom: 240px;
   }
 
   body[data-app-section="game"] .top-nav-bar,
@@ -4212,7 +4241,7 @@ html[data-theme="war-table"]
     width: auto !important;
     height: auto !important;
     min-height: var(--game-command-dock-height) !important;
-    max-height: min(38vh, 260px) !important;
+    max-height: min(40vh, 260px) !important;
     overflow: auto !important;
     border-right: 0 !important;
     border-bottom: 0 !important;
@@ -4245,7 +4274,7 @@ html[data-theme="war-table"]
     grid-column: 1;
     grid-row: auto;
     grid-template-columns: 1fr;
-    padding: 8px 10px 10px;
+    padding: 8px 44px 10px 10px;
   }
 
   .game-command-dock .action-stack,
@@ -4254,20 +4283,14 @@ html[data-theme="war-table"]
     grid-template-columns: 1fr;
   }
 
-  .game-command-dock #card-trade-group {
-    grid-template-columns: 1fr;
+  .game-command-dock.is-collapsed .actions-section {
+    max-height: 64px;
+    overflow: hidden;
   }
 
-  .game-command-dock #card-trade-group #card-trade-alert,
-  .game-command-dock #card-trade-group .action-meta-list,
-  .game-command-dock #card-trade-group .card-trade-list,
-  .game-command-dock #card-trade-group #card-trade-button {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .game-command-dock #card-trade-group .card-trade-list {
-    max-height: 132px;
+  .game-command-dock.is-expanded .actions-section {
+    max-height: none;
+    padding-top: 8px;
   }
 
   .game-command-dock .action-row {

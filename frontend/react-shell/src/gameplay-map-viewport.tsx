@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -52,6 +53,13 @@ type DragState = {
   didDrag: boolean;
 };
 
+type BoardFrame = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
 type GameplayMapViewportProps = {
   attackFromId: string;
   attackToId: string;
@@ -82,8 +90,8 @@ function clampTranslation(
     return { x: translateX, y: translateY };
   }
 
-  const overflowX = Math.max(0, (boardWidth * scale - surfaceWidth) / 2);
-  const overflowY = Math.max(0, (boardHeight * scale - surfaceHeight) / 2);
+  const overflowX = Math.max(0, (boardWidth * scale) / 2);
+  const overflowY = Math.max(0, (boardHeight * scale) / 2);
 
   return {
     x: clampNumber(translateX, -overflowX, overflowX),
@@ -190,6 +198,7 @@ export function GameplayMapViewport({
     width: number;
     height: number;
   } | null>(null);
+  const [renderedBoardFrame, setRenderedBoardFrame] = useState<BoardFrame | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({
     scale: MAP_VIEWPORT_MIN_SCALE,
     translateX: 0,
@@ -218,6 +227,37 @@ export function GameplayMapViewport({
       width: fittedBoardFrame?.width || 0,
       height: fittedBoardFrame?.height || 0
     };
+  }
+
+  function measureRenderedBoardFrame(): void {
+    const surface = surfaceRef.current;
+    const board = boardRef.current;
+    if (!surface || !board) {
+      return;
+    }
+
+    const surfaceRect = surface.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    const nextFrame = {
+      left: boardRect.left - surfaceRect.left,
+      top: boardRect.top - surfaceRect.top,
+      width: boardRect.width,
+      height: boardRect.height
+    };
+
+    setRenderedBoardFrame((currentFrame) => {
+      if (
+        currentFrame &&
+        Math.abs(currentFrame.left - nextFrame.left) < 0.5 &&
+        Math.abs(currentFrame.top - nextFrame.top) < 0.5 &&
+        Math.abs(currentFrame.width - nextFrame.width) < 0.5 &&
+        Math.abs(currentFrame.height - nextFrame.height) < 0.5
+      ) {
+        return currentFrame;
+      }
+
+      return nextFrame;
+    });
   }
 
   const handleSurfaceRef = useCallback((node: HTMLDivElement | null): void => {
@@ -296,10 +336,6 @@ export function GameplayMapViewport({
         return;
       }
 
-      if (viewportRef.current.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001) {
-        return;
-      }
-
       const deltaX = event.clientX - dragStateRef.current.startClientX;
       const deltaY = event.clientY - dragStateRef.current.startClientY;
       if (
@@ -355,6 +391,18 @@ export function GameplayMapViewport({
       )
     );
   }, [fittedBoardFrame?.height, fittedBoardFrame?.width, surfaceSize.height, surfaceSize.width]);
+
+  useLayoutEffect(() => {
+    measureRenderedBoardFrame();
+  }, [
+    fittedBoardFrame?.height,
+    fittedBoardFrame?.width,
+    surfaceSize.height,
+    surfaceSize.width,
+    viewport.scale,
+    viewport.translateX,
+    viewport.translateY
+  ]);
 
   useEffect(() => {
     const mapContainer = mapRef.current;
@@ -481,6 +529,16 @@ export function GameplayMapViewport({
         nextBoardSize.height
       );
       const clampedScale = clampNumber(nextScale, MAP_VIEWPORT_MIN_SCALE, MAP_VIEWPORT_MAX_SCALE);
+      if (clampedScale <= MAP_VIEWPORT_MIN_SCALE + 0.001 && nextScale <= normalizedViewport.scale) {
+        return {
+          ...normalizedViewport,
+          scale: MAP_VIEWPORT_MIN_SCALE,
+          translateX: 0,
+          translateY: 0,
+          isDragging: false
+        };
+      }
+
       if (Math.abs(clampedScale - normalizedViewport.scale) < 0.001) {
         return normalizedViewport;
       }
@@ -513,6 +571,21 @@ export function GameplayMapViewport({
   function zoomByStep(direction: 1 | -1): void {
     const surface = surfaceRef.current;
     if (!surface) {
+      return;
+    }
+
+    if (
+      direction === -1 &&
+      viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 &&
+      Math.hypot(viewport.translateX, viewport.translateY) > 1
+    ) {
+      setViewport((currentViewport) => ({
+        ...currentViewport,
+        scale: MAP_VIEWPORT_MIN_SCALE,
+        translateX: 0,
+        translateY: 0,
+        isDragging: false
+      }));
       return;
     }
 
@@ -566,8 +639,9 @@ export function GameplayMapViewport({
     onTerritorySelect(territoryId);
   }
 
+  const hasViewportOffset = Math.hypot(viewport.translateX, viewport.translateY) > 1;
   const connectionBadgeClassName =
-    viewport.scale > MAP_VIEWPORT_MIN_SCALE + 0.001
+    viewport.scale > MAP_VIEWPORT_MIN_SCALE + 0.001 || hasViewportOffset
       ? viewport.isDragging
         ? "map-board-surface is-zoomed is-dragging"
         : "map-board-surface is-zoomed"
@@ -601,10 +675,16 @@ export function GameplayMapViewport({
         }
       : {})
   } as CSSProperties;
-  const boardSize = currentBoardSize();
   const viewportSize = currentSurfaceSize();
-  const markerCenterX = viewportSize.width / 2 + viewport.translateX;
-  const markerCenterY = viewportSize.height / 2 + viewport.translateY;
+  const boardSize = currentBoardSize();
+  const markerBoardFrame =
+    renderedBoardFrame ||
+    ({
+      left: viewportSize.width / 2 + viewport.translateX - (boardSize.width * viewport.scale) / 2,
+      top: viewportSize.height / 2 + viewport.translateY - (boardSize.height * viewport.scale) / 2,
+      width: boardSize.width * viewport.scale,
+      height: boardSize.height * viewport.scale
+    } satisfies BoardFrame);
 
   return (
     <div
@@ -634,7 +714,7 @@ export function GameplayMapViewport({
             aria-label={t("game.map.zoomOut")}
             title={t("game.map.zoomOut")}
             onClick={() => zoomByStep(-1)}
-            disabled={viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001}
+            disabled={viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 && !hasViewportOffset}
           >
             <span aria-hidden="true">-</span>
           </button>
@@ -722,11 +802,9 @@ export function GameplayMapViewport({
               const isTarget = isAttackTarget || isFortifyTarget;
               const position = territoryPosition(territory);
               const markerLeft =
-                markerCenterX +
-                ((position?.x || 50) / 100 - 0.5) * boardSize.width * viewport.scale;
+                markerBoardFrame.left + ((position?.x || 50) / 100) * markerBoardFrame.width;
               const markerTop =
-                markerCenterY +
-                ((position?.y || 50) / 100 - 0.5) * boardSize.height * viewport.scale;
+                markerBoardFrame.top + ((position?.y || 50) / 100) * markerBoardFrame.height;
               const territoryStyle = {
                 left: `${markerLeft}px`,
                 top: `${markerTop}px`,

@@ -26,6 +26,28 @@ async function openWorldClassicGame(page, suffix) {
   return owner;
 }
 
+async function maxTerritoryMarkerError(page) {
+  return page.evaluate(() => {
+    const board = document.querySelector(".map-board");
+    const markers = Array.from(document.querySelectorAll("[data-territory-id]"));
+    if (!board || markers.length === 0) {
+      return null;
+    }
+
+    const boardRect = board.getBoundingClientRect();
+    return markers.reduce((maxError, marker) => {
+      const markerRect = marker.getBoundingClientRect();
+      const x = Number(marker.getAttribute("data-map-position-x") || "50");
+      const y = Number(marker.getAttribute("data-map-position-y") || "50");
+      const expectedX = boardRect.left + (boardRect.width * x) / 100;
+      const expectedY = boardRect.top + (boardRect.height * y) / 100;
+      const actualX = markerRect.left + markerRect.width / 2;
+      const actualY = markerRect.top + markerRect.height / 2;
+      return Math.max(maxError, Math.hypot(actualX - expectedX, actualY - expectedY));
+    }, 0);
+  });
+}
+
 test("map viewport supports zoom, drag, and returns to fit with zoom out", async ({ page }) => {
   test.slow();
   await page.setViewportSize({ width: 1440, height: 960 });
@@ -45,6 +67,67 @@ test("map viewport supports zoom, drag, and returns to fit with zoom out", async
   expect(initialViewport.translateX).toBeCloseTo(0, 1);
   expect(initialViewport.translateY).toBeCloseTo(0, 1);
   expect(initialTerritorySize).not.toBeNull();
+  await expect(zoomOutButton).toBeDisabled();
+  await expect.poll(() => maxTerritoryMarkerError(page)).toBeLessThanOrEqual(2.5);
+
+  const box = await surface.boundingBox();
+  if (!box) {
+    throw new Error("Map surface bounding box unavailable.");
+  }
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 900, box.y + box.height / 2 + 700, {
+    steps: 16
+  });
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => {
+      const x = Number(await surface.getAttribute("data-map-translate-x"));
+      const y = Number(await surface.getAttribute("data-map-translate-y"));
+      return Math.hypot(x, y);
+    })
+    .toBeGreaterThan(100);
+  await expect(zoomOutButton).toBeEnabled();
+
+  const centeredCorner = await page.evaluate(() => {
+    const stage = document.querySelector(".game-map-stage");
+    const surfaceElement = document.querySelector("[data-map-surface]");
+    const board = document.querySelector(".map-board");
+    if (!stage || !surfaceElement || !board) {
+      return null;
+    }
+
+    const stageStyles = window.getComputedStyle(stage);
+    const safeTop = Number.parseFloat(stageStyles.getPropertyValue("--game-map-safe-top") || "0");
+    const safeBottom = Number.parseFloat(
+      stageStyles.getPropertyValue("--game-map-safe-bottom") || "0"
+    );
+    const surfaceRect = surfaceElement.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    const safeCenterX = surfaceRect.left + surfaceRect.width / 2;
+    const safeCenterY = surfaceRect.top + safeTop + (surfaceRect.height - safeTop - safeBottom) / 2;
+
+    return {
+      xError: Math.abs(boardRect.left - safeCenterX),
+      yError: Math.abs(boardRect.top - safeCenterY)
+    };
+  });
+  expect(centeredCorner).not.toBeNull();
+  expect(centeredCorner.xError).toBeLessThanOrEqual(2.5);
+  expect(centeredCorner.yError).toBeLessThanOrEqual(2.5);
+
+  await zoomOutButton.click();
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(1, 2);
+  await expect
+    .poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-x"))))
+    .toBeLessThan(1);
+  await expect
+    .poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-y"))))
+    .toBeLessThan(1);
   await expect(zoomOutButton).toBeDisabled();
 
   await surface.hover();
@@ -72,11 +155,6 @@ test("map viewport supports zoom, drag, and returns to fit with zoom out", async
     y: Number(node.getAttribute("data-map-translate-y") || "0")
   }));
 
-  const box = await surface.boundingBox();
-  if (!box) {
-    throw new Error("Map surface bounding box unavailable.");
-  }
-
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 110, box.y + box.height / 2 + 70, { steps: 10 });
@@ -89,6 +167,7 @@ test("map viewport supports zoom, drag, and returns to fit with zoom out", async
       return Math.hypot(x - beforeDrag.x, y - beforeDrag.y);
     })
     .toBeGreaterThan(25);
+  await expect.poll(() => maxTerritoryMarkerError(page)).toBeLessThanOrEqual(2.5);
 
   await zoomOutButton.click();
   await expect

@@ -5,18 +5,55 @@ function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
     phase: "active",
     turnPhase: "reinforcement",
     players: [
-      { id: "p1", name: "alice", color: "#e85d04", connected: true, isAi: false, territoryCount: 3, eliminated: false, cardCount: playerHand.length },
-      { id: "p2", name: "CPU", color: "#0f4c5c", connected: true, isAi: true, territoryCount: 2, eliminated: false, cardCount: 0 }
+      {
+        id: "p1",
+        name: "alice",
+        color: "#e85d04",
+        connected: true,
+        isAi: false,
+        territoryCount: 3,
+        eliminated: false,
+        cardCount: playerHand.length
+      },
+      {
+        id: "p2",
+        name: "CPU",
+        color: "#0f4c5c",
+        connected: true,
+        isAi: true,
+        territoryCount: 2,
+        eliminated: false,
+        cardCount: 0
+      }
     ],
     map: [
-      { id: "aurora", name: "Aurora", neighbors: ["bastion"], continentId: "north", ownerId: "p1", armies: 3 },
-      { id: "bastion", name: "Bastion", neighbors: ["aurora"], continentId: "north", ownerId: "p2", armies: 1 }
+      {
+        id: "aurora",
+        name: "Aurora",
+        neighbors: ["bastion"],
+        continentId: "north",
+        ownerId: "p1",
+        armies: 3
+      },
+      {
+        id: "bastion",
+        name: "Bastion",
+        neighbors: ["aurora"],
+        continentId: "north",
+        ownerId: "p2",
+        armies: 1
+      }
     ],
     continents: [],
     currentPlayerId: "p1",
     reinforcementPool,
     winnerId: null,
-    gameConfig: { mapId: "classic-mini", mapName: "Classic Mini", totalPlayers: 2, players: [{ type: "human" }, { type: "ai" }] },
+    gameConfig: {
+      mapId: "classic-mini",
+      mapName: "Classic Mini",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
     log: ["Trade success test"],
     lastAction: null,
     pendingConquest: null,
@@ -38,7 +75,9 @@ function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
   };
 }
 
-test("game page shows inline success after a valid trade and clears it on reselection", async ({ page }) => {
+test("game page shows inline success after a valid trade and clears it on reselection", async ({
+  page
+}) => {
   let currentState = mockState({
     playerHand: [
       { id: "c1", type: "infantry", territoryId: "aurora" },
@@ -50,7 +89,9 @@ test("game page shows inline success after a valid trade and clears it on resele
   });
 
   await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
+    await route.fulfill({
+      json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } }
+    });
   });
 
   await page.route("**/api/games**", async (route) => {
@@ -76,7 +117,11 @@ test("game page shows inline success after a valid trade and clears it on resele
   });
 
   await page.route("**/api/events**", async (route) => {
-    await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
   });
 
   await page.route("**/api/cards/trade", async (route) => {
@@ -90,14 +135,15 @@ test("game page shows inline success after a valid trade and clears it on resele
 
   await page.goto("/game");
 
+  await page.locator(".game-cards-drawer summary").click();
   await page.locator('[data-card-id="c1"]').click();
   await page.locator('[data-card-id="c2"]').click();
   await page.locator('[data-card-id="c3"]').click();
-  await page.locator('#card-trade-button').click();
+  await page.locator("#card-trade-button").click();
 
-  await expect(page.locator('#card-trade-success')).toBeVisible();
-  await expect(page.locator('#card-trade-success')).toContainText('Set valido: +4 rinforzi.');
+  await expect(page.locator("#card-trade-success")).toBeVisible();
+  await expect(page.locator("#card-trade-success")).toContainText("Set valido: +4 rinforzi.");
 
   await page.locator('[data-card-id="c4"]').click();
-  await expect(page.locator('#card-trade-success')).toBeHidden();
+  await expect(page.locator("#card-trade-success")).toBeHidden();
 });

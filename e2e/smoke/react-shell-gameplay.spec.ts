@@ -167,7 +167,9 @@ test("react gameplay deep links support the core turn flow on the React route", 
     timeout: 15000
   });
 
-  const displayedOwnerName = (await ownerPage.getByTestId("current-player-indicator").innerText()).trim();
+  const displayedOwnerName = (
+    await ownerPage.getByTestId("current-player-indicator").innerText()
+  ).trim();
   const attackPair = await findAttackPair(ownerPage, displayedOwnerName);
   const reinforceButton = ownerPage.getByRole("button", { name: "Aggiungi" });
 
@@ -182,9 +184,7 @@ test("react gameplay deep links support the core turn flow on the React route", 
     })
     .toBe(0);
 
-  await expect(ownerPage.getByTestId("status-summary")).toContainText(
-    /Rinforzi disponibili:\s*0/i
-  );
+  await expect(ownerPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
   await ownerPage.locator("#attack-from").selectOption(attackPair.fromId);
   await ownerPage.locator("#attack-to").selectOption(attackPair.toId);
   await ownerPage.locator("#attack-dice").selectOption("1");
@@ -283,10 +283,10 @@ test("react gameplay handles the forced trade flow on the React route", async ({
 
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
   await expect(page.locator("#trade-alert")).toBeVisible();
+  await expect(page.locator('[data-testid="actions-panel"] #card-trade-list')).toHaveCount(0);
+  await page.locator(".game-cards-drawer summary").click();
   await expect(page.locator("#card-trade-group")).toBeVisible();
-  await expect(page.locator("#card-trade-alert")).toContainText(
-    /Devi scambiare subito 3 carte/i
-  );
+  await expect(page.locator("#card-trade-alert")).toContainText(/Devi scambiare subito 3 carte/i);
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(4);
   await expect(page.locator("#card-trade-button")).toBeDisabled();
 
@@ -300,9 +300,7 @@ test("react gameplay handles the forced trade flow on the React route", async ({
   await expect(page.getByTestId("status-summary")).toContainText("7");
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);
   await expect(page.locator("#card-trade-help")).toContainText("0/3 carte selezionate");
-  await expect(page.getByTestId("react-shell-game-feedback")).toContainText(
-    /Set valido|Valid set/
-  );
+  await expect(page.getByTestId("react-shell-game-feedback")).toContainText(/Set valido|Valid set/);
 });
 
 test("react gameplay ignores stale cached player ids from a different game", async ({ page }) => {
@@ -439,7 +437,9 @@ test("react gameplay ignores stale cached player ids from a different game", asy
   await page.goto("/react/game/g-fresh");
 
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
-  await expect(page.getByRole("button", { name: /join|entra nella lobby|unisciti/i })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /join|entra nella lobby|unisciti/i })
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Avvia partita" })).toBeDisabled();
 
   await page.getByRole("button", { name: /join|entra nella lobby|unisciti/i }).click();
@@ -623,7 +623,8 @@ test("react gameplay recovers from VERSION_CONFLICT by refreshing the snapshot a
         status: 409,
         contentType: "application/json",
         body: JSON.stringify({
-          error: "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
+          error:
+            "La partita e stata aggiornata da un'altra richiesta. Ricarica lo stato piu recente.",
           code: "VERSION_CONFLICT",
           currentVersion: 5,
           state: { ...currentState }
@@ -676,18 +677,14 @@ test("react gameplay recovers from VERSION_CONFLICT by refreshing the snapshot a
   await page.goto("/react/game/g-conflict");
 
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
-  await expect(page.getByTestId("status-summary")).toContainText(
-    /Rinforzi disponibili:\s*1/i
-  );
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*1/i);
 
   await page.getByRole("button", { name: "Aggiungi" }).click();
 
   await expect(page.getByTestId("react-shell-game-feedback")).toContainText(
     /Ho ricaricato lo stato piu recente|reloaded the latest state/i
   );
-  await expect(page.getByTestId("status-summary")).toContainText(
-    /Rinforzi disponibili:\s*0/i
-  );
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i);
   await expect(page.locator("#attack-group")).toBeVisible();
 
   await page.locator("#attack-to").selectOption("bastion");
