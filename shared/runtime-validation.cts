@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const NETRISK_MODULE_CAPABILITY_KIND_VALUES = [
+export const NETRISK_MODULE_CAPABILITY_KIND_VALUES = [
   "card-rule-set",
   "content-pack",
   "dice-rule-set",
@@ -13,7 +13,7 @@ const NETRISK_MODULE_CAPABILITY_KIND_VALUES = [
   "ui-slot",
   "victory-rule-set"
 ] as const;
-const NETRISK_UI_SLOT_ID_VALUES = [
+export const NETRISK_UI_SLOT_ID_VALUES = [
   "admin-modules-page",
   "game.sidebar",
   "lobby.page",

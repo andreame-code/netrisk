@@ -4,32 +4,18 @@ import {
   moduleApiVersion,
   saveGameSchemaVersion
 } from "./version-manifest.cjs";
+import {
+  NETRISK_MODULE_CAPABILITY_KIND_VALUES,
+  NETRISK_UI_SLOT_ID_VALUES
+} from "./runtime-validation.cjs";
 
 export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
 export const NETRISK_MODULE_SCHEMA_VERSION = 1;
 export const CORE_MODULE_ID = "core.base";
 export const CORE_MODULE_VERSION = "1.0.0";
-export const NETRISK_MODULE_CAPABILITY_KINDS = [
-  "card-rule-set",
-  "content-pack",
-  "dice-rule-set",
-  "fortify-rule-set",
-  "gameplay-hook",
-  "map",
-  "player-piece-set",
-  "reinforcement-rule-set",
-  "site-theme",
-  "ui-slot",
-  "victory-rule-set"
-] as const;
-export const NETRISK_UI_SLOT_IDS = [
-  "admin-modules-page",
-  "game.sidebar",
-  "lobby.page",
-  "new-game.sidebar",
-  "top-nav-bar"
-] as const;
+export const NETRISK_MODULE_CAPABILITY_KINDS = NETRISK_MODULE_CAPABILITY_KIND_VALUES;
+export const NETRISK_UI_SLOT_IDS = NETRISK_UI_SLOT_ID_VALUES;
 
 import type { ContentPackSummary } from "./content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
