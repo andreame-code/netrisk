@@ -4,7 +4,10 @@ import {
   moduleApiVersion,
   saveGameSchemaVersion
 } from "./version-manifest.cjs";
-import { NETRISK_MODULE_CAPABILITY_KIND_VALUES, NETRISK_UI_SLOT_ID_VALUES } from "./runtime-validation.cjs";
+import {
+  NETRISK_MODULE_CAPABILITY_KIND_VALUES,
+  NETRISK_UI_SLOT_ID_VALUES
+} from "./runtime-validation.cjs";
 
 export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
