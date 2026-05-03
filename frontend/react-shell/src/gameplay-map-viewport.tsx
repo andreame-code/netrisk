@@ -16,6 +16,8 @@ import type {
 
 import { t } from "@frontend-i18n";
 
+import { WarTableIcon } from "@react-shell/war-table-icons";
+
 const MAP_VIEWPORT_MIN_SCALE = 1;
 const MAP_VIEWPORT_MAX_SCALE = 3;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
@@ -720,6 +722,23 @@ export function GameplayMapViewport({
             disabled={viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 && !hasViewportOffset}
           >
             <span aria-hidden="true">-</span>
+          </button>
+          <button
+            type="button"
+            className="map-control-button"
+            data-map-control="focus"
+            aria-label={t("game.map.reset")}
+            title={t("game.map.reset")}
+            onClick={() =>
+              setViewport({
+                scale: MAP_VIEWPORT_MIN_SCALE,
+                translateX: 0,
+                translateY: 0,
+                isDragging: false
+              })
+            }
+          >
+            <WarTableIcon name="objective" />
           </button>
         </div>
 

@@ -4,6 +4,951 @@
   padding: 8px 0 16px;
 }
 
+/* Reference-shell game UI: scoped late overrides for the attached NetRisk game-screen mockups. */
+.game-map-first-page {
+  --nr-bg: #020914;
+  --nr-panel: rgba(5, 18, 29, 0.92);
+  --nr-panel-strong: rgba(3, 13, 22, 0.97);
+  --nr-line: rgba(132, 159, 178, 0.28);
+  --nr-line-strong: rgba(178, 198, 211, 0.45);
+  --nr-gold: #f6b515;
+  --nr-gold-strong: #d98909;
+  --nr-red: #9f2627;
+  --nr-red-strong: #d44343;
+  --nr-text: #f5f8fb;
+  --nr-muted: rgba(222, 233, 242, 0.7);
+  --nr-command-dock-height: 104px;
+  min-height: calc(100vh - 72px) !important;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(20, 72, 98, 0.28), transparent 34%),
+    linear-gradient(180deg, #020610, #03111e 58%, #020712) !important;
+  color: var(--nr-text);
+}
+
+.game-map-first-page .game-battlefield-layout,
+.game-map-first-page .game-main-column {
+  display: block !important;
+  min-height: calc(100vh - 72px) !important;
+}
+
+.game-map-first-page .game-map-stage {
+  min-height: calc(100vh - 72px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(1, 9, 18, 0.98),
+      rgba(4, 15, 27, 0.2) 28%,
+      rgba(4, 15, 27, 0.12) 72%,
+      rgba(1, 9, 18, 0.98)
+    ),
+    linear-gradient(180deg, rgba(2, 8, 16, 0.96), rgba(4, 18, 31, 0.84)) !important;
+  --game-map-safe-top: 28px;
+  --game-map-safe-bottom: 150px;
+}
+
+.game-map-first-page .game-map-stage .map,
+.game-map-first-page .game-map-stage .map-viewport,
+.game-map-first-page .game-map-stage .map-board-surface {
+  min-height: 0 !important;
+}
+
+.game-map-first-page .game-map-stage .map-board {
+  border: 1px solid rgba(128, 154, 174, 0.5) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+.game-map-first-page .map-controls {
+  top: 32px !important;
+  right: 30px !important;
+  gap: 10px !important;
+}
+
+.game-map-first-page .map-control-button {
+  width: 58px !important;
+  min-width: 58px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  border: 1px solid rgba(154, 177, 192, 0.42) !important;
+  border-radius: 7px !important;
+  background: rgba(4, 15, 25, 0.88) !important;
+  color: #ffe1a0 !important;
+  font-size: 1.25rem !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.game-map-first-page .map-control-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.game-floating-hud,
+html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
+  top: 28px !important;
+  left: 24px !important;
+  width: 330px !important;
+  padding: 18px 18px 16px !important;
+  border: 1px solid rgba(246, 181, 21, 0.82) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(5, 21, 34, 0.95), rgba(3, 13, 23, 0.95)) !important;
+  color: var(--nr-text) !important;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  pointer-events: none !important;
+}
+
+.game-floating-hud .game-hud-heading {
+  margin: 0 0 14px !important;
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid rgba(151, 178, 194, 0.24) !important;
+}
+
+.game-floating-hud h1 {
+  color: var(--nr-gold) !important;
+  font-size: 1.02rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+}
+
+.game-floating-hud .badge[data-testid="phase-indicator"] {
+  display: none !important;
+}
+
+.game-hud-summary {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 0 !important;
+}
+
+.game-hud-stat {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+.game-hud-stat + .game-hud-stat {
+  padding-left: 14px;
+  border-left: 1px solid rgba(151, 178, 194, 0.24);
+}
+
+.game-hud-label {
+  color: var(--nr-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+.game-hud-summary strong {
+  color: var(--nr-text) !important;
+  font-size: 1.02rem !important;
+  font-weight: 950 !important;
+}
+
+.game-hud-icon,
+.game-hud-avatar {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 999px !important;
+}
+
+.game-hud-icon {
+  background: radial-gradient(circle at 35% 25%, #9657ff, #341073 72%) !important;
+}
+
+.game-hud-avatar {
+  background: radial-gradient(circle at 38% 26%, #f6c46e, #8b4c13 68%) !important;
+}
+
+.game-floating-hud .map-trade-alert {
+  margin-top: 16px !important;
+  padding: 12px 14px !important;
+  border: 1px solid rgba(255, 93, 93, 0.72) !important;
+  border-radius: 6px !important;
+  background: rgba(112, 24, 27, 0.72) !important;
+  color: #ffe0dc !important;
+}
+
+.game-floating-hud .action-help.is-error {
+  color: #ff9a92 !important;
+}
+
+.game-action-rail {
+  position: absolute;
+  left: 24px;
+  top: 300px;
+  z-index: 34;
+  display: grid;
+  gap: 10px;
+  width: 190px;
+}
+
+.game-action-rail-button,
+.game-activity-trigger {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 14px 0 0;
+  border: 1px solid rgba(145, 168, 184, 0.42);
+  border-radius: 7px;
+  background: rgba(5, 17, 28, 0.88);
+  color: #e9f1f7;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.game-action-rail-button > summary {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: center;
+  width: 100%;
+  min-height: 58px;
+  margin: 0;
+  padding: 0 14px 0 0;
+  list-style: none;
+  cursor: pointer;
+}
+
+.game-action-rail-button > summary::-webkit-details-marker {
+  display: none;
+}
+
+.game-action-rail-button.is-active,
+.game-activity-trigger.is-active {
+  border-color: rgba(246, 181, 21, 0.95);
+  color: var(--nr-gold);
+  box-shadow:
+    0 0 0 1px rgba(246, 181, 21, 0.28),
+    0 18px 36px rgba(0, 0, 0, 0.34),
+    inset 4px 0 0 var(--nr-gold);
+}
+
+.game-action-rail-icon {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  border-right: 1px solid rgba(151, 178, 194, 0.24);
+  color: #ffd789;
+}
+
+.game-action-rail-icon svg,
+.game-activity-trigger svg {
+  width: 22px;
+  height: 22px;
+}
+
+.game-action-badge {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  min-width: 31px;
+  height: 31px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: #de484e;
+  color: #fff;
+  transform: translateY(-50%);
+}
+
+.game-modern-drawer {
+  position: absolute;
+  z-index: 36;
+  width: 350px;
+  max-height: calc(100vh - 128px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(157, 180, 195, 0.55);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(6, 20, 32, 0.97), rgba(3, 12, 21, 0.97));
+  color: var(--nr-text);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.52);
+}
+
+.game-modern-drawer-left {
+  left: 230px;
+  top: 24px;
+}
+
+.game-modern-drawer-right {
+  right: 22px;
+  top: 24px;
+}
+
+.game-modern-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(151, 178, 194, 0.26);
+}
+
+.game-modern-drawer-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.game-modern-drawer-header p {
+  margin: 6px 0 0;
+  color: var(--nr-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.game-drawer-close {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #f7efe2;
+  font-size: 1.1rem;
+}
+
+.game-players-table,
+.game-info-modern-list,
+.game-card-exchange-box,
+.game-enabled-modules {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.game-players-head,
+.game-player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 74px 82px;
+  gap: 10px;
+  align-items: center;
+}
+
+.game-players-head {
+  color: var(--nr-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.game-player-row {
+  padding: 14px 0;
+  border-top: 1px solid rgba(151, 178, 194, 0.22);
+}
+
+.game-player-identity {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.game-player-color {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--player-color);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.game-player-identity strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.game-player-identity em {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #234f96;
+  color: #fff;
+  font-size: 0.65rem;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.game-player-identity small,
+.game-info-modern-list small,
+.game-card-exchange-box p,
+.game-exchange-bonus small,
+.game-exchange-bonus p {
+  color: var(--nr-muted);
+}
+
+.game-player-identity small.is-current {
+  color: var(--nr-gold);
+}
+
+.game-drawer-callout {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid rgba(151, 178, 194, 0.24);
+  border-radius: 7px;
+  background: rgba(11, 28, 43, 0.72);
+}
+
+.game-drawer-callout svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: #ffd789;
+}
+
+.game-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(116px, 1fr));
+  gap: 12px;
+}
+
+.game-card-grid-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.game-card-tile {
+  position: relative;
+  display: grid;
+  align-content: end;
+  min-height: 116px;
+  padding: 12px;
+  border: 1px solid rgba(156, 184, 204, 0.45);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(123, 76, 222, 0.35), transparent 42%),
+    linear-gradient(180deg, rgba(22, 20, 43, 0.94), rgba(8, 12, 22, 0.94));
+  color: #fff;
+  text-align: left;
+}
+
+.game-card-tile.is-selected {
+  border-color: var(--nr-gold);
+  box-shadow:
+    0 0 0 1px rgba(246, 181, 21, 0.4),
+    0 0 26px rgba(246, 181, 21, 0.18);
+}
+
+.game-card-symbol {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--nr-gold);
+  font-weight: 950;
+}
+
+.game-card-tone-artillery {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(234, 112, 28, 0.42), transparent 44%),
+    linear-gradient(180deg, rgba(48, 26, 14, 0.95), rgba(13, 12, 16, 0.95));
+}
+
+.game-card-tone-cavalry {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(124, 185, 75, 0.42), transparent 44%),
+    linear-gradient(180deg, rgba(21, 44, 20, 0.95), rgba(10, 15, 12, 0.95));
+}
+
+.game-card-tone-wild {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(40, 164, 209, 0.5), transparent 44%),
+    linear-gradient(180deg, rgba(8, 47, 62, 0.95), rgba(8, 14, 20, 0.95));
+}
+
+.game-card-check {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  color: var(--nr-gold);
+  font-size: 0.62rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.game-card-exchange-box {
+  padding: 14px;
+  border: 1px dashed rgba(151, 178, 194, 0.42);
+  border-radius: 7px;
+}
+
+.game-card-exchange-box h3,
+.game-enabled-modules h3 {
+  margin: 0;
+  color: var(--nr-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.game-card-exchange-box button,
+.game-log-clear-button,
+.game-trade-actions #card-trade-button {
+  min-height: 44px;
+  border-color: rgba(246, 181, 21, 0.82);
+  background: linear-gradient(180deg, #d99b2d, #9b650c);
+  color: #fff8dc;
+}
+
+.game-info-modern-list > div {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(151, 178, 194, 0.2);
+}
+
+.game-info-modern-list span,
+.game-enabled-modules span {
+  color: var(--nr-gold);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.game-enabled-modules {
+  grid-template-columns: 1fr;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(151, 178, 194, 0.2);
+}
+
+.game-objective-chip {
+  position: absolute;
+  left: 24px;
+  bottom: 134px;
+  z-index: 32;
+  display: flex;
+  gap: 10px;
+  width: 260px;
+  padding: 12px;
+  border: 1px solid rgba(246, 181, 21, 0.54);
+  border-radius: 7px;
+  background: rgba(5, 18, 29, 0.92);
+}
+
+.game-objective-chip svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: var(--nr-gold);
+}
+
+.game-objective-chip small {
+  display: block;
+  color: var(--nr-muted);
+}
+
+.game-right-utility-rail {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  z-index: 34;
+  transform: translateY(-10%);
+}
+
+.game-activity-trigger {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  width: 84px;
+  min-height: 108px;
+  padding: 12px;
+  color: #fff0d0;
+}
+
+.game-activity-trigger span {
+  max-width: 64px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.game-log-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin: 16px 0;
+}
+
+.game-log-tabs button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid rgba(151, 178, 194, 0.32);
+  border-radius: 5px;
+  background: rgba(4, 14, 24, 0.86);
+  color: #dfeaf2;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.game-log-tabs button.is-active {
+  border-color: var(--nr-gold);
+  color: var(--nr-gold);
+}
+
+.game-activity-list {
+  display: grid;
+  gap: 0;
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+}
+
+.game-activity-list .game-log-entry {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(151, 178, 194, 0.2);
+}
+
+.game-log-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  background: rgba(120, 68, 210, 0.32);
+}
+
+.game-log-icon-combat {
+  background: rgba(197, 83, 16, 0.34);
+}
+
+.game-log-icon-cards {
+  background: rgba(194, 145, 4, 0.34);
+}
+
+.game-log-entry small {
+  display: block;
+  color: var(--nr-muted);
+}
+
+.game-log-entry time {
+  color: var(--nr-muted);
+  font-size: 0.68rem;
+}
+
+.game-log-clear-button {
+  width: 100%;
+  margin-top: 18px;
+  background: rgba(4, 14, 24, 0.86);
+  color: #dfeaf2;
+}
+
+.game-command-dock,
+html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+  position: fixed !important;
+  right: auto !important;
+  bottom: 26px !important;
+  left: 50% !important;
+  z-index: 35 !important;
+  width: min(1320px, calc(100vw - 300px)) !important;
+  min-height: var(--nr-command-dock-height) !important;
+  max-height: min(36vh, 300px) !important;
+  padding: 14px 18px !important;
+  overflow: visible !important;
+  border: 1px solid rgba(246, 181, 21, 0.86) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(5, 18, 29, 0.96), rgba(3, 10, 17, 0.96)) !important;
+  color: var(--nr-text) !important;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  transform: translateX(-50%) !important;
+}
+
+.game-command-dock-title {
+  position: absolute;
+  left: 18px;
+  top: -28px;
+  color: var(--nr-gold);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.game-command-dock .actions-section,
+.game-command-dock .game-lobby-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  margin: 0;
+}
+
+.game-command-dock .action-group {
+  min-width: 0;
+}
+
+.game-command-dock .compact-group > label,
+.game-dock-field-label,
+.game-dock-select-label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--nr-gold);
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.game-command-dock .action-stack {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.7fr) minmax(260px, auto);
+  gap: 16px;
+  align-items: end;
+}
+
+.game-command-dock #attack-group .action-stack,
+.game-command-dock #fortify-group .action-stack {
+  grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 1fr) minmax(150px, 0.55fr) minmax(
+      220px,
+      auto
+    );
+}
+
+.game-command-dock select,
+.game-command-dock input {
+  min-height: 54px;
+  border: 1px solid rgba(151, 178, 194, 0.35);
+  border-radius: 7px;
+  background: rgba(3, 13, 22, 0.88);
+  color: var(--nr-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.game-command-dock button {
+  min-height: 54px;
+  border-radius: 7px;
+  font-size: 0.84rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.game-command-dock #attack-button,
+.game-command-dock #reinforce-multi-button,
+.game-command-dock #fortify-button,
+.game-command-dock #conquest-button {
+  min-width: 220px;
+  border-color: rgba(246, 181, 21, 0.88);
+  background: linear-gradient(180deg, #d99b2d, #9b650c);
+  color: #fff8dc;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.game-command-dock #end-turn-button {
+  min-width: 220px;
+  border-color: rgba(228, 68, 68, 0.88);
+  background: linear-gradient(180deg, #b93b3b, #7a1719);
+  color: #fff3f1;
+}
+
+.game-command-secondary-action {
+  border-color: rgba(151, 178, 194, 0.34) !important;
+  background: rgba(4, 14, 24, 0.82) !important;
+  color: #e8f1f7 !important;
+}
+
+.game-number-stepper {
+  display: grid;
+  grid-template-columns: 48px minmax(72px, 1fr) 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+.game-number-stepper input {
+  text-align: center;
+}
+
+.game-mandatory-trade-dock {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) minmax(360px, 0.9fr) 170px;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.game-mandatory-trade-dock .game-card-grid {
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+}
+
+.game-mandatory-trade-dock .game-card-tile {
+  min-height: 124px;
+}
+
+.game-trade-hand,
+.game-trade-selection {
+  min-width: 0;
+}
+
+.game-selected-card-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 124px;
+}
+
+.game-trade-actions {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.game-exchange-bonus {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding-left: 18px;
+  border-left: 1px solid rgba(151, 178, 194, 0.24);
+  text-align: center;
+}
+
+.game-exchange-bonus span {
+  color: var(--nr-gold);
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.game-exchange-bonus strong {
+  color: var(--nr-gold);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+@media (max-width: 1180px) {
+  .game-action-rail {
+    left: 14px;
+    width: 64px;
+  }
+
+  .game-action-rail-button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 64px;
+    padding: 8px;
+  }
+
+  .game-action-rail-button > span:not(.game-action-rail-icon):not(.game-action-badge) {
+    font-size: 0.56rem;
+    text-align: center;
+  }
+
+  .game-action-rail-icon {
+    border-right: 0;
+  }
+
+  .game-modern-drawer-left {
+    left: 88px;
+  }
+
+  .game-command-dock,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+    width: min(980px, calc(100vw - 120px)) !important;
+  }
+
+  .game-command-dock .action-stack,
+  .game-command-dock #attack-group .action-stack,
+  .game-command-dock #fortify-group .action-stack,
+  .game-mandatory-trade-dock {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .game-map-first-page .game-map-stage {
+    --game-map-safe-bottom: 240px;
+  }
+
+  .game-floating-hud {
+    left: 10px !important;
+    right: 10px !important;
+    top: auto !important;
+    bottom: 154px !important;
+    width: auto !important;
+  }
+
+  .game-action-rail {
+    top: auto;
+    bottom: 260px;
+    left: 10px;
+    grid-template-columns: repeat(3, 52px);
+    width: auto;
+  }
+
+  .game-modern-drawer-left,
+  .game-modern-drawer-right {
+    left: 10px;
+    right: 10px;
+    top: 62px;
+    width: auto;
+  }
+
+  .game-right-utility-rail {
+    right: 10px;
+    top: auto;
+    bottom: 260px;
+    transform: none;
+  }
+
+  .game-activity-trigger {
+    width: 54px;
+    min-height: 54px;
+  }
+
+  .game-activity-trigger span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .game-command-dock,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    max-height: 46vh !important;
+    overflow: auto !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: 12px 12px 0 0 !important;
+    transform: none !important;
+  }
+
+  .game-command-dock .actions-section,
+  .game-command-dock .game-lobby-controls,
+  .game-trade-actions,
+  .game-selected-card-row,
+  .game-card-grid,
+  .game-card-grid-compact {
+    grid-template-columns: 1fr;
+  }
+}
+
 .command-bar {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -523,6 +1468,20 @@ h1 {
   display: grid;
   gap: 10px;
   min-width: 0;
+}
+
+.game-combat-result-panel {
+  position: absolute;
+  left: 28px;
+  top: 276px;
+  z-index: 6;
+  width: min(330px, calc(100vw - 56px));
+  padding: 16px;
+  border: 1px solid rgba(242, 171, 21, 0.44);
+  border-radius: 8px;
+  background: rgba(4, 17, 28, 0.9);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
+  pointer-events: none;
 }
 
 .combat-result-section .section-title-row {
@@ -4295,5 +5254,197 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 
   .game-command-dock .action-row {
     flex-wrap: nowrap;
+  }
+}
+
+/* Final cascade layer for the reference game shell. */
+.game-map-first-page .game-map-stage {
+  --game-map-safe-top: 28px !important;
+  --game-map-safe-bottom: 150px !important;
+  min-height: calc(100vh - 72px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(1, 9, 18, 0.98),
+      rgba(4, 15, 27, 0.2) 28%,
+      rgba(4, 15, 27, 0.12) 72%,
+      rgba(1, 9, 18, 0.98)
+    ),
+    linear-gradient(180deg, rgba(2, 8, 16, 0.96), rgba(4, 18, 31, 0.84)) !important;
+}
+
+.game-map-first-page .map-controls,
+html[data-theme="war-table"] .game-map-first-page .map-controls {
+  top: 32px !important;
+  right: 30px !important;
+  bottom: auto !important;
+  gap: 10px !important;
+}
+
+.game-map-first-page .map-control-button,
+html[data-theme="war-table"] .game-map-first-page .map-control-button {
+  width: 58px !important;
+  min-width: 58px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  border: 1px solid rgba(154, 177, 192, 0.42) !important;
+  border-radius: 7px !important;
+  background: rgba(4, 15, 25, 0.88) !important;
+  color: #ffe1a0 !important;
+  font-size: 1.25rem !important;
+}
+
+.game-floating-hud,
+html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
+  top: 28px !important;
+  left: 24px !important;
+  bottom: auto !important;
+  width: 330px !important;
+  padding: 18px 18px 16px !important;
+  border: 1px solid rgba(246, 181, 21, 0.82) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(5, 21, 34, 0.95), rgba(3, 13, 23, 0.95)) !important;
+  pointer-events: none !important;
+}
+
+.game-command-dock,
+html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+  position: fixed !important;
+  right: auto !important;
+  bottom: 26px !important;
+  left: 50% !important;
+  display: block !important;
+  width: min(1320px, calc(100vw - 300px)) !important;
+  min-height: var(--nr-command-dock-height, 104px) !important;
+  max-height: min(36vh, 300px) !important;
+  padding: 14px 18px !important;
+  overflow: visible !important;
+  border: 1px solid rgba(246, 181, 21, 0.86) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(5, 18, 29, 0.96), rgba(3, 10, 17, 0.96)) !important;
+  color: #f5f8fb !important;
+  transform: translateX(-50%) !important;
+}
+
+.game-command-dock .actions-section,
+.game-command-dock .game-lobby-controls {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 18px !important;
+  align-items: end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.game-command-dock .compact-group > label,
+.game-command-dock .game-dock-select-label {
+  position: static !important;
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  margin-bottom: 7px !important;
+  overflow: visible !important;
+  clip: auto !important;
+  color: #f6b515 !important;
+  font-size: 0.7rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+.game-command-dock .game-dock-select-label {
+  margin-bottom: 0 !important;
+}
+
+.game-command-dock #attack-group,
+.game-command-dock #fortify-group {
+  overflow: visible !important;
+}
+
+.game-command-dock .action-stack,
+.game-command-dock #attack-group .action-stack,
+.game-command-dock #fortify-group .action-stack {
+  display: grid !important;
+  grid-template-columns: minmax(170px, 1.15fr) minmax(160px, 1fr) minmax(110px, 0.55fr) minmax(
+      180px,
+      auto
+    ) !important;
+  gap: 16px !important;
+  align-items: end !important;
+}
+
+.game-command-dock #reinforce-group .action-stack,
+.game-command-dock #conquest-group .action-stack {
+  grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 0.7fr) minmax(280px, auto) !important;
+}
+
+.game-command-dock select,
+.game-command-dock input {
+  min-height: 54px !important;
+  border: 1px solid rgba(151, 178, 194, 0.35) !important;
+  border-radius: 7px !important;
+  background: rgba(3, 13, 22, 0.88) !important;
+  color: #f5f8fb !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.game-command-dock button {
+  min-height: 54px !important;
+  border-radius: 7px !important;
+  font-size: 0.84rem !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+.game-command-dock #attack-button,
+.game-command-dock #reinforce-multi-button,
+.game-command-dock #fortify-button,
+.game-command-dock #conquest-button,
+.game-command-dock #card-trade-button {
+  min-width: 220px !important;
+  border-color: rgba(246, 181, 21, 0.88) !important;
+  background: linear-gradient(180deg, #d99b2d, #9b650c) !important;
+  color: #fff8dc !important;
+}
+
+.game-command-dock #end-turn-button {
+  grid-column: auto !important;
+  min-width: 190px !important;
+  border-color: rgba(228, 68, 68, 0.88) !important;
+  background: linear-gradient(180deg, #b93b3b, #7a1719) !important;
+  color: #fff3f1 !important;
+}
+
+@media (max-width: 760px) {
+  .game-map-first-page .game-map-stage {
+    --game-map-safe-bottom: 240px !important;
+  }
+
+  .game-command-dock,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: auto !important;
+    max-height: 46vh !important;
+    overflow: auto !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: 12px 12px 0 0 !important;
+    transform: none !important;
+  }
+
+  .game-command-dock .actions-section,
+  .game-command-dock .game-lobby-controls,
+  .game-command-dock .action-stack,
+  .game-command-dock #attack-group .action-stack,
+  .game-command-dock #fortify-group .action-stack,
+  .game-command-dock #reinforce-group .action-stack,
+  .game-command-dock #conquest-group .action-stack {
+    grid-template-columns: 1fr !important;
   }
 }
