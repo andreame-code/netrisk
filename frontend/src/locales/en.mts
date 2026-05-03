@@ -3,6 +3,7 @@ export const en = Object.freeze({
   "locale.label": "English",
   "locale.label.it": "Italiano",
   "locale.label.en": "English",
+  "locale.label.de": "Deutsch",
   "app.brand": "NetRisk",
   "app.title": "Frontline Dominion",
   "common.notAvailable": "n/a",
