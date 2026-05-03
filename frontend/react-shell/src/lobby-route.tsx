@@ -24,7 +24,7 @@ import { buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
-import { WarTableIcon } from "@react-shell/war-table-icons";
+import { WarTableIcon, type WarTableIconName } from "@react-shell/war-table-icons";
 
 const VISIBLE_GAMES_BATCH_SIZE = 15;
 
@@ -165,6 +165,25 @@ function warTableGameIconClass(game: GameSummary): string {
   return warTableStatusClass(game);
 }
 
+function isWarTableCurrentPlayerTurn(game: GameSummary): boolean {
+  const currentPlayerId = game.phase === "active" ? game.currentPlayerId || null : null;
+  const storedPlayerId = readCurrentPlayerId(game.id);
+
+  return Boolean(currentPlayerId && storedPlayerId === currentPlayerId);
+}
+
+function warTableGameIconName(game: GameSummary): WarTableIconName {
+  if (game.phase === "finished") {
+    return "crosshair";
+  }
+
+  if (game.phase === "active") {
+    return isWarTableCurrentPlayerTurn(game) ? "objective" : "medal";
+  }
+
+  return "users";
+}
+
 function formatWarTableActivity(value: string | null | undefined): string {
   if (!value) {
     return t("common.notAvailable");
@@ -246,10 +265,7 @@ function matchesWarTableFilter(game: GameSummary, filter: WarTableLobbyFilter): 
   }
 
   if (filter === "my-turn") {
-    const currentPlayerId = game.phase === "active" ? game.currentPlayerId || null : null;
-    const storedPlayerId = readCurrentPlayerId(game.id);
-
-    return Boolean(currentPlayerId && storedPlayerId === currentPlayerId);
+    return isWarTableCurrentPlayerTurn(game);
   }
 
   return game.phase === filter;
@@ -480,9 +496,7 @@ export function LobbyRoute() {
     activeGame?.name || selectedGame?.name || t("warTable.lobby.defaultCampaignName");
   const campaignProgress = warTableCampaignProgress(activeGame || selectedGame);
   const isWarTableMyTurn =
-    activeGame?.phase === "active" && activeGame.currentPlayerId
-      ? readCurrentPlayerId(activeGame.id) === activeGame.currentPlayerId
-      : false;
+    activeGame?.phase === "active" ? isWarTableCurrentPlayerTurn(activeGame) : false;
   const loadMoreMessage = !games.length
     ? ""
     : canLoadMoreGames
@@ -735,9 +749,10 @@ export function LobbyRoute() {
                     <span className="session-primary" data-cell-label={t("lobby.table.game")}>
                       <span
                         className={`war-table-game-token ${warTableGameIconClass(game)}`}
+                        data-war-table-icon={warTableGameIconName(game)}
                         aria-hidden="true"
                       >
-                        <WarTableIcon name="soldier" />
+                        <WarTableIcon name={warTableGameIconName(game)} />
                       </span>
                       <span className="session-name" data-open-game-id={game.id}>
                         {game.name}
