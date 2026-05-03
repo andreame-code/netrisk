@@ -53,6 +53,7 @@ type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
 
 const {
+  aiJoinRequestSchema,
   gameIdRequestSchema,
   gameMutationResponseSchema,
   startGameRequestSchema
@@ -82,7 +83,21 @@ async function handleAiJoinRoute(
     return;
   }
 
-  const gameId = getTargetGameId(body, url);
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const parsedBody = parseRequestOrSendError(
+    res as import("node:http").ServerResponse,
+    resolvedBody,
+    aiJoinRequestSchema,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (!parsedBody) {
+    return;
+  }
+
+  const gameId = parsedBody.gameId;
   try {
     const activeGame = await getGame(gameId);
     authorize("game:start", { user: authContext.user, game: activeGame.game });
@@ -99,7 +114,7 @@ async function handleAiJoinRoute(
   }
 
   const gameContext = await loadGameContext(gameId);
-  const result = addPlayer(gameContext.state, body.name, { isAi: true });
+  const result = addPlayer(gameContext.state, parsedBody.name, { isAi: true });
   if (!result.ok) {
     sendLocalizedError(
       res,
