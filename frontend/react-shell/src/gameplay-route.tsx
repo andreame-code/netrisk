@@ -34,6 +34,7 @@ import {
 } from "@react-shell/public-auth-paths";
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 import { useGameEventStream } from "@react-shell/use-game-event-stream";
+import { WarTableIcon } from "@react-shell/war-table-icons";
 
 function phaseLabel(phase: string | null | undefined): string {
   if (phase === "active") {
@@ -187,6 +188,9 @@ export function GameRoute() {
   const [fortifyArmies, setFortifyArmies] = useState("1");
   const [conquestArmies, setConquestArmies] = useState("");
   const [selectedTradeCardIds, setSelectedTradeCardIds] = useState<string[]>([]);
+  const [isRosterDrawerOpen, setIsRosterDrawerOpen] = useState(false);
+  const [isCombatDrawerOpen, setIsCombatDrawerOpen] = useState(false);
+  const [isCommandDockExpanded, setIsCommandDockExpanded] = useState(false);
 
   const gameplayQuery = useQuery({
     queryKey,
@@ -218,6 +222,9 @@ export function GameRoute() {
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
   const me = myPlayerId ? playersById[myPlayerId] || null : null;
+  const activePlayer = snapshot?.currentPlayerId
+    ? playersById[snapshot.currentPlayerId] || null
+    : null;
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
@@ -227,6 +234,17 @@ export function GameRoute() {
   );
   const currentVersion =
     snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
+  const latestCombatKey = snapshot?.lastCombat
+    ? [
+        snapshot.lastCombat.fromTerritoryId,
+        snapshot.lastCombat.toTerritoryId,
+        snapshot.lastCombat.attackerRolls?.join(",") || "",
+        snapshot.lastCombat.defenderRolls?.join(",") || "",
+        snapshot.lastCombat.comparisons?.map((comparison) => comparison.winner).join(",") || "",
+        snapshot.lastCombat.conqueredTerritory ? "conquered" : "",
+        snapshot.lastCombat.defenderReducedToZero ? "defense-broken" : ""
+      ].join(":")
+    : "";
   const isMyTurn = Boolean(
     snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
   );
@@ -299,6 +317,10 @@ export function GameRoute() {
   const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
   const phaseBadgeLabel =
     snapshot?.phase === "active" ? turnPhaseLabel(snapshot.turnPhase) : phaseLabel(snapshot?.phase);
+  const activePlayerName = activePlayer?.name || t("game.runtime.none");
+  const activePlayerInitial = activePlayer?.name
+    ? activePlayer.name.trim().charAt(0).toUpperCase() || "?"
+    : "?";
   const accessStatusLabel = authenticatedUser
     ? t("game.runtime.loggedIn", { username: authenticatedUser.username })
     : t("game.runtime.accessRequired");
@@ -341,15 +363,36 @@ export function GameRoute() {
       : t("game.runtime.combat.resolved");
   const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
   const showActionsSection = Boolean(
-    showReinforceGroup ||
-    showAttackGroup ||
-    showConquestGroup ||
-    showFortifyGroup ||
-    showTradePanel ||
-    showEndTurn
+    showReinforceGroup || showAttackGroup || showConquestGroup || showFortifyGroup || showEndTurn
   );
   const gameFeedbackMessage = feedbackMessage || actionError;
   const gameFeedbackIsError = !feedbackMessage && Boolean(actionError);
+  const commandTerritory =
+    (showConquestGroup && snapshot?.pendingConquest?.toId
+      ? territoriesById[snapshot.pendingConquest.toId] || null
+      : null) ||
+    (showAttackGroup ? attackSource : null) ||
+    (showFortifyGroup ? fortifySource : null) ||
+    (reinforceTerritoryId ? territoriesById[reinforceTerritoryId] || null : null) ||
+    myTerritories[0] ||
+    snapshot?.map?.[0] ||
+    null;
+  const commandTerritoryOwner = commandTerritory
+    ? territoryOwnerName(commandTerritory, playersById)
+    : t("game.runtime.none");
+  const commandContinentLabel =
+    commandTerritory?.continentId?.replace(/[_-]+/g, " ").toUpperCase() || mapMetaLabel;
+  const commandActionTitle = showReinforceGroup
+    ? t("game.commandMode.moveReinforcements")
+    : showAttackGroup
+      ? t("game.commandMode.attack")
+      : showConquestGroup
+        ? t("game.commandMode.moveConquestArmies")
+        : showFortifyGroup
+          ? t("game.commandMode.fortify")
+          : showEndTurn
+            ? t("game.commandMode.otherActions")
+            : t("game.commandMode.commands");
 
   useEffect(() => {
     if (snapshot?.playerId && resolvedGameId) {
@@ -366,6 +409,10 @@ export function GameRoute() {
       setFortifySelectionMode("from");
     }
   }, [snapshot?.turnPhase]);
+
+  useEffect(() => {
+    setIsCombatDrawerOpen(Boolean(latestCombatKey));
+  }, [latestCombatKey]);
 
   useEffect(() => {
     setSelectedTradeCardIds((current) => {
@@ -689,7 +736,7 @@ export function GameRoute() {
     return (
       <section className="status-panel status-panel-loading" data-testid="react-shell-game-loading">
         <LoadingAnimation />
-        <p className="status-label">Game</p>
+        <p className="status-label">{t("game.title")}</p>
         <h2>{t("game.runtime.loadingState")}</h2>
         <p className="status-copy">{t("game.errors.loadActiveGame")}</p>
       </section>
@@ -699,7 +746,7 @@ export function GameRoute() {
   if (gameplayQuery.isError && !snapshot) {
     return (
       <section className="status-panel status-panel-error" data-testid="react-shell-game-error">
-        <p className="status-label">Game</p>
+        <p className="status-label">{t("game.title")}</p>
         <h2>{t("game.errors.loadActiveGame")}</h2>
         <p className="status-copy">
           {translateGameplayError(gameplayQuery.error, t("game.errors.loadActiveGame"))}
@@ -728,7 +775,7 @@ export function GameRoute() {
   const actionPending = gameplayCommands.isAnyPending;
 
   return (
-    <section data-testid="react-shell-game-page">
+    <section className="game-map-first-page" data-testid="react-shell-game-page">
       <section
         className="battlefield-layout game-battlefield-layout"
         data-testid="battlefield-layout"
@@ -741,6 +788,7 @@ export function GameRoute() {
             <GameplayMapViewport
               attackFromId={attackFromId}
               attackToId={attackToId}
+              commandDockExpanded={isCommandDockExpanded}
               fortifyFromId={fortifyFromId}
               fortifyToId={fortifyToId}
               myPlayerId={myPlayerId}
@@ -750,39 +798,70 @@ export function GameRoute() {
               snapshot={snapshot}
               onTerritorySelect={handleTerritorySelect}
             />
-          </section>
 
-          <section
-            className="panel game-info-rail game-info-bottom campaign-shell"
-            data-testid="info-panel"
-          >
-            <div className="panel-header tight-header game-compact-heading">
-              <div>
-                <p className="eyebrow">{t("game.command.eyebrow")}</p>
-                <h1>{t("game.command.heading")}</h1>
+            <section
+              className="panel game-info-rail game-info-bottom game-floating-hud campaign-shell"
+              data-testid="info-panel"
+              aria-label={t("game.command.heading")}
+            >
+              <div className="panel-header tight-header game-compact-heading game-hud-heading">
+                <div>
+                  <h1>
+                    {t("game.hud.phase")}: {phaseBadgeLabel}
+                  </h1>
+                </div>
+                <span id="turn-badge" className="badge" data-testid="phase-indicator">
+                  {phaseBadgeLabel}
+                </span>
               </div>
-              <span id="turn-badge" className="badge" data-testid="phase-indicator">
-                {phaseBadgeLabel}
-              </span>
-            </div>
 
-            <div className="rail-section map-stage-command-strip game-status-bottom-strip">
               <div
                 id="status-summary"
-                className="status-summary command-summary map-command-summary"
+                className="status-summary command-summary map-command-summary game-hud-summary"
                 data-testid="status-summary"
               >
-                <div>
-                  Fase: <strong>{snapshot.phase}</strong>
+                <span className="game-visually-hidden">
+                  {t("game.reinforcementBanner")} {snapshot.reinforcementPool}
+                </span>
+                <div className="game-hud-stat">
+                  <span className="game-hud-icon game-hud-icon-reinforcements" aria-hidden="true">
+                    <WarTableIcon name="soldier" />
+                  </span>
+                  <span>
+                    <span className="game-hud-label">
+                      <span className="game-visually-hidden">{t("game.reinforcementBanner")}</span>
+                      {t("game.hud.reinforcements")}
+                    </span>
+                    <strong>{snapshot.reinforcementPool}</strong>
+                  </span>
                 </div>
-                <div>
-                  {t("game.reinforcementBanner")} <strong>{snapshot.reinforcementPool}</strong>
+                <div className="game-hud-stat">
+                  <span className="game-hud-avatar" aria-hidden="true">
+                    {activePlayerInitial}
+                  </span>
+                  <span>
+                    <span className="game-hud-label">{t("game.hud.activePlayer")}</span>
+                    <strong>{activePlayerName}</strong>
+                  </span>
                 </div>
-                <div>
-                  {t("game.runtime.winner")}:{" "}
-                  <strong>{winner ? winner.name : t("game.runtime.noneLower")}</strong>
+                <div className="game-hud-stat game-hud-identity">
+                  <span className="game-hud-avatar" aria-hidden="true">
+                    {(me?.name || "A").trim().charAt(0).toUpperCase() || "A"}
+                  </span>
+                  <span>
+                    <span className="game-hud-label">{t("game.meta.player")}</span>
+                    <strong id="identity-status" data-testid="current-player-indicator">
+                      {me?.name || t("game.runtime.notConnected")}
+                    </strong>
+                  </span>
                 </div>
+                {winner ? (
+                  <div>
+                    {t("game.runtime.winner")}: <strong>{winner.name}</strong>
+                  </div>
+                ) : null}
               </div>
+
               <div
                 id="trade-alert"
                 className="turn-alert turn-alert-danger map-trade-alert"
@@ -804,75 +883,331 @@ export function GameRoute() {
               >
                 {gameFeedbackMessage}
               </div>
-            </div>
+            </section>
 
-            <div className="rail-section game-meta-stack game-session-card">
-              <div className="game-meta-line">
-                <span>{t("game.meta.player")}</span>
-                <strong id="identity-status" data-testid="current-player-indicator">
-                  {me?.name || t("game.runtime.notConnected")}
-                </strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.activeGame")}</span>
-                <strong id="game-status">{gameStatusLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.map")}</span>
-                <strong id="game-map-meta">{mapMetaLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.setup")}</span>
-                <strong id="game-setup-meta">{setupMetaLabel}</strong>
-              </div>
-              <div className="game-meta-line">
-                <span>{t("game.meta.access")}</span>
-                <span id="auth-status">{accessStatusLabel}</span>
-              </div>
+            <div className="game-secondary-drawers" aria-label={t("game.command.heading")}>
+              <details className="game-secondary-drawer game-info-drawer">
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="globe" />
+                  </span>
+                  <span>{t("game.drawer.gameInfo")}</span>
+                  <span className="badge" id="game-status">
+                    {gameStatusLabel}
+                  </span>
+                </summary>
+                <div className="rail-section game-meta-stack game-session-card">
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.player")}</span>
+                    <strong>{me?.name || t("game.runtime.notConnected")}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.map")}</span>
+                    <strong id="game-map-meta">{mapMetaLabel}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.setup")}</span>
+                    <strong id="game-setup-meta">{setupMetaLabel}</strong>
+                  </div>
+                  <div className="game-meta-line">
+                    <span>{t("game.meta.access")}</span>
+                    <span id="auth-status">{accessStatusLabel}</span>
+                  </div>
+                  <button
+                    id="surrender-button"
+                    type="button"
+                    className="danger-button full-width game-drawer-danger"
+                    hidden={!showSurrender}
+                    onClick={() => void handleSurrender()}
+                    disabled={actionPending}
+                  >
+                    {t("game.surrender")}
+                  </button>
+                </div>
+              </details>
+
+              <details
+                className="game-secondary-drawer game-objective-drawer"
+                hidden={!assignedVictoryObjective}
+              >
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="objective" />
+                  </span>
+                  <span>{t("game.objective.heading")}</span>
+                  <span className="badge accent">{t("game.objective.badge")}</span>
+                </summary>
+                <div
+                  className="rail-section game-objective-section"
+                  data-testid="assigned-objective-panel"
+                  hidden={!assignedVictoryObjective}
+                >
+                  <article className="action-meta-list">
+                    <strong>{assignedVictoryObjective?.title}</strong>
+                    <p className="action-help">{assignedVictoryObjective?.description}</p>
+                    <p className="action-help">
+                      {t("game.objective.module", {
+                        moduleName: assignedVictoryObjective?.moduleName || ""
+                      })}
+                    </p>
+                  </article>
+                </div>
+              </details>
+
+              <details
+                className="game-secondary-drawer game-readonly-drawer game-roster-drawer"
+                onToggle={(event) => setIsRosterDrawerOpen(event.currentTarget.open)}
+                open={isRosterDrawerOpen}
+              >
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="users" />
+                  </span>
+                  <span>{t("game.players.heading")}</span>
+                  <span className="badge accent">{snapshot.players.length}</span>
+                </summary>
+                <div className="rail-section game-roster-section">
+                  <div className="players rail-players" id="players">
+                    {snapshot.players.map((player) => (
+                      <article
+                        className={`player-card ${pieceSkinClass}`}
+                        data-player-id={player.id}
+                        key={player.id}
+                        style={{ "--player-color": player.color || "#162033" } as CSSProperties}
+                      >
+                        <strong>{player.name}</strong>
+                        <div>
+                          {t("game.runtime.territories")}: {player.territoryCount || 0}
+                        </div>
+                        <div>
+                          {t("lobby.table.status")}:{" "}
+                          {player.eliminated
+                            ? t("game.runtime.eliminated")
+                            : t("game.runtime.active")}
+                        </div>
+                        <div className="player-card-token" />
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </details>
+
+              <details
+                className={`game-secondary-drawer game-cards-drawer${mustTradeCards ? " is-attention" : ""}`}
+              >
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="cards" />
+                  </span>
+                  <span>{t("game.actions.cards")}</span>
+                  <span className="badge accent">{playerHand.length}</span>
+                </summary>
+                <div className="rail-section action-meta-list game-card-trade-drawer-panel">
+                  <div
+                    className="action-group compact-group"
+                    id="card-trade-group"
+                    hidden={!showTradePanel}
+                  >
+                    <label htmlFor="card-trade-list">{t("game.actions.cards")}</label>
+                    <div id="card-trade-alert" className="trade-emphasis" hidden={!mustTradeCards}>
+                      <span>{t("game.cards.alert")}</span>
+                    </div>
+                    <div className="action-meta-list">
+                      <p id="card-trade-summary" className="action-help">
+                        {playerHand.length
+                          ? t("game.runtime.cardsInHand", { count: playerHand.length })
+                          : t("game.runtime.noCardsAvailable")}
+                      </p>
+                      <p id="card-trade-bonus" className="action-help">
+                        {snapshot.cardState?.nextTradeBonus != null
+                          ? t("game.runtime.nextTradeBonus", {
+                              bonus: snapshot.cardState.nextTradeBonus
+                            })
+                          : t("game.runtime.none")}
+                      </p>
+                      <p id="card-trade-help" className="action-help">
+                        {mustTradeCards
+                          ? t("game.runtime.tradeHelp.mustTrade", {
+                              limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
+                            })
+                          : t("game.runtime.tradeHelp.selected", {
+                              selected: selectedTradeCardIds.length
+                            })}
+                      </p>
+                    </div>
+                    <div id="card-trade-list" className="card-trade-list">
+                      {playerHand.map((card) => (
+                        <button
+                          key={card.id}
+                          type="button"
+                          className={`game-card-pill${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                          data-card-id={card.id}
+                          onClick={() => toggleTradeCard(card.id)}
+                        >
+                          <strong>{card.territoryId || card.id}</strong>
+                          <span>{cardTypeLabel(card)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p id="card-trade-success" className="action-help" hidden={!feedbackMessage}>
+                      {feedbackMessage}
+                    </p>
+                    <p id="card-trade-error" className="action-help" hidden={!actionError}>
+                      {actionError}
+                    </p>
+                    <button
+                      id="card-trade-button"
+                      type="button"
+                      onClick={() => void handleTradeCards()}
+                      disabled={!canTradeCards}
+                    >
+                      {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
+                    </button>
+                  </div>
+                  <div className="action-meta-list" hidden={showTradePanel}>
+                    <p className="action-help">{t("game.runtime.noCardsAvailable")}</p>
+                    <p className="action-help">
+                      {snapshot.cardState?.nextTradeBonus != null
+                        ? t("game.runtime.nextTradeBonus", {
+                            bonus: snapshot.cardState.nextTradeBonus
+                          })
+                        : t("game.runtime.none")}
+                    </p>
+                  </div>
+                </div>
+              </details>
+
+              <details
+                className="game-secondary-drawer game-readonly-drawer game-combat-drawer"
+                hidden={!snapshot.lastCombat}
+                onToggle={(event) => setIsCombatDrawerOpen(event.currentTarget.open)}
+                open={isCombatDrawerOpen && Boolean(snapshot.lastCombat)}
+              >
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="crosshair" />
+                  </span>
+                  <span>{t("game.combat.heading")}</span>
+                  <span className="badge accent" id="combat-result-badge">
+                    {combatBadgeLabel}
+                  </span>
+                </summary>
+                <div
+                  id="combat-result-group"
+                  className="rail-section combat-result-section"
+                  hidden={!snapshot.lastCombat}
+                >
+                  <div id="combat-result-summary" className="combat-result-summary">
+                    {combatSummary}
+                  </div>
+                  <div className="combat-result-grid">
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.attacker")}</span>
+                      <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
+                    </div>
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.defender")}</span>
+                      <strong id="combat-defender-rolls">{defenderRollsText}</strong>
+                    </div>
+                    <div className="combat-result-line">
+                      <span>{t("game.combat.comparisons")}</span>
+                      <strong id="combat-comparisons">{comparisonSummary}</strong>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <details className="game-secondary-drawer game-log-drawer">
+                <summary>
+                  <span className="game-drawer-icon" aria-hidden="true">
+                    <WarTableIcon name="clock" />
+                  </span>
+                  <span>{t("game.drawer.activityLog")}</span>
+                </summary>
+                <div className="rail-section log-section">
+                  <div className="log-list rail-log" id="log">
+                    {localizedLog.length ? (
+                      localizedLog.map((entry, index) => (
+                        <article className="game-log-entry" key={`${index}-${entry}`}>
+                          {entry}
+                        </article>
+                      ))
+                    ) : (
+                      <p className="action-help">{t("game.log.lobbyCreated")}</p>
+                    )}
+                  </div>
+                </div>
+              </details>
             </div>
           </section>
         </section>
 
         <aside
-          className="right-rail panel game-actions-rail campaign-shell"
+          className={`right-rail panel game-actions-rail game-command-dock campaign-shell${isCommandDockExpanded ? " is-expanded" : " is-collapsed"}`}
           data-testid="actions-panel"
+          data-command-dock-expanded={isCommandDockExpanded ? "true" : "false"}
         >
-          <div className="rail-section game-phase-banner" id="phase-banner">
+          <button
+            type="button"
+            className="game-command-dock-toggle"
+            aria-expanded={isCommandDockExpanded}
+            aria-controls="game-command-actions"
+            aria-label={
+              isCommandDockExpanded ? t("game.commandDock.collapse") : t("game.commandDock.expand")
+            }
+            onClick={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
+          >
+            <span aria-hidden="true">{isCommandDockExpanded ? "v" : "^"}</span>
+          </button>
+          <div className="game-command-context" hidden={!commandTerritory}>
+            <section className="game-command-territory" aria-label="Selected territory">
+              <div className="game-command-territory-heading">
+                <h2>{commandTerritory?.name || t("game.runtime.noTerritory")}</h2>
+                <span className="badge accent">{commandTerritory?.armies ?? 0}</span>
+              </div>
+              <p>{commandContinentLabel}</p>
+              <div className="game-command-owner">
+                <span className="game-hud-avatar" aria-hidden="true">
+                  {commandTerritoryOwner.trim().charAt(0).toUpperCase() || "A"}
+                </span>
+                <span>
+                  {t("game.command.owner")}: <strong>{commandTerritoryOwner}</strong>
+                </span>
+              </div>
+              <div className="game-command-emblem" aria-hidden="true">
+                <WarTableIcon name="medal" />
+              </div>
+            </section>
+            <section className="game-command-mode" aria-label={commandActionTitle}>
+              <p>{commandActionTitle}</p>
+              <div className="game-command-mode-stats">
+                <span>
+                  {t("game.command.available")} <strong>{snapshot.reinforcementPool}</strong>
+                </span>
+                <span>
+                  {t("game.command.toMove")}{" "}
+                  <strong>
+                    {showReinforceGroup
+                      ? reinforceAmount || "0"
+                      : showConquestGroup
+                        ? conquestArmies || pendingConquestMin
+                        : showFortifyGroup
+                          ? fortifyArmies || "1"
+                          : "-"}
+                  </strong>
+                </span>
+              </div>
+            </section>
+          </div>
+          <div className="rail-section game-phase-banner game-dock-heading" id="phase-banner">
             <span>
               <span>{t("game.phaseBanner")}</span>{" "}
               <strong id="phase-banner-value">{phaseBadgeLabel}</strong>
             </span>
-          </div>
-
-          <div
-            className="rail-section game-reinforcement-banner"
-            id="reinforcement-banner"
-            hidden={snapshot.phase !== "active"}
-          >
-            <span>
+            <span id="reinforcement-banner" hidden={snapshot.phase !== "active"}>
               <span>{t("game.reinforcementBanner")}</span>{" "}
               <strong id="reinforcement-banner-value">{snapshot.reinforcementPool}</strong>
             </span>
-          </div>
-
-          <div
-            className="rail-section game-objective-section"
-            data-testid="assigned-objective-panel"
-            hidden={!assignedVictoryObjective}
-          >
-            <div className="section-title-row">
-              <h3>{t("game.objective.heading")}</h3>
-              <span className="badge accent">{t("game.objective.badge")}</span>
-            </div>
-            <article className="action-meta-list">
-              <strong>{assignedVictoryObjective?.title}</strong>
-              <p className="action-help">{assignedVictoryObjective?.description}</p>
-              <p className="action-help">
-                {t("game.objective.module", {
-                  moduleName: assignedVictoryObjective?.moduleName || ""
-                })}
-              </p>
-            </article>
           </div>
 
           <div
@@ -968,7 +1303,11 @@ export function GameRoute() {
             </div>
           </div>
 
-          <div className="rail-section actions-section" hidden={!showActionsSection}>
+          <div
+            className="rail-section actions-section"
+            id="game-command-actions"
+            hidden={!showActionsSection}
+          >
             <div
               className="action-group compact-group"
               id="reinforce-group"
@@ -1006,6 +1345,7 @@ export function GameRoute() {
                   <button
                     id="reinforce-all-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleReinforceAll()}
                     disabled={!reinforceTerritoryId || actionPending}
                   >
@@ -1076,6 +1416,7 @@ export function GameRoute() {
                   <button
                     id="attack-banzai-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleAttack("attackBanzai")}
                     disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
                   >
@@ -1113,6 +1454,7 @@ export function GameRoute() {
                   <button
                     id="conquest-all-button"
                     type="button"
+                    className="game-command-secondary-action"
                     onClick={() => void handleMoveAllAfterConquest()}
                     disabled={actionPending}
                   >
@@ -1185,68 +1527,6 @@ export function GameRoute() {
               </div>
             </div>
 
-            <div
-              className="action-group compact-group"
-              id="card-trade-group"
-              hidden={!showTradePanel}
-            >
-              <label htmlFor="card-trade-list">{t("game.actions.cards")}</label>
-              <div id="card-trade-alert" className="trade-emphasis" hidden={!mustTradeCards}>
-                <span>{t("game.cards.alert")}</span>
-              </div>
-              <div className="action-meta-list">
-                <p id="card-trade-summary" className="action-help">
-                  {playerHand.length
-                    ? t("game.runtime.cardsInHand", { count: playerHand.length })
-                    : t("game.runtime.noCardsAvailable")}
-                </p>
-                <p id="card-trade-bonus" className="action-help">
-                  {snapshot.cardState?.nextTradeBonus != null
-                    ? t("game.runtime.nextTradeBonus", {
-                        bonus: snapshot.cardState.nextTradeBonus
-                      })
-                    : t("game.runtime.none")}
-                </p>
-                <p id="card-trade-help" className="action-help">
-                  {mustTradeCards
-                    ? t("game.runtime.tradeHelp.mustTrade", {
-                        limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
-                      })
-                    : t("game.runtime.tradeHelp.selected", {
-                        selected: selectedTradeCardIds.length
-                      })}
-                </p>
-              </div>
-              <div id="card-trade-list" className="card-trade-list">
-                {playerHand.map((card) => (
-                  <button
-                    key={card.id}
-                    type="button"
-                    className={`game-card-pill${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
-                    data-card-id={card.id}
-                    onClick={() => toggleTradeCard(card.id)}
-                  >
-                    <strong>{card.territoryId || card.id}</strong>
-                    <span>{cardTypeLabel(card)}</span>
-                  </button>
-                ))}
-              </div>
-              <p id="card-trade-success" className="action-help" hidden={!feedbackMessage}>
-                {feedbackMessage}
-              </p>
-              <p id="card-trade-error" className="action-help" hidden={!actionError}>
-                {actionError}
-              </p>
-              <button
-                id="card-trade-button"
-                type="button"
-                onClick={() => void handleTradeCards()}
-                disabled={!canTradeCards}
-              >
-                {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
-              </button>
-            </div>
-
             <button
               id="end-turn-button"
               type="button"
@@ -1255,94 +1535,6 @@ export function GameRoute() {
               disabled={actionPending || Boolean(snapshot.pendingConquest)}
             >
               {gameplayCommands.isActionPending ? "Updating..." : endTurnLabel}
-            </button>
-          </div>
-
-          <div
-            id="combat-result-group"
-            className="rail-section combat-result-section"
-            hidden={!snapshot.lastCombat}
-          >
-            <div className="section-title-row">
-              <h3>{t("game.combat.heading")}</h3>
-              <span className="badge accent" id="combat-result-badge">
-                {combatBadgeLabel}
-              </span>
-            </div>
-            <div id="combat-result-summary" className="combat-result-summary">
-              {combatSummary}
-            </div>
-            <div className="combat-result-grid">
-              <div className="combat-result-line">
-                <span>{t("game.combat.attacker")}</span>
-                <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
-              </div>
-              <div className="combat-result-line">
-                <span>{t("game.combat.defender")}</span>
-                <strong id="combat-defender-rolls">{defenderRollsText}</strong>
-              </div>
-              <div className="combat-result-line">
-                <span>{t("game.combat.comparisons")}</span>
-                <strong id="combat-comparisons">{comparisonSummary}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="rail-section game-roster-section">
-            <div className="section-title-row">
-              <h3>{t("game.players.heading")}</h3>
-              <span className="badge accent">{t("game.players.badge")}</span>
-            </div>
-            <div className="players rail-players" id="players">
-              {snapshot.players.map((player) => (
-                <article
-                  className={`player-card ${pieceSkinClass}`}
-                  data-player-id={player.id}
-                  key={player.id}
-                  style={{ "--player-color": player.color || "#162033" } as CSSProperties}
-                >
-                  <strong>{player.name}</strong>
-                  <div>
-                    {t("game.runtime.territories")}: {player.territoryCount || 0}
-                  </div>
-                  <div>
-                    {t("lobby.table.status")}:{" "}
-                    {player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}
-                  </div>
-                  <div className="player-card-token" />
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="rail-section log-section">
-            <div className="section-title-row">
-              <h3>{t("game.log.heading")}</h3>
-              <span className="badge accent">{t("game.log.badge")}</span>
-            </div>
-            <div className="log-list rail-log" id="log">
-              {localizedLog.length ? (
-                localizedLog.map((entry, index) => (
-                  <article className="game-log-entry" key={`${index}-${entry}`}>
-                    {entry}
-                  </article>
-                ))
-              ) : (
-                <p className="action-help">{t("game.log.lobbyCreated")}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="rail-section surrender-section">
-            <button
-              id="surrender-button"
-              type="button"
-              className="danger-button full-width"
-              hidden={!showSurrender}
-              onClick={() => void handleSurrender()}
-              disabled={actionPending}
-            >
-              {t("game.surrender")}
             </button>
           </div>
         </aside>

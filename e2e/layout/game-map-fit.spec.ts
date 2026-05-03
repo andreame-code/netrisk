@@ -1,16 +1,28 @@
 const { test, expect } = require("@playwright/test");
-const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
+const {
+  registerAndLogin,
+  resetGame,
+  setSessionThemePreference,
+  uniqueUser
+} = require("../support/game-helpers");
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
   await page.goto("/game");
-  const normalizedSuffix = String(suffix).replace(/[^a-z0-9]/gi, "").slice(0, 8).toLowerCase();
+  const normalizedSuffix = String(suffix)
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 8)
+    .toLowerCase();
   const owner = uniqueUser(`mf_${normalizedSuffix}`);
-  await registerAndLogin(page, owner);
+  const sessionToken = await registerAndLogin(page, owner);
+  await setSessionThemePreference(page, sessionToken, "war-table");
+  await page.evaluate(() => window.localStorage.setItem("netrisk.theme", "war-table"));
   await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
-  await page.locator("#setup-game-name").fill(`Map Fit ${suffix} ${Date.now().toString(36).slice(-4)}`);
+  await page
+    .locator("#setup-game-name")
+    .fill(`Map Fit ${suffix} ${Date.now().toString(36).slice(-4)}`);
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
@@ -25,7 +37,9 @@ const viewports = [
 ];
 
 for (const viewport of viewports) {
-  test(`world classic map board stays inside the requested frame at ${viewport.name}`, async ({ page }) => {
+  test(`world classic map board stays fully visible above the command dock at ${viewport.name}`, async ({
+    page
+  }) => {
     test.slow();
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openWorldClassicGame(page, viewport.name);
@@ -37,77 +51,97 @@ for (const viewport of viewports) {
         return null;
       }
 
+      const stageRect = stage.getBoundingClientRect();
       const mapRect = mapRegion.getBoundingClientRect();
       const boardRect = mapBoard.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const aspectRatioValue = mapBoard.style.aspectRatio || window.getComputedStyle(mapBoard).aspectRatio || "760 / 500";
-      const match = aspectRatioValue.match(/([\d.]+)\s*\/\s*([\d.]+)/);
-      const aspectRatio = match ? Number.parseFloat(match[1]) / Number.parseFloat(match[2]) : 760 / 500;
-      const expectedHeightBudget = Math.min(mapRect.height, Math.max(0, viewportHeight - mapRect.top));
-      const expectedWidth = Math.min(mapRect.width, expectedHeightBudget * aspectRatio);
-      const expectedHeight = expectedWidth / aspectRatio;
-      const appliedWidth = Math.floor(expectedWidth);
-      const appliedHeight = Math.floor(expectedHeight);
+      const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+      const actionsRect = actionsPanel?.getBoundingClientRect();
+      const safeMapBottom = actionsRect ? actionsRect.top - 8 : mapRect.bottom;
+      const visibleMapHeight = Math.max(0, safeMapBottom - mapRect.top);
 
       return {
+        stageWidth: stageRect.width,
+        stageHeight: stageRect.height,
         mapWidth: mapRect.width,
         mapHeight: mapRect.height,
         boardWidth: boardRect.width,
         boardHeight: boardRect.height,
-        appliedWidth,
-        appliedHeight,
-        overflowTop: boardRect.top < mapRect.top - 1,
-        overflowRight: boardRect.right > mapRect.right + 1,
-        overflowBottom: boardRect.bottom > mapRect.bottom + 1,
-        overflowLeft: boardRect.left < mapRect.left - 1,
-        viewportOverflowBottom: boardRect.bottom > viewportHeight + 1
+        mapOccupiesMostStageWidth: mapRect.width >= stageRect.width * 0.72,
+        mapOccupiesMostStageHeight: mapRect.height >= stageRect.height * 0.72,
+        boardOccupiesMostSafeWidth: boardRect.width >= mapRect.width * 0.6,
+        boardOccupiesMostSafeHeight: boardRect.height >= visibleMapHeight * 0.92,
+        boardInsideMapTop: boardRect.top >= mapRect.top - 1,
+        boardInsideMapRight: boardRect.right <= mapRect.right + 1,
+        boardInsideSafeBottom: boardRect.bottom <= safeMapBottom + 1,
+        boardInsideMapLeft: boardRect.left >= mapRect.left - 1,
+        dockTop: actionsRect?.top || null,
+        boardBottom: boardRect.bottom
       };
     });
 
     expect(metrics).not.toBeNull();
-    expect(metrics.overflowTop).toBeFalsy();
-    expect(metrics.overflowRight).toBeFalsy();
-    expect(metrics.overflowBottom).toBeFalsy();
-    expect(metrics.overflowLeft).toBeFalsy();
-    expect(metrics.viewportOverflowBottom).toBeFalsy();
-    expect(Math.abs(metrics.boardWidth - metrics.appliedWidth)).toBeLessThanOrEqual(1);
-    expect(Math.abs(metrics.boardHeight - metrics.appliedHeight)).toBeLessThanOrEqual(1);
+    expect(metrics.mapWidth).toBeGreaterThan(0);
+    expect(metrics.mapHeight).toBeGreaterThan(0);
+    expect(metrics.mapOccupiesMostStageWidth).toBeTruthy();
+    expect(metrics.mapOccupiesMostStageHeight).toBeTruthy();
+    expect(metrics.boardOccupiesMostSafeWidth).toBeTruthy();
+    expect(metrics.boardOccupiesMostSafeHeight).toBeTruthy();
+    expect(metrics.boardInsideMapTop).toBeTruthy();
+    expect(metrics.boardInsideMapRight).toBeTruthy();
+    expect(metrics.boardInsideSafeBottom).toBeTruthy();
+    expect(metrics.boardInsideMapLeft).toBeTruthy();
+    expect(metrics.dockTop).toBeGreaterThan(metrics.boardBottom);
   });
 
-  test(`turn summary panel stays under the map and inside the left column at ${viewport.name}`, async ({ page }) => {
+  test(`turn HUD and command dock stay inside the map-first viewport at ${viewport.name}`, async ({
+    page
+  }) => {
     test.slow();
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openWorldClassicGame(page, `${viewport.name}-summary`);
 
     const metrics = await page.evaluate(() => {
-      const mainColumn = document.querySelector(".game-main-column");
       const mapStage = document.querySelector(".game-map-stage");
-      const infoPanel = document.querySelector(".game-info-bottom");
-      if (!mainColumn || !mapStage || !infoPanel) {
+      const infoPanel = document.querySelector('[data-testid="info-panel"]');
+      const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+      if (!mapStage || !infoPanel || !actionsPanel) {
         return null;
       }
 
-      const mainRect = mainColumn.getBoundingClientRect();
       const mapRect = mapStage.getBoundingClientRect();
       const infoRect = infoPanel.getBoundingClientRect();
+      const actionsRect = actionsPanel.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
 
       return {
-        infoStartsBelowMap: infoRect.top >= mapRect.bottom - 1,
-        infoInsideLeftColumnLeft: infoRect.left >= mainRect.left - 1,
-        infoInsideLeftColumnRight: infoRect.right <= mainRect.right + 1,
-        widthMatchesMainColumn: Math.abs(infoRect.width - mainRect.width) <= 2
+        hudInsideMapTop: infoRect.top >= mapRect.top - 1,
+        hudInsideMapLeft: infoRect.left >= mapRect.left - 1,
+        hudInsideMapRight: infoRect.right <= mapRect.right + 1,
+        hudInsideMapBottom: infoRect.bottom <= mapRect.bottom + 1,
+        dockInsideViewportLeft: actionsRect.left >= -1,
+        dockInsideViewportRight: actionsRect.right <= viewportWidth + 1,
+        dockInsideViewportBottom: actionsRect.bottom <= viewportHeight + 1,
+        hudAboveDock:
+          infoRect.bottom <= actionsRect.top + 1 || infoRect.right <= actionsRect.left + 1
       };
     });
 
     expect(metrics).not.toBeNull();
-    expect(metrics.infoStartsBelowMap).toBeTruthy();
-    expect(metrics.infoInsideLeftColumnLeft).toBeTruthy();
-    expect(metrics.infoInsideLeftColumnRight).toBeTruthy();
-    expect(metrics.widthMatchesMainColumn).toBeTruthy();
+    expect(metrics.hudInsideMapTop).toBeTruthy();
+    expect(metrics.hudInsideMapLeft).toBeTruthy();
+    expect(metrics.hudInsideMapRight).toBeTruthy();
+    expect(metrics.hudInsideMapBottom).toBeTruthy();
+    expect(metrics.dockInsideViewportLeft).toBeTruthy();
+    expect(metrics.dockInsideViewportRight).toBeTruthy();
+    expect(metrics.dockInsideViewportBottom).toBeTruthy();
+    expect(metrics.hudAboveDock).toBeTruthy();
   });
 }
 
-test("map controls stay inside the map frame and the actions rail keeps a stable compact layout", async ({ page }) => {
+test("map controls stay inside the map frame and the actions rail keeps a stable compact layout", async ({
+  page
+}) => {
   test.slow();
   await page.setViewportSize({ width: 1180, height: 760 });
   await openWorldClassicGame(page, "compact-controls");
@@ -128,8 +162,17 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
     const reinforceSelect = document.querySelector("#reinforce-select");
     const reinforceAmount = document.querySelector("#reinforce-amount");
     const reinforceButton = document.querySelector("#reinforce-multi-button");
-    if (!battlefield || !mapRegion || !controls || !actionsPanel || !reinforceGroup ||
-      !reinforceSelect || !reinforceAmount || !reinforceButton) {
+    const cardTradeListInDock = actionsPanel.querySelector("#card-trade-list");
+    if (
+      !battlefield ||
+      !mapRegion ||
+      !controls ||
+      !actionsPanel ||
+      !reinforceGroup ||
+      !reinforceSelect ||
+      !reinforceAmount ||
+      !reinforceButton
+    ) {
       return null;
     }
 
@@ -148,6 +191,9 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
       controlsInsideMapLeft: controlsRect.left >= mapRect.left - 1,
       actionsInsideBattlefieldTop: actionsRect.top >= battlefieldRect.top - 1,
       actionsInsideBattlefieldRight: actionsRect.right <= battlefieldRect.right + 1,
+      actionsRailCompactHeight: actionsRect.height <= 86,
+      commandDockCollapsed: actionsPanel.getAttribute("data-command-dock-expanded") === "false",
+      cardTradeAbsentFromDock: cardTradeListInDock === null,
       reinforceGroupInsideActionsRail: reinforceRect.right <= actionsRect.right + 1,
       reinforceSelectInsideActionsRail: reinforceSelectRect.right <= actionsRect.right + 1,
       reinforceAmountInsideActionsRail: reinforceAmountRect.right <= actionsRect.right + 1,
@@ -161,8 +207,32 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
   expect(metrics.controlsInsideMapLeft).toBeTruthy();
   expect(metrics.actionsInsideBattlefieldTop).toBeTruthy();
   expect(metrics.actionsInsideBattlefieldRight).toBeTruthy();
+  expect(metrics.actionsRailCompactHeight).toBeTruthy();
+  expect(metrics.commandDockCollapsed).toBeTruthy();
+  expect(metrics.cardTradeAbsentFromDock).toBeTruthy();
   expect(metrics.reinforceGroupInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceSelectInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceAmountInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceButtonInsideActionsRail).toBeTruthy();
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.getByTestId("actions-panel")).toHaveAttribute(
+    "data-command-dock-expanded",
+    "true"
+  );
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+        const mapBoard = document.querySelector(".game-map-stage .map-board");
+        if (!actionsPanel || !mapBoard) {
+          return false;
+        }
+
+        const actionsRect = actionsPanel.getBoundingClientRect();
+        const boardRect = mapBoard.getBoundingClientRect();
+        return boardRect.bottom <= actionsRect.top + 1;
+      })
+    )
+    .toBeTruthy();
 });

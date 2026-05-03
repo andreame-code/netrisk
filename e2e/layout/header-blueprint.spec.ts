@@ -14,7 +14,7 @@ test("game header follows the single-row blueprint", async ({ page }) => {
   await expect(header.locator(".top-nav-links")).toBeVisible();
   await expect(header.locator(".top-nav-actions")).toBeVisible();
 
-  await expect(header.getByRole("link", { name: "Lobby" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Lobby" })).toHaveCount(0);
   await expect(header.getByRole("link", { name: "Game" })).toBeVisible();
   await expect(header.getByRole("link", { name: "Profile" })).toBeVisible();
   await expect(header.getByRole("button", { name: "Esci" })).toBeVisible();
@@ -25,6 +25,6 @@ test("game header follows the single-row blueprint", async ({ page }) => {
   await expect(header.getByRole("button", { name: "Entra nella lobby" })).toHaveCount(0);
   await expect(header.getByRole("button", { name: "Avvia partita" })).toHaveCount(0);
 
-  await expect(page.getByTestId("info-panel")).toContainText(/Player/i);
-  await expect(page.getByTestId("info-panel")).toContainText(/Active game/i);
+  await expect(page.getByTestId("info-panel")).toContainText(/Giocatore attivo/i);
+  await expect(page.locator("#game-status")).toContainText(/Partita test/i);
 });

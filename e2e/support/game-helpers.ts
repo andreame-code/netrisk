@@ -2,7 +2,9 @@ const { expect } = require("@playwright/test");
 const { randomHex } = require("../../.tsbuild/backend/random.cjs");
 
 function getE2EBaseURL() {
-  return process.env.E2E_BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || "http://127.0.0.1:3100";
+  return (
+    process.env.E2E_BASE_URL || process.env.PLAYWRIGHT_TEST_BASE_URL || "http://127.0.0.1:3100"
+  );
 }
 
 function uniqueUser(prefix) {
@@ -141,7 +143,9 @@ async function registerLoginAndJoin(page, username, password = "secret123") {
   }
 
   await page.goto(`/game/${encodeURIComponent(gameId)}`);
-  await expect(page.getByTestId("current-player-indicator")).toContainText(username, { timeout: 10000 });
+  await expect(page.getByTestId("current-player-indicator")).toContainText(username, {
+    timeout: 10000
+  });
 
   return {
     gameId,
@@ -150,43 +154,45 @@ async function registerLoginAndJoin(page, username, password = "secret123") {
 }
 
 async function attachSessionCookie(page, sessionToken) {
-  await page.context().addCookies([{
-    name: "netrisk_session",
-    value: sessionToken,
-    url: getE2EBaseURL(),
-    httpOnly: true,
-    sameSite: "Lax"
-  }]);
+  await page.context().addCookies([
+    {
+      name: "netrisk_session",
+      value: sessionToken,
+      url: getE2EBaseURL(),
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
 }
 
 async function getReinforcementCount(page) {
   const summaryText = await page.getByTestId("status-summary").innerText();
-  const match = summaryText.match(/Rinforzi disponibili:\s*(\d+)/i);
+  const match = summaryText.match(/Rinforzi(?:\s+disponibili)?[\s:]+(\d+)/i);
   return match ? Number(match[1]) : 0;
 }
 
 async function findAttackPair(page, ownerName) {
-  const ownedButtons = page.locator('[data-territory-id]').filter({ hasText: ownerName });
+  const ownedButtons = page.locator("[data-territory-id]").filter({ hasText: ownerName });
   const total = await ownedButtons.count();
 
   for (let index = 0; index < total; index += 1) {
     await ownedButtons.nth(index).click();
-    const attackTo = page.locator('#attack-to option');
+    const attackTo = page.locator("#attack-to option");
     const optionCount = await attackTo.count();
 
     for (let optionIndex = 0; optionIndex < optionCount; optionIndex += 1) {
       const option = attackTo.nth(optionIndex);
-      const value = await option.getAttribute('value');
+      const value = await option.getAttribute("value");
       if (value) {
         return {
-          fromId: await page.locator('#attack-from').inputValue(),
+          fromId: await page.locator("#attack-from").inputValue(),
           toId: value
         };
       }
     }
   }
 
-  throw new Error('Nessuna coppia attacco valida trovata per ' + ownerName + '.');
+  throw new Error("Nessuna coppia attacco valida trovata per " + ownerName + ".");
 }
 
 module.exports = {

@@ -7,9 +7,44 @@ const {
   uniqueUser
 } = require("../support/game-helpers");
 
+async function loadGameState(page, sessionToken, gameId) {
+  const stateResponse = await page.request.get(`/api/state?gameId=${encodeURIComponent(gameId)}`, {
+    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` }
+  });
+  await expect(stateResponse.ok()).toBeTruthy();
+  return stateResponse.json();
+}
+
+function findAttackPairFromState(state) {
+  const currentPlayerId = state.currentPlayerId;
+  const territories = Array.isArray(state.map) ? state.map : [];
+  const territoriesById = new Map(territories.map((territory) => [territory.id, territory]));
+
+  for (const territory of territories) {
+    if (territory.ownerId !== currentPlayerId) {
+      continue;
+    }
+
+    const target = territory.neighbors
+      .map((neighborId) => territoriesById.get(neighborId))
+      .find((neighbor) => neighbor && neighbor.ownerId !== currentPlayerId);
+
+    if (target) {
+      return {
+        fromId: territory.id,
+        toId: target.id
+      };
+    }
+  }
+
+  throw new Error("Nessuna coppia attacco valida trovata nello stato pubblico.");
+}
+
 async function exhaustReinforcements(page) {
   const reinforceButton = page.getByRole("button", { name: "Aggiungi" });
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
+  await expect(page.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*[1-9]\d*/i
+  );
 
   for (;;) {
     const reinforcementCount = await getReinforcementCount(page);
@@ -25,8 +60,7 @@ async function exhaustReinforcements(page) {
 }
 
 async function captureStableRefs(page) {
-  await expect(page.locator("#players .player-card").first()).toBeVisible();
-  await expect(page.locator("#players .player-card").nth(1)).toBeVisible();
+  await expect(page.locator("#players .player-card")).toHaveCount(2);
 
   await page.evaluate(() => {
     (window as any).__granularRenderRefs = {
@@ -47,9 +81,9 @@ async function waitForSelectedReinforcementTerritory(page) {
     return Boolean(select.value || select.options[0]?.value);
   });
 
-  return page.locator("#reinforce-select").evaluate((select: HTMLSelectElement) => (
-    select.value || select.options[0]?.value || ""
-  ));
+  return page
+    .locator("#reinforce-select")
+    .evaluate((select: HTMLSelectElement) => select.value || select.options[0]?.value || "");
 }
 
 async function expectStableRefs(page) {
@@ -57,39 +91,13 @@ async function expectStableRefs(page) {
     const stored = (window as any).__granularRenderRefs || {};
     return {
       firstPlayerCard: stored.firstPlayerCard === document.querySelector("#players .player-card"),
-      secondPlayerCard: stored.secondPlayerCard === (document.querySelectorAll("#players .player-card")[1] || null)
+      secondPlayerCard:
+        stored.secondPlayerCard === (document.querySelectorAll("#players .player-card")[1] || null)
     };
   });
 
   expect(refs.firstPlayerCard).toBeTruthy();
   expect(refs.secondPlayerCard).toBeTruthy();
-}
-
-async function findAttackPairFromControls(page) {
-  const attackFromValues = await page.locator("#attack-from option").evaluateAll((options) => (
-    options
-      .map((option) => (option as HTMLOptionElement).value)
-      .filter(Boolean)
-  ));
-
-  for (const fromId of attackFromValues) {
-    await page.locator("#attack-from").selectOption(fromId);
-    const attackToValues = await page.locator("#attack-to option").evaluateAll((options) => (
-      options
-        .map((option) => (option as HTMLOptionElement).value)
-        .filter(Boolean)
-    ));
-
-    for (const toId of attackToValues) {
-      await page.locator("#attack-to").selectOption(toId);
-      const hasOneDieAttack = await page.locator('#attack-dice option[value="1"]').count();
-      if (hasOneDieAttack > 0) {
-        return { fromId, toId };
-      }
-    }
-  }
-
-  throw new Error("Nessuna coppia attacco valida con un dado trovata dal pannello attacco.");
 }
 
 test("reinforcement keeps unrelated gameplay panels mounted", async ({ browser }) => {
@@ -121,7 +129,9 @@ test("reinforcement keeps unrelated gameplay panels mounted", async ({ browser }
 
   await firstPage.getByRole("button", { name: "Aggiungi" }).click();
 
-  await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(`Rinforzi disponibili:\\s*${reinforcementCount - 1}`));
+  await expect(firstPage.getByTestId("status-summary")).toContainText(
+    new RegExp(`Rinforzi disponibili:\\s*${reinforcementCount - 1}`)
+  );
   await expect(firstPage.locator("#reinforce-select")).toHaveValue(selectedTerritory);
   await expectStableRefs(firstPage);
 
@@ -143,13 +153,15 @@ test("attack preserves selected controls and skips unrelated rerenders", async (
   await firstPage.goto("/");
   await secondPage.goto("/");
 
-  await registerLoginAndJoin(firstPage, firstUser);
+  const firstJoin = await registerLoginAndJoin(firstPage, firstUser);
   await registerLoginAndJoin(secondPage, secondUser);
 
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
+  const gameState = await loadGameState(firstPage, firstJoin.sessionToken, firstJoin.gameId);
+  const attackPair = findAttackPairFromState(gameState);
+  await firstPage.locator("#reinforce-select").selectOption(attackPair.fromId);
   await exhaustReinforcements(firstPage);
 
-  const attackPair = await findAttackPairFromControls(firstPage);
   const attackFrom = attackPair.fromId;
   const attackTo = attackPair.toId;
 
@@ -171,7 +183,9 @@ test("attack preserves selected controls and skips unrelated rerenders", async (
   await secondContext.close();
 });
 
-test("SSE handoff updates controls on the next player without recreating stable sections", async ({ browser }) => {
+test("SSE handoff updates controls on the next player without recreating stable sections", async ({
+  browser
+}) => {
   test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
@@ -196,7 +210,9 @@ test("SSE handoff updates controls on the next player without recreating stable 
   await expect(firstPage.locator("#fortify-group")).toBeVisible();
   await firstPage.locator("#end-turn-button").click();
 
-  await expect(secondPage.getByRole("button", { name: "Aggiungi" })).toBeEnabled({ timeout: 10000 });
+  await expect(secondPage.getByRole("button", { name: "Aggiungi" })).toBeEnabled({
+    timeout: 10000
+  });
   await expect(secondPage.locator("#reinforce-group")).toBeVisible({ timeout: 10000 });
   await expectStableRefs(secondPage);
 
