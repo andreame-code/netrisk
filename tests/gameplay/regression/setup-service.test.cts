@@ -230,6 +230,27 @@ register("setup mutating routes require a trusted local request", async () => {
   );
   assert.equal(
     isTrustedSetupRequest({
+      socket: { remoteAddress: "127.0.0.1" },
+      headers: { host: "127.0.0.1:3000", "x-forwarded-for": "127.0.0.1, ::1" }
+    }),
+    true
+  );
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "127.0.0.1" },
+      headers: { host: "127.0.0.1:3000", "x-forwarded-for": "127.0.0.1, 203.0.113.10" }
+    }),
+    false
+  );
+  assert.equal(
+    isTrustedSetupRequest({
+      socket: { remoteAddress: "127.0.0.1" },
+      headers: { host: "127.0.0.1:3000", "x-forwarded-for": ["127.0.0.1", "203.0.113.10"] }
+    }),
+    false
+  );
+  assert.equal(
+    isTrustedSetupRequest({
       socket: { remoteAddress: "203.0.113.10" },
       headers: { host: "localhost:3000", "x-forwarded-for": "127.0.0.1" }
     }),

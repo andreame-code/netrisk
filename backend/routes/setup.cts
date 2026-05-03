@@ -40,6 +40,14 @@ function firstHeaderValue(value: unknown): string {
     .trim();
 }
 
+function commaSeparatedHeaderValues(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .flatMap((entry) => String(entry || "").split(","))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function isLoopbackAddress(value: unknown): boolean {
   const address = String(value || "")
     .trim()
@@ -74,7 +82,7 @@ function isTrustedSetupRequest(req: unknown): boolean {
       }
     | null
     | undefined;
-  const forwardedFor = firstHeaderValue(request?.headers?.["x-forwarded-for"]);
+  const forwardedFor = commaSeparatedHeaderValues(request?.headers?.["x-forwarded-for"]);
   const remoteAddress = request?.socket?.remoteAddress;
   const host = hostnameFromHostHeader(request?.headers?.host);
 
@@ -82,7 +90,7 @@ function isTrustedSetupRequest(req: unknown): boolean {
     return false;
   }
 
-  return !forwardedFor || isLoopbackAddress(forwardedFor);
+  return forwardedFor.length === 0 || forwardedFor.every(isLoopbackAddress);
 }
 
 function sendUntrustedSetupError(res: unknown, sendLocalizedError: SendLocalizedError): boolean {
