@@ -29,7 +29,7 @@ test("current player can conquer a territory and move armies after combat", asyn
   await expect(firstPage.getByTestId("phase-indicator")).not.toHaveText(/lobby/i);
 
   const attackPair = await findAttackPair(firstPage, firstUser);
-  const reinforceButton = firstPage.getByRole("button", { name: "Aggiungi" });
+  const reinforceButton = firstPage.locator("#reinforce-multi-button");
   await expect(reinforceButton).toBeEnabled();
 
   for (;;) {
@@ -38,11 +38,12 @@ test("current player can conquer a territory and move armies after combat", asyn
       break;
     }
 
+    await expect(reinforceButton).toBeVisible();
     await reinforceButton.click();
-    await expect(firstPage.getByTestId("status-summary")).toContainText(new RegExp(String(reinforcementCount - 1)));
+    await expect.poll(async () => getReinforcementCount(firstPage)).toBe(reinforcementCount - 1);
   }
 
-  await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*0/i, { timeout: 15000 });
+  await expect.poll(async () => getReinforcementCount(firstPage)).toBe(0);
   await firstPage.locator("#attack-from").selectOption(attackPair.fromId);
   await firstPage.locator("#attack-to").selectOption(attackPair.toId);
   await firstPage.locator("#attack-dice").selectOption("1");
@@ -60,10 +61,13 @@ test("current player can conquer a territory and move armies after combat", asyn
   await expect(firstPage.locator("#fortify-group")).toBeHidden();
   await expect(firstPage.locator("#end-turn-button")).toHaveText("Vai a fortifica");
   await expect(firstPage.locator("#end-turn-button")).toBeEnabled();
-  await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"]')).toContainText(firstUser);
-  await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"] .territory-armies')).toHaveText("1");
+  await expect(firstPage.locator('[data-territory-id="' + attackPair.toId + '"]')).toContainText(
+    firstUser
+  );
+  await expect(
+    firstPage.locator('[data-territory-id="' + attackPair.toId + '"] .territory-armies')
+  ).toHaveText("1");
 
   await firstContext.close();
   await secondContext.close();
 });
-

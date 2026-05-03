@@ -1,5 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { registerAndLogin, registerLoginAndJoin, resetGame, uniqueUser } = require("../support/game-helpers");
+const {
+  registerAndLogin,
+  registerLoginAndJoin,
+  resetGame,
+  uniqueUser
+} = require("../support/game-helpers");
 
 async function openWorldClassicGame(page, suffix) {
   await resetGame(page);
@@ -9,7 +14,9 @@ async function openWorldClassicGame(page, suffix) {
   await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
-  await page.locator("#setup-game-name").fill(`Map Viewport ${suffix} ${Date.now().toString(36).slice(-4)}`);
+  await page
+    .locator("#setup-game-name")
+    .fill(`Map Viewport ${suffix} ${Date.now().toString(36).slice(-4)}`);
   await expect(page.locator("#submit-new-game")).toBeEnabled();
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
@@ -53,8 +60,12 @@ test("map viewport supports zoom, drag, and returns to fit with zoom out", async
 
   const zoomedTerritorySize = await firstTerritory.boundingBox();
   expect(zoomedTerritorySize).not.toBeNull();
-  expect(Math.abs((zoomedTerritorySize?.width || 0) - (initialTerritorySize?.width || 0))).toBeLessThanOrEqual(4.5);
-  expect(Math.abs((zoomedTerritorySize?.height || 0) - (initialTerritorySize?.height || 0))).toBeLessThanOrEqual(4.5);
+  expect(
+    Math.abs((zoomedTerritorySize?.width || 0) - (initialTerritorySize?.width || 0))
+  ).toBeLessThanOrEqual(4.5);
+  expect(
+    Math.abs((zoomedTerritorySize?.height || 0) - (initialTerritorySize?.height || 0))
+  ).toBeLessThanOrEqual(4.5);
 
   const beforeDrag = await surface.evaluate((node) => ({
     x: Number(node.getAttribute("data-map-translate-x") || "0"),
@@ -71,16 +82,24 @@ test("map viewport supports zoom, drag, and returns to fit with zoom out", async
   await page.mouse.move(box.x + box.width / 2 + 110, box.y + box.height / 2 + 70, { steps: 10 });
   await page.mouse.up();
 
-  await expect.poll(async () => {
-    const x = Number(await surface.getAttribute("data-map-translate-x"));
-    const y = Number(await surface.getAttribute("data-map-translate-y"));
-    return Math.hypot(x - beforeDrag.x, y - beforeDrag.y);
-  }).toBeGreaterThan(25);
+  await expect
+    .poll(async () => {
+      const x = Number(await surface.getAttribute("data-map-translate-x"));
+      const y = Number(await surface.getAttribute("data-map-translate-y"));
+      return Math.hypot(x - beforeDrag.x, y - beforeDrag.y);
+    })
+    .toBeGreaterThan(25);
 
   await zoomOutButton.click();
-  await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeCloseTo(1, 2);
-  await expect.poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-x")))).toBeLessThan(1);
-  await expect.poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-y")))).toBeLessThan(1);
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(1, 2);
+  await expect
+    .poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-x"))))
+    .toBeLessThan(1);
+  await expect
+    .poll(async () => Math.abs(Number(await surface.getAttribute("data-map-translate-y"))))
+    .toBeLessThan(1);
   await expect(zoomOutButton).toBeDisabled();
 });
 
@@ -101,12 +120,18 @@ test("map viewport control buttons zoom in and out coherently", async ({ page })
   const zoomedScale = Number(await surface.getAttribute("data-map-scale"));
   await zoomOutButton.click();
 
-  await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeLessThan(zoomedScale);
-  await expect.poll(async () => Number(await surface.getAttribute("data-map-scale"))).toBeCloseTo(1, 2);
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeLessThan(zoomedScale);
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(1, 2);
   await expect(zoomOutButton).toBeDisabled();
 });
 
-test("dragging a zoomed map does not select a territory until an explicit click", async ({ browser }) => {
+test("dragging a zoomed map does not select a territory until an explicit click", async ({
+  browser
+}) => {
   test.slow();
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
@@ -128,7 +153,11 @@ test("dragging a zoomed map does not select a territory until an explicit click"
 
   const surface = firstPage.locator("[data-map-surface]");
   const zoomInButton = firstPage.locator('[data-map-control="zoom-in"]');
-  const myTerritory = firstPage.locator('[data-territory-id]').filter({ hasText: firstUser }).first();
+  const zoomOutButton = firstPage.locator('[data-map-control="zoom-out"]');
+  const myTerritory = firstPage
+    .locator("[data-territory-id]")
+    .filter({ hasText: firstUser })
+    .first();
   await expect(myTerritory).toBeVisible();
 
   await zoomInButton.click();
@@ -144,13 +173,27 @@ test("dragging a zoomed map does not select a territory until an explicit click"
     throw new Error("Owned territory bounding box unavailable.");
   }
 
-  await firstPage.mouse.move(territoryBox.x + territoryBox.width / 2, territoryBox.y + territoryBox.height / 2);
+  await firstPage.mouse.move(
+    territoryBox.x + territoryBox.width / 2,
+    territoryBox.y + territoryBox.height / 2
+  );
   await firstPage.mouse.down();
-  await firstPage.mouse.move(territoryBox.x + territoryBox.width / 2 + 120, territoryBox.y + territoryBox.height / 2 + 70, {
-    steps: 12
-  });
+  await firstPage.mouse.move(
+    territoryBox.x + territoryBox.width / 2 + 120,
+    territoryBox.y + territoryBox.height / 2 + 70,
+    {
+      steps: 12
+    }
+  );
   await firstPage.mouse.up();
 
+  await expect(firstPage.locator("#reinforce-select")).toHaveValue(reinforceBeforeDrag);
+  await expect(firstPage.locator("#attack-from")).toHaveValue(attackBeforeDrag);
+
+  await zoomOutButton.click();
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(1, 2);
   await expect(firstPage.locator("#reinforce-select")).toHaveValue(reinforceBeforeDrag);
   await expect(firstPage.locator("#attack-from")).toHaveValue(attackBeforeDrag);
 

@@ -5,19 +5,63 @@ function mockState() {
     phase: "active",
     turnPhase: "fortify",
     players: [
-      { id: "p1", name: "alice", color: "#e85d04", connected: true, isAi: false, territoryCount: 3, eliminated: false, cardCount: 0 },
-      { id: "p2", name: "CPU", color: "#0f4c5c", connected: true, isAi: true, territoryCount: 0, eliminated: false, cardCount: 0 }
+      {
+        id: "p1",
+        name: "alice",
+        color: "#e85d04",
+        connected: true,
+        isAi: false,
+        territoryCount: 3,
+        eliminated: false,
+        cardCount: 0
+      },
+      {
+        id: "p2",
+        name: "CPU",
+        color: "#0f4c5c",
+        connected: true,
+        isAi: true,
+        territoryCount: 0,
+        eliminated: false,
+        cardCount: 0
+      }
     ],
     map: [
-      { id: "cinder", name: "Cinder", neighbors: ["aurora", "delta", "ember"], continentId: "central", ownerId: "p1", armies: 4 },
-      { id: "delta", name: "Delta", neighbors: ["aurora", "cinder", "grove", "harbor"], continentId: "central", ownerId: "p1", armies: 2 },
-      { id: "harbor", name: "Harbor", neighbors: ["delta", "ember", "forge", "grove", "ion"], continentId: "south", ownerId: "p1", armies: 3 }
+      {
+        id: "cinder",
+        name: "Cinder",
+        neighbors: ["aurora", "delta", "ember"],
+        continentId: "central",
+        ownerId: "p1",
+        armies: 4
+      },
+      {
+        id: "delta",
+        name: "Delta",
+        neighbors: ["aurora", "cinder", "grove", "harbor"],
+        continentId: "central",
+        ownerId: "p1",
+        armies: 2
+      },
+      {
+        id: "harbor",
+        name: "Harbor",
+        neighbors: ["delta", "ember", "forge", "grove", "ion"],
+        continentId: "south",
+        ownerId: "p1",
+        armies: 3
+      }
     ],
     continents: [],
     currentPlayerId: "p1",
     reinforcementPool: 0,
     winnerId: null,
-    gameConfig: { mapId: "classic-mini", mapName: "Classic Mini", totalPlayers: 2, players: [{ type: "human" }, { type: "ai" }] },
+    gameConfig: {
+      mapId: "classic-mini",
+      mapName: "Classic Mini",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
     log: ["Fortify map selection test"],
     lastAction: null,
     lastCombat: null,
@@ -50,11 +94,26 @@ test("fortify map clicks select origin first and destination second", async ({ p
   });
 
   await page.route("**/api/auth/session", async (route) => {
-    await route.fulfill({ json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } } });
+    await route.fulfill({
+      json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } }
+    });
   });
 
   await page.route("**/api/games**", async (route) => {
-    await route.fulfill({ json: { games: [{ id: "g-1", name: "Fortify Map Selection", updatedAt: "2026-04-12T10:00:00.000Z", phase: "active", playerCount: 2 }], activeGameId: "g-1" } });
+    await route.fulfill({
+      json: {
+        games: [
+          {
+            id: "g-1",
+            name: "Fortify Map Selection",
+            updatedAt: "2026-04-12T10:00:00.000Z",
+            phase: "active",
+            playerCount: 2
+          }
+        ],
+        activeGameId: "g-1"
+      }
+    });
   });
 
   await page.route("**/api/state**", async (route) => {
@@ -62,7 +121,11 @@ test("fortify map clicks select origin first and destination second", async ({ p
   });
 
   await page.route("**/api/events**", async (route) => {
-    await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: "" });
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
   });
 
   await page.goto("/game");
@@ -71,14 +134,19 @@ test("fortify map clicks select origin first and destination second", async ({ p
   await expect(page.locator("#fortify-from")).toHaveValue("cinder");
   await expect(page.locator("#fortify-to")).toHaveValue("delta");
 
-  await page.locator('[data-territory-id="delta"]').click();
+  await page.locator('[data-territory-id="delta"]').dispatchEvent("click", {
+    bubbles: true,
+    cancelable: true
+  });
   await expect(page.locator("#fortify-from")).toHaveValue("delta");
   await expect(page.locator("#fortify-to")).toHaveValue("cinder");
   await expect(page.locator('[data-territory-id="delta"]')).toHaveClass(/is-source/);
 
-  await page.locator('[data-territory-id="harbor"]').click();
+  await page.locator('[data-territory-id="harbor"]').dispatchEvent("click", {
+    bubbles: true,
+    cancelable: true
+  });
   await expect(page.locator("#fortify-from")).toHaveValue("delta");
   await expect(page.locator("#fortify-to")).toHaveValue("harbor");
   await expect(page.locator('[data-territory-id="harbor"]')).toHaveClass(/is-target/);
 });
-

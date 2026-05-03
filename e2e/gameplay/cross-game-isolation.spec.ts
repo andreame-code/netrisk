@@ -1,5 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { getE2EBaseURL, registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
+const {
+  getE2EBaseURL,
+  registerAndLogin,
+  resetGame,
+  uniqueUser
+} = require("../support/game-helpers");
 
 async function createAndOpenGame(page, gameName) {
   await page.goto("/lobby");
@@ -12,7 +17,10 @@ async function createAndOpenGame(page, gameName) {
   return page.url().split("/game/")[1] || new URL(page.url()).searchParams.get("gameId");
 }
 
-test("opening another game does not switch already connected clients to a different match", async ({ browser, page }) => {
+test("opening another game does not switch already connected clients to a different match", async ({
+  browser,
+  page
+}) => {
   test.slow();
 
   const userA = uniqueUser("iso_a");
@@ -40,7 +48,7 @@ test("opening another game does not switch already connected clients to a differ
     await expect(page).toHaveURL(new RegExp("/game/" + gameAId + "$"));
     await expect(page.locator("#game-status")).toContainText(gameA);
     await expect(page.locator("#game-status")).not.toContainText(gameB);
-    await expect(page.locator("#game-map-meta")).toBeVisible();
+    await expect(page.locator("#game-map-meta")).toContainText("World Classic");
   } finally {
     await contextB.close();
   }
