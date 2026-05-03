@@ -216,6 +216,45 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
   });
 
+  it("uses one War Table game icon color class for each game phase", async () => {
+    listGamesMock.mockResolvedValue(
+      createLobbyGames([
+        createGameSummary({
+          id: "waiting-game",
+          name: "Waiting Game",
+          phase: "lobby"
+        }),
+        createGameSummary({
+          id: "active-game",
+          name: "Active Game",
+          phase: "active"
+        }),
+        createGameSummary({
+          id: "finished-game",
+          name: "Finished Game",
+          phase: "finished"
+        })
+      ])
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("war-table");
+
+    const waitingToken = (
+      await screen.findByTestId("react-shell-lobby-row-waiting-game")
+    ).querySelector(".war-table-game-token");
+    const activeToken = screen
+      .getByTestId("react-shell-lobby-row-active-game")
+      .querySelector(".war-table-game-token");
+    const finishedToken = screen
+      .getByTestId("react-shell-lobby-row-finished-game")
+      .querySelector(".war-table-game-token");
+
+    expect(waitingToken).toHaveClass("is-lobby");
+    expect(activeToken).toHaveClass("is-active");
+    expect(finishedToken).toHaveClass("is-finished");
+  });
+
   it("keeps the War Table My Turn tab scoped to the current turn owner", async () => {
     let playerSessionListener: () => void = () => undefined;
     subscribeCurrentPlayerIdChangesMock.mockImplementation((listener) => {

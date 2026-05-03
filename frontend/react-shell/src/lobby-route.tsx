@@ -161,8 +161,8 @@ function warTableStatusClass(game: GameSummary): string {
   return "is-lobby";
 }
 
-function warTableGameIconClass(index: number): string {
-  return ["is-blue", "is-green", "is-gold", "is-red", "is-purple"][index % 5] || "is-blue";
+function warTableGameIconClass(game: GameSummary): string {
+  return warTableStatusClass(game);
 }
 
 function formatWarTableActivity(value: string | null | undefined): string {
@@ -711,7 +711,7 @@ export function LobbyRoute() {
               {listStateMessage}
             </div>
             <div id="game-session-list" className="session-list" data-testid="game-session-list">
-              {renderedGames.map((game, index) =>
+              {renderedGames.map((game) =>
                 isWarTableTheme ? (
                   <div
                     key={game.id}
@@ -734,7 +734,7 @@ export function LobbyRoute() {
                   >
                     <span className="session-primary" data-cell-label={t("lobby.table.game")}>
                       <span
-                        className={`war-table-game-token ${warTableGameIconClass(index)}`}
+                        className={`war-table-game-token ${warTableGameIconClass(game)}`}
                         aria-hidden="true"
                       >
                         <WarTableIcon name="soldier" />
