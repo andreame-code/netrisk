@@ -316,6 +316,10 @@ export function GameRoute() {
   const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
   const phaseBadgeLabel =
     snapshot?.phase === "active" ? turnPhaseLabel(snapshot.turnPhase) : phaseLabel(snapshot?.phase);
+  const activePlayerName = activePlayer?.name || t("game.runtime.none");
+  const activePlayerInitial = activePlayer?.name
+    ? activePlayer.name.trim().charAt(0).toUpperCase() || "?"
+    : "?";
   const accessStatusLabel = authenticatedUser
     ? t("game.runtime.loggedIn", { username: authenticatedUser.username })
     : t("game.runtime.accessRequired");
@@ -383,18 +387,18 @@ export function GameRoute() {
   const commandContinentLabel =
     commandTerritory?.continentId?.replace(/[_-]+/g, " ").toUpperCase() || mapMetaLabel;
   const commandActionTitle = showReinforceGroup
-    ? "MOVE REINFORCEMENTS"
+    ? t("game.commandMode.moveReinforcements")
     : showAttackGroup
-      ? "ATTACK"
+      ? t("game.commandMode.attack")
       : showConquestGroup
-        ? "MOVE CONQUEST ARMIES"
+        ? t("game.commandMode.moveConquestArmies")
         : showFortifyGroup
-          ? "FORTIFY"
+          ? t("game.commandMode.fortify")
           : showTradePanel
-            ? "TRADE CARDS"
+            ? t("game.commandMode.tradeCards")
             : showEndTurn
-              ? "OTHER ACTIONS"
-              : "COMMANDS";
+              ? t("game.commandMode.otherActions")
+              : t("game.commandMode.commands");
 
   useEffect(() => {
     if (snapshot?.playerId && resolvedGameId) {
@@ -738,7 +742,7 @@ export function GameRoute() {
     return (
       <section className="status-panel status-panel-loading" data-testid="react-shell-game-loading">
         <LoadingAnimation />
-        <p className="status-label">Game</p>
+        <p className="status-label">{t("game.title")}</p>
         <h2>{t("game.runtime.loadingState")}</h2>
         <p className="status-copy">{t("game.errors.loadActiveGame")}</p>
       </section>
@@ -748,7 +752,7 @@ export function GameRoute() {
   if (gameplayQuery.isError && !snapshot) {
     return (
       <section className="status-panel status-panel-error" data-testid="react-shell-game-error">
-        <p className="status-label">Game</p>
+        <p className="status-label">{t("game.title")}</p>
         <h2>{t("game.errors.loadActiveGame")}</h2>
         <p className="status-copy">
           {translateGameplayError(gameplayQuery.error, t("game.errors.loadActiveGame"))}
@@ -807,7 +811,9 @@ export function GameRoute() {
             >
               <div className="panel-header tight-header game-compact-heading game-hud-heading">
                 <div>
-                  <h1>PHASE: {phaseBadgeLabel.toUpperCase()}</h1>
+                  <h1>
+                    {t("game.hud.phase")}: {phaseBadgeLabel}
+                  </h1>
                 </div>
                 <span id="turn-badge" className="badge" data-testid="phase-indicator">
                   {phaseBadgeLabel}
@@ -829,27 +835,30 @@ export function GameRoute() {
                   <span>
                     <span className="game-hud-label">
                       <span className="game-visually-hidden">{t("game.reinforcementBanner")}</span>
-                      REINFORCEMENTS
+                      {t("game.hud.reinforcements")}
                     </span>
                     <strong>{snapshot.reinforcementPool}</strong>
                   </span>
                 </div>
                 <div className="game-hud-stat">
                   <span className="game-hud-avatar" aria-hidden="true">
-                    {(activePlayer?.name || me?.name || "A").trim().charAt(0).toUpperCase() || "A"}
+                    {activePlayerInitial}
                   </span>
                   <span>
-                    <span className="game-hud-label">ACTIVE PLAYER</span>
-                    <strong>
-                      {activePlayer?.name || me?.name || t("game.runtime.notConnected")}
-                    </strong>
+                    <span className="game-hud-label">{t("game.hud.activePlayer")}</span>
+                    <strong>{activePlayerName}</strong>
                   </span>
                 </div>
-                <div className="game-visually-hidden">
-                  {t("game.meta.player")}:{" "}
-                  <strong id="identity-status" data-testid="current-player-indicator">
-                    {me?.name || t("game.runtime.notConnected")}
-                  </strong>
+                <div className="game-hud-stat game-hud-identity">
+                  <span className="game-hud-avatar" aria-hidden="true">
+                    {(me?.name || "A").trim().charAt(0).toUpperCase() || "A"}
+                  </span>
+                  <span>
+                    <span className="game-hud-label">{t("game.meta.player")}</span>
+                    <strong id="identity-status" data-testid="current-player-indicator">
+                      {me?.name || t("game.runtime.notConnected")}
+                    </strong>
+                  </span>
                 </div>
                 {winner ? (
                   <div>
@@ -887,7 +896,7 @@ export function GameRoute() {
                   <span className="game-drawer-icon" aria-hidden="true">
                     <WarTableIcon name="globe" />
                   </span>
-                  <span>GAME INFO</span>
+                  <span>{t("game.drawer.gameInfo")}</span>
                   <span className="badge" id="game-status">
                     {gameStatusLabel}
                   </span>
@@ -959,7 +968,7 @@ export function GameRoute() {
                   <span className="game-drawer-icon" aria-hidden="true">
                     <WarTableIcon name="users" />
                   </span>
-                  <span>PLAYERS</span>
+                  <span>{t("game.players.heading")}</span>
                   <span className="badge accent">{snapshot.players.length}</span>
                 </summary>
                 <div className="rail-section game-roster-section">
@@ -993,7 +1002,7 @@ export function GameRoute() {
                   <span className="game-drawer-icon" aria-hidden="true">
                     <WarTableIcon name="cards" />
                   </span>
-                  <span>CARDS</span>
+                  <span>{t("game.actions.cards")}</span>
                   <span className="badge accent">{playerHand.length}</span>
                 </summary>
                 <div className="rail-section action-meta-list">
@@ -1057,7 +1066,7 @@ export function GameRoute() {
                   <span className="game-drawer-icon" aria-hidden="true">
                     <WarTableIcon name="clock" />
                   </span>
-                  <span>Activity log</span>
+                  <span>{t("game.drawer.activityLog")}</span>
                 </summary>
                 <div className="rail-section log-section">
                   <div className="log-list rail-log" id="log">
@@ -1093,7 +1102,7 @@ export function GameRoute() {
                   {commandTerritoryOwner.trim().charAt(0).toUpperCase() || "A"}
                 </span>
                 <span>
-                  Owner: <strong>{commandTerritoryOwner}</strong>
+                  {t("game.command.owner")}: <strong>{commandTerritoryOwner}</strong>
                 </span>
               </div>
               <div className="game-command-emblem" aria-hidden="true">
@@ -1104,10 +1113,10 @@ export function GameRoute() {
               <p>{commandActionTitle}</p>
               <div className="game-command-mode-stats">
                 <span>
-                  Available <strong>{snapshot.reinforcementPool}</strong>
+                  {t("game.command.available")} <strong>{snapshot.reinforcementPool}</strong>
                 </span>
                 <span>
-                  To move{" "}
+                  {t("game.command.toMove")}{" "}
                   <strong>
                     {showReinforceGroup
                       ? reinforceAmount || "0"
@@ -1514,7 +1523,6 @@ export function GameRoute() {
               {gameplayCommands.isActionPending ? "Updating..." : endTurnLabel}
             </button>
           </div>
-
         </aside>
       </section>
     </section>
