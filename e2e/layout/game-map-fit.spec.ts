@@ -214,4 +214,25 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
   expect(metrics.reinforceSelectInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceAmountInsideActionsRail).toBeTruthy();
   expect(metrics.reinforceButtonInsideActionsRail).toBeTruthy();
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.getByTestId("actions-panel")).toHaveAttribute(
+    "data-command-dock-expanded",
+    "true"
+  );
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const actionsPanel = document.querySelector('[data-testid="actions-panel"]');
+        const mapBoard = document.querySelector(".game-map-stage .map-board");
+        if (!actionsPanel || !mapBoard) {
+          return false;
+        }
+
+        const actionsRect = actionsPanel.getBoundingClientRect();
+        const boardRect = mapBoard.getBoundingClientRect();
+        return boardRect.bottom <= actionsRect.top + 1;
+      })
+    )
+    .toBeTruthy();
 });

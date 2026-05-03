@@ -788,6 +788,7 @@ export function GameRoute() {
             <GameplayMapViewport
               attackFromId={attackFromId}
               attackToId={attackToId}
+              commandDockExpanded={isCommandDockExpanded}
               fortifyFromId={fortifyFromId}
               fortifyToId={fortifyToId}
               myPlayerId={myPlayerId}
