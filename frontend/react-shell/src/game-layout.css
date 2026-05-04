@@ -5464,9 +5464,19 @@ body[data-app-section="game"] .board-shell {
 body[data-app-section="game"] .game-app-frame,
 body[data-app-section="game"] .game-page-shell,
 body[data-app-section="game"] .board-shell {
-  pointer-events: none !important;
+  pointer-events: auto !important;
 }
 
+body[data-app-section="game"] [data-testid="react-shell-layout"] {
+  pointer-events: auto !important;
+}
+
+body[data-app-section="game"] #root {
+  pointer-events: auto !important;
+}
+
+body[data-app-section="game"] #root > *,
+body[data-app-section="game"] [data-testid="react-shell-layout"] > *,
 body[data-app-section="game"] .game-app-frame > *,
 body[data-app-section="game"] .game-page-shell > *,
 body[data-app-section="game"] .board-shell > *,
@@ -5483,6 +5493,10 @@ body[data-app-section="game"] .game-right-utility-rail,
 body[data-app-section="game"] .game-modern-drawer,
 body[data-app-section="game"] .game-command-dock {
   pointer-events: auto;
+}
+
+body[data-app-section="game"] .backdrop {
+  pointer-events: none !important;
 }
 
 body[data-app-section="game"] .game-bottom-shell {
@@ -6042,6 +6056,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     --game-command-dock-height: 250px !important;
   }
 
+  .game-map-first-page:has(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-mandatory-trade) {
+    --game-command-dock-height: clamp(280px, 44svh, 320px) !important;
+  }
+
   .game-map-first-page .game-map-stage,
   html[data-theme="war-table"] .game-map-first-page .game-map-stage {
     --game-map-safe-top: 112px !important;
@@ -6060,7 +6079,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   html[data-theme="war-table"]
     .game-map-first-page:has(.game-command-dock-mandatory-trade)
     .game-map-stage {
-    --game-map-safe-bottom: 360px !important;
+    --game-map-safe-bottom: clamp(292px, 46svh, 324px) !important;
   }
 
   .game-map-first-page .game-map-stage .map,
@@ -6239,8 +6258,8 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock-mandatory-trade,
   html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
     width: 100vw !important;
-    min-height: 280px !important;
-    max-height: 62svh !important;
+    min-height: var(--game-command-dock-height, 280px) !important;
+    max-height: min(58svh, 340px) !important;
     padding: 14px !important;
   }
 

@@ -967,11 +967,9 @@ export function GameRoute() {
             <span id="game-map-meta" className="game-visually-hidden">
               {mapMetaLabel}
             </span>
-            {configuredPlayers !== 2 || aiCount !== 1 ? (
-              <span id="game-setup-meta" className="game-visually-hidden">
-                {setupMetaLabel}
-              </span>
-            ) : null}
+            <span id="game-setup-meta" className="game-visually-hidden">
+              {setupMetaLabel}
+            </span>
             <span
               id="identity-status"
               className="game-visually-hidden"

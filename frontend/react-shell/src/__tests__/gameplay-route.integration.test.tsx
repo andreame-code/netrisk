@@ -434,7 +434,7 @@ describe("GameRoute integration", () => {
     expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
     const railButtons = container.querySelectorAll(".game-action-rail-button");
     await user.click(railButtons[0]);
-    expect(screen.getByText(/2 giocatori/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/2 giocatori/i).length).toBeGreaterThan(0);
     await user.click(container.querySelector(".game-cards-drawer summary") as HTMLElement);
     expect(screen.getByText(/Le tue carte 1\/5/i)).toBeInTheDocument();
     await user.click(railButtons[2]);

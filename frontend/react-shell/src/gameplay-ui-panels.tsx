@@ -678,11 +678,11 @@ export function GameInfoDrawer({
         </div>
         <div>
           <span>{t("game.meta.setup")}</span>
-          <strong id="game-setup-meta">{setupMetaLabel}</strong>
+          <strong id="game-info-setup-meta">{setupMetaLabel}</strong>
         </div>
         <div>
           <span>{t("game.meta.access")}</span>
-          <strong id="auth-status">{accessStatusLabel}</strong>
+          <strong id="game-info-auth-status">{accessStatusLabel}</strong>
         </div>
         <div>
           <span>{t("game.meta.saveVersion")}</span>
