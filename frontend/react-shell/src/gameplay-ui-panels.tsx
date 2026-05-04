@@ -208,6 +208,15 @@ export function GameHud({
       </div>
 
       <div
+        id="trade-alert"
+        className="turn-alert turn-alert-danger map-trade-alert"
+        hidden={!mustTradeCards}
+      >
+        <strong>{t("game.tradeAlert.title")}</strong>
+        <span id="trade-alert-text">{tradeAlertText}</span>
+      </div>
+
+      <div
         id="status-summary"
         className="status-summary command-summary map-command-summary game-hud-summary"
         data-testid="status-summary"
@@ -247,15 +256,6 @@ export function GameHud({
             </span>
           </div>
         ) : null}
-      </div>
-
-      <div
-        id="trade-alert"
-        className="turn-alert turn-alert-danger map-trade-alert"
-        hidden={!mustTradeCards}
-      >
-        <strong>{t("game.tradeAlert.title")}</strong>
-        <span id="trade-alert-text">{tradeAlertText}</span>
       </div>
       <div
         id="game-feedback"
@@ -423,6 +423,7 @@ export function PlayersDrawer({
       title={t("game.players.heading").toUpperCase()}
       eyebrow={t("game.players.count", { count: players.length })}
       onClose={onClose}
+      className="game-players-modern-drawer"
     >
       <div className="game-players-table" id="players-drawer-list">
         <div className="game-players-head">

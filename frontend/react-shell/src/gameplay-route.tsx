@@ -96,6 +96,10 @@ function territoryOptionLabel(
   return `${territory.name} · ${territoryOwnerName(territory, playersById)} · ${territory.armies}`;
 }
 
+function territoryDockOptionLabel(territory: SnapshotTerritory): string {
+  return territory.name;
+}
+
 function cardTypeLabel(card: SnapshotCard): string {
   if (card.type === "infantry") {
     return t("game.runtime.cardType.infantry");
@@ -1267,7 +1271,7 @@ export function GameRoute() {
                     >
                       {myTerritories.map((territory) => (
                         <option key={territory.id} value={territory.id}>
-                          {territoryOptionLabel(territory, playersById)}
+                          {territoryDockOptionLabel(territory)}
                         </option>
                       ))}
                     </select>
@@ -1351,7 +1355,7 @@ export function GameRoute() {
                     >
                       {myTerritories.map((territory) => (
                         <option key={territory.id} value={territory.id}>
-                          {territoryOptionLabel(territory, playersById)}
+                          {territoryDockOptionLabel(territory)}
                         </option>
                       ))}
                     </select>
@@ -1365,7 +1369,7 @@ export function GameRoute() {
                         <option value="">{t("game.runtime.noTarget")}</option>
                         {attackTargets.map((territory) => (
                           <option key={territory.id} value={territory.id}>
-                            {territoryOptionLabel(territory, playersById)}
+                            {territoryDockOptionLabel(territory)}
                           </option>
                         ))}
                       </select>
@@ -1470,7 +1474,7 @@ export function GameRoute() {
                     >
                       {myTerritories.map((territory) => (
                         <option key={territory.id} value={territory.id}>
-                          {territoryOptionLabel(territory, playersById)}
+                          {territoryDockOptionLabel(territory)}
                         </option>
                       ))}
                     </select>
@@ -1487,7 +1491,7 @@ export function GameRoute() {
                         <option value="">{t("game.runtime.noAdjacentTerritory")}</option>
                         {fortifyTargets.map((territory) => (
                           <option key={territory.id} value={territory.id}>
-                            {territoryOptionLabel(territory, playersById)}
+                            {territoryDockOptionLabel(territory)}
                           </option>
                         ))}
                       </select>

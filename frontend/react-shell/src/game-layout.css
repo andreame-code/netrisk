@@ -5403,7 +5403,8 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
 .game-command-dock #reinforce-multi-button,
 .game-command-dock #fortify-button,
 .game-command-dock #conquest-button,
-.game-command-dock #card-trade-button {
+.game-command-dock #card-trade-button,
+.game-command-dock #card-trade-dock-button {
   min-width: 220px !important;
   border-color: rgba(246, 181, 21, 0.88) !important;
   background: linear-gradient(180deg, #d99b2d, #9b650c) !important;
@@ -5446,5 +5447,354 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock {
   .game-command-dock #reinforce-group .action-stack,
   .game-command-dock #conquest-group .action-stack {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* Final visual-alignment pass for the attached reference shell.
+   This intentionally only affects the active game screen and leaves map rendering intact. */
+body[data-app-section="game"] .game-app-frame,
+body[data-app-section="game"] .game-page-shell,
+body[data-app-section="game"] .board-shell {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body[data-app-section="game"] .game-bottom-shell {
+  display: none !important;
+}
+
+body[data-app-section="game"] .top-nav-bar,
+html[data-theme="war-table"] body[data-app-section="game"] .top-nav-bar {
+  min-height: 70px !important;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  border-width: 0 0 1px !important;
+  border-radius: 0 !important;
+  background: rgba(2, 7, 13, 0.96) !important;
+}
+
+body[data-app-section="game"] .top-nav-title::after {
+  font-size: 1.72rem !important;
+  letter-spacing: 0.18em !important;
+}
+
+body[data-app-section="game"] .top-nav-bar .nav-link {
+  min-height: 70px !important;
+  padding: 0 28px !important;
+  font-size: 0.9rem !important;
+}
+
+@media (min-width: 761px) {
+  body[data-app-section="game"] .top-nav-links,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-links {
+    left: 284px !important;
+    height: 70px !important;
+    gap: 34px !important;
+  }
+
+  body[data-app-section="game"] .top-nav-module-slots,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-module-slots {
+    top: 14px !important;
+  }
+}
+
+.game-map-first-page,
+.game-map-first-page .game-battlefield-layout,
+.game-map-first-page .game-main-column,
+.game-map-first-page .game-map-stage,
+html[data-theme="war-table"] .game-map-first-page,
+html[data-theme="war-table"] .game-map-first-page .game-battlefield-layout,
+html[data-theme="war-table"] .game-map-first-page .game-main-column,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage {
+  min-height: calc(100vh - 70px) !important;
+}
+
+.game-map-first-page .game-map-stage,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage {
+  --game-map-safe-top: 30px !important;
+  --game-map-safe-bottom: 216px !important;
+}
+
+.game-map-first-page .game-map-stage .map-board-anchor,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-anchor {
+  left: calc(50% + 128px) !important;
+}
+
+.game-map-first-page .game-map-stage:has(.game-modern-drawer-left) .map-board-anchor,
+html[data-theme="war-table"]
+  .game-map-first-page
+  .game-map-stage:has(.game-modern-drawer-left)
+  .map-board-anchor {
+  left: calc(50% + 238px) !important;
+}
+
+.game-map-first-page .game-map-stage .map-board,
+html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board {
+  border: 1px solid rgba(134, 158, 176, 0.5) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.48),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+.game-floating-hud,
+html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
+  top: 28px !important;
+  left: 18px !important;
+  width: 336px !important;
+  min-height: 156px !important;
+}
+
+.game-floating-hud .map-trade-alert,
+html[data-theme="war-table"] .game-map-first-page .game-floating-hud .map-trade-alert {
+  margin: 0 0 14px !important;
+  padding: 12px 14px !important;
+  font-size: 0.88rem !important;
+}
+
+.game-action-rail,
+html[data-theme="war-table"] .game-map-first-page .game-action-rail {
+  top: 304px !important;
+  left: 18px !important;
+  width: 204px !important;
+  gap: 10px !important;
+}
+
+.game-action-rail .game-action-rail-button,
+.game-action-rail .game-cards-drawer,
+.game-action-rail .game-info-drawer,
+.game-action-rail .game-players-drawer,
+html[data-theme="war-table"] .game-map-first-page .game-action-rail .game-action-rail-button {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  display: grid !important;
+  width: 100% !important;
+  min-height: 56px !important;
+  transform: none !important;
+}
+
+.game-action-rail .game-action-rail-button > summary {
+  min-height: 56px !important;
+}
+
+.game-action-rail .game-action-rail-button {
+  grid-template-columns: 52px 1fr auto !important;
+  padding: 0 14px 0 0 !important;
+}
+
+.game-action-rail .game-action-rail-button > summary {
+  grid-template-columns: 52px 1fr auto !important;
+  padding: 0 14px 0 0 !important;
+}
+
+.game-modern-drawer-left,
+html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-left {
+  top: 22px !important;
+  left: 238px !important;
+  width: 280px !important;
+  max-height: calc(100vh - 126px) !important;
+}
+
+.game-modern-drawer-right,
+html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-right {
+  top: 22px !important;
+  right: 14px !important;
+  width: 280px !important;
+  max-height: calc(100vh - 126px) !important;
+}
+
+.game-players-modern-drawer,
+html[data-theme="war-table"] .game-map-first-page .game-players-modern-drawer {
+  width: 350px !important;
+}
+
+.game-drawer-callout span {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+.game-cards-modern-drawer .game-card-grid-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.game-cards-modern-drawer .game-card-tile {
+  min-height: 108px !important;
+  padding: 10px 7px !important;
+  text-align: center !important;
+}
+
+.game-cards-modern-drawer .game-card-tile strong {
+  overflow-wrap: anywhere !important;
+  font-size: 0.64rem !important;
+  line-height: 1.12 !important;
+}
+
+.game-cards-modern-drawer .game-card-tile small {
+  font-size: 0.58rem !important;
+  line-height: 1.1 !important;
+}
+
+.game-log-tabs {
+  gap: 6px !important;
+}
+
+.game-log-tabs button {
+  min-width: 0 !important;
+  padding: 0 4px !important;
+  font-size: 0.56rem !important;
+}
+
+.game-map-first-page .map-controls,
+html[data-theme="war-table"] .game-map-first-page .map-controls {
+  top: 34px !important;
+  right: 32px !important;
+}
+
+.game-map-first-page .map-control-button,
+html[data-theme="war-table"] .game-map-first-page .map-control-button {
+  width: 56px !important;
+  min-width: 56px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+}
+
+.game-right-utility-rail,
+html[data-theme="war-table"] .game-map-first-page .game-right-utility-rail {
+  right: 22px !important;
+  top: 52% !important;
+}
+
+.game-activity-trigger,
+html[data-theme="war-table"] .game-map-first-page .game-activity-trigger {
+  width: 72px !important;
+  min-height: 106px !important;
+  border-color: rgba(246, 181, 21, 0.82) !important;
+}
+
+.game-command-dock,
+html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+  bottom: 56px !important;
+  width: min(1360px, calc(100vw - 300px)) !important;
+  min-height: 126px !important;
+  padding: 18px 22px !important;
+}
+
+.game-command-dock-title {
+  top: -30px !important;
+  left: 22px !important;
+}
+
+.game-command-dock .actions-section,
+.game-command-dock .game-lobby-controls {
+  gap: 20px !important;
+}
+
+.game-command-dock .action-stack,
+.game-command-dock #attack-group .action-stack,
+.game-command-dock #fortify-group .action-stack {
+  grid-template-columns:
+    minmax(260px, 1.18fr)
+    minmax(220px, 0.92fr)
+    minmax(96px, 0.38fr)
+    minmax(360px, auto) !important;
+}
+
+.game-command-dock .action-row {
+  display: flex !important;
+  gap: 16px !important;
+}
+
+.game-command-dock #attack-banzai-button {
+  min-width: 118px !important;
+  padding-inline: 14px !important;
+}
+
+.game-command-dock #attack-button,
+.game-command-dock #reinforce-multi-button,
+.game-command-dock #fortify-button,
+.game-command-dock #conquest-button {
+  min-width: 210px !important;
+}
+
+.game-command-dock #end-turn-button {
+  min-width: 194px !important;
+}
+
+.game-command-dock .game-mandatory-trade-dock {
+  display: grid !important;
+  grid-template-columns: minmax(480px, 1.2fr) minmax(410px, 0.95fr) 180px !important;
+  gap: 26px !important;
+  align-items: stretch !important;
+}
+
+.game-map-first-page:has(.game-command-dock-mandatory-trade) .game-map-stage,
+html[data-theme="war-table"]
+  .game-map-first-page:has(.game-command-dock-mandatory-trade)
+  .game-map-stage {
+  --game-map-safe-bottom: 360px !important;
+}
+
+.game-command-dock-mandatory-trade,
+html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
+  bottom: 32px !important;
+  width: min(1490px, calc(100vw - 190px)) !important;
+  min-height: 260px !important;
+  max-height: none !important;
+  padding: 20px 28px !important;
+}
+
+.game-command-dock-mandatory-trade .game-mandatory-trade-dock {
+  min-height: 218px !important;
+}
+
+.game-command-dock-mandatory-trade .game-card-tile {
+  min-height: 158px !important;
+}
+
+.game-command-dock-mandatory-trade .game-selected-card-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(112px, 1fr)) !important;
+  gap: 12px !important;
+  min-height: 158px !important;
+}
+
+.game-command-dock-mandatory-trade .game-trade-actions {
+  display: grid !important;
+  grid-template-columns: minmax(160px, 0.58fr) minmax(220px, 1fr) !important;
+  gap: 18px !important;
+}
+
+.game-command-dock-mandatory-trade .game-exchange-bonus {
+  display: grid !important;
+  align-content: center !important;
+  justify-items: center !important;
+  border-left: 1px solid rgba(151, 178, 194, 0.24) !important;
+}
+
+.game-command-dock .game-card-grid {
+  grid-template-columns: repeat(5, minmax(96px, 1fr)) !important;
+}
+
+.game-command-dock .game-card-tile {
+  min-height: 108px !important;
+}
+
+@media (max-width: 1180px) {
+  .game-map-first-page .game-map-stage .map-board-anchor,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-anchor {
+    left: calc(50% + 76px) !important;
+  }
+
+  .game-command-dock,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+    width: min(980px, calc(100vw - 260px)) !important;
   }
 }

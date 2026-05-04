@@ -138,6 +138,19 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
   return "760 / 500";
 }
 
+function resolveMapImageUrl(imageUrl: string): string {
+  if (/^(?:[a-z][a-z0-9+.-]*:|data:|blob:)/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  const baseUrl = import.meta.env.BASE_URL || "/";
+  if (imageUrl.startsWith("/") && baseUrl !== "/") {
+    return `${baseUrl.replace(/\/$/, "")}${imageUrl}`;
+  }
+
+  return imageUrl;
+}
+
 function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
   const value = Number.parseFloat(styles.getPropertyValue(propertyName) || "0");
   return Number.isFinite(value) ? value : 0;
@@ -676,7 +689,7 @@ export function GameplayMapViewport({
       : {}),
     ...(snapshot.mapVisual?.imageUrl
       ? {
-          "--map-background-image": `url(${snapshot.mapVisual.imageUrl})`
+          "--map-background-image": `url(${resolveMapImageUrl(snapshot.mapVisual.imageUrl)})`
         }
       : {})
   } as CSSProperties;
