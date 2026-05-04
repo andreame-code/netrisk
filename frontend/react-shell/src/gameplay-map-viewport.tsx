@@ -139,6 +139,10 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
 }
 
 function resolveMapImageUrl(imageUrl: string): string {
+  if (imageUrl.startsWith("//")) {
+    return imageUrl;
+  }
+
   if (/^(?:[a-z][a-z0-9+.-]*:|data:|blob:)/i.test(imageUrl)) {
     return imageUrl;
   }
