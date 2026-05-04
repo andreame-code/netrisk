@@ -147,9 +147,8 @@ function resolveMapImageUrl(imageUrl: string): string {
     return imageUrl;
   }
 
-  const baseUrl = import.meta.env.BASE_URL || "/";
-  if (imageUrl.startsWith("/") && baseUrl !== "/") {
-    return `${baseUrl.replace(/\/$/, "")}${imageUrl}`;
+  if (imageUrl.startsWith("/")) {
+    return imageUrl;
   }
 
   return imageUrl;
