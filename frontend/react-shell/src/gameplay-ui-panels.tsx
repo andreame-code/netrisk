@@ -626,9 +626,7 @@ export function CardsDrawer({
           {mustTradeCards ? `${t("game.tradeAlert.title")}. ` : ""}
           {t("game.runtime.tradeHelp.selected", { selected: selectedCardIds.length })}
         </p>
-        <p id="card-trade-bonus">
-          Prossimo scambio: +{cardState?.nextTradeBonus ?? 0} rinforzi
-        </p>
+        <p id="card-trade-bonus">Prossimo scambio: +{cardState?.nextTradeBonus ?? 0} rinforzi</p>
         <button
           id="card-trade-button"
           type="button"
