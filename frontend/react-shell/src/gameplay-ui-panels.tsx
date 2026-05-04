@@ -585,7 +585,7 @@ export function CardsDrawer({
           <span>{t("game.cards.alert")}</span>
         </div>
         <p id="card-trade-summary" className="game-card-trade-summary">
-          Carte in mano: {cards.length}
+          {t("game.runtime.cardsInHand", { count: cards.length })}
         </p>
         <div className="game-card-grid game-card-grid-compact" id="card-trade-list">
           {cards.map((card) => (
@@ -626,7 +626,9 @@ export function CardsDrawer({
           {mustTradeCards ? `${t("game.tradeAlert.title")}. ` : ""}
           {t("game.runtime.tradeHelp.selected", { selected: selectedCardIds.length })}
         </p>
-        <p id="card-trade-bonus">Prossimo scambio: +{cardState?.nextTradeBonus ?? 0} rinforzi</p>
+        <p id="card-trade-bonus">
+          {t("game.runtime.nextTradeBonus", { bonus: cardState?.nextTradeBonus ?? 0 })}
+        </p>
         <button
           id="card-trade-button"
           type="button"
