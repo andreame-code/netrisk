@@ -5560,6 +5560,7 @@ html[data-theme="war-table"] .game-map-first-page .game-action-rail {
   left: 18px !important;
   width: 204px !important;
   gap: 10px !important;
+  z-index: 90 !important;
 }
 
 .game-action-rail .game-action-rail-button,
@@ -5601,9 +5602,16 @@ html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-left {
   max-height: calc(100vh - 126px) !important;
 }
 
+.game-modern-drawer,
+html[data-theme="war-table"] .game-map-first-page .game-modern-drawer {
+  position: fixed !important;
+  top: 92px !important;
+  z-index: 80 !important;
+}
+
 .game-modern-drawer-right,
 html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-right {
-  top: 22px !important;
+  top: 92px !important;
   right: 14px !important;
   width: 280px !important;
   max-height: calc(100vh - 126px) !important;
@@ -5785,6 +5793,55 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
 .game-command-dock .game-card-tile {
   min-height: 108px !important;
+}
+
+@media (max-width: 1360px) {
+  .game-command-dock,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock {
+    width: calc(100vw - 48px) !important;
+    padding-inline: 16px !important;
+  }
+
+  .game-command-dock-mandatory-trade,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
+    width: calc(100vw - 190px) !important;
+  }
+
+  .game-command-dock .actions-section,
+  .game-command-dock .game-lobby-controls {
+    gap: 12px !important;
+  }
+
+  .game-command-dock .action-stack,
+  .game-command-dock #attack-group .action-stack,
+  .game-command-dock #fortify-group .action-stack {
+    grid-template-columns:
+      minmax(180px, 1fr)
+      minmax(160px, 0.86fr)
+      minmax(82px, 0.34fr)
+      minmax(250px, auto) !important;
+    gap: 10px !important;
+  }
+
+  .game-command-dock .action-row {
+    gap: 8px !important;
+  }
+
+  .game-command-dock #attack-button,
+  .game-command-dock #reinforce-multi-button,
+  .game-command-dock #fortify-button,
+  .game-command-dock #conquest-button {
+    min-width: 160px !important;
+  }
+
+  .game-command-dock #attack-banzai-button {
+    min-width: 82px !important;
+    padding-inline: 10px !important;
+  }
+
+  .game-command-dock #end-turn-button {
+    min-width: 160px !important;
+  }
 }
 
 @media (max-width: 1180px) {
