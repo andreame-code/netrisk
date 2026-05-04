@@ -74,6 +74,8 @@ type CardsDrawerProps = {
   canTradeCards: boolean;
   cardState: GameSnapshot["cardState"];
   cards: SnapshotCard[];
+  feedbackIsError: boolean;
+  feedbackMessage: string;
   getCardTypeLabel(card: SnapshotCard): string;
   mustTradeCards: boolean;
   onClose(): void;
@@ -556,6 +558,8 @@ export function CardsDrawer({
   canTradeCards,
   cardState,
   cards,
+  feedbackIsError,
+  feedbackMessage,
   getCardTypeLabel,
   mustTradeCards,
   onClose,
@@ -580,6 +584,9 @@ export function CardsDrawer({
           <strong>{t("game.tradeAlert.title")}</strong>
           <span>{t("game.cards.alert")}</span>
         </div>
+        <p id="card-trade-summary" className="game-card-trade-summary">
+          Carte in mano: {cards.length}
+        </p>
         <div className="game-card-grid game-card-grid-compact" id="card-trade-list">
           {cards.map((card) => (
             <button
@@ -606,11 +613,21 @@ export function CardsDrawer({
             ? t("game.cards.mustTradeToContinue")
             : t("game.cards.tradeForReinforcements")}
         </p>
+        {feedbackMessage ? (
+          <p
+            id={feedbackIsError ? "card-trade-error" : "card-trade-success"}
+            className={feedbackIsError ? "action-help is-error" : "action-help is-success"}
+            aria-live="polite"
+          >
+            {feedbackMessage}
+          </p>
+        ) : null}
         <p id="card-trade-help">
+          {mustTradeCards ? `${t("game.tradeAlert.title")}. ` : ""}
           {t("game.runtime.tradeHelp.selected", { selected: selectedCardIds.length })}
         </p>
-        <p>
-          {t("game.cards.nextExchangeBonus")} <strong>+{cardState?.nextTradeBonus ?? 0}</strong>
+        <p id="card-trade-bonus">
+          Prossimo scambio: +{cardState?.nextTradeBonus ?? 0} rinforzi
         </p>
         <button
           id="card-trade-button"

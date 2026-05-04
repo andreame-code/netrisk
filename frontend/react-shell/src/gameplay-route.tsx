@@ -967,6 +967,11 @@ export function GameRoute() {
             <span id="game-map-meta" className="game-visually-hidden">
               {mapMetaLabel}
             </span>
+            {configuredPlayers !== 2 || aiCount !== 1 ? (
+              <span id="game-setup-meta" className="game-visually-hidden">
+                {setupMetaLabel}
+              </span>
+            ) : null}
             <span
               id="identity-status"
               className="game-visually-hidden"
@@ -976,6 +981,9 @@ export function GameRoute() {
             </span>
             <span id="players-summary" className="game-visually-hidden">
               {snapshot.players.map((player) => player.name).join(" ")}
+            </span>
+            <span id="log" className="game-visually-hidden">
+              {activityLogEntries.map((entry) => entry.text).join(" ")}
             </span>
             {!showAttackGroup && showReinforceGroup ? (
               <span className="game-visually-hidden" aria-hidden="true">
@@ -1078,6 +1086,8 @@ export function GameRoute() {
                 canTradeCards={canTradeCards}
                 cardState={snapshot.cardState || null}
                 cards={playerHand}
+                feedbackIsError={gameFeedbackIsError}
+                feedbackMessage={gameFeedbackMessage}
                 getCardTypeLabel={cardTypeLabel}
                 mustTradeCards={mustTradeCards}
                 selectedCardIds={selectedTradeCardIds}
