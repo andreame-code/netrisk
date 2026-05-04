@@ -6763,13 +6763,20 @@ register("security headers espongono policy browser restrittive", async () => {
     const csp = response.headers.get("content-security-policy") || "";
     const cspDirectives = new Set(csp.split(";").map((directive) => directive.trim()));
 
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(response.headers.get("x-xss-protection"), "0");
+    assert.equal(response.headers.get("x-permitted-cross-domain-policies"), "none");
+    assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
+    assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
     assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
     assert.equal(
       response.headers.get("permissions-policy"),
-      "camera=(), microphone=(), geolocation=()"
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     );
     assert.equal(cspDirectives.has("font-src 'self'"), true);
     assert.equal(cspDirectives.has("frame-ancestors 'none'"), true);
+    assert.equal(cspDirectives.has("upgrade-insecure-requests"), true);
   });
 });
 

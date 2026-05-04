@@ -257,7 +257,11 @@ function parseCookies(req: Request): CookieMap {
       return cookies;
     }
 
-    cookies[key] = decodeURIComponent(value);
+    try {
+      cookies[key] = decodeURIComponent(value);
+    } catch {
+      cookies[key] = value;
+    }
     return cookies;
   }, {} as CookieMap);
 }
@@ -1727,13 +1731,19 @@ function createApp(options: CreateAppOptions = {}) {
 
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "0");
     res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    );
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
     );
   }
 
@@ -1858,6 +1868,7 @@ if (require.main === module) {
 module.exports = {
   createApp,
   parseBody,
+  parseCookies,
   sendJson,
   auth: app.auth,
   datastore: app.datastore,
