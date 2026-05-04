@@ -335,7 +335,7 @@ export function GameRoute() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
-  const isCommandDockExpanded = false;
+  const [isCommandDockExpanded, setIsCommandDockExpanded] = useState(false);
 
   const gameplayQuery = useQuery({
     queryKey,
@@ -964,6 +964,9 @@ export function GameRoute() {
             <span id="game-status" className="game-visually-hidden">
               {gameStatusLabel}
             </span>
+            <span id="game-map-meta" className="game-visually-hidden">
+              {mapMetaLabel}
+            </span>
             <span
               id="identity-status"
               className="game-visually-hidden"
@@ -1088,7 +1091,12 @@ export function GameRoute() {
           </section>
         </section>
 
-        <GameActionDock commandTitle={commandDockTitle} mode={dockMode}>
+        <GameActionDock
+          commandTitle={commandDockTitle}
+          expanded={isCommandDockExpanded}
+          mode={dockMode}
+          onToggleExpanded={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
+        >
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
               <section className="game-trade-hand">

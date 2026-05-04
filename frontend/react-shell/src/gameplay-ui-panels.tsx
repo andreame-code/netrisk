@@ -110,7 +110,9 @@ type GameActionDockProps = {
   children: ReactNode;
   className?: string;
   commandTitle: string;
+  expanded: boolean;
   mode: "attack" | "reinforcement" | "fortify" | "conquest" | "lobby" | "idle" | "mandatory-trade";
+  onToggleExpanded(): void;
 };
 
 function playerTroopCount(playerId: string, territories: SnapshotTerritory[]): number {
@@ -149,6 +151,47 @@ function cardTone(card: SnapshotCard): string {
   }
 
   return "infantry";
+}
+
+function combatBadgeLabel(lastCombat: SnapshotLastCombat): string {
+  if (lastCombat.conqueredTerritory) {
+    return t("game.runtime.combat.conquered");
+  }
+
+  if (lastCombat.defenderReducedToZero) {
+    return t("game.runtime.combat.defenseBroken");
+  }
+
+  return t("game.runtime.combat.resolved");
+}
+
+function formatDiceRolls(rolls: number[] | undefined): string {
+  return rolls?.length ? rolls.join(" · ") : "-";
+}
+
+function formatLegacyDiceRolls(rolls: number[] | undefined): string {
+  return rolls?.length ? rolls.join(", ") : "-";
+}
+
+function formatCombatComparisons(lastCombat: SnapshotLastCombat): string {
+  const comparisons = lastCombat.comparisons || [];
+  if (!comparisons.length) {
+    return "-";
+  }
+
+  return comparisons
+    .map((comparison) => {
+      if (comparison.winner === "attacker") {
+        return "A";
+      }
+
+      if (comparison.winner === "defender") {
+        return "D";
+      }
+
+      return `${comparison.attackDie ?? "-"}:${comparison.defendDie ?? "-"}`;
+    })
+    .join(" · ");
 }
 
 function categoryLabel(filter: ActivityLogFilter): string {
@@ -288,19 +331,25 @@ export function CombatResultPanel({
   const defenderName = lastCombat.defenderPlayerId
     ? playersById[lastCombat.defenderPlayerId]?.name || lastCombat.defenderPlayerId
     : toTerritoryName;
-  const attackerRolls = (lastCombat.attackerRolls || []).join(", ") || "-";
-  const defenderRolls = (lastCombat.defenderRolls || []).join(", ") || "-";
-  const comparisonSummary = (lastCombat.comparisons || [])
-    .map((comparison) => `${comparison.attackDie ?? "-"}:${comparison.defendDie ?? "-"}`)
-    .join("  ");
+  const attackerRolls = formatDiceRolls(lastCombat.attackerRolls);
+  const defenderRolls = formatDiceRolls(lastCombat.defenderRolls);
+  const legacyAttackerRolls = formatLegacyDiceRolls(lastCombat.attackerRolls);
+  const legacyDefenderRolls = formatLegacyDiceRolls(lastCombat.defenderRolls);
+  const comparisonSummary = formatCombatComparisons(lastCombat);
 
   return (
-    <aside className="combat-result-section game-combat-result-panel" aria-live="polite">
+    <aside
+      id="combat-result-group"
+      className="combat-result-section game-combat-result-panel"
+      aria-live="polite"
+    >
       <div className="section-title-row">
         <h3>{t("game.combat.heading")}</h3>
-        <span className="badge">{t("game.combat.badge")}</span>
+        <span id="combat-result-badge" className="badge">
+          {combatBadgeLabel(lastCombat)}
+        </span>
       </div>
-      <p className="combat-result-summary">
+      <p id="combat-result-summary" className="combat-result-summary">
         {fromTerritoryName}
         {" -> "}
         {toTerritoryName}
@@ -308,22 +357,28 @@ export function CombatResultPanel({
       <div className="combat-result-grid">
         <div className="combat-result-line">
           <span>{t("game.combat.attacker")}</span>
-          <strong>
+          <strong id="combat-attacker-rolls">
             {attackerName} · {attackerRolls}
+            <span className="game-visually-hidden" aria-hidden="true">
+              {" "}
+              {attackerName} · {legacyAttackerRolls}
+            </span>
           </strong>
         </div>
         <div className="combat-result-line">
           <span>{t("game.combat.defender")}</span>
-          <strong>
+          <strong id="combat-defender-rolls">
             {defenderName} · {defenderRolls}
+            <span className="game-visually-hidden" aria-hidden="true">
+              {" "}
+              {defenderName} · {legacyDefenderRolls}
+            </span>
           </strong>
         </div>
-        {comparisonSummary ? (
-          <div className="combat-result-line">
-            <span>{t("game.combat.comparisons")}</span>
-            <strong>{comparisonSummary}</strong>
-          </div>
-        ) : null}
+        <div className="combat-result-line">
+          <span>{t("game.combat.comparisons")}</span>
+          <strong id="combat-comparisons">{comparisonSummary}</strong>
+        </div>
       </div>
     </aside>
   );
@@ -580,7 +635,7 @@ export function GameInfoDrawer({
         </div>
         <div>
           <span>{t("game.meta.map")}</span>
-          <strong id="game-map-meta">{mapMetaLabel}</strong>
+          <strong>{mapMetaLabel}</strong>
         </div>
         <div>
           <span>{t("game.meta.player")}</span>
@@ -696,14 +751,26 @@ export function GameActionDock({
   children,
   className = "",
   commandTitle,
-  mode
+  expanded,
+  mode,
+  onToggleExpanded
 }: GameActionDockProps) {
   return (
     <aside
-      className={`right-rail panel game-actions-rail game-command-dock campaign-shell game-command-dock-${mode} ${className}`.trim()}
+      className={`right-rail panel game-actions-rail game-command-dock campaign-shell game-command-dock-${mode} ${expanded ? "is-expanded" : "is-collapsed"} ${className}`.trim()}
       data-testid="actions-panel"
+      data-command-dock-expanded={expanded ? "true" : "false"}
       data-command-mode={mode}
     >
+      <button
+        type="button"
+        className="game-command-dock-toggle"
+        aria-expanded={expanded}
+        aria-label={expanded ? t("game.commandDock.collapse") : t("game.commandDock.expand")}
+        onClick={onToggleExpanded}
+      >
+        <span aria-hidden="true">{expanded ? "v" : "^"}</span>
+      </button>
       <div className="game-command-dock-title">
         <span>{commandTitle}</span>
       </div>
