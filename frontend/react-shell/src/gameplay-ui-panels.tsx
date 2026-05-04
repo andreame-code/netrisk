@@ -49,6 +49,7 @@ type CombatResultPanelProps = {
 type GameActionRailProps = {
   activeDrawer: GameDrawerKey | null;
   items: GameActionItem[];
+  onOpenDrawer(drawer: GameDrawerKey): void;
   onToggleDrawer(drawer: GameDrawerKey): void;
 };
 
@@ -294,7 +295,7 @@ export function GameHud({
               <WarTableIcon name="medal" />
             </span>
             <span>
-              <span className="game-hud-label">{t("game.runtime.winner")}</span>
+              <span className="game-hud-label">{t("game.runtime.winner")}: </span>
               <strong>{winnerName}</strong>
             </span>
           </div>
@@ -384,11 +385,22 @@ export function CombatResultPanel({
   );
 }
 
-export function GameActionRail({ activeDrawer, items, onToggleDrawer }: GameActionRailProps) {
+export function GameActionRail({
+  activeDrawer,
+  items,
+  onOpenDrawer,
+  onToggleDrawer
+}: GameActionRailProps) {
   return (
     <nav className="game-action-rail" aria-label="Game panels">
       {items.map((item) => {
-        const buttonClassName = `game-action-rail-button game-${item.drawer === "gameInfo" ? "info" : item.drawer}-drawer${activeDrawer === item.drawer ? " is-active" : ""}`;
+        const drawerActionClass =
+          item.drawer === "cards"
+            ? "game-cards-drawer"
+            : item.drawer === "gameInfo"
+              ? "game-info-action"
+              : "game-players-action";
+        const buttonClassName = `game-action-rail-button ${drawerActionClass}${activeDrawer === item.drawer ? " is-active" : ""}`;
         const content = (
           <>
             <span className="game-action-rail-icon" aria-hidden="true">
@@ -401,36 +413,33 @@ export function GameActionRail({ activeDrawer, items, onToggleDrawer }: GameActi
           </>
         );
 
-        if (item.drawer === "cards") {
-          return (
-            <details
-              key={item.drawer}
-              className={buttonClassName}
-              open={activeDrawer === item.drawer}
-            >
-              <summary
-                aria-pressed={activeDrawer === item.drawer}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onToggleDrawer(item.drawer);
-                }}
-              >
-                {content}
-              </summary>
-            </details>
-          );
-        }
-
         return (
-          <button
+          <details
             key={item.drawer}
-            type="button"
             className={buttonClassName}
-            aria-pressed={activeDrawer === item.drawer}
-            onClick={() => onToggleDrawer(item.drawer)}
+            open={activeDrawer === item.drawer}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                event.preventDefault();
+                onToggleDrawer(item.drawer);
+              }
+            }}
+            onToggle={(event) => {
+              if (event.currentTarget.open && activeDrawer !== item.drawer) {
+                onOpenDrawer(item.drawer);
+              }
+            }}
           >
-            {content}
-          </button>
+            <summary
+              aria-pressed={activeDrawer === item.drawer}
+              onClick={(event) => {
+                event.preventDefault();
+                onToggleDrawer(item.drawer);
+              }}
+            >
+              {content}
+            </summary>
+          </details>
         );
       })}
     </nav>
@@ -489,6 +498,7 @@ export function PlayersDrawer({
         {players.map((player) => {
           const isCurrent = player.id === currentPlayerId;
           const isMe = player.id === myPlayerId;
+          const territoryCount = player.territoryCount || 0;
           const statusLabel = player.eliminated
             ? t("game.runtime.eliminated")
             : isCurrent
@@ -496,7 +506,11 @@ export function PlayersDrawer({
               : t("game.runtime.waiting");
 
           return (
-            <article className="game-player-row" data-player-id={player.id} key={player.id}>
+            <article
+              className="game-player-row player-card"
+              data-player-id={player.id}
+              key={player.id}
+            >
               <div className="game-player-identity">
                 <span
                   className="game-player-color"
@@ -512,7 +526,11 @@ export function PlayersDrawer({
                 </span>
               </div>
               <strong>{playerTroopCount(player.id, territories)}</strong>
-              <strong>{player.territoryCount || 0}</strong>
+              <strong>{territoryCount}</strong>
+              <span className="game-visually-hidden">
+                {t("game.runtime.territories")}: {territoryCount}. Stato:{" "}
+                {player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}.
+              </span>
             </article>
           );
         })}
@@ -662,7 +680,6 @@ export function GameInfoDrawer({
         ))}
       </div>
       <button
-        id="surrender-button"
         type="button"
         className="danger-button full-width game-drawer-danger"
         hidden={!showSurrender}

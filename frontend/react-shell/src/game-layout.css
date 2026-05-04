@@ -5584,6 +5584,64 @@ html[data-theme="war-table"] .game-map-first-page .game-action-rail .game-action
   min-height: 56px !important;
 }
 
+.game-legacy-drawer-hooks {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.game-legacy-drawer-hook {
+  pointer-events: auto;
+}
+
+.game-legacy-drawer-hook:not([open]) {
+  display: none;
+}
+
+.game-legacy-drawer-hook[open] {
+  position: fixed;
+  left: 244px;
+  z-index: 92;
+  width: min(330px, calc(100vw - 280px));
+  padding: 16px;
+  border: 1px solid rgba(94, 124, 146, 0.7);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(5, 18, 27, 0.98), rgba(3, 10, 16, 0.98));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+  color: var(--nr-text);
+}
+
+.game-legacy-drawer-hook.game-info-drawer[open] {
+  top: 120px;
+}
+
+.game-legacy-drawer-hook.game-roster-drawer[open] {
+  top: 226px;
+}
+
+.game-legacy-drawer-hook > summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.game-legacy-drawer-hook .players {
+  display: grid;
+  gap: 10px;
+}
+
+.game-legacy-drawer-hook .player-card {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid rgba(94, 124, 146, 0.42);
+  border-radius: 7px;
+  background: rgba(8, 27, 42, 0.72);
+}
+
 .game-action-rail .game-action-rail-button {
   grid-template-columns: 52px 1fr auto !important;
   padding: 0 14px 0 0 !important;

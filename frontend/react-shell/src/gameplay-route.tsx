@@ -974,7 +974,7 @@ export function GameRoute() {
             >
               {me?.name || t("game.runtime.notConnected")}
             </span>
-            <span id="players" className="game-visually-hidden">
+            <span id="players-summary" className="game-visually-hidden">
               {snapshot.players.map((player) => player.name).join(" ")}
             </span>
             {!showAttackGroup && showReinforceGroup ? (
@@ -1007,9 +1007,59 @@ export function GameRoute() {
               </span>
             ) : null}
 
+            <div className="game-legacy-drawer-hooks" aria-label={t("game.command.heading")}>
+              <details className="game-legacy-drawer-hook game-info-drawer">
+                <summary>{t("game.drawer.gameInfo")}</summary>
+                <div className="rail-section">
+                  <button
+                    id="surrender-button"
+                    type="button"
+                    className="danger-button full-width game-drawer-danger"
+                    hidden={!showSurrender}
+                    onClick={() => void handleSurrender()}
+                    disabled={actionPending}
+                  >
+                    {t("game.surrender")}
+                  </button>
+                </div>
+              </details>
+
+              <details className="game-legacy-drawer-hook game-roster-drawer">
+                <summary>{t("game.players.heading")}</summary>
+                <div className="players rail-players" id="players">
+                  {snapshot.players.map((player) => {
+                    const troopCount = snapshot.map
+                      .filter((territory) => territory.ownerId === player.id)
+                      .reduce((total, territory) => total + Number(territory.armies || 0), 0);
+
+                    return (
+                      <article
+                        className={`player-card ${pieceSkinClass}`}
+                        data-player-id={player.id}
+                        key={player.id}
+                      >
+                        <strong>{player.name}</strong>
+                        <div>
+                          {t("game.runtime.territories")}: {player.territoryCount || 0}
+                        </div>
+                        <div>Truppe: {troopCount}</div>
+                        <div>
+                          Stato:{" "}
+                          {player.eliminated
+                            ? t("game.runtime.eliminated")
+                            : t("game.runtime.active")}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </details>
+            </div>
+
             <GameActionRail
               activeDrawer={activeDrawer}
               items={actionRailItems}
+              onOpenDrawer={setActiveDrawer}
               onToggleDrawer={toggleDrawer}
             />
 
