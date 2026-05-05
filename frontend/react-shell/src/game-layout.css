@@ -6307,7 +6307,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 @media (min-width: 761px) and (max-height: 700px) {
   .game-map-first-page,
   html[data-theme="war-table"] .game-map-first-page {
-    --game-command-dock-height: 168px !important;
+    --game-command-dock-height: 126px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-mandatory-trade),
@@ -6343,7 +6343,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-map-first-page .game-map-stage,
   html[data-theme="war-table"] .game-map-first-page .game-map-stage {
     --game-map-safe-top: 14px !important;
-    --game-map-safe-bottom: 178px !important;
+    --game-map-safe-bottom: 160px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-mandatory-trade) .game-map-stage,
@@ -6444,16 +6444,16 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-command-dock:not(.game-command-dock-mandatory-trade),
   html[data-theme="war-table"] .game-map-first-page .game-command-dock:not(.game-command-dock-mandatory-trade) {
-    bottom: 0 !important;
+    bottom: 18px !important;
     height: var(--game-command-dock-height) !important;
     min-height: var(--game-command-dock-height) !important;
     max-height: var(--game-command-dock-height) !important;
-    padding: 14px 16px !important;
+    padding: 18px 22px !important;
   }
 
   .game-command-dock:not(.game-command-dock-mandatory-trade),
   html[data-theme="war-table"] .game-map-first-page .game-command-dock:not(.game-command-dock-mandatory-trade) {
-    width: min(1280px, calc(100vw - 120px)) !important;
+    width: min(980px, calc(100vw - 260px)) !important;
   }
 
   .game-command-dock-mandatory-trade,
@@ -6473,21 +6473,38 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock #attack-group .action-stack,
   .game-command-dock #fortify-group .action-stack {
     grid-template-columns:
-      minmax(170px, 1.08fr)
-      minmax(150px, 0.78fr)
-      minmax(72px, 0.3fr)
-      minmax(230px, 0.86fr) !important;
-    gap: 10px !important;
+      minmax(190px, 1.12fr)
+      minmax(170px, 0.88fr)
+      minmax(84px, 0.32fr)
+      minmax(210px, 0.86fr) !important;
+    gap: 14px !important;
   }
 
   .game-command-dock .actions-section,
   .game-command-dock .game-lobby-controls {
-    grid-template-columns: minmax(0, 1fr) minmax(156px, auto) !important;
-    gap: 12px !important;
+    grid-template-columns: minmax(0, 1fr) minmax(178px, auto) !important;
+    gap: 18px !important;
+    box-sizing: border-box !important;
     height: 100% !important;
     max-height: 100% !important;
-    align-items: stretch !important;
+    align-items: end !important;
     overflow: hidden !important;
+    padding: 0 34px 0 0 !important;
+  }
+
+  .game-command-dock .compact-group > label,
+  .game-command-dock .game-dock-select-label {
+    margin-bottom: 3px !important;
+    font-size: 0.6rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .game-command-dock .compact-group > label {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    clip: auto !important;
   }
 
   .game-command-dock .action-group,
@@ -6500,11 +6517,15 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock select,
   .game-command-dock input,
   .game-command-dock button {
-    min-height: 40px !important;
+    min-height: 38px !important;
   }
 
   .game-command-dock #end-turn-button {
     align-self: end !important;
+  }
+
+  .game-command-dock #attack-banzai-button {
+    display: none !important;
   }
 
   .game-command-dock .action-row > button,
@@ -6521,6 +6542,28 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-command-dock .action-row > button {
     flex: 1 1 0 !important;
-    padding-inline: 10px !important;
+    padding-inline: 14px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 700px) {
+  .game-command-dock:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock:not(.game-command-dock-mandatory-trade) {
+    width: min(1348px, calc(100vw - 330px)) !important;
+  }
+
+  .game-command-dock .action-stack,
+  .game-command-dock #attack-group .action-stack,
+  .game-command-dock #fortify-group .action-stack {
+    grid-template-columns:
+      minmax(260px, 1.18fr)
+      minmax(220px, 0.92fr)
+      minmax(96px, 0.38fr)
+      minmax(220px, 0.82fr) !important;
+  }
+
+  .game-command-dock .actions-section,
+  .game-command-dock .game-lobby-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(194px, auto) !important;
   }
 }
