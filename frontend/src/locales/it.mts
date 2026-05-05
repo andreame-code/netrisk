@@ -28,6 +28,7 @@ export const it = Object.freeze({
   "auth.sessionExpired": "Sessione scaduta.",
   "auth.userProfile": "Profilo utente",
   "auth.login.invalidCredentials": "Credenziali non valide.",
+  "auth.throttle.tooManyAttempts": "Troppi tentativi. Riprova piu tardi.",
   "auth.register.requiredFields": "Inserisci utente e password.",
   "auth.register.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",

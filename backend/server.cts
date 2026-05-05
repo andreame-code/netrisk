@@ -10,6 +10,7 @@ const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createSetupCatalogResolver } = require("./setup-catalog-resolver.cjs");
 const { createSetupService } = require("./setup-service.cjs");
 const { createAuthStore } = require("./auth.cjs");
+const { createAuthAttemptThrottle } = require("./auth-attempt-throttle.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
@@ -317,6 +318,7 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   const state = createInitialState();
+  const authAttemptThrottle = createAuthAttemptThrottle();
   let activeGameId: string | null = null;
   let activeGameVersion: number | null = null;
   let activeGameName: string | null = null;
@@ -1466,6 +1468,7 @@ function createApp(options: CreateAppOptions = {}) {
           res,
           requireAuth,
           auth,
+          authAttemptThrottle,
           playerProfiles,
           sendJson,
           sendLocalizedError,
@@ -1509,7 +1512,8 @@ function createApp(options: CreateAppOptions = {}) {
         auth,
         sendJson,
         sendLocalizedError,
-        buildSessionCookie
+        buildSessionCookie,
+        authAttemptThrottle
       );
       return;
     }
