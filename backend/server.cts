@@ -10,6 +10,7 @@ const { createModuleRuntime } = require("./module-runtime.cjs");
 const { createSetupCatalogResolver } = require("./setup-catalog-resolver.cjs");
 const { createSetupService } = require("./setup-service.cjs");
 const { createAuthStore } = require("./auth.cjs");
+const { createAuthAttemptThrottle } = require("./auth-attempt-throttle.cjs");
 const { authorize } = require("./authorization.cjs");
 const { createGameSessionStore } = require("./game-session-store.cjs");
 const { createPlayerProfileStore } = require("./player-profile-store.cjs");
@@ -213,6 +214,9 @@ function defaultDbFile() {
 function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     let raw = "";
+    req.on("error", () => {
+      reject(createLocalizedError("Errore nel caricamento payload", "server.bodyReadError"));
+    });
     req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
@@ -257,7 +261,11 @@ function parseCookies(req: Request): CookieMap {
       return cookies;
     }
 
-    cookies[key] = decodeURIComponent(value);
+    try {
+      cookies[key] = decodeURIComponent(value);
+    } catch {
+      cookies[key] = value;
+    }
     return cookies;
   }, {} as CookieMap);
 }
@@ -310,6 +318,7 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   const state = createInitialState();
+  const authAttemptThrottle = createAuthAttemptThrottle();
   let activeGameId: string | null = null;
   let activeGameVersion: number | null = null;
   let activeGameName: string | null = null;
@@ -1459,6 +1468,7 @@ function createApp(options: CreateAppOptions = {}) {
           res,
           requireAuth,
           auth,
+          authAttemptThrottle,
           playerProfiles,
           sendJson,
           sendLocalizedError,
@@ -1502,7 +1512,8 @@ function createApp(options: CreateAppOptions = {}) {
         auth,
         sendJson,
         sendLocalizedError,
-        buildSessionCookie
+        buildSessionCookie,
+        authAttemptThrottle
       );
       return;
     }
@@ -1727,13 +1738,22 @@ function createApp(options: CreateAppOptions = {}) {
 
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "0");
     res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("X-DNS-Prefetch-Control", "off");
+    res.setHeader("X-Download-Options", "noopen");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader(
+      "Permissions-Policy",
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
+    );
     res.setHeader(
       "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src ${connectSources.join(" ")}`
+      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
     );
   }
 
@@ -1858,6 +1878,7 @@ if (require.main === module) {
 module.exports = {
   createApp,
   parseBody,
+  parseCookies,
   sendJson,
   auth: app.auth,
   datastore: app.datastore,

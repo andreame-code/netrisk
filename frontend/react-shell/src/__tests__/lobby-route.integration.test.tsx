@@ -216,6 +216,61 @@ describe("LobbyRoute War Table theme behavior", () => {
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
   });
 
+  it("uses one War Table game icon color and glyph for each game state", async () => {
+    readCurrentPlayerIdMock.mockReturnValue("player-1");
+    listGamesMock.mockResolvedValue(
+      createLobbyGames([
+        createGameSummary({
+          id: "waiting-game",
+          name: "Waiting Game",
+          phase: "lobby"
+        }),
+        createGameSummary({
+          id: "active-game",
+          name: "Active Game",
+          phase: "active",
+          currentPlayerId: "player-2"
+        }),
+        createGameSummary({
+          id: "my-turn-game",
+          name: "My Turn Game",
+          phase: "active",
+          currentPlayerId: "player-1"
+        }),
+        createGameSummary({
+          id: "finished-game",
+          name: "Finished Game",
+          phase: "finished"
+        })
+      ])
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("war-table");
+
+    const waitingToken = (
+      await screen.findByTestId("react-shell-lobby-row-waiting-game")
+    ).querySelector(".war-table-game-token");
+    const activeToken = screen
+      .getByTestId("react-shell-lobby-row-active-game")
+      .querySelector(".war-table-game-token");
+    const myTurnToken = screen
+      .getByTestId("react-shell-lobby-row-my-turn-game")
+      .querySelector(".war-table-game-token");
+    const finishedToken = screen
+      .getByTestId("react-shell-lobby-row-finished-game")
+      .querySelector(".war-table-game-token");
+
+    expect(waitingToken).toHaveClass("is-lobby");
+    expect(activeToken).toHaveClass("is-active");
+    expect(myTurnToken).toHaveClass("is-active");
+    expect(finishedToken).toHaveClass("is-finished");
+    expect(waitingToken).toHaveAttribute("data-war-table-icon", "users");
+    expect(activeToken).toHaveAttribute("data-war-table-icon", "medal");
+    expect(myTurnToken).toHaveAttribute("data-war-table-icon", "objective");
+    expect(finishedToken).toHaveAttribute("data-war-table-icon", "crosshair");
+  });
+
   it("keeps the War Table My Turn tab scoped to the current turn owner", async () => {
     let playerSessionListener: () => void = () => undefined;
     subscribeCurrentPlayerIdChangesMock.mockImplementation((listener) => {

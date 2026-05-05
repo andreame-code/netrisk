@@ -3,6 +3,8 @@ export const it = Object.freeze({
   "locale.label": "Italiano",
   "locale.label.it": "Italiano",
   "locale.label.en": "English",
+  "locale.label.de": "Deutsch",
+  "locale.label.es": "Espanol",
   "app.brand": "NetRisk",
   "app.title": "Frontline Dominion",
   "common.notAvailable": "n/d",
@@ -28,6 +30,7 @@ export const it = Object.freeze({
   "auth.status.required": "Accesso richiesto.",
   "auth.userProfile": "Profilo utente",
   "auth.login.invalidCredentials": "Credenziali non valide.",
+  "auth.throttle.tooManyAttempts": "Troppi tentativi. Riprova piu tardi.",
   "auth.register.requiredFields": "Inserisci utente e password.",
   "auth.register.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",

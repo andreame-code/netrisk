@@ -981,7 +981,7 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
 
 register("version registry espone manifest e compatibilita baseline", () => {
   const expectedManifest = {
-    appVersion: "0.1.0",
+    appVersion: "0.1.001",
     engineVersion: "1.0.0",
     apiVersion: "1.0.0",
     datastoreSchemaVersion: 1,
@@ -996,6 +996,7 @@ register("version registry espone manifest e compatibilita baseline", () => {
     ...expectedManifest,
     compatible: true
   });
+  assert.match(versionManifest.appVersion, /^\d+\.\d+\.\d{3,}$/);
   assert.equal(versionInfoResponseSchema.safeParse(buildVersionSnapshot()).success, true);
   assert.equal(versionManifest.unversionedSaveGameSchemaVersion, 1);
   assert.equal(isSaveGameSchemaCompatible(versionManifest.saveGameSchemaVersion), true);
@@ -6763,13 +6764,27 @@ register("security headers espongono policy browser restrittive", async () => {
     const csp = response.headers.get("content-security-policy") || "";
     const cspDirectives = new Set(csp.split(";").map((directive) => directive.trim()));
 
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(response.headers.get("x-xss-protection"), "0");
+    assert.equal(response.headers.get("x-permitted-cross-domain-policies"), "none");
+    assert.equal(response.headers.get("x-dns-prefetch-control"), "off");
+    assert.equal(response.headers.get("x-download-options"), "noopen");
+    assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
+    assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
+    assert.equal(response.headers.get("cross-origin-embedder-policy"), "require-corp");
+    assert.equal(
+      response.headers.get("strict-transport-security"),
+      "max-age=31536000; includeSubDomains; preload"
+    );
     assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
     assert.equal(
       response.headers.get("permissions-policy"),
-      "camera=(), microphone=(), geolocation=()"
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
     assert.equal(cspDirectives.has("font-src 'self'"), true);
     assert.equal(cspDirectives.has("frame-ancestors 'none'"), true);
+    assert.equal(cspDirectives.has("upgrade-insecure-requests"), true);
   });
 });
 

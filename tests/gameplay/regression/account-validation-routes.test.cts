@@ -9,6 +9,10 @@ const {
   handleLoginRoute,
   handleRegisterRoute
 } = require("../../../backend/routes/password-auth.cjs");
+const {
+  createAuthAttemptThrottle,
+  createAuthThrottleKey
+} = require("../../../backend/auth-attempt-throttle.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -26,6 +30,7 @@ type LocalizedErrorCall = [
   string,
   { validationErrors: ValidationIssue[] }
 ];
+type AnyLocalizedErrorCall = [unknown, number, unknown, ...unknown[]];
 
 function requireLocalizedErrorCall(call: LocalizedErrorCall | null): LocalizedErrorCall {
   if (!call) {
@@ -107,6 +112,48 @@ function createAccountDeps(overrides = {}) {
     ...overrides
   };
 }
+
+register("auth attempt throttle keeps IP lockout state after a user success", () => {
+  const throttle = createAuthAttemptThrottle({
+    maxAttempts: 10,
+    maxIpAttempts: 2,
+    lockoutMs: 60_000,
+    now: () => 1_000
+  });
+  const req = {
+    headers: {
+      "x-forwarded-for": "203.0.113.11"
+    }
+  };
+
+  const aliceKey = createAuthThrottleKey("login", req, "alice");
+  throttle.recordFailure(aliceKey);
+  throttle.recordSuccess(aliceKey);
+  throttle.recordFailure(createAuthThrottleKey("login", req, "bob"));
+
+  const decision = throttle.check(createAuthThrottleKey("login", req, "carol"));
+
+  assert.equal(decision.allowed, false);
+  assert.equal(decision.retryAfterSeconds, 60);
+});
+
+register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", () => {
+  const req = {
+    headers: {
+      "x-forwarded-for": "203.0.113.22, 198.51.100.1",
+      "x-real-ip": "203.0.113.23"
+    },
+    socket: {
+      remoteAddress: "198.51.100.44"
+    }
+  };
+
+  assert.equal(createAuthThrottleKey("login", req, "alice").ip, "198.51.100.44");
+  assert.equal(
+    createAuthThrottleKey("login", req, "alice", { trustProxyHeaders: true }).ip,
+    "203.0.113.22"
+  );
+});
 
 register("account routes return early when auth is missing", async () => {
   let sendJsonCalls = 0;
@@ -200,6 +247,55 @@ register(
   }
 );
 
+register("handleLoginRoute rate limits repeated password failures before auth work", async () => {
+  const statuses: number[] = [];
+  const throttle = createAuthAttemptThrottle({
+    maxAttempts: 2,
+    maxIpAttempts: 20,
+    lockoutMs: 60_000,
+    now: () => 1_000
+  });
+  let loginCalls = 0;
+
+  async function attemptLogin() {
+    await handleLoginRoute(
+      {
+        headers: {
+          "x-forwarded-for": "203.0.113.7"
+        }
+      },
+      {},
+      { username: "Commander", password: "wrongpass" },
+      {
+        async loginWithPassword() {
+          loginCalls += 1;
+          return {
+            ok: false,
+            error: "Credenziali non valide.",
+            errorKey: "auth.login.invalidCredentials",
+            errorParams: {}
+          };
+        }
+      },
+      () => {
+        throw new Error("sendJson should not be called for failed login attempts.");
+      },
+      (...args: AnyLocalizedErrorCall) => {
+        statuses.push(args[1]);
+      },
+      (_req: unknown, _sessionToken: string) => "session-cookie",
+      throttle
+    );
+  }
+
+  await attemptLogin();
+  await attemptLogin();
+  await attemptLogin();
+
+  assert.deepEqual(statuses, [401, 401, 429]);
+  assert.equal(loginCalls, 2);
+});
+
 register(
   "handleAccountSettingsRoute rejects invalid inbound account payloads with mapped validation errors",
   async () => {
@@ -223,6 +319,57 @@ register(
     );
   }
 );
+
+register("handleAccountSettingsRoute rate limits repeated current password failures", async () => {
+  const statuses: number[] = [];
+  const throttle = createAuthAttemptThrottle({
+    maxAttempts: 2,
+    maxIpAttempts: 20,
+    lockoutMs: 60_000,
+    now: () => 1_000
+  });
+  const baseDeps = createAccountDeps();
+  let accountUpdateCalls = 0;
+
+  async function attemptAccountUpdate() {
+    await handleAccountSettingsRoute(
+      createAccountDeps({
+        req: {
+          headers: {
+            "x-forwarded-for": "203.0.113.9"
+          }
+        },
+        authAttemptThrottle: throttle,
+        auth: {
+          ...baseDeps.auth,
+          async updateUserAccountSettings() {
+            accountUpdateCalls += 1;
+            return {
+              ok: false,
+              error: "Password attuale non valida.",
+              errorKey: "auth.account.currentPasswordInvalid",
+              errorParams: {}
+            };
+          }
+        },
+        sendLocalizedError(...args: AnyLocalizedErrorCall) {
+          statuses.push(args[1]);
+        }
+      }),
+      {
+        currentPassword: "wrongpass",
+        email: "new@example.com"
+      }
+    );
+  }
+
+  await attemptAccountUpdate();
+  await attemptAccountUpdate();
+  await attemptAccountUpdate();
+
+  assert.deepEqual(statuses, [401, 401, 429]);
+  assert.equal(accountUpdateCalls, 2);
+});
 
 register(
   "handleThemePreferenceRoute rejects invalid inbound theme payloads with mapped validation errors",

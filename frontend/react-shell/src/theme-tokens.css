@@ -4673,7 +4673,15 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-toke
   background: linear-gradient(180deg, #227ed7, #114a8e);
 }
 
+html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-token.is-lobby {
+  background: linear-gradient(180deg, #227ed7, #114a8e);
+}
+
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-token.is-green {
+  background: linear-gradient(180deg, #72d67b, #267747);
+}
+
+html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-token.is-active {
   background: linear-gradient(180deg, #72d67b, #267747);
 }
 
@@ -4682,6 +4690,10 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-toke
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-token.is-red {
+  background: linear-gradient(180deg, #df584b, #8a241e);
+}
+
+html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-game-token.is-finished {
   background: linear-gradient(180deg, #df584b, #8a241e);
 }
 

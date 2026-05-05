@@ -144,6 +144,8 @@ The current authored module type is `victory-objectives`.
 A good PR for NetRisk is narrow, tested, and explicit about touched boundaries.
 
 - Summarize what changed and why.
+- Bump `appVersion` in `shared/version-manifest.cts` using the long patch format, for example `0.1.001`.
+- Add a matching `CHANGELOG.md` entry with a short report of the change.
 - List any public API or docs updates.
 - Mention the validation commands you ran.
 - Call out follow-up work separately instead of folding it into the same change.
