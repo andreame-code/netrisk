@@ -20,6 +20,7 @@ type AuthThrottleDecision = {
 };
 
 type AuthAttemptThrottleOptions = {
+  cleanupIntervalMs?: number;
   maxAttempts?: number;
   maxIpAttempts?: number;
   windowMs?: number;
@@ -28,11 +29,16 @@ type AuthAttemptThrottleOptions = {
   now?: () => number;
 };
 
+type RequestIpOptions = {
+  trustProxyHeaders?: boolean;
+};
+
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_MAX_IP_ATTEMPTS = 30;
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_LOCKOUT_MS = 60 * 1000;
 const DEFAULT_MAX_LOCKOUT_MS = 15 * 60 * 1000;
+const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000;
 
 function normalizeUsername(username: unknown): string {
   return String(username || "")
@@ -50,7 +56,19 @@ function firstHeaderValue(value: HeaderValue): string {
   return Array.isArray(value) ? String(value[0] || "") : String(value || "");
 }
 
-function resolveRequestIp(req: unknown): string {
+function trustsForwardedHeaders(options: RequestIpOptions = {}): boolean {
+  if (typeof options.trustProxyHeaders === "boolean") {
+    return options.trustProxyHeaders;
+  }
+
+  return (
+    process.env.NETRISK_TRUST_PROXY_HEADERS === "true" ||
+    process.env.VERCEL === "1" ||
+    Boolean(process.env.VERCEL_ENV)
+  );
+}
+
+function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string {
   const request = req as {
     headers?: Record<string, HeaderValue>;
     socket?: {
@@ -58,21 +76,25 @@ function resolveRequestIp(req: unknown): string {
     };
   };
   const headers = request?.headers || {};
+  const socketIp = String(request?.socket?.remoteAddress || "").trim();
+  if (!trustsForwardedHeaders(options)) {
+    return normalizeIp(socketIp || "unknown");
+  }
+
   const forwardedFor = firstHeaderValue(headers["x-forwarded-for"]).split(",")[0].trim();
   const realIp = firstHeaderValue(headers["x-real-ip"]).trim();
-  const socketIp = String(request?.socket?.remoteAddress || "").trim();
-
   return normalizeIp(forwardedFor || realIp || socketIp || "unknown");
 }
 
 function createAuthThrottleKey(
   scope: AuthThrottleScope,
   req: unknown,
-  username: unknown
+  username: unknown,
+  options: RequestIpOptions = {}
 ): AuthThrottleKey {
   return {
     scope,
-    ip: resolveRequestIp(req),
+    ip: resolveRequestIp(req, options),
     username: normalizeUsername(username)
   };
 }
@@ -84,7 +106,9 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
   const windowMs = options.windowMs || DEFAULT_WINDOW_MS;
   const lockoutMs = options.lockoutMs || DEFAULT_LOCKOUT_MS;
   const maxLockoutMs = options.maxLockoutMs || DEFAULT_MAX_LOCKOUT_MS;
+  const cleanupIntervalMs = options.cleanupIntervalMs || DEFAULT_CLEANUP_INTERVAL_MS;
   const now = options.now || Date.now;
+  let lastCleanupAt = 0;
 
   function bucketIds(key: AuthThrottleKey): Array<{ id: string; limit: number }> {
     return [
@@ -117,8 +141,22 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
     return bucket;
   }
 
+  function cleanupExpiredBuckets(timestamp: number): void {
+    if (timestamp - lastCleanupAt < cleanupIntervalMs) {
+      return;
+    }
+
+    lastCleanupAt = timestamp;
+    for (const [id, bucket] of buckets.entries()) {
+      if (timestamp - bucket.firstAttemptAt > windowMs && bucket.lockedUntil <= timestamp) {
+        buckets.delete(id);
+      }
+    }
+  }
+
   function check(key: AuthThrottleKey): AuthThrottleDecision {
     const timestamp = now();
+    cleanupExpiredBuckets(timestamp);
     const retryAfterMs = bucketIds(key).reduce((maxRetryAfterMs, entry) => {
       const bucket = currentBucket(entry.id, timestamp);
       if (!bucket || bucket.lockedUntil <= timestamp) {
@@ -136,6 +174,7 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
 
   function recordFailure(key: AuthThrottleKey): AuthThrottleDecision {
     const timestamp = now();
+    cleanupExpiredBuckets(timestamp);
     for (const entry of bucketIds(key)) {
       const bucket =
         currentBucket(entry.id, timestamp) ||

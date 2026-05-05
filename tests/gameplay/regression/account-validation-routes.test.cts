@@ -137,6 +137,24 @@ register("auth attempt throttle keeps IP lockout state after a user success", ()
   assert.equal(decision.retryAfterSeconds, 60);
 });
 
+register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", () => {
+  const req = {
+    headers: {
+      "x-forwarded-for": "203.0.113.22, 198.51.100.1",
+      "x-real-ip": "203.0.113.23"
+    },
+    socket: {
+      remoteAddress: "198.51.100.44"
+    }
+  };
+
+  assert.equal(createAuthThrottleKey("login", req, "alice").ip, "198.51.100.44");
+  assert.equal(
+    createAuthThrottleKey("login", req, "alice", { trustProxyHeaders: true }).ip,
+    "203.0.113.22"
+  );
+});
+
 register("account routes return early when auth is missing", async () => {
   let sendJsonCalls = 0;
   let sendLocalizedErrorCalls = 0;
