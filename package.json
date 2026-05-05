@@ -25,6 +25,7 @@
     "test:theme-tokens": "node .tsbuild/scripts/check-theme-tokenization.cjs",
     "vercel:link:ci": "node .tsbuild/scripts/write-vercel-project-link.cjs",
     "vercel:env:check": "node .tsbuild/scripts/check-vercel-env-parity.cjs",
+    "release:check": "npm run build:ts && node .tsbuild/scripts/check-release-gate.cjs",
     "supabase:check": "npm run build:ts && node .tsbuild/scripts/check-supabase-connection.cjs",
     "coverage:collect": "c8 --clean --reporter=none node .tsbuild/scripts/run-tests.cjs && c8 --clean=false --reporter=none node .tsbuild/scripts/run-gameplay-tests.cjs",
     "coverage:report": "c8 report --reporter=text-summary --reporter=json-summary --reporter=lcov",
