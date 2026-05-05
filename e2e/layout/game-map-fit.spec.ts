@@ -290,6 +290,7 @@ test("short desktop viewport keeps the reference shell playable", async ({ page 
 
     return {
       activityInsideViewport: activity.right <= viewport.width + 1 && activity.top >= -1,
+      activityClearOfDock: !intersects(activity, dock),
       boardHeight: board.height,
       boardClearOfDock: !intersects(board, dock),
       boardInsideViewport: board.top >= -1 && board.right <= viewport.width + 1,
@@ -309,8 +310,8 @@ test("short desktop viewport keeps the reference shell playable", async ({ page 
     };
   });
 
-  expect(metrics.boardWidth).toBeGreaterThanOrEqual(560);
-  expect(metrics.boardHeight).toBeGreaterThanOrEqual(360);
+  expect(metrics.boardWidth).toBeGreaterThanOrEqual(500);
+  expect(metrics.boardHeight).toBeGreaterThanOrEqual(330);
   expect(metrics.boardInsideViewport).toBeTruthy();
   expect(metrics.boardClearOfDock).toBeTruthy();
   expect(metrics.dockInsideViewport).toBeTruthy();
@@ -318,6 +319,7 @@ test("short desktop viewport keeps the reference shell playable", async ({ page 
   expect(metrics.railAboveDock).toBeTruthy();
   expect(metrics.railClearOfDock).toBeTruthy();
   expect(metrics.activityInsideViewport).toBeTruthy();
+  expect(metrics.activityClearOfDock).toBeTruthy();
   expect(metrics.hudHasNoHorizontalScrollbar).toBeTruthy();
 
   await page.locator(".game-activity-trigger").click();

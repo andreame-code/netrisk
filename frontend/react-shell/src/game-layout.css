@@ -6307,7 +6307,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 @media (min-width: 761px) and (max-height: 700px) {
   .game-map-first-page,
   html[data-theme="war-table"] .game-map-first-page {
-    --game-command-dock-height: 96px !important;
+    --game-command-dock-height: 168px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-mandatory-trade),
@@ -6343,7 +6343,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-map-first-page .game-map-stage,
   html[data-theme="war-table"] .game-map-first-page .game-map-stage {
     --game-map-safe-top: 14px !important;
-    --game-map-safe-bottom: 116px !important;
+    --game-map-safe-bottom: 178px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-mandatory-trade) .game-map-stage,
@@ -6393,10 +6393,10 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-action-rail,
   html[data-theme="war-table"] .game-map-first-page .game-action-rail {
-    top: 220px !important;
+    top: 184px !important;
     left: 14px !important;
     width: 204px !important;
-    gap: 8px !important;
+    gap: 7px !important;
   }
 
   .game-action-rail .game-action-rail-button,
@@ -6413,7 +6413,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     .game-action-rail
     .game-action-rail-button
     > summary {
-    min-height: 52px !important;
+    min-height: 48px !important;
   }
 
   .game-map-first-page .map-controls,
@@ -6434,21 +6434,21 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-right-utility-rail,
   html[data-theme="war-table"] .game-map-first-page .game-right-utility-rail {
     right: 20px !important;
-    top: 58% !important;
+    top: 50% !important;
   }
 
   .game-activity-trigger,
   html[data-theme="war-table"] .game-map-first-page .game-activity-trigger {
-    min-height: 104px !important;
+    min-height: 92px !important;
   }
 
   .game-command-dock:not(.game-command-dock-mandatory-trade),
   html[data-theme="war-table"] .game-map-first-page .game-command-dock:not(.game-command-dock-mandatory-trade) {
-    bottom: 10px !important;
+    bottom: 0 !important;
     height: var(--game-command-dock-height) !important;
     min-height: var(--game-command-dock-height) !important;
     max-height: var(--game-command-dock-height) !important;
-    padding: 10px 16px !important;
+    padding: 14px 16px !important;
   }
 
   .game-command-dock:not(.game-command-dock-mandatory-trade),
@@ -6484,6 +6484,9 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock .game-lobby-controls {
     grid-template-columns: minmax(0, 1fr) minmax(156px, auto) !important;
     gap: 12px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    align-items: stretch !important;
     overflow: hidden !important;
   }
 
@@ -6497,7 +6500,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock select,
   .game-command-dock input,
   .game-command-dock button {
-    min-height: 44px !important;
+    min-height: 40px !important;
+  }
+
+  .game-command-dock #end-turn-button {
+    align-self: end !important;
   }
 
   .game-command-dock .action-row > button,
