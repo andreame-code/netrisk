@@ -65,7 +65,9 @@ function extractAppVersion(source: string): string | null {
 }
 
 function parseVersion(version: string, requireLongPatch: boolean): LongVersion | null {
-  const match = version.match(requireLongPatch ? longVersionPattern : legacyVersionPattern);
+  const match = requireLongPatch
+    ? version.match(longVersionPattern)
+    : version.match(longVersionPattern) || version.match(legacyVersionPattern);
   if (!match) {
     return null;
   }
