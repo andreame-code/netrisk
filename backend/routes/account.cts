@@ -39,6 +39,11 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
+  authAttemptThrottle?: {
+    check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+    recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+    recordSuccess(key: Record<string, unknown>): void;
+  };
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
@@ -62,6 +67,8 @@ interface AccountRouteDeps {
   supportedSiteThemes: SupportedSiteThemesSource;
   resolveStoredTheme: (theme: string) => string;
 }
+
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
 
 async function resolveRouteSupportedSiteThemes(deps: AccountRouteDeps): Promise<Set<string>> {
   return typeof deps.supportedSiteThemes === "function"
@@ -189,6 +196,27 @@ export async function handleAccountSettingsRoute(
     return true;
   }
 
+  const throttleKey = createAuthThrottleKey("account", deps.req, authContext.user.username);
+  const throttleDecision = deps.authAttemptThrottle?.check(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    deps.sendLocalizedError(
+      deps.res,
+      429,
+      {
+        error: "Troppi tentativi di verifica password. Riprova piu tardi.",
+        errorKey: "auth.throttle.tooManyAttempts",
+        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        code: "AUTH_RATE_LIMITED"
+      },
+      "Troppi tentativi di verifica password. Riprova piu tardi.",
+      "auth.throttle.tooManyAttempts",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+      "AUTH_RATE_LIMITED",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+    );
+    return true;
+  }
+
   const result = await deps.auth.updateUserAccountSettings({
     userId: authContext.user.id,
     currentPassword: parsedBody.currentPassword,
@@ -198,6 +226,9 @@ export async function handleAccountSettingsRoute(
   });
 
   if (!result.ok || !result.user) {
+    if (result.errorKey === "auth.account.currentPasswordInvalid") {
+      deps.authAttemptThrottle?.recordFailure(throttleKey);
+    }
     deps.sendLocalizedError(
       deps.res,
       result.errorKey === "auth.account.currentPasswordInvalid" ? 401 : 400,
@@ -209,6 +240,7 @@ export async function handleAccountSettingsRoute(
     return true;
   }
 
+  deps.authAttemptThrottle?.recordSuccess(throttleKey);
   const payload: AccountSettingsUpdateResponseContract = {
     ok: true,
     user: result.user as AccountSettingsUpdateResponseContract["user"]

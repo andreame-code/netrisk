@@ -28,12 +28,40 @@ type AuthStore = {
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
+type AuthAttemptThrottle = {
+  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordSuccess(key: Record<string, unknown>): void;
+};
 const {
   loginRequestSchema,
   loginResponseSchema,
   registerRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+
+function sendTooManyAuthAttempts(
+  res: unknown,
+  sendLocalizedError: SendLocalizedError,
+  retryAfterSeconds: number
+): void {
+  sendLocalizedError(
+    res,
+    429,
+    {
+      error: "Troppi tentativi di accesso. Riprova piu tardi.",
+      errorKey: "auth.throttle.tooManyAttempts",
+      errorParams: { retryAfterSeconds },
+      code: "AUTH_RATE_LIMITED"
+    },
+    "Troppi tentativi di accesso. Riprova piu tardi.",
+    "auth.throttle.tooManyAttempts",
+    { retryAfterSeconds },
+    "AUTH_RATE_LIMITED",
+    { retryAfterSeconds }
+  );
+}
 
 async function handleRegisterRoute(
   req: unknown,
@@ -91,7 +119,8 @@ async function handleLoginRoute(
   auth: AuthStore,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError,
-  buildSessionCookie: BuildSessionCookie
+  buildSessionCookie: BuildSessionCookie,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
     res as import("node:http").ServerResponse,
@@ -103,8 +132,16 @@ async function handleLoginRoute(
     return;
   }
 
+  const throttleKey = createAuthThrottleKey("login", req, parsedBody.username);
+  const throttleDecision = authAttemptThrottle?.check(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    sendTooManyAuthAttempts(res, sendLocalizedError, throttleDecision.retryAfterSeconds);
+    return;
+  }
+
   const result = await auth.loginWithPassword(parsedBody.username, parsedBody.password);
   if (!result.ok) {
+    authAttemptThrottle?.recordFailure(throttleKey);
     sendLocalizedError(
       res,
       401,
@@ -116,6 +153,7 @@ async function handleLoginRoute(
     return;
   }
 
+  authAttemptThrottle?.recordSuccess(throttleKey);
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     200,
