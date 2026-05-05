@@ -981,7 +981,7 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
 
 register("version registry espone manifest e compatibilita baseline", () => {
   const expectedManifest = {
-    appVersion: "0.1.001",
+    appVersion: "0.1.002",
     engineVersion: "1.0.0",
     apiVersion: "1.0.0",
     datastoreSchemaVersion: 1,
