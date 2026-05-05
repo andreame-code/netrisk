@@ -24,6 +24,8 @@ export const it = Object.freeze({
   "auth.register": "Registrati",
   "auth.logout": "Esci",
   "auth.sessionExpired": "Sessione scaduta.",
+  "auth.status.loggedIn": "Autenticato come {username}.",
+  "auth.status.required": "Accesso richiesto.",
   "auth.userProfile": "Profilo utente",
   "auth.login.invalidCredentials": "Credenziali non valide.",
   "auth.register.requiredFields": "Inserisci utente e password.",

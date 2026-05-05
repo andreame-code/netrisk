@@ -430,7 +430,9 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           </span>
           {section === "game" ? (
             <span id="auth-status" className="visually-hidden">
-              {isAuthenticated ? `Autenticato come ${state.user.username}.` : "Accesso richiesto."}
+              {isAuthenticated
+                ? t("auth.status.loggedIn", { username: state.user.username })
+                : t("auth.status.required")}
             </span>
           ) : null}
           <button

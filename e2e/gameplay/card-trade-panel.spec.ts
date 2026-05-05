@@ -1,6 +1,11 @@
 const { test, expect } = require("@playwright/test");
 
-function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
+function mockState({
+  playerHand,
+  reinforcementPool = 3,
+  mustTrade = false,
+  maxHandBeforeForcedTrade = 5
+}) {
   return {
     phase: "active",
     turnPhase: "reinforcement",
@@ -65,7 +70,7 @@ function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
       deckCount: 5,
       discardCount: 0,
       nextTradeBonus: 4,
-      maxHandBeforeForcedTrade: 5,
+      maxHandBeforeForcedTrade,
       currentPlayerMustTrade: mustTrade
     },
     gameId: "g-1",
@@ -86,7 +91,8 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
       { id: "c3", type: "infantry", territoryId: "aurora" },
       { id: "c4", type: "wild" }
     ],
-    mustTrade: true
+    mustTrade: true,
+    maxHandBeforeForcedTrade: 7
   });
 
   await page.route("**/api/auth/session", async (route) => {
@@ -144,6 +150,7 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await expect(page.locator("#trade-alert")).toContainText("scambiane 3 per continuare");
   await expect(page.locator('[data-testid="actions-panel"] #card-trade-list')).toHaveCount(0);
   await page.locator(".game-cards-drawer summary").click();
+  await expect(page.locator(".game-cards-modern-drawer")).toContainText("Le tue carte 4/7");
   await expect(page.locator("#card-trade-group")).toBeVisible();
   await expect(page.locator("#card-trade-alert")).toBeVisible();
   await expect(page.locator("#card-trade-alert")).toContainText(

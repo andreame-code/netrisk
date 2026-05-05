@@ -571,7 +571,10 @@ export function CardsDrawer({
   return (
     <GameDrawerShell
       title={t("game.actions.cards").toUpperCase()}
-      eyebrow={t("game.cards.yourCardsCount", { count: cards.length, limit: 5 })}
+      eyebrow={t("game.cards.yourCardsCount", {
+        count: cards.length,
+        limit: cardState?.maxHandBeforeForcedTrade || 5
+      })}
       onClose={onClose}
       className="game-cards-modern-drawer"
     >
