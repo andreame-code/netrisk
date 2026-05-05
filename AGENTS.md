@@ -79,10 +79,10 @@ Expected central files once they exist:
 
 ## Git safety workflow
 
-For every new chat, automatically create and switch to a dedicated git branch before making changes.
-Each chat must always continue on its own dedicated branch, even when switching between different chats.
-Before large changes, remind the user to create a git checkpoint.
-Before heavy code changes requested by the user, automatically create and switch to a new git branch before editing files.
+For read-only tasks, reviews, analysis, planning, or other work that does not modify files, do not create a branch, commit changes, push, or open a PR.
+For tasks that modify files, create and switch to a dedicated git branch for the chat before editing files, or continue on the existing dedicated branch for that chat.
+If the worktree is in detached HEAD and a task requires file changes, create and switch to a branch named `codex/<short-description>` before editing files.
+Before large or risky changes, remind the user to create a git checkpoint.
 Do not stop after local implementation if the task is an implementation request: once local validation passes, automatically continue with commit, push, and PR creation/update unless the user explicitly says not to.
 Do not hesitate about creating or updating a PR when this workflow applies: treat PR creation/update as part of completing the task, not as an optional follow-up.
 After changes, summarize exactly which files were touched and why.
