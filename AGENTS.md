@@ -9,7 +9,7 @@ The project must be safe to extend over time without rewriting existing work.
 
 1. Never rewrite entire files unless explicitly requested.
 2. Modify only the minimum code needed for the requested change.
-3. Never delete existing code unless explicitly requested.
+3. Do not delete working code without a clear reason; when removing dead, obsolete, or duplicated code, explain why.
 4. Never rename files, folders, exported functions, or public interfaces unless strictly necessary.
 5. Preserve the existing project structure.
 6. Prefer adding new modules over heavily editing existing ones.
