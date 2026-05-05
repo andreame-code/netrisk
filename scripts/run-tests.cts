@@ -6767,12 +6767,19 @@ register("security headers espongono policy browser restrittive", async () => {
     assert.equal(response.headers.get("x-frame-options"), "DENY");
     assert.equal(response.headers.get("x-xss-protection"), "0");
     assert.equal(response.headers.get("x-permitted-cross-domain-policies"), "none");
+    assert.equal(response.headers.get("x-dns-prefetch-control"), "off");
+    assert.equal(response.headers.get("x-download-options"), "noopen");
     assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
     assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
+    assert.equal(response.headers.get("cross-origin-embedder-policy"), "require-corp");
+    assert.equal(
+      response.headers.get("strict-transport-security"),
+      "max-age=31536000; includeSubDomains; preload"
+    );
     assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
     assert.equal(
       response.headers.get("permissions-policy"),
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
     assert.equal(cspDirectives.has("font-src 'self'"), true);
     assert.equal(cspDirectives.has("frame-ancestors 'none'"), true);
