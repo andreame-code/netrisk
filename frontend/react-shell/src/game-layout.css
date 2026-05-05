@@ -6079,7 +6079,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   html[data-theme="war-table"]
     .game-map-first-page:has(.game-command-dock-mandatory-trade)
     .game-map-stage {
-    --game-map-safe-bottom: clamp(292px, 46svh, 324px) !important;
+    --game-map-safe-bottom: 324px !important;
   }
 
   .game-map-first-page .game-map-stage .map,
