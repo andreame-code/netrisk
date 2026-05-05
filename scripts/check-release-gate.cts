@@ -9,6 +9,10 @@ type LongVersion = {
   patch: number;
 };
 
+type PushEventPayload = {
+  before?: unknown;
+};
+
 const versionManifestPath = "shared/version-manifest.cts";
 const changelogPath = "CHANGELOG.md";
 const longVersionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(\d{3,})$/;
@@ -34,6 +38,28 @@ function fileAtRef(ref: string, path: string): string | null {
   }
 }
 
+function readPushEventBeforeRef(): string | null {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (!eventPath) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(readFileSync(eventPath, "utf8")) as PushEventPayload;
+    if (
+      typeof payload.before === "string" &&
+      /^[0-9a-f]{40}$/i.test(payload.before) &&
+      !/^0+$/.test(payload.before)
+    ) {
+      return payload.before;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function resolveBaseRef(): string | null {
   if (process.env.NETRISK_RELEASE_BASE_REF) {
     return process.env.NETRISK_RELEASE_BASE_REF;
@@ -44,6 +70,11 @@ function resolveBaseRef(): string | null {
   }
 
   if (process.env.GITHUB_EVENT_NAME === "push") {
+    const beforeRef = readPushEventBeforeRef();
+    if (beforeRef) {
+      return beforeRef;
+    }
+
     try {
       return runGit(["rev-parse", "HEAD^1"]);
     } catch {
