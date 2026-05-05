@@ -6771,7 +6771,7 @@ register("security headers espongono policy browser restrittive", async () => {
     assert.equal(response.headers.get("x-download-options"), "noopen");
     assert.equal(response.headers.get("cross-origin-opener-policy"), "same-origin");
     assert.equal(response.headers.get("cross-origin-resource-policy"), "same-origin");
-    assert.equal(response.headers.get("cross-origin-embedder-policy"), "same-origin");
+    assert.equal(response.headers.get("cross-origin-embedder-policy"), "require-corp");
     assert.equal(
       response.headers.get("strict-transport-security"),
       "max-age=31536000; includeSubDomains; preload"
