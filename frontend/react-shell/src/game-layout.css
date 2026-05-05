@@ -6451,6 +6451,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     padding: 10px 16px !important;
   }
 
+  .game-command-dock:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock:not(.game-command-dock-mandatory-trade) {
+    width: min(1280px, calc(100vw - 120px)) !important;
+  }
+
   .game-command-dock-mandatory-trade,
   html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
     bottom: 10px !important;
@@ -6468,15 +6473,47 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock #attack-group .action-stack,
   .game-command-dock #fortify-group .action-stack {
     grid-template-columns:
-      minmax(220px, 1.08fr)
-      minmax(170px, 0.78fr)
-      minmax(84px, 0.3fr)
-      minmax(300px, auto) !important;
+      minmax(170px, 1.08fr)
+      minmax(150px, 0.78fr)
+      minmax(72px, 0.3fr)
+      minmax(230px, 0.86fr) !important;
+    gap: 10px !important;
+  }
+
+  .game-command-dock .actions-section,
+  .game-command-dock .game-lobby-controls {
+    grid-template-columns: minmax(0, 1fr) minmax(156px, auto) !important;
+    gap: 12px !important;
+    overflow: hidden !important;
+  }
+
+  .game-command-dock .action-group,
+  .game-command-dock .action-stack,
+  .game-command-dock .game-dock-select-label,
+  .game-command-dock .action-row {
+    min-width: 0 !important;
   }
 
   .game-command-dock select,
   .game-command-dock input,
   .game-command-dock button {
     min-height: 44px !important;
+  }
+
+  .game-command-dock .action-row > button,
+  .game-command-dock #attack-button,
+  .game-command-dock #attack-banzai-button,
+  .game-command-dock #reinforce-multi-button,
+  .game-command-dock #reinforce-all-button,
+  .game-command-dock #fortify-button,
+  .game-command-dock #conquest-button,
+  .game-command-dock #end-turn-button {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .game-command-dock .action-row > button {
+    flex: 1 1 0 !important;
+    padding-inline: 10px !important;
   }
 }
