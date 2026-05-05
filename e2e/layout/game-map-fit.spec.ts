@@ -305,4 +305,7 @@ test("short desktop viewport keeps the reference shell playable", async ({ page 
   expect(metrics.railClearOfDock).toBeTruthy();
   expect(metrics.activityInsideViewport).toBeTruthy();
   expect(metrics.hudHasNoHorizontalScrollbar).toBeTruthy();
+
+  await page.locator(".game-activity-trigger").click();
+  await expect(page.locator("#log")).toHaveCount(1);
 });

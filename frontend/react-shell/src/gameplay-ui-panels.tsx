@@ -530,7 +530,7 @@ export function PlayersDrawer({
               <strong>{playerTroopCount(player.id, territories)}</strong>
               <strong>{territoryCount}</strong>
               <span className="game-visually-hidden">
-                {t("game.runtime.territories")}: {territoryCount}. Stato:{" "}
+                {t("game.runtime.territories")}: {territoryCount}. {t("lobby.table.status")}:{" "}
                 {player.eliminated ? t("game.runtime.eliminated") : t("game.runtime.active")}.
               </span>
             </article>

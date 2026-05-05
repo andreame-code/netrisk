@@ -980,7 +980,7 @@ export function GameRoute() {
             <span id="players-summary" className="game-visually-hidden">
               {snapshot.players.map((player) => player.name).join(" ")}
             </span>
-            <span id="log" className="game-visually-hidden">
+            <span id="log-summary" className="game-visually-hidden">
               {activityLogEntries.map((entry) => entry.text).join(" ")}
             </span>
             {!showAttackGroup && showReinforceGroup ? (
