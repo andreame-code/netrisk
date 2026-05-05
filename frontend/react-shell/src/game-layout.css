@@ -6310,6 +6310,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     --game-command-dock-height: 96px !important;
   }
 
+  .game-map-first-page:has(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-mandatory-trade) {
+    --game-command-dock-height: 280px !important;
+  }
+
   body[data-app-section="game"] .top-nav-bar,
   html[data-theme="war-table"] body[data-app-section="game"] .top-nav-bar {
     min-height: 62px !important;
@@ -6339,6 +6344,13 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   html[data-theme="war-table"] .game-map-first-page .game-map-stage {
     --game-map-safe-top: 14px !important;
     --game-map-safe-bottom: 116px !important;
+  }
+
+  .game-map-first-page:has(.game-command-dock-mandatory-trade) .game-map-stage,
+  html[data-theme="war-table"]
+    .game-map-first-page:has(.game-command-dock-mandatory-trade)
+    .game-map-stage {
+    --game-map-safe-bottom: 324px !important;
   }
 
   .game-floating-hud,
@@ -6437,6 +6449,15 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     min-height: var(--game-command-dock-height) !important;
     max-height: var(--game-command-dock-height) !important;
     padding: 10px 16px !important;
+  }
+
+  .game-command-dock-mandatory-trade,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
+    bottom: 10px !important;
+    height: var(--game-command-dock-height) !important;
+    min-height: var(--game-command-dock-height) !important;
+    max-height: var(--game-command-dock-height) !important;
+    overflow: auto !important;
   }
 
   .game-command-dock-title {
