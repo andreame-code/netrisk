@@ -213,6 +213,9 @@ function defaultDbFile() {
 function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     let raw = "";
+    req.on("error", () => {
+      reject(createLocalizedError("Errore nel caricamento payload", "server.bodyReadError"));
+    });
     req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
@@ -1733,13 +1736,16 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "0");
     res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+    res.setHeader("X-DNS-Prefetch-Control", "off");
+    res.setHeader("X-Download-Options", "noopen");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Cross-Origin-Embedder-Policy", "same-origin");
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
     res.setHeader(
       "Content-Security-Policy",
