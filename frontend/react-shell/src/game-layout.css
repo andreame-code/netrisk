@@ -6524,10 +6524,6 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     align-self: end !important;
   }
 
-  .game-command-dock #attack-banzai-button {
-    display: none !important;
-  }
-
   .game-command-dock .action-row > button,
   .game-command-dock #attack-button,
   .game-command-dock #attack-banzai-button,
