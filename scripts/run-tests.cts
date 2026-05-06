@@ -1,6 +1,5 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const projectRoot = path.resolve(__dirname, "..", "..");
@@ -39,7 +38,6 @@ const {
   DEFENSE_THREE_DICE_RULE_SET_ID,
   STANDARD_DICE_RULE_SET_ID,
   getDiceRuleSet,
-  listDiceRuleSets,
   standardDiceRuleSet
 } = require("../shared/dice.cjs");
 const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
@@ -140,10 +138,6 @@ type MockSupabaseData = {
   sessions?: any[];
   app_state?: any[];
 };
-interface Body {
-  json(): Promise<any>;
-}
-
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
 const frontendPublicRoot = path.join(projectRoot, "public");
@@ -981,7 +975,7 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
 
 register("version registry espone manifest e compatibilita baseline", () => {
   const expectedManifest = {
-    appVersion: "0.1.002",
+    appVersion: "0.1.003",
     engineVersion: "1.0.0",
     apiVersion: "1.0.0",
     datastoreSchemaVersion: 1,
@@ -6204,8 +6198,6 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     });
     assert.equal(created.status, 201);
 
-    const username = uniqueName("cpu_host");
-
     const humanSession = ownerSession;
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
@@ -6482,7 +6474,6 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     });
     assert.equal(created.status, 201);
 
-    const username = uniqueName("prof");
     const other = uniqueName("enem");
 
     const registerOther = await fetch(baseUrl + "/api/auth/register", {
@@ -6663,7 +6654,7 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
 });
 
 register("GET /api/health espone lo stato sintetico del server", async () => {
-  await withServer(async (baseUrl, context) => {
+  await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
@@ -7021,6 +7012,30 @@ register("API register + login + join completa il flusso di accesso", async () =
       body: JSON.stringify({ sessionToken: loginPayload.sessionToken })
     });
     assert.equal(joinResponse.status, 201);
+  });
+});
+
+register("API registration applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const password = TEST_PASSWORD;
+
+    for (let i = 0; i < 30; i++) {
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: uniqueName(`throttle_reg_${i}`), password })
+      });
+      assert.equal(res.status, 201);
+    }
+
+    const limitedRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: uniqueName("throttle_reg_limited"), password })
+    });
+    assert.equal(limitedRes.status, 429);
+    const payload: any = await limitedRes.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
   });
 });
 

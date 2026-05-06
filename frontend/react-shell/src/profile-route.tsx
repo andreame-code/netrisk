@@ -19,7 +19,6 @@ import { buildLobbyPath, buildNewGamePath } from "@react-shell/public-auth-paths
 import { profileDetailQueryKey } from "@react-shell/react-query";
 import {
   applyShellTheme,
-  currentShellTheme,
   listShellThemes,
   normalizeShellTheme,
   themeLabel

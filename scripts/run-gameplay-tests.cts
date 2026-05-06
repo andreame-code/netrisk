@@ -1,4 +1,5 @@
-const path = require("node:path") as typeof import("node:path");
+import type * as NodePathTypes from "node:path";
+const path = require("node:path") as typeof NodePathTypes;
 
 type GameplayTest = {
   name: string;

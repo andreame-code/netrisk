@@ -69,22 +69,6 @@ function createLobbyGames(): GameListResponse {
   };
 }
 
-function createActiveLobbyGames(activeGameId = "game-42"): GameListResponse {
-  return {
-    games: [
-      {
-        id: activeGameId,
-        name: "Bridge Match",
-        phase: "active",
-        playerCount: 2,
-        updatedAt: "2026-04-20T06:00:00.000Z",
-        totalPlayers: 2
-      }
-    ],
-    activeGameId
-  };
-}
-
 function createGameOptionsResponse(): GameOptionsResponse {
   return {
     ruleSets: [],

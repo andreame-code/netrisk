@@ -1,7 +1,9 @@
+import type * as GameEngineTypes from "../engine/game-engine.cjs";
+import type * as AiTurnRecoveryTypes from "./ai-turn-recovery.cjs";
 import { findExpiredTurn } from "../engine/turn-timeout.cjs";
 
-type ForceEndTurn = typeof import("../engine/game-engine.cjs").forceEndTurn;
-type RecoverAiTurnState = typeof import("./ai-turn-recovery.cjs").recoverAiTurnState;
+type ForceEndTurn = typeof GameEngineTypes.forceEndTurn;
+type RecoverAiTurnState = typeof AiTurnRecoveryTypes.recoverAiTurnState;
 
 type GameEntry = {
   id: string;

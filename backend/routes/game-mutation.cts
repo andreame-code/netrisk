@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const {
   gameMutationResponseSchema,
   gameVersionConflictResponseSchema
@@ -104,7 +105,7 @@ function conflictPayload(options: VersionConflictOptions): Record<string, unknow
 
 function sendVersionConflict(options: VersionConflictOptions): void {
   sendValidatedJson(
-    options.res as import("node:http").ServerResponse,
+    options.res as HttpTypes.ServerResponse,
     409,
     conflictPayload(options),
     gameVersionConflictResponseSchema,
@@ -140,7 +141,7 @@ async function persistBroadcastAndSendMutation(options: MutationOptions): Promis
 
   options.broadcastGame(options.gameContext);
   sendValidatedJson(
-    options.res as import("node:http").ServerResponse,
+    options.res as HttpTypes.ServerResponse,
     200,
     {
       ok: true,

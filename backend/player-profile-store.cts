@@ -155,10 +155,6 @@ function persistedMapName(entry: GameEntry): string | null {
   return null;
 }
 
-function summarizeParticipatingGame(entry: GameEntry, username: string): ParticipatingGameContract {
-  return summarizeParticipatingGameWithMapName(entry, username, readableMapName);
-}
-
 function summarizeParticipatingGameWithMapName(
   entry: GameEntry,
   username: string,

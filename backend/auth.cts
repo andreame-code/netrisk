@@ -174,7 +174,7 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     return false;
   }
 
-  let candidate = "";
+  let candidate: string;
   if (record.algorithm === "scrypt" || !record.digest) {
     const keylen = Number.isInteger(record.keylen) ? record.keylen : 64;
     candidate = crypto.scryptSync(String(password || ""), record.salt, keylen).toString("hex");
@@ -598,7 +598,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   }
 
   async function updateUserThemePreference(userId: string, theme: string) {
-    let updatedUser: StoredUser | null = null;
+    let updatedUser: StoredUser | null;
 
     if (typeof datastore.updateUserThemePreference === "function") {
       updatedUser = await datastore.updateUserThemePreference(userId, theme);

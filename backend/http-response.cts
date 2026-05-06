@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 interface LocalizedPayloadInput {
   message?: string;
   error?: string;
@@ -20,7 +21,7 @@ type ResponseRequestContext = {
   errorLogged?: boolean;
 };
 
-type ObservedResponse = import("node:http").ServerResponse & {
+type ObservedResponse = HttpTypes.ServerResponse & {
   __netriskRequestContext?: ResponseRequestContext;
   headers?: Record<string, string>;
   setHeader?: (name: string, value: string) => void;
@@ -38,7 +39,7 @@ function setResponseHeader(res: ObservedResponse, name: string, value: string): 
 }
 
 export function setResponseRequestContext(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   context: ResponseRequestContext
 ): void {
   const observedResponse = res as ObservedResponse;
@@ -46,15 +47,13 @@ export function setResponseRequestContext(
   setResponseHeader(observedResponse, "X-Request-Id", context.requestId);
 }
 
-function getResponseRequestContext(
-  res: import("node:http").ServerResponse
-): ResponseRequestContext | null {
+function getResponseRequestContext(res: HttpTypes.ServerResponse): ResponseRequestContext | null {
   const observedResponse = res as ObservedResponse;
   return observedResponse.__netriskRequestContext || null;
 }
 
 function logUnexpectedServerError(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: {
     error: string;
@@ -91,7 +90,7 @@ function logUnexpectedServerError(
 }
 
 export function sendJson(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   headers: Record<string, string> = {}
@@ -136,7 +135,7 @@ export function localizedPayload(
 }
 
 export function sendLocalizedError(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: LocalizedPayloadInput | null | undefined,
   fallbackMessage: string,

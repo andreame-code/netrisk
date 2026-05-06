@@ -1,14 +1,15 @@
+import type * as HttpTypes from "node:http";
 const { toValidationErrors } = require("../shared/runtime-validation.cjs");
 
 type SendJson = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   headers?: Record<string, string>
 ) => void;
 
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -27,7 +28,7 @@ type ValidationSchema<T> = {
 };
 
 function sendValidationFailure(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   code: "REQUEST_VALIDATION_FAILED" | "RESPONSE_VALIDATION_FAILED",
   error: { issues?: Array<Record<string, unknown>> } | null | undefined,
@@ -46,7 +47,7 @@ function sendValidationFailure(
 }
 
 function parseRequestOrSendError<T>(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   payload: unknown,
   schema: ValidationSchema<T>,
   sendLocalizedError: SendLocalizedError
@@ -61,7 +62,7 @@ function parseRequestOrSendError<T>(
 }
 
 function sendValidatedJson<T>(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   schema: ValidationSchema<T>,

@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const {
   adminAuditResponseSchema,
   adminConfigResponseSchema,
@@ -18,14 +19,14 @@ const {
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 type SendJson = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   headers?: Record<string, string>
 ) => void;
 
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -36,8 +37,8 @@ type SendLocalizedError = (
 ) => void;
 
 type RequireAuth = (
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   url?: URL | null
 ) => Promise<{ user: { id: string; username: string; role?: string } } | null>;
@@ -84,8 +85,8 @@ type AdminConsole = {
 };
 
 async function requireAdminAccess(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -134,8 +135,8 @@ async function tryRecordFailureAudit(
 }
 
 async function handleAdminOverviewRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,
@@ -168,8 +169,8 @@ async function handleAdminOverviewRoute(
 }
 
 async function handleAdminUsersRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   url: URL,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -206,8 +207,8 @@ async function handleAdminUsersRoute(
 }
 
 async function handleAdminUserRoleRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -262,8 +263,8 @@ async function handleAdminUserRoleRoute(
 }
 
 async function handleAdminGamesRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   url: URL,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -300,8 +301,8 @@ async function handleAdminGamesRoute(
 }
 
 async function handleAdminGameDetailRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   gameId: string,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -335,8 +336,8 @@ async function handleAdminGameDetailRoute(
 }
 
 async function handleAdminGameActionRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -391,8 +392,8 @@ async function handleAdminGameActionRoute(
 }
 
 async function handleAdminConfigRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,
@@ -425,8 +426,8 @@ async function handleAdminConfigRoute(
 }
 
 async function handleAdminConfigUpdateRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -481,8 +482,8 @@ async function handleAdminConfigUpdateRoute(
 }
 
 async function handleAdminMaintenanceRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,
@@ -515,8 +516,8 @@ async function handleAdminMaintenanceRoute(
 }
 
 async function handleAdminMaintenanceActionRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -571,8 +572,8 @@ async function handleAdminMaintenanceActionRoute(
 }
 
 async function handleAdminAuditRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,

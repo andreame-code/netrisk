@@ -1,8 +1,9 @@
+import type * as HttpTypes from "node:http";
 export async function handleHealthRoute(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   healthSnapshot: () => Promise<{ ok: boolean } & Record<string, unknown>>,
   sendJson: (
-    res: import("node:http").ServerResponse,
+    res: HttpTypes.ServerResponse,
     statusCode: number,
     payload: unknown,
     headers?: Record<string, string>

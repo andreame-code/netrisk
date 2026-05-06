@@ -125,7 +125,7 @@ function parseJson<T>(value: unknown, fallbackValue: T): T {
 
   try {
     return JSON.parse(value) as T;
-  } catch (error) {
+  } catch (_error) {
     return fallbackValue;
   }
 }
