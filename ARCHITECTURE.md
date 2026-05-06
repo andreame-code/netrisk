@@ -155,14 +155,29 @@ Categorie modulo gia impostate:
 - temi sito
 - set pedine / palette giocatori
 - skin pedine
-- ruleset dadi
-- ruleset carte
-- ruleset vittoria
-- ruleset setup / preset partita
 - mappe
 - content pack
+- ruleset dadi
+- ruleset carte
+- ruleset combattimento
+- ruleset rinforzo
+- ruleset fortifica
+- ruleset vittoria
+- timeout turno
+- ruleset setup / preset partita
 - profili content/gameplay/ui
 - slot UI
+- runtime moduli
+- moduli admin/autoriali
+- datastore
+- stato pubblico/API read model
+- AI players
+
+Le versioni SemVer di questi moduli funzionali e le loro regole di compatibilita sono dichiarate
+in `shared/module-versions.cts`. Le compatibilita sono machine-readable e collegano ogni modulo a
+versione app, schema salvataggio, schema datastore, module API e dipendenze fra moduli. I manifest
+runtime `module.json` restano metadata locali per discovery/installazione, ma per i moduli
+first-party devono restare allineati alla versione centrale.
 
 Categorie future da trattare con lo stesso modello:
 

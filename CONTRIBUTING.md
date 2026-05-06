@@ -107,14 +107,29 @@ Default product content belongs in shared registries plus `shared/core-base-cata
 
 1. Create a folder under `modules/<module-id>`.
 2. Add `module.json` with id, version, capabilities, dependencies, and entrypoints. Optional runtime modules should normally depend on `core.base`.
-3. Add `client-manifest.json` for UI slots, profiles, presets, and client-visible content declarations.
-4. Add a server entrypoint only when the module contributes runtime maps, content packs, piece sets, dice rule sets, or server-side profile defaults.
-5. Verify the module through `/api/modules/options` and `/api/game/options`, treating `resolvedCatalog` as the canonical snapshot and the flat top-level arrays as compatibility mirrors.
-6. Verify rescan/enable/disable flows, including the case where a module is still referenced by an active game.
-7. Confirm the module does not expose `core.base` as a toggleable setup/admin option.
-8. Add or extend regression coverage in `tests/gameplay/regression/module-runtime.test.cts`.
+3. If the module is first-party or changes a first-party functional capability, update `shared/module-versions.cts` with its SemVer version, compatibility declaration, and owner paths.
+4. Add `client-manifest.json` for UI slots, profiles, presets, and client-visible content declarations.
+5. Add a server entrypoint only when the module contributes runtime maps, content packs, piece sets, dice rule sets, or server-side profile defaults.
+6. Verify the module through `/api/modules/options` and `/api/game/options`, treating `resolvedCatalog` as the canonical snapshot and the flat top-level arrays as compatibility mirrors.
+7. Verify rescan/enable/disable flows, including the case where a module is still referenced by an active game.
+8. Confirm the module does not expose `core.base` as a toggleable setup/admin option.
+9. Add or extend regression coverage in `tests/gameplay/regression/module-runtime.test.cts`.
 
 Use the existing `modules/demo.command-center` fixture as the baseline shape for manifests and slot declarations.
+
+## Updating functional module versions
+
+Functional module versions and compatibility live in `shared/module-versions.cts`.
+
+When touching a module-owned path, bump the affected module:
+
+- PATCH for internal fixes that preserve behavior, APIs, saved-state compatibility, and module interoperability.
+- MINOR for backward-compatible additions or optional behavior extensions.
+- MAJOR for breaking behavior, saved-state incompatibility, public API/schema changes, or required migrations.
+
+Update the module's compatibility declaration when the supported app version range, save-game schema range, datastore schema range, module API range, or dependent module range changes.
+
+Run `npm run check:module-versioning` before opening a PR when module-owned files changed. The check is path-based, so broad shared files may need manual judgement and more than one module bump.
 
 ## Adding authored Content Studio modules
 
@@ -145,6 +160,7 @@ A good PR for NetRisk is narrow, tested, and explicit about touched boundaries.
 
 - Summarize what changed and why.
 - Bump `appVersion` in `shared/version-manifest.cts` using the long patch format, for example `0.1.001`.
+- Bump any affected functional module versions in `shared/module-versions.cts`.
 - Add a matching `CHANGELOG.md` entry with a short report of the change.
 - List any public API or docs updates.
 - Mention the validation commands you ran.
