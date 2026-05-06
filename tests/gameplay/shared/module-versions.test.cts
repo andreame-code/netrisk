@@ -79,7 +79,11 @@ register("module version range helpers support exact, wildcard, and comparator r
   assert.equal(isValidVersionRange("1.x"), true);
   assert.equal(isValidVersionRange("1.2.x"), true);
   assert.equal(isValidVersionRange(">=1.0.0 <2.0.0"), true);
+  assert.equal(isValidVersionRange(">=1.0.0 <=1.0.0"), true);
   assert.equal(isValidVersionRange(">=2.0.0 <1.0.0"), false);
+  assert.equal(isValidVersionRange(">1.0.0 <1.0.0"), false);
+  assert.equal(isValidVersionRange(">1.0.0 <=1.0.0"), false);
+  assert.equal(isValidVersionRange(">=1.0.0 <1.0.0"), false);
   assert.equal(isValidVersionRange("not-a-range"), false);
 
   assert.equal(versionSatisfiesRange("1.4.2", "1.x"), true);

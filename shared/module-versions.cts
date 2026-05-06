@@ -471,6 +471,10 @@ export const moduleVersionManifest = Object.freeze({
 });
 
 type VersionParts = [number, number, number];
+type VersionBound = {
+  version: VersionParts;
+  inclusive: boolean;
+};
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -576,23 +580,41 @@ export function isValidVersionRange(range: unknown): range is string {
     return false;
   }
 
-  let lower: VersionParts | null = null;
-  let upper: VersionParts | null = null;
-  comparators.forEach((entry) => {
-    if (!entry) {
-      return;
-    }
-
+  const parsedComparators = comparators as Array<{ operator: string; version: VersionParts }>;
+  let lower: VersionBound | null = null;
+  let upper: VersionBound | null = null;
+  for (const entry of parsedComparators) {
     if (entry.operator === ">" || entry.operator === ">=") {
-      lower = !lower || compareVersionParts(entry.version, lower) > 0 ? entry.version : lower;
+      const inclusive = entry.operator === ">=";
+      const comparison = lower ? compareVersionParts(entry.version, lower.version) : 1;
+      if (!lower || comparison > 0) {
+        lower = { version: entry.version, inclusive };
+      } else if (comparison === 0 && lower.inclusive && !inclusive) {
+        lower = { version: entry.version, inclusive };
+      }
     }
 
     if (entry.operator === "<" || entry.operator === "<=") {
-      upper = !upper || compareVersionParts(entry.version, upper) < 0 ? entry.version : upper;
+      const inclusive = entry.operator === "<=";
+      const comparison = upper ? compareVersionParts(entry.version, upper.version) : -1;
+      if (!upper || comparison < 0) {
+        upper = { version: entry.version, inclusive };
+      } else if (comparison === 0 && upper.inclusive && !inclusive) {
+        upper = { version: entry.version, inclusive };
+      }
     }
-  });
+  }
 
-  return !lower || !upper || compareVersionParts(lower, upper) <= 0;
+  if (!lower || !upper) {
+    return true;
+  }
+
+  const comparison = compareVersionParts(lower.version, upper.version);
+  if (comparison !== 0) {
+    return comparison < 0;
+  }
+
+  return lower.inclusive && upper.inclusive;
 }
 
 export function versionSatisfiesRange(
