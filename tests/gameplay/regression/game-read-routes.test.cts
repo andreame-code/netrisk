@@ -3,6 +3,8 @@ const { handleEventsRoute, handleStateRoute } = require("../../../backend/routes
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
+type LocalizedErrorCall = [unknown, number, unknown, string, string, unknown, string, unknown];
+
 register("handleStateRoute resumes AI turns before returning the snapshot", async () => {
   const calls: string[] = [];
   let sentPayload: Record<string, unknown> | null = null;
@@ -119,6 +121,53 @@ register(
   }
 );
 
+register("handleStateRoute reports invalid outbound snapshots without sending JSON", async () => {
+  let sendJsonCalled = false;
+  let localizedErrorCall: LocalizedErrorCall | null = null;
+
+  await handleStateRoute(
+    { headers: {} },
+    {},
+    new URL("https://netrisk.test/api/state?gameId=g-invalid"),
+    async () => ({ ok: true, user: { id: "u-1" } }),
+    () => "g-invalid",
+    async () => ({
+      gameId: "g-invalid",
+      version: 4,
+      gameName: "Invalid Snapshot",
+      state: { phase: "active" }
+    }),
+    async () => [],
+    async () => {
+      throw new Error("getUserFromSession should not run when access includes a user.");
+    },
+    () => {
+      throw new Error("extractSessionToken should not run when access includes a user.");
+    },
+    () => ({
+      gameId: "g-invalid",
+      version: 4,
+      phase: "active"
+    }),
+    () => {
+      sendJsonCalled = true;
+    },
+    (...args: LocalizedErrorCall) => {
+      localizedErrorCall = args;
+    }
+  );
+
+  assert.equal(sendJsonCalled, false);
+  assert.notEqual(localizedErrorCall, null);
+  const call = localizedErrorCall!;
+  assert.equal(call[1], 500);
+  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+  assert.deepEqual(
+    (call[7] as any).validationErrors.map((entry: any) => entry.path),
+    ["players", "map", "reinforcementPool"]
+  );
+});
+
 register("handleStateRoute returns early when authorizeGameRead blocks access", async () => {
   let sendJsonCalled = false;
 
@@ -229,6 +278,118 @@ register(
 
     closeHandlers[0]();
     assert.equal(clientsByGameId.has("g-1"), false);
+  }
+);
+
+register("handleEventsRoute rejects invalid outbound snapshots before opening SSE", async () => {
+  const clientsByGameId = new Map<string, Set<{ res: unknown; user: unknown }>>();
+  let writeHeadCalled = false;
+  let writeCalled = false;
+  let localizedErrorCall: LocalizedErrorCall | null = null;
+
+  await handleEventsRoute(
+    {
+      on() {
+        throw new Error("close handler should not be registered for invalid payloads.");
+      }
+    },
+    {
+      writeHead() {
+        writeHeadCalled = true;
+      },
+      write() {
+        writeCalled = true;
+      }
+    },
+    new URL("https://netrisk.test/api/events?gameId=g-invalid"),
+    async () => ({ ok: true, user: { id: "u-1" } }),
+    () => "g-invalid",
+    async () => ({
+      gameId: "g-invalid",
+      version: 5,
+      gameName: "Invalid Event",
+      state: { phase: "active" }
+    }),
+    async () => {
+      throw new Error("resumeAiTurnsForRead should not run for SSE reads.");
+    },
+    () => ({
+      gameId: "g-invalid",
+      version: 5,
+      phase: "active"
+    }),
+    clientsByGameId,
+    (...args: LocalizedErrorCall) => {
+      localizedErrorCall = args;
+    }
+  );
+
+  assert.equal(writeHeadCalled, false);
+  assert.equal(writeCalled, false);
+  assert.equal(clientsByGameId.size, 0);
+  assert.notEqual(localizedErrorCall, null);
+  const call = localizedErrorCall!;
+  assert.equal(call[1], 500);
+  assert.equal(call[6], "RESPONSE_VALIDATION_FAILED");
+  assert.deepEqual(
+    (call[7] as any).validationErrors.map((entry: any) => entry.path),
+    ["players", "map", "reinforcementPool"]
+  );
+});
+
+register(
+  "handleEventsRoute stores anonymous default-game clients and closes idempotently",
+  async () => {
+    const clientsByGameId = new Map<string, Set<{ res: unknown; user: unknown }>>();
+    const writes: string[] = [];
+    let closeHandler: (() => void) | null = null;
+
+    await handleEventsRoute(
+      {
+        on(_eventName: string, handler: () => void) {
+          closeHandler = handler;
+        }
+      },
+      {
+        writeHead(_statusCode: number, _headers: Record<string, string>) {},
+        write(chunk: string) {
+          writes.push(chunk);
+        }
+      },
+      new URL("https://netrisk.test/api/events"),
+      async () => ({ ok: true, user: null }),
+      () => null,
+      async () => ({
+        gameId: null,
+        version: null,
+        gameName: null,
+        state: { phase: "active" }
+      }),
+      async () => {
+        throw new Error("resumeAiTurnsForRead should not run for SSE reads.");
+      },
+      () => ({
+        players: [],
+        map: [],
+        reinforcementPool: 0
+      }),
+      clientsByGameId
+    );
+
+    const defaultGroup = clientsByGameId.get("__default__");
+    assert.notEqual(defaultGroup, undefined);
+    assert.equal(defaultGroup!.size, 1);
+    assert.equal(
+      writes[0],
+      "data: " + JSON.stringify({ players: [], map: [], reinforcementPool: 0 }) + "\n\n"
+    );
+    assert.notEqual(closeHandler, null);
+
+    const close = closeHandler!;
+    close();
+    assert.equal(clientsByGameId.has("__default__"), false);
+    close();
+    assert.equal(clientsByGameId.has("__default__"), false);
   }
 );
 
