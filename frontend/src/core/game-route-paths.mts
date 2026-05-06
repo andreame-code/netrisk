@@ -1,4 +1,4 @@
-export function requestedGameIdFromLocation(pathname: string, search: string): string | null {
+export function requestedGameIdFromLocation(pathname: string, _search: string): string | null {
   const canonicalPathMatch = pathname.match(/^\/(?:react\/)?game\/([^/]+)$/);
   if (canonicalPathMatch) {
     return decodeURIComponent(canonicalPathMatch[1]);

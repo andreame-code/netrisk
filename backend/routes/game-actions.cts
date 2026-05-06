@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const { handleAttackGameActionRoute } = require("./game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./game-actions-basic.cjs");
 const { sendVersionConflict } = require("./game-mutation.cjs");
@@ -127,7 +128,7 @@ async function handleGameActionRoute({
     gameId: getTargetGameId(body, url)
   };
   const parsedEnvelope = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     resolvedBody,
     gameActionEnvelopeSchema,
     sendLocalizedError as SendLocalizedError
@@ -140,10 +141,10 @@ async function handleGameActionRoute({
   const playerId = parsedEnvelope.playerId;
   const type = parsedEnvelope.type;
   const expectedVersion = parsedEnvelope.expectedVersion ?? null;
-  const nodeResponse = res as import("node:http").ServerResponse;
+  const nodeResponse = res as HttpTypes.ServerResponse;
   const sendGameplayMutationJson: SendJson = (targetRes, statusCode, payload, headers) => {
     sendValidatedJson(
-      targetRes as import("node:http").ServerResponse,
+      targetRes as HttpTypes.ServerResponse,
       statusCode,
       payload,
       gameMutationResponseSchema,

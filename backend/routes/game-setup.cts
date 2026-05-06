@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -88,7 +89,7 @@ async function handleAiJoinRoute(
     gameId: getTargetGameId(body, url)
   };
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     resolvedBody,
     aiJoinRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -181,7 +182,7 @@ async function handleJoinRoute(
     gameId: getTargetGameId(body, url)
   };
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     resolvedBody,
     gameIdRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -209,7 +210,7 @@ async function handleJoinRoute(
   await persistGameContext(gameContext);
   broadcastGame(gameContext);
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     result.rejoined ? 200 : 201,
     {
       playerId: result.player.id,
@@ -256,7 +257,7 @@ async function handleStartRoute(
     gameId: getTargetGameId(body, url)
   };
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     resolvedBody,
     startGameRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -265,7 +266,7 @@ async function handleStartRoute(
     return;
   }
 
-  const nodeResponse = res as import("node:http").ServerResponse;
+  const nodeResponse = res as HttpTypes.ServerResponse;
   const expectedVersion = parsedBody.expectedVersion ?? null;
 
   try {

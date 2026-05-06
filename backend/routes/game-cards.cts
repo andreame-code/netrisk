@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const { tradeCardsRequestSchema } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError } = require("../route-validation.cjs");
 const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
@@ -87,7 +88,7 @@ async function handleCardsTradeRoute(
     gameId: getTargetGameId(body, url)
   };
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     resolvedBody,
     tradeCardsRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -96,7 +97,7 @@ async function handleCardsTradeRoute(
     return;
   }
 
-  const nodeResponse = res as import("node:http").ServerResponse;
+  const nodeResponse = res as HttpTypes.ServerResponse;
   const gameContext = await loadGameContext(parsedBody.gameId ?? null);
   const player = getPlayer(gameContext.state, parsedBody.playerId);
   if (!player || !playerBelongsToUser(player, authContext.user)) {

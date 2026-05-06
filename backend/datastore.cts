@@ -26,12 +26,6 @@ type GameRecord = {
   updatedAt: string;
 };
 
-type SessionRecord = {
-  token: string;
-  user_id: string;
-  created_at: number;
-};
-
 type UserRow = {
   id: string;
   username: string;
@@ -140,7 +134,7 @@ function parseJson<T>(value: unknown, fallbackValue: T): T {
 
   try {
     return JSON.parse(value) as T;
-  } catch (error) {
+  } catch (_error) {
     return fallbackValue;
   }
 }

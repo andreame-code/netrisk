@@ -1,5 +1,4 @@
 import {
-  DEFENSE_THREE_DICE_RULE_SET_ID,
   findDiceRuleSet,
   listDiceRuleSets,
   STANDARD_DICE_RULE_SET_ID,
@@ -54,7 +53,7 @@ import {
 import type { SupportedMap } from "../shared/maps/index.cjs";
 import type { AuthoredVictoryModuleRuntime } from "../shared/runtime-validation.cjs";
 const { secureRandom } = require("./random.cjs");
-import { createLocalizedError, type LocalizedError } from "../shared/messages.cjs";
+import { createLocalizedError } from "../shared/messages.cjs";
 import type { GameState } from "../shared/models.cjs";
 
 type AddPlayerResult =

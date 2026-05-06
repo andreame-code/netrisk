@@ -1,7 +1,8 @@
+import type * as MapGraphTypes from "../../../shared/map-graph.cjs";
+import type * as ModelsTypes from "../../../shared/models.cjs";
 const { createContinent, createGameState, createPlayer, createTerritory, TurnPhase } =
-  require("../../../shared/models.cjs") as typeof import("../../../shared/models.cjs");
-const { buildMapGraph } =
-  require("../../../shared/map-graph.cjs") as typeof import("../../../shared/map-graph.cjs");
+  require("../../../shared/models.cjs") as typeof ModelsTypes;
+const { buildMapGraph } = require("../../../shared/map-graph.cjs") as typeof MapGraphTypes;
 import type {
   Continent,
   GameState,

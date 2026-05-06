@@ -11,11 +11,6 @@ const {
 const { findSupportedMap } = require("../../../shared/maps/index.cjs");
 const { createFixedRandom } = require("../helpers/random.cjs");
 
-type TerritoryOwnerState = {
-  ownerId: string | null;
-  armies: number;
-};
-
 type PlayerRef = {
   id: string;
   surrendered?: boolean;

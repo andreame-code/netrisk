@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 import type {
   AccountSettingsUpdateResponseContract,
   ProfileResponseContract,
@@ -14,16 +15,16 @@ const {
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 type RequireAuthFn = (
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>
 ) => Promise<{ user: { id: string; username: string } } | null>;
 
 type SupportedSiteThemesSource = Set<string> | (() => Promise<Set<string>> | Set<string>);
 
 interface AccountRouteDeps {
-  req: import("node:http").IncomingMessage;
-  res: import("node:http").ServerResponse;
+  req: HttpTypes.IncomingMessage;
+  res: HttpTypes.ServerResponse;
   requireAuth: RequireAuthFn;
   auth: {
     publicUser(user: unknown): unknown;
@@ -48,13 +49,13 @@ interface AccountRouteDeps {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
   sendJson: (
-    res: import("node:http").ServerResponse,
+    res: HttpTypes.ServerResponse,
     statusCode: number,
     payload: unknown,
     headers?: Record<string, string>
   ) => void;
   sendLocalizedError: (
-    res: import("node:http").ServerResponse,
+    res: HttpTypes.ServerResponse,
     statusCode: number,
     input: Record<string, unknown> | null,
     fallbackMessage: string,

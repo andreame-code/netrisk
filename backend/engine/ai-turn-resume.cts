@@ -1,8 +1,10 @@
+import type * as MessagesTypes from "../../shared/messages.cjs";
+import type * as AiPlayerTypes from "./ai-player.cjs";
+import type * as GameEngineTypes from "./game-engine.cjs";
 const { advanceTurn, getCurrentPlayer, territoriesOwnedBy } =
-  require("./game-engine.cjs") as typeof import("./game-engine.cjs");
-const { runAiTurn } = require("./ai-player.cjs") as typeof import("./ai-player.cjs");
-const { createLocalizedError } =
-  require("../../shared/messages.cjs") as typeof import("../../shared/messages.cjs");
+  require("./game-engine.cjs") as typeof GameEngineTypes;
+const { runAiTurn } = require("./ai-player.cjs") as typeof AiPlayerTypes;
+const { createLocalizedError } = require("../../shared/messages.cjs") as typeof MessagesTypes;
 
 type ResumeState = {
   players: Array<unknown>;

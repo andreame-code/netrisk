@@ -1,6 +1,6 @@
 type HeaderValue = string | string[] | undefined;
 
-type AuthThrottleScope = "account" | "login";
+type AuthThrottleScope = "account" | "login" | "register";
 
 type AuthThrottleBucket = {
   attempts: number;
@@ -172,7 +172,7 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
     };
   }
 
-  function recordFailure(key: AuthThrottleKey): AuthThrottleDecision {
+  function recordAttempt(key: AuthThrottleKey): AuthThrottleDecision {
     const timestamp = now();
     cleanupExpiredBuckets(timestamp);
     for (const entry of bucketIds(key)) {
@@ -197,12 +197,17 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
     return check(key);
   }
 
+  function recordFailure(key: AuthThrottleKey): AuthThrottleDecision {
+    return recordAttempt(key);
+  }
+
   function recordSuccess(key: AuthThrottleKey): void {
     buckets.delete(primaryBucketId(key));
   }
 
   return {
     check,
+    recordAttempt,
     recordFailure,
     recordSuccess
   };

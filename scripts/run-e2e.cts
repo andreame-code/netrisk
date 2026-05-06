@@ -1,3 +1,5 @@
+import type * as NodeFsTypes from "node:fs";
+import type * as HttpTypes from "node:http";
 const fs = require("fs");
 const net = require("net");
 const { spawn } = require("child_process");
@@ -79,10 +81,10 @@ async function cleanupStaleE2eDatabases(
   const now = Date.now();
   const candidates = entries
     .filter(
-      (entry: import("node:fs").Dirent) =>
+      (entry: NodeFsTypes.Dirent) =>
         entry.isFile() && /^e2e-\d+\.sqlite(?:-shm|-wal)?$/.test(entry.name)
     )
-    .map((entry: import("node:fs").Dirent) => path.join(dataDir, entry.name));
+    .map((entry: NodeFsTypes.Dirent) => path.join(dataDir, entry.name));
 
   for (const target of candidates) {
     const stats = await fs.promises.stat(target).catch(() => null);
@@ -100,13 +102,10 @@ function wait(ms: number): Promise<void> {
 
 function isServerHealthy(baseURL: string): Promise<boolean> {
   return new Promise((resolve: (value: boolean) => void) => {
-    const request = http.get(
-      `${baseURL}/api/health`,
-      (response: import("node:http").IncomingMessage) => {
-        response.resume();
-        resolve(response.statusCode === 200);
-      }
-    );
+    const request = http.get(`${baseURL}/api/health`, (response: HttpTypes.IncomingMessage) => {
+      response.resume();
+      resolve(response.statusCode === 200);
+    });
 
     request.on("error", () => resolve(false));
     request.setTimeout(2000, () => {

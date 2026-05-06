@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -30,6 +31,7 @@ type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
 type AuthAttemptThrottle = {
   check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
   recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
   recordSuccess(key: Record<string, unknown>): void;
 };
@@ -69,15 +71,23 @@ async function handleRegisterRoute(
   body: Record<string, any>,
   auth: AuthStore,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     registerRequestSchema,
     sendLocalizedError as SendLocalizedError
   );
   if (!parsedBody) {
+    return;
+  }
+
+  const throttleKey = createAuthThrottleKey("register", req, parsedBody.username);
+  const throttleDecision = authAttemptThrottle?.check(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    sendTooManyAuthAttempts(res, sendLocalizedError, throttleDecision.retryAfterSeconds);
     return;
   }
 
@@ -87,6 +97,7 @@ async function handleRegisterRoute(
     email: parsedBody.email
   });
   if (!result.ok) {
+    authAttemptThrottle?.recordAttempt(throttleKey);
     sendLocalizedError(
       res,
       400,
@@ -98,8 +109,9 @@ async function handleRegisterRoute(
     return;
   }
 
+  authAttemptThrottle?.recordAttempt(throttleKey);
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     201,
     {
       ok: true,
@@ -123,7 +135,7 @@ async function handleLoginRoute(
   authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     loginRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -155,7 +167,7 @@ async function handleLoginRoute(
 
   authAttemptThrottle?.recordSuccess(throttleKey);
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     {
       ok: true,
