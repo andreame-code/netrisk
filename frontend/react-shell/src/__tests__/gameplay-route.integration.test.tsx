@@ -367,6 +367,7 @@ describe("GameRoute integration", () => {
   });
 
   it("renders mandatory card trade flow in the bottom dock", async () => {
+    const user = userEvent.setup();
     getGameStateMock.mockResolvedValue(
       createGameplayState({
         reinforcementPool: 5,
@@ -397,6 +398,15 @@ describe("GameRoute integration", () => {
     expect(within(dock).getByText("Bonus scambio")).toBeInTheDocument();
     expect(within(dock).getByText("+8")).toBeInTheDocument();
     expect(dock.querySelectorAll("[data-dock-card-id]")).toHaveLength(5);
+    expect(
+      within(dock.querySelector(".game-trade-hand") as HTMLElement).getByText("5")
+    ).toBeInTheDocument();
+    const cardButtons = dock.querySelectorAll("[data-dock-card-id]");
+    expect(cardButtons[0]).toHaveClass("game-card-tone-infantry");
+    expect(cardButtons[1]).toHaveClass("game-card-tone-artillery");
+    await user.click(cardButtons[0] as HTMLElement);
+    expect(cardButtons[0]).toHaveAttribute("aria-pressed", "true");
+    expect(within(dock).getByText("1 / 3 selezionate")).toBeInTheDocument();
     expect(dock.querySelector("#card-trade-dock-button")).toHaveTextContent("Scambia carte");
   });
 

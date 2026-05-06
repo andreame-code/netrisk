@@ -120,6 +120,38 @@ function cardTypeLabel(card: SnapshotCard): string {
   return t("game.runtime.cardType.default");
 }
 
+function dockCardTone(card: SnapshotCard | undefined): string {
+  if (card?.type === "artillery") {
+    return "artillery";
+  }
+
+  if (card?.type === "cavalry") {
+    return "cavalry";
+  }
+
+  if (card?.type === "wild") {
+    return "wild";
+  }
+
+  return "infantry";
+}
+
+function dockCardSymbol(card: SnapshotCard | undefined): string {
+  if (card?.type === "artillery") {
+    return "C";
+  }
+
+  if (card?.type === "cavalry") {
+    return "H";
+  }
+
+  if (card?.type === "wild") {
+    return "*";
+  }
+
+  return "I";
+}
+
 function logEntryMessageKey(entry: unknown): string {
   if (!entry || typeof entry !== "object") {
     return "";
@@ -1079,7 +1111,7 @@ export function GameRoute() {
               />
             ) : null}
 
-            {activeDrawer === "cards" ? (
+            {activeDrawer === "cards" && !mustTradeCards ? (
               <CardsDrawer
                 canTradeCards={canTradeCards}
                 cardState={snapshot.cardState || null}
@@ -1158,16 +1190,25 @@ export function GameRoute() {
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
               <section className="game-trade-hand">
-                <div className="game-dock-field-label">{t("game.commandDock.yourCards")}</div>
+                <div className="game-dock-field-label">
+                  {t("game.commandDock.yourCards")}
+                  <span className="game-dock-label-badge">{playerHand.length}</span>
+                </div>
                 <div id="card-trade-dock-list" className="game-card-grid">
                   {playerHand.map((card) => (
                     <button
                       key={card.id}
                       type="button"
-                      className={`game-card-tile${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                      className={`game-card-tile game-card-tone-${dockCardTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
                       data-dock-card-id={card.id}
+                      aria-pressed={selectedTradeCardIds.includes(card.id)}
                       onClick={() => toggleTradeCard(card.id)}
                     >
+                      <span className="game-card-selected-mark" aria-hidden="true" />
+                      <span className="game-card-visual" aria-hidden="true">
+                        <span className="game-card-silhouette">{dockCardSymbol(card)}</span>
+                        <span className="game-card-territory-shape" />
+                      </span>
                       <strong>{card.territoryId || card.id}</strong>
                       <span>{cardTypeLabel(card)}</span>
                     </button>
@@ -1192,9 +1233,15 @@ export function GameRoute() {
                         <button
                           key={cardId}
                           type="button"
-                          className="game-card-tile is-selected"
+                          className={`game-card-tile game-card-tone-${dockCardTone(card)} is-selected`}
+                          aria-pressed="true"
                           onClick={() => toggleTradeCard(cardId)}
                         >
+                          <span className="game-card-selected-mark" aria-hidden="true" />
+                          <span className="game-card-visual" aria-hidden="true">
+                            <span className="game-card-silhouette">{dockCardSymbol(card)}</span>
+                            <span className="game-card-territory-shape" />
+                          </span>
                           <strong>{card?.territoryId || cardId}</strong>
                           <span>{card ? cardTypeLabel(card) : t("game.actions.cards")}</span>
                         </button>
