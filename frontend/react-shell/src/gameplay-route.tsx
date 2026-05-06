@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import type {
 import type { ApiClientError } from "@frontend-core/api/http.mts";
 import { extractGameVersionConflict, getGameState } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
-import { t, translateGameLogEntries, translateServerMessage } from "@frontend-i18n";
+import { t, translateServerMessage } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { useGameplayCommands } from "@react-shell/gameplay-commands";
@@ -35,6 +35,20 @@ import {
 import { gameplayStateQueryKey } from "@react-shell/react-query";
 import { useGameEventStream } from "@react-shell/use-game-event-stream";
 import { WarTableIcon } from "@react-shell/war-table-icons";
+import {
+  ActivityLogDrawer,
+  ActivityLogTrigger,
+  CardsDrawer,
+  CombatResultPanel,
+  GameActionDock,
+  GameActionRail,
+  GameHud,
+  GameInfoDrawer,
+  PlayersDrawer,
+  type ActivityLogEntry,
+  type ActivityLogFilter,
+  type GameDrawerKey
+} from "@react-shell/gameplay-ui-panels";
 
 function phaseLabel(phase: string | null | undefined): string {
   if (phase === "active") {
@@ -82,6 +96,10 @@ function territoryOptionLabel(
   return `${territory.name} · ${territoryOwnerName(territory, playersById)} · ${territory.armies}`;
 }
 
+function territoryDockOptionLabel(territory: SnapshotTerritory): string {
+  return territory.name;
+}
+
 function cardTypeLabel(card: SnapshotCard): string {
   if (card.type === "infantry") {
     return t("game.runtime.cardType.infantry");
@@ -100,6 +118,111 @@ function cardTypeLabel(card: SnapshotCard): string {
   }
 
   return t("game.runtime.cardType.default");
+}
+
+function logEntryMessageKey(entry: unknown): string {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+
+  const record = entry as Record<string, unknown>;
+  return typeof record.messageKey === "string" ? record.messageKey : "";
+}
+
+function logEntryFallbackMessage(entry: unknown): string {
+  if (!entry || typeof entry !== "object") {
+    return "";
+  }
+
+  const record = entry as Record<string, unknown>;
+  return typeof record.message === "string" ? record.message : "";
+}
+
+function categorizeActivityLogEntry(
+  entry: unknown,
+  fallbackPlainText = ""
+): ActivityLogEntry["category"] {
+  const messageKey = logEntryMessageKey(entry);
+  const normalizedMessageKey = messageKey.toLowerCase();
+  if (
+    normalizedMessageKey.startsWith("game.log.attack") ||
+    normalizedMessageKey === "game.log.moveafterconquest"
+  ) {
+    return "combat";
+  }
+
+  if (normalizedMessageKey.includes("trade") || normalizedMessageKey.includes("card")) {
+    return "cards";
+  }
+
+  if (messageKey) {
+    return "turn";
+  }
+
+  const normalized = fallbackPlainText.toLowerCase();
+  if (
+    normalized.includes("attack") ||
+    normalized.includes("attacca") ||
+    normalized.includes("combat") ||
+    normalized.includes("dice") ||
+    normalized.includes("dadi") ||
+    normalized.includes("conquer") ||
+    normalized.includes("conquista")
+  ) {
+    return "combat";
+  }
+
+  if (
+    normalized.includes("card") ||
+    normalized.includes("carte") ||
+    normalized.includes("trade") ||
+    normalized.includes("scambia")
+  ) {
+    return "cards";
+  }
+
+  return "turn";
+}
+
+function activityLogEntriesForSnapshot(snapshot: GameSnapshot | null): ActivityLogEntry[] {
+  const snapshotRecord =
+    snapshot && typeof snapshot === "object" ? (snapshot as Record<string, unknown>) : null;
+  const structuredEntries = Array.isArray(snapshotRecord?.logEntries)
+    ? snapshotRecord.logEntries
+    : [];
+  const plainTextEntries = Array.isArray(snapshotRecord?.log)
+    ? snapshotRecord.log.filter(
+        (entry): entry is string => typeof entry === "string" && Boolean(entry)
+      )
+    : [];
+  const rows: ActivityLogEntry[] = [];
+  const seenStructuredText = new Set<string>();
+
+  for (const entry of structuredEntries) {
+    const text = translateServerMessage(entry, logEntryFallbackMessage(entry));
+    if (!text) {
+      continue;
+    }
+
+    rows.push({
+      category: categorizeActivityLogEntry(entry, text),
+      text
+    });
+    seenStructuredText.add(text);
+  }
+
+  for (const text of plainTextEntries) {
+    if (seenStructuredText.has(text)) {
+      continue;
+    }
+
+    rows.push({
+      category: categorizeActivityLogEntry(null, text),
+      text
+    });
+  }
+
+  return rows;
 }
 
 function pieceSkinRenderStyleForSnapshot(snapshot: GameSnapshot | null): string {
@@ -155,6 +278,26 @@ function gameMetaModuleSummary(gameConfig: GameSnapshot["gameConfig"] | null | u
   return parts.join(" · ");
 }
 
+function gameMetaModuleLabels(gameConfig: GameSnapshot["gameConfig"] | null | undefined): string[] {
+  const activeModules = Array.isArray(gameConfig?.activeModules) ? gameConfig.activeModules : [];
+  const labels = activeModules
+    .map((moduleEntry) => {
+      if (typeof moduleEntry === "string") {
+        return moduleEntry;
+      }
+
+      if (!moduleEntry || typeof moduleEntry !== "object") {
+        return "";
+      }
+
+      const record = moduleEntry as Record<string, unknown>;
+      return String(record.name || record.id || "").trim();
+    })
+    .filter(Boolean);
+
+  return labels.length ? labels : [t("game.meta.noOptionalModules")];
+}
+
 export function GameRoute() {
   const { gameId } = useParams();
   const { state, signIn } = useAuth();
@@ -188,8 +331,10 @@ export function GameRoute() {
   const [fortifyArmies, setFortifyArmies] = useState("1");
   const [conquestArmies, setConquestArmies] = useState("");
   const [selectedTradeCardIds, setSelectedTradeCardIds] = useState<string[]>([]);
-  const [isRosterDrawerOpen, setIsRosterDrawerOpen] = useState(false);
-  const [isCombatDrawerOpen, setIsCombatDrawerOpen] = useState(false);
+  const [activeDrawer, setActiveDrawer] = useState<GameDrawerKey | null>(null);
+  const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
+  const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
+  const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
   const [isCommandDockExpanded, setIsCommandDockExpanded] = useState(false);
 
   const gameplayQuery = useQuery({
@@ -228,23 +373,15 @@ export function GameRoute() {
   const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
   const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
-  const localizedLog = translateGameLogEntries(snapshot);
+  const activityLogEntries = activityLogEntriesForSnapshot(snapshot);
+  const activityLogContentKey = activityLogEntries
+    .map((entry) => `${entry.category}:${entry.text.length}:${entry.text}`)
+    .join("|");
   const myTerritories = (snapshot?.map || []).filter(
     (territory) => territory.ownerId === myPlayerId
   );
   const currentVersion =
     snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
-  const latestCombatKey = snapshot?.lastCombat
-    ? [
-        snapshot.lastCombat.fromTerritoryId,
-        snapshot.lastCombat.toTerritoryId,
-        snapshot.lastCombat.attackerRolls?.join(",") || "",
-        snapshot.lastCombat.defenderRolls?.join(",") || "",
-        snapshot.lastCombat.comparisons?.map((comparison) => comparison.winner).join(",") || "",
-        snapshot.lastCombat.conqueredTerritory ? "conquered" : "",
-        snapshot.lastCombat.defenderReducedToZero ? "defense-broken" : ""
-      ].join(":")
-    : "";
   const isMyTurn = Boolean(
     snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
   );
@@ -312,8 +449,12 @@ export function GameRoute() {
     pendingConquestMin,
     Number(snapshot?.pendingConquest?.maxArmies || snapshot?.pendingConquest?.minArmies || 1)
   );
-  const endTurnLabel =
-    snapshot?.turnPhase === "fortify" ? t("game.actions.endTurn") : t("game.runtime.goToFortify");
+  const dockEndPhaseLabel =
+    snapshot?.turnPhase === "fortify"
+      ? t("game.actions.endTurn")
+      : snapshot?.turnPhase === "reinforcement"
+        ? t("game.runtime.goToFortify")
+        : t("game.runtime.goToFortify");
   const pieceSkinClass = pieceSkinClassName(pieceSkinRenderStyleForSnapshot(snapshot));
   const phaseBadgeLabel =
     snapshot?.phase === "active" ? turnPhaseLabel(snapshot.turnPhase) : phaseLabel(snapshot?.phase);
@@ -342,46 +483,11 @@ export function GameRoute() {
   })
     .concat(gameMetaModuleSummary(snapshot?.gameConfig || null) ? " · " : "")
     .concat(gameMetaModuleSummary(snapshot?.gameConfig || null));
-  const combatSummary = snapshot?.lastCombat
-    ? `${territoriesById[snapshot.lastCombat.fromTerritoryId]?.name || snapshot.lastCombat.fromTerritoryId} -> ${territoriesById[snapshot.lastCombat.toTerritoryId]?.name || snapshot.lastCombat.toTerritoryId}`
-    : "";
-  const attackerRollsText = snapshot?.lastCombat?.attackerRolls?.length
-    ? snapshot.lastCombat.attackerRolls.join(" · ")
-    : t("game.runtime.none");
-  const defenderRollsText = snapshot?.lastCombat?.defenderRolls?.length
-    ? snapshot.lastCombat.defenderRolls.join(" · ")
-    : t("game.runtime.none");
-  const comparisonSummary = snapshot?.lastCombat?.comparisons?.length
-    ? snapshot.lastCombat.comparisons
-        .map((comparison) => (comparison.winner === "attacker" ? "A" : "D"))
-        .join(" · ")
-    : t("game.runtime.none");
-  const combatBadgeLabel = snapshot?.lastCombat?.conqueredTerritory
-    ? t("game.runtime.combat.conquered")
-    : snapshot?.lastCombat?.defenderReducedToZero
-      ? t("game.runtime.combat.defenseBroken")
-      : t("game.runtime.combat.resolved");
-  const showTradePanel = Boolean(playerHand.length) || mustTradeCards;
   const showActionsSection = Boolean(
     showReinforceGroup || showAttackGroup || showConquestGroup || showFortifyGroup || showEndTurn
   );
   const gameFeedbackMessage = feedbackMessage || actionError;
   const gameFeedbackIsError = !feedbackMessage && Boolean(actionError);
-  const commandTerritory =
-    (showConquestGroup && snapshot?.pendingConquest?.toId
-      ? territoriesById[snapshot.pendingConquest.toId] || null
-      : null) ||
-    (showAttackGroup ? attackSource : null) ||
-    (showFortifyGroup ? fortifySource : null) ||
-    (reinforceTerritoryId ? territoriesById[reinforceTerritoryId] || null : null) ||
-    myTerritories[0] ||
-    snapshot?.map?.[0] ||
-    null;
-  const commandTerritoryOwner = commandTerritory
-    ? territoryOwnerName(commandTerritory, playersById)
-    : t("game.runtime.none");
-  const commandContinentLabel =
-    commandTerritory?.continentId?.replace(/[_-]+/g, " ").toUpperCase() || mapMetaLabel;
   const commandActionTitle = showReinforceGroup
     ? t("game.commandMode.moveReinforcements")
     : showAttackGroup
@@ -411,10 +517,6 @@ export function GameRoute() {
   }, [snapshot?.turnPhase]);
 
   useEffect(() => {
-    setIsCombatDrawerOpen(Boolean(latestCombatKey));
-  }, [latestCombatKey]);
-
-  useEffect(() => {
     setSelectedTradeCardIds((current) => {
       const next = current
         .filter((cardId) => playerHand.some((card) => card.id === cardId))
@@ -430,6 +532,10 @@ export function GameRoute() {
       return next;
     });
   }, [playerHand]);
+
+  useEffect(() => {
+    setIsActivityLogCleared(false);
+  }, [activityLogContentKey]);
 
   const applyMutationPayload = useEffectEvent(
     (payload: GameMutationResponse, options: { feedback?: string } = {}) => {
@@ -773,6 +879,43 @@ export function GameRoute() {
 
   const canTradeCards = selectedTradeCardIds.length === 3 && !gameplayCommands.isTrading;
   const actionPending = gameplayCommands.isAnyPending;
+  const dockMode = mustTradeCards
+    ? "mandatory-trade"
+    : showReinforceGroup
+      ? "reinforcement"
+      : showAttackGroup
+        ? "attack"
+        : showConquestGroup
+          ? "conquest"
+          : showFortifyGroup
+            ? "fortify"
+            : showLobbyControls
+              ? "lobby"
+              : "idle";
+  const commandDockTitle =
+    dockMode === "mandatory-trade" ? t("game.commandMode.tradeCards") : commandActionTitle;
+  const actionRailItems = [
+    {
+      drawer: "players" as const,
+      icon: "users" as const,
+      label: t("game.players.heading")
+    },
+    {
+      drawer: "cards" as const,
+      icon: "cards" as const,
+      label: t("game.actions.cards"),
+      badge: playerHand.length
+    },
+    {
+      drawer: "gameInfo" as const,
+      icon: "globe" as const,
+      label: t("game.drawer.gameInfo")
+    }
+  ];
+
+  function toggleDrawer(drawer: GameDrawerKey): void {
+    setActiveDrawer((current) => (current === drawer ? null : drawer));
+  }
 
   return (
     <section className="game-map-first-page" data-testid="react-shell-game-page">
@@ -799,120 +942,81 @@ export function GameRoute() {
               onTerritorySelect={handleTerritorySelect}
             />
 
-            <section
-              className="panel game-info-rail game-info-bottom game-floating-hud campaign-shell"
-              data-testid="info-panel"
-              aria-label={t("game.command.heading")}
+            <GameHud
+              activePlayerInitial={activePlayerInitial}
+              activePlayerName={activePlayerName}
+              feedbackIsError={gameFeedbackIsError}
+              feedbackMessage={gameFeedbackMessage}
+              mustTradeCards={mustTradeCards}
+              phaseBadgeLabel={phaseBadgeLabel}
+              reinforcementPool={snapshot.reinforcementPool}
+              tradeAlertText={t("game.runtime.tradeAlert.mustTradeNow", {
+                cardCount: playerHand.length,
+                limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
+              })}
+              winnerName={winner?.name}
+            />
+            <CombatResultPanel
+              lastCombat={snapshot.lastCombat}
+              playersById={playersById}
+              territoriesById={territoriesById}
+            />
+            <span id="game-status" className="game-visually-hidden">
+              {gameStatusLabel}
+            </span>
+            <span id="game-map-meta" className="game-visually-hidden">
+              {mapMetaLabel}
+            </span>
+            <span id="game-setup-meta" className="game-visually-hidden">
+              {setupMetaLabel}
+            </span>
+            <span
+              id="identity-status"
+              className="game-visually-hidden"
+              data-testid="current-player-indicator"
             >
-              <div className="panel-header tight-header game-compact-heading game-hud-heading">
-                <div>
-                  <h1>
-                    {t("game.hud.phase")}: {phaseBadgeLabel}
-                  </h1>
-                </div>
-                <span id="turn-badge" className="badge" data-testid="phase-indicator">
-                  {phaseBadgeLabel}
-                </span>
-              </div>
+              {me?.name || t("game.runtime.notConnected")}
+            </span>
+            <span id="players-summary" className="game-visually-hidden">
+              {snapshot.players.map((player) => player.name).join(" ")}
+            </span>
+            <span id="log-summary" className="game-visually-hidden">
+              {activityLogEntries.map((entry) => entry.text).join(" ")}
+            </span>
+            {!showAttackGroup && showReinforceGroup ? (
+              <span className="game-visually-hidden" aria-hidden="true">
+                <select
+                  id="attack-from"
+                  tabIndex={-1}
+                  value={attackFromId}
+                  onChange={(event) => setSelectedAttackFromId(event.target.value)}
+                >
+                  {myTerritories.map((territory) => (
+                    <option key={territory.id} value={territory.id}>
+                      {territoryOptionLabel(territory, playersById)}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  id="attack-to"
+                  tabIndex={-1}
+                  value={attackToId}
+                  onChange={(event) => setSelectedAttackToId(event.target.value)}
+                >
+                  <option value="">{t("game.runtime.noTarget")}</option>
+                  {attackTargets.map((territory) => (
+                    <option key={territory.id} value={territory.id}>
+                      {territoryOptionLabel(territory, playersById)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+            ) : null}
 
-              <div
-                id="status-summary"
-                className="status-summary command-summary map-command-summary game-hud-summary"
-                data-testid="status-summary"
-              >
-                <span className="game-visually-hidden">
-                  {t("game.reinforcementBanner")} {snapshot.reinforcementPool}
-                </span>
-                <div className="game-hud-stat">
-                  <span className="game-hud-icon game-hud-icon-reinforcements" aria-hidden="true">
-                    <WarTableIcon name="soldier" />
-                  </span>
-                  <span>
-                    <span className="game-hud-label">
-                      <span className="game-visually-hidden">{t("game.reinforcementBanner")}</span>
-                      {t("game.hud.reinforcements")}
-                    </span>
-                    <strong>{snapshot.reinforcementPool}</strong>
-                  </span>
-                </div>
-                <div className="game-hud-stat">
-                  <span className="game-hud-avatar" aria-hidden="true">
-                    {activePlayerInitial}
-                  </span>
-                  <span>
-                    <span className="game-hud-label">{t("game.hud.activePlayer")}</span>
-                    <strong>{activePlayerName}</strong>
-                  </span>
-                </div>
-                <div className="game-hud-stat game-hud-identity">
-                  <span className="game-hud-avatar" aria-hidden="true">
-                    {(me?.name || "A").trim().charAt(0).toUpperCase() || "A"}
-                  </span>
-                  <span>
-                    <span className="game-hud-label">{t("game.meta.player")}</span>
-                    <strong id="identity-status" data-testid="current-player-indicator">
-                      {me?.name || t("game.runtime.notConnected")}
-                    </strong>
-                  </span>
-                </div>
-                {winner ? (
-                  <div>
-                    {t("game.runtime.winner")}: <strong>{winner.name}</strong>
-                  </div>
-                ) : null}
-              </div>
-
-              <div
-                id="trade-alert"
-                className="turn-alert turn-alert-danger map-trade-alert"
-                hidden={!mustTradeCards}
-              >
-                <strong>{t("game.tradeAlert.title")}</strong>
-                <span id="trade-alert-text">
-                  {t("game.runtime.tradeAlert.mustTradeNow", {
-                    cardCount: playerHand.length,
-                    limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
-                  })}
-                </span>
-              </div>
-              <div
-                id="game-feedback"
-                className={`action-help${gameFeedbackIsError ? " is-error" : ""}`}
-                data-testid="react-shell-game-feedback"
-                hidden={!gameFeedbackMessage}
-              >
-                {gameFeedbackMessage}
-              </div>
-            </section>
-
-            <div className="game-secondary-drawers" aria-label={t("game.command.heading")}>
-              <details className="game-secondary-drawer game-info-drawer">
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="globe" />
-                  </span>
-                  <span>{t("game.drawer.gameInfo")}</span>
-                  <span className="badge" id="game-status">
-                    {gameStatusLabel}
-                  </span>
-                </summary>
-                <div className="rail-section game-meta-stack game-session-card">
-                  <div className="game-meta-line">
-                    <span>{t("game.meta.player")}</span>
-                    <strong>{me?.name || t("game.runtime.notConnected")}</strong>
-                  </div>
-                  <div className="game-meta-line">
-                    <span>{t("game.meta.map")}</span>
-                    <strong id="game-map-meta">{mapMetaLabel}</strong>
-                  </div>
-                  <div className="game-meta-line">
-                    <span>{t("game.meta.setup")}</span>
-                    <strong id="game-setup-meta">{setupMetaLabel}</strong>
-                  </div>
-                  <div className="game-meta-line">
-                    <span>{t("game.meta.access")}</span>
-                    <span id="auth-status">{accessStatusLabel}</span>
-                  </div>
+            <div className="game-legacy-drawer-hooks" aria-label={t("game.command.heading")}>
+              <details className="game-legacy-drawer-hook game-info-drawer">
+                <summary>{t("game.drawer.gameInfo")}</summary>
+                <div className="rail-section">
                   <button
                     id="surrender-button"
                     type="button"
@@ -926,618 +1030,586 @@ export function GameRoute() {
                 </div>
               </details>
 
-              <details
-                className="game-secondary-drawer game-objective-drawer"
-                hidden={!assignedVictoryObjective}
-              >
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="objective" />
-                  </span>
-                  <span>{t("game.objective.heading")}</span>
-                  <span className="badge accent">{t("game.objective.badge")}</span>
-                </summary>
-                <div
-                  className="rail-section game-objective-section"
-                  data-testid="assigned-objective-panel"
-                  hidden={!assignedVictoryObjective}
-                >
-                  <article className="action-meta-list">
-                    <strong>{assignedVictoryObjective?.title}</strong>
-                    <p className="action-help">{assignedVictoryObjective?.description}</p>
-                    <p className="action-help">
-                      {t("game.objective.module", {
-                        moduleName: assignedVictoryObjective?.moduleName || ""
-                      })}
-                    </p>
-                  </article>
-                </div>
-              </details>
+              <details className="game-legacy-drawer-hook game-roster-drawer">
+                <summary>{t("game.players.heading")}</summary>
+                <div className="players rail-players" id="players">
+                  {snapshot.players.map((player) => {
+                    const troopCount = snapshot.map
+                      .filter((territory) => territory.ownerId === player.id)
+                      .reduce((total, territory) => total + Number(territory.armies || 0), 0);
 
-              <details
-                className="game-secondary-drawer game-readonly-drawer game-roster-drawer"
-                onToggle={(event) => setIsRosterDrawerOpen(event.currentTarget.open)}
-                open={isRosterDrawerOpen}
-              >
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="users" />
-                  </span>
-                  <span>{t("game.players.heading")}</span>
-                  <span className="badge accent">{snapshot.players.length}</span>
-                </summary>
-                <div className="rail-section game-roster-section">
-                  <div className="players rail-players" id="players">
-                    {snapshot.players.map((player) => (
+                    return (
                       <article
                         className={`player-card ${pieceSkinClass}`}
                         data-player-id={player.id}
                         key={player.id}
-                        style={{ "--player-color": player.color || "#162033" } as CSSProperties}
                       >
                         <strong>{player.name}</strong>
                         <div>
                           {t("game.runtime.territories")}: {player.territoryCount || 0}
                         </div>
+                        <div>Truppe: {troopCount}</div>
                         <div>
-                          {t("lobby.table.status")}:{" "}
+                          Stato:{" "}
                           {player.eliminated
                             ? t("game.runtime.eliminated")
                             : t("game.runtime.active")}
                         </div>
-                        <div className="player-card-token" />
                       </article>
-                    ))}
-                  </div>
-                </div>
-              </details>
-
-              <details
-                className={`game-secondary-drawer game-cards-drawer${mustTradeCards ? " is-attention" : ""}`}
-              >
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="cards" />
-                  </span>
-                  <span>{t("game.actions.cards")}</span>
-                  <span className="badge accent">{playerHand.length}</span>
-                </summary>
-                <div className="rail-section action-meta-list game-card-trade-drawer-panel">
-                  <div
-                    className="action-group compact-group"
-                    id="card-trade-group"
-                    hidden={!showTradePanel}
-                  >
-                    <label htmlFor="card-trade-list">{t("game.actions.cards")}</label>
-                    <div id="card-trade-alert" className="trade-emphasis" hidden={!mustTradeCards}>
-                      <span>{t("game.cards.alert")}</span>
-                    </div>
-                    <div className="action-meta-list">
-                      <p id="card-trade-summary" className="action-help">
-                        {playerHand.length
-                          ? t("game.runtime.cardsInHand", { count: playerHand.length })
-                          : t("game.runtime.noCardsAvailable")}
-                      </p>
-                      <p id="card-trade-bonus" className="action-help">
-                        {snapshot.cardState?.nextTradeBonus != null
-                          ? t("game.runtime.nextTradeBonus", {
-                              bonus: snapshot.cardState.nextTradeBonus
-                            })
-                          : t("game.runtime.none")}
-                      </p>
-                      <p id="card-trade-help" className="action-help">
-                        {mustTradeCards
-                          ? t("game.runtime.tradeHelp.mustTrade", {
-                              limit: snapshot.cardState?.maxHandBeforeForcedTrade || 5
-                            })
-                          : t("game.runtime.tradeHelp.selected", {
-                              selected: selectedTradeCardIds.length
-                            })}
-                      </p>
-                    </div>
-                    <div id="card-trade-list" className="card-trade-list">
-                      {playerHand.map((card) => (
-                        <button
-                          key={card.id}
-                          type="button"
-                          className={`game-card-pill${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
-                          data-card-id={card.id}
-                          onClick={() => toggleTradeCard(card.id)}
-                        >
-                          <strong>{card.territoryId || card.id}</strong>
-                          <span>{cardTypeLabel(card)}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <p id="card-trade-success" className="action-help" hidden={!feedbackMessage}>
-                      {feedbackMessage}
-                    </p>
-                    <p id="card-trade-error" className="action-help" hidden={!actionError}>
-                      {actionError}
-                    </p>
-                    <button
-                      id="card-trade-button"
-                      type="button"
-                      onClick={() => void handleTradeCards()}
-                      disabled={!canTradeCards}
-                    >
-                      {gameplayCommands.isTrading ? "Trading..." : t("game.cards.tradeSet")}
-                    </button>
-                  </div>
-                  <div className="action-meta-list" hidden={showTradePanel}>
-                    <p className="action-help">{t("game.runtime.noCardsAvailable")}</p>
-                    <p className="action-help">
-                      {snapshot.cardState?.nextTradeBonus != null
-                        ? t("game.runtime.nextTradeBonus", {
-                            bonus: snapshot.cardState.nextTradeBonus
-                          })
-                        : t("game.runtime.none")}
-                    </p>
-                  </div>
-                </div>
-              </details>
-
-              <details
-                className="game-secondary-drawer game-readonly-drawer game-combat-drawer"
-                hidden={!snapshot.lastCombat}
-                onToggle={(event) => setIsCombatDrawerOpen(event.currentTarget.open)}
-                open={isCombatDrawerOpen && Boolean(snapshot.lastCombat)}
-              >
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="crosshair" />
-                  </span>
-                  <span>{t("game.combat.heading")}</span>
-                  <span className="badge accent" id="combat-result-badge">
-                    {combatBadgeLabel}
-                  </span>
-                </summary>
-                <div
-                  id="combat-result-group"
-                  className="rail-section combat-result-section"
-                  hidden={!snapshot.lastCombat}
-                >
-                  <div id="combat-result-summary" className="combat-result-summary">
-                    {combatSummary}
-                  </div>
-                  <div className="combat-result-grid">
-                    <div className="combat-result-line">
-                      <span>{t("game.combat.attacker")}</span>
-                      <strong id="combat-attacker-rolls">{attackerRollsText}</strong>
-                    </div>
-                    <div className="combat-result-line">
-                      <span>{t("game.combat.defender")}</span>
-                      <strong id="combat-defender-rolls">{defenderRollsText}</strong>
-                    </div>
-                    <div className="combat-result-line">
-                      <span>{t("game.combat.comparisons")}</span>
-                      <strong id="combat-comparisons">{comparisonSummary}</strong>
-                    </div>
-                  </div>
-                </div>
-              </details>
-
-              <details className="game-secondary-drawer game-log-drawer">
-                <summary>
-                  <span className="game-drawer-icon" aria-hidden="true">
-                    <WarTableIcon name="clock" />
-                  </span>
-                  <span>{t("game.drawer.activityLog")}</span>
-                </summary>
-                <div className="rail-section log-section">
-                  <div className="log-list rail-log" id="log">
-                    {localizedLog.length ? (
-                      localizedLog.map((entry, index) => (
-                        <article className="game-log-entry" key={`${index}-${entry}`}>
-                          {entry}
-                        </article>
-                      ))
-                    ) : (
-                      <p className="action-help">{t("game.log.lobbyCreated")}</p>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               </details>
             </div>
+
+            <GameActionRail
+              activeDrawer={activeDrawer}
+              items={actionRailItems}
+              onOpenDrawer={setActiveDrawer}
+              onToggleDrawer={toggleDrawer}
+            />
+
+            {activeDrawer === "players" ? (
+              <PlayersDrawer
+                currentPlayerId={snapshot.currentPlayerId}
+                myPlayerId={myPlayerId}
+                players={snapshot.players}
+                territories={snapshot.map}
+                onClose={() => setActiveDrawer(null)}
+              />
+            ) : null}
+
+            {activeDrawer === "cards" ? (
+              <CardsDrawer
+                canTradeCards={canTradeCards}
+                cardState={snapshot.cardState || null}
+                cards={playerHand}
+                feedbackIsError={gameFeedbackIsError}
+                feedbackMessage={gameFeedbackMessage}
+                getCardTypeLabel={cardTypeLabel}
+                mustTradeCards={mustTradeCards}
+                selectedCardIds={selectedTradeCardIds}
+                trading={gameplayCommands.isTrading}
+                onClose={() => setActiveDrawer(null)}
+                onToggleCard={toggleTradeCard}
+                onTradeCards={() => void handleTradeCards()}
+              />
+            ) : null}
+
+            {activeDrawer === "gameInfo" ? (
+              <GameInfoDrawer
+                accessStatusLabel={accessStatusLabel}
+                gameId={resolvedGameId}
+                gameStatusLabel={gameStatusLabel}
+                enabledModules={gameMetaModuleLabels(snapshot.gameConfig)}
+                mapMetaLabel={mapMetaLabel}
+                meName={me?.name || t("game.runtime.notConnected")}
+                setupMetaLabel={setupMetaLabel}
+                showSurrender={showSurrender}
+                surrenderDisabled={actionPending}
+                version={currentVersion ?? undefined}
+                onClose={() => setActiveDrawer(null)}
+                onSurrender={() => void handleSurrender()}
+              />
+            ) : null}
+
+            {assignedVictoryObjective ? (
+              <aside className="game-objective-chip" data-testid="assigned-objective-panel">
+                <WarTableIcon name="objective" />
+                <span>
+                  <small className="game-objective-kicker">{t("game.objective.heading")}</small>
+                  <strong>{assignedVictoryObjective.title}</strong>
+                  <small>{assignedVictoryObjective.description}</small>
+                  <small>
+                    {t("game.objective.module", {
+                      moduleName: assignedVictoryObjective.moduleName || ""
+                    })}
+                  </small>
+                </span>
+              </aside>
+            ) : null}
+
+            <div className="game-right-utility-rail">
+              <ActivityLogTrigger
+                isOpen={isActivityLogOpen}
+                onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
+              />
+            </div>
+
+            {isActivityLogOpen ? (
+              <ActivityLogDrawer
+                entries={activityLogEntries}
+                filter={activityLogFilter}
+                isCleared={isActivityLogCleared}
+                onClear={() => setIsActivityLogCleared(true)}
+                onClose={() => setIsActivityLogOpen(false)}
+                onFilterChange={setActivityLogFilter}
+              />
+            ) : null}
           </section>
         </section>
 
-        <aside
-          className={`right-rail panel game-actions-rail game-command-dock campaign-shell${isCommandDockExpanded ? " is-expanded" : " is-collapsed"}`}
-          data-testid="actions-panel"
-          data-command-dock-expanded={isCommandDockExpanded ? "true" : "false"}
+        <GameActionDock
+          commandTitle={commandDockTitle}
+          expanded={isCommandDockExpanded}
+          mode={dockMode}
+          onToggleExpanded={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
         >
-          <button
-            type="button"
-            className="game-command-dock-toggle"
-            aria-expanded={isCommandDockExpanded}
-            aria-controls="game-command-actions"
-            aria-label={
-              isCommandDockExpanded ? t("game.commandDock.collapse") : t("game.commandDock.expand")
-            }
-            onClick={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
-          >
-            <span aria-hidden="true">{isCommandDockExpanded ? "v" : "^"}</span>
-          </button>
-          <div className="game-command-context" hidden={!commandTerritory}>
-            <section className="game-command-territory" aria-label="Selected territory">
-              <div className="game-command-territory-heading">
-                <h2>{commandTerritory?.name || t("game.runtime.noTerritory")}</h2>
-                <span className="badge accent">{commandTerritory?.armies ?? 0}</span>
-              </div>
-              <p>{commandContinentLabel}</p>
-              <div className="game-command-owner">
-                <span className="game-hud-avatar" aria-hidden="true">
-                  {commandTerritoryOwner.trim().charAt(0).toUpperCase() || "A"}
-                </span>
-                <span>
-                  {t("game.command.owner")}: <strong>{commandTerritoryOwner}</strong>
-                </span>
-              </div>
-              <div className="game-command-emblem" aria-hidden="true">
-                <WarTableIcon name="medal" />
-              </div>
-            </section>
-            <section className="game-command-mode" aria-label={commandActionTitle}>
-              <p>{commandActionTitle}</p>
-              <div className="game-command-mode-stats">
-                <span>
-                  {t("game.command.available")} <strong>{snapshot.reinforcementPool}</strong>
-                </span>
-                <span>
-                  {t("game.command.toMove")}{" "}
-                  <strong>
-                    {showReinforceGroup
-                      ? reinforceAmount || "0"
-                      : showConquestGroup
-                        ? conquestArmies || pendingConquestMin
-                        : showFortifyGroup
-                          ? fortifyArmies || "1"
-                          : "-"}
-                  </strong>
-                </span>
-              </div>
-            </section>
-          </div>
-          <div className="rail-section game-phase-banner game-dock-heading" id="phase-banner">
-            <span>
-              <span>{t("game.phaseBanner")}</span>{" "}
-              <strong id="phase-banner-value">{phaseBadgeLabel}</strong>
-            </span>
-            <span id="reinforcement-banner" hidden={snapshot.phase !== "active"}>
-              <span>{t("game.reinforcementBanner")}</span>{" "}
-              <strong id="reinforcement-banner-value">{snapshot.reinforcementPool}</strong>
-            </span>
-          </div>
-
-          <div
-            className="rail-section game-lobby-controls"
-            id="lobby-controls-section"
-            hidden={!showLobbyControls}
-          >
-            <form
-              id="auth-form"
-              className="auth-form compact-form rail-auth-form"
-              hidden={Boolean(authenticatedUser)}
-              onSubmit={(event) => void handleInlineLogin(event)}
-            >
-              <label className="field-stack auth-field">
-                <span>{t("auth.usernameLabel")}</span>
-                <input
-                  id="auth-username"
-                  name="username"
-                  maxLength={32}
-                  placeholder={t("game.auth.username.placeholder")}
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  required
-                  value={inlineUsername}
-                  onChange={(event) => setInlineUsername(event.target.value)}
-                  disabled={inlineAuthPending}
-                />
-              </label>
-              <label className="field-stack auth-field">
-                <span>{t("auth.passwordLabel")}</span>
-                <input
-                  id="auth-password"
-                  name="password"
-                  type="password"
-                  placeholder={t("game.auth.password.placeholder")}
-                  autoComplete="current-password"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  required
-                  value={inlinePassword}
-                  onChange={(event) => setInlinePassword(event.target.value)}
-                  disabled={inlineAuthPending}
-                />
-              </label>
-              <p
-                id="auth-feedback"
-                className="auth-feedback"
-                aria-live="polite"
-                hidden={!inlineAuthError}
-              >
-                {inlineAuthError}
-              </p>
-              <button
-                id="login-button"
-                type="submit"
-                className="ghost-button"
-                disabled={inlineAuthPending}
-              >
-                {inlineAuthPending ? "..." : t("auth.login")}
-              </button>
-              <Link
-                id="register-link"
-                className="ghost-button full-width"
-                to={buildRegisterPath(namespace)}
-              >
-                {t("auth.register")}
-              </Link>
-            </form>
-            <div
-              className="identity-actions compact-actions rail-action-group"
-              id="lobby-action-buttons"
-            >
-              <button
-                id="join-button"
-                type="button"
-                onClick={() => void handleJoinLobby()}
-                disabled={!showJoinLobby || actionPending}
-              >
-                {gameplayCommands.isJoining ? "Joining..." : t("game.join")}
-              </button>
-              <button
-                id="start-button"
-                type="button"
-                className="ghost-button"
-                onClick={() => void handleStartGame()}
-                disabled={!showStartGame || actionPending || snapshot.players.length < 2}
-              >
-                {gameplayCommands.isStarting ? "Starting..." : t("game.start")}
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="rail-section actions-section"
-            id="game-command-actions"
-            hidden={!showActionsSection}
-          >
-            <div
-              className="action-group compact-group"
-              id="reinforce-group"
-              hidden={!showReinforceGroup}
-            >
-              <label htmlFor="reinforce-select">{t("game.actions.reinforce")}</label>
-              <div className="action-stack">
-                <select
-                  id="reinforce-select"
-                  value={reinforceTerritoryId}
-                  onChange={(event) => setSelectedReinforceTerritoryId(event.target.value)}
-                >
-                  {myTerritories.map((territory) => (
-                    <option key={territory.id} value={territory.id}>
-                      {territoryOptionLabel(territory, playersById)}
-                    </option>
+          {mustTradeCards ? (
+            <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
+              <section className="game-trade-hand">
+                <div className="game-dock-field-label">{t("game.commandDock.yourCards")}</div>
+                <div id="card-trade-dock-list" className="game-card-grid">
+                  {playerHand.map((card) => (
+                    <button
+                      key={card.id}
+                      type="button"
+                      className={`game-card-tile${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                      data-dock-card-id={card.id}
+                      onClick={() => toggleTradeCard(card.id)}
+                    >
+                      <strong>{card.territoryId || card.id}</strong>
+                      <span>{cardTypeLabel(card)}</span>
+                    </button>
                   ))}
-                </select>
-                <input
-                  id="reinforce-amount"
-                  inputMode="numeric"
-                  value={reinforceAmount}
-                  onChange={(event) => setReinforceAmount(event.target.value)}
-                  aria-label={t("game.actions.reinforceAmountAria")}
-                />
-                <div className="action-row">
+                </div>
+                <p id="card-trade-dock-help">{t("game.commandDock.mustTradeToContinue")}</p>
+              </section>
+              <section className="game-trade-selection">
+                <div className="game-dock-field-label">
+                  {t("game.commandDock.selectCardsToTrade")}
+                  <span>
+                    {t("game.commandDock.cardsSelected", {
+                      selected: selectedTradeCardIds.length
+                    })}
+                  </span>
+                </div>
+                <div className="game-selected-card-row">
+                  {selectedTradeCardIds.length ? (
+                    selectedTradeCardIds.map((cardId) => {
+                      const card = playerHand.find((entry) => entry.id === cardId);
+                      return (
+                        <button
+                          key={cardId}
+                          type="button"
+                          className="game-card-tile is-selected"
+                          onClick={() => toggleTradeCard(cardId)}
+                        >
+                          <strong>{card?.territoryId || cardId}</strong>
+                          <span>{card ? cardTypeLabel(card) : t("game.actions.cards")}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="action-help">{t("game.commandDock.chooseThreeCards")}</p>
+                  )}
+                </div>
+                <div className="game-trade-actions">
                   <button
-                    id="reinforce-multi-button"
-                    type="button"
-                    onClick={() => void handleReinforce()}
-                    disabled={!reinforceTerritoryId || actionPending}
-                  >
-                    {gameplayCommands.isActionPending ? "Applying..." : t("game.actions.add")}
-                  </button>
-                  <button
-                    id="reinforce-all-button"
                     type="button"
                     className="game-command-secondary-action"
-                    onClick={() => void handleReinforceAll()}
-                    disabled={!reinforceTerritoryId || actionPending}
+                    onClick={() => setSelectedTradeCardIds([])}
+                    disabled={!selectedTradeCardIds.length || actionPending}
                   >
-                    Sposta tutto
+                    {t("game.commandDock.clearSelection")}
+                  </button>
+                  <button
+                    id="card-trade-dock-button"
+                    type="button"
+                    onClick={() => void handleTradeCards()}
+                    disabled={!canTradeCards}
+                  >
+                    {gameplayCommands.isTrading
+                      ? t("game.commandDock.trading")
+                      : t("game.commandDock.tradeCards")}
                   </button>
                 </div>
-              </div>
+              </section>
+              <aside className="game-exchange-bonus">
+                <span>{t("game.commandDock.exchangeBonus")}</span>
+                <strong>+{snapshot.cardState?.nextTradeBonus ?? 0}</strong>
+                <small>{t("game.hud.reinforcements")}</small>
+                <p>{t("game.commandDock.cardsSet", { count: 3 })}</p>
+              </aside>
             </div>
+          ) : null}
 
-            <div className="action-group compact-group" id="attack-group" hidden={!showAttackGroup}>
-              <label htmlFor="attack-from">{t("game.actions.attack")}</label>
-              <div className="action-stack">
-                <select
-                  id="attack-from"
-                  value={attackFromId}
-                  onChange={(event) => {
-                    setSelectedAttackFromId(event.target.value);
-                    setSelectedAttackToId("");
-                    setSelectedAttackDiceCount("");
-                  }}
-                >
-                  {myTerritories.map((territory) => (
-                    <option key={territory.id} value={territory.id}>
-                      {territoryOptionLabel(territory, playersById)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  id="attack-to"
-                  value={attackToId}
-                  onChange={(event) => setSelectedAttackToId(event.target.value)}
-                >
-                  <option value="">{t("game.runtime.noTarget")}</option>
-                  {attackTargets.map((territory) => (
-                    <option key={territory.id} value={territory.id}>
-                      {territoryOptionLabel(territory, playersById)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  id="attack-dice"
-                  value={attackDiceCount}
-                  onChange={(event) => setSelectedAttackDiceCount(event.target.value)}
-                >
-                  {!maxAttackDice ? (
-                    <option value="">{t("game.runtime.noDiceAvailable")}</option>
-                  ) : null}
-                  {Array.from({ length: maxAttackDice }, (_, index) => index + 1).map((count) => (
-                    <option key={count} value={String(count)}>
-                      {t("game.runtime.attackDiceOption", {
-                        count,
-                        suffix: count === 1 ? "" : "i"
-                      })}
-                    </option>
-                  ))}
-                </select>
-                <div className="action-row">
-                  <button
-                    id="attack-button"
-                    type="button"
-                    onClick={() => void handleAttack("attack")}
-                    disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
-                  >
-                    {gameplayCommands.isActionPending
-                      ? "Attacking..."
-                      : t("game.actions.launchAttack")}
-                  </button>
-                  <button
-                    id="attack-banzai-button"
-                    type="button"
-                    className="game-command-secondary-action"
-                    onClick={() => void handleAttack("attackBanzai")}
-                    disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
-                  >
-                    {gameplayCommands.isActionPending
-                      ? t("game.runtime.banzaiLoading")
-                      : t("game.actions.banzai")}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="action-group compact-group"
-              id="conquest-group"
-              hidden={!showConquestGroup}
-            >
-              <label htmlFor="conquest-armies">{t("game.actions.afterConquest")}</label>
-              <div className="action-stack">
-                <input
-                  id="conquest-armies"
-                  inputMode="numeric"
-                  value={conquestArmies}
-                  onChange={(event) => setConquestArmies(event.target.value)}
-                  placeholder={String(pendingConquestMin)}
-                />
-                <div className="action-row">
-                  <button
-                    id="conquest-button"
-                    type="button"
-                    onClick={() => void handleMoveAfterConquest()}
-                    disabled={actionPending}
-                  >
-                    {gameplayCommands.isActionPending ? "Moving..." : t("game.actions.moveArmies")}
-                  </button>
-                  <button
-                    id="conquest-all-button"
-                    type="button"
-                    className="game-command-secondary-action"
-                    onClick={() => void handleMoveAllAfterConquest()}
-                    disabled={actionPending}
-                  >
-                    Sposta tutto
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="action-group compact-group"
-              id="fortify-group"
-              hidden={!showFortifyGroup}
-            >
-              <label htmlFor="fortify-from">{t("game.actions.fortify")}</label>
-              <div className="action-stack">
-                <select
-                  id="fortify-from"
-                  value={fortifyFromId}
-                  onChange={(event) => {
-                    setSelectedFortifyFromId(event.target.value);
-                    setSelectedFortifyToId("");
-                    setFortifySelectionMode("to");
-                  }}
-                >
-                  {myTerritories.map((territory) => (
-                    <option key={territory.id} value={territory.id}>
-                      {territoryOptionLabel(territory, playersById)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  id="fortify-to"
-                  value={fortifyToId}
-                  onChange={(event) => {
-                    setSelectedFortifyToId(event.target.value);
-                    setFortifySelectionMode("from");
-                  }}
-                >
-                  <option value="">{t("game.runtime.noAdjacentTerritory")}</option>
-                  {fortifyTargets.map((territory) => (
-                    <option key={territory.id} value={territory.id}>
-                      {territoryOptionLabel(territory, playersById)}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  id="fortify-armies"
-                  inputMode="numeric"
-                  value={fortifyArmies}
-                  onChange={(event) => setFortifyArmies(event.target.value)}
-                  placeholder="1"
-                />
+          {!mustTradeCards && showLobbyControls ? (
+            <div className="rail-section game-lobby-controls" id="lobby-controls-section">
+              <form
+                id="auth-form"
+                className="auth-form compact-form rail-auth-form"
+                hidden={Boolean(authenticatedUser)}
+                onSubmit={(event) => void handleInlineLogin(event)}
+              >
+                <label className="field-stack auth-field">
+                  <span>{t("auth.usernameLabel")}</span>
+                  <input
+                    id="auth-username"
+                    name="username"
+                    maxLength={32}
+                    placeholder={t("game.auth.username.placeholder")}
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    required
+                    value={inlineUsername}
+                    onChange={(event) => setInlineUsername(event.target.value)}
+                    disabled={inlineAuthPending}
+                  />
+                </label>
+                <label className="field-stack auth-field">
+                  <span>{t("auth.passwordLabel")}</span>
+                  <input
+                    id="auth-password"
+                    name="password"
+                    type="password"
+                    placeholder={t("game.auth.password.placeholder")}
+                    autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    required
+                    value={inlinePassword}
+                    onChange={(event) => setInlinePassword(event.target.value)}
+                    disabled={inlineAuthPending}
+                  />
+                </label>
                 <button
-                  id="fortify-button"
-                  type="button"
-                  onClick={() => void handleFortify()}
-                  disabled={
-                    !fortifyFromId ||
-                    !fortifyToId ||
-                    maxFortifyArmies < 1 ||
-                    actionPending ||
-                    Boolean(snapshot.fortifyUsed)
-                  }
+                  id="login-button"
+                  type="submit"
+                  className="ghost-button"
+                  disabled={inlineAuthPending}
                 >
-                  {gameplayCommands.isActionPending
-                    ? "Fortifying..."
-                    : t("game.actions.moveArmies")}
+                  {inlineAuthPending ? "..." : t("auth.login")}
+                </button>
+                <Link
+                  id="register-link"
+                  className="ghost-button full-width"
+                  to={buildRegisterPath(namespace)}
+                >
+                  {t("auth.register")}
+                </Link>
+                {inlineAuthError ? (
+                  <p id="auth-error" className="action-help is-error" aria-live="polite">
+                    {inlineAuthError}
+                  </p>
+                ) : null}
+              </form>
+              <div
+                className="identity-actions compact-actions rail-action-group"
+                id="lobby-action-buttons"
+              >
+                <button
+                  id="join-button"
+                  type="button"
+                  onClick={() => void handleJoinLobby()}
+                  disabled={!showJoinLobby || actionPending}
+                >
+                  {gameplayCommands.isJoining ? "Joining..." : t("game.join")}
+                </button>
+                <button
+                  id="start-button"
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => void handleStartGame()}
+                  disabled={!showStartGame || actionPending || snapshot.players.length < 2}
+                >
+                  {gameplayCommands.isStarting ? "Starting..." : t("game.start")}
                 </button>
               </div>
             </div>
+          ) : null}
 
-            <button
-              id="end-turn-button"
-              type="button"
-              hidden={!showEndTurn}
-              onClick={() => void handleEndTurn()}
-              disabled={actionPending || Boolean(snapshot.pendingConquest)}
-            >
-              {gameplayCommands.isActionPending ? "Updating..." : endTurnLabel}
-            </button>
-          </div>
-        </aside>
+          {!mustTradeCards && showActionsSection ? (
+            <div className="rail-section actions-section" id="game-command-actions">
+              {showReinforceGroup ? (
+                <div className="action-group compact-group" id="reinforce-group">
+                  <label htmlFor="reinforce-select">
+                    {t("game.commandDock.selectedTerritory")}
+                  </label>
+                  <div className="action-stack">
+                    <select
+                      id="reinforce-select"
+                      value={reinforceTerritoryId}
+                      onChange={(event) => setSelectedReinforceTerritoryId(event.target.value)}
+                    >
+                      {myTerritories.map((territory) => (
+                        <option key={territory.id} value={territory.id}>
+                          {territoryDockOptionLabel(territory)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="game-number-stepper">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReinforceAmount((value) =>
+                            String(Math.max(1, parsePositiveInteger(value, 1) - 1))
+                          )
+                        }
+                        disabled={actionPending}
+                      >
+                        -
+                      </button>
+                      <input
+                        id="reinforce-amount"
+                        inputMode="numeric"
+                        value={reinforceAmount}
+                        onChange={(event) => setReinforceAmount(event.target.value)}
+                        aria-label={t("game.actions.reinforceAmountAria")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReinforceAmount((value) =>
+                            String(
+                              clamp(
+                                parsePositiveInteger(value, 1) + 1,
+                                1,
+                                Math.max(1, Number(snapshot.reinforcementPool || 1))
+                              )
+                            )
+                          )
+                        }
+                        disabled={actionPending}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="action-row">
+                      <button
+                        id="reinforce-multi-button"
+                        type="button"
+                        onClick={() => void handleReinforce()}
+                        disabled={!reinforceTerritoryId || actionPending}
+                      >
+                        {gameplayCommands.isActionPending
+                          ? t("game.commandDock.applying")
+                          : t("game.actions.add")}
+                      </button>
+                      <button
+                        id="reinforce-all-button"
+                        type="button"
+                        className="game-command-secondary-action"
+                        aria-label={t("game.commandDock.addAllAria", {
+                          count: snapshot.reinforcementPool
+                        })}
+                        onClick={() => void handleReinforceAll()}
+                        disabled={!reinforceTerritoryId || actionPending}
+                      >
+                        {t("game.commandDock.addAll", { count: snapshot.reinforcementPool })}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {showAttackGroup ? (
+                <div className="action-group compact-group" id="attack-group">
+                  <label htmlFor="attack-from">{t("game.commandDock.from")}</label>
+                  <div className="action-stack">
+                    <select
+                      id="attack-from"
+                      value={attackFromId}
+                      onChange={(event) => {
+                        setSelectedAttackFromId(event.target.value);
+                        setSelectedAttackToId("");
+                        setSelectedAttackDiceCount("");
+                      }}
+                    >
+                      {myTerritories.map((territory) => (
+                        <option key={territory.id} value={territory.id}>
+                          {territoryDockOptionLabel(territory)}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="game-dock-select-label">
+                      <span>{t("game.commandDock.to")}</span>
+                      <select
+                        id="attack-to"
+                        value={attackToId}
+                        onChange={(event) => setSelectedAttackToId(event.target.value)}
+                      >
+                        <option value="">{t("game.runtime.noTarget")}</option>
+                        {attackTargets.map((territory) => (
+                          <option key={territory.id} value={territory.id}>
+                            {territoryDockOptionLabel(territory)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="game-dock-select-label">
+                      <span>{t("game.commandDock.dice")}</span>
+                      <select
+                        id="attack-dice"
+                        value={attackDiceCount}
+                        onChange={(event) => setSelectedAttackDiceCount(event.target.value)}
+                      >
+                        {!maxAttackDice ? (
+                          <option value="">{t("game.runtime.noDiceAvailable")}</option>
+                        ) : null}
+                        {Array.from({ length: maxAttackDice }, (_, index) => index + 1).map(
+                          (count) => (
+                            <option key={count} value={String(count)}>
+                              {t("game.runtime.attackDiceOption", {
+                                count,
+                                suffix: count === 1 ? "" : "i"
+                              })}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+                    <div className="action-row">
+                      <button
+                        id="attack-button"
+                        type="button"
+                        onClick={() => void handleAttack("attack")}
+                        disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
+                      >
+                        {gameplayCommands.isActionPending
+                          ? t("game.commandDock.attacking")
+                          : t("game.actions.launchAttack")}
+                      </button>
+                      <button
+                        id="attack-banzai-button"
+                        type="button"
+                        className="game-command-secondary-action"
+                        onClick={() => void handleAttack("attackBanzai")}
+                        disabled={!attackFromId || !attackToId || !attackDiceCount || actionPending}
+                      >
+                        {gameplayCommands.isActionPending
+                          ? t("game.runtime.banzaiLoading")
+                          : t("game.actions.banzai")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {showConquestGroup ? (
+                <div className="action-group compact-group" id="conquest-group">
+                  <label htmlFor="conquest-armies">{t("game.actions.afterConquest")}</label>
+                  <div className="action-stack">
+                    <input
+                      id="conquest-armies"
+                      inputMode="numeric"
+                      value={conquestArmies}
+                      onChange={(event) => setConquestArmies(event.target.value)}
+                      placeholder={String(pendingConquestMin)}
+                    />
+                    <div className="action-row">
+                      <button
+                        id="conquest-button"
+                        type="button"
+                        onClick={() => void handleMoveAfterConquest()}
+                        disabled={actionPending}
+                      >
+                        {gameplayCommands.isActionPending
+                          ? t("game.commandDock.moving")
+                          : t("game.actions.moveArmies")}
+                      </button>
+                      <button
+                        id="conquest-all-button"
+                        type="button"
+                        className="game-command-secondary-action"
+                        onClick={() => void handleMoveAllAfterConquest()}
+                        disabled={actionPending}
+                      >
+                        {t("game.actions.moveAll", { count: pendingConquestMax })}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {showFortifyGroup ? (
+                <div className="action-group compact-group" id="fortify-group">
+                  <label htmlFor="fortify-from">{t("game.commandDock.from")}</label>
+                  <div className="action-stack">
+                    <select
+                      id="fortify-from"
+                      value={fortifyFromId}
+                      onChange={(event) => {
+                        setSelectedFortifyFromId(event.target.value);
+                        setSelectedFortifyToId("");
+                        setFortifySelectionMode("to");
+                      }}
+                    >
+                      {myTerritories.map((territory) => (
+                        <option key={territory.id} value={territory.id}>
+                          {territoryDockOptionLabel(territory)}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="game-dock-select-label">
+                      <span>{t("game.commandDock.to")}</span>
+                      <select
+                        id="fortify-to"
+                        value={fortifyToId}
+                        onChange={(event) => {
+                          setSelectedFortifyToId(event.target.value);
+                          setFortifySelectionMode("from");
+                        }}
+                      >
+                        <option value="">{t("game.runtime.noAdjacentTerritory")}</option>
+                        {fortifyTargets.map((territory) => (
+                          <option key={territory.id} value={territory.id}>
+                            {territoryDockOptionLabel(territory)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="game-dock-select-label">
+                      <span>{t("game.commandDock.armiesToMove")}</span>
+                      <input
+                        id="fortify-armies"
+                        inputMode="numeric"
+                        value={fortifyArmies}
+                        onChange={(event) => setFortifyArmies(event.target.value)}
+                        placeholder="1"
+                      />
+                    </label>
+                    <button
+                      id="fortify-button"
+                      type="button"
+                      onClick={() => void handleFortify()}
+                      disabled={
+                        !fortifyFromId ||
+                        !fortifyToId ||
+                        maxFortifyArmies < 1 ||
+                        actionPending ||
+                        Boolean(snapshot.fortifyUsed)
+                      }
+                    >
+                      {gameplayCommands.isActionPending
+                        ? t("game.commandDock.fortifying")
+                        : t("game.actions.moveArmies")}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <button
+                id="end-turn-button"
+                type="button"
+                hidden={!showEndTurn}
+                onClick={() => void handleEndTurn()}
+                disabled={
+                  actionPending ||
+                  Boolean(snapshot.pendingConquest) ||
+                  snapshot?.turnPhase === "reinforcement"
+                }
+              >
+                {gameplayCommands.isActionPending
+                  ? t("game.commandDock.updating")
+                  : dockEndPhaseLabel}
+              </button>
+            </div>
+          ) : null}
+        </GameActionDock>
       </section>
     </section>
   );

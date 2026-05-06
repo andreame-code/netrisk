@@ -236,3 +236,92 @@ test("map controls stay inside the map frame and the actions rail keeps a stable
     )
     .toBeTruthy();
 });
+
+test("short desktop viewport keeps the reference shell playable", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 600 });
+  await openWorldClassicGame(page, "short-desktop");
+  const joinAiResponse = await page.request.post("/api/ai/join", {
+    data: { name: "CPU Short" }
+  });
+  await expect(joinAiResponse.ok()).toBeTruthy();
+  await page.getByRole("button", { name: "Avvia partita" }).click();
+  await expect(page.locator("#reinforce-group")).toBeVisible();
+
+  const metrics = await page.evaluate(() => {
+    const boundsFor = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Missing ${selector}`);
+      }
+
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        width: rect.width
+      };
+    };
+    const intersects = (first, second) =>
+      !(
+        first.right <= second.left ||
+        second.right <= first.left ||
+        first.bottom <= second.top ||
+        second.bottom <= first.top
+      );
+
+    const hud = document.querySelector(".game-floating-hud");
+    const board = boundsFor(".game-map-stage .map-board");
+    const dock = boundsFor(".game-command-dock");
+    const dockElement = document.querySelector(".game-command-dock");
+    const rail = boundsFor(".game-action-rail");
+    const activity = boundsFor(".game-right-utility-rail");
+    const viewport = {
+      height: window.innerHeight,
+      width: window.innerWidth
+    };
+    const visibleDockControls = dockElement
+      ? Array.from(dockElement.querySelectorAll("button, select, input"))
+          .map((element) => element.getBoundingClientRect())
+          .filter((rect) => rect.width > 0 && rect.height > 0)
+      : [];
+
+    return {
+      activityInsideViewport: activity.right <= viewport.width + 1 && activity.top >= -1,
+      activityClearOfDock: !intersects(activity, dock),
+      boardHeight: board.height,
+      boardClearOfDock: !intersects(board, dock),
+      boardInsideViewport: board.top >= -1 && board.right <= viewport.width + 1,
+      boardWidth: board.width,
+      dockInsideViewport:
+        dock.left >= -1 && dock.right <= viewport.width + 1 && dock.bottom <= viewport.height + 1,
+      dockControlsInsideDock: visibleDockControls.every(
+        (rect) =>
+          rect.left >= dock.left - 1 &&
+          rect.right <= dock.right + 1 &&
+          rect.top >= dock.top - 1 &&
+          rect.bottom <= dock.bottom + 1
+      ),
+      hudHasNoHorizontalScrollbar: hud ? hud.scrollWidth <= hud.clientWidth + 1 : false,
+      railAboveDock: rail.bottom <= dock.top + 1,
+      railClearOfDock: !intersects(rail, dock)
+    };
+  });
+
+  expect(metrics.boardWidth).toBeGreaterThanOrEqual(500);
+  expect(metrics.boardHeight).toBeGreaterThanOrEqual(330);
+  expect(metrics.boardInsideViewport).toBeTruthy();
+  expect(metrics.boardClearOfDock).toBeTruthy();
+  expect(metrics.dockInsideViewport).toBeTruthy();
+  expect(metrics.dockControlsInsideDock).toBeTruthy();
+  expect(metrics.railAboveDock).toBeTruthy();
+  expect(metrics.railClearOfDock).toBeTruthy();
+  expect(metrics.activityInsideViewport).toBeTruthy();
+  expect(metrics.activityClearOfDock).toBeTruthy();
+  expect(metrics.hudHasNoHorizontalScrollbar).toBeTruthy();
+
+  await page.locator(".game-activity-trigger").click();
+  await expect(page.locator("#log")).toHaveCount(1);
+});
