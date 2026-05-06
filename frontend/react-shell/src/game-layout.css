@@ -6473,16 +6473,16 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock #attack-group .action-stack,
   .game-command-dock #fortify-group .action-stack {
     grid-template-columns:
-      minmax(190px, 1.12fr)
-      minmax(170px, 0.88fr)
-      minmax(84px, 0.32fr)
-      minmax(210px, 0.86fr) !important;
+      minmax(0, 1.12fr)
+      minmax(0, 0.88fr)
+      minmax(76px, 0.32fr)
+      minmax(196px, 0.86fr) !important;
     gap: 14px !important;
   }
 
   .game-command-dock .actions-section,
   .game-command-dock .game-lobby-controls {
-    grid-template-columns: minmax(0, 1fr) minmax(178px, auto) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(166px, 0.2fr) !important;
     gap: 18px !important;
     box-sizing: border-box !important;
     height: 100% !important;
@@ -6540,6 +6540,18 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     flex: 1 1 0 !important;
     padding-inline: 14px !important;
   }
+
+  .game-command-dock #attack-group .action-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(68px, 0.42fr) !important;
+    gap: 8px !important;
+  }
+
+  .game-command-dock #attack-group .action-row > button,
+  .game-command-dock #end-turn-button {
+    width: 100% !important;
+    white-space: normal !important;
+  }
 }
 
 @media (min-width: 1181px) and (max-height: 700px) {
@@ -6552,14 +6564,14 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-command-dock #attack-group .action-stack,
   .game-command-dock #fortify-group .action-stack {
     grid-template-columns:
-      minmax(260px, 1.18fr)
-      minmax(220px, 0.92fr)
-      minmax(96px, 0.38fr)
+      minmax(0, 1.18fr)
+      minmax(0, 0.92fr)
+      minmax(86px, 0.38fr)
       minmax(220px, 0.82fr) !important;
   }
 
   .game-command-dock .actions-section,
   .game-command-dock .game-lobby-controls {
-    grid-template-columns: minmax(0, 1fr) minmax(194px, auto) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(182px, 0.2fr) !important;
   }
 }
