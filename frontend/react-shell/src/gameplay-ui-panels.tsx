@@ -737,7 +737,6 @@ export function ActivityLogDrawer({
             type="button"
             role="tab"
             aria-selected={filter === entryFilter}
-            tabIndex={filter === entryFilter ? 0 : -1}
             className={filter === entryFilter ? "is-active" : ""}
             onClick={() => onFilterChange(entryFilter)}
           >

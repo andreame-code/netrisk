@@ -26,6 +26,8 @@ export const de = Object.freeze({
   "auth.register": "Registrieren",
   "auth.logout": "Abmelden",
   "auth.sessionExpired": "Sitzung abgelaufen.",
+  "auth.status.loggedIn": "Angemeldet als {username}.",
+  "auth.status.required": "Anmeldung erforderlich.",
   "auth.userProfile": "Benutzerprofil",
   "auth.login.invalidCredentials": "Ungueltige Zugangsdaten.",
   "auth.throttle.tooManyAttempts": "Zu viele Versuche. Bitte versuche es spaeter erneut.",
