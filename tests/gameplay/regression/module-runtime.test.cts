@@ -804,6 +804,7 @@ register("module runtime serve gli asset modulo dal projectRoot runtime", async 
           displayName: "Runtime Assets",
           engineVersion: "1.0.0",
           kind: "ui",
+          assetsDir: "assets",
           capabilities: []
         },
         serverEntryPath: "assets/runtime-only.css",
