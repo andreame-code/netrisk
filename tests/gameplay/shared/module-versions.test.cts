@@ -17,6 +17,7 @@ const {
 } = require("../../../shared/module-versions.cjs");
 const { validateNetRiskModuleManifest } = require("../../../shared/netrisk-modules.cjs");
 const {
+  findModuleVersionChanges,
   findNonIncrementingModuleVersionChanges,
   parseChangedFilePathsFromNameStatus
 } = require("../../../scripts/check-module-versioning.cjs");
@@ -278,4 +279,21 @@ register("module version bump detector rejects non-incrementing version edits", 
       currentVersion: "1.2.2"
     }
   ]);
+});
+
+register("module version bump detector treats newly added modules as changed", () => {
+  const baseSource = '{ id: "maps", name: "Maps", version: "1.0.0", ownerPaths: ["shared/maps/"] }';
+  const currentSource = [
+    '{ id: "maps", name: "Maps", version: "1.0.0", ownerPaths: ["shared/maps/"] }',
+    '{ id: "new-module", name: "New Module", version: "1.0.0", ownerPaths: ["shared/new-module.cts"] }'
+  ].join("\n");
+
+  assert.deepEqual(findModuleVersionChanges(currentSource, baseSource), [
+    {
+      moduleId: "new-module",
+      baseVersion: null,
+      currentVersion: "1.0.0"
+    }
+  ]);
+  assert.deepEqual(findNonIncrementingModuleVersionChanges(currentSource, baseSource), []);
 });

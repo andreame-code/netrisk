@@ -14,7 +14,7 @@ type PushEventPayload = {
 
 type ModuleVersionChange = {
   moduleId: string;
-  baseVersion: string;
+  baseVersion: string | null;
   currentVersion: string;
 };
 
@@ -155,12 +155,10 @@ export function findModuleVersionChanges(
   const baseVersions = baseSource ? extractModuleVersions(baseSource) : {};
 
   return Object.entries(currentVersions)
-    .filter(
-      ([moduleId, version]) => Boolean(baseVersions[moduleId]) && baseVersions[moduleId] !== version
-    )
+    .filter(([moduleId, version]) => baseVersions[moduleId] !== version)
     .map(([moduleId, version]) => ({
       moduleId,
-      baseVersion: baseVersions[moduleId],
+      baseVersion: baseVersions[moduleId] ?? null,
       currentVersion: version
     }));
 }
@@ -177,6 +175,9 @@ export function findNonIncrementingModuleVersionChanges(
   baseSource: string | null
 ): ModuleVersionChange[] {
   return findModuleVersionChanges(currentSource, baseSource).filter((entry) => {
+    if (!entry.baseVersion) {
+      return false;
+    }
     const comparison = compareSemver(entry.currentVersion, entry.baseVersion);
     return comparison === null || comparison <= 0;
   });
