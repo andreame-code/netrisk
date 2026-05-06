@@ -53,6 +53,9 @@ register("module version manifest validation rejects malformed data", () => {
   compatibility[1].requires.push({ moduleId: "missing.module", versions: "1.x" });
   compatibility[2].moduleVersions = ">=2.0.0 <1.0.0";
   compatibility[3].compatibleSaveGameSchemaVersions = { min: 2, max: 1 };
+  const versionMismatch = modules.find((entry: { id: string }) => entry.id === "public-state");
+  assert.ok(versionMismatch);
+  versionMismatch.version = "2.0.0";
 
   const errors = validateModuleVersionManifest(modules, compatibility);
 
@@ -70,6 +73,10 @@ register("module version manifest validation rejects malformed data", () => {
   );
   assert.equal(
     errors.some((entry: string) => entry.includes("invalid save-game schema range")),
+    true
+  );
+  assert.equal(
+    errors.some((entry: string) => entry.includes("outside declared module version range")),
     true
   );
 });
@@ -190,6 +197,8 @@ register("module compatibility checks app, schema, API, and dependent module ver
   assert.equal(isModuleCompatibleWith("demo.command-center", "1.0.0", "core.base", "2.0.0"), false);
   assert.equal(isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "1.0.0"), true);
   assert.equal(isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "2.0.0"), false);
+  assert.equal(isModuleCompatibleWith("maps", "1.0.0", "setup-flow", "not-a-version"), false);
+  assert.equal(isModuleCompatibleWith("maps", "1.0.0", "setup-flow", "2.0.0"), false);
   assert.equal(
     isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "1.0.0", {
       appVersion: "0.2.000"

@@ -684,6 +684,7 @@ export function validateModuleVersionManifest(
 ): string[] {
   const errors: string[] = [];
   const moduleIds = new Set<string>();
+  const moduleEntriesById = new Map<string, FunctionalModuleVersion>();
   const compatibilityIds = new Set<string>();
 
   modules.forEach((entry) => {
@@ -696,6 +697,7 @@ export function validateModuleVersionManifest(
       errors.push(`Duplicate module version entry "${entry.id}".`);
     }
     moduleIds.add(entry.id);
+    moduleEntriesById.set(entry.id, entry);
 
     if (!isNonEmptyString(entry.name)) {
       errors.push(`${entry.id} is missing a name.`);
@@ -734,6 +736,17 @@ export function validateModuleVersionManifest(
 
     if (!isValidVersionRange(entry.moduleVersions)) {
       errors.push(`${entry.moduleId} has invalid module version range "${entry.moduleVersions}".`);
+    } else {
+      const moduleEntry = moduleEntriesById.get(entry.moduleId);
+      if (
+        moduleEntry &&
+        isValidModuleSemver(moduleEntry.version) &&
+        !versionSatisfiesRange(moduleEntry.version, entry.moduleVersions)
+      ) {
+        errors.push(
+          `${entry.moduleId} version ${moduleEntry.version} is outside declared module version range "${entry.moduleVersions}".`
+        );
+      }
     }
 
     if (!isValidVersionRange(entry.compatibleAppVersions)) {
@@ -920,8 +933,11 @@ export function isModuleCompatibleWith(
   environment: Omit<ModuleCompatibilityEnvironment, "modules"> = {}
 ): boolean {
   const compatibility = moduleCompatibility.find((entry) => entry.moduleId === moduleId) || null;
+  const otherCompatibility =
+    moduleCompatibility.find((entry) => entry.moduleId === otherModuleId) || null;
   if (
     !compatibility ||
+    !otherCompatibility ||
     !getFunctionalModuleVersion(moduleId) ||
     !getFunctionalModuleVersion(otherModuleId)
   ) {
@@ -934,10 +950,27 @@ export function isModuleCompatibleWith(
     compatibility,
     environment
   );
+  errors.push(
+    ...collectModuleCompatibilitySurfaceErrors(
+      otherModuleId,
+      otherModuleVersion,
+      otherCompatibility,
+      environment
+    )
+  );
   const requirement = compatibility.requires.find((entry) => entry.moduleId === otherModuleId);
   if (requirement && !versionSatisfiesRange(otherModuleVersion, requirement.versions)) {
     errors.push(
       `${moduleId} requires ${requirement.moduleId} ${requirement.versions}, received ${otherModuleVersion}.`
+    );
+  }
+
+  const reverseRequirement = otherCompatibility.requires.find(
+    (entry) => entry.moduleId === moduleId
+  );
+  if (reverseRequirement && !versionSatisfiesRange(moduleVersion, reverseRequirement.versions)) {
+    errors.push(
+      `${otherModuleId} requires ${reverseRequirement.moduleId} ${reverseRequirement.versions}, received ${moduleVersion}.`
     );
   }
 
