@@ -22,6 +22,7 @@ type RuntimeMapEntry = { map: { id: string } };
 type RuntimeContentPackEntry = { contentPack: { id: string } };
 type RuntimePlayerPieceSetEntry = { pieceSet: { id: string } };
 type RuntimeDiceRuleSetEntry = { diceRuleSet: { id: string } };
+type RuntimeCardRuleSetEntry = { cardRuleSet: { id: string } };
 type RuntimeSiteThemeEntry = { theme: { id: string } };
 
 function isNonEmptyString(value: unknown): value is string {
@@ -53,6 +54,7 @@ function aggregateContentContribution(
   runtimeContentPackEntries: RuntimeContentPackEntry[] = [],
   runtimePlayerPieceSetEntries: RuntimePlayerPieceSetEntry[] = [],
   runtimeDiceRuleSetEntries: RuntimeDiceRuleSetEntry[] = [],
+  runtimeCardRuleSetEntries: RuntimeCardRuleSetEntry[] = [],
   runtimeSiteThemeEntries: RuntimeSiteThemeEntry[] = []
 ): NetRiskContentContribution {
   const contribution = emptyContentContribution();
@@ -95,6 +97,13 @@ function aggregateContentContribution(
     contribution.diceRuleSetIds = unique([
       ...(contribution.diceRuleSetIds || []),
       ...runtimeDiceRuleSetEntries.map((entry) => entry.diceRuleSet.id)
+    ]);
+  }
+
+  if (runtimeCardRuleSetEntries.length) {
+    contribution.cardRuleSetIds = unique([
+      ...(contribution.cardRuleSetIds || []),
+      ...runtimeCardRuleSetEntries.map((entry) => entry.cardRuleSet.id)
     ]);
   }
 

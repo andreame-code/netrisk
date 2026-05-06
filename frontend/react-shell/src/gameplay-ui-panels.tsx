@@ -76,7 +76,6 @@ type CardsDrawerProps = {
   cards: SnapshotCard[];
   feedbackIsError: boolean;
   feedbackMessage: string;
-  getCardTypeLabel(card: SnapshotCard): string;
   mustTradeCards: boolean;
   onClose(): void;
   onTradeCards(): void;
@@ -124,7 +123,54 @@ function playerTroopCount(playerId: string, territories: SnapshotTerritory[]): n
     .reduce((total, territory) => total + Number(territory.armies || 0), 0);
 }
 
-function cardSymbol(card: SnapshotCard): string {
+function legacyCardTypeLabel(card: SnapshotCard): string {
+  if (card.type === "infantry") {
+    return t("game.runtime.cardType.infantry");
+  }
+
+  if (card.type === "cavalry") {
+    return t("game.runtime.cardType.cavalry");
+  }
+
+  if (card.type === "artillery") {
+    return t("game.runtime.cardType.artillery");
+  }
+
+  if (card.type === "wild") {
+    return t("game.runtime.cardType.wild");
+  }
+
+  return t("game.runtime.cardType.default");
+}
+
+function translatedFallback(key: unknown, fallback: string | undefined): string | undefined {
+  if (typeof key === "string" && key.trim()) {
+    const translated = t(key);
+    if (translated && translated !== key) {
+      return translated;
+    }
+  }
+
+  return fallback;
+}
+
+export function cardDisplayName(card: SnapshotCard): string {
+  return (
+    translatedFallback(card.displayNameKey, card.displayName) ||
+    (typeof card.category === "string" && card.category ? card.category : "") ||
+    legacyCardTypeLabel(card)
+  );
+}
+
+export function cardDescription(card: SnapshotCard): string {
+  return translatedFallback(card.descriptionKey, card.description) || "";
+}
+
+export function cardVisualToken(card: SnapshotCard): string {
+  if (card.visual && typeof card.visual.token === "string" && card.visual.token) {
+    return card.visual.token;
+  }
+
   if (card.type === "artillery") {
     return "C";
   }
@@ -140,7 +186,11 @@ function cardSymbol(card: SnapshotCard): string {
   return "I";
 }
 
-function cardTone(card: SnapshotCard): string {
+export function cardVisualTone(card: SnapshotCard): string {
+  if (card.visual && typeof card.visual.tone === "string" && card.visual.tone) {
+    return card.visual.tone;
+  }
+
   if (card.type === "artillery") {
     return "artillery";
   }
@@ -560,7 +610,6 @@ export function CardsDrawer({
   cards,
   feedbackIsError,
   feedbackMessage,
-  getCardTypeLabel,
   mustTradeCards,
   onClose,
   onToggleCard,
@@ -595,13 +644,14 @@ export function CardsDrawer({
             <button
               key={card.id}
               type="button"
-              className={`game-card-tile game-card-tone-${cardTone(card)}${selectedCardIds.includes(card.id) ? " is-selected" : ""}`}
+              className={`game-card-tile game-card-tone-${cardVisualTone(card)}${selectedCardIds.includes(card.id) ? " is-selected" : ""}`}
               data-card-id={card.id}
+              title={cardDescription(card) || undefined}
               onClick={() => onToggleCard(card.id)}
             >
-              <span className="game-card-symbol">{cardSymbol(card)}</span>
+              <span className="game-card-symbol">{cardVisualToken(card)}</span>
               <strong>{card.territoryId || card.id}</strong>
-              <small>{getCardTypeLabel(card)}</small>
+              <small>{cardDisplayName(card)}</small>
               {selectedCardIds.includes(card.id) ? (
                 <span className="game-card-check">{t("game.cards.selected")}</span>
               ) : null}

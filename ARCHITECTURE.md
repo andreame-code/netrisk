@@ -83,7 +83,8 @@ Suite Playwright per flussi end-to-end UI + API.
 
 ## Moduli engine attuali
 
-- `game-engine.cts`: flusso partita e azioni ad alto livello (incluso trade carte)
+- `game-engine.cts`: flusso partita e azioni ad alto livello; delega gli effetti carta registrati
+- `card-effects.cts`: registry sicuro degli effetti carta eseguibili dal backend
 - `game-setup.cts`: creazione stato iniziale da mappa e configurazione player
 - `reinforcement-calculator.cts`: calcolo rinforzi base + bonus continenti
 - `reinforcement-placement.cts`: applicazione rinforzi su territori validi
@@ -107,7 +108,7 @@ Suite Playwright per flussi end-to-end UI + API.
 - `api-contracts.cts`: payload/contratti API condivisi
 - `runtime-validation.cts`: schemi runtime condivisi e shape uniforme degli errori di validazione, inclusi i boundary gameplay
 - `module-registry.cts`: primitive comune per registry/moduli estendibili
-- `cards.cts`: deck, set validi, progressione bonus trade
+- `cards.cts`: manifest/definizioni carta, validazione, deck, set validi, progressione bonus trade
 - `dice.cts`: registry ruleset dadi (incluso `defense-three-dice`)
 - `combat-rule-sets.cts`: registry regole combattimento
 - `reinforcement-rule-sets.cts`: registry regole rinforzo

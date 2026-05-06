@@ -26,6 +26,7 @@ import {
   type PlayerPieceSet,
   type Territory
 } from "../../shared/models.cjs";
+import { getCardEffectHandler } from "./card-effects.cjs";
 import { detectVictory } from "./victory-detection.cjs";
 import {
   assignVictoryObjectives,
@@ -433,38 +434,17 @@ export function tradeCardSet(
   }
 
   const resolvedCards = selectedCards as Card[];
-  const validation = cardRuleSet.validateSet(resolvedCards);
-  if (!validation.ok) {
-    return createActionFailure(validation.reason, validation.reasonKey, validation.reasonParams);
-  }
-
-  const bonus = cardRuleSet.tradeBonusForIndex(state.tradeCount || 0);
-  state.hands[playerId] = hand.filter((card) => !card.id || !uniqueCardIds.includes(card.id));
-  if (!Array.isArray(state.discardPile)) {
-    state.discardPile = [];
-  }
-  state.discardPile.push(...resolvedCards);
-  state.tradeCount = (state.tradeCount || 0) + 1;
-  state.reinforcementPool += bonus;
-  state.lastAction = {
-    type: "tradeCards",
-    summary: player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
-    summaryKey: "game.log.tradeCompleted",
-    summaryParams: {
-      playerName: player.name,
-      bonus
-    }
-  };
-  appendLog(
+  const cardEffectHandler = getCardEffectHandler(cardRuleSet.effect.type);
+  return cardEffectHandler.apply({
     state,
-    player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
-    "game.log.tradeCompleted",
-    {
-      playerName: player.name,
-      bonus
-    }
-  );
-  return { ok: true, bonus, validation };
+    player,
+    playerId,
+    hand,
+    selectedCards: resolvedCards,
+    selectedCardIds: uniqueCardIds,
+    cardRuleSet,
+    appendLog
+  });
 }
 
 function readableMapName(mapId: string | null | undefined): string | null {
@@ -713,6 +693,7 @@ export function publicState(state: EngineState) {
 
   const currentPlayer = getCurrentPlayer(snapshotState);
   const diceRuleSet = resolveDiceRuleSetFromState(snapshotState);
+  const cardRuleSet = getCardRuleSet(snapshotState.cardRuleSetId || "standard");
   const lastAction = snapshotState.lastAction as
     | ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>)
     | null;
@@ -797,12 +778,20 @@ export function publicState(state: EngineState) {
       ? snapshotState.attacksThisTurn
       : 0,
     conqueredTerritoryThisTurn: Boolean(snapshotState.conqueredTerritoryThisTurn),
+    playerHand:
+      currentPlayer && currentPlayer.id && Array.isArray(snapshotState.hands?.[currentPlayer.id])
+        ? snapshotState.hands[currentPlayer.id].map((card) => ({
+            ...card,
+            ...cardRuleSet.renderCard(card)
+          }))
+        : [],
     cardState: {
       ruleSetId: snapshotState.cardRuleSetId || "standard",
+      ruleSetName: cardRuleSet.name,
       tradeCount: Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0,
       deckCount: Array.isArray(snapshotState.deck) ? snapshotState.deck.length : 0,
       discardCount: Array.isArray(snapshotState.discardPile) ? snapshotState.discardPile.length : 0,
-      nextTradeBonus: getCardRuleSet(snapshotState.cardRuleSetId || "standard").tradeBonusForIndex(
+      nextTradeBonus: cardRuleSet.tradeBonusForIndex(
         Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0
       ),
       maxHandBeforeForcedTrade: getForcedTradeLimit(snapshotState),

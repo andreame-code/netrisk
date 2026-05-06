@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameMutationResponse,
   GameSnapshot,
-  SnapshotCard,
   SnapshotPlayer,
   SnapshotTerritory
 } from "@frontend-generated/shared-runtime-validation.mts";
@@ -40,6 +39,8 @@ import {
   ActivityLogTrigger,
   CardsDrawer,
   CombatResultPanel,
+  cardDisplayName,
+  cardVisualTone,
   GameActionDock,
   GameActionRail,
   GameHud,
@@ -98,26 +99,6 @@ function territoryOptionLabel(
 
 function territoryDockOptionLabel(territory: SnapshotTerritory): string {
   return territory.name;
-}
-
-function cardTypeLabel(card: SnapshotCard): string {
-  if (card.type === "infantry") {
-    return t("game.runtime.cardType.infantry");
-  }
-
-  if (card.type === "cavalry") {
-    return t("game.runtime.cardType.cavalry");
-  }
-
-  if (card.type === "artillery") {
-    return t("game.runtime.cardType.artillery");
-  }
-
-  if (card.type === "wild") {
-    return t("game.runtime.cardType.wild");
-  }
-
-  return t("game.runtime.cardType.default");
 }
 
 function logEntryMessageKey(entry: unknown): string {
@@ -1086,7 +1067,6 @@ export function GameRoute() {
                 cards={playerHand}
                 feedbackIsError={gameFeedbackIsError}
                 feedbackMessage={gameFeedbackMessage}
-                getCardTypeLabel={cardTypeLabel}
                 mustTradeCards={mustTradeCards}
                 selectedCardIds={selectedTradeCardIds}
                 trading={gameplayCommands.isTrading}
@@ -1164,12 +1144,12 @@ export function GameRoute() {
                     <button
                       key={card.id}
                       type="button"
-                      className={`game-card-tile${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                      className={`game-card-tile game-card-tone-${cardVisualTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
                       data-dock-card-id={card.id}
                       onClick={() => toggleTradeCard(card.id)}
                     >
                       <strong>{card.territoryId || card.id}</strong>
-                      <span>{cardTypeLabel(card)}</span>
+                      <span>{cardDisplayName(card)}</span>
                     </button>
                   ))}
                 </div>
@@ -1196,7 +1176,7 @@ export function GameRoute() {
                           onClick={() => toggleTradeCard(cardId)}
                         >
                           <strong>{card?.territoryId || cardId}</strong>
-                          <span>{card ? cardTypeLabel(card) : t("game.actions.cards")}</span>
+                          <span>{card ? cardDisplayName(card) : t("game.actions.cards")}</span>
                         </button>
                       );
                     })

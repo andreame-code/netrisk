@@ -67,7 +67,7 @@ Use this path for:
 - optional maps or content packs
 - selectable presets and profiles
 - UI slot contributions
-- runtime piece sets, dice rule sets, or server-side gameplay defaults
+- runtime piece sets, dice rule sets, card rule set summaries, or server-side gameplay defaults
 
 ### What admins get from modules
 
@@ -139,11 +139,30 @@ Add a server entrypoint when the module contributes runtime content or defaults 
 - `contentPacks`
 - `playerPieceSets`
 - `diceRuleSets`
+- `cardRuleSets`
 - server-side `profiles`
 
 Server-side profiles can also contribute setup defaults, `gameplayEffects`, and `scenarioSetup`, which are then persisted in `gameConfig` and preserved across create/open/save round trips.
 
-The regression coverage in `tests/gameplay/regression/module-runtime.test.cts` contains concrete fixtures for runtime maps, content packs, piece sets, dice rule sets, and server-side default profiles.
+The regression coverage in `tests/gameplay/regression/module-runtime.test.cts` contains concrete fixtures for runtime maps, content packs, piece sets, dice rule sets, card rule set summaries, and server-side default profiles.
+
+## Modular cards
+
+The default card module is defined in `shared/cards.cts` as `standardCardModuleManifest` and exposed through `standardCardRuleSet`. It preserves the existing infantry, cavalry, artillery, and wild cards, the same territory-card deck generation, the same valid trade sets, the same trade bonus sequence, and the same forced-trade threshold.
+
+Card instances in saved game state remain small and backward-compatible: `id`, `type`, `territoryId`, and optional `definitionId`. Names, descriptions, visual tokens, play conditions, and effect metadata come from card definitions and are added to public snapshots at the backend boundary.
+
+To add a core card:
+
+1. Add or update the card definition in `standardCardModuleManifest` or a new manifest in `shared/cards.cts`.
+2. Give the definition a stable `id`, `displayName`, `description`, `category`, `visual`, `effect`, and optional localization keys.
+3. Configure graphics with `visual.token` and `visual.tone`; the React shell maps `tone` to existing `game-card-tone-*` CSS and displays `token` inside the card tile.
+4. Attach only a registered effect handler. The current core effect is `tradeForReinforcements`, implemented in `backend/engine/card-effects.cts`.
+5. Add or update validation and gameplay tests in `tests/gameplay/shared/cards.test.cts`.
+
+Validation is centralized in `validateCardModuleManifest` / `assertValidCardModuleManifest`. It rejects duplicate card ids, missing names/descriptions, unknown effect handlers, invalid visual metadata, invalid territory references when a map context is supplied, malformed module compatibility metadata, unknown play conditions, and unsafe non-serializable data. Do not store executable JavaScript in manifests.
+
+Runtime modules may expose `cardRuleSets` summaries for catalog discovery and content-pack references. Full runtime card behavior is still constrained to known engine handlers; adding a new rule effect requires registering a backend handler and tests, not loading code from JSON.
 
 ### Runtime module checklist
 
