@@ -830,6 +830,40 @@ export function checkModuleCompatibility(
     };
   }
 
+  errors.push(
+    ...collectModuleCompatibilitySurfaceErrors(moduleId, moduleVersion, compatibility, environment)
+  );
+
+  compatibility.requires.forEach((requirement) => {
+    const providedVersion = environmentModules[requirement.moduleId];
+    if (!providedVersion) {
+      if (!requirement.optional) {
+        errors.push(`${moduleId} requires ${requirement.moduleId} ${requirement.versions}.`);
+      }
+      return;
+    }
+
+    if (!versionSatisfiesRange(providedVersion, requirement.versions)) {
+      errors.push(
+        `${moduleId} requires ${requirement.moduleId} ${requirement.versions}, received ${providedVersion}.`
+      );
+    }
+  });
+
+  return {
+    compatible: errors.length === 0,
+    errors
+  };
+}
+
+function collectModuleCompatibilitySurfaceErrors(
+  moduleId: string,
+  moduleVersion: string,
+  compatibility: ModuleCompatibilityDeclaration,
+  environment: Omit<ModuleCompatibilityEnvironment, "modules">
+): string[] {
+  const errors: string[] = [];
+
   if (!versionSatisfiesRange(moduleVersion, compatibility.moduleVersions)) {
     errors.push(`${moduleId} version ${moduleVersion} is outside ${compatibility.moduleVersions}.`);
   }
@@ -875,26 +909,7 @@ export function checkModuleCompatibility(
     );
   }
 
-  compatibility.requires.forEach((requirement) => {
-    const providedVersion = environmentModules[requirement.moduleId];
-    if (!providedVersion) {
-      if (!requirement.optional) {
-        errors.push(`${moduleId} requires ${requirement.moduleId} ${requirement.versions}.`);
-      }
-      return;
-    }
-
-    if (!versionSatisfiesRange(providedVersion, requirement.versions)) {
-      errors.push(
-        `${moduleId} requires ${requirement.moduleId} ${requirement.versions}, received ${providedVersion}.`
-      );
-    }
-  });
-
-  return {
-    compatible: errors.length === 0,
-    errors
-  };
+  return errors;
 }
 
 export function isModuleCompatibleWith(
@@ -904,12 +919,29 @@ export function isModuleCompatibleWith(
   otherModuleVersion: string,
   environment: Omit<ModuleCompatibilityEnvironment, "modules"> = {}
 ): boolean {
-  return checkModuleCompatibility(moduleId, moduleVersion, {
-    ...environment,
-    modules: {
-      [otherModuleId]: otherModuleVersion
-    }
-  }).compatible;
+  const compatibility = moduleCompatibility.find((entry) => entry.moduleId === moduleId) || null;
+  if (
+    !compatibility ||
+    !getFunctionalModuleVersion(moduleId) ||
+    !getFunctionalModuleVersion(otherModuleId)
+  ) {
+    return false;
+  }
+
+  const errors = collectModuleCompatibilitySurfaceErrors(
+    moduleId,
+    moduleVersion,
+    compatibility,
+    environment
+  );
+  const requirement = compatibility.requires.find((entry) => entry.moduleId === otherModuleId);
+  if (requirement && !versionSatisfiesRange(otherModuleVersion, requirement.versions)) {
+    errors.push(
+      `${moduleId} requires ${requirement.moduleId} ${requirement.versions}, received ${otherModuleVersion}.`
+    );
+  }
+
+  return errors.length === 0;
 }
 
 function normalizeRepoPath(filePath: string): string {

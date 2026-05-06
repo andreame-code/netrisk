@@ -188,6 +188,14 @@ register("module compatibility checks app, schema, API, and dependent module ver
 
   assert.equal(isModuleCompatibleWith("demo.command-center", "1.0.0", "core.base", "1.0.0"), true);
   assert.equal(isModuleCompatibleWith("demo.command-center", "1.0.0", "core.base", "2.0.0"), false);
+  assert.equal(isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "1.0.0"), true);
+  assert.equal(isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "2.0.0"), false);
+  assert.equal(
+    isModuleCompatibleWith("setup-flow", "1.0.0", "content-packs", "1.0.0", {
+      appVersion: "0.2.000"
+    }),
+    false
+  );
 });
 
 register("module version bump detector maps changed paths to owned functional modules", () => {
