@@ -393,8 +393,6 @@ export function LobbyRoute() {
     shellTheme === "war-table" ? t("warTable.lobby.resumeBattle") : t("lobby.openSelected");
   const openingSelectedLabel =
     shellTheme === "war-table" ? t("warTable.lobby.opening") : "Opening...";
-  const selectedGameCanJoin = canJoinGame(selectedGame);
-
   useEffect(() => {
     document.title = t("lobby.title");
   }, []);

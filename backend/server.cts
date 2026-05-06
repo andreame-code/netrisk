@@ -1,3 +1,4 @@
+import type * as HttpTypes from "http";
 const http = require("http");
 const crypto = require("node:crypto");
 const fs = require("fs");
@@ -104,8 +105,8 @@ const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
 const { gameEventPayloadSchema } = require("../shared/runtime-validation.cjs");
 
-type Request = import("http").IncomingMessage;
-type Response = import("http").ServerResponse;
+type Request = HttpTypes.IncomingMessage;
+type Response = HttpTypes.ServerResponse;
 type CookieMap = Record<string, string>;
 type AppUser = {
   id: string;
@@ -232,7 +233,7 @@ function parseBody(req: Request): Promise<Record<string, any>> {
 
       try {
         resolve(JSON.parse(raw) as Record<string, any>);
-      } catch (error) {
+      } catch (_error) {
         reject(createLocalizedError("JSON non valido", "server.invalidJson"));
       }
     });
@@ -398,7 +399,7 @@ function createApp(options: CreateAppOptions = {}) {
     try {
       const adminConfig = await adminConsole.getConfig();
       return adminConfig.config.defaults;
-    } catch (error) {
+    } catch (_error) {
       return undefined;
     }
   }
@@ -454,17 +455,6 @@ function createApp(options: CreateAppOptions = {}) {
     if (!activeGameId && initError) {
       throw initError;
     }
-  }
-
-  async function persistActiveGame(expectedVersion?: number | null) {
-    if (!activeGameId) {
-      return null;
-    }
-
-    const savedGame = await gameSessions.saveGame(activeGameId, state, expectedVersion);
-    activeGameVersion = savedGame.version;
-    activeGameName = savedGame.name;
-    return savedGame;
   }
 
   function snapshotForState(
@@ -602,8 +592,8 @@ function createApp(options: CreateAppOptions = {}) {
 
   function extractSessionToken(
     req: Request,
-    body: Record<string, any> = {},
-    url: URL | null = null
+    _body: Record<string, any> = {},
+    _url: URL | null = null
   ): string | null {
     const cookies = parseCookies(req);
     return cookies[sessionCookieName] || null;
@@ -638,7 +628,7 @@ function createApp(options: CreateAppOptions = {}) {
       return { ok: true, user: null, gameRecord: null };
     }
 
-    let gameRecord = null;
+    let gameRecord: any;
     try {
       gameRecord = await gameSessions.getGame(gameId);
     } catch (error) {

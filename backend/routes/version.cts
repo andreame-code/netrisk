@@ -1,16 +1,17 @@
+import type * as HttpTypes from "node:http";
 const { buildVersionSnapshot } = require("../../shared/compatibility.cjs");
 const { versionInfoResponseSchema } = require("../../shared/runtime-validation.cjs");
 const { sendValidatedJson } = require("../route-validation.cjs");
 
 type SendJson = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   headers?: Record<string, string>
 ) => void;
 
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -21,7 +22,7 @@ type SendLocalizedError = (
 ) => void;
 
 export async function handleVersionRoute(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   sendJson: SendJson,
   sendLocalizedError: SendLocalizedError
 ): Promise<boolean> {

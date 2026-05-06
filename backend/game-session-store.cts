@@ -162,10 +162,6 @@ function persistedMapName(entry: GameEntry): string | null {
   return null;
 }
 
-function summarizeGame(entry: GameEntry): GameSummary {
-  return summarizeGameWithMapName(entry, readableMapName);
-}
-
 function summarizeGameWithMapName(
   entry: GameEntry,
   resolveMapName: (mapId: string | null | undefined) => string | null

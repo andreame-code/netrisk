@@ -91,7 +91,7 @@ function trackedFilesFromGit(): string[] | null {
       .split(/\r?\n/)
       .map((filePath) => filePath.trim())
       .filter(Boolean);
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

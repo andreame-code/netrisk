@@ -32,11 +32,11 @@ function readJsonFile<T>(
   try {
     const parsed = safeReadJson(filePath, fallbackValue);
     return validate(parsed) ? parsed : fallbackValue;
-  } catch (error) {
+  } catch (_error) {
     try {
       const backup = safeReadJson(backupPathFor(filePath), fallbackValue);
       return validate(backup) ? backup : fallbackValue;
-    } catch (backupError) {
+    } catch (_backupError) {
       return fallbackValue;
     }
   }

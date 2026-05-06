@@ -46,12 +46,8 @@ async function requireModuleAdmin(
     return null;
   }
 
-  try {
-    authorize("modules:manage", { user: authContext.user });
-    return authContext;
-  } catch (error: unknown) {
-    throw error;
-  }
+  authorize("modules:manage", { user: authContext.user });
+  return authContext;
 }
 
 async function handleListModulesRoute(

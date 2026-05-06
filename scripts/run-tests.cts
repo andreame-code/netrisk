@@ -1,6 +1,5 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const projectRoot = path.resolve(__dirname, "..", "..");
@@ -39,7 +38,6 @@ const {
   DEFENSE_THREE_DICE_RULE_SET_ID,
   STANDARD_DICE_RULE_SET_ID,
   getDiceRuleSet,
-  listDiceRuleSets,
   standardDiceRuleSet
 } = require("../shared/dice.cjs");
 const { compareCombatDice, rollCombatDice } = require("../backend/engine/combat-dice.cjs");
@@ -140,10 +138,6 @@ type MockSupabaseData = {
   sessions?: any[];
   app_state?: any[];
 };
-interface Body {
-  json(): Promise<any>;
-}
-
 const tests: TestCase[] = [];
 const TEST_PASSWORD = "Secret123!";
 const frontendPublicRoot = path.join(projectRoot, "public");
@@ -6204,8 +6198,6 @@ register("API ai join + endTurn esegue automaticamente il turno AI", async () =>
     });
     assert.equal(created.status, 201);
 
-    const username = uniqueName("cpu_host");
-
     const humanSession = ownerSession;
 
     const joinHuman = await fetch(baseUrl + "/api/join", {
@@ -6482,7 +6474,6 @@ register("API profile espone statistiche giocatore aggregate", async () => {
     });
     assert.equal(created.status, 201);
 
-    const username = uniqueName("prof");
     const other = uniqueName("enem");
 
     const registerOther = await fetch(baseUrl + "/api/auth/register", {
@@ -6663,7 +6654,7 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
 });
 
 register("GET /api/health espone lo stato sintetico del server", async () => {
-  await withServer(async (baseUrl, context) => {
+  await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);

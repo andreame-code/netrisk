@@ -1,7 +1,8 @@
+import type * as AiTurnResumeTypes from "../engine/ai-turn-resume.cjs";
+import type * as GameEngineTypes from "../engine/game-engine.cjs";
 const { forceEndTurn, getCurrentPlayer } =
-  require("../engine/game-engine.cjs") as typeof import("../engine/game-engine.cjs");
-const { runAiTurnsIfNeeded } =
-  require("../engine/ai-turn-resume.cjs") as typeof import("../engine/ai-turn-resume.cjs");
+  require("../engine/game-engine.cjs") as typeof GameEngineTypes;
+const { runAiTurnsIfNeeded } = require("../engine/ai-turn-resume.cjs") as typeof AiTurnResumeTypes;
 
 type EngineState = Parameters<typeof forceEndTurn>[0];
 
@@ -194,7 +195,7 @@ export async function recoverAiTurnState(
       executeAiTurns(state as unknown as Parameters<typeof runAiTurnsIfNeeded>[0])
     );
     reports = Array.isArray(nextReports) ? nextReports : [];
-  } catch (error) {
+  } catch (_error) {
     interceptedError = true;
   }
 

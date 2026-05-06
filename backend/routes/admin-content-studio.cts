@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const {
   adminAuthoredModuleDetailResponseSchema,
   adminAuthoredModuleEditorOptionsResponseSchema,
@@ -9,14 +10,14 @@ const {
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 
 type SendJson = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   payload: unknown,
   headers?: Record<string, string>
 ) => void;
 
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -27,8 +28,8 @@ type SendLocalizedError = (
 ) => void;
 
 type RequireAuth = (
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   url?: URL | null
 ) => Promise<{ user: { id: string; username: string; role?: string } } | null>;
@@ -68,8 +69,8 @@ type AdminConsole = {
 };
 
 async function requireAdminAccess(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -116,7 +117,7 @@ async function tryRecordFailureAudit(
 }
 
 function sendAuthoredModuleError(
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   sendLocalizedError: SendLocalizedError,
   error: unknown,
   fallbackMessage: string,
@@ -150,8 +151,8 @@ function ensureModuleIdMatchesPath(routeModuleId: string, bodyModuleId: string) 
 }
 
 async function handleAdminContentStudioOptionsRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,
@@ -184,8 +185,8 @@ async function handleAdminContentStudioOptionsRoute(
 }
 
 async function handleAdminContentStudioModulesRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   requireAuth: RequireAuth,
   authorize: Authorize,
   adminConsole: AdminConsole,
@@ -218,8 +219,8 @@ async function handleAdminContentStudioModulesRoute(
 }
 
 async function handleAdminContentStudioModuleDetailRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   moduleId: string,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -253,8 +254,8 @@ async function handleAdminContentStudioModuleDetailRoute(
 }
 
 async function handleAdminContentStudioValidateRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -298,8 +299,8 @@ async function handleAdminContentStudioValidateRoute(
 }
 
 async function handleAdminContentStudioCreateRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -352,8 +353,8 @@ async function handleAdminContentStudioCreateRoute(
 }
 
 async function handleAdminContentStudioUpdateRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   moduleId: string,
   body: Record<string, unknown>,
   requireAuth: RequireAuth,
@@ -409,8 +410,8 @@ async function handleAdminContentStudioUpdateRoute(
 }
 
 async function handleAdminContentStudioPublishRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   moduleId: string,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -453,8 +454,8 @@ async function handleAdminContentStudioPublishRoute(
 }
 
 async function handleAdminContentStudioEnableRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   moduleId: string,
   requireAuth: RequireAuth,
   authorize: Authorize,
@@ -497,8 +498,8 @@ async function handleAdminContentStudioEnableRoute(
 }
 
 async function handleAdminContentStudioDisableRoute(
-  req: import("node:http").IncomingMessage,
-  res: import("node:http").ServerResponse,
+  req: HttpTypes.IncomingMessage,
+  res: HttpTypes.ServerResponse,
   moduleId: string,
   requireAuth: RequireAuth,
   authorize: Authorize,

@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const {
   gameEventPayloadSchema,
   gameStateResponseSchema,
@@ -12,7 +13,7 @@ type SendJson = (
   headers?: Record<string, string>
 ) => void;
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -83,7 +84,7 @@ async function handleStateRoute(
   }
 
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     payload,
     gameStateResponseSchema,
@@ -129,7 +130,7 @@ async function handleEventsRoute(
     }
 
     sendLocalizedError(
-      res as import("node:http").ServerResponse,
+      res as HttpTypes.ServerResponse,
       500,
       null,
       "Risposta server non valida.",

@@ -38,7 +38,7 @@ export function broadcastEventPayload(
 
     try {
       client.res?.write(buildPayload(client));
-    } catch (error) {
+    } catch (_error) {
       staleClients.push(client);
     }
   });

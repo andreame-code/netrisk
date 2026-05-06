@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 const {
   setupCompleteRequestSchema,
   setupCompleteResponseSchema,
@@ -138,7 +139,7 @@ async function handleSetupStatusRoute(
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     withSetupRouteAvailability(req, await setup.getSetupStatus()),
     setupStatusResponseSchema,
@@ -161,7 +162,7 @@ async function handleSetupCreateAdminRoute(
   }
 
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     setupCreateAdminRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -190,7 +191,7 @@ async function handleSetupCreateAdminRoute(
   };
 
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     201,
     responsePayload,
     setupCreateAdminResponseSchema,
@@ -213,7 +214,7 @@ async function handleSetupCompleteRoute(
   }
 
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     setupCompleteRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -242,7 +243,7 @@ async function handleSetupCompleteRoute(
   };
 
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     responsePayload,
     setupCompleteResponseSchema,

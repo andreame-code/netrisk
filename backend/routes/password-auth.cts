@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -74,7 +75,7 @@ async function handleRegisterRoute(
   authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     registerRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -110,7 +111,7 @@ async function handleRegisterRoute(
 
   authAttemptThrottle?.recordAttempt(throttleKey);
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     201,
     {
       ok: true,
@@ -134,7 +135,7 @@ async function handleLoginRoute(
   authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     body,
     loginRequestSchema,
     sendLocalizedError as SendLocalizedError
@@ -166,7 +167,7 @@ async function handleLoginRoute(
 
   authAttemptThrottle?.recordSuccess(throttleKey);
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     {
       ok: true,

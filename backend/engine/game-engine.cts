@@ -16,8 +16,6 @@ import {
   getPieceSkin,
   migrateGameConfigExtensions,
   migrateGameStateExtensions,
-  standardTradeBonusForIndex,
-  validateStandardCardSet,
   type ActionFailure,
   type Card,
   type CardSetValidationResult,

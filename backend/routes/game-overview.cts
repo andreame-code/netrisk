@@ -1,3 +1,4 @@
+import type * as HttpTypes from "node:http";
 type SendJson = (res: unknown, statusCode: number, payload: unknown) => void;
 
 type ListGames = () => Promise<unknown> | unknown;
@@ -24,7 +25,7 @@ type GetResolvedCatalog = () => Promise<GameOptionsResolvedCatalog> | GameOption
 type ListTurnTimeoutHoursOptions = () => unknown;
 type GetExtraGameOptions = () => Record<string, unknown> | Promise<Record<string, unknown>>;
 type SendLocalizedError = (
-  res: import("node:http").ServerResponse,
+  res: HttpTypes.ServerResponse,
   statusCode: number,
   input: Record<string, unknown> | null,
   fallbackMessage: string,
@@ -50,7 +51,7 @@ async function handleGamesListRoute(
   sendLocalizedError: SendLocalizedError
 ): Promise<void> {
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     {
       games: await listGames(),
@@ -101,7 +102,7 @@ async function handleGameOptionsRoute(
   }
 
   sendValidatedJson(
-    res as import("node:http").ServerResponse,
+    res as HttpTypes.ServerResponse,
     200,
     payload,
     gameOptionsResponseSchema,
