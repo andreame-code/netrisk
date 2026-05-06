@@ -1499,7 +1499,15 @@ function createApp(options: CreateAppOptions = {}) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
       const body = await parseBody(req);
-      await handleRegisterRoute(req, res, body, auth, sendJson, sendLocalizedError);
+      await handleRegisterRoute(
+        req,
+        res,
+        body,
+        auth,
+        sendJson,
+        sendLocalizedError,
+        authAttemptThrottle
+      );
       return;
     }
 

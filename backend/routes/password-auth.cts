@@ -69,7 +69,8 @@ async function handleRegisterRoute(
   body: Record<string, any>,
   auth: AuthStore,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const parsedBody = parseRequestOrSendError(
     res as import("node:http").ServerResponse,
@@ -81,12 +82,20 @@ async function handleRegisterRoute(
     return;
   }
 
+  const throttleKey = createAuthThrottleKey("register", req, parsedBody.username);
+  const throttleDecision = authAttemptThrottle?.check(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    sendTooManyAuthAttempts(res, sendLocalizedError, throttleDecision.retryAfterSeconds);
+    return;
+  }
+
   const result = await auth.registerPasswordUser({
     username: parsedBody.username,
     password: parsedBody.password,
     email: parsedBody.email
   });
   if (!result.ok) {
+    authAttemptThrottle?.recordFailure(throttleKey);
     sendLocalizedError(
       res,
       400,
@@ -98,6 +107,7 @@ async function handleRegisterRoute(
     return;
   }
 
+  authAttemptThrottle?.recordSuccess(throttleKey);
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     201,

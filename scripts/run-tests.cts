@@ -7024,6 +7024,35 @@ register("API register + login + join completa il flusso di accesso", async () =
   });
 });
 
+register("API registration applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const username = uniqueName("throttle_reg");
+    const password = TEST_PASSWORD;
+
+    // We reach the limit of 5 failures.
+    // First attempt is success (201), which clears the bucket.
+    // We need 5 subsequent failures to trigger the lockout for this username.
+    for (let i = 0; i < 6; i++) {
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      assert.ok(res.status === 201 || res.status === 400);
+    }
+
+    // 7th attempt should be rate limited.
+    const limitedRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    assert.equal(limitedRes.status, 429);
+    const payload: any = await limitedRes.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
 async function run() {
   let failures = 0;
   for (const test of tests) {
