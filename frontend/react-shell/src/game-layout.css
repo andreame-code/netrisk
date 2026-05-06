@@ -6712,6 +6712,11 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     min-width: 0 !important;
   }
 
+  .game-command-dock-attack.is-expanded #attack-group .action-row {
+    grid-template-columns: minmax(0, 1fr) minmax(74px, 0.38fr) !important;
+    gap: 8px !important;
+  }
+
   .game-command-dock-fortify #fortify-button {
     grid-column: 4 !important;
     grid-row: 2 !important;
