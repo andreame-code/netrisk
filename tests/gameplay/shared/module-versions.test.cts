@@ -19,7 +19,8 @@ const { validateNetRiskModuleManifest } = require("../../../shared/netrisk-modul
 const {
   findModuleVersionChanges,
   findNonIncrementingModuleVersionChanges,
-  parseChangedFilePathsFromNameStatus
+  parseChangedFilePathsFromNameStatus,
+  validateRuntimeManifestVersionMirrors
 } = require("../../../scripts/check-module-versioning.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -155,6 +156,14 @@ register("module compatibility checks app, schema, API, and dependent module ver
     }
   });
   assert.deepEqual(compatible, {
+    compatible: true,
+    errors: []
+  });
+
+  const compatibleRangeEnvironment = checkModuleCompatibility("module-runtime", "1.0.0", {
+    modules: [{ moduleId: "core.base", versions: "1.x" }]
+  });
+  assert.deepEqual(compatibleRangeEnvironment, {
     compatible: true,
     errors: []
   });
@@ -296,4 +305,20 @@ register("module version bump detector treats newly added modules as changed", (
     }
   ]);
   assert.deepEqual(findNonIncrementingModuleVersionChanges(currentSource, baseSource), []);
+});
+
+register("module versioning check reports missing first-party runtime manifests", () => {
+  assert.deepEqual(
+    validateRuntimeManifestVersionMirrors(
+      [
+        {
+          id: "missing-runtime",
+          version: "1.0.0",
+          ownerPaths: ["modules/missing-runtime/"]
+        }
+      ],
+      process.cwd()
+    ),
+    ["modules/missing-runtime/module.json is missing."]
+  );
 });

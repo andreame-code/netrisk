@@ -18,6 +18,12 @@ type ModuleVersionChange = {
   currentVersion: string;
 };
 
+type RuntimeManifestModuleEntry = {
+  id: string;
+  version: string;
+  ownerPaths: string[];
+};
+
 const moduleVersionsPath = "shared/module-versions.cts";
 
 function runGit(args: string[]): string {
@@ -183,16 +189,19 @@ export function findNonIncrementingModuleVersionChanges(
   });
 }
 
-function validateRuntimeManifestVersionMirrors(): string[] {
-  return listFunctionalModuleVersions().flatMap((moduleEntry) => {
+export function validateRuntimeManifestVersionMirrors(
+  modules: readonly RuntimeManifestModuleEntry[] = listFunctionalModuleVersions(),
+  rootDir = process.cwd()
+): string[] {
+  return modules.flatMap((moduleEntry) => {
     const runtimeModulePath = `modules/${moduleEntry.id}/`;
     if (!moduleEntry.ownerPaths.includes(runtimeModulePath)) {
       return [];
     }
 
-    const manifestPath = join(process.cwd(), runtimeModulePath, "module.json");
+    const manifestPath = join(rootDir, runtimeModulePath, "module.json");
     if (!existsSync(manifestPath)) {
-      return [];
+      return [`${runtimeModulePath}module.json is missing.`];
     }
 
     try {

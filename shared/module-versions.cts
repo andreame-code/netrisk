@@ -817,7 +817,11 @@ function normalizeEnvironmentModules(
   if (Array.isArray(modules)) {
     return modules.reduce<Record<string, string>>((accumulator, entry) => {
       if (isNonEmptyString(entry.moduleId) && isNonEmptyString(entry.versions)) {
-        accumulator[entry.moduleId] = entry.versions;
+        const knownModuleVersion = getFunctionalModuleVersion(entry.moduleId)?.version || null;
+        accumulator[entry.moduleId] =
+          knownModuleVersion && versionSatisfiesRange(knownModuleVersion, entry.versions)
+            ? knownModuleVersion
+            : entry.versions;
       }
       return accumulator;
     }, {});
