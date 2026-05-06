@@ -397,9 +397,12 @@ describe("GameRoute integration", () => {
     expect(within(dock).getByText("Seleziona 3 carte da scambiare")).toBeInTheDocument();
     expect(within(dock).getByText("Bonus scambio")).toBeInTheDocument();
     expect(within(dock).getByText("+8")).toBeInTheDocument();
+    expect(dock.querySelector(".game-card-tray")).toBeInTheDocument();
+    expect(dock.querySelector(".game-card-row")).toHaveAttribute("data-card-count", "5");
+    expect(dock.querySelector(".game-selected-card-row")).not.toBeInTheDocument();
     expect(dock.querySelectorAll("[data-dock-card-id]")).toHaveLength(5);
     expect(
-      within(dock.querySelector(".game-trade-hand") as HTMLElement).getByText("5")
+      within(dock.querySelector(".game-card-tray") as HTMLElement).getByText("5")
     ).toBeInTheDocument();
     const cardButtons = dock.querySelectorAll("[data-dock-card-id]");
     expect(cardButtons[0]).toHaveClass("game-card-tone-infantry");
@@ -407,8 +410,47 @@ describe("GameRoute integration", () => {
     await user.click(cardButtons[0] as HTMLElement);
     expect(cardButtons[0]).toHaveAttribute("aria-pressed", "true");
     expect(within(dock).getByText("1 / 3 selezionate")).toBeInTheDocument();
+    await user.click(cardButtons[1] as HTMLElement);
+    await user.click(cardButtons[2] as HTMLElement);
+    expect(dock.querySelectorAll("[data-dock-card-id]")).toHaveLength(5);
+    expect(dock.querySelectorAll('[data-dock-card-id][aria-pressed="true"]')).toHaveLength(3);
     expect(dock.querySelector("#card-trade-dock-button")).toHaveTextContent("Scambia carte");
   });
+
+  it.each([3, 5, 6, 8])(
+    "keeps mandatory trade cards in one tray row for %i card hands",
+    async (cardCount) => {
+      getGameStateMock.mockResolvedValue(
+        createGameplayState({
+          reinforcementPool: 5,
+          cardState: {
+            ruleSetId: "standard",
+            tradeCount: 2,
+            deckCount: 12,
+            discardCount: 0,
+            nextTradeBonus: 8,
+            maxHandBeforeForcedTrade: 5,
+            currentPlayerMustTrade: true
+          },
+          playerHand: Array.from({ length: cardCount }, (_, index) => ({
+            id: `card-${index + 1}`,
+            territoryId: `Territory ${index + 1}`,
+            type: index % 3 === 0 ? "infantry" : index % 3 === 1 ? "artillery" : "cavalry"
+          }))
+        })
+      );
+
+      renderReactShell("/react/game/g-1");
+
+      const dock = await screen.findByTestId("actions-panel");
+      const row = dock.querySelector(".game-card-row") as HTMLElement;
+      expect(row).toBeInTheDocument();
+      expect(row).toHaveAttribute("data-card-count", String(cardCount));
+      expect(row.querySelectorAll("[data-dock-card-id]")).toHaveLength(cardCount);
+      expect(dock.querySelector(".game-selected-card-row")).not.toBeInTheDocument();
+      expect(within(dock).getByText("+8")).toBeInTheDocument();
+    }
+  );
 
   it("opens reference drawers and filters the activity log", async () => {
     const user = userEvent.setup();

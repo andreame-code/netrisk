@@ -7134,3 +7134,192 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     column-gap: 16px !important;
   }
 }
+
+.game-command-dock .game-mandatory-trade-dock,
+.game-command-dock-mandatory-trade .game-mandatory-trade-dock,
+html[data-theme="war-table"]
+  .game-map-first-page
+  .game-command-dock-mandatory-trade
+  .game-mandatory-trade-dock {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) clamp(150px, 14vw, 210px) !important;
+  gap: 28px !important;
+  align-items: stretch !important;
+  min-width: 0 !important;
+}
+
+.game-card-tray {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.game-card-tray-header,
+.game-card-tray-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+}
+
+.game-card-tray-header {
+  margin-bottom: 12px !important;
+}
+
+.game-card-tray-footer {
+  margin-top: 14px !important;
+}
+
+.game-card-tray .game-dock-field-label {
+  margin-bottom: 0 !important;
+}
+
+.game-dock-selection-label {
+  justify-content: flex-end !important;
+  text-align: right !important;
+}
+
+.game-card-tray-scroll {
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain !important;
+  scrollbar-gutter: stable !important;
+  padding: 2px 4px 12px !important;
+}
+
+.game-card-tray-scroll::-webkit-scrollbar {
+  height: 12px;
+}
+
+.game-card-tray-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(151, 178, 194, 0.16);
+}
+
+.game-card-tray-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(232, 241, 247, 0.52);
+}
+
+.game-command-dock-mandatory-trade .game-card-row,
+html[data-theme="war-table"]
+  .game-map-first-page
+  .game-command-dock-mandatory-trade
+  .game-card-row {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: stretch !important;
+  gap: 16px !important;
+  min-width: max-content !important;
+}
+
+.game-command-dock-mandatory-trade .game-card-row .game-card-tile,
+html[data-theme="war-table"]
+  .game-map-first-page
+  .game-command-dock-mandatory-trade
+  .game-card-row
+  .game-card-tile {
+  position: relative !important;
+  flex: 0 0 clamp(118px, 9.4vw, 150px) !important;
+  width: clamp(118px, 9.4vw, 150px) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.game-command-dock-mandatory-trade,
+html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-trade {
+  overflow: hidden !important;
+}
+
+.game-card-tray #card-trade-dock-help {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.game-card-tray .game-trade-actions {
+  flex: 0 0 auto !important;
+  grid-template-columns: minmax(138px, auto) minmax(190px, auto) !important;
+  margin-top: 0 !important;
+}
+
+.game-command-dock-mandatory-trade .game-exchange-bonus,
+html[data-theme="war-table"]
+  .game-map-first-page
+  .game-command-dock-mandatory-trade
+  .game-exchange-bonus {
+  min-width: clamp(150px, 14vw, 210px) !important;
+  padding-left: 28px !important;
+}
+
+@media (max-width: 1180px) {
+  .game-command-dock .game-mandatory-trade-dock,
+  .game-command-dock-mandatory-trade .game-mandatory-trade-dock,
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-mandatory-trade
+    .game-mandatory-trade-dock {
+    grid-template-columns: minmax(0, 1fr) 156px !important;
+    gap: 18px !important;
+  }
+
+  .game-command-dock-mandatory-trade .game-card-row .game-card-tile,
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-mandatory-trade
+    .game-card-row
+    .game-card-tile {
+    flex-basis: 118px !important;
+    width: 118px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .game-command-dock .game-mandatory-trade-dock,
+  .game-command-dock-mandatory-trade .game-mandatory-trade-dock,
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-mandatory-trade
+    .game-mandatory-trade-dock {
+    grid-template-columns: minmax(0, 1fr) 128px !important;
+    gap: 12px !important;
+  }
+
+  .game-card-tray-header,
+  .game-card-tray-footer {
+    align-items: stretch !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .game-dock-selection-label {
+    justify-content: space-between !important;
+    text-align: left !important;
+  }
+
+  .game-command-dock-mandatory-trade .game-card-row .game-card-tile,
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-mandatory-trade
+    .game-card-row
+    .game-card-tile {
+    flex-basis: 104px !important;
+    width: 104px !important;
+  }
+
+  .game-card-tray .game-trade-actions {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .game-command-dock-mandatory-trade .game-exchange-bonus,
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-mandatory-trade
+    .game-exchange-bonus {
+    min-width: 128px !important;
+    padding-left: 12px !important;
+  }
+}
