@@ -17,6 +17,7 @@ export const CORE_MODULE_VERSION = "1.0.0";
 export const NETRISK_MODULE_CAPABILITY_KINDS = NETRISK_MODULE_CAPABILITY_KIND_VALUES;
 export const NETRISK_UI_SLOT_IDS = NETRISK_UI_SLOT_ID_VALUES;
 
+import type { CardRuleSetSummary } from "./cards.cjs";
 import type { ContentPackSummary } from "./content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "./dice.cjs";
 import type {
@@ -213,6 +214,8 @@ export interface NetRiskModulePlayerPieceSetDefinition extends PlayerPieceSet {}
 
 export interface NetRiskModuleDiceRuleSetDefinition extends DiceRuleSet {}
 
+export interface NetRiskModuleCardRuleSetDefinition extends CardRuleSetSummary {}
+
 export interface NetRiskModuleSiteThemeDefinition extends VisualTheme {}
 
 export interface NetRiskReinforcementAdjustment {
@@ -274,6 +277,7 @@ export interface NetRiskServerModule {
   contentPacks?: NetRiskModuleContentPackDefinition[] | null;
   playerPieceSets?: NetRiskModulePlayerPieceSetDefinition[] | null;
   diceRuleSets?: NetRiskModuleDiceRuleSetDefinition[] | null;
+  cardRuleSets?: NetRiskModuleCardRuleSetDefinition[] | null;
   profiles?: {
     content?: NetRiskServerProfile[];
     gameplay?: NetRiskServerProfile[];
@@ -290,6 +294,7 @@ export interface NetRiskResolvedModuleCatalog {
   ruleSets: BuiltInNewGameRuleSetSummary[];
   playerPieceSets: PlayerPieceSetSummary[];
   diceRuleSets: DiceRuleSetSummary[];
+  cardRuleSets: CardRuleSetSummary[];
   contentPacks: ContentPackSummary[];
   victoryRuleSets: VictoryRuleSet[];
   themes: VisualTheme[];
@@ -669,6 +674,35 @@ function normalizeModuleDiceRuleSets(
   });
 }
 
+function normalizeModuleCardRuleSets(
+  raw: unknown,
+  sourcePath: string
+): NetRiskModuleCardRuleSetDefinition[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.map((entry) => {
+    if (!isObject(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.name)) {
+      throw new Error(`Invalid module card rule set definition in "${sourcePath}".`);
+    }
+
+    const maxHandBeforeForcedTrade = Number(entry.maxHandBeforeForcedTrade);
+    if (!Number.isInteger(maxHandBeforeForcedTrade) || maxHandBeforeForcedTrade < 3) {
+      throw new Error(
+        `Invalid maxHandBeforeForcedTrade for module card rule set "${String(entry.id).trim()}" in "${sourcePath}".`
+      );
+    }
+
+    return {
+      id: String(entry.id).trim(),
+      name: String(entry.name).trim(),
+      description: isNonEmptyString(entry.description) ? String(entry.description).trim() : "",
+      maxHandBeforeForcedTrade
+    };
+  });
+}
+
 function normalizeGameplayEffects(raw: unknown, sourcePath: string): NetRiskGameplayEffects | null {
   if (!isObject(raw)) {
     return null;
@@ -985,6 +1019,7 @@ export function validateNetRiskServerModule(raw: unknown, sourcePath: string): N
     contentPacks: normalizeModuleContentPacks(raw.contentPacks, sourcePath),
     playerPieceSets: normalizeModulePlayerPieceSets(raw.playerPieceSets, sourcePath),
     diceRuleSets: normalizeModuleDiceRuleSets(raw.diceRuleSets, sourcePath),
+    cardRuleSets: normalizeModuleCardRuleSets(raw.cardRuleSets, sourcePath),
     profiles
   };
 }

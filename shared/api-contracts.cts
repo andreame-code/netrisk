@@ -113,6 +113,7 @@ export interface NetRiskResolvedModuleCatalogContract {
   ruleSets: Array<Record<string, unknown>>;
   playerPieceSets: Array<Record<string, unknown>>;
   diceRuleSets: Array<Record<string, unknown>>;
+  cardRuleSets?: Array<Record<string, unknown>>;
   contentPacks: Array<Record<string, unknown>>;
   victoryRuleSets: VictoryRuleSetContract[];
   themes: VisualThemeContract[];

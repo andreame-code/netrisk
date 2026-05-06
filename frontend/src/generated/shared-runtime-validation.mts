@@ -540,6 +540,15 @@ export const diceRuleSetSchema = objectSchema({
 
 export type DiceRuleSet = z.infer<typeof diceRuleSetSchema>;
 
+export const cardRuleSetSchema = objectSchema({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1).optional(),
+  maxHandBeforeForcedTrade: z.number().int()
+});
+
+export type CardRuleSet = z.infer<typeof cardRuleSetSchema>;
+
 export const resolvedModuleCatalogSchema = objectSchema({
   modules: z.array(installedModuleSummarySchema),
   enabledModules: z.array(netRiskModuleReferenceSchema),
@@ -549,6 +558,7 @@ export const resolvedModuleCatalogSchema = objectSchema({
   ruleSets: z.array(ruleSetSummarySchema),
   playerPieceSets: z.array(playerPieceSetSummarySchema),
   diceRuleSets: z.array(diceRuleSetSchema),
+  cardRuleSets: z.array(cardRuleSetSchema).optional(),
   contentPacks: z.array(contentPackSummarySchema),
   victoryRuleSets: z.array(victoryRuleSetSchema),
   themes: z.array(visualThemeSchema),
@@ -791,6 +801,7 @@ export const moduleOptionsResponseSchema = objectSchema({
   maps: z.array(mapSummarySchema).optional(),
   playerPieceSets: z.array(playerPieceSetSummarySchema).optional(),
   diceRuleSets: z.array(diceRuleSetSchema).optional(),
+  cardRuleSets: z.array(cardRuleSetSchema).optional(),
   contentPacks: z.array(contentPackSummarySchema).optional(),
   themes: z.array(visualThemeSchema).optional(),
   pieceSkins: z.array(pieceSkinSchema).optional(),
@@ -842,7 +853,20 @@ export type SnapshotTerritory = z.infer<typeof snapshotTerritorySchema>;
 export const snapshotCardSchema = objectSchema({
   id: z.string().min(1),
   territoryId: z.string().min(1).nullable().optional(),
-  type: z.string().min(1).nullable().optional()
+  type: z.string().min(1).nullable().optional(),
+  definitionId: z.string().min(1).nullable().optional(),
+  displayName: z.string().min(1).optional(),
+  displayNameKey: z.string().min(1).nullable().optional(),
+  description: z.string().min(1).optional(),
+  descriptionKey: z.string().min(1).nullable().optional(),
+  category: z.string().min(1).optional(),
+  effectType: z.string().min(1).optional(),
+  playConditions: z.array(z.string().min(1)).optional(),
+  visual: objectSchema({
+    token: z.string().min(1).max(3),
+    tone: z.string().min(1),
+    iconKey: z.string().min(1).nullable().optional()
+  }).optional()
 });
 
 export type SnapshotCard = z.infer<typeof snapshotCardSchema>;
@@ -888,6 +912,7 @@ export type PendingConquest = z.infer<typeof pendingConquestSchema>;
 
 export const snapshotCardStateSchema = objectSchema({
   ruleSetId: z.string().min(1).optional(),
+  ruleSetName: z.string().min(1).optional(),
   tradeCount: z.number().optional(),
   deckCount: z.number().optional(),
   discardCount: z.number().optional(),

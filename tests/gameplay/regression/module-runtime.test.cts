@@ -3221,6 +3221,66 @@ register("module runtime espone dice rule set locali e li usa in creazione parti
   );
 });
 
+register("module runtime espone card rule set locali nei cataloghi modulari", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "demo.card-rules",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.card-rules",
+          version: "1.0.0",
+          displayName: "Demo Card Rules",
+          engineVersion: "1.0.0",
+          kind: "content",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            { kind: "card-rule-set", scope: "game", description: "Runtime module card rules" }
+          ],
+          entrypoints: {
+            server: "server-module.cjs"
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  cardRuleSets: [
+    {
+      id: "demo-card-rules",
+      name: "Demo Card Rules",
+      description: "Demo modular card rule summary.",
+      maxHandBeforeForcedTrade: 6
+    }
+  ]
+};`
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const enableResponse = await callApp(
+        app,
+        "POST",
+        "/api/modules/demo.card-rules/enable",
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(enableResponse.statusCode, 200);
+
+      const optionsResponse = await callApp(app, "GET", "/api/game/options");
+      assert.equal(optionsResponse.statusCode, 200);
+      assert.equal(
+        optionsResponse.payload.resolvedCatalog.cardRuleSets.some(
+          (entry: any) => entry.id === "demo-card-rules" && entry.maxHandBeforeForcedTrade === 6
+        ),
+        true
+      );
+      assert.equal(
+        optionsResponse.payload.resolvedCatalog.content.cardRuleSetIds.includes("demo-card-rules"),
+        true
+      );
+    }
+  );
+});
+
 register("module runtime espone e risolve game preset modulari nel setup partita", async () => {
   await withModuleServer(
     [

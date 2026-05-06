@@ -145,6 +145,8 @@ Success responses return:
 ```
 
 - On version conflict returns the standard `409` snapshot reload envelope.
+- Game snapshots keep the legacy card fields (`id`, `type`, `territoryId`) and may also include additive rendering metadata on `playerHand` cards: `definitionId`, `displayName`, `displayNameKey`, `description`, `descriptionKey`, `category`, `visual`, `effectType`, and `playConditions`.
+- `cardState` may include `ruleSetName` alongside the existing rule-set id, counts, next trade bonus, forced-trade limit, and mandatory-trade flag.
 
 ## Public JSON endpoints not modeled in OpenAPI yet
 
