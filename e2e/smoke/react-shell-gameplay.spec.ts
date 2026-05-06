@@ -283,19 +283,19 @@ test("react gameplay handles the forced trade flow on the React route", async ({
 
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
   await expect(page.locator("#trade-alert")).toBeVisible();
-  await expect(page.locator('[data-testid="actions-panel"] #card-trade-list')).toHaveCount(0);
+  await expect(
+    page.locator('[data-testid="actions-panel"] #card-trade-dock-list [data-dock-card-id]')
+  ).toHaveCount(4);
   await page.locator(".game-cards-drawer summary").click();
-  await expect(page.locator("#card-trade-group")).toBeVisible();
-  await expect(page.locator("#card-trade-alert")).toContainText(/Devi scambiare subito 3 carte/i);
-  await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(4);
-  await expect(page.locator("#card-trade-button")).toBeDisabled();
+  await expect(page.locator("#card-trade-group")).toBeHidden();
+  await expect(page.locator("#card-trade-dock-button")).toBeDisabled();
 
-  await page.locator('[data-card-id="c1"]').click();
-  await page.locator('[data-card-id="c2"]').click();
-  await page.locator('[data-card-id="c3"]').click();
+  await page.locator('[data-dock-card-id="c1"]').click();
+  await page.locator('[data-dock-card-id="c2"]').click();
+  await page.locator('[data-dock-card-id="c3"]').click();
 
-  await expect(page.locator("#card-trade-button")).toBeEnabled();
-  await page.locator("#card-trade-button").click();
+  await expect(page.locator("#card-trade-dock-button")).toBeEnabled();
+  await page.locator("#card-trade-dock-button").click();
 
   await expect(page.getByTestId("status-summary")).toContainText("7");
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);

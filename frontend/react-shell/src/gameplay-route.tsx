@@ -120,6 +120,38 @@ function cardTypeLabel(card: SnapshotCard): string {
   return t("game.runtime.cardType.default");
 }
 
+function dockCardTone(card: SnapshotCard | undefined): string {
+  if (card?.type === "artillery") {
+    return "artillery";
+  }
+
+  if (card?.type === "cavalry") {
+    return "cavalry";
+  }
+
+  if (card?.type === "wild") {
+    return "wild";
+  }
+
+  return "infantry";
+}
+
+function dockCardSymbol(card: SnapshotCard | undefined): string {
+  if (card?.type === "artillery") {
+    return "C";
+  }
+
+  if (card?.type === "cavalry") {
+    return "H";
+  }
+
+  if (card?.type === "wild") {
+    return "*";
+  }
+
+  return "I";
+}
+
 function logEntryMessageKey(entry: unknown): string {
   if (!entry || typeof entry !== "object") {
     return "";
@@ -1079,7 +1111,7 @@ export function GameRoute() {
               />
             ) : null}
 
-            {activeDrawer === "cards" ? (
+            {activeDrawer === "cards" && !mustTradeCards ? (
               <CardsDrawer
                 canTradeCards={canTradeCards}
                 cardState={snapshot.cardState || null}
@@ -1157,72 +1189,77 @@ export function GameRoute() {
         >
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
-              <section className="game-trade-hand">
-                <div className="game-dock-field-label">{t("game.commandDock.yourCards")}</div>
-                <div id="card-trade-dock-list" className="game-card-grid">
-                  {playerHand.map((card) => (
+              <section
+                className="game-card-tray"
+                aria-labelledby="card-trade-dock-heading"
+                aria-describedby="card-trade-dock-help"
+              >
+                <div className="game-card-tray-header">
+                  <div className="game-dock-field-label" id="card-trade-dock-heading">
+                    {t("game.commandDock.yourCards")}
+                    <span className="game-dock-label-badge">{playerHand.length}</span>
+                  </div>
+                  <div className="game-dock-field-label game-dock-selection-label">
+                    {t("game.commandDock.selectCardsToTrade")}
+                    <span>
+                      {t("game.commandDock.cardsSelected", {
+                        selected: selectedTradeCardIds.length
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="game-card-tray-scroll">
+                  <div
+                    id="card-trade-dock-list"
+                    className="game-card-row"
+                    data-card-count={playerHand.length}
+                  >
+                    {playerHand.map((card) => (
+                      <button
+                        key={card.id}
+                        type="button"
+                        className={`game-card-tile game-card-tone-${dockCardTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                        data-dock-card-id={card.id}
+                        aria-pressed={selectedTradeCardIds.includes(card.id)}
+                        onClick={() => toggleTradeCard(card.id)}
+                      >
+                        <span className="game-card-selected-mark" aria-hidden="true" />
+                        <span className="game-card-visual" aria-hidden="true">
+                          <span className="game-card-silhouette">{dockCardSymbol(card)}</span>
+                          <span className="game-card-territory-shape" />
+                        </span>
+                        <strong>{card.territoryId || card.id}</strong>
+                        <span>{cardTypeLabel(card)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="game-card-tray-footer">
+                  <p id="card-trade-dock-help">
+                    {selectedTradeCardIds.length
+                      ? t("game.commandDock.mustTradeToContinue")
+                      : t("game.commandDock.chooseThreeCards")}
+                  </p>
+                  <div className="game-trade-actions">
                     <button
-                      key={card.id}
                       type="button"
-                      className={`game-card-tile${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
-                      data-dock-card-id={card.id}
-                      onClick={() => toggleTradeCard(card.id)}
+                      className="game-command-secondary-action"
+                      onClick={() => setSelectedTradeCardIds([])}
+                      disabled={!selectedTradeCardIds.length || actionPending}
                     >
-                      <strong>{card.territoryId || card.id}</strong>
-                      <span>{cardTypeLabel(card)}</span>
+                      {t("game.commandDock.clearSelection")}
                     </button>
-                  ))}
-                </div>
-                <p id="card-trade-dock-help">{t("game.commandDock.mustTradeToContinue")}</p>
-              </section>
-              <section className="game-trade-selection">
-                <div className="game-dock-field-label">
-                  {t("game.commandDock.selectCardsToTrade")}
-                  <span>
-                    {t("game.commandDock.cardsSelected", {
-                      selected: selectedTradeCardIds.length
-                    })}
-                  </span>
-                </div>
-                <div className="game-selected-card-row">
-                  {selectedTradeCardIds.length ? (
-                    selectedTradeCardIds.map((cardId) => {
-                      const card = playerHand.find((entry) => entry.id === cardId);
-                      return (
-                        <button
-                          key={cardId}
-                          type="button"
-                          className="game-card-tile is-selected"
-                          onClick={() => toggleTradeCard(cardId)}
-                        >
-                          <strong>{card?.territoryId || cardId}</strong>
-                          <span>{card ? cardTypeLabel(card) : t("game.actions.cards")}</span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <p className="action-help">{t("game.commandDock.chooseThreeCards")}</p>
-                  )}
-                </div>
-                <div className="game-trade-actions">
-                  <button
-                    type="button"
-                    className="game-command-secondary-action"
-                    onClick={() => setSelectedTradeCardIds([])}
-                    disabled={!selectedTradeCardIds.length || actionPending}
-                  >
-                    {t("game.commandDock.clearSelection")}
-                  </button>
-                  <button
-                    id="card-trade-dock-button"
-                    type="button"
-                    onClick={() => void handleTradeCards()}
-                    disabled={!canTradeCards}
-                  >
-                    {gameplayCommands.isTrading
-                      ? t("game.commandDock.trading")
-                      : t("game.commandDock.tradeCards")}
-                  </button>
+                    <button
+                      id="card-trade-dock-button"
+                      type="button"
+                      onClick={() => void handleTradeCards()}
+                      disabled={!canTradeCards}
+                    >
+                      {gameplayCommands.isTrading
+                        ? t("game.commandDock.trading")
+                        : t("game.commandDock.tradeCards")}
+                    </button>
+                  </div>
                 </div>
               </section>
               <aside className="game-exchange-bonus">
