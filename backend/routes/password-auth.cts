@@ -30,6 +30,7 @@ type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
 type AuthAttemptThrottle = {
   check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
   recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
   recordSuccess(key: Record<string, unknown>): void;
 };
@@ -95,7 +96,7 @@ async function handleRegisterRoute(
     email: parsedBody.email
   });
   if (!result.ok) {
-    authAttemptThrottle?.recordFailure(throttleKey);
+    authAttemptThrottle?.recordAttempt(throttleKey);
     sendLocalizedError(
       res,
       400,
@@ -107,7 +108,7 @@ async function handleRegisterRoute(
     return;
   }
 
-  authAttemptThrottle?.recordSuccess(throttleKey);
+  authAttemptThrottle?.recordAttempt(throttleKey);
   sendValidatedJson(
     res as import("node:http").ServerResponse,
     201,
