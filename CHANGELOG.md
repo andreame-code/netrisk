@@ -2,9 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
-## 0.1.003 - 2026-05-06
+## 0.1.004 - 2026-05-06
 
 - Refined the game screen bottom command dock so attack, reinforcement, and fortify controls stay inside the reference-style frame on short desktop viewports.
+
+## 0.1.003 - 2026-05-06
+
 - Restricted module static file serving to declared public asset directories so module manifests and server entrypoints are not exposed.
 
 ## 0.1.002 - 2026-05-06
