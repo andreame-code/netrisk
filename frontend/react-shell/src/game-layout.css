@@ -6772,6 +6772,16 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     .game-command-dock-fortify:not(.game-command-dock-mandatory-trade) {
     width: calc(100vw - 48px) !important;
   }
+
+  .game-command-dock-attack .actions-section {
+    grid-template-columns:
+      minmax(0, 1.18fr)
+      minmax(0, 1fr)
+      minmax(64px, 0.42fr)
+      minmax(0, 0.9fr)
+      minmax(0, 0.78fr) !important;
+    column-gap: 10px !important;
+  }
 }
 
 @media (min-width: 761px) and (max-height: 700px) {
