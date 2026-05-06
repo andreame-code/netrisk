@@ -16,6 +16,9 @@ const {
   versionSatisfiesRange
 } = require("../../../shared/module-versions.cjs");
 const { validateNetRiskModuleManifest } = require("../../../shared/netrisk-modules.cjs");
+const {
+  parseChangedFilePathsFromNameStatus
+} = require("../../../scripts/check-module-versioning.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -211,4 +214,31 @@ register("module version bump detector maps changed paths to owned functional mo
   assert.ok(victoryRequirement);
   assert.equal(victoryRequirement.versionChanged, false);
   assert.deepEqual(victoryRequirement.changedPaths, ["backend/engine/victory-detection.cts"]);
+});
+
+register("module version bump detector includes both paths from git rename output", () => {
+  const changedPaths = parseChangedFilePathsFromNameStatus(
+    [
+      "M\tshared/module-versions.cts",
+      "R100\tshared/maps/world-classic.cts\tdocs/world-classic-map.md",
+      "C075\tshared/dice.cts\tshared/dice-copy.cts"
+    ].join("\n")
+  );
+
+  assert.deepEqual(changedPaths, [
+    "shared/module-versions.cts",
+    "shared/maps/world-classic.cts",
+    "docs/world-classic-map.md",
+    "shared/dice.cts",
+    "shared/dice-copy.cts"
+  ]);
+
+  const requirements = findModuleVersionChangeRequirements(changedPaths, []);
+  assert.equal(
+    requirements.some(
+      (entry: { moduleId: string; changedPaths: string[] }) =>
+        entry.moduleId === "maps" && entry.changedPaths.includes("shared/maps/world-classic.cts")
+    ),
+    true
+  );
 });

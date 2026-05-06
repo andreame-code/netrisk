@@ -78,16 +78,32 @@ function resolveBaseRef(): string | null {
 
 function changedFilesSince(baseRef: string): string[] {
   try {
-    return runGit(["diff", "--name-only", `${baseRef}...HEAD`])
-      .split(/\r?\n/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
+    return parseChangedFilePathsFromNameStatus(
+      runGit(["diff", "--name-status", "-M", `${baseRef}...HEAD`])
+    );
   } catch {
-    return runGit(["diff", "--name-only", baseRef, "HEAD"])
-      .split(/\r?\n/)
-      .map((entry) => entry.trim())
-      .filter(Boolean);
+    return parseChangedFilePathsFromNameStatus(
+      runGit(["diff", "--name-status", "-M", baseRef, "HEAD"])
+    );
   }
+}
+
+export function parseChangedFilePathsFromNameStatus(output: string): string[] {
+  const paths = new Set<string>();
+
+  output
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      const fields = line
+        .split("\t")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      fields.slice(1).forEach((filePath) => paths.add(filePath));
+    });
+
+  return Array.from(paths);
 }
 
 function extractModuleVersions(source: string): Record<string, string> {
@@ -197,4 +213,6 @@ function main(): void {
   );
 }
 
-main();
+if (require.main === module) {
+  main();
+}
