@@ -16,6 +16,8 @@ import type {
 
 import { t } from "@frontend-i18n";
 
+import { WarTableIcon } from "@react-shell/war-table-icons";
+
 const MAP_VIEWPORT_MIN_SCALE = 1;
 const MAP_VIEWPORT_MAX_SCALE = 3;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
@@ -134,6 +136,22 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
   }
 
   return "760 / 500";
+}
+
+function resolveMapImageUrl(imageUrl: string): string {
+  if (imageUrl.startsWith("//")) {
+    return imageUrl;
+  }
+
+  if (/^(?:[a-z][a-z0-9+.-]*:|data:|blob:)/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  if (imageUrl.startsWith("/")) {
+    return imageUrl;
+  }
+
+  return imageUrl;
 }
 
 function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
@@ -674,7 +692,7 @@ export function GameplayMapViewport({
       : {}),
     ...(snapshot.mapVisual?.imageUrl
       ? {
-          "--map-background-image": `url(${snapshot.mapVisual.imageUrl})`
+          "--map-background-image": `url(${resolveMapImageUrl(snapshot.mapVisual.imageUrl)})`
         }
       : {})
   } as CSSProperties;
@@ -720,6 +738,23 @@ export function GameplayMapViewport({
             disabled={viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 && !hasViewportOffset}
           >
             <span aria-hidden="true">-</span>
+          </button>
+          <button
+            type="button"
+            className="map-control-button"
+            data-map-control="focus"
+            aria-label={t("game.map.reset")}
+            title={t("game.map.reset")}
+            onClick={() =>
+              setViewport({
+                scale: MAP_VIEWPORT_MIN_SCALE,
+                translateX: 0,
+                translateY: 0,
+                isDragging: false
+              })
+            }
+          >
+            <WarTableIcon name="objective" />
           </button>
         </div>
 

@@ -1,6 +1,11 @@
 const { test, expect } = require("@playwright/test");
 
-function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
+function mockState({
+  playerHand,
+  reinforcementPool = 3,
+  mustTrade = false,
+  maxHandBeforeForcedTrade = 5
+}) {
   return {
     phase: "active",
     turnPhase: "reinforcement",
@@ -65,7 +70,7 @@ function mockState({ playerHand, reinforcementPool = 3, mustTrade = false }) {
       deckCount: 5,
       discardCount: 0,
       nextTradeBonus: 4,
-      maxHandBeforeForcedTrade: 5,
+      maxHandBeforeForcedTrade,
       currentPlayerMustTrade: mustTrade
     },
     gameId: "g-1",
@@ -86,7 +91,8 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
       { id: "c3", type: "infantry", territoryId: "aurora" },
       { id: "c4", type: "wild" }
     ],
-    mustTrade: true
+    mustTrade: true,
+    maxHandBeforeForcedTrade: 7
   });
 
   await page.route("**/api/auth/session", async (route) => {
@@ -144,6 +150,7 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await expect(page.locator("#trade-alert")).toContainText("scambiane 3 per continuare");
   await expect(page.locator('[data-testid="actions-panel"] #card-trade-list')).toHaveCount(0);
   await page.locator(".game-cards-drawer summary").click();
+  await expect(page.locator(".game-cards-modern-drawer")).toContainText("Le tue carte 4/7");
   await expect(page.locator("#card-trade-group")).toBeVisible();
   await expect(page.locator("#card-trade-alert")).toBeVisible();
   await expect(page.locator("#card-trade-alert")).toContainText(
@@ -166,3 +173,119 @@ test("game page lets the authenticated player select 3 cards and submit a trade"
   await expect(page.locator("#card-trade-list [data-card-id]")).toHaveCount(1);
   await expect(page.locator("#card-trade-help")).toContainText("0/3 carte selezionate");
 });
+
+for (const viewport of [
+  { name: "short desktop", width: 1366, height: 600 },
+  { name: "mobile", width: 390, height: 844 }
+]) {
+  test(`mandatory trade dock keeps the map clear at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    const currentState = mockState({
+      playerHand: [
+        { id: "c1", type: "infantry", territoryId: "aurora" },
+        { id: "c2", type: "infantry", territoryId: "bastion" },
+        { id: "c3", type: "infantry", territoryId: "aurora" },
+        { id: "c4", type: "wild" }
+      ],
+      mustTrade: true
+    });
+
+    await page.route("**/api/auth/session", async (route) => {
+      await route.fulfill({
+        json: { user: { id: "u1", username: "alice", role: "user", authMethods: ["password"] } }
+      });
+    });
+
+    await page.route("**/api/games**", async (route) => {
+      await route.fulfill({
+        json: {
+          games: [
+            {
+              id: "g-1",
+              name: "Trade Match",
+              updatedAt: "2026-03-19T10:00:00.000Z",
+              phase: "active",
+              playerCount: 2,
+              totalPlayers: 2
+            }
+          ],
+          activeGameId: "g-1"
+        }
+      });
+    });
+
+    await page.route("**/api/state**", async (route) => {
+      await route.fulfill({ json: currentState });
+    });
+
+    await page.route("**/api/events**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+        body: ""
+      });
+    });
+
+    await page.addInitScript(() => window.localStorage.setItem("netrisk.theme", "war-table"));
+    await page.goto("/game");
+
+    await expect(page.locator(".game-command-dock-mandatory-trade")).toBeVisible({
+      timeout: 15000
+    });
+
+    const metrics = await page.evaluate(() => {
+      const intersects = (first, second) =>
+        !(
+          first.right <= second.left ||
+          second.right <= first.left ||
+          first.bottom <= second.top ||
+          second.bottom <= first.top
+        );
+      const boundsFor = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) {
+          throw new Error(`Missing ${selector}`);
+        }
+        const rect = element.getBoundingClientRect();
+        return {
+          bottom: rect.bottom,
+          height: rect.height,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          width: rect.width
+        };
+      };
+
+      const board = boundsFor(".game-map-stage .map-board");
+      const dock = boundsFor(".game-command-dock-mandatory-trade");
+      const stage = document.querySelector(".game-map-stage");
+      const stageStyles = stage ? window.getComputedStyle(stage) : null;
+      const viewport = { height: window.innerHeight, width: window.innerWidth };
+
+      return {
+        boardClearOfDock: !intersects(board, dock),
+        boardHeight: board.height,
+        boardInsideViewport:
+          board.top >= -1 &&
+          board.left >= -1 &&
+          board.right <= viewport.width + 1 &&
+          board.bottom <= viewport.height + 1,
+        boardWidth: board.width,
+        dockInsideViewport:
+          dock.left >= -1 &&
+          dock.right <= viewport.width + 1 &&
+          dock.bottom <= viewport.height + 1,
+        safeBottom: stageStyles?.getPropertyValue("--game-map-safe-bottom").trim() || "",
+        safeTop: stageStyles?.getPropertyValue("--game-map-safe-top").trim() || ""
+      };
+    });
+
+    expect(metrics.boardWidth).toBeGreaterThan(240);
+    expect(metrics.boardHeight).toBeGreaterThan(150);
+    expect(metrics.boardInsideViewport).toBeTruthy();
+    expect(metrics.boardClearOfDock).toBeTruthy();
+    expect(metrics.dockInsideViewport).toBeTruthy();
+    expect(metrics.safeBottom).toMatch(/^[0-9.]+px$/);
+  });
+}

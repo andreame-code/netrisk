@@ -428,6 +428,13 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           <span className="visually-hidden" data-testid="react-shell-session-status">
             {sessionStatusLabel(state.status)}
           </span>
+          {section === "game" ? (
+            <span id="auth-status" className="visually-hidden">
+              {isAuthenticated
+                ? t("auth.status.loggedIn", { username: state.user.username })
+                : t("auth.status.required")}
+            </span>
+          ) : null}
           <button
             type="button"
             id="logout-button"
