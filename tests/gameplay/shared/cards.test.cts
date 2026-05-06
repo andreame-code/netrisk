@@ -143,7 +143,7 @@ register("cards trade effect preserves reinforcement trade flow", () => {
   assert.equal(state.discardPile.length, 3);
 });
 
-register("cards public snapshot carries modular rendering data", () => {
+register("cards rendering data is resolved from the modular rule set", () => {
   const state = createInitialState();
   state.phase = "active";
   state.turnPhase = TurnPhase.REINFORCEMENT;
@@ -162,9 +162,10 @@ register("cards public snapshot carries modular rendering data", () => {
   state.hands.p1 = [createCard({ id: "card-a", type: CardType.INFANTRY, territoryId: "a" })];
 
   const snapshot = publicState(state);
-  assert.equal(snapshot.playerHand.length, 1);
-  assert.equal(snapshot.playerHand[0].displayNameKey, "game.runtime.cardType.infantry");
-  assert.equal(snapshot.playerHand[0].visual.token, "I");
-  assert.equal(snapshot.playerHand[0].effectType, CardEffectType.TRADE_FOR_REINFORCEMENTS);
+  const rendered = getCardRuleSet(snapshot.cardState.ruleSetId).renderCard(state.hands.p1[0]);
+  assert.equal(rendered.displayNameKey, "game.runtime.cardType.infantry");
+  assert.equal(rendered.visual.token, "I");
+  assert.equal(rendered.effectType, CardEffectType.TRADE_FOR_REINFORCEMENTS);
+  assert.equal(Object.prototype.hasOwnProperty.call(snapshot, "playerHand"), false);
   assert.equal(snapshot.cardState.ruleSetName, "Standard");
 });

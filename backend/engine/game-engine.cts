@@ -778,13 +778,6 @@ export function publicState(state: EngineState) {
       ? snapshotState.attacksThisTurn
       : 0,
     conqueredTerritoryThisTurn: Boolean(snapshotState.conqueredTerritoryThisTurn),
-    playerHand:
-      currentPlayer && currentPlayer.id && Array.isArray(snapshotState.hands?.[currentPlayer.id])
-        ? snapshotState.hands[currentPlayer.id].map((card) => ({
-            ...card,
-            ...cardRuleSet.renderCard(card)
-          }))
-        : [],
     cardState: {
       ruleSetId: snapshotState.cardRuleSetId || "standard",
       ruleSetName: cardRuleSet.name,
