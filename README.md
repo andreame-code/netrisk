@@ -79,6 +79,10 @@ NetRisk now treats the default experience as a baseline module platform rather t
 
 For admins, this means a module can now change maps, rule sets, themes, piece skins, presets, profiles, and supported UI slots through normal module enable/disable flows, without requiring dedicated frontend or route logic for each module.
 
+Functional module versions and compatibility are centralized in `shared/module-versions.cts`.
+Run `npm run check:module-versioning` to validate the registry and, when a git base ref is
+available, detect module-owned file changes that did not bump the affected module version.
+
 ## Quick Start
 
 Prerequisites:

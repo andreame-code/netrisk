@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -35,6 +37,9 @@ jobs:
 
       - name: Run build
         run: npm run build:ts
+
+      - name: Run module versioning check
+        run: node .tsbuild/scripts/check-module-versioning.cjs
 
       - name: Run lint
         run: npm run lint
