@@ -6702,7 +6702,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     align-self: end !important;
   }
 
-  .game-command-dock-attack #attack-group .action-row {
+  .game-command-dock-attack.is-collapsed #attack-group .action-row {
     grid-column: 4 !important;
     grid-row: 2 !important;
     display: grid !important;
