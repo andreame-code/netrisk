@@ -17,6 +17,7 @@ const {
 } = require("../../../shared/module-versions.cjs");
 const { validateNetRiskModuleManifest } = require("../../../shared/netrisk-modules.cjs");
 const {
+  findNonIncrementingModuleVersionChanges,
   parseChangedFilePathsFromNameStatus
 } = require("../../../scripts/check-module-versioning.cjs");
 
@@ -258,4 +259,23 @@ register("module version bump detector includes both paths from git rename outpu
     ),
     true
   );
+});
+
+register("module version bump detector rejects non-incrementing version edits", () => {
+  const baseSource = [
+    '{ id: "maps", name: "Maps", version: "1.2.3", ownerPaths: ["shared/maps/"] }',
+    '{ id: "public-state", name: "Public State", version: "1.0.0", ownerPaths: ["shared/public-state.cts"] }'
+  ].join("\n");
+  const currentSource = [
+    '{ id: "maps", name: "Maps", version: "1.2.2", ownerPaths: ["shared/maps/"] }',
+    '{ id: "public-state", name: "Public State", version: "1.0.1", ownerPaths: ["shared/public-state.cts"] }'
+  ].join("\n");
+
+  assert.deepEqual(findNonIncrementingModuleVersionChanges(currentSource, baseSource), [
+    {
+      moduleId: "maps",
+      baseVersion: "1.2.3",
+      currentVersion: "1.2.2"
+    }
+  ]);
 });

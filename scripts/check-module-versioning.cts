@@ -12,6 +12,12 @@ type PushEventPayload = {
   before?: unknown;
 };
 
+type ModuleVersionChange = {
+  moduleId: string;
+  baseVersion: string;
+  currentVersion: string;
+};
+
 const moduleVersionsPath = "shared/module-versions.cts";
 
 function runGit(args: string[]): string {
@@ -119,16 +125,61 @@ function extractModuleVersions(source: string): Record<string, string> {
   return versions;
 }
 
-function changedModuleIdsFromManifestSource(
+function parseSemverParts(version: string): [number, number, number] | null {
+  const match = /^([0-9]|[1-9][0-9]*)\.([0-9]|[1-9][0-9]*)\.([0-9]|[1-9][0-9]*)$/.exec(version);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+function compareSemver(left: string, right: string): number | null {
+  const leftParts = parseSemverParts(left);
+  const rightParts = parseSemverParts(right);
+  if (!leftParts || !rightParts) {
+    return null;
+  }
+
+  for (let index = 0; index < leftParts.length; index += 1) {
+    const difference = leftParts[index] - rightParts[index];
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+
+  return 0;
+}
+
+export function findModuleVersionChanges(
   currentSource: string,
   baseSource: string | null
-): string[] {
+): ModuleVersionChange[] {
   const currentVersions = extractModuleVersions(currentSource);
   const baseVersions = baseSource ? extractModuleVersions(baseSource) : {};
 
   return Object.entries(currentVersions)
-    .filter(([moduleId, version]) => baseVersions[moduleId] !== version)
-    .map(([moduleId]) => moduleId);
+    .filter(
+      ([moduleId, version]) => Boolean(baseVersions[moduleId]) && baseVersions[moduleId] !== version
+    )
+    .map(([moduleId, version]) => ({
+      moduleId,
+      baseVersion: baseVersions[moduleId],
+      currentVersion: version
+    }));
+}
+
+function changedModuleIdsFromManifestSource(
+  currentSource: string,
+  baseSource: string | null
+): string[] {
+  return findModuleVersionChanges(currentSource, baseSource).map((entry) => entry.moduleId);
+}
+
+export function findNonIncrementingModuleVersionChanges(
+  currentSource: string,
+  baseSource: string | null
+): ModuleVersionChange[] {
+  return findModuleVersionChanges(currentSource, baseSource).filter((entry) => {
+    const comparison = compareSemver(entry.currentVersion, entry.baseVersion);
+    return comparison === null || comparison <= 0;
+  });
 }
 
 function validateRuntimeManifestVersionMirrors(): string[] {
@@ -193,6 +244,20 @@ function main(): void {
 
   const changedFiles = changedFilesSince(baseRef);
   const changedModuleIds = changedModuleIdsFromManifestSource(currentSource, baseSource);
+  const nonIncrementingChanges = findNonIncrementingModuleVersionChanges(currentSource, baseSource);
+
+  if (nonIncrementingChanges.length) {
+    const report = nonIncrementingChanges
+      .map(
+        (entry) =>
+          `- ${entry.moduleId}: ${entry.baseVersion} -> ${entry.currentVersion} is not an increment`
+      )
+      .join("\n");
+    fail(
+      `Module version changes must increment SemVer values in ${moduleVersionsPath}:\n${report}`
+    );
+  }
+
   const requirements = findModuleVersionChangeRequirements(changedFiles, changedModuleIds);
   const missingBumps = requirements.filter((entry) => !entry.versionChanged);
 
