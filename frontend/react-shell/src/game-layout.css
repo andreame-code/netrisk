@@ -6575,3 +6575,239 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     grid-template-columns: minmax(0, 1fr) minmax(182px, 0.2fr) !important;
   }
 }
+
+@media (min-width: 761px) {
+  .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  .game-command-dock-fortify:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-fortify:not(.game-command-dock-mandatory-trade) {
+    bottom: 42px !important;
+    width: min(1340px, calc(100vw - 300px)) !important;
+    height: 126px !important;
+    min-height: 126px !important;
+    max-height: 126px !important;
+    overflow: visible !important;
+    padding: 20px 22px !important;
+  }
+
+  .game-command-dock-attack .actions-section,
+  .game-command-dock-fortify .actions-section,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-attack .actions-section,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-fortify .actions-section {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    display: grid !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    align-items: end !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .game-command-dock-attack .game-command-dock-title,
+  .game-command-dock-fortify .game-command-dock-title {
+    display: none !important;
+  }
+
+  .game-command-dock-attack .actions-section {
+    grid-template-columns:
+      minmax(240px, 1.28fr)
+      minmax(200px, 1fr)
+      minmax(92px, 0.38fr)
+      minmax(220px, 0.92fr)
+      minmax(190px, 0.78fr) !important;
+    grid-template-rows: auto 58px !important;
+    column-gap: 20px !important;
+    row-gap: 6px !important;
+  }
+
+  .game-command-dock-fortify .actions-section {
+    grid-template-columns:
+      minmax(220px, 1.15fr)
+      minmax(200px, 1fr)
+      minmax(120px, 0.58fr)
+      minmax(200px, 0.9fr)
+      minmax(170px, 0.72fr) !important;
+    grid-template-rows: auto 58px !important;
+    column-gap: 20px !important;
+    row-gap: 6px !important;
+  }
+
+  .game-command-dock-attack #attack-group,
+  .game-command-dock-fortify #fortify-group,
+  .game-command-dock-attack #attack-group .action-stack,
+  .game-command-dock-fortify #fortify-group .action-stack {
+    display: contents !important;
+  }
+
+  .game-command-dock-attack #attack-group > label,
+  .game-command-dock-fortify #fortify-group > label,
+  .game-command-dock-attack #attack-group .game-dock-select-label,
+  .game-command-dock-fortify #fortify-group .game-dock-select-label {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+  }
+
+  .game-command-dock-attack #attack-group > label,
+  .game-command-dock-fortify #fortify-group > label,
+  .game-command-dock-attack #attack-group .game-dock-select-label > span,
+  .game-command-dock-fortify #fortify-group .game-dock-select-label > span {
+    display: block !important;
+    margin: 0 0 7px !important;
+    color: var(--nr-gold) !important;
+    font-size: 0.68rem !important;
+    font-weight: 950 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: uppercase !important;
+  }
+
+  .game-command-dock-attack #attack-group > label,
+  .game-command-dock-fortify #fortify-group > label {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    align-self: end !important;
+  }
+
+  .game-command-dock-attack #attack-from,
+  .game-command-dock-fortify #fortify-from {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .game-command-dock-attack #attack-group .action-stack > .game-dock-select-label:nth-of-type(1),
+  .game-command-dock-fortify #fortify-group .action-stack > .game-dock-select-label:nth-of-type(1) {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    align-self: end !important;
+  }
+
+  .game-command-dock-attack #attack-group .action-stack > .game-dock-select-label:nth-of-type(2),
+  .game-command-dock-fortify #fortify-group .action-stack > .game-dock-select-label:nth-of-type(2) {
+    grid-column: 3 !important;
+    grid-row: 1 / span 2 !important;
+    align-self: end !important;
+  }
+
+  .game-command-dock-attack #attack-group .action-row {
+    grid-column: 4 !important;
+    grid-row: 2 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0 !important;
+    align-self: stretch !important;
+    min-width: 0 !important;
+  }
+
+  .game-command-dock-fortify #fortify-button {
+    grid-column: 4 !important;
+    grid-row: 2 !important;
+    align-self: stretch !important;
+  }
+
+  .game-command-dock-attack #end-turn-button,
+  .game-command-dock-fortify #end-turn-button {
+    grid-column: 5 !important;
+    grid-row: 2 !important;
+    align-self: stretch !important;
+  }
+
+  .game-command-dock-attack select,
+  .game-command-dock-fortify select,
+  .game-command-dock-fortify input,
+  .game-command-dock-attack #attack-button,
+  .game-command-dock-attack #attack-banzai-button,
+  .game-command-dock-attack #end-turn-button,
+  .game-command-dock-fortify #fortify-button,
+  .game-command-dock-fortify #end-turn-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 58px !important;
+    height: 58px !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+  }
+
+  .game-command-dock-attack #attack-button,
+  .game-command-dock-fortify #fortify-button {
+    padding-inline: 18px !important;
+  }
+
+  .game-command-dock-attack #attack-banzai-button {
+    padding-inline: 8px !important;
+    font-size: 0.66rem !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  .game-command-dock-fortify:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-fortify:not(.game-command-dock-mandatory-trade) {
+    width: calc(100vw - 48px) !important;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 700px) {
+  .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  .game-command-dock-fortify:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-fortify:not(.game-command-dock-mandatory-trade) {
+    bottom: 18px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 700px) {
+  .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  .game-command-dock-fortify:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-attack:not(.game-command-dock-mandatory-trade),
+  html[data-theme="war-table"]
+    .game-map-first-page
+    .game-command-dock-fortify:not(.game-command-dock-mandatory-trade) {
+    width: min(1340px, calc(100vw - 330px)) !important;
+  }
+
+  .game-command-dock-attack .actions-section {
+    grid-template-columns:
+      minmax(190px, 1.2fr)
+      minmax(180px, 1fr)
+      minmax(86px, 0.38fr)
+      minmax(198px, 0.88fr)
+      minmax(176px, 0.76fr) !important;
+    column-gap: 16px !important;
+  }
+
+  .game-command-dock-fortify .actions-section {
+    grid-template-columns:
+      minmax(190px, 1.12fr)
+      minmax(180px, 1fr)
+      minmax(132px, 0.6fr)
+      minmax(198px, 0.88fr)
+      minmax(166px, 0.72fr) !important;
+    column-gap: 16px !important;
+  }
+}
