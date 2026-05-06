@@ -6782,6 +6782,38 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
       minmax(0, 0.78fr) !important;
     column-gap: 10px !important;
   }
+
+  .game-command-dock-fortify .actions-section {
+    grid-template-columns:
+      minmax(0, 1.12fr)
+      minmax(0, 1fr)
+      minmax(82px, 0.56fr)
+      minmax(0, 0.9fr)
+      minmax(0, 0.72fr) !important;
+    column-gap: 10px !important;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1321px) {
+  .game-command-dock-attack .actions-section {
+    grid-template-columns:
+      minmax(0, 1.18fr)
+      minmax(0, 1fr)
+      minmax(76px, 0.42fr)
+      minmax(0, 0.9fr)
+      minmax(0, 0.78fr) !important;
+    column-gap: 14px !important;
+  }
+
+  .game-command-dock-fortify .actions-section {
+    grid-template-columns:
+      minmax(0, 1.12fr)
+      minmax(0, 1fr)
+      minmax(96px, 0.56fr)
+      minmax(0, 0.9fr)
+      minmax(0, 0.72fr) !important;
+    column-gap: 14px !important;
+  }
 }
 
 @media (min-width: 761px) and (max-height: 700px) {
