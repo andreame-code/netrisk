@@ -35,6 +35,22 @@ create table if not exists public.app_state (
   key text primary key,
   value_json jsonb not null
 );
+
+alter table public.users enable row level security;
+alter table public.sessions enable row level security;
+alter table public.games enable row level security;
+alter table public.app_state enable row level security;
+
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on table public.users, public.sessions, public.games, public.app_state from anon;
+  end if;
+
+  if exists (select 1 from pg_roles where rolname = 'authenticated') then
+    revoke all on table public.users, public.sessions, public.games, public.app_state from authenticated;
+  end if;
+end $$;
 `.trim() + "\n";
 
 export function getSupabaseSchemaSql(): string {
