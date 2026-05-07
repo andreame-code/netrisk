@@ -5,6 +5,8 @@ const {
   ensureAllowedContentId,
   moduleEntriesForSelection
 } = require("./module-runtime-contributions.cjs");
+const { projectRuntimeCatalogInputs } =
+  require("./module-runtime-catalog-projection.cjs") as typeof import("./module-runtime-catalog-projection.cjs");
 const { listCardRuleSets } = require("../shared/cards.cjs");
 const {
   findCoreBaseSupportedMap,
@@ -963,23 +965,20 @@ function buildResolvedModuleCatalog(
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
-  const enabled = clonedModules.filter(
-    (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
-  );
-  const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) =>
-    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
-  );
-  const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) =>
-    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
-  );
-  const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) =>
-    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
-  );
-  const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) =>
-    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
-  );
-  const enabledRuntimeSiteThemeEntries = runtimeSiteThemeEntries.filter((entry) =>
-    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  const {
+    enabledModules: enabled,
+    enabledRuntimeMapEntries,
+    enabledRuntimeContentPackEntries,
+    enabledRuntimePlayerPieceSetEntries,
+    enabledRuntimeDiceRuleSetEntries,
+    enabledRuntimeSiteThemeEntries
+  } = projectRuntimeCatalogInputs(
+    clonedModules,
+    runtimeMapEntries,
+    runtimeContentPackEntries,
+    runtimePlayerPieceSetEntries,
+    runtimeDiceRuleSetEntries,
+    runtimeSiteThemeEntries
   );
   const content = aggregateContentContribution(
     enabled,
