@@ -25,6 +25,7 @@ import {
   parsePositiveInteger,
   selectOrFallback
 } from "@react-shell/gameplay-selections";
+import { buildGameplayViewState } from "@react-shell/gameplay-view-state";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import {
@@ -354,57 +355,34 @@ export function GameRoute() {
   const resolvedGameId = snapshot?.gameId || routeGameId;
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
 
-  const playersById: Record<string, SnapshotPlayer> = {};
-  for (const player of snapshot?.players || []) {
-    playersById[player.id] = player;
-  }
-
-  const territoriesById: Record<string, SnapshotTerritory> = {};
-  for (const territory of snapshot?.map || []) {
-    territoriesById[territory.id] = territory;
-  }
-
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
-  const me = myPlayerId ? playersById[myPlayerId] || null : null;
-  const activePlayer = snapshot?.currentPlayerId
-    ? playersById[snapshot.currentPlayerId] || null
-    : null;
-  const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
-  const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
+  const {
+    playersById,
+    territoriesById,
+    me,
+    activePlayer,
+    winner,
+    playerHand,
+    myTerritories,
+    currentVersion,
+    isMyTurn,
+    mustTradeCards,
+    showLobbyControls,
+    showJoinLobby,
+    showStartGame,
+    showReinforceGroup,
+    showAttackGroup,
+    showConquestGroup,
+    showFortifyGroup,
+    showEndTurn,
+    showSurrender
+  } = buildGameplayViewState(snapshot, myPlayerId);
   const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
   const activityLogEntries = activityLogEntriesForSnapshot(snapshot);
   const activityLogContentKey = activityLogEntries
     .map((entry) => `${entry.category}:${entry.text.length}:${entry.text}`)
     .join("|");
-  const myTerritories = (snapshot?.map || []).filter(
-    (territory) => territory.ownerId === myPlayerId
-  );
-  const currentVersion =
-    snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
-  const isMyTurn = Boolean(
-    snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
-  );
-  const mustTradeCards = Boolean(
-    isMyTurn && snapshot?.cardState?.currentPlayerMustTrade && playerHand.length
-  );
-  const showLobbyControls = snapshot?.phase === "lobby";
-  const showJoinLobby = snapshot?.phase === "lobby" && !myPlayerId;
-  const showStartGame = snapshot?.phase === "lobby" && Boolean(myPlayerId);
-  const showReinforceGroup = Boolean(
-    isMyTurn &&
-    snapshot?.turnPhase === "reinforcement" &&
-    Number(snapshot?.reinforcementPool || 0) > 0
-  );
-  const showAttackGroup = Boolean(
-    isMyTurn && snapshot?.turnPhase === "attack" && !snapshot?.pendingConquest
-  );
-  const showConquestGroup = Boolean(isMyTurn && snapshot?.pendingConquest);
-  const showFortifyGroup = Boolean(isMyTurn && snapshot?.turnPhase === "fortify");
-  const showEndTurn = Boolean(
-    isMyTurn && snapshot?.phase === "active" && snapshot?.turnPhase !== "reinforcement"
-  );
-  const showSurrender = Boolean(myPlayerId && snapshot?.phase === "active");
   const reinforceTerritoryId = selectOrFallback(
     selectedReinforceTerritoryId,
     myTerritories,
