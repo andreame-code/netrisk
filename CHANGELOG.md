@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.008 - 2026-05-07
+
+- Added direct regression coverage for shared route request and response validation helpers.
+
 ## 0.1.007 - 2026-05-07
 
 - Hardened request handling in the custom HTTP server against malformed Host headers and prioritized security header application.
