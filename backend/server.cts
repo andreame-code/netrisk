@@ -1816,9 +1816,15 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function handleRequest(req: Request, res: Response) {
-    const url = new URL(req.url || "/", "http://" + req.headers.host);
-
     addSecurityHeaders(res);
+
+    let url: URL;
+    try {
+      url = new URL(req.url || "/", "http://" + req.headers.host);
+    } catch (error) {
+      sendLocalizedError(res, 400, error, "Richiesta non valida.", "server.request.invalid");
+      return;
+    }
 
     Promise.resolve()
       .then(() => {
