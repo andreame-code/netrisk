@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.007 - 2026-05-07
+
+- Hardened request handling in the custom HTTP server against malformed Host headers and prioritized security header application.
+
 ## 0.1.006 - 2026-05-06
 
 - Added central functional module versioning, compatibility validation, and CI bump protection for module-owned changes.
