@@ -60,7 +60,12 @@ const {
   startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
-const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
+const {
+  isInvalidExpectedVersion,
+  persistBroadcastAndSendMutation,
+  readExpectedVersionOrSendError,
+  sendVersionConflict
+} = require("./game-mutation.cjs");
 
 async function handleAiJoinRoute(
   req: unknown,
@@ -163,17 +168,12 @@ async function handleJoinRoute(
     return;
   }
 
-  if (
-    body.expectedVersion != null &&
-    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
-  ) {
-    sendLocalizedError(
-      res,
-      400,
-      null,
-      "expectedVersion non valida.",
-      "server.invalidExpectedVersion"
-    );
+  const preflightExpectedVersion = readExpectedVersionOrSendError(
+    body,
+    res,
+    sendLocalizedError as SendLocalizedError
+  );
+  if (isInvalidExpectedVersion(preflightExpectedVersion)) {
     return;
   }
 

@@ -36,6 +36,7 @@ type LocalizedPayload = (
   fallbackMessageKey?: string
 ) => Record<string, unknown>;
 type HandleVersionConflict = (error: unknown) => boolean;
+const invalidExpectedVersion = Symbol("invalidExpectedVersion");
 
 type VersionConflictOptions = {
   res: unknown;
@@ -64,6 +65,38 @@ type MutationOptions = {
   handleVersionConflict?: HandleVersionConflict;
   payload?: Record<string, unknown>;
 };
+
+type ExpectedVersionResult = number | null | typeof invalidExpectedVersion;
+
+function readExpectedVersionOrSendError(
+  body: Record<string, unknown>,
+  res: unknown,
+  sendLocalizedError: SendLocalizedError
+): ExpectedVersionResult {
+  if (body.expectedVersion == null) {
+    return null;
+  }
+
+  const expectedVersion = Number(body.expectedVersion);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "expectedVersion non valida.",
+      "server.invalidExpectedVersion"
+    );
+    return invalidExpectedVersion;
+  }
+
+  return expectedVersion;
+}
+
+function isInvalidExpectedVersion(
+  expectedVersion: ExpectedVersionResult
+): expectedVersion is typeof invalidExpectedVersion {
+  return expectedVersion === invalidExpectedVersion;
+}
 
 function conflictPayload(options: VersionConflictOptions): Record<string, unknown> {
   const error = options.error || null;
@@ -161,6 +194,8 @@ async function persistBroadcastAndSendMutation(options: MutationOptions): Promis
 }
 
 module.exports = {
+  isInvalidExpectedVersion,
   persistBroadcastAndSendMutation,
+  readExpectedVersionOrSendError,
   sendVersionConflict
 };
