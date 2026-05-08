@@ -406,57 +406,60 @@ register(
   }
 );
 
-register("module runtime sanitizza sourcePath per non esporre percorsi assoluti server", async () => {
-  await withModuleServer(
-    [
-      {
-        dir: "demo.sanitized",
-        manifest: {
-          schemaVersion: 1,
-          id: "demo.sanitized",
-          version: "1.0.0",
-          displayName: "Demo Sanitized",
-          engineVersion: "1.0.0",
-          kind: "hybrid",
-          capabilities: []
+register(
+  "module runtime sanitizza sourcePath per non esporre percorsi assoluti server",
+  async () => {
+    await withModuleServer(
+      [
+        {
+          dir: "demo.sanitized",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.sanitized",
+            version: "1.0.0",
+            displayName: "Demo Sanitized",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            capabilities: []
+          }
         }
+      ],
+      async ({ app, adminSessionToken, tempRoot }) => {
+        const catalogResponse = await callApp(
+          app,
+          "GET",
+          "/api/modules",
+          undefined,
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(catalogResponse.statusCode, 200);
+
+        const sanitizedModule = catalogResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.sanitized"
+        );
+        const coreModule = catalogResponse.payload.modules.find(
+          (entry: any) => entry.id === CORE_MODULE_ID
+        );
+
+        assert.equal(Boolean(sanitizedModule), true);
+        assert.equal(sanitizedModule.sourcePath.includes(tempRoot), false);
+        assert.match(sanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
+
+        assert.equal(Boolean(coreModule), true);
+        assert.equal(coreModule.sourcePath.includes(tempRoot), false);
+        assert.match(coreModule.sourcePath, /^modules\/core\.base\/module\.json$/);
+
+        const optionsResponse = await callApp(app, "GET", "/api/modules/options");
+        assert.equal(optionsResponse.statusCode, 200);
+        const optionsSanitizedModule = optionsResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.sanitized"
+        );
+        assert.equal(optionsSanitizedModule.sourcePath.includes(tempRoot), false);
+        assert.match(optionsSanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
       }
-    ],
-    async ({ app, adminSessionToken, tempRoot }) => {
-      const catalogResponse = await callApp(
-        app,
-        "GET",
-        "/api/modules",
-        undefined,
-        authHeaders(adminSessionToken)
-      );
-      assert.equal(catalogResponse.statusCode, 200);
-
-      const sanitizedModule = catalogResponse.payload.modules.find(
-        (entry: any) => entry.id === "demo.sanitized"
-      );
-      const coreModule = catalogResponse.payload.modules.find(
-        (entry: any) => entry.id === CORE_MODULE_ID
-      );
-
-      assert.equal(Boolean(sanitizedModule), true);
-      assert.equal(sanitizedModule.sourcePath.includes(tempRoot), false);
-      assert.match(sanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
-
-      assert.equal(Boolean(coreModule), true);
-      assert.equal(coreModule.sourcePath.includes(tempRoot), false);
-      assert.match(coreModule.sourcePath, /^modules\/core\.base\/module\.json$/);
-
-      const optionsResponse = await callApp(app, "GET", "/api/modules/options");
-      assert.equal(optionsResponse.statusCode, 200);
-      const optionsSanitizedModule = optionsResponse.payload.modules.find(
-        (entry: any) => entry.id === "demo.sanitized"
-      );
-      assert.equal(optionsSanitizedModule.sourcePath.includes(tempRoot), false);
-      assert.match(optionsSanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
-    }
-  );
-});
+    );
+  }
+);
 
 register("module runtime enforces module API and save-game manifest compatibility", async () => {
   await withModuleServer(
