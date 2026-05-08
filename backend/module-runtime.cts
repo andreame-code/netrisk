@@ -327,9 +327,32 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
   };
 }
 
-function cloneInstalledModule(moduleEntry: NetRiskInstalledModule): NetRiskInstalledModule {
+function sanitizeModuleSourcePath(sourcePath: string, projectRoot?: string): string {
+  if (!projectRoot || !sourcePath) {
+    return sourcePath;
+  }
+
+  const absoluteRoot = path.resolve(projectRoot);
+  const absoluteSource = path.resolve(sourcePath);
+
+  if (absoluteSource === absoluteRoot) {
+    return ".";
+  }
+
+  if (absoluteSource.startsWith(absoluteRoot + path.sep)) {
+    return path.relative(absoluteRoot, absoluteSource).replace(/\\/g, "/");
+  }
+
+  return sourcePath;
+}
+
+function cloneInstalledModule(
+  moduleEntry: NetRiskInstalledModule,
+  projectRoot?: string
+): NetRiskInstalledModule {
   return {
     ...moduleEntry,
+    sourcePath: sanitizeModuleSourcePath(moduleEntry.sourcePath, projectRoot),
     manifest: moduleEntry.manifest
       ? {
           ...moduleEntry.manifest,
@@ -960,9 +983,10 @@ function buildResolvedModuleCatalog(
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
-  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [],
+  projectRoot?: string
 ): NetRiskResolvedModuleCatalog {
-  const clonedModules = modules.map(cloneInstalledModule);
+  const clonedModules = modules.map((m) => cloneInstalledModule(m, projectRoot));
   const enabled = clonedModules.filter(
     (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
   );
@@ -1002,7 +1026,7 @@ function buildResolvedModuleCatalog(
     enabledModules: enabledReferences(clonedModules),
     gameModules: enabled
       .filter((moduleEntry) => moduleEntry.kind !== "ui")
-      .map(cloneInstalledModule),
+      .map((m) => cloneInstalledModule(m, projectRoot)),
     content,
     maps: filterMapsByAllowedIds(
       [
@@ -1095,7 +1119,8 @@ function buildModuleOptions(
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
-  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [],
+  projectRoot?: string
 ): ModuleOptionsSnapshot {
   const resolvedCatalog = buildResolvedModuleCatalog(
     modules,
@@ -1104,7 +1129,8 @@ function buildModuleOptions(
     runtimePlayerPieceSetEntries,
     runtimeDiceRuleSetEntries,
     runtimeSiteThemeEntries,
-    authoredVictoryRuleSets
+    authoredVictoryRuleSets,
+    projectRoot
   );
 
   return {
@@ -2105,13 +2131,13 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
     });
 
-    cachedModules = modules.map(cloneInstalledModule);
-    return cachedModules.map(cloneInstalledModule);
+    cachedModules = modules.map((m) => cloneInstalledModule(m));
+    return cachedModules.map((m) => cloneInstalledModule(m));
   }
 
   async function ensureCatalog(): Promise<NetRiskInstalledModule[]> {
     if (cachedModules.length) {
-      return cachedModules.map(cloneInstalledModule);
+      return cachedModules.map((m) => cloneInstalledModule(m));
     }
 
     return buildCatalog();
@@ -2136,7 +2162,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       listEnabledRuntimePlayerPieceSets(modules),
       listEnabledRuntimeDiceRuleSets(modules),
       listEnabledRuntimeSiteThemes(modules),
-      authoredVictoryRuleSets
+      authoredVictoryRuleSets,
+      options.projectRoot
     );
   }
 
@@ -2162,10 +2189,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   return {
     async rescan() {
       cachedModules = [];
-      return ensureCatalog();
+      return (await ensureCatalog()).map((m) => cloneInstalledModule(m, options.projectRoot));
     },
     async listInstalledModules() {
-      return ensureCatalog();
+      return (await ensureCatalog()).map((m) => cloneInstalledModule(m, options.projectRoot));
     },
     async getModuleOptions() {
       return getModuleOptions();

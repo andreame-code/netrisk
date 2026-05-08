@@ -12,3 +12,8 @@
 **Vulnerability:** Malformed Host headers caused the custom HTTP server to throw unhandled TypeErrors during URL initialization, potentially leading to service instability or ungraceful error states.
 **Learning:** Node.js's `new URL()` constructor throws on invalid input. In a custom server implementation, this must be handled explicitly at the boundary. Furthermore, applying security headers *after* potential crash points leaves error responses unprotected.
 **Prevention:** Wrap request boundary parsing in try-catch blocks and prioritize the application of security headers to ensure all response paths, including early failures, are hardened.
+
+## 2026-05-15 - Sanitized API Path Exposure
+**Vulnerability:** Absolute server-side filesystem paths were being exposed in the module management API, disclosing internal directory structures to users.
+**Learning:** Metadata that includes server-side state (like installation paths) must be sanitized at the API boundary. Even for administrative interfaces, leaking the host's directory structure increases the risk of successful path traversal or system mapping.
+**Prevention:** Always convert absolute filesystem paths to project-relative paths before sending them to the client. Use centralized sanitization logic at the service layer to ensure consistent behavior across all endpoints returning similar metadata.
