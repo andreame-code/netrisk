@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const { createSupabaseDatastore } = require("../../../backend/datastore-supabase.cjs");
 const { checkSupabaseConnection } = require("../../../scripts/check-supabase-connection.cjs");
+const { getSupabaseSchemaSql } = require("../../../supabase/schema.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -102,6 +103,56 @@ register("Supabase connection check fails clearly when REST auth is invalid", as
         tables: ["users"]
       }),
     /Supabase connection check failed for table users \(401\)/
+  );
+});
+
+register("Supabase datastore ignores public keys and requires the service role key", () => {
+  const previousEnv = {
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+  };
+
+  try {
+    process.env.SUPABASE_ANON_KEY = "anon-key";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "publishable-key";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "next-public-anon-key";
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    assert.throws(
+      () =>
+        createSupabaseDatastore({
+          supabaseUrl: "https://example.supabase.co"
+        }),
+      /SUPABASE_SERVICE_ROLE_KEY/
+    );
+  } finally {
+    Object.entries(previousEnv).forEach(([key, value]) => {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
+  }
+});
+
+register("Supabase schema enables RLS and revokes browser role table access", () => {
+  const schemaSql = getSupabaseSchemaSql();
+
+  ["users", "sessions", "games", "app_state"].forEach((table) => {
+    assert.match(schemaSql, new RegExp(`alter table public\\.${table} enable row level security;`));
+  });
+
+  assert.match(
+    schemaSql,
+    /revoke all on table public\.users, public\.sessions, public\.games, public\.app_state from anon;/
+  );
+  assert.match(
+    schemaSql,
+    /revoke all on table public\.users, public\.sessions, public\.games, public\.app_state from authenticated;/
   );
 });
 
