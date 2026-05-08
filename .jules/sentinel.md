@@ -7,3 +7,8 @@
 **Vulnerability:** The `/api/ai/join` endpoint was completely unauthenticated and unauthorized, allowing anyone to fill game lobbies with AI bots.
 **Learning:** Security controls must be applied consistently across all endpoints that mutate game state, regardless of whether they represent "human" or "system" actions. Partial authentication (securing `/api/join` but not `/api/ai/join`) creates easy bypasses for disruptive behavior.
 **Prevention:** Audit all endpoints in a feature set (e.g., game setup) to ensure they share the same security posture. Use centralized authorization policies (like `game:start`) to enforce consistent permissions.
+
+## 2026-05-07 - Hardened Request Parsing and Early Security Headers
+**Vulnerability:** Malformed Host headers caused the custom HTTP server to throw unhandled TypeErrors during URL initialization, potentially leading to service instability or ungraceful error states.
+**Learning:** Node.js's `new URL()` constructor throws on invalid input. In a custom server implementation, this must be handled explicitly at the boundary. Furthermore, applying security headers *after* potential crash points leaves error responses unprotected.
+**Prevention:** Wrap request boundary parsing in try-catch blocks and prioritize the application of security headers to ensure all response paths, including early failures, are hardened.

@@ -12,6 +12,7 @@
     "build:frontend": "node .tsbuild/scripts/sync-shared-runtime-validation-frontend.cjs && tsc -p tsconfig.frontend.json --incremental false && node .tsbuild/scripts/sync-public-assets.cjs",
     "build:react-shell": "vite build --config frontend/react-shell/vite.config.ts",
     "check:ts-sources": "node .tsbuild/scripts/check-no-js-sources.cjs",
+    "check:module-versioning": "npm run build:ts && node .tsbuild/scripts/check-module-versioning.cjs",
     "dev:react-shell": "vite --config frontend/react-shell/vite.config.ts",
     "lint": "eslint \"backend/**/*.{ts,cts,mts}\" \"frontend/src/**/*.{ts,cts,mts,d.ts}\" \"frontend/react-shell/**/*.{ts,tsx,d.ts}\" \"shared/**/*.{ts,cts,mts,d.ts}\" \"scripts/**/*.{ts,cts,mts}\" \"tests/**/*.{ts,cts,mts,d.ts}\" \"api/**/*.{ts,cts,mts,d.ts}\" \"supabase/**/*.{ts,cts,mts,d.ts}\"",
     "lint:fix": "npm run lint -- --fix",

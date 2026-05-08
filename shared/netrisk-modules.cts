@@ -8,6 +8,7 @@ import {
   NETRISK_MODULE_CAPABILITY_KIND_VALUES,
   NETRISK_UI_SLOT_ID_VALUES
 } from "./runtime-validation.cjs";
+import { isValidModuleSemver, isValidVersionRange } from "./module-versions.cjs";
 
 export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
@@ -342,9 +343,14 @@ function normalizeDependency(raw: unknown, sourcePath: string): NetRiskModuleDep
     throw new Error(`Invalid module dependency in "${sourcePath}".`);
   }
 
+  const version = isNonEmptyString(raw.version) ? String(raw.version).trim() : null;
+  if (version && !isValidVersionRange(version)) {
+    throw new Error(`Invalid module dependency version range in "${sourcePath}".`);
+  }
+
   return {
     id: String(raw.id).trim(),
-    version: isNonEmptyString(raw.version) ? String(raw.version).trim() : null,
+    version,
     optional: Boolean(raw.optional)
   };
 }
@@ -864,6 +870,10 @@ export function validateNetRiskModuleManifest(
     !isNonEmptyString(raw.engineVersion)
   ) {
     throw new Error(`Module manifest "${sourcePath}" is missing required string fields.`);
+  }
+
+  if (!isValidModuleSemver(String(raw.version).trim())) {
+    throw new Error(`Module manifest "${sourcePath}" has invalid SemVer.`);
   }
 
   return {

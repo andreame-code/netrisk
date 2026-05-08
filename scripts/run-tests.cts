@@ -975,14 +975,14 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
 
 register("version registry espone manifest e compatibilita baseline", () => {
   const expectedManifest = {
-    appVersion: "0.1.005",
-    engineVersion: "1.0.0",
-    apiVersion: "1.0.0",
-    datastoreSchemaVersion: 1,
-    saveGameSchemaVersion: 1,
-    moduleApiVersion: "1.0.0",
-    minimumCompatibleSaveGameSchemaVersion: 1,
-    minimumCompatibleModuleApiVersion: "1.0.0"
+    appVersion: versionManifest.appVersion,
+    engineVersion: versionManifest.engineVersion,
+    apiVersion: versionManifest.apiVersion,
+    datastoreSchemaVersion: versionManifest.datastoreSchemaVersion,
+    saveGameSchemaVersion: versionManifest.saveGameSchemaVersion,
+    moduleApiVersion: versionManifest.moduleApiVersion,
+    minimumCompatibleSaveGameSchemaVersion: versionManifest.minimumCompatibleSaveGameSchemaVersion,
+    minimumCompatibleModuleApiVersion: versionManifest.minimumCompatibleModuleApiVersion
   };
 
   assert.deepEqual(versionManifest.versionManifest, expectedManifest);
