@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.009 - 2026-05-08
+
+- Added the Supabase CLI as a pinned development dependency and scoped the Supabase MCP config to the NetRisk project.
+
 ## 0.1.008 - 2026-05-08
 
 - Hardened Supabase datastore access by requiring the service-role key and enabling RLS guardrails for Supabase-backed tables.

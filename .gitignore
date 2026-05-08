@@ -3,6 +3,7 @@ npm-debug.log
 .env
 .env.local
 .env.*.local
+.mcp.json
 memory.md
 .tmp-SUPABASE_URL.txt
 .vercel/
@@ -21,6 +22,7 @@ test-results/
 coverage/
 /public/
 supabase/schema.sql
+supabase/.temp/
 .tmp-server-*.log
 .tsbuild/
 *.tsbuildinfo
