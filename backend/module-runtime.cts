@@ -327,13 +327,13 @@ function cloneSupportedMap(map: SupportedMap): SupportedMap {
   };
 }
 
-function sanitizeModuleSourcePath(sourcePath: string, projectRoot?: string): string {
-  if (!projectRoot || !sourcePath) {
-    return sourcePath;
+function sanitizeModuleApiPath(filePath: string, projectRoot?: string): string {
+  if (!projectRoot || !filePath) {
+    return filePath;
   }
 
   const absoluteRoot = path.resolve(projectRoot);
-  const absoluteSource = path.resolve(sourcePath);
+  const absoluteSource = path.resolve(filePath);
 
   if (absoluteSource === absoluteRoot) {
     return ".";
@@ -343,7 +343,7 @@ function sanitizeModuleSourcePath(sourcePath: string, projectRoot?: string): str
     return path.relative(absoluteRoot, absoluteSource).replace(/\\/g, "/");
   }
 
-  return sourcePath;
+  return filePath;
 }
 
 function cloneInstalledModule(
@@ -352,7 +352,7 @@ function cloneInstalledModule(
 ): NetRiskInstalledModule {
   return {
     ...moduleEntry,
-    sourcePath: sanitizeModuleSourcePath(moduleEntry.sourcePath, projectRoot),
+    sourcePath: sanitizeModuleApiPath(moduleEntry.sourcePath, projectRoot),
     manifest: moduleEntry.manifest
       ? {
           ...moduleEntry.manifest,
@@ -369,7 +369,9 @@ function cloneInstalledModule(
     capabilities: moduleEntry.capabilities.map((capability) => ({ ...capability })),
     warnings: [...moduleEntry.warnings],
     errors: [...moduleEntry.errors],
-    clientManifestPath: moduleEntry.clientManifestPath || null,
+    clientManifestPath: moduleEntry.clientManifestPath
+      ? sanitizeModuleApiPath(moduleEntry.clientManifestPath, projectRoot)
+      : null,
     clientManifest: moduleEntry.clientManifest
       ? {
           ...moduleEntry.clientManifest,
@@ -2143,6 +2145,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return buildCatalog();
   }
 
+  function cloneCatalogForApi(modules: NetRiskInstalledModule[]): NetRiskInstalledModule[] {
+    return modules.map((m) => cloneInstalledModule(m, options.projectRoot));
+  }
+
   async function listGames(): Promise<Array<Record<string, unknown>>> {
     if (typeof options.datastore.listGames !== "function") {
       return [];
@@ -2189,10 +2195,10 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   return {
     async rescan() {
       cachedModules = [];
-      return (await ensureCatalog()).map((m) => cloneInstalledModule(m, options.projectRoot));
+      return cloneCatalogForApi(await ensureCatalog());
     },
     async listInstalledModules() {
-      return (await ensureCatalog()).map((m) => cloneInstalledModule(m, options.projectRoot));
+      return cloneCatalogForApi(await ensureCatalog());
     },
     async getModuleOptions() {
       return getModuleOptions();
@@ -2353,7 +2359,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       if (target.id === CORE_MODULE_ID) {
-        return installedModules;
+        return cloneCatalogForApi(installedModules);
       }
 
       if (!target.compatible) {
@@ -2374,7 +2380,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
       await saveCatalogState(nextState);
       cachedModules = [];
-      return ensureCatalog();
+      return cloneCatalogForApi(await ensureCatalog());
     },
     async disableModule(moduleId: string) {
       if (moduleId === CORE_MODULE_ID) {
@@ -2404,7 +2410,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
       await saveCatalogState(nextState);
       cachedModules = [];
-      return ensureCatalog();
+      return cloneCatalogForApi(await ensureCatalog());
     },
     async resolveGameConfigDefaults(
       input: {
