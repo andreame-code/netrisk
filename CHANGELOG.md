@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.010 - 2026-05-09
+
+- Hardened authentication flow against timing-based username enumeration by ensuring consistent password hashing execution paths for all users.
+
 ## 0.1.009 - 2026-05-08
 
 - Added the Supabase CLI as a pinned development dependency and scoped the Supabase MCP config to the NetRisk project.
