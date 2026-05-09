@@ -165,28 +165,31 @@ function publicUser(user: StoredUser | null | undefined): PublicUser | null {
 }
 
 function verifyPassword(credentials: UserCredentials | undefined, password: unknown): boolean {
-  const record = credentials && credentials.password ? credentials.password : null;
-  if (!record) {
-    return false;
-  }
+  // Use a dummy record to ensure timing parity when credentials or password records are missing.
+  const dummyHash = "0000000000000000000000000000000000000000000000000000000000000000";
+  const dummySalt = "00000000000000000000000000000000";
 
-  if (!record.salt || !record.hash) {
-    return false;
-  }
+  const record = credentials && credentials.password ? credentials.password : null;
+  const hasValidRecord = Boolean(record && record.salt && record.hash);
+
+  const algorithm = hasValidRecord && record ? record.algorithm : "scrypt";
+  const salt = hasValidRecord && record ? record.salt! : dummySalt;
+  const expectedHash = hasValidRecord && record ? record.hash! : dummyHash;
 
   let candidate: string;
-  if (record.algorithm === "scrypt" || !record.digest) {
-    const keylen = Number.isInteger(record.keylen) ? record.keylen : 64;
-    candidate = crypto.scryptSync(String(password || ""), record.salt, keylen).toString("hex");
+  if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
+    const keylen = hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
+    candidate = crypto.scryptSync(String(password || ""), salt, keylen).toString("hex");
   } else {
-    const iterations = Number.isInteger(record.iterations) ? record.iterations : 120000;
-    const digest = record.digest || "sha256";
+    const iterations =
+      hasValidRecord && record && Number.isInteger(record.iterations) ? record.iterations! : 120000;
+    const digest = (hasValidRecord && record ? record.digest : null) || "sha256";
     candidate = crypto
-      .pbkdf2Sync(String(password || ""), record.salt, iterations, 32, digest)
+      .pbkdf2Sync(String(password || ""), salt, iterations, 32, digest)
       .toString("hex");
   }
 
-  const expectedBuffer = Buffer.from(record.hash, "hex");
+  const expectedBuffer = Buffer.from(expectedHash, "hex");
   const candidateBuffer = Buffer.from(candidate, "hex");
 
   // We use timingSafeEqual to prevent timing attacks.
@@ -197,7 +200,10 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     return false;
   }
 
-  return crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
+  const matches = crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
+
+  // We only return true if the record was actually valid AND the hash matched.
+  return hasValidRecord && matches;
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
@@ -451,7 +457,8 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      runDummyPasswordVerification();
+      // Note: verifyPassword(undefined, password) already performs dummy hashing.
+      verifyPassword(undefined, password);
       return null;
     }
 
@@ -463,15 +470,20 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       const expectedBuffer = Buffer.from(expectedSecret);
       const providedBuffer = Buffer.from(providedSecret);
 
+      let legacyMatches = true;
+
       // If lengths differ, we compare expected with itself to maintain timing parity
       // and satisfy CodeQL without using SHA-256 on password data.
       if (expectedBuffer.length !== providedBuffer.length) {
         crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
-        runDummyPasswordVerification();
-        return null;
+        legacyMatches = false;
+      } else if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+        legacyMatches = false;
       }
 
-      if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+      if (!legacyMatches) {
+        // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
+        // with the non-legacy success path which would normally proceed to scrypt hashing.
         runDummyPasswordVerification();
         return null;
       }
