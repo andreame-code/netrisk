@@ -178,7 +178,8 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
 
   let candidate: string;
   if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
-    const keylen = hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
+    const keylen =
+      hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
     candidate = crypto.scryptSync(String(password || ""), salt, keylen).toString("hex");
   } else {
     const iterations =
