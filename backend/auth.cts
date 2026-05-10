@@ -332,9 +332,6 @@ function accountSettingsValidationError(
     return authFailure("Nessuna modifica da salvare.", "auth.account.noChanges");
   }
 
-  if (input.currentPassword.length > 128) {
-    return authFailure("Password attuale non valida.", "auth.account.currentPasswordInvalid");
-  }
 
   if (hasEmailChange && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
     return authFailure("Email non valida.", "auth.register.invalidEmail");
@@ -436,22 +433,35 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   }
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
+    let passwordToVerify = password;
     if (String(password || "").length > 128) {
-      // Avoid expensive hashing for extremely long passwords.
-      verifyPassword(undefined, password);
-      return null;
+      // Avoid expensive hashing for extremely long passwords to mitigate DoS.
+      // We use a short constant string for the dummy hashing operation to maintain timing parity.
+      passwordToVerify = "__LONG_PASSWORD_PLACEHOLDER__";
     }
+
+    const onLongPasswordFailure = () => {
+      if (passwordToVerify !== password) {
+        verifyPassword(undefined, passwordToVerify);
+        return true;
+      }
+      return false;
+    };
 
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      // Note: verifyPassword(undefined, password) already performs dummy hashing.
-      verifyPassword(undefined, password);
+      // Note: verifyPassword(undefined, ...) already performs dummy hashing.
+      verifyPassword(undefined, passwordToVerify);
+      return null;
+    }
+
+    if (onLongPasswordFailure()) {
       return null;
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
-      const providedSecret = String(password || "");
+      const providedSecret = String(passwordToVerify || "");
       const expectedSecret = user.credentials.password.secret;
 
       // Use timing-safe comparison for legacy plaintext secrets.
@@ -472,13 +482,13 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       if (!legacyMatches) {
         // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
         // with the non-legacy success path which would normally proceed to scrypt hashing.
-        verifyPassword(undefined, password);
+        verifyPassword(undefined, passwordToVerify);
         return null;
       }
 
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(password)
+        password: passwordRecord(passwordToVerify)
       };
 
       return (
@@ -489,14 +499,14 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       );
     }
 
-    if (!verifyPassword(user.credentials, password)) {
+    if (!verifyPassword(user.credentials, passwordToVerify)) {
       return null;
     }
 
     if (user.credentials?.password?.algorithm !== "scrypt") {
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(password)
+        password: passwordRecord(passwordToVerify)
       };
 
       return (
@@ -522,6 +532,8 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (await findByUsername(input.username)) {
+      // Dummy hashing to maintain timing parity when username is already taken.
+      verifyPassword(undefined, input.password);
       return authFailure("Utente gia registrato.", "auth.register.userExists");
     }
 
