@@ -170,6 +170,12 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   const dummySalt = "00000000000000000000000000000000";
 
+  let passwordToVerify = password;
+  if (String(password || "").length > 128) {
+    // Avoid expensive hashing for extremely long passwords to mitigate DoS.
+    passwordToVerify = "__LONG_PASSWORD_PLACEHOLDER__";
+  }
+
   const record = credentials && credentials.password ? credentials.password : null;
   const hasValidRecord = Boolean(record && record.salt && record.hash);
 
@@ -181,13 +187,13 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
   if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
     const keylen =
       hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
-    candidate = crypto.scryptSync(String(password || ""), salt, keylen).toString("hex");
+    candidate = crypto.scryptSync(String(passwordToVerify || ""), salt, keylen).toString("hex");
   } else {
     const iterations =
       hasValidRecord && record && Number.isInteger(record.iterations) ? record.iterations! : 120000;
     const digest = (hasValidRecord && record ? record.digest : null) || "sha256";
     candidate = crypto
-      .pbkdf2Sync(String(password || ""), salt, iterations, 32, digest)
+      .pbkdf2Sync(String(passwordToVerify || ""), salt, iterations, 32, digest)
       .toString("hex");
   }
 
@@ -432,35 +438,23 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   }
 
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
-    let passwordToVerify = password;
-    if (String(password || "").length > 128) {
-      // Avoid expensive hashing for extremely long passwords to mitigate DoS.
-      // We use a short constant string for the dummy hashing operation to maintain timing parity.
-      passwordToVerify = "__LONG_PASSWORD_PLACEHOLDER__";
-    }
-
-    const onLongPasswordFailure = () => {
-      if (passwordToVerify !== password) {
-        verifyPassword(undefined, passwordToVerify);
-        return true;
-      }
-      return false;
-    };
-
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      // Note: verifyPassword(undefined, ...) already performs dummy hashing.
-      verifyPassword(undefined, passwordToVerify);
+      // Note: verifyPassword(undefined, ...) already performs dummy hashing and DoS mitigation.
+      verifyPassword(undefined, password);
       return null;
     }
 
-    if (onLongPasswordFailure()) {
+    if (String(password || "").length > 128) {
+      // Avoid expensive hashing for extremely long passwords to mitigate DoS.
+      // We perform a dummy hashing operation via verifyPassword to maintain timing parity.
+      verifyPassword(undefined, password);
       return null;
     }
 
     if (typeof user.credentials?.password?.secret === "string") {
-      const providedSecret = String(passwordToVerify || "");
+      const providedSecret = String(password || "");
       const expectedSecret = user.credentials.password.secret;
 
       // Use timing-safe comparison for legacy plaintext secrets.
@@ -481,13 +475,13 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       if (!legacyMatches) {
         // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
         // with the non-legacy success path which would normally proceed to scrypt hashing.
-        verifyPassword(undefined, passwordToVerify);
+        verifyPassword(undefined, password);
         return null;
       }
 
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(passwordToVerify)
+        password: passwordRecord(password)
       };
 
       return (
@@ -498,14 +492,14 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       );
     }
 
-    if (!verifyPassword(user.credentials, passwordToVerify)) {
+    if (!verifyPassword(user.credentials, password)) {
       return null;
     }
 
     if (user.credentials?.password?.algorithm !== "scrypt") {
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(passwordToVerify)
+        password: passwordRecord(password)
       };
 
       return (
