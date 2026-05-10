@@ -166,7 +166,8 @@ function publicUser(user: StoredUser | null | undefined): PublicUser | null {
 
 function verifyPassword(credentials: UserCredentials | undefined, password: unknown): boolean {
   // Use a dummy record to ensure timing parity when credentials or password records are missing.
-  const dummyHash = "0000000000000000000000000000000000000000000000000000000000000000";
+  const dummyHash =
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
   const dummySalt = "00000000000000000000000000000000";
 
   const record = credentials && credentials.password ? credentials.password : null;
@@ -434,24 +435,10 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
-  function runDummyPasswordVerification() {
-    const dummySecret = "netrisk-auth-dummy";
-    const dummyCredentials: UserCredentials = {
-      password: {
-        algorithm: "scrypt",
-        salt: "00000000000000000000000000000000",
-        keylen: 64,
-        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-      }
-    };
-
-    verifyPassword(dummyCredentials, dummySecret);
-  }
-
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
     if (String(password || "").length > 128) {
       // Avoid expensive hashing for extremely long passwords.
-      runDummyPasswordVerification();
+      verifyPassword(undefined, password);
       return null;
     }
 
@@ -485,7 +472,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       if (!legacyMatches) {
         // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
         // with the non-legacy success path which would normally proceed to scrypt hashing.
-        runDummyPasswordVerification();
+        verifyPassword(undefined, password);
         return null;
       }
 
