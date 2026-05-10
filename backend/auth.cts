@@ -332,7 +332,6 @@ function accountSettingsValidationError(
     return authFailure("Nessuna modifica da salvare.", "auth.account.noChanges");
   }
 
-
   if (hasEmailChange && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
     return authFailure("Email non valida.", "auth.register.invalidEmail");
   }
