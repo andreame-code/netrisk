@@ -12,3 +12,8 @@
 **Vulnerability:** Malformed Host headers caused the custom HTTP server to throw unhandled TypeErrors during URL initialization, potentially leading to service instability or ungraceful error states.
 **Learning:** Node.js's `new URL()` constructor throws on invalid input. In a custom server implementation, this must be handled explicitly at the boundary. Furthermore, applying security headers *after* potential crash points leaves error responses unprotected.
 **Prevention:** Wrap request boundary parsing in try-catch blocks and prioritize the application of security headers to ensure all response paths, including early failures, are hardened.
+
+## 2026-05-25 - Timing-Safe Authentication and Username Enumeration Mitigation
+**Vulnerability:** The authentication flow was susceptible to timing-based username enumeration. If a user did not exist or had no password record (e.g., OAuth only), the system would skip hashing and return early, significantly faster than a successful or failed password check.
+**Learning:** Security-sensitive operations like password verification must maintain consistent timing profiles across all logic branches. Partial mitigations (like dummy hashing only when a user is found but credentials are missing) still leave gaps for non-existent users.
+**Prevention:** Hardened the core `verifyPassword` utility to always perform a hashing operation (using dummy salt/hash if necessary) even when user records are missing. This ensures consistent timing parity across the entire authentication boundary.
