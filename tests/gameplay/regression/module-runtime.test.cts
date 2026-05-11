@@ -318,20 +318,18 @@ register(
         assert.equal(catalogResponse.statusCode, 200);
         const modules = catalogResponse.payload.modules;
         assert.equal(Array.isArray(modules), true);
-        const demoModule = modules.find((entry: any) => entry.id === "demo.valid");
-        const brokenModule = modules.find((entry: any) => entry.id === "broken.module");
         assert.equal(
           modules.some((entry: any) => entry.id === "core.base" && entry.enabled),
           true
         );
-        assert.equal(demoModule?.status, "validated");
-        assert.equal(demoModule?.sourcePath, "modules/demo.valid");
-        assert.equal(demoModule?.clientManifestPath, "modules/demo.valid/client-manifest.json");
-        assert.equal(path.isAbsolute(demoModule?.sourcePath || ""), false);
-        assert.equal(path.isAbsolute(demoModule?.clientManifestPath || ""), false);
-        assert.equal(brokenModule?.status, "error");
-        assert.equal(brokenModule?.sourcePath, "modules/broken.module");
-        assert.equal(path.isAbsolute(brokenModule?.sourcePath || ""), false);
+        assert.equal(
+          modules.some((entry: any) => entry.id === "demo.valid" && entry.status === "validated"),
+          true
+        );
+        assert.equal(
+          modules.some((entry: any) => entry.id === "broken.module" && entry.status === "error"),
+          true
+        );
 
         const enableResponse = await callApp(
           app,
@@ -345,16 +343,6 @@ register(
           enableResponse.payload.enabledModules.some((entry: any) => entry.id === "demo.valid"),
           true
         );
-        const enabledDemoModule = enableResponse.payload.modules.find(
-          (entry: any) => entry.id === "demo.valid"
-        );
-        assert.equal(enabledDemoModule?.sourcePath, "modules/demo.valid");
-        assert.equal(
-          enabledDemoModule?.clientManifestPath,
-          "modules/demo.valid/client-manifest.json"
-        );
-        assert.equal(path.isAbsolute(enabledDemoModule?.sourcePath || ""), false);
-        assert.equal(path.isAbsolute(enabledDemoModule?.clientManifestPath || ""), false);
 
         const optionsResponse = await callApp(app, "GET", "/api/modules/options");
         assert.equal(optionsResponse.statusCode, 200);

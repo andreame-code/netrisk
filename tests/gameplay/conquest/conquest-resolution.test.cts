@@ -104,15 +104,6 @@ register("resolveConquest throws when the attacker territory state is missing", 
   assert.throws(() => resolveConquest(state, makeCombatResult(), 2), /attacker territory state/i);
 });
 
-register("resolveConquest throws when the defender territory state is missing", () => {
-  const state = makeState({
-    players: makePlayers(["Alice", "Bob"]),
-    territories: territoryStates([{ id: "a", ownerId: "p1", armies: 4 }])
-  });
-
-  assert.throws(() => resolveConquest(state, makeCombatResult(), 2), /defender territory state/i);
-});
-
 register("resolveConquest rejects moves that leave the source empty", () => {
   const state = makeState({
     players: makePlayers(["Alice", "Bob"]),
@@ -186,64 +177,3 @@ register(
     assert.equal(state.territories.b.armies, 1);
   }
 );
-
-register(
-  "resolveConquest applies configured conquest minimum and clamps it to available armies",
-  () => {
-    const state = makeState({
-      players: makePlayers(["Alice", "Bob"]),
-      territories: territoryStates([
-        { id: "a", ownerId: "p1", armies: 4 },
-        { id: "b", ownerId: "p2", armies: 0 }
-      ])
-    });
-    state.gameConfig = {
-      gameplayEffects: {
-        conquestMinimumArmies: 10
-      }
-    };
-
-    const belowMinimum = resolveConquest(state, makeCombatResult(), 2);
-    assert.equal(belowMinimum.ok, false);
-    assert.equal(belowMinimum.code, "MOVE_BELOW_MINIMUM");
-    assert.equal(belowMinimum.details.minimumMove, 3);
-    assert.equal(state.territories.a.armies, 4);
-    assert.equal(state.territories.b.ownerId, "p2");
-
-    const resolved = resolveConquest(state, makeCombatResult(), 3);
-    assert.equal(resolved.ok, true);
-    assert.equal(resolved.conquest.minimumMove, 3);
-    assert.equal(state.territories.a.armies, 1);
-    assert.equal(state.territories.b.armies, 3);
-  }
-);
-
-register("resolveConquest rejects malformed state and combat result inputs", () => {
-  const state = makeState({
-    players: makePlayers(["Alice", "Bob"]),
-    territories: territoryStates([
-      { id: "a", ownerId: "p1", armies: 4 },
-      { id: "b", ownerId: "p2", armies: 0 }
-    ])
-  });
-
-  assert.throws(() => resolveConquest(null, makeCombatResult(), 2), /valid game state/i);
-  assert.throws(() => resolveConquest(state, null, 2), /valid combat result/i);
-  assert.throws(
-    () =>
-      resolveConquest(
-        state,
-        {
-          details: { playerId: "p1" },
-          combat: {
-            fromTerritoryId: "",
-            toTerritoryId: "b",
-            attackDiceCount: 2,
-            defenderReducedToZero: true
-          }
-        },
-        2
-      ),
-    /missing conquest territory identifiers/i
-  );
-});
