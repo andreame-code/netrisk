@@ -269,7 +269,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "datastore",
     name: "Datastore",
     kind: "platform",
-    version: "1.0.1",
+    version: "1.0.2",
     description:
       "Game/session persistence, app state persistence, backups, and datastore schema use.",
     ownerPaths: [
