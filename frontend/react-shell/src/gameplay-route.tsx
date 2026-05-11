@@ -344,9 +344,8 @@ export function GameRoute() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
-  const [commandDockSheetState, setCommandDockSheetState] = useState<GameCommandDockSheetState>(
-    () => (isMobileCommandDockViewport() ? "half-open" : "collapsed")
-  );
+  const [commandDockSheetState, setCommandDockSheetState] =
+    useState<GameCommandDockSheetState>("collapsed");
   const isCommandDockExpanded = commandDockSheetState !== "collapsed";
 
   const gameplayQuery = useQuery({
@@ -550,44 +549,10 @@ export function GameRoute() {
   }, [activityLogContentKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
+    if (mustTradeCards) {
+      setCommandDockSheetState("expanded");
     }
-
-    const mediaQuery = window.matchMedia("(max-width: 760px)");
-
-    function syncMobileCommandSheet(event: MediaQueryList | MediaQueryListEvent): void {
-      if (!event.matches) {
-        setCommandDockSheetState((current) => (current === "half-open" ? "collapsed" : current));
-        return;
-      }
-
-      setCommandDockSheetState((current) => (current === "collapsed" ? "half-open" : current));
-    }
-
-    syncMobileCommandSheet(mediaQuery);
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncMobileCommandSheet);
-
-      return () => {
-        mediaQuery.removeEventListener("change", syncMobileCommandSheet);
-      };
-    }
-
-    const legacyMediaQuery = mediaQuery as MediaQueryList & {
-      addListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
-      removeListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
-    };
-
-    if (typeof legacyMediaQuery.addListener === "function") {
-      legacyMediaQuery.addListener(syncMobileCommandSheet);
-
-      return () => {
-        legacyMediaQuery.removeListener?.(syncMobileCommandSheet);
-      };
-    }
-  }, []);
+  }, [mustTradeCards]);
 
   const applyMutationPayload = useEffectEvent(
     (payload: GameMutationResponse, options: { feedback?: string } = {}) => {
@@ -1003,8 +968,12 @@ export function GameRoute() {
     setActiveDrawer((current) => (current === drawer ? null : drawer));
   }
 
+  const pageClassName = `game-map-first-page${
+    activeDrawer || isActivityLogOpen ? " has-open-drawer" : ""
+  }`;
+
   return (
-    <section className="game-map-first-page" data-testid="react-shell-game-page">
+    <section className={pageClassName} data-testid="react-shell-game-page">
       <section
         className="battlefield-layout game-battlefield-layout"
         data-testid="battlefield-layout"
@@ -1698,6 +1667,35 @@ export function GameRoute() {
               </button>
             </div>
           ) : null}
+
+          <nav
+            className="game-mobile-sheet-actions"
+            aria-label={t("game.command.heading")}
+            hidden={commandDockSheetState !== "expanded"}
+          >
+            {actionRailItems.map((item) => (
+              <button
+                key={item.drawer}
+                type="button"
+                className={activeDrawer === item.drawer ? "is-active" : ""}
+                aria-pressed={activeDrawer === item.drawer}
+                onClick={() => toggleDrawer(item.drawer)}
+              >
+                <WarTableIcon name={item.icon} />
+                <span>{item.label}</span>
+                {typeof item.badge === "number" ? <strong>{item.badge}</strong> : null}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={isActivityLogOpen ? "is-active" : ""}
+              aria-pressed={isActivityLogOpen}
+              onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
+            >
+              <WarTableIcon name="clock" />
+              <span>{t("game.drawer.activityLog")}</span>
+            </button>
+          </nav>
         </GameActionDock>
       </section>
     </section>

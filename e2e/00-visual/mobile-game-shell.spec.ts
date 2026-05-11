@@ -74,7 +74,6 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
         document.querySelector("#start-button");
 
       return {
-        activity: boundsFor(".game-right-utility-rail"),
         board: boundsFor(".game-map-stage .map-board"),
         boardStageBackground,
         dock: boundsFor(".game-command-dock"),
@@ -87,7 +86,6 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
               top: primaryDockButton.getBoundingClientRect().top
             }
           : null,
-        rail: boundsFor(".game-action-rail"),
         sheetState: document
           .querySelector(".game-command-dock")
           ?.getAttribute("data-command-sheet-state"),
@@ -107,13 +105,65 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
     expect(layout.board.height).toBeGreaterThanOrEqual(layout.viewport.height * 0.42);
     expect(layout.dock.left).toBeLessThanOrEqual(1);
     expect(layout.dock.right).toBeGreaterThanOrEqual(layout.viewport.width - 1);
-    expect(layout.dock.height).toBeGreaterThanOrEqual(190);
-    expect(layout.dock.height).toBeLessThanOrEqual(layout.viewport.height * 0.34);
-    expect(layout.sheetState).toBe("half-open");
+    expect(layout.dock.height).toBeGreaterThanOrEqual(70);
+    expect(layout.dock.height).toBeLessThanOrEqual(112);
+    expect(layout.sheetState).toBe("collapsed");
     expect(layout.hud.width).toBeLessThan(layout.viewport.width);
-    expect(layout.rail.height).toBeGreaterThanOrEqual(44);
-    expect(layout.activity.height).toBeGreaterThanOrEqual(44);
-    expect(layout.primaryDockButton?.height).toBeGreaterThanOrEqual(44);
-    expect(layout.primaryDockButton?.bottom).toBeLessThanOrEqual(layout.viewport.height + 1);
+
+    await page.locator(".game-command-dock-toggle").click();
+    await expect(page.locator(".game-command-dock")).toHaveAttribute(
+      "data-command-sheet-state",
+      "half-open"
+    );
+
+    const halfOpenLayout = await page.evaluate(() => {
+      const primaryDockButton =
+        document.querySelector("#reinforce-multi-button") ||
+        document.querySelector("#attack-button") ||
+        document.querySelector("#conquest-button") ||
+        document.querySelector("#fortify-button") ||
+        document.querySelector("#join-button") ||
+        document.querySelector("#start-button");
+
+      if (!primaryDockButton) {
+        throw new Error("Missing primary dock button");
+      }
+
+      const dockRect = document.querySelector(".game-command-dock").getBoundingClientRect();
+      const buttonRect = primaryDockButton.getBoundingClientRect();
+
+      return {
+        dock: {
+          bottom: dockRect.bottom,
+          height: dockRect.height,
+          top: dockRect.top
+        },
+        primaryDockButton: {
+          bottom: buttonRect.bottom,
+          height: buttonRect.height,
+          top: buttonRect.top
+        },
+        viewport: {
+          height: window.innerHeight,
+          width: window.innerWidth
+        }
+      };
+    });
+
+    expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(180);
+    expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(
+      halfOpenLayout.viewport.height * 0.32
+    );
+    expect(halfOpenLayout.primaryDockButton.height).toBeGreaterThanOrEqual(44);
+    expect(halfOpenLayout.primaryDockButton.bottom).toBeLessThanOrEqual(
+      halfOpenLayout.viewport.height + 1
+    );
+
+    await page.locator(".game-command-dock-toggle").click();
+    await expect(page.locator(".game-command-dock")).toHaveAttribute(
+      "data-command-sheet-state",
+      "expanded"
+    );
+    await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
   }
 });
