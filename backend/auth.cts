@@ -610,11 +610,18 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (tokenToDelete === sessionToken) {
-      await datastore.createSession(
-        storedSessionToken,
-        sessionUserId,
-        Number(createdAt) || Date.now()
-      );
+      try {
+        await datastore.createSession(
+          storedSessionToken,
+          sessionUserId,
+          Number(createdAt) || Date.now()
+        );
+      } catch (error) {
+        const migratedSession = await datastore.findSession(storedSessionToken);
+        if (!migratedSession) {
+          throw error;
+        }
+      }
       await datastore.deleteSession(sessionToken);
     }
 

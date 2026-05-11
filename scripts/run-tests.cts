@@ -3447,6 +3447,21 @@ register("auth store migra sessioni legacy plaintext al primo uso", async () => 
       null
     );
 
+    const concurrentLegacyToken = "legacy-concurrent-session-token";
+    await auth.datastore.createSession(concurrentLegacyToken, registered.user.id, Date.now());
+    await auth.datastore.createSession(
+      sessionTokenStorageKey(concurrentLegacyToken),
+      registered.user.id,
+      Date.now()
+    );
+    const concurrentSessionUser = await auth.getUserFromSession(concurrentLegacyToken);
+    assert.equal(concurrentSessionUser.username, "legacy_session");
+    assert.equal(await auth.datastore.findSession(concurrentLegacyToken), null);
+    assert.equal(
+      (await auth.datastore.findSession(sessionTokenStorageKey(concurrentLegacyToken))).user_id,
+      registered.user.id
+    );
+
     auth.datastore.close();
   } finally {
     if (fs.existsSync(tempFile)) {
