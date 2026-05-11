@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.012 - 2026-05-11
+
+- Hardened security posture by sanitizing absolute filesystem paths in module metadata and disabling caching for JSON API responses.
+
 ## 0.1.011 - 2026-05-11
 
 - Hardened security posture by sanitizing absolute filesystem paths in module metadata and disabling caching for JSON API responses.
