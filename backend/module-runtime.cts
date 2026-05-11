@@ -789,6 +789,10 @@ function loadClientManifest(
   }
 }
 
+function projectRelativePath(projectRoot: string, targetPath: string): string {
+  return path.relative(projectRoot, targetPath).split(path.sep).join("/");
+}
+
 function baseInstalledModuleFromManifest(
   manifest: NetRiskModuleManifest,
   sourcePath: string,
@@ -806,7 +810,7 @@ function baseInstalledModuleFromManifest(
     displayName: manifest.displayName,
     description: manifest.description || null,
     kind: manifest.kind,
-    sourcePath: path.relative(projectRoot, sourcePath),
+    sourcePath: projectRelativePath(projectRoot, sourcePath),
     status: isCoreModule || enabledById[manifest.id] ? "enabled" : "validated",
     enabled: isCoreModule || Boolean(enabledById[manifest.id]),
     compatible: true,
@@ -814,7 +818,9 @@ function baseInstalledModuleFromManifest(
     capabilities: manifest.capabilities.map((capability) => ({ ...capability })),
     warnings: [...warnings],
     errors: [...errors],
-    clientManifestPath: clientManifestPath ? path.relative(projectRoot, clientManifestPath) : null,
+    clientManifestPath: clientManifestPath
+      ? projectRelativePath(projectRoot, clientManifestPath)
+      : null,
     clientManifest
   };
 }
@@ -1895,7 +1901,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           displayName: directory.name,
           description: null,
           kind: null,
-          sourcePath: path.relative(options.projectRoot, moduleRoot),
+          sourcePath: projectRelativePath(options.projectRoot, moduleRoot),
           status: "error",
           enabled: false,
           compatible: false,
