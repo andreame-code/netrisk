@@ -557,12 +557,23 @@ register("admin console can promote a user and grant admin access", async () => 
     assert.equal(promoteResponse.payload.user.role, "admin");
     assert.equal(promoteResponse.payload.audit.action, "user.role.update");
 
-    const elevatedResponse = await callApp(
+    const staleElevatedResponse = await callApp(
       app,
       "GET",
       "/api/admin/overview",
       undefined,
       authHeaders(guestLogin.sessionToken)
+    );
+    assert.equal(staleElevatedResponse.statusCode, 401);
+
+    const refreshedGuestLogin = await app.auth.loginWithPassword("operations_guest", "secret123");
+    assert.equal(refreshedGuestLogin.ok, true);
+    const elevatedResponse = await callApp(
+      app,
+      "GET",
+      "/api/admin/overview",
+      undefined,
+      authHeaders(refreshedGuestLogin.sessionToken)
     );
     assert.equal(elevatedResponse.statusCode, 200);
     assert.equal(elevatedResponse.payload.summary.adminUsers >= 2, true);
@@ -1560,6 +1571,7 @@ register(
       ]
     };
     const roleUpdates: Array<{ username: string; role: string }> = [];
+    const revokedSessionUserIds: string[] = [];
 
     const adminConsole = createAdminConsole({
       datastore: {
@@ -1575,6 +1587,9 @@ register(
           if (targetUser) {
             targetUser.role = role;
           }
+        },
+        deleteSessionsForUser(userId: string) {
+          revokedSessionUserIds.push(userId);
         },
         getAppState(key: string) {
           return appState[key] || null;
@@ -1750,6 +1765,7 @@ register(
         role: "admin"
       }
     ]);
+    assert.deepEqual(revokedSessionUserIds, ["user-1"]);
 
     const lobbyGames = await adminConsole.listGames({
       status: "lobby",

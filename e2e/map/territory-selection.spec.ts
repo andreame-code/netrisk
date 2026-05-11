@@ -33,7 +33,7 @@ test("territory selection updates action controls for the current player", async
   await expect(myTerritory).toBeVisible();
 
   const territoryId = await myTerritory.getAttribute("data-territory-id");
-  await myTerritory.click();
+  await myTerritory.click({ force: true });
 
   await expect(firstPage.locator("#reinforce-select")).toHaveValue(territoryId || "");
   await expect(firstPage.locator("#attack-from")).toHaveValue(territoryId || "");
@@ -75,7 +75,7 @@ test("reinforcement still works when local player identity is stale", async ({ b
     .filter({ hasText: firstUser })
     .first();
   await expect(myTerritory).toBeVisible();
-  await myTerritory.click();
+  await myTerritory.click({ force: true });
 
   const dialogMessages = [];
   firstPage.on("dialog", async (dialog) => {

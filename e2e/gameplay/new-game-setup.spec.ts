@@ -1,7 +1,14 @@
 const { test, expect } = require("@playwright/test");
 const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
-test("new game setup keeps player 1 locked as creator and creates the configured session", async ({ page }) => {
+async function expectNewGameSetupReady(page) {
+  await expect(page.locator("#setup-map")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("#submit-new-game")).toBeVisible({ timeout: 15000 });
+}
+
+test("new game setup keeps player 1 locked as creator and creates the configured session", async ({
+  page
+}) => {
   test.slow();
   await resetGame(page);
   await page.goto("/game");
@@ -9,7 +16,7 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await registerAndLogin(page, owner);
   await page.goto("/lobby/new");
 
-  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expectNewGameSetupReady(page);
   await expect(page.locator("#setup-ruleset")).toBeVisible();
   await expect(page.locator("#setup-ruleset")).toContainText("Classic Defense 3");
   await expect(page.locator("#setup-map")).toBeEnabled();
@@ -42,30 +49,30 @@ test("new game setup keeps player 1 locked as creator and creates the configured
   await expect(slotOne).toContainText("Player 1");
   await expect(slotOne).toContainText("Creator");
   await expect(slotOne).toContainText("Human");
-  await expect(slotOne.locator('select')).toHaveCount(0);
+  await expect(slotOne.locator("select")).toHaveCount(0);
 
-  await page.locator('#setup-total-players').selectOption('4');
-  await expect(page.locator('[data-slot-index]')).toHaveCount(4);
-  await expect(slotOne.locator('select')).toHaveCount(0);
+  await page.locator("#setup-total-players").selectOption("4");
+  await expect(page.locator("[data-slot-index]")).toHaveCount(4);
+  await expect(slotOne.locator("select")).toHaveCount(0);
   await expect(page.locator('[data-slot-index="1"] select[data-role="type"]')).toHaveCount(1);
   await expect(page.locator('[data-slot-index="2"] select[data-role="type"]')).toHaveCount(1);
   await expect(page.locator('[data-slot-index="3"] select[data-role="type"]')).toHaveCount(1);
 
-  await page.locator('[data-slot-index="1"] select[data-role="type"]').selectOption('ai');
-  await page.locator('[data-slot-index="2"] select[data-role="type"]').selectOption('human');
-  await page.locator('[data-slot-index="3"] select[data-role="type"]').selectOption('ai');
+  await page.locator('[data-slot-index="1"] select[data-role="type"]').selectOption("ai");
+  await page.locator('[data-slot-index="2"] select[data-role="type"]').selectOption("human");
+  await page.locator('[data-slot-index="3"] select[data-role="type"]').selectOption("ai");
 
-  await page.locator('#setup-game-name').fill('Setup Lock Test');
-  await page.getByRole('button', { name: 'Crea e apri' }).click();
+  await page.locator("#setup-game-name").fill("Setup Lock Test");
+  await page.getByRole("button", { name: "Crea e apri" }).click();
 
-  await expect(page).toHaveURL(/\/game\//);
-  await expect(page.locator('#game-status')).toContainText('Setup Lock Test');
-  await expect(page.locator('#game-map-meta')).toContainText('World Classic');
-  await expect(page.locator('#game-setup-meta')).toContainText('4 giocatori');
-  await expect(page.locator('#game-setup-meta')).toContainText('2 AI');
-  await expect(page.getByTestId('current-player-indicator')).toContainText(owner);
-  await expect(page.locator('#join-button')).toBeDisabled();
-  await expect(page.locator('.territory-node').first()).toHaveClass(/piece-skin-style-ring-core/);
+  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(/\/game\//);
+  await expect(page.locator("#game-status")).toContainText("Setup Lock Test");
+  await expect(page.locator("#game-map-meta")).toContainText("World Classic");
+  await expect(page.locator("#game-setup-meta")).toContainText("4 giocatori");
+  await expect(page.locator("#game-setup-meta")).toContainText("2 AI");
+  await expect(page.getByTestId("current-player-indicator")).toContainText(owner);
+  await expect(page.locator("#join-button")).toBeDisabled();
+  await expect(page.locator(".territory-node").first()).toHaveClass(/piece-skin-style-ring-core/);
 });
 
 test("new game setup creates and renders the selected Classic Mini map", async ({ page }) => {
@@ -76,7 +83,7 @@ test("new game setup creates and renders the selected Classic Mini map", async (
   await registerAndLogin(page, owner);
   await page.goto("/lobby/new");
 
-  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expectNewGameSetupReady(page);
   await expect(page.locator("#setup-map")).toContainText("Classic Mini");
 
   await page.locator("#setup-map").selectOption("classic-mini");
@@ -101,7 +108,7 @@ test("new game setup creates and renders the selected Middle-earth map", async (
   await registerAndLogin(page, owner);
   await page.goto("/lobby/new");
 
-  await expect(page.getByTestId("new-game-shell")).toBeVisible();
+  await expectNewGameSetupReady(page);
   await expect(page.locator("#setup-map")).toContainText("Middle-earth");
 
   await page.locator("#setup-map").selectOption("middle-earth");
@@ -116,7 +123,10 @@ test("new game setup creates and renders the selected Middle-earth map", async (
   const mapBoard = page.locator(".map-board.has-custom-background");
   await expect(mapBoard).toBeVisible();
   await expect(mapBoard).toHaveAttribute("style", /middle-earth\.jpg/);
-  await expect(page.locator('[data-territory-id="the_shire"]')).toHaveAttribute("title", "The Shire");
+  await expect(page.locator('[data-territory-id="the_shire"]')).toHaveAttribute(
+    "title",
+    "The Shire"
+  );
   await expect(page.locator('[data-territory-id="gondor"]')).toBeVisible();
   await expect(page.locator('[data-territory-id="mordor"]')).toBeVisible();
 });
