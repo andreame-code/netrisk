@@ -197,13 +197,16 @@ function parsePositiveIntegerEnv(name: string): number | undefined {
 }
 
 function authAttemptThrottleOptionsFromEnv(): Record<string, number> {
-  return authThrottleEnvBindings.reduce((options, [optionName, envName]) => {
-    const value = parsePositiveIntegerEnv(envName);
-    if (typeof value === "number") {
-      options[optionName] = value;
-    }
-    return options;
-  }, {} as Record<string, number>);
+  return authThrottleEnvBindings.reduce(
+    (options, [optionName, envName]) => {
+      const value = parsePositiveIntegerEnv(envName);
+      if (typeof value === "number") {
+        options[optionName] = value;
+      }
+      return options;
+    },
+    {} as Record<string, number>
+  );
 }
 
 function logAiRecovery(payload: {
