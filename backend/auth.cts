@@ -2,7 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
 const { SESSION_MAX_AGE_MS } = require("./session-policy.cjs");
-const { sessionTokenStorageKey } = require("./session-token.cjs");
+const { isSessionTokenStorageKey, sessionTokenStorageKey } = require("./session-token.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
 interface ThemePreferences {
@@ -584,6 +584,10 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     let session = await datastore.findSession(storedSessionToken);
     let tokenToDelete = storedSessionToken;
     if (!session) {
+      if (isSessionTokenStorageKey(sessionToken)) {
+        return null;
+      }
+
       const legacySession = await datastore.findSession(sessionToken);
       if (!legacySession) {
         return null;
@@ -620,7 +624,9 @@ function createAuthStore(options: AuthStoreOptions = {}) {
   async function logout(sessionToken: string | null | undefined) {
     if (sessionToken) {
       await datastore.deleteSession(sessionTokenStorageKey(sessionToken));
-      await datastore.deleteSession(sessionToken);
+      if (!isSessionTokenStorageKey(sessionToken)) {
+        await datastore.deleteSession(sessionToken);
+      }
     }
 
     return null;

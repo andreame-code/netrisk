@@ -24,7 +24,10 @@ test("human player can end turn and watch the AI complete its turn automatically
   });
   await expect(joinAiResponse.ok()).toBeTruthy();
 
-  await page.getByRole("button", { name: "Avvia partita" }).click();
+  await page.reload();
+  const startButton = page.getByRole("button", { name: "Avvia partita" });
+  await expect(startButton).toBeEnabled();
+  await startButton.click();
   await expect(page.getByTestId("status-summary")).toContainText(
     /Rinforzi disponibili:\s*[1-9]\d*/i
   );

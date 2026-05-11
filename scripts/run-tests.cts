@@ -3344,6 +3344,12 @@ register("auth store registra e autentica utenti password", async () => {
   );
   assert.equal(storedSession.user_id, registered.user.id);
   assert.notEqual(storedSession.token, login.sessionToken);
+  assert.equal(await auth.getUserFromSession(storedSession.token), null);
+  await auth.logout(storedSession.token);
+  assert.equal(
+    (await auth.datastore.findSession(sessionTokenStorageKey(login.sessionToken))).user_id,
+    registered.user.id
+  );
   const storedUser = await auth.datastore.findUserByUsername("tester");
   assert.equal(typeof storedUser.credentials.password.secret, "undefined");
   assert.equal(typeof storedUser.credentials.password.hash, "string");
