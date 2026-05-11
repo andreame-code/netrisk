@@ -234,7 +234,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.0.2",
+    version: "1.0.3",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
