@@ -90,6 +90,7 @@ const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
 const { checkThemeTokenization } = require("./check-theme-tokenization.cjs");
+const { grantRole } = require("./grant-admin.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
@@ -3243,6 +3244,45 @@ function cleanupSqliteFiles(filePath: string) {
     }
   });
 }
+
+register("grant admin revoca sessioni solo quando il ruolo cambia", () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDbFile = path.join(__dirname, `tmp-grant-admin-${unique}.sqlite`);
+  const userId = `grant-role-user-${unique}`;
+  const username = `grant_role_${unique}`;
+
+  try {
+    let datastore = createDatastore({ dbFile: tempDbFile });
+    datastore.createUser({
+      id: userId,
+      username,
+      role: "user",
+      profile: {},
+      credentials: {},
+      createdAt: new Date().toISOString()
+    });
+    datastore.createSession("session-before-role-change", userId, Date.now());
+    datastore.close();
+
+    const promoted = grantRole({ username, role: "admin", dbFile: tempDbFile });
+    assert.deepEqual(promoted, { username, role: "admin" });
+
+    datastore = createDatastore({ dbFile: tempDbFile });
+    assert.equal(datastore.findUserByUsername(username).role, "admin");
+    assert.equal(datastore.findSession("session-before-role-change"), null);
+    datastore.createSession("session-after-role-change", userId, Date.now());
+    datastore.close();
+
+    const repeated = grantRole({ username, role: "admin", dbFile: tempDbFile });
+    assert.deepEqual(repeated, { username, role: "admin" });
+
+    datastore = createDatastore({ dbFile: tempDbFile });
+    assert.equal(datastore.findSession("session-after-role-change").user_id, userId);
+    datastore.close();
+  } finally {
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
 
 async function withServer(
   run: (baseUrl: string, context: ServerTestContext) => Promise<void>

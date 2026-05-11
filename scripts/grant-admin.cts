@@ -12,9 +12,10 @@ interface GrantAdminArgs {
 }
 
 interface DatastoreLike {
-  findUserByUsername(username: string): { username: string; role?: string } | null;
+  findUserByUsername(username: string): { id?: string; username: string; role?: string } | null;
   updateUserRoleByUsername(username: string, role: string): void;
   deleteSessionsForUser?(userId: string): void;
+  close?(): void;
 }
 
 function parseArgs(argv: string[]): GrantAdminArgs {
@@ -93,26 +94,31 @@ function grantRole(args: GrantAdminArgs) {
     sessionsFile: resolveOptionalPath(args.sessionsFile)
   }) as DatastoreLike;
 
-  const existingUser = datastore.findUserByUsername(String(args.username));
-  if (!existingUser) {
-    throw new Error(`Utente non trovato: ${args.username}`);
-  }
+  try {
+    const existingUser = datastore.findUserByUsername(String(args.username));
+    if (!existingUser) {
+      throw new Error(`Utente non trovato: ${args.username}`);
+    }
 
-  const role = args.role === "user" ? "user" : "admin";
-  datastore.updateUserRoleByUsername(existingUser.username, role);
-  if ("id" in existingUser && typeof existingUser.id === "string") {
-    datastore.deleteSessionsForUser?.(existingUser.id);
-  }
+    const role = args.role === "user" ? "user" : "admin";
+    const roleChanged = existingUser.role !== role;
+    datastore.updateUserRoleByUsername(existingUser.username, role);
+    if (roleChanged && existingUser.id) {
+      datastore.deleteSessionsForUser?.(existingUser.id);
+    }
 
-  const updatedUser = datastore.findUserByUsername(existingUser.username);
-  if (!updatedUser) {
-    throw new Error(`Impossibile rileggere l'utente aggiornato: ${existingUser.username}`);
-  }
+    const updatedUser = datastore.findUserByUsername(existingUser.username);
+    if (!updatedUser) {
+      throw new Error(`Impossibile rileggere l'utente aggiornato: ${existingUser.username}`);
+    }
 
-  return {
-    username: updatedUser.username,
-    role: updatedUser.role === "admin" ? "admin" : "user"
-  };
+    return {
+      username: updatedUser.username,
+      role: updatedUser.role === "admin" ? "admin" : "user"
+    };
+  } finally {
+    datastore.close?.();
+  }
 }
 
 function main(): void {

@@ -580,11 +580,12 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return null;
     }
 
+    const presentedTokenIsStorageKey = isSessionTokenStorageKey(sessionToken);
     const storedSessionToken = sessionTokenStorageKey(sessionToken);
     let session = await datastore.findSession(storedSessionToken);
     let tokenToDelete = storedSessionToken;
     if (!session) {
-      if (isSessionTokenStorageKey(sessionToken)) {
+      if (presentedTokenIsStorageKey) {
         return null;
       }
 
@@ -600,12 +601,18 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     const createdAt = session.created_at || session.createdAt || 0;
     if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
       await datastore.deleteSession(tokenToDelete);
+      if (!presentedTokenIsStorageKey && tokenToDelete !== sessionToken) {
+        await datastore.deleteSession(sessionToken);
+      }
       return null;
     }
 
     const sessionUserId = session.user_id || session.userId || "";
     if (!sessionUserId) {
       await datastore.deleteSession(tokenToDelete);
+      if (!presentedTokenIsStorageKey && tokenToDelete !== sessionToken) {
+        await datastore.deleteSession(sessionToken);
+      }
       return null;
     }
 
@@ -622,6 +629,8 @@ function createAuthStore(options: AuthStoreOptions = {}) {
           throw error;
         }
       }
+      await datastore.deleteSession(sessionToken);
+    } else if (!presentedTokenIsStorageKey) {
       await datastore.deleteSession(sessionToken);
     }
 
