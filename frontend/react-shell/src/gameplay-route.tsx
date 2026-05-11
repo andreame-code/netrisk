@@ -79,6 +79,14 @@ function turnPhaseLabel(turnPhase: string | null | undefined): string {
   return phaseLabel(turnPhase);
 }
 
+function isMobileCommandDockViewport(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 760px)").matches
+  );
+}
+
 function territoryOwnerName(
   territory: SnapshotTerritory,
   playersById: Record<string, SnapshotPlayer>
@@ -337,10 +345,7 @@ export function GameRoute() {
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
   const [commandDockSheetState, setCommandDockSheetState] = useState<GameCommandDockSheetState>(
-    () =>
-      typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches
-        ? "half-open"
-        : "collapsed"
+    () => (isMobileCommandDockViewport() ? "half-open" : "collapsed")
   );
   const isCommandDockExpanded = commandDockSheetState !== "collapsed";
 
@@ -545,7 +550,7 @@ export function GameRoute() {
   }, [activityLogContentKey]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
 
