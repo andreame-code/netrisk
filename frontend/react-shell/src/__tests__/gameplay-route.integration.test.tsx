@@ -40,7 +40,16 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 }));
 
 vi.mock("@react-shell/gameplay-map-viewport", () => ({
-  GameplayMapViewport: () => <div data-testid="mock-gameplay-map-viewport" />
+  GameplayMapViewport: ({
+    commandDockSheetState
+  }: {
+    commandDockSheetState: "collapsed" | "half-open" | "expanded";
+  }) => (
+    <div
+      data-testid="mock-gameplay-map-viewport"
+      data-command-sheet-state={commandDockSheetState}
+    />
+  )
 }));
 
 const getGameStateMock = vi.mocked(getGameState);
@@ -367,6 +376,75 @@ describe("GameRoute integration", () => {
     unmount();
 
     expect(removeListener).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes mobile command dock sheet state changes through to the map viewport", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        media: "(max-width: 760px)",
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true)
+      }))
+    );
+
+    renderReactShell("/react/game/g-1");
+
+    const dock = await screen.findByTestId("actions-panel");
+    const mapViewport = screen.getByTestId("mock-gameplay-map-viewport");
+    const toggle = dock.querySelector(".game-command-dock-toggle") as HTMLButtonElement | null;
+    expect(toggle).not.toBeNull();
+    expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
+    expect(mapViewport).toHaveAttribute("data-command-sheet-state", "half-open");
+
+    await user.click(toggle as HTMLButtonElement);
+
+    expect(dock).toHaveAttribute("data-command-sheet-state", "expanded");
+    expect(mapViewport).toHaveAttribute("data-command-sheet-state", "expanded");
+  });
+
+  it("normalizes the mobile-only half-open dock state after leaving the mobile viewport", async () => {
+    const user = userEvent.setup();
+    let isMobileViewport = true;
+    let changeListener: ((event: MediaQueryListEvent) => void) | null = null;
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: isMobileViewport,
+        media: "(max-width: 760px)",
+        onchange: null,
+        addEventListener: vi.fn(
+          (eventName: string, listener: (event: MediaQueryListEvent) => void) => {
+            if (eventName === "change") {
+              changeListener = listener;
+            }
+          }
+        ),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(() => true)
+      }))
+    );
+
+    renderReactShell("/react/game/g-1");
+
+    const dock = await screen.findByTestId("actions-panel");
+    const toggle = dock.querySelector(".game-command-dock-toggle") as HTMLButtonElement | null;
+    expect(toggle).not.toBeNull();
+    expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
+
+    act(() => {
+      isMobileViewport = false;
+      changeListener?.({ matches: false } as MediaQueryListEvent);
+    });
+
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+
+    await user.click(toggle as HTMLButtonElement);
+    expect(dock).toHaveAttribute("data-command-sheet-state", "expanded");
   });
 
   it("renders the reference fortify command dock", async () => {

@@ -65,7 +65,7 @@ type BoardFrame = {
 type GameplayMapViewportProps = {
   attackFromId: string;
   attackToId: string;
-  commandDockExpanded: boolean;
+  commandDockSheetState: "collapsed" | "half-open" | "expanded";
   fortifyFromId: string;
   fortifyToId: string;
   myPlayerId: string | null;
@@ -184,7 +184,7 @@ function territoryPosition(territory: SnapshotTerritory): { x: number; y: number
 export function GameplayMapViewport({
   attackFromId,
   attackToId,
-  commandDockExpanded,
+  commandDockSheetState,
   fortifyFromId,
   fortifyToId,
   myPlayerId,
@@ -504,7 +504,7 @@ export function GameplayMapViewport({
       window.removeEventListener("resize", fitBoardToViewport);
     };
   }, [
-    commandDockExpanded,
+    commandDockSheetState,
     snapshot.cardState?.currentPlayerMustTrade,
     snapshot.mapVisual?.aspectRatio?.height,
     snapshot.mapVisual?.aspectRatio?.width,

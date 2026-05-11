@@ -558,6 +558,7 @@ export function GameRoute() {
 
     function syncMobileCommandSheet(event: MediaQueryList | MediaQueryListEvent): void {
       if (!event.matches) {
+        setCommandDockSheetState((current) => (current === "half-open" ? "collapsed" : current));
         return;
       }
 
@@ -1016,7 +1017,7 @@ export function GameRoute() {
             <GameplayMapViewport
               attackFromId={attackFromId}
               attackToId={attackToId}
-              commandDockExpanded={isCommandDockExpanded}
+              commandDockSheetState={commandDockSheetState}
               fortifyFromId={fortifyFromId}
               fortifyToId={fortifyToId}
               myPlayerId={myPlayerId}
