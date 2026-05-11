@@ -565,11 +565,27 @@ export function GameRoute() {
     }
 
     syncMobileCommandSheet(mediaQuery);
-    mediaQuery.addEventListener("change", syncMobileCommandSheet);
 
-    return () => {
-      mediaQuery.removeEventListener("change", syncMobileCommandSheet);
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncMobileCommandSheet);
+
+      return () => {
+        mediaQuery.removeEventListener("change", syncMobileCommandSheet);
+      };
+    }
+
+    const legacyMediaQuery = mediaQuery as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
+      removeListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
     };
+
+    if (typeof legacyMediaQuery.addListener === "function") {
+      legacyMediaQuery.addListener(syncMobileCommandSheet);
+
+      return () => {
+        legacyMediaQuery.removeListener?.(syncMobileCommandSheet);
+      };
+    }
   }, []);
 
   const applyMutationPayload = useEffectEvent(

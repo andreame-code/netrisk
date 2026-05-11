@@ -343,6 +343,32 @@ describe("GameRoute integration", () => {
     expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
   });
 
+  it("uses legacy media query listeners when the mobile dock viewport API needs them", async () => {
+    const addListener = vi.fn();
+    const removeListener = vi.fn();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        media: "(max-width: 760px)",
+        onchange: null,
+        addListener,
+        removeListener,
+        dispatchEvent: vi.fn(() => true)
+      }))
+    );
+
+    const { unmount } = renderReactShell("/react/game/g-1");
+
+    const dock = await screen.findByTestId("actions-panel");
+    expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
+    expect(addListener).toHaveBeenCalledTimes(1);
+
+    unmount();
+
+    expect(removeListener).toHaveBeenCalledTimes(1);
+  });
+
   it("renders the reference fortify command dock", async () => {
     getGameStateMock.mockResolvedValue(
       createGameplayState({
