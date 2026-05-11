@@ -142,6 +142,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const [loginError, setLoginError] = useState("");
   const [isSubmittingLogin, setIsSubmittingLogin] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const moduleOptionsQuery = useQuery({
     queryKey: ["shell", "module-options"],
@@ -173,6 +174,11 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
     document.body.dataset.shellKind = "app";
     document.body.dataset.appSection = section;
   }, [section]);
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+    setIsUserMenuOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!moduleOptionsQuery.data) {
@@ -276,13 +282,27 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const content = (
     <div className="shell-header" style={{ display: "contents" }}>
       <header className="panel top-nav-bar campaign-nav">
+        <button
+          type="button"
+          className="mobile-nav-toggle"
+          aria-controls="primary-top-nav"
+          aria-expanded={isMobileNavOpen}
+          aria-label="Toggle menu"
+          onClick={() => setIsMobileNavOpen((isOpen) => !isOpen)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
+
         <Link className="top-nav-zone top-nav-brand brand-link" to={lobbyHref}>
           <p className="eyebrow">{t("app.brand")}</p>
           <span className="top-nav-title">{t("app.title")}</span>
         </Link>
 
         <nav
-          className="top-nav-zone top-nav-links"
+          id="primary-top-nav"
+          className={`top-nav-zone top-nav-links${isMobileNavOpen ? " is-mobile-open" : ""}`}
           aria-label={t("nav.aria.primary")}
           data-testid="react-shell-nav"
         >

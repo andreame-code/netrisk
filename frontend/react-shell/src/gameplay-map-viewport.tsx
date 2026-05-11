@@ -62,10 +62,18 @@ type BoardFrame = {
   height: number;
 };
 
+type FittedBoardSizeInput = {
+  allowsHorizontalCrop: boolean;
+  aspectRatio: number;
+  availableHeight: number;
+  availableWidth: number;
+  stagePaddingY: number;
+};
+
 type GameplayMapViewportProps = {
   attackFromId: string;
   attackToId: string;
-  commandDockExpanded: boolean;
+  commandDockSheetState: "collapsed" | "half-open" | "expanded";
   fortifyFromId: string;
   fortifyToId: string;
   myPlayerId: string | null;
@@ -159,6 +167,27 @@ function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): n
   return Number.isFinite(value) ? value : 0;
 }
 
+export function calculateFittedBoardSize({
+  allowsHorizontalCrop,
+  aspectRatio,
+  availableHeight,
+  availableWidth,
+  stagePaddingY
+}: FittedBoardSizeInput): { width: number; height: number } {
+  const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
+  const fittedWidth = Math.min(availableWidth, widthFromHeight);
+  const width = allowsHorizontalCrop
+    ? widthFromHeight >= availableWidth
+      ? Math.min(widthFromHeight, availableWidth * 1.9)
+      : fittedWidth
+    : fittedWidth;
+
+  return {
+    width: Math.floor(width),
+    height: Math.ceil(width / aspectRatio)
+  };
+}
+
 function territoryOwnerName(
   territory: SnapshotTerritory,
   playersById: Record<string, SnapshotPlayer>
@@ -184,7 +213,7 @@ function territoryPosition(territory: SnapshotTerritory): { x: number; y: number
 export function GameplayMapViewport({
   attackFromId,
   attackToId,
-  commandDockExpanded,
+  commandDockSheetState,
   fortifyFromId,
   fortifyToId,
   myPlayerId,
@@ -470,13 +499,16 @@ export function GameplayMapViewport({
       const aspectRatio = aspectRatioMatch
         ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
         : 760 / 500;
-      const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
-      const width = Math.min(availableWidth, widthFromHeight);
-      const height = width / aspectRatio;
-
+      const allowsHorizontalCrop =
+        stageStyles.getPropertyValue("--game-map-allow-horizontal-crop").trim() === "1";
       setFittedBoardFrame({
-        width: Math.floor(width),
-        height: Math.ceil(height)
+        ...calculateFittedBoardSize({
+          allowsHorizontalCrop,
+          aspectRatio,
+          availableHeight,
+          availableWidth,
+          stagePaddingY
+        })
       });
     }
 
@@ -500,7 +532,7 @@ export function GameplayMapViewport({
       window.removeEventListener("resize", fitBoardToViewport);
     };
   }, [
-    commandDockExpanded,
+    commandDockSheetState,
     snapshot.cardState?.currentPlayerMustTrade,
     snapshot.mapVisual?.aspectRatio?.height,
     snapshot.mapVisual?.aspectRatio?.width,
