@@ -14,6 +14,7 @@ import { WarTableIcon, type WarTableIconName } from "@react-shell/war-table-icon
 
 export type GameDrawerKey = "players" | "cards" | "gameInfo";
 export type ActivityLogFilter = "all" | "combat" | "cards" | "turn";
+export type GameCommandDockSheetState = "collapsed" | "half-open" | "expanded";
 
 export type ActivityLogEntry = {
   category: Exclude<ActivityLogFilter, "all">;
@@ -115,6 +116,9 @@ type GameActionDockProps = {
   commandTitle: string;
   expanded: boolean;
   mode: "attack" | "reinforcement" | "fortify" | "conquest" | "lobby" | "idle" | "mandatory-trade";
+  sheetState: GameCommandDockSheetState;
+  summaryDetail: string;
+  summaryTitle: string;
   onToggleExpanded(): void;
 };
 
@@ -789,26 +793,37 @@ export function GameActionDock({
   commandTitle,
   expanded,
   mode,
+  sheetState,
+  summaryDetail,
+  summaryTitle,
   onToggleExpanded
 }: GameActionDockProps) {
+  const isSheetOpen = sheetState !== "collapsed";
+
   return (
     <aside
-      className={`right-rail panel game-actions-rail game-command-dock campaign-shell game-command-dock-${mode} ${expanded ? "is-expanded" : "is-collapsed"} ${className}`.trim()}
+      className={`right-rail panel game-actions-rail game-command-dock campaign-shell game-command-dock-${mode} ${expanded ? "is-expanded" : "is-collapsed"} game-command-dock-sheet-${sheetState} ${className}`.trim()}
       data-testid="actions-panel"
       data-command-dock-expanded={expanded ? "true" : "false"}
       data-command-mode={mode}
+      data-command-sheet-state={sheetState}
     >
+      <span className="game-command-sheet-grip" aria-hidden="true" />
       <button
         type="button"
         className="game-command-dock-toggle"
-        aria-expanded={expanded}
-        aria-label={expanded ? t("game.commandDock.collapse") : t("game.commandDock.expand")}
+        aria-expanded={isSheetOpen}
+        aria-label={isSheetOpen ? t("game.commandDock.collapse") : t("game.commandDock.expand")}
         onClick={onToggleExpanded}
       >
-        <span aria-hidden="true">{expanded ? "v" : "^"}</span>
+        <span aria-hidden="true">{sheetState === "expanded" ? "v" : "^"}</span>
       </button>
       <div className="game-command-dock-title">
         <span>{commandTitle}</span>
+      </div>
+      <div className="game-command-dock-summary" aria-hidden={isSheetOpen ? "true" : "false"}>
+        <strong>{summaryTitle}</strong>
+        <span>{summaryDetail}</span>
       </div>
       {children}
     </aside>

@@ -471,7 +471,11 @@ export function GameplayMapViewport({
         ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
         : 760 / 500;
       const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
-      const width = Math.min(availableWidth, widthFromHeight);
+      const allowsHorizontalCrop =
+        stageStyles.getPropertyValue("--game-map-allow-horizontal-crop").trim() === "1";
+      const width = allowsHorizontalCrop
+        ? Math.min(Math.max(availableWidth, widthFromHeight), availableWidth * 1.9)
+        : Math.min(availableWidth, widthFromHeight);
       const height = width / aspectRatio;
 
       setFittedBoardFrame({

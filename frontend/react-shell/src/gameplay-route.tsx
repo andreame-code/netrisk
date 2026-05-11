@@ -47,6 +47,7 @@ import {
   PlayersDrawer,
   type ActivityLogEntry,
   type ActivityLogFilter,
+  type GameCommandDockSheetState,
   type GameDrawerKey
 } from "@react-shell/gameplay-ui-panels";
 
@@ -335,7 +336,13 @@ export function GameRoute() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
-  const [isCommandDockExpanded, setIsCommandDockExpanded] = useState(false);
+  const [commandDockSheetState, setCommandDockSheetState] = useState<GameCommandDockSheetState>(
+    () =>
+      typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches
+        ? "half-open"
+        : "collapsed"
+  );
+  const isCommandDockExpanded = commandDockSheetState !== "collapsed";
 
   const gameplayQuery = useQuery({
     queryKey,
@@ -536,6 +543,29 @@ export function GameRoute() {
   useEffect(() => {
     setIsActivityLogCleared(false);
   }, [activityLogContentKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 760px)");
+
+    function syncMobileCommandSheet(event: MediaQueryList | MediaQueryListEvent): void {
+      if (!event.matches) {
+        return;
+      }
+
+      setCommandDockSheetState((current) => (current === "collapsed" ? "half-open" : current));
+    }
+
+    syncMobileCommandSheet(mediaQuery);
+    mediaQuery.addEventListener("change", syncMobileCommandSheet);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncMobileCommandSheet);
+    };
+  }, []);
 
   const applyMutationPayload = useEffectEvent(
     (payload: GameMutationResponse, options: { feedback?: string } = {}) => {
@@ -894,6 +924,36 @@ export function GameRoute() {
               : "idle";
   const commandDockTitle =
     dockMode === "mandatory-trade" ? t("game.commandMode.tradeCards") : commandActionTitle;
+  const commandDockSummaryTerritory =
+    (showReinforceGroup && reinforceTerritoryId
+      ? territoriesById[reinforceTerritoryId]
+      : showAttackGroup && attackFromId
+        ? territoriesById[attackFromId]
+        : showConquestGroup && snapshot.pendingConquest?.toId
+          ? territoriesById[snapshot.pendingConquest.toId]
+          : showFortifyGroup && fortifyFromId
+            ? territoriesById[fortifyFromId]
+            : null) || null;
+  const commandDockSummaryTitle = commandDockSummaryTerritory?.name || commandDockTitle;
+  const commandDockSummaryDetail =
+    dockMode === "mandatory-trade"
+      ? t("game.commandDock.cardsSelected", { selected: selectedTradeCardIds.length })
+      : `${phaseBadgeLabel} · ${t("game.hud.reinforcements")} ${snapshot.reinforcementPool}`;
+
+  function cycleCommandDockSheet(): void {
+    setCommandDockSheetState((current) => {
+      if (current === "collapsed") {
+        return "half-open";
+      }
+
+      if (current === "half-open") {
+        return "expanded";
+      }
+
+      return "collapsed";
+    });
+  }
+
   const actionRailItems = [
     {
       drawer: "players" as const,
@@ -1153,7 +1213,10 @@ export function GameRoute() {
           commandTitle={commandDockTitle}
           expanded={isCommandDockExpanded}
           mode={dockMode}
-          onToggleExpanded={() => setIsCommandDockExpanded((isExpanded) => !isExpanded)}
+          sheetState={commandDockSheetState}
+          summaryDetail={commandDockSummaryDetail}
+          summaryTitle={commandDockSummaryTitle}
+          onToggleExpanded={cycleCommandDockSheet}
         >
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
