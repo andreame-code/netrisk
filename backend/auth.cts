@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
 const { SESSION_MAX_AGE_MS } = require("./session-policy.cjs");
+const { sessionTokenStorageKey } = require("./session-token.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
 interface ThemePreferences {
@@ -78,6 +79,7 @@ interface AuthRepository {
   createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
   findSession(token: string): Promise<AuthSession | null> | AuthSession | null;
   deleteSession(token: string): Promise<void> | void;
+  deleteSessionsForUser?(userId: string): Promise<void> | void;
 }
 
 interface AuthStoreOptions {
@@ -559,8 +561,12 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
     }
 
-    const sessionToken = crypto.randomBytes(16).toString("hex");
-    await datastore.createSession(sessionToken, verifiedUser.id, Date.now());
+    const sessionToken = crypto.randomBytes(32).toString("base64url");
+    await datastore.createSession(
+      sessionTokenStorageKey(sessionToken),
+      verifiedUser.id,
+      Date.now()
+    );
 
     return {
       ok: true,
@@ -574,14 +580,15 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return null;
     }
 
-    const session = await datastore.findSession(sessionToken);
+    const storedSessionToken = sessionTokenStorageKey(sessionToken);
+    const session = await datastore.findSession(storedSessionToken);
     if (!session) {
       return null;
     }
 
     const createdAt = session.created_at || session.createdAt || 0;
     if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
-      await datastore.deleteSession(sessionToken);
+      await datastore.deleteSession(storedSessionToken);
       return null;
     }
 
@@ -591,7 +598,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
 
   async function logout(sessionToken: string | null | undefined) {
     if (sessionToken) {
-      await datastore.deleteSession(sessionToken);
+      await datastore.deleteSession(sessionTokenStorageKey(sessionToken));
     }
 
     return null;
@@ -655,6 +662,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
           ...(updatedUser.credentials || {}),
           password: passwordRecord(nextPassword)
         })) || updatedUser;
+      await datastore.deleteSessionsForUser?.(updatedUser.id);
     }
 
     return {

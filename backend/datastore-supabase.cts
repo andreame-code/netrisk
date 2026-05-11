@@ -570,6 +570,10 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       await ensureInitialized();
       await deleteRows("sessions", { token: `eq.${token}` });
     },
+    async deleteSessionsForUser(userId: string) {
+      await ensureInitialized();
+      await deleteRows("sessions", { user_id: `eq.${userId}` });
+    },
     async listGames() {
       await ensureInitialized();
       return (await selectMany<GameRow>("games", {}, { order: "updated_at.desc" })).map((row) =>

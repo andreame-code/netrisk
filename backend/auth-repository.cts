@@ -58,6 +58,7 @@ interface LocalDatastore {
     token: string
   ): Promise<SessionRecord | SessionRow | null> | SessionRecord | SessionRow | null;
   deleteSession(token: string): Promise<void> | void;
+  deleteSessionsForUser?(userId: string): Promise<void> | void;
   close?(): void;
 }
 
@@ -161,6 +162,9 @@ function createLocalAuthRepository(options: AuthRepositoryOptions = {}) {
     },
     async deleteSession(token: string) {
       await datastore.deleteSession(token);
+    },
+    async deleteSessionsForUser(userId: string) {
+      await datastore.deleteSessionsForUser?.(userId);
     },
     close() {
       if (typeof datastore.close === "function") {
@@ -359,6 +363,11 @@ function createSupabaseAuthRepository(options: AuthRepositoryOptions = {}) {
     async deleteSession(token: string) {
       await request("sessions", "DELETE", {
         token: `eq.${String(token || "").trim()}`
+      });
+    },
+    async deleteSessionsForUser(userId: string) {
+      await request("sessions", "DELETE", {
+        user_id: `eq.${String(userId || "").trim()}`
       });
     },
     close() {}

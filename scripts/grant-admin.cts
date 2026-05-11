@@ -14,6 +14,7 @@ interface GrantAdminArgs {
 interface DatastoreLike {
   findUserByUsername(username: string): { username: string; role?: string } | null;
   updateUserRoleByUsername(username: string, role: string): void;
+  deleteSessionsForUser?(userId: string): void;
 }
 
 function parseArgs(argv: string[]): GrantAdminArgs {
@@ -99,6 +100,9 @@ function grantRole(args: GrantAdminArgs) {
 
   const role = args.role === "user" ? "user" : "admin";
   datastore.updateUserRoleByUsername(existingUser.username, role);
+  if ("id" in existingUser && typeof existingUser.id === "string") {
+    datastore.deleteSessionsForUser?.(existingUser.id);
+  }
 
   const updatedUser = datastore.findUserByUsername(existingUser.username);
   if (!updatedUser) {

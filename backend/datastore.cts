@@ -4,6 +4,7 @@ const { readJsonFile } = require("./json-file-store.cjs") as {
   readJsonFile: <T>(filePath: string, fallbackValue: T, isValid?: (value: unknown) => boolean) => T;
 };
 const { createSupabaseDatastore } = require("./datastore-supabase.cjs");
+const { isSessionTokenStorageKey, sessionTokenStorageKey } = require("./session-token.cjs");
 
 type JsonRecord = Record<string, unknown>;
 
@@ -259,6 +260,9 @@ function createDatastore(options: DatastoreOptions = {}) {
       "SELECT * FROM sessions WHERE token = ?"
     ) as Statement<SessionRow | null>,
     deleteSession: db.prepare("DELETE FROM sessions WHERE token = ?") as Statement<unknown>,
+    deleteSessionsForUser: db.prepare(
+      "DELETE FROM sessions WHERE user_id = ?"
+    ) as Statement<unknown>,
     listGames: db.prepare("SELECT * FROM games ORDER BY updated_at DESC") as Statement<GameRow>,
     findGameById: db.prepare("SELECT * FROM games WHERE id = ?") as Statement<GameRow | null>,
     insertGame: db.prepare(
@@ -329,7 +333,9 @@ function createDatastore(options: DatastoreOptions = {}) {
         }
 
         statements.insertSession.run(
-          session.token,
+          isSessionTokenStorageKey(session.token)
+            ? session.token
+            : sessionTokenStorageKey(session.token),
           session.userId,
           Number(session.createdAt) || Date.now()
         );
@@ -474,6 +480,11 @@ function createDatastore(options: DatastoreOptions = {}) {
     deleteSession(token: string) {
       transaction(() => {
         statements.deleteSession.run(token);
+      });
+    },
+    deleteSessionsForUser(userId: string) {
+      transaction(() => {
+        statements.deleteSessionsForUser.run(String(userId || ""));
       });
     },
     listGames() {

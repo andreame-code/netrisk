@@ -59,6 +59,7 @@ const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { SESSION_MAX_AGE_MS, SESSION_MAX_AGE_SECONDS } = require("../backend/session-policy.cjs");
+const { sessionTokenStorageKey } = require("../backend/session-token.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const {
@@ -664,6 +665,11 @@ register("auth repository supabase normalizza utenti, preferenze e sessioni", as
 
     await repository.deleteSession("token-1");
     assert.equal(await repository.findSession("token-1"), null);
+    await repository.createSession("token-2", "user-2", 123);
+    await repository.createSession("token-3", "user-2", 456);
+    await repository.deleteSessionsForUser("user-2");
+    assert.equal(await repository.findSession("token-2"), null);
+    assert.equal(await repository.findSession("token-3"), null);
 
     repository.close();
   });
@@ -712,6 +718,9 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
       deleteSession(token: any) {
         calls.push(["deleteSession", token]);
       },
+      deleteSessionsForUser(userId: any) {
+        calls.push(["deleteSessionsForUser", userId]);
+      },
       close() {
         calls.push("close");
       }
@@ -745,6 +754,7 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
     created_at: 1234
   });
   await localRepository.deleteSession("token-local");
+  await localRepository.deleteSessionsForUser("u2");
   localRepository.close();
 
   assert.equal(
@@ -753,6 +763,10 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
   );
   assert.equal(
     calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserThemePreference"),
+    true
+  );
+  assert.equal(
+    calls.some((entry: any) => Array.isArray(entry) && entry[0] === "deleteSessionsForUser"),
     true
   );
   assert.equal(calls.includes("close"), true);
@@ -3324,6 +3338,12 @@ register("auth store registra e autentica utenti password", async () => {
   assert.equal(login.ok, true);
   assert.equal(Boolean(login.sessionToken), true);
   assert.equal((await auth.getUserFromSession(login.sessionToken)).username, "tester");
+  assert.equal(await auth.datastore.findSession(login.sessionToken), null);
+  const storedSession = await auth.datastore.findSession(
+    sessionTokenStorageKey(login.sessionToken)
+  );
+  assert.equal(storedSession.user_id, registered.user.id);
+  assert.notEqual(storedSession.token, login.sessionToken);
   const storedUser = await auth.datastore.findUserByUsername("tester");
   assert.equal(typeof storedUser.credentials.password.secret, "undefined");
   assert.equal(typeof storedUser.credentials.password.hash, "string");
@@ -3338,6 +3358,52 @@ register("auth store registra e autentica utenti password", async () => {
     fs.unlinkSync(tempSessionsFile);
   }
   cleanupSqliteFiles(tempDbFile);
+});
+
+register("auth store revoca le sessioni utente dopo cambio password", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+
+  try {
+    const auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+    const registered = await auth.registerPasswordUser("rotate_session", TEST_PASSWORD);
+    assert.equal(registered.ok, true);
+
+    const firstLogin = await auth.loginWithPassword("rotate_session", TEST_PASSWORD);
+    const secondLogin = await auth.loginWithPassword("rotate_session", TEST_PASSWORD);
+    assert.equal(firstLogin.ok, true);
+    assert.equal(secondLogin.ok, true);
+    assert.equal(Boolean(await auth.getUserFromSession(firstLogin.sessionToken)), true);
+    assert.equal(Boolean(await auth.getUserFromSession(secondLogin.sessionToken)), true);
+
+    const update = await auth.updateUserAccountSettings({
+      userId: registered.user.id,
+      currentPassword: TEST_PASSWORD,
+      newPassword: "Changed123!",
+      confirmNewPassword: "Changed123!"
+    });
+    assert.equal(update.ok, true);
+
+    assert.equal(await auth.getUserFromSession(firstLogin.sessionToken), null);
+    assert.equal(await auth.getUserFromSession(secondLogin.sessionToken), null);
+    assert.equal((await auth.loginWithPassword("rotate_session", TEST_PASSWORD)).ok, false);
+    assert.equal((await auth.loginWithPassword("rotate_session", "Changed123!")).ok, true);
+    auth.datastore.close();
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+    cleanupSqliteFiles(tempDbFile);
+  }
 });
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
