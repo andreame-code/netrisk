@@ -6,9 +6,7 @@ const {
   uniqueUser
 } = require("../support/game-helpers");
 
-test("human player can end turn and watch the AI complete its turn automatically", async ({
-  page
-}) => {
+test("human player can end turn and watch the AI complete its turn automatically", async ({ page }) => {
   test.slow();
 
   const humanUser = uniqueUser("ai_e2e");
@@ -25,19 +23,15 @@ test("human player can end turn and watch the AI complete its turn automatically
   await expect(joinAiResponse.ok()).toBeTruthy();
 
   await page.getByRole("button", { name: "Avvia partita" }).click();
-  await expect(page.getByTestId("status-summary")).toContainText(
-    /Rinforzi disponibili:\s*[1-9]\d*/i
-  );
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
 
   const reinforceButton = page.getByRole("button", { name: "Aggiungi" });
   let reinforcementCount = await getReinforcementCount(page);
   while (reinforcementCount > 0) {
     await reinforceButton.click();
-    await expect
-      .poll(() => getReinforcementCount(page), {
-        message: "i rinforzi disponibili devono diminuire dopo ogni click"
-      })
-      .toBeLessThan(reinforcementCount);
+    await expect.poll(() => getReinforcementCount(page), {
+      message: "i rinforzi disponibili devono diminuire dopo ogni click"
+    }).toBeLessThan(reinforcementCount);
     reinforcementCount = await getReinforcementCount(page);
   }
 
@@ -50,12 +44,8 @@ test("human player can end turn and watch the AI complete its turn automatically
 
   await page.locator("#end-turn-button").click();
 
-  await expect(page.getByTestId("status-summary")).toContainText(
-    /Rinforzi disponibili:\s*[1-9]\d*/i,
-    { timeout: 10000 }
-  );
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
   await expect(page.locator("#players")).toContainText(aiName);
-  await page.getByRole("button", { name: /Registro attivita/i }).click();
   await expect(page.locator("#log")).toContainText(aiName);
 });
