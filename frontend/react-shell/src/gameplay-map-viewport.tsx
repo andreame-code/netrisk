@@ -62,6 +62,14 @@ type BoardFrame = {
   height: number;
 };
 
+type FittedBoardSizeInput = {
+  allowsHorizontalCrop: boolean;
+  aspectRatio: number;
+  availableHeight: number;
+  availableWidth: number;
+  stagePaddingY: number;
+};
+
 type GameplayMapViewportProps = {
   attackFromId: string;
   attackToId: string;
@@ -157,6 +165,27 @@ function resolveMapImageUrl(imageUrl: string): string {
 function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
   const value = Number.parseFloat(styles.getPropertyValue(propertyName) || "0");
   return Number.isFinite(value) ? value : 0;
+}
+
+export function calculateFittedBoardSize({
+  allowsHorizontalCrop,
+  aspectRatio,
+  availableHeight,
+  availableWidth,
+  stagePaddingY
+}: FittedBoardSizeInput): { width: number; height: number } {
+  const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
+  const fittedWidth = Math.min(availableWidth, widthFromHeight);
+  const width = allowsHorizontalCrop
+    ? widthFromHeight >= availableWidth
+      ? Math.min(widthFromHeight, availableWidth * 1.9)
+      : fittedWidth
+    : fittedWidth;
+
+  return {
+    width: Math.floor(width),
+    height: Math.ceil(width / aspectRatio)
+  };
 }
 
 function territoryOwnerName(
@@ -470,17 +499,16 @@ export function GameplayMapViewport({
       const aspectRatio = aspectRatioMatch
         ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
         : 760 / 500;
-      const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
       const allowsHorizontalCrop =
         stageStyles.getPropertyValue("--game-map-allow-horizontal-crop").trim() === "1";
-      const width = allowsHorizontalCrop
-        ? Math.min(Math.max(availableWidth, widthFromHeight), availableWidth * 1.9)
-        : Math.min(availableWidth, widthFromHeight);
-      const height = width / aspectRatio;
-
       setFittedBoardFrame({
-        width: Math.floor(width),
-        height: Math.ceil(height)
+        ...calculateFittedBoardSize({
+          allowsHorizontalCrop,
+          aspectRatio,
+          availableHeight,
+          availableWidth,
+          stagePaddingY
+        })
       });
     }
 
