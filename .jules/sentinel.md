@@ -12,3 +12,8 @@
 **Vulnerability:** Malformed Host headers caused the custom HTTP server to throw unhandled TypeErrors during URL initialization, potentially leading to service instability or ungraceful error states.
 **Learning:** Node.js's `new URL()` constructor throws on invalid input. In a custom server implementation, this must be handled explicitly at the boundary. Furthermore, applying security headers *after* potential crash points leaves error responses unprotected.
 **Prevention:** Wrap request boundary parsing in try-catch blocks and prioritize the application of security headers to ensure all response paths, including early failures, are hardened.
+
+## 2026-05-10 - Anti-Caching for Sensitive API Responses
+**Vulnerability:** JSON API responses containing sensitive user data (profile, session, game state) lacked explicit cache control headers, potentially allowing sensitive information to be stored in browser or proxy caches.
+**Learning:** Modern APIs often transmit sensitive data via JSON. Relying on default browser behavior for caching is a security risk. Centralized response utilities should enforce a "no-store" policy by default.
+**Prevention:** Use a central utility for all API responses that sets `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate`, `Pragma: no-cache`, and `Expires: 0` headers. Provide an override mechanism for public, non-sensitive data.
