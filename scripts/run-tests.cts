@@ -6657,7 +6657,10 @@ register("GET /api/health espone lo stato sintetico del server", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get("cache-control"), "no-store, no-cache, must-revalidate, proxy-revalidate");
+    assert.equal(
+      response.headers.get("cache-control"),
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
     assert.equal(response.headers.get("pragma"), "no-cache");
     assert.equal(response.headers.get("expires"), "0");
     const payload: any = await readJson(response);

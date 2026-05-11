@@ -102,8 +102,8 @@ export function sendJson(
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0",
+    Pragma: "no-cache",
+    Expires: "0",
     ...headers
   });
   res.end(JSON.stringify(payload));
