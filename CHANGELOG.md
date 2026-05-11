@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.014 - 2026-05-11
+
+- Hardened module UI slot routes by rejecting unsafe schemes and external URLs before module links reach the frontend.
+
 ## 0.1.013 - 2026-05-11
 
 - Hardened session storage by hashing server-side session tokens and revoking user sessions after password or role changes.
