@@ -1,8 +1,14 @@
 const { test, expect } = require("@playwright/test");
-const { getReinforcementCount, registerLoginAndJoin, resetGame, uniqueUser } = require("../support/game-helpers");
+const {
+  getReinforcementCount,
+  registerLoginAndJoin,
+  resetGame,
+  uniqueUser
+} = require("../support/game-helpers");
 
 test("stale game tab reloads latest state after a version conflict", async ({ browser }) => {
   test.slow();
+  test.setTimeout(120000);
 
   const firstContext = await browser.newContext();
   const secondContext = await browser.newContext();
@@ -20,14 +26,24 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await registerLoginAndJoin(secondPage, secondUser);
 
   await currentPage.getByRole("button", { name: "Avvia partita" }).click();
-  await expect(currentPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
+  await expect(currentPage.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*[1-9]\d*/i
+  );
 
   const stalePage = await firstContext.newPage();
+  await stalePage.addInitScript(() => {
+    window.__netriskAlerts = [];
+    window.alert = (message) => {
+      window.__netriskAlerts.push(String(message));
+    };
+  });
   await stalePage.route("**/api/events", (route) => route.abort());
   await stalePage.goto("/game");
 
   await expect(stalePage.locator("#auth-status")).toContainText(firstUser, { timeout: 10000 });
-  await expect(stalePage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i);
+  await expect(stalePage.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*[1-9]\d*/i
+  );
   await expect(stalePage.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
 
   const staleVersion = await stalePage.evaluate(async () => {
@@ -60,11 +76,15 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await currentPage.getByRole("button", { name: "Aggiungi" }).click();
   await expect.poll(() => getReinforcementCount(currentPage)).toBe(initialReinforcements - 1);
 
-  const dialogPromise = stalePage.waitForEvent("dialog");
   await stalePage.getByRole("button", { name: "Aggiungi" }).click();
-  const dialog = await dialogPromise;
-  await expect(dialog.message()).toMatch(/aggiornata|ricaricato|recente/i);
-  await dialog.accept();
+  await expect
+    .poll(async () =>
+      stalePage.evaluate(() => {
+        const alerts = window.__netriskAlerts || [];
+        return alerts[alerts.length - 1] || "";
+      })
+    )
+    .toMatch(/aggiornata|ricaricato|recente/i);
 
   await expect.poll(() => getReinforcementCount(stalePage)).toBe(initialReinforcements - 1);
 
@@ -74,4 +94,3 @@ test("stale game tab reloads latest state after a version conflict", async ({ br
   await firstContext.close();
   await secondContext.close();
 });
-

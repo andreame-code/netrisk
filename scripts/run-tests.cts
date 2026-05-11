@@ -3406,6 +3406,53 @@ register("auth store revoca le sessioni utente dopo cambio password", async () =
   }
 });
 
+register("auth store migra sessioni legacy plaintext al primo uso", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+
+  try {
+    const auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+    const registered = await auth.registerPasswordUser("legacy_session", TEST_PASSWORD);
+    assert.equal(registered.ok, true);
+
+    const legacyToken = "legacy-plaintext-session-token";
+    await auth.datastore.createSession(legacyToken, registered.user.id, Date.now());
+
+    const sessionUser = await auth.getUserFromSession(legacyToken);
+    assert.equal(sessionUser.username, "legacy_session");
+    assert.equal(await auth.datastore.findSession(legacyToken), null);
+    assert.equal(
+      (await auth.datastore.findSession(sessionTokenStorageKey(legacyToken))).user_id,
+      registered.user.id
+    );
+
+    const logoutOnlyLegacyToken = "logout-only-legacy-session-token";
+    await auth.datastore.createSession(logoutOnlyLegacyToken, registered.user.id, Date.now());
+    await auth.logout(logoutOnlyLegacyToken);
+    assert.equal(await auth.datastore.findSession(logoutOnlyLegacyToken), null);
+    assert.equal(
+      await auth.datastore.findSession(sessionTokenStorageKey(logoutOnlyLegacyToken)),
+      null
+    );
+
+    auth.datastore.close();
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
   for (let index = 0; index < 32; index += 1) {
     const value = secureRandom();

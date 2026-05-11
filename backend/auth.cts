@@ -581,24 +581,46 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     const storedSessionToken = sessionTokenStorageKey(sessionToken);
-    const session = await datastore.findSession(storedSessionToken);
+    let session = await datastore.findSession(storedSessionToken);
+    let tokenToDelete = storedSessionToken;
     if (!session) {
-      return null;
+      const legacySession = await datastore.findSession(sessionToken);
+      if (!legacySession) {
+        return null;
+      }
+
+      session = legacySession;
+      tokenToDelete = sessionToken;
     }
 
     const createdAt = session.created_at || session.createdAt || 0;
     if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
-      await datastore.deleteSession(storedSessionToken);
+      await datastore.deleteSession(tokenToDelete);
       return null;
     }
 
     const sessionUserId = session.user_id || session.userId || "";
-    return sessionUserId ? (await datastore.findUserById(sessionUserId)) || null : null;
+    if (!sessionUserId) {
+      await datastore.deleteSession(tokenToDelete);
+      return null;
+    }
+
+    if (tokenToDelete === sessionToken) {
+      await datastore.createSession(
+        storedSessionToken,
+        sessionUserId,
+        Number(createdAt) || Date.now()
+      );
+      await datastore.deleteSession(sessionToken);
+    }
+
+    return (await datastore.findUserById(sessionUserId)) || null;
   }
 
   async function logout(sessionToken: string | null | undefined) {
     if (sessionToken) {
       await datastore.deleteSession(sessionTokenStorageKey(sessionToken));
+      await datastore.deleteSession(sessionToken);
     }
 
     return null;
