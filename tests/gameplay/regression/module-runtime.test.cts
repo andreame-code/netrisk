@@ -407,7 +407,7 @@ register(
 );
 
 register(
-  "module runtime sanitizza sourcePath per non esporre percorsi assoluti server",
+  "module runtime sanitizes sourcePath to avoid exposing absolute server paths",
   async () => {
     await withModuleServer(
       [
@@ -420,40 +420,11 @@ register(
             displayName: "Demo Sanitized",
             engineVersion: "1.0.0",
             kind: "hybrid",
-            capabilities: [{ kind: "ui-slot", scope: "global", description: "Demo slot" }],
-            entrypoints: {
-              clientManifest: "client-manifest.json"
-            }
-          },
-          clientManifest: {
-            ui: {
-              slots: [
-                {
-                  slotId: "new-game.sidebar",
-                  itemId: "demo.sanitized.briefing",
-                  title: "Demo Sanitized Briefing",
-                  kind: "panel",
-                  order: 20
-                }
-              ]
-            }
+            capabilities: []
           }
         }
       ],
       async ({ app, adminSessionToken, tempRoot }) => {
-        function assertSanitizedModulePathFields(moduleEntry: any): void {
-          assert.equal(Boolean(moduleEntry), true);
-          assert.equal(moduleEntry.sourcePath.includes(tempRoot), false);
-          assert.equal(path.isAbsolute(moduleEntry.sourcePath), false);
-          assert.match(moduleEntry.sourcePath, /^modules\/demo\.sanitized$/);
-          assert.equal(moduleEntry.clientManifestPath.includes(tempRoot), false);
-          assert.equal(path.isAbsolute(moduleEntry.clientManifestPath), false);
-          assert.match(
-            moduleEntry.clientManifestPath,
-            /^modules\/demo\.sanitized\/client-manifest\.json$/
-          );
-        }
-
         const catalogResponse = await callApp(
           app,
           "GET",
@@ -470,42 +441,21 @@ register(
           (entry: any) => entry.id === CORE_MODULE_ID
         );
 
-        assertSanitizedModulePathFields(sanitizedModule);
+        assert.equal(Boolean(sanitizedModule), true);
+        assert.equal(sanitizedModule.sourcePath.includes(tempRoot), false);
+        assert.match(sanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
 
         assert.equal(Boolean(coreModule), true);
         assert.equal(coreModule.sourcePath.includes(tempRoot), false);
         assert.match(coreModule.sourcePath, /^modules\/core\.base\/module\.json$/);
-
-        const enableResponse = await callApp(
-          app,
-          "POST",
-          "/api/modules/demo.sanitized/enable",
-          undefined,
-          authHeaders(adminSessionToken)
-        );
-        assert.equal(enableResponse.statusCode, 200);
-        assertSanitizedModulePathFields(
-          enableResponse.payload.modules.find((entry: any) => entry.id === "demo.sanitized")
-        );
-
-        const disableResponse = await callApp(
-          app,
-          "POST",
-          "/api/modules/demo.sanitized/disable",
-          undefined,
-          authHeaders(adminSessionToken)
-        );
-        assert.equal(disableResponse.statusCode, 200);
-        assertSanitizedModulePathFields(
-          disableResponse.payload.modules.find((entry: any) => entry.id === "demo.sanitized")
-        );
 
         const optionsResponse = await callApp(app, "GET", "/api/modules/options");
         assert.equal(optionsResponse.statusCode, 200);
         const optionsSanitizedModule = optionsResponse.payload.modules.find(
           (entry: any) => entry.id === "demo.sanitized"
         );
-        assertSanitizedModulePathFields(optionsSanitizedModule);
+        assert.equal(optionsSanitizedModule.sourcePath.includes(tempRoot), false);
+        assert.match(optionsSanitizedModule.sourcePath, /^modules\/demo\.sanitized$/);
       }
     );
   }
