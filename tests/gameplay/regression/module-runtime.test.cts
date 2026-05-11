@@ -757,6 +757,74 @@ register("module runtime non espone slot UI con slotId non supportati", async ()
   );
 });
 
+register("module runtime rejects UI slot routes that are not same-origin paths", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "unsafe.route",
+        manifest: {
+          schemaVersion: 1,
+          id: "unsafe.route",
+          version: "1.0.0",
+          displayName: "Unsafe Route",
+          engineVersion: "1.0.0",
+          kind: "ui",
+          capabilities: [{ kind: "ui-slot", scope: "global", description: "Unsafe route" }],
+          entrypoints: {
+            clientManifest: "client-manifest.json"
+          }
+        },
+        clientManifest: {
+          ui: {
+            slots: [
+              {
+                slotId: "top-nav-bar",
+                itemId: "unsafe.route.link",
+                title: "Unsafe Route",
+                kind: "nav-item",
+                route: "javascript:alert(1)"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const catalogResponse = await callApp(
+        app,
+        "GET",
+        "/api/modules",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(catalogResponse.statusCode, 200);
+      const unsafeModule = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "unsafe.route"
+      );
+      assert.equal(Boolean(unsafeModule), true);
+      assert.equal(
+        unsafeModule.errors.some((entry: string) => entry.includes("Invalid UI slot route")),
+        true
+      );
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.uiSlots.some(
+          (entry: any) => entry.itemId === "unsafe.route.link"
+        ),
+        false
+      );
+      assert.equal(
+        moduleOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+          (entry: any) => entry.itemId === "unsafe.route.link"
+        ),
+        false
+      );
+    }
+  );
+});
+
 register(
   "module runtime rifiuta client manifest che escono dalla directory del modulo",
   async () => {

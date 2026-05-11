@@ -947,6 +947,10 @@ export function GameRoute() {
 
   function cycleCommandDockSheet(): void {
     setCommandDockSheetState((current) => {
+      if (!isMobileCommandDockViewport()) {
+        return current === "collapsed" ? "expanded" : "collapsed";
+      }
+
       if (current === "collapsed") {
         return "half-open";
       }

@@ -204,6 +204,7 @@ describe("GameRoute integration", () => {
 
   afterEach(() => {
     streamHandlers = null;
+    vi.unstubAllGlobals();
   });
 
   it("falls back to polling after an invalid stream payload and returns to live updates after recovery", async () => {
@@ -323,6 +324,23 @@ describe("GameRoute integration", () => {
     expect(dock.querySelector("#reinforce-multi-button")).toHaveTextContent("Aggiungi");
     expect(dock.querySelector("#reinforce-all-button")).toHaveTextContent("Aggiungi tutto (3)");
     expect(dock.querySelector("#end-turn-button")).toHaveAttribute("hidden");
+  });
+
+  it("keeps the command dock toggle binary outside mobile viewports", async () => {
+    const user = userEvent.setup();
+
+    renderReactShell("/react/game/g-1");
+
+    const dock = await screen.findByTestId("actions-panel");
+    const toggle = dock.querySelector(".game-command-dock-toggle") as HTMLButtonElement | null;
+    expect(toggle).not.toBeNull();
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+
+    await user.click(toggle as HTMLButtonElement);
+    expect(dock).toHaveAttribute("data-command-sheet-state", "expanded");
+
+    await user.click(toggle as HTMLButtonElement);
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
   });
 
   it("renders the reference fortify command dock", async () => {

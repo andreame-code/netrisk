@@ -2,9 +2,13 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
-## 0.1.014 - 2026-05-11
+## 0.1.015 - 2026-05-11
 
 - Added the mobile map-first gameplay shell with a compact header, floating HUD, bottom-sheet commands, and phone viewport coverage.
+
+## 0.1.014 - 2026-05-11
+
+- Hardened module UI slot routes by rejecting unsafe schemes and external URLs before module links reach the frontend.
 
 ## 0.1.013 - 2026-05-11
 
