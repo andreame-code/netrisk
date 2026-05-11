@@ -789,6 +789,10 @@ function loadClientManifest(
   }
 }
 
+function projectRelativePath(projectRoot: string, targetPath: string): string {
+  return path.relative(projectRoot, targetPath).split(path.sep).join("/");
+}
+
 function baseInstalledModuleFromManifest(
   manifest: NetRiskModuleManifest,
   sourcePath: string,
@@ -796,7 +800,8 @@ function baseInstalledModuleFromManifest(
   clientManifest: NetRiskModuleClientManifest | null,
   clientManifestPath: string | null,
   warnings: string[],
-  errors: string[]
+  errors: string[],
+  projectRoot: string
 ): NetRiskInstalledModule {
   const isCoreModule = manifest.id === CORE_MODULE_ID;
   return {
@@ -805,7 +810,7 @@ function baseInstalledModuleFromManifest(
     displayName: manifest.displayName,
     description: manifest.description || null,
     kind: manifest.kind,
-    sourcePath,
+    sourcePath: projectRelativePath(projectRoot, sourcePath),
     status: isCoreModule || enabledById[manifest.id] ? "enabled" : "validated",
     enabled: isCoreModule || Boolean(enabledById[manifest.id]),
     compatible: true,
@@ -813,7 +818,9 @@ function baseInstalledModuleFromManifest(
     capabilities: manifest.capabilities.map((capability) => ({ ...capability })),
     warnings: [...warnings],
     errors: [...errors],
-    clientManifestPath,
+    clientManifestPath: clientManifestPath
+      ? projectRelativePath(projectRoot, clientManifestPath)
+      : null,
     clientManifest
   };
 }
@@ -1868,7 +1875,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           clientManifestResult.clientManifest,
           clientManifestResult.clientManifestPath,
           [...clientManifestResult.warnings, ...serverModuleResult.warnings],
-          [...clientManifestResult.errors, ...serverModuleResult.errors, ...moduleMapErrors]
+          [...clientManifestResult.errors, ...serverModuleResult.errors, ...moduleMapErrors],
+          options.projectRoot
         );
         if (serverModuleResult.serverModule) {
           serverModulesById.set(manifest.id, serverModuleResult.serverModule);
@@ -1893,7 +1901,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           displayName: directory.name,
           description: null,
           kind: null,
-          sourcePath: moduleRoot,
+          sourcePath: projectRelativePath(options.projectRoot, moduleRoot),
           status: "error",
           enabled: false,
           compatible: false,
@@ -1978,7 +1986,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         coreClientManifest,
         coreClientManifestPath,
         coreWarnings,
-        coreErrors
+        coreErrors,
+        options.projectRoot
       ),
       ...filesystemModules
     ];

@@ -146,6 +146,9 @@ async function main(): Promise<void> {
     E2E_PORT: String(port),
     E2E_BASE_URL: baseURL,
     E2E_DB_FILE: dbFile,
+    NETRISK_AUTH_THROTTLE_MAX_ATTEMPTS: process.env.NETRISK_AUTH_THROTTLE_MAX_ATTEMPTS || "1000",
+    NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS:
+      process.env.NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS || "1000",
     PLAYWRIGHT_SKIP_WEBSERVER: "true"
   };
   await cleanupStaleE2eDatabases(dataDir);
