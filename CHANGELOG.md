@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.018 - 2026-05-12
+
+- Refined the mobile gameplay shell to match the reference state layouts for collapsed, half-open, expanded, and drawer-based actions.
+
 ## 0.1.017 - 2026-05-12
 
 - Fixed the mobile mandatory card-trade layout so the map board remains fully visible above the command dock.

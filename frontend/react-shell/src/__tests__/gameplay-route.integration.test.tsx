@@ -363,10 +363,7 @@ describe("GameRoute integration", () => {
       removeListener,
       dispatchEvent: vi.fn(() => true)
     }));
-    vi.stubGlobal(
-      "matchMedia",
-      matchMedia
-    );
+    vi.stubGlobal("matchMedia", matchMedia);
 
     const { unmount } = renderReactShell("/react/game/g-1");
 
