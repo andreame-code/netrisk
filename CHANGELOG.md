@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.011 - 2026-05-11
+
+- Added branch-focused regression tests for map data validation, reinforcement adjustments, and conquest resolution edge cases.
+
 ## 0.1.010 - 2026-05-09
 
 - Hardened authentication flow against timing-based username enumeration by ensuring consistent password hashing execution paths for all users.
