@@ -6940,10 +6940,15 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   body[data-app-section="game"] .top-nav-title,
   html[data-theme="war-table"] body[data-app-section="game"] .top-nav-title {
     display: block !important;
+    max-width: 48vw !important;
+    overflow: hidden !important;
     color: #f6b515 !important;
-    font-size: 0 !important;
+    font-size: 0.86rem !important;
     font-weight: 950 !important;
-    letter-spacing: 0.18em !important;
+    letter-spacing: 0.06em !important;
+    text-align: center !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   body[data-app-section="game"] .top-nav-title::after,
@@ -6953,11 +6958,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   body[data-app-section="game"] .top-nav-title::before,
   html[data-theme="war-table"] body[data-app-section="game"] .top-nav-title::before {
-    content: "NETRISK" !important;
-    color: #f6b515 !important;
-    font-size: 1.08rem !important;
-    font-weight: 950 !important;
-    letter-spacing: 0.22em !important;
+    content: none !important;
   }
 
   body[data-app-section="game"] .top-nav-links,

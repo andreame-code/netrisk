@@ -799,6 +799,8 @@ export function GameActionDock({
   onToggleExpanded
 }: GameActionDockProps) {
   const isSheetOpen = sheetState !== "collapsed";
+  const toggleLabel =
+    sheetState === "expanded" ? t("game.commandDock.collapse") : t("game.commandDock.expand");
 
   return (
     <aside
@@ -813,7 +815,7 @@ export function GameActionDock({
         type="button"
         className="game-command-dock-toggle"
         aria-expanded={isSheetOpen}
-        aria-label={isSheetOpen ? t("game.commandDock.collapse") : t("game.commandDock.expand")}
+        aria-label={toggleLabel}
         onClick={onToggleExpanded}
       >
         <span aria-hidden="true">{sheetState === "expanded" ? "v" : "^"}</span>

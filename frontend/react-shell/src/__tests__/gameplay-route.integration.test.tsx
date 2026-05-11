@@ -400,11 +400,13 @@ describe("GameRoute integration", () => {
     expect(toggle).not.toBeNull();
     expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
     expect(mapViewport).toHaveAttribute("data-command-sheet-state", "half-open");
+    expect(toggle).toHaveAttribute("aria-label", "Espandi comandi");
 
     await user.click(toggle as HTMLButtonElement);
 
     expect(dock).toHaveAttribute("data-command-sheet-state", "expanded");
     expect(mapViewport).toHaveAttribute("data-command-sheet-state", "expanded");
+    expect(toggle).toHaveAttribute("aria-label", "Comprimi comandi");
   });
 
   it("normalizes the mobile-only half-open dock state after leaving the mobile viewport", async () => {
