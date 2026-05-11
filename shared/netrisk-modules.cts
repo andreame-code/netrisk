@@ -5,6 +5,7 @@ import {
   saveGameSchemaVersion
 } from "./version-manifest.cjs";
 import {
+  isSafeModuleUiRoute,
   NETRISK_MODULE_CAPABILITY_KIND_VALUES,
   NETRISK_UI_SLOT_ID_VALUES
 } from "./runtime-validation.cjs";
@@ -377,6 +378,11 @@ function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContrib
     throw new Error(`Invalid UI slot kind in "${sourcePath}".`);
   }
 
+  const route = isNonEmptyString(raw.route) ? String(raw.route).trim() : null;
+  if (route && !isSafeModuleUiRoute(route)) {
+    throw new Error(`Invalid UI slot route in "${sourcePath}".`);
+  }
+
   return {
     slotId: String(raw.slotId).trim() as NetRiskUiSlotId,
     itemId: String(raw.itemId).trim(),
@@ -384,7 +390,7 @@ function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContrib
     kind,
     order: typeof raw.order === "number" && Number.isFinite(raw.order) ? raw.order : 0,
     description: isNonEmptyString(raw.description) ? String(raw.description).trim() : null,
-    route: isNonEmptyString(raw.route) ? String(raw.route).trim() : null
+    route
   };
 }
 

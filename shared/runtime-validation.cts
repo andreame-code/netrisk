@@ -93,6 +93,24 @@ function objectSchema<T extends z.ZodRawShape>(shape: T) {
 }
 
 const passwordSchema = z.string().min(8).max(128);
+const moduleUiRouteBaseUrl = "https://netrisk.local";
+
+export function isSafeModuleUiRoute(route: string): boolean {
+  if (!route.startsWith("/") || route.startsWith("//") || route.includes("\\")) {
+    return false;
+  }
+
+  try {
+    const parsedRoute = new URL(route, moduleUiRouteBaseUrl);
+    return parsedRoute.origin === moduleUiRouteBaseUrl && parsedRoute.pathname.startsWith("/");
+  } catch {
+    return false;
+  }
+}
+
+const moduleUiRouteSchema = z.string().trim().min(1).refine(isSafeModuleUiRoute, {
+  message: "Module UI routes must be same-origin paths."
+});
 
 export function formatValidationPath(path: IssuePathSegment[] | undefined): string {
   if (!Array.isArray(path) || !path.length) {
@@ -341,7 +359,7 @@ export const netRiskUiSlotContributionSchema = objectSchema({
   kind: z.string().min(1),
   order: z.number().optional(),
   description: z.string().min(1).nullable().optional(),
-  route: z.string().min(1).nullable().optional()
+  route: moduleUiRouteSchema.nullable().optional()
 });
 
 export type NetRiskUiSlotContribution = z.infer<typeof netRiskUiSlotContributionSchema>;
