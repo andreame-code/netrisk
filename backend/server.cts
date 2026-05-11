@@ -177,6 +177,34 @@ const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
+const authThrottleEnvBindings: Array<[string, string]> = [
+  ["cleanupIntervalMs", "NETRISK_AUTH_THROTTLE_CLEANUP_INTERVAL_MS"],
+  ["maxAttempts", "NETRISK_AUTH_THROTTLE_MAX_ATTEMPTS"],
+  ["maxIpAttempts", "NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS"],
+  ["windowMs", "NETRISK_AUTH_THROTTLE_WINDOW_MS"],
+  ["lockoutMs", "NETRISK_AUTH_THROTTLE_LOCKOUT_MS"],
+  ["maxLockoutMs", "NETRISK_AUTH_THROTTLE_MAX_LOCKOUT_MS"]
+];
+
+function parsePositiveIntegerEnv(name: string): number | undefined {
+  const rawValue = String(process.env[name] || "").trim();
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const value = Number(rawValue);
+  return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function authAttemptThrottleOptionsFromEnv(): Record<string, number> {
+  return authThrottleEnvBindings.reduce((options, [optionName, envName]) => {
+    const value = parsePositiveIntegerEnv(envName);
+    if (typeof value === "number") {
+      options[optionName] = value;
+    }
+    return options;
+  }, {} as Record<string, number>);
+}
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -319,7 +347,7 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   const state = createInitialState();
-  const authAttemptThrottle = createAuthAttemptThrottle();
+  const authAttemptThrottle = createAuthAttemptThrottle(authAttemptThrottleOptionsFromEnv());
   let activeGameId: string | null = null;
   let activeGameVersion: number | null = null;
   let activeGameName: string | null = null;

@@ -47,6 +47,6 @@ test("human player can end turn and watch the AI complete its turn automatically
   await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, { timeout: 10000 });
   await expect(page.getByRole("button", { name: "Aggiungi" })).toBeEnabled();
   await expect(page.locator("#players")).toContainText(aiName);
+  await page.getByRole("button", { name: /Registro attivita/i }).click();
   await expect(page.locator("#log")).toContainText(aiName);
 });
-

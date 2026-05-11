@@ -171,24 +171,38 @@ async function getReinforcementCount(page) {
   return match ? Number(match[1]) : 0;
 }
 
+function gameIdFromPageUrl(page) {
+  const segments = new URL(page.url()).pathname.split("/").filter(Boolean);
+  const gameSegmentIndex = segments.lastIndexOf("game");
+  if (gameSegmentIndex === -1 || !segments[gameSegmentIndex + 1]) {
+    throw new Error("Impossibile risolvere gameId dalla URL corrente.");
+  }
+  return segments[gameSegmentIndex + 1];
+}
+
 async function findAttackPair(page, ownerName) {
-  const ownedButtons = page.locator("[data-territory-id]").filter({ hasText: ownerName });
-  const total = await ownedButtons.count();
+  const gameId = gameIdFromPageUrl(page);
+  const stateResponse = await page.request.get(`/api/state?gameId=${encodeURIComponent(gameId)}`);
+  await expect(stateResponse.ok()).toBeTruthy();
+  const state = await stateResponse.json();
+  const player = state.players.find((candidate) => candidate.name === ownerName);
+  if (!player) {
+    throw new Error("Nessun giocatore trovato per " + ownerName + ".");
+  }
 
-  for (let index = 0; index < total; index += 1) {
-    await ownedButtons.nth(index).click();
-    const attackTo = page.locator("#attack-to option");
-    const optionCount = await attackTo.count();
+  const territoriesById = new Map(state.map.map((territory) => [territory.id, territory]));
+  const ownedTerritories = state.map.filter((territory) => territory.ownerId === player.id);
 
-    for (let optionIndex = 0; optionIndex < optionCount; optionIndex += 1) {
-      const option = attackTo.nth(optionIndex);
-      const value = await option.getAttribute("value");
-      if (value) {
-        return {
-          fromId: await page.locator("#attack-from").inputValue(),
-          toId: value
-        };
-      }
+  for (const territory of ownedTerritories) {
+    const target = (territory.neighbors || [])
+      .map((neighborId) => territoriesById.get(neighborId))
+      .find((neighbor) => neighbor && neighbor.ownerId && neighbor.ownerId !== player.id);
+    if (target) {
+      await page.locator("#reinforce-select").selectOption(territory.id);
+      return {
+        fromId: territory.id,
+        toId: target.id
+      };
     }
   }
 
