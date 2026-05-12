@@ -403,7 +403,7 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
         boardStageBackground,
         dock: boundsFor(".game-command-dock"),
         header: boundsFor("body[data-app-section='game'] .top-nav-bar"),
-        hud: boundsFor(".game-floating-hud"),
+        hudDisplay: window.getComputedStyle(document.querySelector(".game-floating-hud")).display,
         primaryDockButton: primaryDockButton
           ? {
               bottom: primaryDockButton.getBoundingClientRect().bottom,
@@ -435,7 +435,7 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
     expect(layout.dock.height).toBeGreaterThanOrEqual(70);
     expect(layout.dock.height).toBeLessThanOrEqual(112);
     expect(layout.sheetState).toBe("collapsed");
-    expect(layout.hud.width).toBeLessThan(layout.viewport.width);
+    expect(layout.hudDisplay).toBe("none");
 
     await page.locator(".game-command-dock-toggle").click();
     await expect(page.locator(".game-command-dock")).toHaveAttribute(

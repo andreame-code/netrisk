@@ -7631,14 +7631,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-floating-hud,
   html[data-theme="war-table"] .game-map-first-page .game-floating-hud {
-    top: 34px !important;
-    right: auto !important;
-    bottom: auto !important;
-    left: 12px !important;
-    width: min(182px, calc(100vw - 98px)) !important;
-    max-height: none !important;
-    padding: 9px 10px !important;
-    border-radius: 6px !important;
+    display: none !important;
   }
 
   .game-floating-hud .game-hud-heading,
