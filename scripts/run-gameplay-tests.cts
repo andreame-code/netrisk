@@ -30,6 +30,7 @@ const gameplayTestModules = [
   "../tests/gameplay/shared/runtime-validation.test.cjs",
   "../tests/gameplay/shared/module-registry.test.cjs",
   "../tests/gameplay/ai/ai-player.test.cjs",
+  "../tests/gameplay/ai/ai-turn-resume.test.cjs",
   "../tests/gameplay/ai/ai-turn-recovery.test.cjs",
   "../tests/gameplay/setup/game-setup.test.cjs",
   "../tests/gameplay/setup/new-game-config.test.cjs",
