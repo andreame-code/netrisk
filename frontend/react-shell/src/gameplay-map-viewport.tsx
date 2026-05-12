@@ -162,9 +162,47 @@ function resolveMapImageUrl(imageUrl: string): string {
   return imageUrl;
 }
 
-function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
-  const value = Number.parseFloat(styles.getPropertyValue(propertyName) || "0");
-  return Number.isFinite(value) ? value : 0;
+function readCssLengthPixelValue(
+  element: HTMLElement,
+  styles: CSSStyleDeclaration,
+  propertyName: string
+): number {
+  const rawValue = styles.getPropertyValue(propertyName).trim();
+  if (!rawValue) {
+    return 0;
+  }
+
+  if (rawValue === "0") {
+    return 0;
+  }
+
+  const pixelMatch = rawValue.match(/^(-?\d+(?:\.\d+)?)px$/);
+  if (pixelMatch) {
+    const value = Number.parseFloat(pixelMatch[1]);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const measurement = document.createElement("div");
+  measurement.style.position = "absolute";
+  measurement.style.visibility = "hidden";
+  measurement.style.pointerEvents = "none";
+  measurement.style.boxSizing = "border-box";
+  measurement.style.width = rawValue;
+  measurement.style.height = "0";
+  measurement.style.margin = "0";
+  measurement.style.padding = "0";
+  measurement.style.border = "0";
+
+  element.appendChild(measurement);
+  const measuredWidth = measurement.getBoundingClientRect().width;
+  measurement.remove();
+
+  if (Number.isFinite(measuredWidth) && measuredWidth >= 0) {
+    return measuredWidth;
+  }
+
+  const fallback = Number.parseFloat(rawValue);
+  return Number.isFinite(fallback) ? fallback : 0;
 }
 
 export function calculateFittedBoardSize({
@@ -475,8 +513,8 @@ export function GameplayMapViewport({
       const stagePaddingY =
         Number.parseFloat(stageStyles.paddingTop || "0") +
         Number.parseFloat(stageStyles.paddingBottom || "0");
-      const safeTop = readCssPixelValue(stageStyles, "--game-map-safe-top");
-      const safeBottom = readCssPixelValue(stageStyles, "--game-map-safe-bottom");
+      const safeTop = readCssLengthPixelValue(mapStage, stageStyles, "--game-map-safe-top");
+      const safeBottom = readCssLengthPixelValue(mapStage, stageStyles, "--game-map-safe-bottom");
       const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
       const stageRect = mapStage.getBoundingClientRect();
       const availableHeight = Math.max(

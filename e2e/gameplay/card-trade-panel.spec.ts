@@ -256,6 +256,32 @@ for (const viewport of [
           width: rect.width
         };
       };
+      const resolvedCssLength = (
+        element: HTMLElement,
+        styles: CSSStyleDeclaration | null,
+        propertyName: string
+      ) => {
+        const rawValue = styles?.getPropertyValue(propertyName).trim() || "";
+        if (!rawValue) {
+          return "";
+        }
+
+        const measurement = document.createElement("div");
+        measurement.style.position = "absolute";
+        measurement.style.visibility = "hidden";
+        measurement.style.pointerEvents = "none";
+        measurement.style.boxSizing = "border-box";
+        measurement.style.width = rawValue;
+        measurement.style.height = "0";
+        measurement.style.margin = "0";
+        measurement.style.padding = "0";
+        measurement.style.border = "0";
+        element.appendChild(measurement);
+        const measuredWidth = measurement.getBoundingClientRect().width;
+        measurement.remove();
+
+        return Number.isFinite(measuredWidth) ? `${measuredWidth}px` : "";
+      };
 
       const board = boundsFor(".game-map-stage .map-board");
       const dock = boundsFor(".game-command-dock-mandatory-trade");
@@ -276,8 +302,12 @@ for (const viewport of [
           dock.left >= -1 &&
           dock.right <= viewport.width + 1 &&
           dock.bottom <= viewport.height + 1,
-        safeBottom: stageStyles?.getPropertyValue("--game-map-safe-bottom").trim() || "",
-        safeTop: stageStyles?.getPropertyValue("--game-map-safe-top").trim() || ""
+        safeBottom:
+          stage instanceof HTMLElement
+            ? resolvedCssLength(stage, stageStyles, "--game-map-safe-bottom")
+            : "",
+        safeTop:
+          stage instanceof HTMLElement ? resolvedCssLength(stage, stageStyles, "--game-map-safe-top") : ""
       };
     });
 
