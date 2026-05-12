@@ -326,8 +326,8 @@ for (const viewport of [
       expect(metrics.boardHasVisiblePlayArea).toBeTruthy();
     } else {
       expect(metrics.boardInsideViewport).toBeTruthy();
+      expect(metrics.boardClearOfDock).toBeTruthy();
     }
-    expect(metrics.boardClearOfDock).toBeTruthy();
     expect(metrics.dockInsideViewport).toBeTruthy();
     expect(metrics.safeBottom).toMatch(/^[0-9.]+px$/);
   });

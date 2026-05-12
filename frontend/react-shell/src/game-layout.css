@@ -7077,8 +7077,9 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     --game-command-dock-height: 76px !important;
   }
 
-  .game-map-first-page:has(.game-command-dock-sheet-expanded),
-  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-sheet-expanded) {
+  .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded),
+  html[data-theme="war-table"]
+    .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded) {
     --game-command-dock-height: min(68svh, 520px) !important;
   }
 
@@ -7581,8 +7582,9 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     --game-command-dock-height: 214px !important;
   }
 
-  .game-map-first-page:has(.game-command-dock-sheet-expanded),
-  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-sheet-expanded) {
+  .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded),
+  html[data-theme="war-table"]
+    .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded) {
     --game-command-dock-height: min(64svh, 520px) !important;
   }
 
@@ -8031,5 +8033,90 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-info-modern-list > div small {
     grid-column: 1 / -1 !important;
+  }
+
+  body[data-app-section="game"] .top-nav-title,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-title {
+    position: relative !important;
+    color: transparent !important;
+  }
+
+  body[data-app-section="game"] .top-nav-title::after,
+  html[data-theme="war-table"] body[data-app-section="game"] .top-nav-title::after {
+    content: "NETRISK" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    color: #f6b515 !important;
+    font-size: 0.84rem !important;
+    font-weight: 950 !important;
+    letter-spacing: 0.22em !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    text-shadow: 0 0 18px rgba(246, 181, 21, 0.32) !important;
+  }
+
+  .game-map-first-page,
+  html[data-theme="war-table"] .game-map-first-page {
+    --game-mobile-map-board-width: max(250vw, 760px);
+  }
+
+  .game-map-first-page .game-map-stage,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage {
+    background:
+      radial-gradient(circle at 52% 50%, rgba(58, 115, 158, 0.28), transparent 52%),
+      linear-gradient(180deg, #0b263c 0%, #061925 58%, #03101a 100%) !important;
+  }
+
+  .game-map-first-page .game-map-stage .map-board-anchor,
+  .game-map-first-page .game-map-stage .map-board-transform,
+  .game-map-first-page .game-map-stage .map-board,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-anchor,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-transform,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board {
+    width: var(--game-mobile-map-board-width) !important;
+    height: calc(var(--game-mobile-map-board-width) * 0.6578947368) !important;
+  }
+
+  .game-map-first-page .game-map-stage .map-board-stage,
+  html[data-theme="war-table"] .game-map-first-page .game-map-stage .map-board-stage {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded),
+  html[data-theme="war-table"]
+    .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-expanded.is-expanded) {
+    --game-command-dock-height: calc(100svh - 142px) !important;
+  }
+
+  .game-command-dock-sheet-expanded,
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-sheet-expanded {
+    max-height: calc(100svh - 142px) !important;
+  }
+
+  .game-modern-drawer,
+  html[data-theme="war-table"] .game-map-first-page .game-modern-drawer,
+  .game-modern-drawer-left,
+  .game-modern-drawer-right,
+  html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-left,
+  html[data-theme="war-table"] .game-map-first-page .game-modern-drawer-right {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 100svh !important;
+    min-height: 100svh !important;
+    max-height: 100svh !important;
+    border-right: 0 !important;
+    border-left: 0 !important;
+    border-radius: 0 !important;
+    padding: 42px 18px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .game-modern-drawer-header {
+    top: -42px !important;
+    margin: -42px -18px 14px !important;
+    padding: 42px 18px 14px !important;
   }
 }

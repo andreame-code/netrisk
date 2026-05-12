@@ -21,6 +21,15 @@ async function openWorldClassicGame(page) {
   await page.getByRole("button", { name: "Crea e apri" }).click();
 
   await expect(page.locator("#game-map-meta")).toContainText("World Classic", { timeout: 15000 });
+  const joinAiResponse = await page.request.post("/api/ai/join", {
+    data: { name: "CPU Mobile" }
+  });
+  await expect(joinAiResponse.ok()).toBeTruthy();
+  await page.locator(".game-command-dock-toggle").click();
+  await page.getByRole("button", { name: "Avvia partita" }).click();
+  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, {
+    timeout: 15000
+  });
   await expect(page.locator(".map-board.has-custom-background")).toBeVisible({ timeout: 15000 });
 }
 
@@ -89,7 +98,9 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
         sheetState: document
           .querySelector(".game-command-dock")
           ?.getAttribute("data-command-sheet-state"),
-        title: document.querySelector("body[data-app-section='game'] .top-nav-title")?.textContent,
+        title: window
+          .getComputedStyle(document.querySelector("body[data-app-section='game'] .top-nav-title"), "::after")
+          .content.replaceAll('"', ""),
         viewport: {
           height: window.innerHeight,
           width: window.innerWidth
@@ -100,7 +111,7 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
     expect(layout.viewport).toEqual(viewport);
     expect(layout.boardStageBackground).toContain("world-classic");
     expect(layout.header.height).toBeLessThanOrEqual(60);
-    expect(layout.title).toContain("Frontline Dominion");
+    expect(layout.title).toBe("NETRISK");
     expect(layout.board.width).toBeGreaterThan(layout.viewport.width);
     expect(layout.board.height).toBeGreaterThanOrEqual(layout.viewport.height * 0.42);
     expect(layout.dock.left).toBeLessThanOrEqual(1);
