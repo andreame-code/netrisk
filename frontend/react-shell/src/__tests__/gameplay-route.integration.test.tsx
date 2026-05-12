@@ -352,25 +352,24 @@ describe("GameRoute integration", () => {
     expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
   });
 
-  it("uses legacy media query listeners when the mobile dock viewport API needs them", async () => {
+  it("keeps the mobile command dock collapsed while registering viewport sync", async () => {
     const addListener = vi.fn();
     const removeListener = vi.fn();
-    vi.stubGlobal(
-      "matchMedia",
-      vi.fn(() => ({
-        matches: true,
-        media: "(max-width: 760px)",
-        onchange: null,
-        addListener,
-        removeListener,
-        dispatchEvent: vi.fn(() => true)
-      }))
-    );
+    const matchMedia = vi.fn(() => ({
+      matches: true,
+      media: "(max-width: 760px)",
+      onchange: null,
+      addListener,
+      removeListener,
+      dispatchEvent: vi.fn(() => true)
+    }));
+    vi.stubGlobal("matchMedia", matchMedia);
 
     const { unmount } = renderReactShell("/react/game/g-1");
 
     const dock = await screen.findByTestId("actions-panel");
-    expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+    expect(matchMedia).toHaveBeenCalledWith("(max-width: 760px)");
     expect(addListener).toHaveBeenCalledTimes(1);
 
     unmount();
@@ -398,6 +397,12 @@ describe("GameRoute integration", () => {
     const mapViewport = screen.getByTestId("mock-gameplay-map-viewport");
     const toggle = dock.querySelector(".game-command-dock-toggle") as HTMLButtonElement | null;
     expect(toggle).not.toBeNull();
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+    expect(mapViewport).toHaveAttribute("data-command-sheet-state", "collapsed");
+    expect(toggle).toHaveAttribute("aria-label", "Espandi comandi");
+
+    await user.click(toggle as HTMLButtonElement);
+
     expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
     expect(mapViewport).toHaveAttribute("data-command-sheet-state", "half-open");
     expect(toggle).toHaveAttribute("aria-label", "Espandi comandi");
@@ -409,7 +414,7 @@ describe("GameRoute integration", () => {
     expect(toggle).toHaveAttribute("aria-label", "Comprimi comandi");
   });
 
-  it("normalizes the mobile-only half-open dock state after leaving the mobile viewport", async () => {
+  it("uses binary command dock toggling after leaving the mobile viewport", async () => {
     const user = userEvent.setup();
     let isMobileViewport = true;
     let changeListener: ((event: MediaQueryListEvent) => void) | null = null;
@@ -436,13 +441,15 @@ describe("GameRoute integration", () => {
     const dock = await screen.findByTestId("actions-panel");
     const toggle = dock.querySelector(".game-command-dock-toggle") as HTMLButtonElement | null;
     expect(toggle).not.toBeNull();
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+
+    await user.click(toggle as HTMLButtonElement);
     expect(dock).toHaveAttribute("data-command-sheet-state", "half-open");
 
     act(() => {
       isMobileViewport = false;
       changeListener?.({ matches: false } as MediaQueryListEvent);
     });
-
     expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
 
     await user.click(toggle as HTMLButtonElement);

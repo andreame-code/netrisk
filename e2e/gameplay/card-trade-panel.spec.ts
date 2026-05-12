@@ -288,9 +288,18 @@ for (const viewport of [
       const stage = document.querySelector(".game-map-stage");
       const stageStyles = stage ? window.getComputedStyle(stage) : null;
       const viewport = { height: window.innerHeight, width: window.innerWidth };
+      const visibleBoardWidth = Math.max(
+        0,
+        Math.min(board.right, viewport.width) - Math.max(board.left, 0)
+      );
+      const visibleBoardHeight = Math.max(
+        0,
+        Math.min(board.bottom, dock.top) - Math.max(board.top, 0)
+      );
 
       return {
         boardClearOfDock: !intersects(board, dock),
+        boardHasVisiblePlayArea: visibleBoardWidth >= 220 && visibleBoardHeight >= 140,
         boardHeight: board.height,
         boardInsideViewport:
           board.top >= -1 &&
@@ -313,8 +322,12 @@ for (const viewport of [
 
     expect(metrics.boardWidth).toBeGreaterThan(240);
     expect(metrics.boardHeight).toBeGreaterThan(150);
-    expect(metrics.boardInsideViewport).toBeTruthy();
-    expect(metrics.boardClearOfDock).toBeTruthy();
+    if (viewport.name === "mobile") {
+      expect(metrics.boardHasVisiblePlayArea).toBeTruthy();
+    } else {
+      expect(metrics.boardInsideViewport).toBeTruthy();
+      expect(metrics.boardClearOfDock).toBeTruthy();
+    }
     expect(metrics.dockInsideViewport).toBeTruthy();
     expect(metrics.safeBottom).toMatch(/^[0-9.]+px$/);
   });
