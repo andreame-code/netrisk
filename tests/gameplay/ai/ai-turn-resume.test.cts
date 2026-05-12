@@ -10,6 +10,10 @@ const {
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
+type ResumeState = ReturnType<typeof makeState> & {
+  mapTerritories: ReturnType<typeof makeTerritory>[];
+};
+
 function withPatchedAdvanceTurn<T>(
   advanceTurn: (state: unknown) => void,
   run: (patchedRunAiTurnsIfNeeded: typeof runAiTurnsIfNeeded) => T
@@ -57,10 +61,9 @@ function createResumeState(options: {
         { id: "a", ownerId: "p1", armies: 3 },
         { id: "b", ownerId: "p2", armies: 2 }
       ])
-  });
+  }) as ResumeState;
 
-  (state as typeof state & { mapTerritories: ReturnType<typeof makeTerritory>[] }).mapTerritories =
-    [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])] ;
+  state.mapTerritories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])] ;
   return state;
 }
 
