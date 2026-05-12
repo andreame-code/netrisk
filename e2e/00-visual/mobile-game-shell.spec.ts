@@ -155,6 +155,132 @@ async function openMockAttackGame(page) {
   await expect(page.locator(".game-command-dock-attack")).toBeVisible();
 }
 
+async function openMockFortifyGame(page) {
+  const fortifyState = {
+    phase: "active",
+    turnPhase: "fortify",
+    players: [
+      {
+        id: "p1",
+        name: "andrea",
+        color: "#7c3aed",
+        connected: true,
+        isAi: false,
+        territoryCount: 2,
+        eliminated: false,
+        cardCount: 3
+      },
+      {
+        id: "p2",
+        name: "CPU",
+        color: "#f97316",
+        connected: true,
+        isAi: true,
+        territoryCount: 1,
+        eliminated: false,
+        cardCount: 0
+      }
+    ],
+    map: [
+      {
+        id: "western-united-states",
+        name: "Western United States",
+        neighbors: ["alaska", "alberta"],
+        continentId: "north-america",
+        ownerId: "p1",
+        armies: 4,
+        x: 0.22,
+        y: 0.38
+      },
+      {
+        id: "alaska",
+        name: "Alaska",
+        neighbors: ["western-united-states"],
+        continentId: "north-america",
+        ownerId: "p1",
+        armies: 1,
+        x: 0.16,
+        y: 0.18
+      },
+      {
+        id: "alberta",
+        name: "Alberta",
+        neighbors: ["western-united-states"],
+        continentId: "north-america",
+        ownerId: "p2",
+        armies: 2,
+        x: 0.36,
+        y: 0.3
+      }
+    ],
+    continents: [],
+    currentPlayerId: "p1",
+    reinforcementPool: 0,
+    winnerId: null,
+    gameConfig: {
+      mapId: "world-classic",
+      mapName: "World Classic",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    log: ["Fortify layout visual state"],
+    lastAction: null,
+    pendingConquest: null,
+    fortifyUsed: false,
+    conqueredTerritoryThisTurn: true,
+    attacksThisTurn: 1,
+    cardState: {
+      ruleSetId: "standard",
+      tradeCount: 0,
+      deckCount: 20,
+      discardCount: 0,
+      nextTradeBonus: 4,
+      maxHandBeforeForcedTrade: 5,
+      currentPlayerMustTrade: false
+    },
+    diceRuleSet: {
+      id: "standard",
+      attackerMaxDice: 3,
+      defenderMaxDice: 2
+    },
+    gameId: "g-mobile-fortify",
+    version: 8,
+    gameName: "Mobile Fortify",
+    playerId: "p1",
+    playerHand: []
+  };
+
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      json: {
+        user: {
+          id: "u1",
+          username: "andrea",
+          role: "user",
+          authMethods: ["password"],
+          preferences: { theme: "war-table" }
+        }
+      }
+    });
+  });
+
+  await page.route("**/api/state**", async (route) => {
+    await route.fulfill({ json: fortifyState });
+  });
+
+  await page.route("**/api/events**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
+  });
+
+  await page.addInitScript(() => window.localStorage.setItem("netrisk.theme", "war-table"));
+  await page.goto("/react/game/g-mobile-fortify");
+  await expect(page.locator(".game-command-dock-fortify")).toBeVisible();
+}
+
 async function readMobileAttackLayout(page) {
   return page.evaluate(() => {
     const rectFor = (selector) => {
@@ -184,6 +310,42 @@ async function readMobileAttackLayout(page) {
         ? rectFor(".game-mobile-sheet-actions")
         : null,
       stage: rectFor(".game-map-stage"),
+      toggle: rectFor(".game-command-dock-toggle"),
+      viewport: {
+        height: window.innerHeight,
+        width: window.innerWidth
+      }
+    };
+  });
+}
+
+async function readMobileFortifyLayout(page) {
+  return page.evaluate(() => {
+    const rectFor = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Missing ${selector}`);
+      }
+
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        width: rect.width
+      };
+    };
+
+    return {
+      dock: rectFor(".game-command-dock"),
+      endTurn: rectFor("#end-turn-button"),
+      fortify: rectFor("#fortify-button"),
+      header: rectFor("body[data-app-section='game'] .top-nav-bar"),
+      mobileActions: document.querySelector(".game-mobile-sheet-actions")
+        ? rectFor(".game-mobile-sheet-actions")
+        : null,
       toggle: rectFor(".game-command-dock-toggle"),
       viewport: {
         height: window.innerHeight,
@@ -372,6 +534,58 @@ test("mobile attack sheet keeps primary actions visible and expands only seconda
   await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
 
   const expandedLayout = await readMobileAttackLayout(page);
+  expect(expandedLayout.dock.height).toBeLessThanOrEqual(500);
+  expect(expandedLayout.dock.top - expandedLayout.header.bottom).toBeGreaterThan(160);
+  expect(expandedLayout.toggle.top).toBeGreaterThanOrEqual(0);
+  expect(expandedLayout.toggle.bottom).toBeLessThanOrEqual(expandedLayout.viewport.height + 1);
+  expect(expandedLayout.mobileActions.bottom).toBeLessThanOrEqual(
+    expandedLayout.viewport.height + 1
+  );
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "collapsed"
+  );
+});
+
+test("mobile fortify sheet keeps primary actions visible and expands only secondary actions", async ({
+  page
+}) => {
+  await page.setViewportSize(mobileViewports[0]);
+  await openMockFortifyGame(page);
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "half-open"
+  );
+  await expect(page.locator("#fortify-button")).toBeVisible();
+  await expect(page.locator("#end-turn-button")).toBeVisible();
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeHidden();
+
+  const halfOpenLayout = await readMobileFortifyLayout(page);
+  for (const button of [
+    halfOpenLayout.fortify,
+    halfOpenLayout.endTurn,
+    halfOpenLayout.toggle
+  ]) {
+    expect(button.height).toBeGreaterThanOrEqual(44);
+    expect(button.top).toBeGreaterThanOrEqual(0);
+    expect(button.bottom).toBeLessThanOrEqual(halfOpenLayout.viewport.height + 1);
+  }
+  expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(390);
+  expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(410);
+  expect(halfOpenLayout.dock.top - halfOpenLayout.header.bottom).toBeGreaterThan(240);
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "expanded"
+  );
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
+
+  const expandedLayout = await readMobileFortifyLayout(page);
   expect(expandedLayout.dock.height).toBeLessThanOrEqual(500);
   expect(expandedLayout.dock.top - expandedLayout.header.bottom).toBeGreaterThan(160);
   expect(expandedLayout.toggle.top).toBeGreaterThanOrEqual(0);
