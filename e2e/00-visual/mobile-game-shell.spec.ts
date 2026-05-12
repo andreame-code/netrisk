@@ -12,7 +12,7 @@ async function openWorldClassicGame(page) {
   const owner = uniqueUser("mobile_shell");
   const sessionToken = await registerAndLogin(page, owner);
   await setSessionThemePreference(page, sessionToken, "war-table");
-  await page.evaluate(() => window.localStorage.setItem("netrisk.theme", "war-table"));
+  await page.addInitScript(() => window.localStorage.setItem("netrisk.theme", "war-table"));
   await page.goto("/lobby/new");
   await expect(page.getByTestId("new-game-shell")).toBeVisible();
   await page.locator("#setup-map").selectOption("world-classic");
@@ -38,6 +38,160 @@ const mobileViewports = [
   { width: 360, height: 780 },
   { width: 430, height: 932 }
 ];
+
+async function openMockAttackGame(page) {
+  const attackState = {
+    phase: "active",
+    turnPhase: "attack",
+    players: [
+      {
+        id: "p1",
+        name: "andrea",
+        color: "#7c3aed",
+        connected: true,
+        isAi: false,
+        territoryCount: 1,
+        eliminated: false,
+        cardCount: 3
+      },
+      {
+        id: "p2",
+        name: "CPU",
+        color: "#f97316",
+        connected: true,
+        isAi: true,
+        territoryCount: 1,
+        eliminated: false,
+        cardCount: 0
+      }
+    ],
+    map: [
+      {
+        id: "western-united-states",
+        name: "Western United States",
+        neighbors: ["alberta"],
+        continentId: "north-america",
+        ownerId: "p1",
+        armies: 4,
+        x: 0.22,
+        y: 0.38
+      },
+      {
+        id: "alberta",
+        name: "Alberta",
+        neighbors: ["western-united-states"],
+        continentId: "north-america",
+        ownerId: "p2",
+        armies: 2,
+        x: 0.36,
+        y: 0.3
+      }
+    ],
+    continents: [],
+    currentPlayerId: "p1",
+    reinforcementPool: 0,
+    winnerId: null,
+    gameConfig: {
+      mapId: "world-classic",
+      mapName: "World Classic",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    log: ["Attack layout visual state"],
+    lastAction: null,
+    pendingConquest: null,
+    fortifyUsed: false,
+    conqueredTerritoryThisTurn: false,
+    attacksThisTurn: 0,
+    cardState: {
+      ruleSetId: "standard",
+      tradeCount: 0,
+      deckCount: 20,
+      discardCount: 0,
+      nextTradeBonus: 4,
+      maxHandBeforeForcedTrade: 5,
+      currentPlayerMustTrade: false
+    },
+    diceRuleSet: {
+      id: "standard",
+      attackerMaxDice: 3,
+      defenderMaxDice: 2
+    },
+    gameId: "g-mobile-attack",
+    version: 7,
+    gameName: "Mobile Attack",
+    playerId: "p1",
+    playerHand: []
+  };
+
+  await page.route("**/api/auth/session", async (route) => {
+    await route.fulfill({
+      json: {
+        user: {
+          id: "u1",
+          username: "andrea",
+          role: "user",
+          authMethods: ["password"],
+          preferences: { theme: "war-table" }
+        }
+      }
+    });
+  });
+
+  await page.route("**/api/state**", async (route) => {
+    await route.fulfill({ json: attackState });
+  });
+
+  await page.route("**/api/events**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: ""
+    });
+  });
+
+  await page.addInitScript(() => window.localStorage.setItem("netrisk.theme", "war-table"));
+  await page.goto("/react/game/g-mobile-attack");
+  await expect(page.locator(".game-command-dock-attack")).toBeVisible();
+}
+
+async function readMobileAttackLayout(page) {
+  return page.evaluate(() => {
+    const rectFor = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        throw new Error(`Missing ${selector}`);
+      }
+
+      const rect = element.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        width: rect.width
+      };
+    };
+
+    return {
+      attack: rectFor("#attack-button"),
+      banzai: rectFor("#attack-banzai-button"),
+      dock: rectFor(".game-command-dock"),
+      endTurn: rectFor("#end-turn-button"),
+      header: rectFor("body[data-app-section='game'] .top-nav-bar"),
+      mobileActions: document.querySelector(".game-mobile-sheet-actions")
+        ? rectFor(".game-mobile-sheet-actions")
+        : null,
+      stage: rectFor(".game-map-stage"),
+      toggle: rectFor(".game-command-dock-toggle"),
+      viewport: {
+        height: window.innerHeight,
+        width: window.innerWidth
+      }
+    };
+  });
+}
 
 test("mobile game shell keeps the map-first sheet layout playable", async ({ page }) => {
   await page.setViewportSize(mobileViewports[0]);
@@ -177,4 +331,58 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
     );
     await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
   }
+});
+
+test("mobile attack sheet keeps primary actions visible and expands only secondary actions", async ({
+  page
+}) => {
+  await page.setViewportSize(mobileViewports[0]);
+  await openMockAttackGame(page);
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "half-open"
+  );
+  await expect(page.locator("#attack-button")).toBeVisible();
+  await expect(page.locator("#attack-banzai-button")).toBeVisible();
+  await expect(page.locator("#end-turn-button")).toBeVisible();
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeHidden();
+
+  const halfOpenLayout = await readMobileAttackLayout(page);
+  for (const button of [
+    halfOpenLayout.attack,
+    halfOpenLayout.banzai,
+    halfOpenLayout.endTurn,
+    halfOpenLayout.toggle
+  ]) {
+    expect(button.height).toBeGreaterThanOrEqual(44);
+    expect(button.top).toBeGreaterThanOrEqual(0);
+    expect(button.bottom).toBeLessThanOrEqual(halfOpenLayout.viewport.height + 1);
+  }
+  expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(390);
+  expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(410);
+  expect(halfOpenLayout.dock.top - halfOpenLayout.header.bottom).toBeGreaterThan(240);
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "expanded"
+  );
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
+
+  const expandedLayout = await readMobileAttackLayout(page);
+  expect(expandedLayout.dock.height).toBeLessThanOrEqual(500);
+  expect(expandedLayout.dock.top - expandedLayout.header.bottom).toBeGreaterThan(160);
+  expect(expandedLayout.toggle.top).toBeGreaterThanOrEqual(0);
+  expect(expandedLayout.toggle.bottom).toBeLessThanOrEqual(expandedLayout.viewport.height + 1);
+  expect(expandedLayout.mobileActions.bottom).toBeLessThanOrEqual(
+    expandedLayout.viewport.height + 1
+  );
+
+  await page.locator(".game-command-dock-toggle").click();
+  await expect(page.locator(".game-command-dock")).toHaveAttribute(
+    "data-command-sheet-state",
+    "collapsed"
+  );
 });
