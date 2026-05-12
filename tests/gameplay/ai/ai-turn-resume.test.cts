@@ -63,7 +63,10 @@ function createResumeState(options: {
       ])
   }) as ResumeState;
 
-  state.mapTerritories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])] ;
+  state.mapTerritories = [
+    makeTerritory("a", ["b"], { name: "Resume Alpha" }),
+    makeTerritory("b", ["a"], { name: "Resume Beta" })
+  ];
   return state;
 }
 
