@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.016 - 2026-05-12
+
+- Added branch-focused coverage for AI turn resume guards, stale AI handoff, and localized AI failure handling.
+
 ## 0.1.015 - 2026-05-11
 
 - Added the mobile map-first gameplay shell with a compact header, floating HUD, bottom-sheet commands, and phone viewport coverage.
