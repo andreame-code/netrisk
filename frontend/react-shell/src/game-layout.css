@@ -7085,6 +7085,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   .game-map-first-page:has(.game-command-dock-mandatory-trade),
   html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-mandatory-trade) {
     --game-command-dock-height: min(62svh, 500px) !important;
+    --game-map-allow-horizontal-crop: 0;
   }
 
   .game-map-first-page .game-battlefield-layout,
