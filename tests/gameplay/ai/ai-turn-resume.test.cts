@@ -60,8 +60,7 @@ function createResumeState(options: {
   });
 
   (state as typeof state & { mapTerritories: ReturnType<typeof makeTerritory>[] }).mapTerritories =
-    [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])
-  ];
+    [makeTerritory("a", ["b"]), makeTerritory("b", ["a"]));
   return state;
 }
 
