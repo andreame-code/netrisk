@@ -352,7 +352,7 @@ describe("GameRoute integration", () => {
     expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
   });
 
-  it("keeps the mobile command dock collapsed until the player opens it", async () => {
+  it("keeps the mobile command dock collapsed while registering viewport sync", async () => {
     const addListener = vi.fn();
     const removeListener = vi.fn();
     const matchMedia = vi.fn(() => ({
@@ -369,12 +369,12 @@ describe("GameRoute integration", () => {
 
     const dock = await screen.findByTestId("actions-panel");
     expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
-    expect(matchMedia).not.toHaveBeenCalled();
-    expect(addListener).not.toHaveBeenCalled();
+    expect(matchMedia).toHaveBeenCalledWith("(max-width: 760px)");
+    expect(addListener).toHaveBeenCalledTimes(1);
 
     unmount();
 
-    expect(removeListener).not.toHaveBeenCalled();
+    expect(removeListener).toHaveBeenCalledTimes(1);
   });
 
   it("passes mobile command dock sheet state changes through to the map viewport", async () => {
@@ -417,13 +417,20 @@ describe("GameRoute integration", () => {
   it("uses binary command dock toggling after leaving the mobile viewport", async () => {
     const user = userEvent.setup();
     let isMobileViewport = true;
+    let changeListener: ((event: MediaQueryListEvent) => void) | null = null;
     vi.stubGlobal(
       "matchMedia",
       vi.fn(() => ({
         matches: isMobileViewport,
         media: "(max-width: 760px)",
         onchange: null,
-        addEventListener: vi.fn(),
+        addEventListener: vi.fn(
+          (eventName: string, listener: (event: MediaQueryListEvent) => void) => {
+            if (eventName === "change") {
+              changeListener = listener;
+            }
+          }
+        ),
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(() => true)
       }))
@@ -441,10 +448,12 @@ describe("GameRoute integration", () => {
 
     act(() => {
       isMobileViewport = false;
+      changeListener?.({ matches: false } as MediaQueryListEvent);
     });
+    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
 
     await user.click(toggle as HTMLButtonElement);
-    expect(dock).toHaveAttribute("data-command-sheet-state", "collapsed");
+    expect(dock).toHaveAttribute("data-command-sheet-state", "expanded");
   });
 
   it("renders the reference fortify command dock", async () => {

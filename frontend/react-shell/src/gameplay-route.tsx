@@ -549,6 +549,32 @@ export function GameRoute() {
   }, [activityLogContentKey]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 760px)");
+    const normalizeForViewport = (matchesMobile: boolean) => {
+      if (matchesMobile) {
+        return;
+      }
+
+      setCommandDockSheetState((current) => (current === "half-open" ? "collapsed" : current));
+    };
+    const handleViewportChange = (event: MediaQueryListEvent) => {
+      normalizeForViewport(event.matches);
+    };
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleViewportChange);
+      return () => mediaQuery.removeEventListener("change", handleViewportChange);
+    }
+
+    mediaQuery.addListener(handleViewportChange);
+    return () => mediaQuery.removeListener(handleViewportChange);
+  }, []);
+
+  useEffect(() => {
     if (mustTradeCards) {
       setCommandDockSheetState("expanded");
     }
