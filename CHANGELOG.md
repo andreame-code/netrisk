@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.019 - 2026-05-13
+
+- Updated the grouped npm runtime, React, testing, linting, and build-tool dependencies.
+
 ## 0.1.018 - 2026-05-13
 
 - Hardened the game event stream (SSE) by removing overly permissive CORS headers and enforcing strict anti-caching security policies.
