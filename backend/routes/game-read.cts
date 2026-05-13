@@ -144,9 +144,10 @@ async function handleEventsRoute(
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-    "Access-Control-Allow-Origin": "*"
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+    Connection: "keep-alive"
   });
   res.write("data: " + JSON.stringify(initialPayloadResult.data) + "\n\n");
   const key = gameContext.gameId || "__default__";

@@ -6827,6 +6827,26 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
   });
 });
 
+register("GET /api/events espone header di sicurezza restrittivi", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/events`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("content-type"), "text/event-stream");
+    assert.equal(
+      response.headers.get("cache-control"),
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    assert.equal(response.headers.get("pragma"), "no-cache");
+    assert.equal(response.headers.get("expires"), "0");
+    assert.equal(response.headers.get("access-control-allow-origin"), null);
+
+    // We must close the connection to avoid hanging the test
+    if (typeof (response as any).body?.cancel === "function") {
+      await (response as any).body.cancel();
+    }
+  });
+});
+
 register("GET /api/health espone lo stato sintetico del server", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/health`);
