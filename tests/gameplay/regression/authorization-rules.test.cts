@@ -112,51 +112,55 @@ register(
   }
 );
 
-register("authorization game reading mirrors member and public fallback access", () => {
-  const alice = actor("u-1", "Alice");
-  const admin = actor("admin-1", "Admin", Roles.ADMIN);
+register(
+  "authorization game reading mirrors member and authenticated legacy fallback access",
+  () => {
+    const alice = actor("u-1", "Alice");
+    const admin = actor("admin-1", "Admin", Roles.ADMIN);
 
-  assert.equal(canReadGame(null, { phase: "active", creatorUserId: "host" }, null), false);
-  assert.equal(canReadGame(actor("", "Alice"), { phase: "active" }, null), false);
-  assert.equal(canReadGame(alice, null, null), false);
-  assert.equal(canReadGame(admin, { phase: "active", creatorUserId: "host" }, null), true);
-  assert.equal(canReadGame(alice, { phase: "lobby", creatorUserId: "host" }, null), true);
-  assert.equal(canReadGame(alice, { phase: "active", creatorUserId: "u-1" }, null), true);
-  assert.equal(
-    canReadGame(
-      alice,
-      { phase: "active", creatorUserId: "host" },
-      {
-        players: [{ linkedUserId: "u-1", name: "Someone" }]
-      }
-    ),
-    true
-  );
-  assert.equal(
-    canReadGame(
-      alice,
-      { phase: "active", creatorUserId: "host" },
-      {
-        players: [{ linkedUserId: null, name: "Alice" }]
-      }
-    ),
-    true
-  );
-  assert.equal(
-    canReadGame(alice, { phase: "active", creatorUserId: null }, { players: null }),
-    true
-  );
-  assert.equal(
-    canReadGame(
-      alice,
-      { phase: "active", creatorUserId: "host" },
-      {
-        players: [{ linkedUserId: "other", name: "Bob" }]
-      }
-    ),
-    false
-  );
-});
+    assert.equal(canReadGame(null, { phase: "active", creatorUserId: "host" }, null), false);
+    assert.equal(canReadGame(null, { phase: "active", creatorUserId: null }, null), false);
+    assert.equal(canReadGame(actor("", "Alice"), { phase: "active" }, null), false);
+    assert.equal(canReadGame(alice, null, null), false);
+    assert.equal(canReadGame(admin, { phase: "active", creatorUserId: "host" }, null), true);
+    assert.equal(canReadGame(alice, { phase: "lobby", creatorUserId: "host" }, null), true);
+    assert.equal(canReadGame(alice, { phase: "active", creatorUserId: "u-1" }, null), true);
+    assert.equal(
+      canReadGame(
+        alice,
+        { phase: "active", creatorUserId: "host" },
+        {
+          players: [{ linkedUserId: "u-1", name: "Someone" }]
+        }
+      ),
+      true
+    );
+    assert.equal(
+      canReadGame(
+        alice,
+        { phase: "active", creatorUserId: "host" },
+        {
+          players: [{ linkedUserId: null, name: "Alice" }]
+        }
+      ),
+      true
+    );
+    assert.equal(
+      canReadGame(alice, { phase: "active", creatorUserId: null }, { players: null }),
+      true
+    );
+    assert.equal(
+      canReadGame(
+        alice,
+        { phase: "active", creatorUserId: "host" },
+        {
+          players: [{ linkedUserId: "other", name: "Bob" }]
+        }
+      ),
+      false
+    );
+  }
+);
 
 register("authorization start game helper covers host, admin and legacy creatorless games", () => {
   const alice = actor("u-1", "Alice");

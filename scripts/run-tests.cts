@@ -6797,8 +6797,9 @@ register("API profile account aggiorna email e password del giocatore autenticat
   });
 });
 
-register("GET /api/state risponde con lo stato pubblico", async () => {
+register("GET /api/state risponde con lo stato pubblico autenticato", async () => {
   await withServer(async (baseUrl, context) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("state_public"));
     const state = createInitialState();
     const first = addPlayer(state, "Alice").player;
     addPlayer(state, "Bob");
@@ -6816,7 +6817,9 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await fetch(`${baseUrl}/api/state`);
+    const response = await fetch(`${baseUrl}/api/state`, {
+      headers: authHeaders(session.sessionToken)
+    });
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.equal(Array.isArray(payload.map), true);
@@ -6827,25 +6830,31 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
   });
 });
 
-register("GET /api/events espone header di sicurezza restrittivi", async () => {
-  await withServer(async (baseUrl) => {
-    const response = await fetch(`${baseUrl}/api/events`);
-    assert.equal(response.status, 200);
-    assert.equal(response.headers.get("content-type"), "text/event-stream");
-    assert.equal(
-      response.headers.get("cache-control"),
-      "no-store, no-cache, must-revalidate, proxy-revalidate"
-    );
-    assert.equal(response.headers.get("pragma"), "no-cache");
-    assert.equal(response.headers.get("expires"), "0");
-    assert.equal(response.headers.get("access-control-allow-origin"), null);
+register(
+  "GET /api/events espone header di sicurezza restrittivi per sessioni autenticate",
+  async () => {
+    await withServer(async (baseUrl) => {
+      const session = await createAuthenticatedSession(baseUrl, uniqueName("events_headers"));
+      const response = await fetch(`${baseUrl}/api/events`, {
+        headers: authHeaders(session.sessionToken)
+      });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("content-type"), "text/event-stream");
+      assert.equal(
+        response.headers.get("cache-control"),
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+      assert.equal(response.headers.get("pragma"), "no-cache");
+      assert.equal(response.headers.get("expires"), "0");
+      assert.equal(response.headers.get("access-control-allow-origin"), null);
 
-    // We must close the connection to avoid hanging the test
-    if (typeof (response as any).body?.cancel === "function") {
-      await (response as any).body.cancel();
-    }
-  });
-});
+      // We must close the connection to avoid hanging the test
+      if (typeof (response as any).body?.cancel === "function") {
+        await (response as any).body.cancel();
+      }
+    });
+  }
+);
 
 register("GET /api/health espone lo stato sintetico del server", async () => {
   await withServer(async (baseUrl) => {
@@ -7056,8 +7065,9 @@ register(
   }
 );
 
-register("GET /api/state espone lastCombat dopo un attacco", async () => {
+register("GET /api/state espone lastCombat dopo un attacco per sessioni autenticate", async () => {
   await withServer(async (baseUrl, context) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("last_combat_state"));
     const state = createInitialState();
     const first = addPlayer(state, "Alice").player;
     const second = addPlayer(state, "Bob").player;
@@ -7079,7 +7089,9 @@ register("GET /api/state espone lastCombat dopo un attacco", async () => {
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await fetch(`${baseUrl}/api/state`);
+    const response = await fetch(`${baseUrl}/api/state`, {
+      headers: authHeaders(session.sessionToken)
+    });
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.deepEqual(payload.lastCombat, attack.combat);

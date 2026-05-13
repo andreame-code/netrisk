@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.020 - 2026-05-13
+
+- Required authenticated game-read access before returning state or event streams for legacy games without a recorded creator.
+
 ## 0.1.019 - 2026-05-13
 
 - Updated the grouped npm runtime, React, testing, linting, and build-tool dependencies.
