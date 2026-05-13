@@ -674,10 +674,6 @@ function createApp(options: CreateAppOptions = {}) {
       );
       return null;
     }
-    if (!gameRecord.game.creatorUserId) {
-      return { ok: true, user: null, gameRecord };
-    }
-
     const authContext = await requireAuth(req, res, {}, url);
     if (!authContext) {
       return null;
