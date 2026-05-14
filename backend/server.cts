@@ -131,6 +131,7 @@ type GameContext = {
   gameId: string | null;
   gameName: string | null;
   version: number | null;
+  creatorUserId: string | null;
   state: any;
 };
 type EventClient = {
@@ -354,6 +355,7 @@ function createApp(options: CreateAppOptions = {}) {
   let activeGameId: string | null = null;
   let activeGameVersion: number | null = null;
   let activeGameName: string | null = null;
+  let activeGameCreatorUserId: string | null = null;
   let nextAttackRolls: number[] | null = null;
   const datastore = createDatastore({
     dbFile: options.dbFile || defaultDbFile(),
@@ -445,6 +447,7 @@ function createApp(options: CreateAppOptions = {}) {
         activeGameId = initialGame.game.id;
         activeGameVersion = initialGame.game.version;
         activeGameName = initialGame.game.name;
+        activeGameCreatorUserId = initialGame.game.creatorUserId || null;
         replaceState(initialGame.state);
       })
       .catch((error: any) => {
@@ -464,6 +467,7 @@ function createApp(options: CreateAppOptions = {}) {
     activeGameId = eagerInitialGame.game.id;
     activeGameVersion = eagerInitialGame.game.version;
     activeGameName = eagerInitialGame.game.name;
+    activeGameCreatorUserId = eagerInitialGame.game.creatorUserId || null;
     replaceState(eagerInitialGame.state);
   }
 
@@ -513,6 +517,7 @@ function createApp(options: CreateAppOptions = {}) {
         gameId: activeGameId,
         gameName: activeGameName,
         version: activeGameVersion,
+        creatorUserId: activeGameCreatorUserId,
         state
       };
     }
@@ -522,6 +527,7 @@ function createApp(options: CreateAppOptions = {}) {
       gameId: record.game.id,
       gameName: record.game.name,
       version: record.game.version,
+      creatorUserId: record.game.creatorUserId || null,
       state: record.state
     };
   }
@@ -538,10 +544,12 @@ function createApp(options: CreateAppOptions = {}) {
     );
     gameContext.version = savedGame.version;
     gameContext.gameName = savedGame.name;
+    gameContext.creatorUserId = savedGame.creatorUserId || null;
 
     if (gameContext.gameId === activeGameId) {
       activeGameVersion = savedGame.version;
       activeGameName = savedGame.name;
+      activeGameCreatorUserId = savedGame.creatorUserId || null;
       if (gameContext.state !== state) {
         replaceState(gameContext.state);
       }
@@ -560,7 +568,20 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
+    const creatorUserId =
+      gameContext.creatorUserId ||
+      (gameContext.gameId === activeGameId ? activeGameCreatorUserId : null);
+
     broadcastEventPayload(clients, (client: EventClient) => {
+      authorize("game:read", {
+        user: client.user,
+        game: {
+          phase: gameContext.state?.phase,
+          creatorUserId
+        },
+        state: gameContext.state
+      });
+
       const payloadResult = gameEventPayloadSchema.safeParse(
         snapshotForUser(
           gameContext.state,
@@ -838,12 +859,14 @@ function createApp(options: CreateAppOptions = {}) {
       activeGameId = resetGame.game.id;
       activeGameVersion = resetGame.game.version;
       activeGameName = resetGame.game.name;
+      activeGameCreatorUserId = resetGame.game.creatorUserId || null;
       replaceState(resetGame.state);
       nextAttackRolls = null;
       broadcastGame({
         gameId: resetGame.game.id,
         gameName: resetGame.game.name,
         version: resetGame.game.version,
+        creatorUserId: resetGame.game.creatorUserId || null,
         state: resetGame.state
       });
       sendJson(res, 200, { ok: true, state: snapshot() });
@@ -1319,6 +1342,7 @@ function createApp(options: CreateAppOptions = {}) {
                 activeGameId = null;
                 activeGameVersion = null;
                 activeGameName = null;
+                activeGameCreatorUserId = null;
                 replaceState(createInitialState());
               }
             },
@@ -1361,6 +1385,7 @@ function createApp(options: CreateAppOptions = {}) {
                 gameId,
                 gameName,
                 version,
+                creatorUserId: gameId === activeGameId ? activeGameCreatorUserId : null,
                 state: nextState
               });
             }
@@ -1393,6 +1418,7 @@ function createApp(options: CreateAppOptions = {}) {
           activeGameId = created.game.id;
           activeGameVersion = created.game.version;
           activeGameName = created.game.name;
+          activeGameCreatorUserId = created.game.creatorUserId || null;
           return created;
         },
         () => gameSessions.listGames(),

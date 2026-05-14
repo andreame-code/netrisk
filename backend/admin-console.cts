@@ -84,6 +84,7 @@ type GameContext = {
   gameId: string | null;
   gameName: string | null;
   version: number | null;
+  creatorUserId: string | null;
   state: GameState;
 };
 
