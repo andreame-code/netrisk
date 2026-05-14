@@ -9,6 +9,7 @@ const gameplayTestModules = [
   "./setup/new-game-config.test.cjs",
   "./turn-flow/turn-flow.test.cjs",
   "./turn-flow/turn-timeout.test.cjs",
+  "./turn-flow/turn-timeout-enforcement.test.cjs",
   "./ai/ai-turn-recovery.test.cjs",
   "./reinforcement/reinforcement-calculation.test.cjs",
   "./reinforcement/map-continent-bonuses.test.cjs",
