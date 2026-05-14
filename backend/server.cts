@@ -1816,38 +1816,47 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function addSecurityHeaders(req: Request, res: Response) {
+    if (!res) {
+      return;
+    }
+
     const connectSources = ["'self'"];
     if (sentryConnectOrigin) {
       connectSources.push(sentryConnectOrigin);
     }
 
-    res.removeHeader("X-Powered-By");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("X-XSS-Protection", "0");
-    res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
-    res.setHeader("X-DNS-Prefetch-Control", "off");
-    res.setHeader("X-Download-Options", "noopen");
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-    res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    if (
-      secureCookieFlag(req) ||
-      process.env.NODE_ENV === "test" ||
-      process.env.E2E === "true" ||
-      process.env.TEST === "true"
-    ) {
-      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    if (typeof (res as any).removeHeader === "function") {
+      res.removeHeader("X-Powered-By");
     }
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader(
-      "Permissions-Policy",
-      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
-    );
-    res.setHeader(
-      "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
-    );
+
+    if (typeof res.setHeader === "function") {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "DENY");
+      res.setHeader("X-XSS-Protection", "0");
+      res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+      res.setHeader("X-DNS-Prefetch-Control", "off");
+      res.setHeader("X-Download-Options", "noopen");
+      res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+      res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+      res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+      if (
+        secureCookieFlag(req) ||
+        process.env.NODE_ENV === "test" ||
+        process.env.E2E === "true" ||
+        process.env.TEST === "true"
+      ) {
+        res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+      }
+      res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+      res.setHeader(
+        "Permissions-Policy",
+        "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
+      );
+      res.setHeader(
+        "Content-Security-Policy",
+        `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
+      );
+    }
   }
 
   function handleRequest(req: Request, res: Response) {
