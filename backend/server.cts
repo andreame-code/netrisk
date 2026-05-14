@@ -561,6 +561,15 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     broadcastEventPayload(clients, (client: EventClient) => {
+      authorize("game:read", {
+        user: client.user,
+        game: {
+          phase: gameContext.state?.phase,
+          creatorUserId: gameContext.state?.creatorUserId || null
+        },
+        state: gameContext.state
+      });
+
       const payloadResult = gameEventPayloadSchema.safeParse(
         snapshotForUser(
           gameContext.state,
