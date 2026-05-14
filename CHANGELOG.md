@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.023 - 2026-05-14
+
+- Added branch-focused coverage for turn timeout enforcement saves, AI recovery persistence, legacy version fallback, and session token storage-key validation.
+
 ## 0.1.022 - 2026-05-14
 
 - Prevented AI display names from satisfying human game membership checks for creator-protected games.
