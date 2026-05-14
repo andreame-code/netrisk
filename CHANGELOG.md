@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.023 - 2026-05-14
+
+- Fixed signed-out game deep links so auth-required game reads offer login and registration paths back to the requested game.
+
 ## 0.1.022 - 2026-05-14
 
 - Prevented AI display names from satisfying human game membership checks for creator-protected games.

@@ -80,6 +80,12 @@ function createSession(theme = "command"): AuthSessionResponse {
   };
 }
 
+function createAuthRequiredError(): Error & { code: string } {
+  const error = new Error("Sign in to continue.") as Error & { code: string };
+  error.code = "AUTH_REQUIRED";
+  return error;
+}
+
 function emptyModuleOptions(): ModuleOptionsResponse {
   return {
     modules: [],
@@ -214,6 +220,20 @@ describe("GameRoute integration", () => {
   afterEach(() => {
     streamHandlers = null;
     vi.unstubAllGlobals();
+  });
+
+  it("offers auth actions when a deep-linked game read requires login", async () => {
+    getSessionMock.mockRejectedValue(createAuthRequiredError());
+    getGameStateMock.mockRejectedValue(createAuthRequiredError());
+
+    renderReactShell("/react/game/g-1");
+
+    const errorPanel = await screen.findByTestId("react-shell-game-error");
+    const authLinks = within(errorPanel).getAllByRole("link");
+    expect(errorPanel).toBeInTheDocument();
+    expect(authLinks[0]).toHaveAttribute("href", "/react/login?next=%2Fgame%2Fg-1");
+    expect(authLinks[1]).toHaveAttribute("href", "/react/register?next=%2Fgame%2Fg-1");
+    expect(subscribeToGameEventsMock).not.toHaveBeenCalled();
   });
 
   it("falls back to polling after an invalid stream payload and returns to live updates after recovery", async () => {
