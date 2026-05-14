@@ -20,6 +20,7 @@ interface UserLike {
 interface PlayerLike {
   linkedUserId?: string | null;
   name?: string | null;
+  isAi?: boolean;
 }
 
 interface GameLike {
@@ -67,6 +68,7 @@ function canCreateGame(actor: Actor | null): boolean {
 
 function isActorPlayer(player: PlayerLike | null | undefined, actor: Actor) {
   if (!player) return false;
+  if (player.isAi) return false;
   if (player.linkedUserId) return player.linkedUserId === actor.id;
   return player.name === actor.username;
 }
