@@ -61,11 +61,7 @@ function trustsForwardedHeaders(options: RequestIpOptions = {}): boolean {
     return options.trustProxyHeaders;
   }
 
-  return (
-    process.env.NETRISK_TRUST_PROXY_HEADERS === "true" ||
-    process.env.VERCEL === "1" ||
-    Boolean(process.env.VERCEL_ENV)
-  );
+  return process.env.NETRISK_TRUST_PROXY_HEADERS === "true";
 }
 
 function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string {
@@ -81,7 +77,11 @@ function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string 
     return normalizeIp(socketIp || "unknown");
   }
 
-  const forwardedFor = firstHeaderValue(headers["x-forwarded-for"]).split(",")[0].trim();
+  const forwardedFor = firstHeaderValue(headers["x-forwarded-for"])
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .at(-1) || "";
   const realIp = firstHeaderValue(headers["x-real-ip"]).trim();
   return normalizeIp(forwardedFor || realIp || socketIp || "unknown");
 }

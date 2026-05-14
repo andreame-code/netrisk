@@ -151,7 +151,7 @@ register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", (
   assert.equal(createAuthThrottleKey("login", req, "alice").ip, "198.51.100.44");
   assert.equal(
     createAuthThrottleKey("login", req, "alice", { trustProxyHeaders: true }).ip,
-    "203.0.113.22"
+    "198.51.100.1"
   );
 });
 
