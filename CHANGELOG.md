@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.022 - 2026-05-14
+
+- Prevented AI display names from satisfying human game membership checks for creator-protected games.
+
 ## 0.1.021 - 2026-05-14
 
 - Re-authorized SSE broadcasts with the persisted game creator so lobby listeners are dropped before receiving active-game updates they cannot read.
