@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.021 - 2026-05-27
+
+- Hardened security headers by explicitly removing X-Powered-By, conditionally applying HSTS only for secure connections, and ensuring X-Content-Type-Options: nosniff is set for all JSON responses.
+- Added the standard Retry-After HTTP header to rate-limited (429) responses for authentication and account settings.
+
 ## 0.1.020 - 2026-05-13
 
 - Required authenticated game-read access before returning state or event streams for legacy games without a recorded creator.

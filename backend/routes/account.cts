@@ -200,6 +200,7 @@ export async function handleAccountSettingsRoute(
   const throttleKey = createAuthThrottleKey("account", deps.req, authContext.user.username);
   const throttleDecision = deps.authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
+    deps.res.setHeader("Retry-After", String(throttleDecision.retryAfterSeconds));
     deps.sendLocalizedError(
       deps.res,
       429,

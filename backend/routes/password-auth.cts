@@ -48,6 +48,9 @@ function sendTooManyAuthAttempts(
   sendLocalizedError: SendLocalizedError,
   retryAfterSeconds: number
 ): void {
+  if (res && typeof (res as any).setHeader === "function") {
+    (res as HttpTypes.ServerResponse).setHeader("Retry-After", String(retryAfterSeconds));
+  }
   sendLocalizedError(
     res,
     429,
