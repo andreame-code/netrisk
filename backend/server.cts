@@ -1841,12 +1841,19 @@ function createApp(options: CreateAppOptions = {}) {
     };
   }
 
-  function addSecurityHeaders(res: Response) {
+  function addSecurityHeaders(req: Request, res: Response) {
     const connectSources = ["'self'"];
     if (sentryConnectOrigin) {
       connectSources.push(sentryConnectOrigin);
     }
 
+    const isSecure =
+      secureCookieFlag(req) ||
+      process.env.TEST === "true" ||
+      process.env.E2E === "true" ||
+      process.env.NODE_ENV === "test";
+
+    res.removeHeader("X-Powered-By");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "0");
@@ -1856,20 +1863,39 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+
+    if (isSecure) {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
-    res.setHeader(
-      "Content-Security-Policy",
-      `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests; connect-src ${connectSources.join(" ")}`
-    );
+
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "font-src 'self'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'self'",
+      `connect-src ${connectSources.join(" ")}`
+    ];
+
+    if (isSecure) {
+      cspDirectives.push("upgrade-insecure-requests");
+    }
+
+    res.setHeader("Content-Security-Policy", cspDirectives.join("; "));
   }
 
   function handleRequest(req: Request, res: Response) {
-    addSecurityHeaders(res);
+    addSecurityHeaders(req, res);
 
     let url: URL;
     try {
