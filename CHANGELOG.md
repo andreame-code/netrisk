@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.024 - 2026-05-15
+
+- Hardened security headers by conditionally applying HSTS and CSP `upgrade-insecure-requests` based on connection security.
+- Explicitly removed `X-Powered-By` header to prevent information disclosure.
+
 ## 0.1.023 - 2026-05-14
 
 - Added branch-focused coverage for turn timeout enforcement saves, AI recovery persistence, legacy version fallback, and session token storage-key validation.

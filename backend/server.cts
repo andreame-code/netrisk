@@ -1853,7 +1853,10 @@ function createApp(options: CreateAppOptions = {}) {
       process.env.E2E === "true" ||
       process.env.NODE_ENV === "test";
 
-    res.removeHeader("X-Powered-By");
+    if (typeof res.removeHeader === "function") {
+      res.removeHeader("X-Powered-By");
+    }
+
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "0");
