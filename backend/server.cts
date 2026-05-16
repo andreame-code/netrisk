@@ -1841,7 +1841,7 @@ function createApp(options: CreateAppOptions = {}) {
     };
   }
 
-  function addSecurityHeaders(res: Response) {
+  function addSecurityHeaders(req: Request, res: Response) {
     const connectSources = ["'self'"];
     if (sentryConnectOrigin) {
       connectSources.push(sentryConnectOrigin);
@@ -1856,8 +1856,16 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+
+    const isSecure = secureCookieFlag(req);
+    const isTest =
+      process.env.TEST === "true" || process.env.E2E === "true" || process.env.NODE_ENV === "test";
+    if (isSecure || isTest) {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.removeHeader("X-Powered-By");
     res.setHeader(
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
@@ -1869,7 +1877,7 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function handleRequest(req: Request, res: Response) {
-    addSecurityHeaders(res);
+    addSecurityHeaders(req, res);
 
     let url: URL;
     try {

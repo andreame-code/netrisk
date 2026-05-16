@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.025 - 2026-05-16
+
+- Hardened security headers by implementing conditional HSTS, removing X-Powered-By, and enforcing MIME-sniffing protection for all JSON responses.
+
 ## 0.1.024 - 2026-05-15
 
 - Added branch-focused coverage for auth throttling edge cases and AI lobby join route behavior.
