@@ -4,7 +4,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.025 - 2026-05-16
 
-- Hardened security headers by implementing conditional HSTS, removing X-Powered-By, and enforcing MIME-sniffing protection for all JSON responses.
+- Hardened security headers by implementing conditional HSTS, removing X-Powered-By with mock compatibility, and enforcing MIME-sniffing protection for all JSON responses.
 
 ## 0.1.024 - 2026-05-15
 
