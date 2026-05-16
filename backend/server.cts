@@ -1865,7 +1865,9 @@ function createApp(options: CreateAppOptions = {}) {
     }
 
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.removeHeader("X-Powered-By");
+    if (typeof res.removeHeader === "function") {
+      res.removeHeader("X-Powered-By");
+    }
     res.setHeader(
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
