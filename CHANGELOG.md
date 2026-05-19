@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.026 - 2026-05-19
+
+- Added branch-focused coverage for fortify movement validation and Supabase connection check edge cases.
+
 ## 0.1.025 - 2026-05-15
 
 - Hardened security headers by adding defensive X-Powered-By removal and conditional HSTS based on connection security.
