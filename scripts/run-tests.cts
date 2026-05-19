@@ -7246,6 +7246,7 @@ register("API registration applica il rate limiting dopo troppi tentativi", asyn
       body: JSON.stringify({ username: uniqueName("throttle_reg_limited"), password })
     });
     assert.equal(limitedRes.status, 429);
+    assert.equal(limitedRes.headers.get("retry-after"), "60");
     const payload: any = await limitedRes.json();
     assert.equal(payload.code, "AUTH_RATE_LIMITED");
   });

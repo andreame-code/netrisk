@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createSupabaseDatastore } = require("../../../backend/datastore-supabase.cjs");
+const { loadLocalEnv } = require("../../../backend/load-local-env.cjs");
 const { checkSupabaseConnection } = require("../../../scripts/check-supabase-connection.cjs");
 const { getSupabaseSchemaSql } = require("../../../supabase/schema.cjs");
 
@@ -103,6 +104,76 @@ register("Supabase connection check fails clearly when REST auth is invalid", as
         tables: ["users"]
       }),
     /Supabase connection check failed for table users \(401\)/
+  );
+});
+
+register("Supabase connection check validates required environment before probing", async () => {
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_URL/
+  );
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co",
+          SUPABASE_SERVICE_ROLE_KEY: "   "
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_SERVICE_ROLE_KEY/
+  );
+});
+
+register("Supabase connection check defaults schema and reports invalid hosts safely", async () => {
+  const requestedHeaders: Array<Record<string, string>> = [];
+  const fetchImpl = async (_input: unknown, init: RequestInit = {}) => {
+    requestedHeaders.push(init.headers as Record<string, string>);
+    return new Response("[]", { status: 200 });
+  };
+
+  const result = await checkSupabaseConnection({
+    env: {
+      SUPABASE_URL: "not-a-valid-url/",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      SUPABASE_DB_SCHEMA: "   "
+    },
+    fetchImpl,
+    tables: []
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.urlHost, "invalid-url");
+  assert.equal(result.schema, "public");
+  assert.deepEqual(result.checkedTables, []);
+  assert.equal(requestedHeaders.length, 0);
+});
+
+register("Supabase connection check falls back to status text for empty error bodies", async () => {
+  const fetchImpl = async () =>
+    new Response("", {
+      status: 503,
+      statusText: "Service unavailable"
+    });
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co/",
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl,
+        tables: ["games"]
+      }),
+    /games \(503\): Service unavailable/
   );
 });
 
@@ -217,6 +288,82 @@ register("sync public assets removes stale removed UI artifacts", () => {
     });
     assert.equal(fs.readFileSync(path.join(publicDir, "assets", "favicon.svg"), "utf8"), "<svg />");
   } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+register("loadLocalEnv parses local env files without overriding existing values", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "netrisk-local-env-"));
+  const originalCwd = process.cwd();
+  const trackedEnvKeys = [
+    "E2E",
+    "TEST",
+    "NODE_ENV",
+    "NETRISK_PROJECT_ROOT",
+    "NETRISK_QUOTED_VALUE",
+    "NETRISK_SINGLE_QUOTED_VALUE",
+    "NETRISK_PLAIN_VALUE",
+    "NETRISK_LOCAL_ONLY_VALUE",
+    "NETRISK_EXISTING_VALUE",
+    "NETRISK_EMPTY_VALUE",
+    "NETRISK_SKIPPED_VALUE"
+  ];
+  const originalEnv = Object.fromEntries(trackedEnvKeys.map((key) => [key, process.env[key]]));
+
+  fs.writeFileSync(
+    path.join(tempRoot, ".env"),
+    [
+      "# ignored comment",
+      'NETRISK_QUOTED_VALUE="quoted value"',
+      "NETRISK_SINGLE_QUOTED_VALUE='single quoted value'",
+      "NETRISK_PLAIN_VALUE= plain value ",
+      "NETRISK_EXISTING_VALUE=from-file",
+      "NETRISK_EMPTY_VALUE=",
+      "MALFORMED_WITHOUT_SEPARATOR",
+      "=missing-key"
+    ].join("\n")
+  );
+  fs.writeFileSync(
+    path.join(tempRoot, ".env.local"),
+    ["NETRISK_LOCAL_ONLY_VALUE=from-local", "NETRISK_QUOTED_VALUE=from-local"].join("\n")
+  );
+
+  try {
+    delete process.env.E2E;
+    delete process.env.TEST;
+    delete process.env.NODE_ENV;
+    process.env.NETRISK_PROJECT_ROOT = tempRoot;
+    process.env.NETRISK_EXISTING_VALUE = "from-process";
+    process.chdir(tempRoot);
+
+    loadLocalEnv();
+
+    assert.equal(process.env.NETRISK_QUOTED_VALUE, "quoted value");
+    assert.equal(process.env.NETRISK_SINGLE_QUOTED_VALUE, "single quoted value");
+    assert.equal(process.env.NETRISK_PLAIN_VALUE, "plain value");
+    assert.equal(process.env.NETRISK_LOCAL_ONLY_VALUE, "from-local");
+    assert.equal(process.env.NETRISK_EXISTING_VALUE, "from-process");
+    assert.equal(process.env.NETRISK_EMPTY_VALUE, "");
+    assert.equal(process.env.MALFORMED_WITHOUT_SEPARATOR, undefined);
+
+    delete process.env.NETRISK_SKIPPED_VALUE;
+    process.env.TEST = "true";
+    fs.writeFileSync(path.join(tempRoot, ".env"), "NETRISK_SKIPPED_VALUE=should-not-load\n");
+
+    loadLocalEnv();
+
+    assert.equal(process.env.NETRISK_SKIPPED_VALUE, undefined);
+  } finally {
+    process.chdir(originalCwd);
+    trackedEnvKeys.forEach((key) => {
+      if (typeof originalEnv[key] === "undefined") {
+        delete process.env[key];
+        return;
+      }
+
+      process.env[key] = originalEnv[key];
+    });
+    delete process.env.MALFORMED_WITHOUT_SEPARATOR;
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 });

@@ -27,15 +27,25 @@ type ObservedResponse = HttpTypes.ServerResponse & {
   setHeader?: (name: string, value: string) => void;
 };
 
-function setResponseHeader(res: ObservedResponse, name: string, value: string): void {
-  if (typeof res.setHeader === "function") {
-    res.setHeader(name, value);
+export function setResponseHeader(res: unknown, name: string, value: string): void {
+  if (!res || typeof res !== "object") {
     return;
   }
 
-  if (res.headers && typeof res.headers === "object") {
-    res.headers[name] = value;
+  const observedResponse = res as ObservedResponse;
+  if (typeof observedResponse.setHeader === "function") {
+    observedResponse.setHeader(name, value);
+    return;
   }
+
+  if (observedResponse.headers && typeof observedResponse.headers === "object") {
+    observedResponse.headers[name] = value;
+  }
+}
+
+export function setRetryAfterHeader(res: unknown, retryAfterSeconds: number): void {
+  const delaySeconds = Math.max(0, Math.ceil(Number(retryAfterSeconds) || 0));
+  setResponseHeader(res, "Retry-After", String(delaySeconds));
 }
 
 export function setResponseRequestContext(
@@ -101,6 +111,7 @@ export function sendJson(
 
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
     Pragma: "no-cache",
     Expires: "0",

@@ -11,7 +11,8 @@ const {
 } = require("../../../backend/routes/password-auth.cjs");
 const {
   createAuthAttemptThrottle,
-  createAuthThrottleKey
+  createAuthThrottleKey,
+  resolveRequestIp
 } = require("../../../backend/auth-attempt-throttle.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -155,6 +156,105 @@ register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", (
   );
 });
 
+register("auth attempt throttle resolves trusted proxy IP fallbacks deterministically", () => {
+  const previousVercelEnv = process.env.VERCEL_ENV;
+  try {
+    delete process.env.VERCEL_ENV;
+
+    assert.equal(resolveRequestIp({ headers: {}, socket: {} }), "unknown");
+    assert.equal(
+      resolveRequestIp(
+        {
+          headers: {
+            "x-real-ip": "203.0.113.24"
+          },
+          socket: {
+            remoteAddress: "198.51.100.45"
+          }
+        },
+        { trustProxyHeaders: true }
+      ),
+      "203.0.113.24"
+    );
+
+    process.env.VERCEL_ENV = "preview";
+    assert.equal(
+      resolveRequestIp({
+        headers: {
+          "x-forwarded-for": ["203.0.113.25", "198.51.100.46"]
+        },
+        socket: {
+          remoteAddress: "198.51.100.47"
+        }
+      }),
+      "203.0.113.25"
+    );
+  } finally {
+    if (previousVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = previousVercelEnv;
+    }
+  }
+});
+
+register("auth attempt throttle expires lockouts after the configured window", () => {
+  let timestamp = 1_000;
+  const throttle = createAuthAttemptThrottle({
+    cleanupIntervalMs: 1,
+    lockoutMs: 100,
+    maxAttempts: 2,
+    maxIpAttempts: 20,
+    windowMs: 50,
+    now: () => timestamp
+  });
+  const key = createAuthThrottleKey(
+    "login",
+    { socket: { remoteAddress: "198.51.100.50" } },
+    "commander"
+  );
+
+  throttle.recordFailure(key);
+  const locked = throttle.recordFailure(key);
+
+  assert.equal(locked.allowed, false);
+  assert.equal(locked.retryAfterSeconds, 1);
+
+  timestamp = 1_201;
+  assert.deepEqual(throttle.check(key), {
+    allowed: true,
+    retryAfterSeconds: 0
+  });
+});
+
+register("auth attempt throttle doubles lockout duration up to the configured cap", () => {
+  const throttle = createAuthAttemptThrottle({
+    lockoutMs: 1_000,
+    maxAttempts: 1,
+    maxIpAttempts: 20,
+    maxLockoutMs: 2_000,
+    now: () => 1_000
+  });
+  const key = createAuthThrottleKey(
+    "login",
+    { socket: { remoteAddress: "198.51.100.51" } },
+    "commander"
+  );
+
+  assert.deepEqual(throttle.recordFailure(key), {
+    allowed: false,
+    retryAfterSeconds: 1
+  });
+  assert.deepEqual(throttle.recordFailure(key), {
+    allowed: false,
+    retryAfterSeconds: 2
+  });
+  assert.deepEqual(throttle.recordFailure(key), {
+    allowed: false,
+    retryAfterSeconds: 2
+  });
+});
+
 register("account routes return early when auth is missing", async () => {
   let sendJsonCalls = 0;
   let sendLocalizedErrorCalls = 0;
@@ -249,6 +349,7 @@ register(
 
 register("handleLoginRoute rate limits repeated password failures before auth work", async () => {
   const statuses: number[] = [];
+  const retryAfterHeaders: string[] = [];
   const throttle = createAuthAttemptThrottle({
     maxAttempts: 2,
     maxIpAttempts: 20,
@@ -264,7 +365,13 @@ register("handleLoginRoute rate limits repeated password failures before auth wo
           "x-forwarded-for": "203.0.113.7"
         }
       },
-      {},
+      {
+        setHeader(name: string, value: string) {
+          if (name === "Retry-After") {
+            retryAfterHeaders.push(value);
+          }
+        }
+      },
       { username: "Commander", password: "wrongpass" },
       {
         async loginWithPassword() {
@@ -293,6 +400,7 @@ register("handleLoginRoute rate limits repeated password failures before auth wo
   await attemptLogin();
 
   assert.deepEqual(statuses, [401, 401, 429]);
+  assert.deepEqual(retryAfterHeaders, ["60"]);
   assert.equal(loginCalls, 2);
 });
 
@@ -322,6 +430,7 @@ register(
 
 register("handleAccountSettingsRoute rate limits repeated current password failures", async () => {
   const statuses: number[] = [];
+  const retryAfterHeaders: string[] = [];
   const throttle = createAuthAttemptThrottle({
     maxAttempts: 2,
     maxIpAttempts: 20,
@@ -337,6 +446,13 @@ register("handleAccountSettingsRoute rate limits repeated current password failu
         req: {
           headers: {
             "x-forwarded-for": "203.0.113.9"
+          }
+        },
+        res: {
+          setHeader(name: string, value: string) {
+            if (name === "Retry-After") {
+              retryAfterHeaders.push(value);
+            }
           }
         },
         authAttemptThrottle: throttle,
@@ -368,6 +484,7 @@ register("handleAccountSettingsRoute rate limits repeated current password failu
   await attemptAccountUpdate();
 
   assert.deepEqual(statuses, [401, 401, 429]);
+  assert.deepEqual(retryAfterHeaders, ["60"]);
   assert.equal(accountUpdateCalls, 2);
 });
 

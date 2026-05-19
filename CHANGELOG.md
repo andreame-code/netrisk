@@ -2,6 +2,39 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.030 - 2026-05-19
+
+- Added branch-focused coverage for shared content pack/message helpers and local environment file loading.
+
+## 0.1.029 - 2026-05-19
+
+- Added Retry-After headers to rate-limited authentication and account settings responses.
+
+## 0.1.028 - 2026-05-19
+
+- Fixed signed-out game deep links so auth-required game reads offer login and registration paths back to the requested game.
+
+## 0.1.027 - 2026-05-19
+
+- Improved gameplay route regression coverage for invalid outbound game snapshots and SSE client lifecycle handling.
+
+## 0.1.026 - 2026-05-19
+
+- Added branch-focused coverage for fortify movement validation and Supabase connection check edge cases.
+
+## 0.1.025 - 2026-05-15
+
+- Hardened security headers by adding defensive X-Powered-By removal and conditional HSTS based on connection security.
+- Added X-Content-Type-Options: nosniff to all JSON and SSE responses to prevent MIME-sniffing.
+
+## 0.1.024 - 2026-05-15
+
+- Added branch-focused coverage for auth throttling edge cases and AI lobby join route behavior.
+
+## 0.1.023 - 2026-05-14
+
+- Added branch-focused coverage for turn timeout enforcement saves, AI recovery persistence, legacy version fallback, and session token storage-key validation.
+
 ## 0.1.022 - 2026-05-14
 
 - Prevented AI display names from satisfying human game membership checks for creator-protected games.

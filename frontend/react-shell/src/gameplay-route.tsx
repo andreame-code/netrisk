@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useState } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -28,7 +28,9 @@ import {
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import {
+  buildLoginHref,
   buildLobbyPath,
+  buildRegisterHref,
   buildRegisterPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
@@ -256,6 +258,10 @@ function translateGameplayError(error: unknown, fallback: string): string {
   return messageFromError(error, fallback);
 }
 
+function isAuthRequiredError(error: unknown): boolean {
+  return error instanceof Error && (error as ApiClientError).code === "AUTH_REQUIRED";
+}
+
 function selectedProfileIds(gameConfig: GameSnapshot["gameConfig"] | null | undefined): string[] {
   return [
     gameConfig?.contentProfileId,
@@ -309,6 +315,7 @@ function gameMetaModuleLabels(gameConfig: GameSnapshot["gameConfig"] | null | un
 
 export function GameRoute() {
   const { gameId } = useParams();
+  const location = useLocation();
   const { state, signIn } = useAuth();
   const namespace = useShellNamespace();
   const queryClient = useQueryClient();
@@ -317,9 +324,10 @@ export function GameRoute() {
   const shouldLoadGameState =
     Boolean(routeGameId) || state.status === "authenticated" || state.status === "error";
   const shouldRedirectGuestGameRoot = !routeGameId && state.status === "unauthenticated";
+  const shouldOpenGameEventStream = shouldLoadGameState && state.status === "authenticated";
   const queryKey = gameplayStateQueryKey(routeGameId || "current");
   const streamStatus = useGameEventStream({
-    enabled: shouldLoadGameState,
+    enabled: shouldOpenGameEventStream,
     gameId: routeGameId,
     queryKey
   });
@@ -364,6 +372,7 @@ export function GameRoute() {
 
   const snapshot = gameplayQuery.data || null;
   const resolvedGameId = snapshot?.gameId || routeGameId;
+  const currentLocationPath = `${location.pathname}${location.search}`;
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
 
   const playersById: Record<string, SnapshotPlayer> = {};
@@ -902,6 +911,8 @@ export function GameRoute() {
   }
 
   if (gameplayQuery.isError && !snapshot) {
+    const authRequired = isAuthRequiredError(gameplayQuery.error);
+
     return (
       <section className="status-panel status-panel-error" data-testid="react-shell-game-error">
         <p className="status-label">{t("game.title")}</p>
@@ -910,16 +921,29 @@ export function GameRoute() {
           {translateGameplayError(gameplayQuery.error, t("game.errors.loadActiveGame"))}
         </p>
         <div className="shell-actions">
-          <button
-            type="button"
-            className="refresh-button"
-            onClick={() => void gameplayQuery.refetch()}
-          >
-            Retry game
-          </button>
-          <Link className="ghost-action" to={lobbyHref}>
-            {t("nav.lobby")}
-          </Link>
+          {authRequired ? (
+            <>
+              <Link className="refresh-button" to={buildLoginHref(currentLocationPath, namespace)}>
+                {t("auth.login")}
+              </Link>
+              <Link className="ghost-action" to={buildRegisterHref(currentLocationPath, namespace)}>
+                {t("auth.register")}
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="refresh-button"
+                onClick={() => void gameplayQuery.refetch()}
+              >
+                Retry game
+              </button>
+              <Link className="ghost-action" to={lobbyHref}>
+                {t("nav.lobby")}
+              </Link>
+            </>
+          )}
         </div>
       </section>
     );

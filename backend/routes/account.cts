@@ -13,6 +13,7 @@ const {
   themePreferenceResponseSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 type RequireAuthFn = (
   req: HttpTypes.IncomingMessage,
@@ -200,6 +201,7 @@ export async function handleAccountSettingsRoute(
   const throttleKey = createAuthThrottleKey("account", deps.req, authContext.user.username);
   const throttleDecision = deps.authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
+    setRetryAfterHeader(deps.res, throttleDecision.retryAfterSeconds);
     deps.sendLocalizedError(
       deps.res,
       429,

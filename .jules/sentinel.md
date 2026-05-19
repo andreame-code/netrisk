@@ -17,3 +17,8 @@
 **Vulnerability:** The authentication flow was susceptible to timing-based username enumeration. If a user did not exist or had no password record (e.g., OAuth only), the system would skip hashing and return early, significantly faster than a successful or failed password check.
 **Learning:** Security-sensitive operations like password verification must maintain consistent timing profiles across all logic branches. Partial mitigations (like dummy hashing only when a user is found but credentials are missing) still leave gaps for non-existent users.
 **Prevention:** Hardened the core `verifyPassword` utility to always perform a hashing operation (using dummy salt/hash if necessary) even when user records are missing. This ensures consistent timing parity across the entire authentication boundary.
+
+## 2026-05-15 - Defensive Security Header Management with Mock Compatibility
+**Vulnerability:** Security hardening that relies on standard Node.js HTTP response methods like `res.removeHeader` can cause runtime errors in test suites where response objects are mocked without full API parity.
+**Learning:** When applying security headers at the global server level, defensive checks for method existence (e.g., `typeof res.removeHeader === 'function'`) ensure that security logic doesn't break gameplay or regression tests that use lightweight mocks. Additionally, HSTS must be applied conditionally (only over secure connections or in test environments) to align with RFC 6797 and maintain local development accessibility.
+**Prevention:** Always wrap non-standard or late-added response methods in defensive type checks and ensure HSTS application logic respects the connection's security state.

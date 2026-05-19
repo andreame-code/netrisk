@@ -42,12 +42,14 @@ const {
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 function sendTooManyAuthAttempts(
   res: unknown,
   sendLocalizedError: SendLocalizedError,
   retryAfterSeconds: number
 ): void {
+  setRetryAfterHeader(res, retryAfterSeconds);
   sendLocalizedError(
     res,
     429,
