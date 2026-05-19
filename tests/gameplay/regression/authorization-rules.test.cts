@@ -96,6 +96,16 @@ register(
       true
     );
     assert.equal(
+      canOpenGame(
+        alice,
+        { phase: "active", creatorUserId: "host" },
+        {
+          players: [{ linkedUserId: null, name: "Alice", isAi: true }]
+        }
+      ),
+      false
+    );
+    assert.equal(
       canOpenGame(alice, { phase: "active", creatorUserId: null }, { players: null }),
       true
     );
@@ -144,6 +154,16 @@ register(
         }
       ),
       true
+    );
+    assert.equal(
+      canReadGame(
+        alice,
+        { phase: "active", creatorUserId: "host" },
+        {
+          players: [{ linkedUserId: null, name: "Alice", isAi: true }]
+        }
+      ),
+      false
     );
     assert.equal(
       canReadGame(alice, { phase: "active", creatorUserId: null }, { players: null }),

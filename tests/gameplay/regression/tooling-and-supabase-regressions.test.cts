@@ -106,6 +106,76 @@ register("Supabase connection check fails clearly when REST auth is invalid", as
   );
 });
 
+register("Supabase connection check validates required environment before probing", async () => {
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_URL/
+  );
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co",
+          SUPABASE_SERVICE_ROLE_KEY: "   "
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_SERVICE_ROLE_KEY/
+  );
+});
+
+register("Supabase connection check defaults schema and reports invalid hosts safely", async () => {
+  const requestedHeaders: Array<Record<string, string>> = [];
+  const fetchImpl = async (_input: unknown, init: RequestInit = {}) => {
+    requestedHeaders.push(init.headers as Record<string, string>);
+    return new Response("[]", { status: 200 });
+  };
+
+  const result = await checkSupabaseConnection({
+    env: {
+      SUPABASE_URL: "not-a-valid-url/",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      SUPABASE_DB_SCHEMA: "   "
+    },
+    fetchImpl,
+    tables: []
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.urlHost, "invalid-url");
+  assert.equal(result.schema, "public");
+  assert.deepEqual(result.checkedTables, []);
+  assert.equal(requestedHeaders.length, 0);
+});
+
+register("Supabase connection check falls back to status text for empty error bodies", async () => {
+  const fetchImpl = async () =>
+    new Response("", {
+      status: 503,
+      statusText: "Service unavailable"
+    });
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co/",
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl,
+        tables: ["games"]
+      }),
+    /games \(503\): Service unavailable/
+  );
+});
+
 register("Supabase datastore ignores public keys and requires the service role key", () => {
   const previousEnv = {
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,

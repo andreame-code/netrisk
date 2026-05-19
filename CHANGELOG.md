@@ -2,10 +2,42 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
-## 0.1.021 - 2026-05-27
+## 0.1.029 - 2026-05-27
 
-- Hardened security headers by explicitly removing X-Powered-By, conditionally applying HSTS only for secure connections, and ensuring X-Content-Type-Options: nosniff is set for all JSON responses.
 - Added the standard Retry-After HTTP header to rate-limited (429) responses for authentication and account settings.
+
+## 0.1.028 - 2026-05-19
+
+- Fixed signed-out game deep links so auth-required game reads offer login and registration paths back to the requested game.
+
+## 0.1.027 - 2026-05-19
+
+- Improved gameplay route regression coverage for invalid outbound game snapshots and SSE client lifecycle handling.
+
+## 0.1.026 - 2026-05-19
+
+- Added branch-focused coverage for fortify movement validation and Supabase connection check edge cases.
+
+## 0.1.025 - 2026-05-15
+
+- Hardened security headers by adding defensive X-Powered-By removal and conditional HSTS based on connection security.
+- Added X-Content-Type-Options: nosniff to all JSON and SSE responses to prevent MIME-sniffing.
+
+## 0.1.024 - 2026-05-15
+
+- Added branch-focused coverage for auth throttling edge cases and AI lobby join route behavior.
+
+## 0.1.023 - 2026-05-14
+
+- Added branch-focused coverage for turn timeout enforcement saves, AI recovery persistence, legacy version fallback, and session token storage-key validation.
+
+## 0.1.022 - 2026-05-14
+
+- Prevented AI display names from satisfying human game membership checks for creator-protected games.
+
+## 0.1.021 - 2026-05-14
+
+- Re-authorized SSE broadcasts with the persisted game creator so lobby listeners are dropped before receiving active-game updates they cannot read.
 
 ## 0.1.020 - 2026-05-13
 
