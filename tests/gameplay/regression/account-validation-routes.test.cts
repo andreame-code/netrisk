@@ -349,6 +349,7 @@ register(
 
 register("handleLoginRoute rate limits repeated password failures before auth work", async () => {
   const statuses: number[] = [];
+  const retryAfterHeaders: string[] = [];
   const throttle = createAuthAttemptThrottle({
     maxAttempts: 2,
     maxIpAttempts: 20,
@@ -364,7 +365,13 @@ register("handleLoginRoute rate limits repeated password failures before auth wo
           "x-forwarded-for": "203.0.113.7"
         }
       },
-      {},
+      {
+        setHeader(name: string, value: string) {
+          if (name === "Retry-After") {
+            retryAfterHeaders.push(value);
+          }
+        }
+      },
       { username: "Commander", password: "wrongpass" },
       {
         async loginWithPassword() {
@@ -393,6 +400,7 @@ register("handleLoginRoute rate limits repeated password failures before auth wo
   await attemptLogin();
 
   assert.deepEqual(statuses, [401, 401, 429]);
+  assert.deepEqual(retryAfterHeaders, ["60"]);
   assert.equal(loginCalls, 2);
 });
 
@@ -422,6 +430,7 @@ register(
 
 register("handleAccountSettingsRoute rate limits repeated current password failures", async () => {
   const statuses: number[] = [];
+  const retryAfterHeaders: string[] = [];
   const throttle = createAuthAttemptThrottle({
     maxAttempts: 2,
     maxIpAttempts: 20,
@@ -437,6 +446,13 @@ register("handleAccountSettingsRoute rate limits repeated current password failu
         req: {
           headers: {
             "x-forwarded-for": "203.0.113.9"
+          }
+        },
+        res: {
+          setHeader(name: string, value: string) {
+            if (name === "Retry-After") {
+              retryAfterHeaders.push(value);
+            }
           }
         },
         authAttemptThrottle: throttle,
@@ -468,6 +484,7 @@ register("handleAccountSettingsRoute rate limits repeated current password failu
   await attemptAccountUpdate();
 
   assert.deepEqual(statuses, [401, 401, 429]);
+  assert.deepEqual(retryAfterHeaders, ["60"]);
   assert.equal(accountUpdateCalls, 2);
 });
 
