@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.028 - 2026-05-19
+
+- Fixed signed-out game deep links so auth-required game reads offer login and registration paths back to the requested game.
+
 ## 0.1.027 - 2026-05-19
 
 - Improved gameplay route regression coverage for invalid outbound game snapshots and SSE client lifecycle handling.
