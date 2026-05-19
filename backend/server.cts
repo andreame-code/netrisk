@@ -1865,9 +1865,7 @@ function createApp(options: CreateAppOptions = {}) {
 
     // Apply HSTS only for secure connections or in test environments.
     const isTest =
-      process.env.TEST === "true" ||
-      process.env.E2E === "true" ||
-      process.env.NODE_ENV === "test";
+      process.env.TEST === "true" || process.env.E2E === "true" || process.env.NODE_ENV === "test";
     if (secureCookieFlag(req) || isTest) {
       res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     }
