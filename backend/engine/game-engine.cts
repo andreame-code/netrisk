@@ -34,6 +34,7 @@ import {
 } from "./victory-objectives.cjs";
 import { compareCombatDice, rollCombatDice } from "./combat-dice.cjs";
 import { calculateReinforcements } from "./reinforcement-calculator.cjs";
+import { placeReinforcementAction } from "./reinforcement-placement.cjs";
 import { findSupportedMap } from "../../shared/maps/index.cjs";
 const { secureRandom } = require("../random.cjs");
 
@@ -1009,79 +1010,34 @@ export function applyReinforcement(
   territoryId: string,
   requestedAmount: number = 1
 ): BasicResult {
-  const territoryState = state.territories[territoryId];
-  const player = getPlayer(state, playerId);
-  const reinforcementAmount = Math.floor(Number(requestedAmount));
-
-  if (!player) {
-    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
+  const result = placeReinforcementAction(state, playerId, territoryId, requestedAmount);
+  if (!result.ok) {
+    return result;
   }
 
-  if (state.phase !== "active") {
-    return createActionFailure("La partita non e attiva.", "game.notActive");
-  }
-
-  if (!getCurrentPlayer(state) || getCurrentPlayer(state)?.id !== playerId) {
-    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
-  }
-
-  if (state.reinforcementPool <= 0) {
-    return createActionFailure("Non hai rinforzi disponibili.", "game.reinforce.noneAvailable");
-  }
-
-  if (!Number.isFinite(reinforcementAmount) || reinforcementAmount <= 0) {
-    return createActionFailure("Quantita rinforzi non valida.", "game.reinforce.invalidAmount");
-  }
-
-  if (reinforcementAmount > state.reinforcementPool) {
-    return createActionFailure(
-      "Stai tentando di usare piu rinforzi di quelli disponibili.",
-      "game.reinforce.tooMany"
-    );
-  }
-
-  if (!territoryState || territoryState.ownerId !== playerId) {
-    return createActionFailure(
-      "Puoi rinforzare solo un tuo territorio.",
-      "game.reinforce.mustOwnTerritory"
-    );
-  }
-
-  territoryState.armies += reinforcementAmount;
-  state.reinforcementPool -= reinforcementAmount;
-  state.lastAction = {
-    type: GameAction.REINFORCE,
-    summary: player.name + " rinforza " + territoryId + " con " + reinforcementAmount + " armate.",
-    summaryKey: "game.log.reinforced",
-    summaryParams: {
-      playerName: player.name,
-      reinforcementAmount,
-      territoryId,
-      reinforcementPool: state.reinforcementPool
-    }
-  };
   state.turnPhase =
     state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId)
       ? TurnPhase.ATTACK
       : TurnPhase.REINFORCEMENT;
+  const { player, placement } = result;
   appendLog(
     state,
     player.name +
       " aggiunge " +
-      reinforcementAmount +
+      placement.placedArmies +
       " " +
-      (reinforcementAmount === 1 ? "armata" : "armate") +
+      (placement.placedArmies === 1 ? "armata" : "armate") +
       " a " +
       territoryId +
       ". Rinforzi rimasti: " +
-      state.reinforcementPool +
+      placement.remainingReinforcements +
       ".",
     "game.log.reinforced",
     {
       playerName: player.name,
-      reinforcementAmount,
+      reinforcementAmount: placement.placedArmies,
       territoryId,
-      reinforcementPool: state.reinforcementPool
+      reinforcementPool: placement.remainingReinforcements
     }
   );
   return { ok: true };
