@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.031 - 2026-05-19
+
+- Hardened auth throttling IP resolution so forwarded proxy headers are trusted only when explicitly configured.
+
 ## 0.1.030 - 2026-05-19
 
 - Added branch-focused coverage for shared content pack/message helpers and local environment file loading.

@@ -77,11 +77,12 @@ function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string 
     return normalizeIp(socketIp || "unknown");
   }
 
-  const forwardedFor = firstHeaderValue(headers["x-forwarded-for"])
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .at(-1) || "";
+  const forwardedFor =
+    firstHeaderValue(headers["x-forwarded-for"])
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .at(-1) || "";
   const realIp = firstHeaderValue(headers["x-real-ip"]).trim();
   return normalizeIp(forwardedFor || realIp || socketIp || "unknown");
 }

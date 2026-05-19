@@ -156,9 +156,13 @@ register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", (
   );
 });
 
-register("auth attempt throttle resolves trusted proxy IP fallbacks deterministically", () => {
+register("auth attempt throttle resolves proxy IP fallbacks only when trust is explicit", () => {
+  const previousTrustProxyHeaders = process.env.NETRISK_TRUST_PROXY_HEADERS;
+  const previousVercel = process.env.VERCEL;
   const previousVercelEnv = process.env.VERCEL_ENV;
   try {
+    delete process.env.NETRISK_TRUST_PROXY_HEADERS;
+    delete process.env.VERCEL;
     delete process.env.VERCEL_ENV;
 
     assert.equal(resolveRequestIp({ headers: {}, socket: {} }), "unknown");
@@ -181,15 +185,51 @@ register("auth attempt throttle resolves trusted proxy IP fallbacks deterministi
     assert.equal(
       resolveRequestIp({
         headers: {
-          "x-forwarded-for": ["203.0.113.25", "198.51.100.46"]
+          "x-forwarded-for": "203.0.113.25, 198.51.100.46"
         },
         socket: {
           remoteAddress: "198.51.100.47"
         }
       }),
-      "203.0.113.25"
+      "198.51.100.47"
+    );
+
+    process.env.VERCEL = "1";
+    assert.equal(
+      resolveRequestIp({
+        headers: {
+          "x-forwarded-for": "203.0.113.26, 198.51.100.48"
+        },
+        socket: {
+          remoteAddress: "198.51.100.49"
+        }
+      }),
+      "198.51.100.49"
+    );
+
+    process.env.NETRISK_TRUST_PROXY_HEADERS = "true";
+    assert.equal(
+      resolveRequestIp({
+        headers: {
+          "x-forwarded-for": "203.0.113.27, 198.51.100.50"
+        },
+        socket: {
+          remoteAddress: "198.51.100.51"
+        }
+      }),
+      "198.51.100.50"
     );
   } finally {
+    if (previousTrustProxyHeaders === undefined) {
+      delete process.env.NETRISK_TRUST_PROXY_HEADERS;
+    } else {
+      process.env.NETRISK_TRUST_PROXY_HEADERS = previousTrustProxyHeaders;
+    }
+    if (previousVercel === undefined) {
+      delete process.env.VERCEL;
+    } else {
+      process.env.VERCEL = previousVercel;
+    }
     if (previousVercelEnv === undefined) {
       delete process.env.VERCEL_ENV;
     } else {
