@@ -1,7 +1,10 @@
 import { setMarkup } from "./dom.mjs";
 import { getModuleOptionsOrNull } from "./api/client.mjs";
 import { resolvedUiSlots } from "./module-catalog.mjs";
-import type { ModuleOptionsResponse, NetRiskUiSlotContribution } from "./types.mjs";
+import type {
+  ModuleOptionsResponse,
+  NetRiskUiSlotContribution
+} from "../generated/shared-runtime-validation.mjs";
 
 type MountModuleSlotSectionOptions = {
   slotId: string;
