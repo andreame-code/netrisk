@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const { createAuthRepository } = require("./auth-repository.cjs");
 const { SESSION_MAX_AGE_MS } = require("./session-policy.cjs");
+const { isSessionTokenStorageKey, sessionTokenStorageKey } = require("./session-token.cjs");
 const { createLocalizedError } = require("../shared/messages.cjs");
 
 interface ThemePreferences {
@@ -78,6 +79,7 @@ interface AuthRepository {
   createSession(token: string, userId: string, createdAt: number): Promise<void> | void;
   findSession(token: string): Promise<AuthSession | null> | AuthSession | null;
   deleteSession(token: string): Promise<void> | void;
+  deleteSessionsForUser?(userId: string): Promise<void> | void;
 }
 
 interface AuthStoreOptions {
@@ -165,28 +167,39 @@ function publicUser(user: StoredUser | null | undefined): PublicUser | null {
 }
 
 function verifyPassword(credentials: UserCredentials | undefined, password: unknown): boolean {
-  const record = credentials && credentials.password ? credentials.password : null;
-  if (!record) {
-    return false;
+  // Use a dummy record to ensure timing parity when credentials or password records are missing.
+  const dummyHash =
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+  const dummySalt = "00000000000000000000000000000000";
+
+  let passwordToVerify = password;
+  if (String(password || "").length > 128) {
+    // Avoid expensive hashing for extremely long passwords to mitigate DoS.
+    passwordToVerify = "__LONG_PASSWORD_PLACEHOLDER__";
   }
 
-  if (!record.salt || !record.hash) {
-    return false;
-  }
+  const record = credentials && credentials.password ? credentials.password : null;
+  const hasValidRecord = Boolean(record && record.salt && record.hash);
+
+  const algorithm = hasValidRecord && record ? record.algorithm : "scrypt";
+  const salt = hasValidRecord && record ? record.salt! : dummySalt;
+  const expectedHash = hasValidRecord && record ? record.hash! : dummyHash;
 
   let candidate: string;
-  if (record.algorithm === "scrypt" || !record.digest) {
-    const keylen = Number.isInteger(record.keylen) ? record.keylen : 64;
-    candidate = crypto.scryptSync(String(password || ""), record.salt, keylen).toString("hex");
+  if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
+    const keylen =
+      hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
+    candidate = crypto.scryptSync(String(passwordToVerify || ""), salt, keylen).toString("hex");
   } else {
-    const iterations = Number.isInteger(record.iterations) ? record.iterations : 120000;
-    const digest = record.digest || "sha256";
+    const iterations =
+      hasValidRecord && record && Number.isInteger(record.iterations) ? record.iterations! : 120000;
+    const digest = (hasValidRecord && record ? record.digest : null) || "sha256";
     candidate = crypto
-      .pbkdf2Sync(String(password || ""), record.salt, iterations, 32, digest)
+      .pbkdf2Sync(String(passwordToVerify || ""), salt, iterations, 32, digest)
       .toString("hex");
   }
 
-  const expectedBuffer = Buffer.from(record.hash, "hex");
+  const expectedBuffer = Buffer.from(expectedHash, "hex");
   const candidateBuffer = Buffer.from(candidate, "hex");
 
   // We use timingSafeEqual to prevent timing attacks.
@@ -197,7 +210,10 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
     return false;
   }
 
-  return crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
+  const matches = crypto.timingSafeEqual(expectedBuffer, candidateBuffer);
+
+  // We only return true if the record was actually valid AND the hash matched.
+  return hasValidRecord && matches;
 }
 
 function dataProtectionKey(options: AuthStoreOptions = {}): Buffer | null {
@@ -324,10 +340,6 @@ function accountSettingsValidationError(
     return authFailure("Nessuna modifica da salvare.", "auth.account.noChanges");
   }
 
-  if (input.currentPassword.length > 128) {
-    return authFailure("Password attuale non valida.", "auth.account.currentPasswordInvalid");
-  }
-
   if (hasEmailChange && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
     return authFailure("Email non valida.", "auth.register.invalidEmail");
   }
@@ -427,31 +439,19 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     return normalized ? datastore.findUserByUsername(normalized) : null;
   }
 
-  function runDummyPasswordVerification() {
-    const dummySecret = "netrisk-auth-dummy";
-    const dummyCredentials: UserCredentials = {
-      password: {
-        algorithm: "scrypt",
-        salt: "00000000000000000000000000000000",
-        keylen: 64,
-        hash: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-      }
-    };
-
-    verifyPassword(dummyCredentials, dummySecret);
-  }
-
   async function verifyUserPasswordAndMigrate(user: StoredUser | null, password: unknown) {
-    if (String(password || "").length > 128) {
-      // Avoid expensive hashing for extremely long passwords.
-      runDummyPasswordVerification();
-      return null;
-    }
-
     if (!user) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
-      runDummyPasswordVerification();
+      // Note: verifyPassword(undefined, ...) already performs dummy hashing and DoS mitigation.
+      verifyPassword(undefined, password);
+      return null;
+    }
+
+    if (String(password || "").length > 128) {
+      // Avoid expensive hashing for extremely long passwords to mitigate DoS.
+      // We perform a dummy hashing operation via verifyPassword to maintain timing parity.
+      verifyPassword(undefined, password);
       return null;
     }
 
@@ -463,16 +463,21 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       const expectedBuffer = Buffer.from(expectedSecret);
       const providedBuffer = Buffer.from(providedSecret);
 
+      let legacyMatches = true;
+
       // If lengths differ, we compare expected with itself to maintain timing parity
       // and satisfy CodeQL without using SHA-256 on password data.
       if (expectedBuffer.length !== providedBuffer.length) {
         crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
-        runDummyPasswordVerification();
-        return null;
+        legacyMatches = false;
+      } else if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+        legacyMatches = false;
       }
 
-      if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
-        runDummyPasswordVerification();
+      if (!legacyMatches) {
+        // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
+        // with the non-legacy success path which would normally proceed to scrypt hashing.
+        verifyPassword(undefined, password);
         return null;
       }
 
@@ -522,6 +527,8 @@ function createAuthStore(options: AuthStoreOptions = {}) {
     }
 
     if (await findByUsername(input.username)) {
+      // Dummy hashing to maintain timing parity when username is already taken.
+      verifyPassword(undefined, input.password);
       return authFailure("Utente gia registrato.", "auth.register.userExists");
     }
 
@@ -554,8 +561,12 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return authFailure("Credenziali non valide.", "auth.login.invalidCredentials");
     }
 
-    const sessionToken = crypto.randomBytes(16).toString("hex");
-    await datastore.createSession(sessionToken, verifiedUser.id, Date.now());
+    const sessionToken = crypto.randomBytes(32).toString("base64url");
+    await datastore.createSession(
+      sessionTokenStorageKey(sessionToken),
+      verifiedUser.id,
+      Date.now()
+    );
 
     return {
       ok: true,
@@ -569,24 +580,69 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       return null;
     }
 
-    const session = await datastore.findSession(sessionToken);
+    const presentedTokenIsStorageKey = isSessionTokenStorageKey(sessionToken);
+    const storedSessionToken = sessionTokenStorageKey(sessionToken);
+    let session = await datastore.findSession(storedSessionToken);
+    let tokenToDelete = storedSessionToken;
     if (!session) {
-      return null;
+      if (presentedTokenIsStorageKey) {
+        return null;
+      }
+
+      const legacySession = await datastore.findSession(sessionToken);
+      if (!legacySession) {
+        return null;
+      }
+
+      session = legacySession;
+      tokenToDelete = sessionToken;
     }
 
     const createdAt = session.created_at || session.createdAt || 0;
     if (Date.now() - Number(createdAt) > SESSION_MAX_AGE_MS) {
-      await datastore.deleteSession(sessionToken);
+      await datastore.deleteSession(tokenToDelete);
+      if (!presentedTokenIsStorageKey && tokenToDelete !== sessionToken) {
+        await datastore.deleteSession(sessionToken);
+      }
       return null;
     }
 
     const sessionUserId = session.user_id || session.userId || "";
-    return sessionUserId ? (await datastore.findUserById(sessionUserId)) || null : null;
+    if (!sessionUserId) {
+      await datastore.deleteSession(tokenToDelete);
+      if (!presentedTokenIsStorageKey && tokenToDelete !== sessionToken) {
+        await datastore.deleteSession(sessionToken);
+      }
+      return null;
+    }
+
+    if (tokenToDelete === sessionToken) {
+      try {
+        await datastore.createSession(
+          storedSessionToken,
+          sessionUserId,
+          Number(createdAt) || Date.now()
+        );
+      } catch (error) {
+        const migratedSession = await datastore.findSession(storedSessionToken);
+        if (!migratedSession) {
+          throw error;
+        }
+      }
+      await datastore.deleteSession(sessionToken);
+    } else if (!presentedTokenIsStorageKey) {
+      await datastore.deleteSession(sessionToken);
+    }
+
+    return (await datastore.findUserById(sessionUserId)) || null;
   }
 
   async function logout(sessionToken: string | null | undefined) {
     if (sessionToken) {
-      await datastore.deleteSession(sessionToken);
+      await datastore.deleteSession(sessionTokenStorageKey(sessionToken));
+      if (!isSessionTokenStorageKey(sessionToken)) {
+        await datastore.deleteSession(sessionToken);
+      }
     }
 
     return null;
@@ -650,6 +706,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
           ...(updatedUser.credentials || {}),
           password: passwordRecord(nextPassword)
         })) || updatedUser;
+      await datastore.deleteSessionsForUser?.(updatedUser.id);
     }
 
     return {

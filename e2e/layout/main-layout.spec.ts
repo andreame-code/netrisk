@@ -1,9 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame } = require("../support/game-helpers");
+const { registerAndLogin, resetGame, uniqueUser } = require("../support/game-helpers");
 
 test("main layout exposes core regions", async ({ page }) => {
   const resetPayload = await resetGame(page);
   const gameId = resetPayload?.state?.gameId;
+  await registerAndLogin(page, uniqueUser("layout_main"));
   await page.goto(`/game/${encodeURIComponent(gameId)}`);
 
   await expect(page.getByTestId("app-shell")).toBeVisible();

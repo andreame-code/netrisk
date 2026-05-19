@@ -131,6 +131,7 @@ type GameContext = {
   gameId: string | null;
   gameName: string | null;
   version: number | null;
+  creatorUserId: string | null;
   state: any;
 };
 type EventClient = {
@@ -177,6 +178,37 @@ const projectRoot = resolveProjectRoot();
 const port = process.env.PORT || 3000;
 const sessionCookieName = "netrisk_session";
 const supportedSiteThemes = new Set(listSupportedThemeIds());
+const authThrottleEnvBindings: Array<[string, string]> = [
+  ["cleanupIntervalMs", "NETRISK_AUTH_THROTTLE_CLEANUP_INTERVAL_MS"],
+  ["maxAttempts", "NETRISK_AUTH_THROTTLE_MAX_ATTEMPTS"],
+  ["maxIpAttempts", "NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS"],
+  ["windowMs", "NETRISK_AUTH_THROTTLE_WINDOW_MS"],
+  ["lockoutMs", "NETRISK_AUTH_THROTTLE_LOCKOUT_MS"],
+  ["maxLockoutMs", "NETRISK_AUTH_THROTTLE_MAX_LOCKOUT_MS"]
+];
+
+function parsePositiveIntegerEnv(name: string): number | undefined {
+  const rawValue = String(process.env[name] || "").trim();
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const value = Number(rawValue);
+  return Number.isInteger(value) && value > 0 ? value : undefined;
+}
+
+function authAttemptThrottleOptionsFromEnv(): Record<string, number> {
+  return authThrottleEnvBindings.reduce(
+    (options, [optionName, envName]) => {
+      const value = parsePositiveIntegerEnv(envName);
+      if (typeof value === "number") {
+        options[optionName] = value;
+      }
+      return options;
+    },
+    {} as Record<string, number>
+  );
+}
 
 function logAiRecovery(payload: {
   event: "ai_turn_recovery";
@@ -319,10 +351,11 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   const state = createInitialState();
-  const authAttemptThrottle = createAuthAttemptThrottle();
+  const authAttemptThrottle = createAuthAttemptThrottle(authAttemptThrottleOptionsFromEnv());
   let activeGameId: string | null = null;
   let activeGameVersion: number | null = null;
   let activeGameName: string | null = null;
+  let activeGameCreatorUserId: string | null = null;
   let nextAttackRolls: number[] | null = null;
   const datastore = createDatastore({
     dbFile: options.dbFile || defaultDbFile(),
@@ -414,6 +447,7 @@ function createApp(options: CreateAppOptions = {}) {
         activeGameId = initialGame.game.id;
         activeGameVersion = initialGame.game.version;
         activeGameName = initialGame.game.name;
+        activeGameCreatorUserId = initialGame.game.creatorUserId || null;
         replaceState(initialGame.state);
       })
       .catch((error: any) => {
@@ -433,6 +467,7 @@ function createApp(options: CreateAppOptions = {}) {
     activeGameId = eagerInitialGame.game.id;
     activeGameVersion = eagerInitialGame.game.version;
     activeGameName = eagerInitialGame.game.name;
+    activeGameCreatorUserId = eagerInitialGame.game.creatorUserId || null;
     replaceState(eagerInitialGame.state);
   }
 
@@ -482,6 +517,7 @@ function createApp(options: CreateAppOptions = {}) {
         gameId: activeGameId,
         gameName: activeGameName,
         version: activeGameVersion,
+        creatorUserId: activeGameCreatorUserId,
         state
       };
     }
@@ -491,6 +527,7 @@ function createApp(options: CreateAppOptions = {}) {
       gameId: record.game.id,
       gameName: record.game.name,
       version: record.game.version,
+      creatorUserId: record.game.creatorUserId || null,
       state: record.state
     };
   }
@@ -507,10 +544,12 @@ function createApp(options: CreateAppOptions = {}) {
     );
     gameContext.version = savedGame.version;
     gameContext.gameName = savedGame.name;
+    gameContext.creatorUserId = savedGame.creatorUserId || null;
 
     if (gameContext.gameId === activeGameId) {
       activeGameVersion = savedGame.version;
       activeGameName = savedGame.name;
+      activeGameCreatorUserId = savedGame.creatorUserId || null;
       if (gameContext.state !== state) {
         replaceState(gameContext.state);
       }
@@ -529,7 +568,20 @@ function createApp(options: CreateAppOptions = {}) {
       return;
     }
 
+    const creatorUserId =
+      gameContext.creatorUserId ||
+      (gameContext.gameId === activeGameId ? activeGameCreatorUserId : null);
+
     broadcastEventPayload(clients, (client: EventClient) => {
+      authorize("game:read", {
+        user: client.user,
+        game: {
+          phase: gameContext.state?.phase,
+          creatorUserId
+        },
+        state: gameContext.state
+      });
+
       const payloadResult = gameEventPayloadSchema.safeParse(
         snapshotForUser(
           gameContext.state,
@@ -643,10 +695,6 @@ function createApp(options: CreateAppOptions = {}) {
       );
       return null;
     }
-    if (!gameRecord.game.creatorUserId) {
-      return { ok: true, user: null, gameRecord };
-    }
-
     const authContext = await requireAuth(req, res, {}, url);
     if (!authContext) {
       return null;
@@ -811,12 +859,14 @@ function createApp(options: CreateAppOptions = {}) {
       activeGameId = resetGame.game.id;
       activeGameVersion = resetGame.game.version;
       activeGameName = resetGame.game.name;
+      activeGameCreatorUserId = resetGame.game.creatorUserId || null;
       replaceState(resetGame.state);
       nextAttackRolls = null;
       broadcastGame({
         gameId: resetGame.game.id,
         gameName: resetGame.game.name,
         version: resetGame.game.version,
+        creatorUserId: resetGame.game.creatorUserId || null,
         state: resetGame.state
       });
       sendJson(res, 200, { ok: true, state: snapshot() });
@@ -1292,6 +1342,7 @@ function createApp(options: CreateAppOptions = {}) {
                 activeGameId = null;
                 activeGameVersion = null;
                 activeGameName = null;
+                activeGameCreatorUserId = null;
                 replaceState(createInitialState());
               }
             },
@@ -1334,6 +1385,7 @@ function createApp(options: CreateAppOptions = {}) {
                 gameId,
                 gameName,
                 version,
+                creatorUserId: gameId === activeGameId ? activeGameCreatorUserId : null,
                 state: nextState
               });
             }
@@ -1366,6 +1418,7 @@ function createApp(options: CreateAppOptions = {}) {
           activeGameId = created.game.id;
           activeGameVersion = created.game.version;
           activeGameName = created.game.name;
+          activeGameCreatorUserId = created.game.creatorUserId || null;
           return created;
         },
         () => gameSessions.listGames(),
@@ -1788,10 +1841,16 @@ function createApp(options: CreateAppOptions = {}) {
     };
   }
 
-  function addSecurityHeaders(res: Response) {
+  function addSecurityHeaders(req: Request, res: Response) {
     const connectSources = ["'self'"];
     if (sentryConnectOrigin) {
       connectSources.push(sentryConnectOrigin);
+    }
+
+    // Explicitly remove the X-Powered-By header to prevent information disclosure.
+    // We wrap it in a type check to ensure compatibility with mock response objects.
+    if (typeof res.removeHeader === "function") {
+      res.removeHeader("X-Powered-By");
     }
 
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -1803,7 +1862,14 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+
+    // Apply HSTS only for secure connections or in test environments.
+    const isTest =
+      process.env.TEST === "true" || process.env.E2E === "true" || process.env.NODE_ENV === "test";
+    if (secureCookieFlag(req) || isTest) {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
@@ -1816,9 +1882,15 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function handleRequest(req: Request, res: Response) {
-    const url = new URL(req.url || "/", "http://" + req.headers.host);
+    addSecurityHeaders(req, res);
 
-    addSecurityHeaders(res);
+    let url: URL;
+    try {
+      url = new URL(req.url || "/", "http://" + req.headers.host);
+    } catch (error) {
+      sendLocalizedError(res, 400, error, "Richiesta non valida.", "server.request.invalid");
+      return;
+    }
 
     Promise.resolve()
       .then(() => {

@@ -16,6 +16,8 @@ import type {
 
 import { t } from "@frontend-i18n";
 
+import { WarTableIcon } from "@react-shell/war-table-icons";
+
 const MAP_VIEWPORT_MIN_SCALE = 1;
 const MAP_VIEWPORT_MAX_SCALE = 3;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
@@ -60,10 +62,18 @@ type BoardFrame = {
   height: number;
 };
 
+type FittedBoardSizeInput = {
+  allowsHorizontalCrop: boolean;
+  aspectRatio: number;
+  availableHeight: number;
+  availableWidth: number;
+  stagePaddingY: number;
+};
+
 type GameplayMapViewportProps = {
   attackFromId: string;
   attackToId: string;
-  commandDockExpanded: boolean;
+  commandDockSheetState: "collapsed" | "half-open" | "expanded";
   fortifyFromId: string;
   fortifyToId: string;
   myPlayerId: string | null;
@@ -136,9 +146,84 @@ function mapAspectRatio(snapshot: GameSnapshot): string {
   return "760 / 500";
 }
 
-function readCssPixelValue(styles: CSSStyleDeclaration, propertyName: string): number {
-  const value = Number.parseFloat(styles.getPropertyValue(propertyName) || "0");
-  return Number.isFinite(value) ? value : 0;
+function resolveMapImageUrl(imageUrl: string): string {
+  if (imageUrl.startsWith("//")) {
+    return imageUrl;
+  }
+
+  if (/^(?:[a-z][a-z0-9+.-]*:|data:|blob:)/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  if (imageUrl.startsWith("/")) {
+    return imageUrl;
+  }
+
+  return imageUrl;
+}
+
+function readCssLengthPixelValue(
+  element: HTMLElement,
+  styles: CSSStyleDeclaration,
+  propertyName: string
+): number {
+  const rawValue = styles.getPropertyValue(propertyName).trim();
+  if (!rawValue) {
+    return 0;
+  }
+
+  if (rawValue === "0") {
+    return 0;
+  }
+
+  const pixelMatch = rawValue.match(/^(-?\d+(?:\.\d+)?)px$/);
+  if (pixelMatch) {
+    const value = Number.parseFloat(pixelMatch[1]);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const measurement = document.createElement("div");
+  measurement.style.position = "absolute";
+  measurement.style.visibility = "hidden";
+  measurement.style.pointerEvents = "none";
+  measurement.style.boxSizing = "border-box";
+  measurement.style.width = rawValue;
+  measurement.style.height = "0";
+  measurement.style.margin = "0";
+  measurement.style.padding = "0";
+  measurement.style.border = "0";
+
+  element.appendChild(measurement);
+  const measuredWidth = measurement.getBoundingClientRect().width;
+  measurement.remove();
+
+  if (Number.isFinite(measuredWidth) && measuredWidth >= 0) {
+    return measuredWidth;
+  }
+
+  const fallback = Number.parseFloat(rawValue);
+  return Number.isFinite(fallback) ? fallback : 0;
+}
+
+export function calculateFittedBoardSize({
+  allowsHorizontalCrop,
+  aspectRatio,
+  availableHeight,
+  availableWidth,
+  stagePaddingY
+}: FittedBoardSizeInput): { width: number; height: number } {
+  const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
+  const fittedWidth = Math.min(availableWidth, widthFromHeight);
+  const width = allowsHorizontalCrop
+    ? widthFromHeight >= availableWidth
+      ? Math.min(widthFromHeight, availableWidth * 1.9)
+      : fittedWidth
+    : fittedWidth;
+
+  return {
+    width: Math.floor(width),
+    height: Math.ceil(width / aspectRatio)
+  };
 }
 
 function territoryOwnerName(
@@ -166,7 +251,7 @@ function territoryPosition(territory: SnapshotTerritory): { x: number; y: number
 export function GameplayMapViewport({
   attackFromId,
   attackToId,
-  commandDockExpanded,
+  commandDockSheetState,
   fortifyFromId,
   fortifyToId,
   myPlayerId,
@@ -428,8 +513,8 @@ export function GameplayMapViewport({
       const stagePaddingY =
         Number.parseFloat(stageStyles.paddingTop || "0") +
         Number.parseFloat(stageStyles.paddingBottom || "0");
-      const safeTop = readCssPixelValue(stageStyles, "--game-map-safe-top");
-      const safeBottom = readCssPixelValue(stageStyles, "--game-map-safe-bottom");
+      const safeTop = readCssLengthPixelValue(mapStage, stageStyles, "--game-map-safe-top");
+      const safeBottom = readCssLengthPixelValue(mapStage, stageStyles, "--game-map-safe-bottom");
       const availableWidth = Math.max(0, mapStage.clientWidth - stagePaddingX);
       const stageRect = mapStage.getBoundingClientRect();
       const availableHeight = Math.max(
@@ -452,13 +537,16 @@ export function GameplayMapViewport({
       const aspectRatio = aspectRatioMatch
         ? Number.parseFloat(aspectRatioMatch[1]) / Number.parseFloat(aspectRatioMatch[2])
         : 760 / 500;
-      const widthFromHeight = Math.max(0, (availableHeight - stagePaddingY) * aspectRatio);
-      const width = Math.min(availableWidth, widthFromHeight);
-      const height = width / aspectRatio;
-
+      const allowsHorizontalCrop =
+        stageStyles.getPropertyValue("--game-map-allow-horizontal-crop").trim() === "1";
       setFittedBoardFrame({
-        width: Math.floor(width),
-        height: Math.ceil(height)
+        ...calculateFittedBoardSize({
+          allowsHorizontalCrop,
+          aspectRatio,
+          availableHeight,
+          availableWidth,
+          stagePaddingY
+        })
       });
     }
 
@@ -482,7 +570,7 @@ export function GameplayMapViewport({
       window.removeEventListener("resize", fitBoardToViewport);
     };
   }, [
-    commandDockExpanded,
+    commandDockSheetState,
     snapshot.cardState?.currentPlayerMustTrade,
     snapshot.mapVisual?.aspectRatio?.height,
     snapshot.mapVisual?.aspectRatio?.width,
@@ -674,7 +762,7 @@ export function GameplayMapViewport({
       : {}),
     ...(snapshot.mapVisual?.imageUrl
       ? {
-          "--map-background-image": `url(${snapshot.mapVisual.imageUrl})`
+          "--map-background-image": `url(${resolveMapImageUrl(snapshot.mapVisual.imageUrl)})`
         }
       : {})
   } as CSSProperties;
@@ -720,6 +808,23 @@ export function GameplayMapViewport({
             disabled={viewport.scale <= MAP_VIEWPORT_MIN_SCALE + 0.001 && !hasViewportOffset}
           >
             <span aria-hidden="true">-</span>
+          </button>
+          <button
+            type="button"
+            className="map-control-button"
+            data-map-control="focus"
+            aria-label={t("game.map.reset")}
+            title={t("game.map.reset")}
+            onClick={() =>
+              setViewport({
+                scale: MAP_VIEWPORT_MIN_SCALE,
+                translateX: 0,
+                translateY: 0,
+                isDragging: false
+              })
+            }
+          >
+            <WarTableIcon name="objective" />
           </button>
         </div>
 

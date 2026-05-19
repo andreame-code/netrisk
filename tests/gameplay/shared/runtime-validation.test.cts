@@ -10,6 +10,7 @@ const {
   loginRequestSchema,
   logoutResponseSchema,
   messagePayloadSchema,
+  netRiskUiSlotContributionSchema,
   parseWithSchema,
   profileResponseSchema,
   registerRequestSchema,
@@ -252,6 +253,38 @@ register("shared runtime validation validates lobby route payload shapes", () =>
     toValidationErrors(invalidJoinResponse.error).map((entry: { path: string }) => entry.path),
     ["user.id"]
   );
+});
+
+register("shared runtime validation constrains module UI slot routes to same-origin paths", () => {
+  const validSlot = parseWithSchema(netRiskUiSlotContributionSchema, {
+    slotId: "top-nav-bar",
+    itemId: "demo.safe-route",
+    title: "Demo Route",
+    kind: "nav-item",
+    route: " /modules/demo.safe?panel=overview#details "
+  });
+  assert.equal(validSlot.route, "/modules/demo.safe?panel=overview#details");
+
+  const invalidRoutes = [
+    "javascript:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "https://example.test/modules/demo",
+    "//example.test/modules/demo",
+    "/\\example.test/modules/demo"
+  ];
+
+  invalidRoutes.forEach((route) => {
+    const result = netRiskUiSlotContributionSchema.safeParse({
+      slotId: "top-nav-bar",
+      itemId: `demo.unsafe-route.${route.length}`,
+      title: "Unsafe Route",
+      kind: "nav-item",
+      route
+    });
+
+    assert.equal(result.success, false, `Expected route to be rejected: ${route}`);
+  });
 });
 
 register("shared runtime validation rejects passwords exceeding 128 characters", () => {

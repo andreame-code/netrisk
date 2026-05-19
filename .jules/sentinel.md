@@ -7,3 +7,18 @@
 **Vulnerability:** The `/api/ai/join` endpoint was completely unauthenticated and unauthorized, allowing anyone to fill game lobbies with AI bots.
 **Learning:** Security controls must be applied consistently across all endpoints that mutate game state, regardless of whether they represent "human" or "system" actions. Partial authentication (securing `/api/join` but not `/api/ai/join`) creates easy bypasses for disruptive behavior.
 **Prevention:** Audit all endpoints in a feature set (e.g., game setup) to ensure they share the same security posture. Use centralized authorization policies (like `game:start`) to enforce consistent permissions.
+
+## 2026-05-07 - Hardened Request Parsing and Early Security Headers
+**Vulnerability:** Malformed Host headers caused the custom HTTP server to throw unhandled TypeErrors during URL initialization, potentially leading to service instability or ungraceful error states.
+**Learning:** Node.js's `new URL()` constructor throws on invalid input. In a custom server implementation, this must be handled explicitly at the boundary. Furthermore, applying security headers *after* potential crash points leaves error responses unprotected.
+**Prevention:** Wrap request boundary parsing in try-catch blocks and prioritize the application of security headers to ensure all response paths, including early failures, are hardened.
+
+## 2026-05-25 - Timing-Safe Authentication and Username Enumeration Mitigation
+**Vulnerability:** The authentication flow was susceptible to timing-based username enumeration. If a user did not exist or had no password record (e.g., OAuth only), the system would skip hashing and return early, significantly faster than a successful or failed password check.
+**Learning:** Security-sensitive operations like password verification must maintain consistent timing profiles across all logic branches. Partial mitigations (like dummy hashing only when a user is found but credentials are missing) still leave gaps for non-existent users.
+**Prevention:** Hardened the core `verifyPassword` utility to always perform a hashing operation (using dummy salt/hash if necessary) even when user records are missing. This ensures consistent timing parity across the entire authentication boundary.
+
+## 2026-05-15 - Defensive Security Header Management with Mock Compatibility
+**Vulnerability:** Security hardening that relies on standard Node.js HTTP response methods like `res.removeHeader` can cause runtime errors in test suites where response objects are mocked without full API parity.
+**Learning:** When applying security headers at the global server level, defensive checks for method existence (e.g., `typeof res.removeHeader === 'function'`) ensure that security logic doesn't break gameplay or regression tests that use lightweight mocks. Additionally, HSTS must be applied conditionally (only over secure connections or in test environments) to align with RFC 6797 and maintain local development accessibility.
+**Prevention:** Always wrap non-standard or late-added response methods in defensive type checks and ensure HSTS application logic respects the connection's security state.

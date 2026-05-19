@@ -84,6 +84,7 @@ type GameContext = {
   gameId: string | null;
   gameName: string | null;
   version: number | null;
+  creatorUserId: string | null;
   state: GameState;
 };
 
@@ -123,6 +124,7 @@ type AdminConsoleOptions = {
     listUsers(): Promise<StoredUser[]> | StoredUser[];
     findUserById(userId: string): Promise<StoredUser | null> | StoredUser | null;
     updateUserRoleByUsername(username: string, role: string): Promise<void> | void;
+    deleteSessionsForUser?(userId: string): Promise<void> | void;
     getAppState(key: string): Promise<unknown> | unknown;
     setAppState(key: string, value: unknown): Promise<unknown> | unknown;
   };
@@ -880,7 +882,11 @@ function createAdminConsole(options: AdminConsoleOptions) {
       throw new Error("Impossibile rimuovere l'ultimo amministratore disponibile.");
     }
 
+    const roleChanged = targetUser.role !== input.role;
     await maybeResolve(options.datastore.updateUserRoleByUsername(targetUser.username, input.role));
+    if (roleChanged) {
+      await maybeResolve(options.datastore.deleteSessionsForUser?.(targetUser.id));
+    }
     const refreshedUsers = await listUsers();
     const updatedUser = refreshedUsers.users.find((user) => user.id === input.userId);
     if (!updatedUser) {

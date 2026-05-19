@@ -6,6 +6,7 @@ const path = require("node:path");
 
 const { createSupabaseDatastore } = require("../../../backend/datastore-supabase.cjs");
 const { checkSupabaseConnection } = require("../../../scripts/check-supabase-connection.cjs");
+const { getSupabaseSchemaSql } = require("../../../supabase/schema.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -102,6 +103,126 @@ register("Supabase connection check fails clearly when REST auth is invalid", as
         tables: ["users"]
       }),
     /Supabase connection check failed for table users \(401\)/
+  );
+});
+
+register("Supabase connection check validates required environment before probing", async () => {
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_URL/
+  );
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co",
+          SUPABASE_SERVICE_ROLE_KEY: "   "
+        },
+        fetchImpl: async () => new Response("[]", { status: 200 })
+      }),
+    /Missing Supabase connection env: SUPABASE_SERVICE_ROLE_KEY/
+  );
+});
+
+register("Supabase connection check defaults schema and reports invalid hosts safely", async () => {
+  const requestedHeaders: Array<Record<string, string>> = [];
+  const fetchImpl = async (_input: unknown, init: RequestInit = {}) => {
+    requestedHeaders.push(init.headers as Record<string, string>);
+    return new Response("[]", { status: 200 });
+  };
+
+  const result = await checkSupabaseConnection({
+    env: {
+      SUPABASE_URL: "not-a-valid-url/",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role",
+      SUPABASE_DB_SCHEMA: "   "
+    },
+    fetchImpl,
+    tables: []
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.urlHost, "invalid-url");
+  assert.equal(result.schema, "public");
+  assert.deepEqual(result.checkedTables, []);
+  assert.equal(requestedHeaders.length, 0);
+});
+
+register("Supabase connection check falls back to status text for empty error bodies", async () => {
+  const fetchImpl = async () =>
+    new Response("", {
+      status: 503,
+      statusText: "Service unavailable"
+    });
+
+  await assert.rejects(
+    () =>
+      checkSupabaseConnection({
+        env: {
+          SUPABASE_URL: "https://example.supabase.co/",
+          SUPABASE_SERVICE_ROLE_KEY: "service-role"
+        },
+        fetchImpl,
+        tables: ["games"]
+      }),
+    /games \(503\): Service unavailable/
+  );
+});
+
+register("Supabase datastore ignores public keys and requires the service role key", () => {
+  const previousEnv = {
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+  };
+
+  try {
+    process.env.SUPABASE_ANON_KEY = "anon-key";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "publishable-key";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "next-public-anon-key";
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    assert.throws(
+      () =>
+        createSupabaseDatastore({
+          supabaseUrl: "https://example.supabase.co"
+        }),
+      /SUPABASE_SERVICE_ROLE_KEY/
+    );
+  } finally {
+    Object.entries(previousEnv).forEach(([key, value]) => {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
+  }
+});
+
+register("Supabase schema enables RLS and revokes browser role table access", () => {
+  const schemaSql = getSupabaseSchemaSql();
+
+  ["users", "sessions", "games", "app_state"].forEach((table) => {
+    assert.match(schemaSql, new RegExp(`alter table public\\.${table} enable row level security;`));
+  });
+
+  assert.match(
+    schemaSql,
+    /revoke all on table public\.users, public\.sessions, public\.games, public\.app_state from anon;/
+  );
+  assert.match(
+    schemaSql,
+    /revoke all on table public\.users, public\.sessions, public\.games, public\.app_state from authenticated;/
   );
 });
 

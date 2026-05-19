@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 
 import type { ModuleOptionsResponse } from "@frontend-generated/shared-runtime-validation.mts";
 import { getModuleOptions } from "@frontend-core/api/client.mts";
+import { setLocale } from "@frontend-i18n";
 
 import { AppShellLayout, resolveCurrentGameId } from "@react-shell/app-shell-layout";
 import type { AuthState } from "@react-shell/auth-store";
@@ -88,6 +89,7 @@ describe("resolveCurrentGameId", () => {
     document.body.removeAttribute("data-theme");
     window.localStorage.clear();
     setAvailableShellThemes(["command", "midnight", "ember", "war-table"]);
+    setLocale("it", { applyDocument: false });
     authMocks.state = {
       status: "unauthenticated",
       message: "Sign in to continue."
@@ -173,5 +175,22 @@ describe("resolveCurrentGameId", () => {
     expect(document.documentElement.dataset.theme).toBeUndefined();
     expect(document.body.dataset.theme).toBeUndefined();
     expect(moduleStyleMocks.syncModuleStyleAssets).not.toHaveBeenCalled();
+  });
+
+  it("localizes the hidden game auth status", () => {
+    setLocale("en", { applyDocument: false });
+    authMocks.state = {
+      status: "authenticated",
+      user: {
+        id: "user-1",
+        username: "Player",
+        preferences: {}
+      }
+    };
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/game");
+
+    expect(view.container.querySelector("#auth-status")?.textContent).toBe("Logged in as Player.");
   });
 });

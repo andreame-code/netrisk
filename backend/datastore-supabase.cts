@@ -212,12 +212,7 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       requiredEnv("NEXT_PUBLIC_SUPABASE_URL")
   ).replace(/\/$/, "");
   const supabaseKey = String(
-    options.supabaseServiceRoleKey ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_ANON_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      ""
+    options.supabaseServiceRoleKey || process.env.SUPABASE_SERVICE_ROLE_KEY || ""
   ).trim();
 
   if (!supabaseKey) {
@@ -574,6 +569,10 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
     async deleteSession(token: string) {
       await ensureInitialized();
       await deleteRows("sessions", { token: `eq.${token}` });
+    },
+    async deleteSessionsForUser(userId: string) {
+      await ensureInitialized();
+      await deleteRows("sessions", { user_id: `eq.${userId}` });
     },
     async listGames() {
       await ensureInitialized();

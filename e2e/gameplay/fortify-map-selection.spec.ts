@@ -89,10 +89,11 @@ function mockState() {
 test("fortify map clicks select origin first and destination second", async ({ page }) => {
   const currentState = mockState();
 
-  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.setViewportSize({ width: 1366, height: 600 });
 
   await page.addInitScript(() => {
     window.localStorage.setItem("frontline-player-id", "p1");
+    window.localStorage.setItem("netrisk.theme", "war-table");
   });
 
   await page.route("**/api/auth/session", async (route) => {
@@ -135,6 +136,38 @@ test("fortify map clicks select origin first and destination second", async ({ p
   await expect(page.locator("#fortify-group")).toBeVisible();
   await expect(page.locator("#fortify-from")).toHaveValue("cinder");
   await expect(page.locator("#fortify-to")).toHaveValue("delta");
+
+  const dockMetrics = await page.evaluate(() => {
+    const dock = document.querySelector(".game-command-dock");
+    if (!dock) {
+      return null;
+    }
+
+    const dockRect = dock.getBoundingClientRect();
+    const visibleControls = Array.from(dock.querySelectorAll("button, select, input"))
+      .map((element) => element.getBoundingClientRect())
+      .filter((rect) => rect.width > 0 && rect.height > 0);
+
+    return {
+      controlsInsideDock: visibleControls.every(
+        (rect) =>
+          rect.left >= dockRect.left - 1 &&
+          rect.right <= dockRect.right + 1 &&
+          rect.top >= dockRect.top - 1 &&
+          rect.bottom <= dockRect.bottom + 1
+      ),
+      dockInsideViewport:
+        dockRect.left >= -1 &&
+        dockRect.right <= window.innerWidth + 1 &&
+        dockRect.bottom <= window.innerHeight + 1,
+      contentFitsDock: dock.scrollHeight <= dock.clientHeight + 1
+    };
+  });
+
+  expect(dockMetrics).not.toBeNull();
+  expect(dockMetrics.dockInsideViewport).toBeTruthy();
+  expect(dockMetrics.controlsInsideDock).toBeTruthy();
+  expect(dockMetrics.contentFitsDock).toBeTruthy();
 
   await page.locator('[data-territory-id="delta"]').click();
   await expect(page.locator("#fortify-from")).toHaveValue("delta");

@@ -4,6 +4,7 @@ export type WarTableIconName =
   | "chevronDown"
   | "clock"
   | "crosshair"
+  | "flag"
   | "filter"
   | "globe"
   | "medal"
@@ -65,6 +66,13 @@ export function WarTableIcon({ className = "", name }: WarTableIconProps) {
           <path d="M4 7h16" />
           <path d="M7 12h10" />
           <path d="M10 17h4" />
+        </svg>
+      );
+    case "flag":
+      return (
+        <svg className={iconClassName} viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 21V4" />
+          <path d="M6 5h11l-2 4 2 4H6" />
         </svg>
       );
     case "globe":

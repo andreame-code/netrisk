@@ -59,6 +59,7 @@ const { createAuthRepository } = require("../backend/auth-repository.cjs");
 const { createDatastore } = require("../backend/datastore.cjs");
 const { createGameSessionStore } = require("../backend/game-session-store.cjs");
 const { SESSION_MAX_AGE_MS, SESSION_MAX_AGE_SECONDS } = require("../backend/session-policy.cjs");
+const { sessionTokenStorageKey } = require("../backend/session-token.cjs");
 const { readJsonFile, writeJsonFile } = require("../backend/json-file-store.cjs");
 const { createPlayerProfileStore } = require("../backend/player-profile-store.cjs");
 const {
@@ -89,6 +90,7 @@ const { randomHex, secureRandom } = require("../backend/random.cjs");
 const { pruneBackups } = require("./backup-datastore.cjs");
 const { inspectBackup } = require("./check-backup.cjs");
 const { checkThemeTokenization } = require("./check-theme-tokenization.cjs");
+const { grantRole } = require("./grant-admin.cjs");
 const classicMiniMap = require("../shared/maps/classic-mini.cjs");
 const middleEarthMap = require("../shared/maps/middle-earth.cjs");
 const worldClassicMap = require("../shared/maps/world-classic.cjs");
@@ -664,6 +666,11 @@ register("auth repository supabase normalizza utenti, preferenze e sessioni", as
 
     await repository.deleteSession("token-1");
     assert.equal(await repository.findSession("token-1"), null);
+    await repository.createSession("token-2", "user-2", 123);
+    await repository.createSession("token-3", "user-2", 456);
+    await repository.deleteSessionsForUser("user-2");
+    assert.equal(await repository.findSession("token-2"), null);
+    assert.equal(await repository.findSession("token-3"), null);
 
     repository.close();
   });
@@ -712,6 +719,9 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
       deleteSession(token: any) {
         calls.push(["deleteSession", token]);
       },
+      deleteSessionsForUser(userId: any) {
+        calls.push(["deleteSessionsForUser", userId]);
+      },
       close() {
         calls.push("close");
       }
@@ -745,6 +755,7 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
     created_at: 1234
   });
   await localRepository.deleteSession("token-local");
+  await localRepository.deleteSessionsForUser("u2");
   localRepository.close();
 
   assert.equal(
@@ -753,6 +764,10 @@ register("auth repository locale delega aggiornamenti profilo, tema e sessioni",
   );
   assert.equal(
     calls.some((entry: any) => Array.isArray(entry) && entry[0] === "updateUserThemePreference"),
+    true
+  );
+  assert.equal(
+    calls.some((entry: any) => Array.isArray(entry) && entry[0] === "deleteSessionsForUser"),
     true
   );
   assert.equal(calls.includes("close"), true);
@@ -975,14 +990,14 @@ register("health route usa 503 quando lo snapshot segnala errore", async () => {
 
 register("version registry espone manifest e compatibilita baseline", () => {
   const expectedManifest = {
-    appVersion: "0.1.004",
-    engineVersion: "1.0.0",
-    apiVersion: "1.0.0",
-    datastoreSchemaVersion: 1,
-    saveGameSchemaVersion: 1,
-    moduleApiVersion: "1.0.0",
-    minimumCompatibleSaveGameSchemaVersion: 1,
-    minimumCompatibleModuleApiVersion: "1.0.0"
+    appVersion: versionManifest.appVersion,
+    engineVersion: versionManifest.engineVersion,
+    apiVersion: versionManifest.apiVersion,
+    datastoreSchemaVersion: versionManifest.datastoreSchemaVersion,
+    saveGameSchemaVersion: versionManifest.saveGameSchemaVersion,
+    moduleApiVersion: versionManifest.moduleApiVersion,
+    minimumCompatibleSaveGameSchemaVersion: versionManifest.minimumCompatibleSaveGameSchemaVersion,
+    minimumCompatibleModuleApiVersion: versionManifest.minimumCompatibleModuleApiVersion
   };
 
   assert.deepEqual(versionManifest.versionManifest, expectedManifest);
@@ -3230,6 +3245,45 @@ function cleanupSqliteFiles(filePath: string) {
   });
 }
 
+register("grant admin revoca sessioni solo quando il ruolo cambia", () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempDbFile = path.join(__dirname, `tmp-grant-admin-${unique}.sqlite`);
+  const userId = `grant-role-user-${unique}`;
+  const username = `grant_role_${unique}`;
+
+  try {
+    let datastore = createDatastore({ dbFile: tempDbFile });
+    datastore.createUser({
+      id: userId,
+      username,
+      role: "user",
+      profile: {},
+      credentials: {},
+      createdAt: new Date().toISOString()
+    });
+    datastore.createSession("session-before-role-change", userId, Date.now());
+    datastore.close();
+
+    const promoted = grantRole({ username, role: "admin", dbFile: tempDbFile });
+    assert.deepEqual(promoted, { username, role: "admin" });
+
+    datastore = createDatastore({ dbFile: tempDbFile });
+    assert.equal(datastore.findUserByUsername(username).role, "admin");
+    assert.equal(datastore.findSession("session-before-role-change"), null);
+    datastore.createSession("session-after-role-change", userId, Date.now());
+    datastore.close();
+
+    const repeated = grantRole({ username, role: "admin", dbFile: tempDbFile });
+    assert.deepEqual(repeated, { username, role: "admin" });
+
+    datastore = createDatastore({ dbFile: tempDbFile });
+    assert.equal(datastore.findSession("session-after-role-change").user_id, userId);
+    datastore.close();
+  } finally {
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
 async function withServer(
   run: (baseUrl: string, context: ServerTestContext) => Promise<void>
 ): Promise<void> {
@@ -3324,6 +3378,18 @@ register("auth store registra e autentica utenti password", async () => {
   assert.equal(login.ok, true);
   assert.equal(Boolean(login.sessionToken), true);
   assert.equal((await auth.getUserFromSession(login.sessionToken)).username, "tester");
+  assert.equal(await auth.datastore.findSession(login.sessionToken), null);
+  const storedSession = await auth.datastore.findSession(
+    sessionTokenStorageKey(login.sessionToken)
+  );
+  assert.equal(storedSession.user_id, registered.user.id);
+  assert.notEqual(storedSession.token, login.sessionToken);
+  assert.equal(await auth.getUserFromSession(storedSession.token), null);
+  await auth.logout(storedSession.token);
+  assert.equal(
+    (await auth.datastore.findSession(sessionTokenStorageKey(login.sessionToken))).user_id,
+    registered.user.id
+  );
   const storedUser = await auth.datastore.findUserByUsername("tester");
   assert.equal(typeof storedUser.credentials.password.secret, "undefined");
   assert.equal(typeof storedUser.credentials.password.hash, "string");
@@ -3338,6 +3404,114 @@ register("auth store registra e autentica utenti password", async () => {
     fs.unlinkSync(tempSessionsFile);
   }
   cleanupSqliteFiles(tempDbFile);
+});
+
+register("auth store revoca le sessioni utente dopo cambio password", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+
+  try {
+    const auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+    const registered = await auth.registerPasswordUser("rotate_session", TEST_PASSWORD);
+    assert.equal(registered.ok, true);
+
+    const firstLogin = await auth.loginWithPassword("rotate_session", TEST_PASSWORD);
+    const secondLogin = await auth.loginWithPassword("rotate_session", TEST_PASSWORD);
+    assert.equal(firstLogin.ok, true);
+    assert.equal(secondLogin.ok, true);
+    assert.equal(Boolean(await auth.getUserFromSession(firstLogin.sessionToken)), true);
+    assert.equal(Boolean(await auth.getUserFromSession(secondLogin.sessionToken)), true);
+
+    const update = await auth.updateUserAccountSettings({
+      userId: registered.user.id,
+      currentPassword: TEST_PASSWORD,
+      newPassword: "Changed123!",
+      confirmNewPassword: "Changed123!"
+    });
+    assert.equal(update.ok, true);
+
+    assert.equal(await auth.getUserFromSession(firstLogin.sessionToken), null);
+    assert.equal(await auth.getUserFromSession(secondLogin.sessionToken), null);
+    assert.equal((await auth.loginWithPassword("rotate_session", TEST_PASSWORD)).ok, false);
+    assert.equal((await auth.loginWithPassword("rotate_session", "Changed123!")).ok, true);
+    auth.datastore.close();
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+    cleanupSqliteFiles(tempDbFile);
+  }
+});
+
+register("auth store migra sessioni legacy plaintext al primo uso", async () => {
+  const unique = `${Date.now()}-${uniqueSuffix()}`;
+  const tempFile = path.join(__dirname, `tmp-users-${unique}.json`);
+  const tempSessionsFile = path.join(__dirname, `tmp-sessions-${unique}.json`);
+  const tempDbFile = path.join(__dirname, `tmp-auth-${unique}.sqlite`);
+
+  try {
+    const auth = createAuthStore({
+      dataFile: tempFile,
+      sessionsFile: tempSessionsFile,
+      dbFile: tempDbFile
+    });
+    const registered = await auth.registerPasswordUser("legacy_session", TEST_PASSWORD);
+    assert.equal(registered.ok, true);
+
+    const legacyToken = "legacy-plaintext-session-token";
+    await auth.datastore.createSession(legacyToken, registered.user.id, Date.now());
+
+    const sessionUser = await auth.getUserFromSession(legacyToken);
+    assert.equal(sessionUser.username, "legacy_session");
+    assert.equal(await auth.datastore.findSession(legacyToken), null);
+    assert.equal(
+      (await auth.datastore.findSession(sessionTokenStorageKey(legacyToken))).user_id,
+      registered.user.id
+    );
+
+    const logoutOnlyLegacyToken = "logout-only-legacy-session-token";
+    await auth.datastore.createSession(logoutOnlyLegacyToken, registered.user.id, Date.now());
+    await auth.logout(logoutOnlyLegacyToken);
+    assert.equal(await auth.datastore.findSession(logoutOnlyLegacyToken), null);
+    assert.equal(
+      await auth.datastore.findSession(sessionTokenStorageKey(logoutOnlyLegacyToken)),
+      null
+    );
+
+    const concurrentLegacyToken = "legacy-concurrent-session-token";
+    await auth.datastore.createSession(concurrentLegacyToken, registered.user.id, Date.now());
+    await auth.datastore.createSession(
+      sessionTokenStorageKey(concurrentLegacyToken),
+      registered.user.id,
+      Date.now()
+    );
+    const concurrentSessionUser = await auth.getUserFromSession(concurrentLegacyToken);
+    assert.equal(concurrentSessionUser.username, "legacy_session");
+    assert.equal(await auth.datastore.findSession(concurrentLegacyToken), null);
+    assert.equal(
+      (await auth.datastore.findSession(sessionTokenStorageKey(concurrentLegacyToken))).user_id,
+      registered.user.id
+    );
+
+    auth.datastore.close();
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
+    if (fs.existsSync(tempSessionsFile)) {
+      fs.unlinkSync(tempSessionsFile);
+    }
+    cleanupSqliteFiles(tempDbFile);
+  }
 });
 
 register("secureRandom restituisce un numero compreso tra 0 incluso e 1 escluso", () => {
@@ -6623,8 +6797,9 @@ register("API profile account aggiorna email e password del giocatore autenticat
   });
 });
 
-register("GET /api/state risponde con lo stato pubblico", async () => {
+register("GET /api/state risponde con lo stato pubblico autenticato", async () => {
   await withServer(async (baseUrl, context) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("state_public"));
     const state = createInitialState();
     const first = addPlayer(state, "Alice").player;
     addPlayer(state, "Bob");
@@ -6642,7 +6817,9 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await fetch(`${baseUrl}/api/state`);
+    const response = await fetch(`${baseUrl}/api/state`, {
+      headers: authHeaders(session.sessionToken)
+    });
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.equal(Array.isArray(payload.map), true);
@@ -6653,10 +6830,42 @@ register("GET /api/state risponde con lo stato pubblico", async () => {
   });
 });
 
+register(
+  "GET /api/events espone header di sicurezza restrittivi per sessioni autenticate",
+  async () => {
+    await withServer(async (baseUrl) => {
+      const session = await createAuthenticatedSession(baseUrl, uniqueName("events_headers"));
+      const response = await fetch(`${baseUrl}/api/events`, {
+        headers: authHeaders(session.sessionToken)
+      });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("content-type"), "text/event-stream");
+      assert.equal(
+        response.headers.get("cache-control"),
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
+      assert.equal(response.headers.get("pragma"), "no-cache");
+      assert.equal(response.headers.get("expires"), "0");
+      assert.equal(response.headers.get("access-control-allow-origin"), null);
+
+      // We must close the connection to avoid hanging the test
+      if (typeof (response as any).body?.cancel === "function") {
+        await (response as any).body.cancel();
+      }
+    });
+  }
+);
+
 register("GET /api/health espone lo stato sintetico del server", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/health`);
     assert.equal(response.status, 200);
+    assert.equal(
+      response.headers.get("cache-control"),
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    assert.equal(response.headers.get("pragma"), "no-cache");
+    assert.equal(response.headers.get("expires"), "0");
     const payload: any = await readJson(response);
     assert.equal(payload.ok, true);
     assert.equal(typeof payload.storage, "undefined");
@@ -6856,8 +7065,9 @@ register(
   }
 );
 
-register("GET /api/state espone lastCombat dopo un attacco", async () => {
+register("GET /api/state espone lastCombat dopo un attacco per sessioni autenticate", async () => {
   await withServer(async (baseUrl, context) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("last_combat_state"));
     const state = createInitialState();
     const first = addPlayer(state, "Alice").player;
     const second = addPlayer(state, "Bob").player;
@@ -6879,7 +7089,9 @@ register("GET /api/state espone lastCombat dopo un attacco", async () => {
     Object.keys(context.app.state).forEach((key) => delete context.app.state[key]);
     Object.assign(context.app.state, state);
 
-    const response = await fetch(`${baseUrl}/api/state`);
+    const response = await fetch(`${baseUrl}/api/state`, {
+      headers: authHeaders(session.sessionToken)
+    });
     assert.equal(response.status, 200);
     const payload: any = await readJson(response);
     assert.deepEqual(payload.lastCombat, attack.combat);

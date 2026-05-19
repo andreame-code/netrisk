@@ -5,9 +5,11 @@ import {
   saveGameSchemaVersion
 } from "./version-manifest.cjs";
 import {
+  isSafeModuleUiRoute,
   NETRISK_MODULE_CAPABILITY_KIND_VALUES,
   NETRISK_UI_SLOT_ID_VALUES
 } from "./runtime-validation.cjs";
+import { isValidModuleSemver, isValidVersionRange } from "./module-versions.cjs";
 
 export const NETRISK_ENGINE_VERSION = engineVersion;
 export const NETRISK_MODULE_MANIFEST_SCHEMA_VERSION = 1;
@@ -342,9 +344,14 @@ function normalizeDependency(raw: unknown, sourcePath: string): NetRiskModuleDep
     throw new Error(`Invalid module dependency in "${sourcePath}".`);
   }
 
+  const version = isNonEmptyString(raw.version) ? String(raw.version).trim() : null;
+  if (version && !isValidVersionRange(version)) {
+    throw new Error(`Invalid module dependency version range in "${sourcePath}".`);
+  }
+
   return {
     id: String(raw.id).trim(),
-    version: isNonEmptyString(raw.version) ? String(raw.version).trim() : null,
+    version,
     optional: Boolean(raw.optional)
   };
 }
@@ -371,6 +378,11 @@ function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContrib
     throw new Error(`Invalid UI slot kind in "${sourcePath}".`);
   }
 
+  const route = isNonEmptyString(raw.route) ? String(raw.route).trim() : null;
+  if (route && !isSafeModuleUiRoute(route)) {
+    throw new Error(`Invalid UI slot route in "${sourcePath}".`);
+  }
+
   return {
     slotId: String(raw.slotId).trim() as NetRiskUiSlotId,
     itemId: String(raw.itemId).trim(),
@@ -378,7 +390,7 @@ function normalizeUiSlot(raw: unknown, sourcePath: string): NetRiskUiSlotContrib
     kind,
     order: typeof raw.order === "number" && Number.isFinite(raw.order) ? raw.order : 0,
     description: isNonEmptyString(raw.description) ? String(raw.description).trim() : null,
-    route: isNonEmptyString(raw.route) ? String(raw.route).trim() : null
+    route
   };
 }
 
@@ -864,6 +876,10 @@ export function validateNetRiskModuleManifest(
     !isNonEmptyString(raw.engineVersion)
   ) {
     throw new Error(`Module manifest "${sourcePath}" is missing required string fields.`);
+  }
+
+  if (!isValidModuleSemver(String(raw.version).trim())) {
+    throw new Error(`Module manifest "${sourcePath}" has invalid SemVer.`);
   }
 
   return {

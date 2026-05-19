@@ -318,18 +318,20 @@ register(
         assert.equal(catalogResponse.statusCode, 200);
         const modules = catalogResponse.payload.modules;
         assert.equal(Array.isArray(modules), true);
+        const demoModule = modules.find((entry: any) => entry.id === "demo.valid");
+        const brokenModule = modules.find((entry: any) => entry.id === "broken.module");
         assert.equal(
           modules.some((entry: any) => entry.id === "core.base" && entry.enabled),
           true
         );
-        assert.equal(
-          modules.some((entry: any) => entry.id === "demo.valid" && entry.status === "validated"),
-          true
-        );
-        assert.equal(
-          modules.some((entry: any) => entry.id === "broken.module" && entry.status === "error"),
-          true
-        );
+        assert.equal(demoModule?.status, "validated");
+        assert.equal(demoModule?.sourcePath, "modules/demo.valid");
+        assert.equal(demoModule?.clientManifestPath, "modules/demo.valid/client-manifest.json");
+        assert.equal(path.isAbsolute(demoModule?.sourcePath || ""), false);
+        assert.equal(path.isAbsolute(demoModule?.clientManifestPath || ""), false);
+        assert.equal(brokenModule?.status, "error");
+        assert.equal(brokenModule?.sourcePath, "modules/broken.module");
+        assert.equal(path.isAbsolute(brokenModule?.sourcePath || ""), false);
 
         const enableResponse = await callApp(
           app,
@@ -343,6 +345,16 @@ register(
           enableResponse.payload.enabledModules.some((entry: any) => entry.id === "demo.valid"),
           true
         );
+        const enabledDemoModule = enableResponse.payload.modules.find(
+          (entry: any) => entry.id === "demo.valid"
+        );
+        assert.equal(enabledDemoModule?.sourcePath, "modules/demo.valid");
+        assert.equal(
+          enabledDemoModule?.clientManifestPath,
+          "modules/demo.valid/client-manifest.json"
+        );
+        assert.equal(path.isAbsolute(enabledDemoModule?.sourcePath || ""), false);
+        assert.equal(path.isAbsolute(enabledDemoModule?.clientManifestPath || ""), false);
 
         const optionsResponse = await callApp(app, "GET", "/api/modules/options");
         assert.equal(optionsResponse.statusCode, 200);
@@ -738,6 +750,74 @@ register("module runtime non espone slot UI con slotId non supportati", async ()
       assert.equal(
         moduleOptionsResponse.payload.resolvedCatalog.uiSlots.some(
           (entry: any) => entry.itemId === "unsupported.slot.item"
+        ),
+        false
+      );
+    }
+  );
+});
+
+register("module runtime rejects UI slot routes that are not same-origin paths", async () => {
+  await withModuleServer(
+    [
+      {
+        dir: "unsafe.route",
+        manifest: {
+          schemaVersion: 1,
+          id: "unsafe.route",
+          version: "1.0.0",
+          displayName: "Unsafe Route",
+          engineVersion: "1.0.0",
+          kind: "ui",
+          capabilities: [{ kind: "ui-slot", scope: "global", description: "Unsafe route" }],
+          entrypoints: {
+            clientManifest: "client-manifest.json"
+          }
+        },
+        clientManifest: {
+          ui: {
+            slots: [
+              {
+                slotId: "top-nav-bar",
+                itemId: "unsafe.route.link",
+                title: "Unsafe Route",
+                kind: "nav-item",
+                route: "javascript:alert(1)"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const catalogResponse = await callApp(
+        app,
+        "GET",
+        "/api/modules",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(catalogResponse.statusCode, 200);
+      const unsafeModule = catalogResponse.payload.modules.find(
+        (entry: any) => entry.id === "unsafe.route"
+      );
+      assert.equal(Boolean(unsafeModule), true);
+      assert.equal(
+        unsafeModule.errors.some((entry: string) => entry.includes("Invalid UI slot route")),
+        true
+      );
+
+      const moduleOptionsResponse = await callApp(app, "GET", "/api/modules/options");
+      assert.equal(moduleOptionsResponse.statusCode, 200);
+      assert.equal(
+        moduleOptionsResponse.payload.uiSlots.some(
+          (entry: any) => entry.itemId === "unsafe.route.link"
+        ),
+        false
+      );
+      assert.equal(
+        moduleOptionsResponse.payload.resolvedCatalog.uiSlots.some(
+          (entry: any) => entry.itemId === "unsafe.route.link"
         ),
         false
       );

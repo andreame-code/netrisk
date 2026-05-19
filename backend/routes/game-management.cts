@@ -113,6 +113,7 @@ async function handleCreateGameRoute(
       gameId: created.game.id,
       gameName: created.game.name,
       version: created.game.version,
+      creatorUserId: created.game.creatorUserId || null,
       state: created.state
     });
     sendValidatedJson(

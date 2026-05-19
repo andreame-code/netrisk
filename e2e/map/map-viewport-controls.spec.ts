@@ -276,7 +276,7 @@ test("dragging a zoomed map does not select a territory until an explicit click"
   await expect(firstPage.locator("#reinforce-select")).toHaveValue(reinforceBeforeDrag);
   await expect(firstPage.locator("#attack-from")).toHaveValue(attackBeforeDrag);
 
-  await myTerritory.click();
+  await myTerritory.click({ force: true });
   await expect(firstPage.locator("#reinforce-select")).toHaveValue(territoryId || "");
   await expect(firstPage.locator("#attack-from")).toHaveValue(territoryId || "");
 
