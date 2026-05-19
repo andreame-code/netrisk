@@ -157,8 +157,12 @@ register("auth attempt throttle ignores spoofed forwarded IPs unless trusted", (
 });
 
 register("auth attempt throttle resolves trusted proxy IP fallbacks deterministically", () => {
+  const previousTrustProxyHeaders = process.env.NETRISK_TRUST_PROXY_HEADERS;
+  const previousVercel = process.env.VERCEL;
   const previousVercelEnv = process.env.VERCEL_ENV;
   try {
+    delete process.env.NETRISK_TRUST_PROXY_HEADERS;
+    delete process.env.VERCEL;
     delete process.env.VERCEL_ENV;
 
     assert.equal(resolveRequestIp({ headers: {}, socket: {} }), "unknown");
@@ -181,7 +185,8 @@ register("auth attempt throttle resolves trusted proxy IP fallbacks deterministi
     assert.equal(
       resolveRequestIp({
         headers: {
-          "x-forwarded-for": ["203.0.113.25", "198.51.100.46"]
+          "x-vercel-forwarded-for": "203.0.113.25",
+          "x-forwarded-for": "198.51.100.46"
         },
         socket: {
           remoteAddress: "198.51.100.47"
@@ -189,7 +194,45 @@ register("auth attempt throttle resolves trusted proxy IP fallbacks deterministi
       }),
       "203.0.113.25"
     );
+
+    process.env.VERCEL = "1";
+    assert.equal(
+      resolveRequestIp({
+        headers: {
+          "x-forwarded-for": "203.0.113.26, 198.51.100.48"
+        },
+        socket: {
+          remoteAddress: "198.51.100.49"
+        }
+      }),
+      "203.0.113.26"
+    );
+
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+    process.env.NETRISK_TRUST_PROXY_HEADERS = "true";
+    assert.equal(
+      resolveRequestIp({
+        headers: {
+          "x-forwarded-for": "203.0.113.27, 198.51.100.50"
+        },
+        socket: {
+          remoteAddress: "198.51.100.51"
+        }
+      }),
+      "203.0.113.27"
+    );
   } finally {
+    if (previousTrustProxyHeaders === undefined) {
+      delete process.env.NETRISK_TRUST_PROXY_HEADERS;
+    } else {
+      process.env.NETRISK_TRUST_PROXY_HEADERS = previousTrustProxyHeaders;
+    }
+    if (previousVercel === undefined) {
+      delete process.env.VERCEL;
+    } else {
+      process.env.VERCEL = previousVercel;
+    }
     if (previousVercelEnv === undefined) {
       delete process.env.VERCEL_ENV;
     } else {

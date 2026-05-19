@@ -56,6 +56,15 @@ function firstHeaderValue(value: HeaderValue): string {
   return Array.isArray(value) ? String(value[0] || "") : String(value || "");
 }
 
+function firstForwardedIp(value: HeaderValue): string {
+  return (
+    firstHeaderValue(value)
+      .split(",")
+      .map((part) => part.trim())
+      .find(Boolean) || ""
+  );
+}
+
 function trustsForwardedHeaders(options: RequestIpOptions = {}): boolean {
   if (typeof options.trustProxyHeaders === "boolean") {
     return options.trustProxyHeaders;
@@ -81,9 +90,10 @@ function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string 
     return normalizeIp(socketIp || "unknown");
   }
 
-  const forwardedFor = firstHeaderValue(headers["x-forwarded-for"]).split(",")[0].trim();
+  const vercelForwardedFor = firstForwardedIp(headers["x-vercel-forwarded-for"]);
+  const forwardedFor = firstForwardedIp(headers["x-forwarded-for"]);
   const realIp = firstHeaderValue(headers["x-real-ip"]).trim();
-  return normalizeIp(forwardedFor || realIp || socketIp || "unknown");
+  return normalizeIp(vercelForwardedFor || forwardedFor || realIp || socketIp || "unknown");
 }
 
 function createAuthThrottleKey(
