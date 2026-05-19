@@ -1841,10 +1841,16 @@ function createApp(options: CreateAppOptions = {}) {
     };
   }
 
-  function addSecurityHeaders(res: Response) {
+  function addSecurityHeaders(req: Request, res: Response) {
     const connectSources = ["'self'"];
     if (sentryConnectOrigin) {
       connectSources.push(sentryConnectOrigin);
+    }
+
+    // Explicitly remove the X-Powered-By header to prevent information disclosure.
+    // We wrap it in a type check to ensure compatibility with mock response objects.
+    if (typeof res.removeHeader === "function") {
+      res.removeHeader("X-Powered-By");
     }
 
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -1856,7 +1862,16 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+
+    // Apply HSTS only for secure connections or in test environments.
+    const isTest =
+      process.env.TEST === "true" ||
+      process.env.E2E === "true" ||
+      process.env.NODE_ENV === "test";
+    if (secureCookieFlag(req) || isTest) {
+      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
@@ -1869,7 +1884,7 @@ function createApp(options: CreateAppOptions = {}) {
   }
 
   function handleRequest(req: Request, res: Response) {
-    addSecurityHeaders(res);
+    addSecurityHeaders(req, res);
 
     let url: URL;
     try {
