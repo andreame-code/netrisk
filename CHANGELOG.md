@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.030 - 2026-05-19
+
+- Added branch-focused coverage for shared content pack/message helpers and local environment file loading.
+
 ## 0.1.029 - 2026-05-19
 
 - Added Retry-After headers to rate-limited authentication and account settings responses.
