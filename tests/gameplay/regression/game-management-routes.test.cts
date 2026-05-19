@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { handleOpenGameRoute } = require("../../../backend/routes/game-management.cjs");
+const { handleAiJoinRoute } = require("../../../backend/routes/game-setup.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -104,5 +105,151 @@ register("handleOpenGameRoute returns the per-user snapshot for the opener", asy
       }
     },
     playerId: "p-1"
+  });
+});
+
+register("handleAiJoinRoute maps authorization failures before mutating the lobby", async () => {
+  let localizedErrorCall: any[] | null = null;
+  let loadCalls = 0;
+  let addPlayerCalls = 0;
+
+  await handleAiJoinRoute(
+    {},
+    {},
+    { name: "CPU" },
+    new URL("http://localhost/api/ai/join?gameId=g-1"),
+    async () => ({
+      user: {
+        id: "u-1",
+        username: "host"
+      }
+    }),
+    async () => {
+      loadCalls += 1;
+      throw new Error("loadGameContext should not run after failed authorization.");
+    },
+    () => "g-1",
+    async () => {
+      throw new Error("not authorized");
+    },
+    () => {
+      throw Object.assign(new Error("forbidden"), { statusCode: 403 });
+    },
+    () => {
+      addPlayerCalls += 1;
+      return { ok: false };
+    },
+    async () => {
+      throw new Error("persistGameContext should not run.");
+    },
+    () => {
+      throw new Error("broadcastGame should not run.");
+    },
+    () => {
+      throw new Error("snapshotForState should not run.");
+    },
+    () => {
+      throw new Error("sendJson should not run.");
+    },
+    (...args: any[]) => {
+      localizedErrorCall = args;
+    }
+  );
+
+  assert.equal(loadCalls, 0);
+  assert.equal(addPlayerCalls, 0);
+  assert.equal(localizedErrorCall?.[1], 403);
+  assert.equal(localizedErrorCall?.[3], "Aggiunta AI non autorizzata.");
+  assert.equal(localizedErrorCall?.[4], "server.game.aiJoinUnauthorized");
+});
+
+register("handleAiJoinRoute returns 200 when an existing AI rejoins the lobby", async () => {
+  const state = { phase: "lobby" };
+  let persisted = false;
+  let broadcasted = false;
+  let sentStatusCode: number | null = null;
+  let sentPayload: any = null;
+
+  await handleAiJoinRoute(
+    {},
+    {},
+    { name: "CPU" },
+    new URL("http://localhost/api/ai/join?gameId=g-1"),
+    async () => ({
+      user: {
+        id: "u-1",
+        username: "host"
+      }
+    }),
+    async () => ({
+      state,
+      gameId: "g-1",
+      version: 7,
+      gameName: "AI Lobby"
+    }),
+    () => "g-1",
+    async () => ({
+      game: {
+        id: "g-1"
+      }
+    }),
+    () => undefined,
+    (lobbyState: any, name: string, options: Record<string, unknown>) => {
+      assert.equal(lobbyState, state);
+      assert.equal(name, "CPU");
+      assert.equal(options.isAi, true);
+      return {
+        ok: true,
+        rejoined: true,
+        player: {
+          id: "ai-1",
+          name: "CPU",
+          isAi: true
+        }
+      };
+    },
+    async (gameContext: any) => {
+      assert.equal(gameContext.state, state);
+      persisted = true;
+      return gameContext;
+    },
+    (gameContext: any) => {
+      assert.equal(gameContext.state, state);
+      broadcasted = true;
+    },
+    (
+      _snapshotState: any,
+      gameId: string | null,
+      version: number | null,
+      gameName: string | null
+    ) => ({
+      gameId,
+      version,
+      gameName
+    }),
+    (_res: unknown, statusCode: number, payload: any) => {
+      sentStatusCode = statusCode;
+      sentPayload = payload;
+    },
+    () => {
+      throw new Error("sendLocalizedError should not run for a rejoined AI.");
+    }
+  );
+
+  assert.equal(persisted, true);
+  assert.equal(broadcasted, true);
+  assert.equal(sentStatusCode, 200);
+  assert.deepEqual(sentPayload, {
+    playerId: "ai-1",
+    state: {
+      gameId: "g-1",
+      version: 7,
+      gameName: "AI Lobby"
+    },
+    player: {
+      id: "ai-1",
+      name: "CPU",
+      isAi: true
+    }
   });
 });

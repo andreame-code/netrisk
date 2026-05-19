@@ -1847,12 +1847,8 @@ function createApp(options: CreateAppOptions = {}) {
       connectSources.push(sentryConnectOrigin);
     }
 
-    const isSecure =
-      secureCookieFlag(req) ||
-      process.env.TEST === "true" ||
-      process.env.E2E === "true" ||
-      process.env.NODE_ENV === "test";
-
+    // Explicitly remove the X-Powered-By header to prevent information disclosure.
+    // We wrap it in a type check to ensure compatibility with mock response objects.
     if (typeof res.removeHeader === "function") {
       res.removeHeader("X-Powered-By");
     }
@@ -1867,7 +1863,10 @@ function createApp(options: CreateAppOptions = {}) {
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
     res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
-    if (isSecure) {
+    // Apply HSTS only for secure connections or in test environments.
+    const isTest =
+      process.env.TEST === "true" || process.env.E2E === "true" || process.env.NODE_ENV === "test";
+    if (secureCookieFlag(req) || isTest) {
       res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
     }
 
@@ -1876,7 +1875,6 @@ function createApp(options: CreateAppOptions = {}) {
       "Permissions-Policy",
       "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), sync-xhr=(), usb=()"
     );
-
     const cspDirectives = [
       "default-src 'self'",
       "script-src 'self'",
@@ -1890,7 +1888,7 @@ function createApp(options: CreateAppOptions = {}) {
       `connect-src ${connectSources.join(" ")}`
     ];
 
-    if (isSecure) {
+    if (secureCookieFlag(req) || isTest) {
       cspDirectives.push("upgrade-insecure-requests");
     }
 
