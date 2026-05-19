@@ -25,6 +25,7 @@ const gameplayTestModules = [
   "../tests/gameplay/shared/continent-loader.test.cjs",
   "../tests/gameplay/shared/extensions.test.cjs",
   "../tests/gameplay/shared/core-base-catalog.test.cjs",
+  "../tests/gameplay/shared/content-packs-and-messages.test.cjs",
   "../tests/gameplay/shared/version-registry.test.cjs",
   "../tests/gameplay/shared/module-versions.test.cjs",
   "../tests/gameplay/shared/runtime-validation.test.cjs",
