@@ -4,7 +4,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.031 - 2026-05-19
 
-- Hardened auth throttling IP resolution so forwarded proxy headers are trusted only when explicitly configured.
+- Hardened auth throttling IP resolution while preserving trusted Vercel forwarded headers.
 
 ## 0.1.030 - 2026-05-19
 

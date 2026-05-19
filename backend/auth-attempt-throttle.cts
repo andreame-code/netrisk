@@ -56,12 +56,25 @@ function firstHeaderValue(value: HeaderValue): string {
   return Array.isArray(value) ? String(value[0] || "") : String(value || "");
 }
 
+function firstForwardedIp(value: HeaderValue): string {
+  return (
+    firstHeaderValue(value)
+      .split(",")
+      .map((part) => part.trim())
+      .find(Boolean) || ""
+  );
+}
+
 function trustsForwardedHeaders(options: RequestIpOptions = {}): boolean {
   if (typeof options.trustProxyHeaders === "boolean") {
     return options.trustProxyHeaders;
   }
 
-  return process.env.NETRISK_TRUST_PROXY_HEADERS === "true";
+  return (
+    process.env.NETRISK_TRUST_PROXY_HEADERS === "true" ||
+    process.env.VERCEL === "1" ||
+    Boolean(process.env.VERCEL_ENV)
+  );
 }
 
 function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string {
@@ -77,14 +90,10 @@ function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string 
     return normalizeIp(socketIp || "unknown");
   }
 
-  const forwardedFor =
-    firstHeaderValue(headers["x-forwarded-for"])
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .at(-1) || "";
+  const vercelForwardedFor = firstForwardedIp(headers["x-vercel-forwarded-for"]);
+  const forwardedFor = firstForwardedIp(headers["x-forwarded-for"]);
   const realIp = firstHeaderValue(headers["x-real-ip"]).trim();
-  return normalizeIp(forwardedFor || realIp || socketIp || "unknown");
+  return normalizeIp(vercelForwardedFor || forwardedFor || realIp || socketIp || "unknown");
 }
 
 function createAuthThrottleKey(
