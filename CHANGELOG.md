@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.027 - 2026-05-19
+
+- Improved gameplay route regression coverage for invalid outbound game snapshots and SSE client lifecycle handling.
+
 ## 0.1.026 - 2026-05-19
 
 - Added branch-focused coverage for fortify movement validation and Supabase connection check edge cases.
