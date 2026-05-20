@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.032 - 2026-05-20
+
+- Implemented asynchronous password hashing to prevent blocking the Node.js event loop and mitigate CPU-bound DoS risks.
+
 ## 0.1.031 - 2026-05-19
 
 - Hardened auth throttling IP resolution while preserving trusted Vercel forwarded headers.
