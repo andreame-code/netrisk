@@ -22,3 +22,8 @@
 **Vulnerability:** Security hardening that relies on standard Node.js HTTP response methods like `res.removeHeader` can cause runtime errors in test suites where response objects are mocked without full API parity.
 **Learning:** When applying security headers at the global server level, defensive checks for method existence (e.g., `typeof res.removeHeader === 'function'`) ensure that security logic doesn't break gameplay or regression tests that use lightweight mocks. Additionally, HSTS must be applied conditionally (only over secure connections or in test environments) to align with RFC 6797 and maintain local development accessibility.
 **Prevention:** Always wrap non-standard or late-added response methods in defensive type checks and ensure HSTS application logic respects the connection's security state.
+
+## 2026-05-20 - Asynchronous Password Hashing to Mitigate DoS
+**Vulnerability:** Synchronous password hashing and verification (`scryptSync`, `pbkdf2Sync`) were blocking the Node.js event loop, making the application vulnerable to CPU-bound Denial of Service (DoS) attacks.
+**Learning:** Cryptographic operations are computationally expensive. In a single-threaded environment like Node.js, performing them synchronously prevents the server from processing other requests until the operation completes, creating a trivial DoS vector.
+**Prevention:** Always use asynchronous versions of cryptographic functions for user-provided secrets. Offloading these tasks to the libuv thread pool ensures the event loop remains responsive.
