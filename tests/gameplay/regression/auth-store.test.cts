@@ -49,12 +49,7 @@ register("legacy password mismatch performs bounded dummy verification work", as
   const originalScrypt = crypto.scrypt;
   const salts: string[] = [];
 
-  crypto.scrypt = function patchedScrypt(
-    password: any,
-    salt: any,
-    keylen: any,
-    callback: any
-  ) {
+  crypto.scrypt = function patchedScrypt(password: any, salt: any, keylen: any, callback: any) {
     salts.push(salt);
     return originalScrypt(password, salt, keylen, callback);
   } as any;
