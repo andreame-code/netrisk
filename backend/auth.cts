@@ -116,12 +116,17 @@ interface AuthFailure {
   errorParams: Record<string, unknown>;
 }
 
-function passwordRecord(
+async function passwordRecord(
   secret: unknown
-): Required<Pick<PasswordHashRecord, "algorithm" | "salt" | "keylen" | "hash">> {
+): Promise<Required<Pick<PasswordHashRecord, "algorithm" | "salt" | "keylen" | "hash">>> {
   const salt = crypto.randomBytes(16).toString("hex");
   const keylen = 64;
-  const hash = crypto.scryptSync(String(secret || ""), salt, keylen).toString("hex");
+  const hash = await new Promise<string>((resolve, reject) => {
+    crypto.scrypt(String(secret || ""), salt, keylen, (err: Error | null, derivedKey: Buffer) => {
+      if (err) reject(err);
+      else resolve(derivedKey.toString("hex"));
+    });
+  });
   return {
     algorithm: "scrypt",
     salt,
@@ -166,7 +171,10 @@ function publicUser(user: StoredUser | null | undefined): PublicUser | null {
   };
 }
 
-function verifyPassword(credentials: UserCredentials | undefined, password: unknown): boolean {
+async function verifyPassword(
+  credentials: UserCredentials | undefined,
+  password: unknown
+): Promise<boolean> {
   // Use a dummy record to ensure timing parity when credentials or password records are missing.
   const dummyHash =
     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
@@ -189,14 +197,29 @@ function verifyPassword(credentials: UserCredentials | undefined, password: unkn
   if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
     const keylen =
       hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
-    candidate = crypto.scryptSync(String(passwordToVerify || ""), salt, keylen).toString("hex");
+    candidate = await new Promise<string>((resolve, reject) => {
+      crypto.scrypt(String(passwordToVerify || ""), salt, keylen, (err: Error | null, derivedKey: Buffer) => {
+        if (err) reject(err);
+        else resolve(derivedKey.toString("hex"));
+      });
+    });
   } else {
     const iterations =
       hasValidRecord && record && Number.isInteger(record.iterations) ? record.iterations! : 120000;
     const digest = (hasValidRecord && record ? record.digest : null) || "sha256";
-    candidate = crypto
-      .pbkdf2Sync(String(passwordToVerify || ""), salt, iterations, 32, digest)
-      .toString("hex");
+    candidate = await new Promise<string>((resolve, reject) => {
+      crypto.pbkdf2(
+        String(passwordToVerify || ""),
+        salt,
+        iterations,
+        32,
+        digest,
+        (err: Error | null, derivedKey: Buffer) => {
+          if (err) reject(err);
+          else resolve(derivedKey.toString("hex"));
+        }
+      );
+    });
   }
 
   const expectedBuffer = Buffer.from(expectedHash, "hex");
@@ -444,14 +467,14 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       // Dummy verification to mitigate timing-based username enumeration.
       // This ensures that the response time for non-existent users is similar to real ones.
       // Note: verifyPassword(undefined, ...) already performs dummy hashing and DoS mitigation.
-      verifyPassword(undefined, password);
+      await verifyPassword(undefined, password);
       return null;
     }
 
     if (String(password || "").length > 128) {
       // Avoid expensive hashing for extremely long passwords to mitigate DoS.
       // We perform a dummy hashing operation via verifyPassword to maintain timing parity.
-      verifyPassword(undefined, password);
+      await verifyPassword(undefined, password);
       return null;
     }
 
@@ -460,30 +483,20 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       const expectedSecret = user.credentials.password.secret;
 
       // Use timing-safe comparison for legacy plaintext secrets.
-      const expectedBuffer = Buffer.from(expectedSecret);
-      const providedBuffer = Buffer.from(providedSecret);
+      // We hash the values first to ensure both buffers have the same length for timingSafeEqual.
+      const expectedHash = crypto.createHash("sha256").update(expectedSecret).digest();
+      const providedHash = crypto.createHash("sha256").update(providedSecret).digest();
 
-      let legacyMatches = true;
-
-      // If lengths differ, we compare expected with itself to maintain timing parity
-      // and satisfy CodeQL without using SHA-256 on password data.
-      if (expectedBuffer.length !== providedBuffer.length) {
-        crypto.timingSafeEqual(expectedBuffer, expectedBuffer);
-        legacyMatches = false;
-      } else if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
-        legacyMatches = false;
-      }
-
-      if (!legacyMatches) {
+      if (!crypto.timingSafeEqual(expectedHash, providedHash)) {
         // Even on legacy mismatch, we perform a dummy hash to keep timing consistent
         // with the non-legacy success path which would normally proceed to scrypt hashing.
-        verifyPassword(undefined, password);
+        await verifyPassword(undefined, password);
         return null;
       }
 
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(password)
+        password: await passwordRecord(password)
       };
 
       return (
@@ -494,14 +507,14 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       );
     }
 
-    if (!verifyPassword(user.credentials, password)) {
+    if (!(await verifyPassword(user.credentials, password))) {
       return null;
     }
 
     if (user.credentials?.password?.algorithm !== "scrypt") {
       const migratedCredentials = {
         ...(user.credentials || {}),
-        password: passwordRecord(password)
+        password: await passwordRecord(password)
       };
 
       return (
@@ -528,7 +541,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
 
     if (await findByUsername(input.username)) {
       // Dummy hashing to maintain timing parity when username is already taken.
-      verifyPassword(undefined, input.password);
+      await verifyPassword(undefined, input.password);
       return authFailure("Utente gia registrato.", "auth.register.userExists");
     }
 
@@ -536,7 +549,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       id: crypto.randomBytes(8).toString("hex"),
       username: input.username,
       credentials: {
-        password: passwordRecord(input.password)
+        password: await passwordRecord(input.password)
       },
       role,
       profile: buildProfile(input.username, input.email, protector),
@@ -704,7 +717,7 @@ function createAuthStore(options: AuthStoreOptions = {}) {
       updatedUser =
         (await datastore.updateUserCredentials(updatedUser.id, {
           ...(updatedUser.credentials || {}),
-          password: passwordRecord(nextPassword)
+          password: await passwordRecord(nextPassword)
         })) || updatedUser;
       await datastore.deleteSessionsForUser?.(updatedUser.id);
     }
