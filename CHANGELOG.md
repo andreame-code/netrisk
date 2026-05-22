@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.032 - 2026-05-20
+
+- Hardened authentication by migrating password hashing and verification to asynchronous cryptographic operations to prevent blocking the Node.js event loop.
+- Improved timing-attack resistance for legacy plaintext passwords by using SHA-256 hashing before constant-time comparison.
+
 ## 0.1.031 - 2026-05-19
 
 - Hardened auth throttling IP resolution while preserving trusted Vercel forwarded headers.
