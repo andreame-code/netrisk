@@ -46,12 +46,20 @@ register("legacy password mismatch performs bounded dummy verification work", as
     }
   };
   const store = createAuthStore({ datastore: createDatastore(legacyUser) });
-  const originalScryptSync = crypto.scryptSync;
+  const originalScrypt = crypto.scrypt;
   const salts: string[] = [];
 
-  crypto.scryptSync = function patchedScryptSync(password: string, salt: string, keylen: number) {
-    salts.push(salt);
-    return originalScryptSync.call(this, password, salt, keylen);
+  crypto.scrypt = function patchedScrypt(
+    password: any,
+    salt: any,
+    keylen: any,
+    options: any,
+    callback?: any
+  ) {
+    salts.push(String(salt));
+    const actualOptions = typeof options === "object" ? options : {};
+    const actualCallback = typeof options === "function" ? options : callback;
+    return originalScrypt.call(this, password, salt, keylen, actualOptions, actualCallback);
   };
 
   try {
@@ -61,6 +69,6 @@ register("legacy password mismatch performs bounded dummy verification work", as
     assert.equal(result.errorKey, "auth.login.invalidCredentials");
     assert.deepEqual(salts, ["00000000000000000000000000000000"]);
   } finally {
-    crypto.scryptSync = originalScryptSync;
+    crypto.scrypt = originalScrypt;
   }
 });
