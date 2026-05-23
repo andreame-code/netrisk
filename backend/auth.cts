@@ -123,18 +123,13 @@ async function passwordRecord(
   const keylen = 64;
 
   const hash = await new Promise<string>((resolve, reject) => {
-    crypto.scrypt(
-      String(secret || ""),
-      salt,
-      keylen,
-      (err: Error | null, derivedKey: Buffer) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(derivedKey.toString("hex"));
-        }
+    crypto.scrypt(String(secret || ""), salt, keylen, (err: Error | null, derivedKey: Buffer) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(derivedKey.toString("hex"));
       }
-    );
+    });
   });
 
   return {
@@ -205,7 +200,8 @@ async function verifyPassword(
 
   let candidate: string;
   if (algorithm === "scrypt" || !hasValidRecord || !record?.digest) {
-    const keylen = hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
+    const keylen =
+      hasValidRecord && record && Number.isInteger(record.keylen) ? record.keylen! : 64;
     candidate = await new Promise<string>((resolve, reject) => {
       crypto.scrypt(
         String(passwordToVerify || ""),
