@@ -1233,10 +1233,10 @@ export const authoredVictoryModuleContentSchema = objectSchema({
 export type AuthoredVictoryModuleContent = z.infer<typeof authoredVictoryModuleContentSchema>;
 
 export const authoredModuleInputSchema = objectSchema({
-  id: z.string().trim().min(1),
-  name: z.string(),
-  description: z.string(),
-  version: z.string(),
+  id: z.string().trim().min(1).max(64),
+  name: z.string().min(1).max(64),
+  description: z.string().max(255),
+  version: z.string().min(1).max(32),
   moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
   content: authoredVictoryModuleContentSchema
 });
