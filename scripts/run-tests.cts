@@ -7252,6 +7252,48 @@ register("API registration applica il rate limiting dopo troppi tentativi", asyn
   });
 });
 
+register("API ai join applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("throttle_ai"));
+
+    // Default limit is 5 attempts per user/IP
+    for (let i = 0; i < 5; i++) {
+      const created = await fetch(baseUrl + "/api/games", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ name: `Match ${i}` })
+      });
+      assert.equal(created.status, 201);
+      const gameId = (await readJson(created)).game.id;
+
+      const res = await fetch(`${baseUrl}/api/ai/join`, {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ name: `AI ${i}`, gameId })
+      });
+      assert.equal(res.status, 201);
+    }
+
+    const createdLast = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "Final Match" })
+    });
+    assert.equal(createdLast.status, 201);
+    const lastGameId = (await readJson(createdLast)).game.id;
+
+    const limitedRes = await fetch(`${baseUrl}/api/ai/join`, {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "AI Limited", gameId: lastGameId })
+    });
+    assert.equal(limitedRes.status, 429);
+    assert.equal(limitedRes.headers.get("retry-after"), "60");
+    const payload: any = await limitedRes.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
 async function run() {
   let failures = 0;
   for (const test of tests) {

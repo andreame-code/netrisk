@@ -48,6 +48,12 @@ type SnapshotForUser = (
   user: AuthContext["user"]
 ) => unknown;
 type Authorize = (action: string, context: Record<string, unknown>) => void;
+type AuthAttemptThrottle = {
+  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordSuccess(key: Record<string, unknown>): void;
+};
 type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
@@ -60,6 +66,8 @@ const {
   startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
 
 async function handleAiJoinRoute(
@@ -77,7 +85,8 @@ async function handleAiJoinRoute(
   broadcastGame: BroadcastGame,
   snapshotForState: SnapshotForState,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -95,6 +104,28 @@ async function handleAiJoinRoute(
     sendLocalizedError as SendLocalizedError
   );
   if (!parsedBody) {
+    return;
+  }
+
+  const throttleKey = createAuthThrottleKey("ai_join", req, authContext.user.username);
+  const throttleDecision = authAttemptThrottle?.check(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+    sendLocalizedError(
+      res,
+      429,
+      {
+        error: "Troppi tentativi di aggiunta AI. Riprova più tardi.",
+        errorKey: "auth.throttle.tooManyAttempts",
+        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        code: "AUTH_RATE_LIMITED"
+      },
+      "Troppi tentativi di aggiunta AI. Riprova più tardi.",
+      "auth.throttle.tooManyAttempts",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+      "AUTH_RATE_LIMITED",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+    );
     return;
   }
 
@@ -128,6 +159,7 @@ async function handleAiJoinRoute(
     return;
   }
 
+  authAttemptThrottle?.recordAttempt(throttleKey);
   await persistGameContext(gameContext);
   broadcastGame(gameContext);
   sendJson(res, result.rejoined ? 200 : 201, {
