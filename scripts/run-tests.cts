@@ -7252,6 +7252,43 @@ register("API registration applica il rate limiting dopo troppi tentativi", asyn
   });
 });
 
+register("API AI join applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const ownerSession = await createAuthenticatedSession(baseUrl, uniqueName("throttle_ai_owner"));
+    const created = await fetch(baseUrl + "/api/games", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({
+        name: "Throttle AI Match",
+        totalPlayers: 4,
+        players: [{ type: "human" }, { type: "human" }, { type: "human" }, { type: "human" }]
+      })
+    });
+    assert.equal(created.status, 201);
+
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(baseUrl + "/api/ai/join", {
+        method: "POST",
+        headers: authHeaders(ownerSession.sessionToken),
+        body: JSON.stringify({ name: `CPU ${i}` })
+      });
+      // The status could be 201 (success) or 400 (lobby full)
+      // Both results should record an attempt in the throttle.
+      assert.ok(res.status === 201 || res.status === 400, `Expected 201 or 400, got ${res.status}`);
+    }
+
+    const limitedRes = await fetch(baseUrl + "/api/ai/join", {
+      method: "POST",
+      headers: authHeaders(ownerSession.sessionToken),
+      body: JSON.stringify({ name: "CPU Limited" })
+    });
+    assert.equal(limitedRes.status, 429);
+    assert.equal(limitedRes.headers.get("retry-after"), "60");
+    const payload: any = await limitedRes.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
 async function run() {
   let failures = 0;
   for (const test of tests) {
