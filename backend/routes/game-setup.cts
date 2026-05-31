@@ -52,6 +52,10 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
+type AuthAttemptThrottle = {
+  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+};
 
 const {
   aiJoinRequestSchema,
@@ -60,6 +64,8 @@ const {
   startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
 
 async function handleAiJoinRoute(
@@ -77,10 +83,33 @@ async function handleAiJoinRoute(
   broadcastGame: BroadcastGame,
   snapshotForState: SnapshotForState,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
+    return;
+  }
+
+  const throttleKey = createAuthThrottleKey("ai_join", req, authContext.user.username);
+  const throttleDecision = authAttemptThrottle?.recordAttempt(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+    sendLocalizedError(
+      res,
+      429,
+      {
+        error: "Troppi tentativi di aggiunta AI. Riprova più tardi.",
+        errorKey: "auth.throttle.tooManyAttempts",
+        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        code: "AUTH_RATE_LIMITED"
+      },
+      "Troppi tentativi di aggiunta AI. Riprova più tardi.",
+      "auth.throttle.tooManyAttempts",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+      "AUTH_RATE_LIMITED",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+    );
     return;
   }
 
