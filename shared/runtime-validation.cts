@@ -1191,9 +1191,9 @@ export const authoredModuleValidationSchema = objectSchema({
 export type AuthoredModuleValidation = z.infer<typeof authoredModuleValidationSchema>;
 
 export const authoredVictoryObjectiveBaseSchema = objectSchema({
-  id: z.string(),
-  title: z.string(),
-  description: z.string(),
+  id: z.string().max(64),
+  title: z.string().max(128),
+  description: z.string().max(512),
   enabled: z.boolean(),
   type: z.enum(AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES)
 });
@@ -1226,17 +1226,17 @@ export const authoredVictoryObjectiveSchema = z.discriminatedUnion("type", [
 export type AuthoredVictoryObjective = z.infer<typeof authoredVictoryObjectiveSchema>;
 
 export const authoredVictoryModuleContentSchema = objectSchema({
-  mapId: z.string(),
+  mapId: z.string().max(64),
   objectives: z.array(authoredVictoryObjectiveSchema)
 });
 
 export type AuthoredVictoryModuleContent = z.infer<typeof authoredVictoryModuleContentSchema>;
 
 export const authoredModuleInputSchema = objectSchema({
-  id: z.string().trim().min(1),
-  name: z.string(),
-  description: z.string(),
-  version: z.string(),
+  id: z.string().trim().min(1).max(64),
+  name: z.string().max(128),
+  description: z.string().max(512),
+  version: z.string().max(32),
   moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
   content: authoredVictoryModuleContentSchema
 });
