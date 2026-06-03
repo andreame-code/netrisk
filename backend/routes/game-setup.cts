@@ -53,6 +53,13 @@ type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
 
+type AuthAttemptThrottle = {
+  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordSuccess(key: Record<string, unknown>): void;
+};
+
 const {
   aiJoinRequestSchema,
   gameIdRequestSchema,
@@ -61,6 +68,8 @@ const {
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 async function handleAiJoinRoute(
   req: unknown,
@@ -77,7 +86,8 @@ async function handleAiJoinRoute(
   broadcastGame: BroadcastGame,
   snapshotForState: SnapshotForState,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -99,6 +109,29 @@ async function handleAiJoinRoute(
   }
 
   const gameId = parsedBody.gameId;
+
+  const throttleKey = createAuthThrottleKey("ai_join", req, authContext.user.username);
+  const throttleDecision = authAttemptThrottle?.recordAttempt(throttleKey);
+  if (throttleDecision && !throttleDecision.allowed) {
+    setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+    sendLocalizedError(
+      res,
+      429,
+      {
+        error: "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
+        errorKey: "auth.throttle.tooManyAttempts",
+        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        code: "AUTH_RATE_LIMITED"
+      },
+      "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
+      "auth.throttle.tooManyAttempts",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+      "AUTH_RATE_LIMITED",
+      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+    );
+    return;
+  }
+
   try {
     const activeGame = await getGame(gameId);
     authorize("game:start", { user: authContext.user, game: activeGame.game });

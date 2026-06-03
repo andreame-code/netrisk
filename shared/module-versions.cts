@@ -222,7 +222,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "setup-flow",
     name: "Setup Flow",
     kind: "gameplay",
-    version: "1.0.0",
+    version: "1.0.1",
     description: "New-game setup, setup defaults, profiles, and setup route behavior.",
     ownerPaths: [
       "backend/engine/game-setup.cts",

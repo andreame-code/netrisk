@@ -7227,6 +7227,37 @@ register("API register + login + join completa il flusso di accesso", async () =
   });
 });
 
+register("API AI join applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("throttle_ai"));
+
+    // The default limit is 5 attempts. We record the attempt before the capacity check,
+    // so if the lobby is full it still counts as an attempt.
+    // We expect 4 successful/valid attempts (either 201 Joined or 400 Lobby full)
+    // and the 5th one to be rate limited (429).
+    for (let i = 0; i < 4; i++) {
+      const res = await fetch(`${baseUrl}/api/ai/join`, {
+        method: "POST",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({ name: `AI_${i}` })
+      });
+      // Accept 201 (Joined) or 400 (Lobby full) as valid recorded attempts
+      assert.ok(res.status === 201 || res.status === 400, `Attempt ${i} failed with ${res.status}`);
+    }
+
+    const limitedRes = await fetch(`${baseUrl}/api/ai/join`, {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({ name: "AI_limited" })
+    });
+
+    assert.equal(limitedRes.status, 429);
+    assert.equal(limitedRes.headers.get("retry-after"), "60");
+    const payload: any = await limitedRes.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
 register("API registration applica il rate limiting dopo troppi tentativi", async () => {
   await withServer(async (baseUrl) => {
     const password = TEST_PASSWORD;

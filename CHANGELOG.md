@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.033 - 2026-05-25
+
+- Implemented rate limiting on the AI join endpoint to prevent automated lobby flooding and resource exhaustion.
+
 ## 0.1.032 - 2026-05-19
 
 - Hardened password hashing and verification by migrating to asynchronous non-blocking crypto operations.
