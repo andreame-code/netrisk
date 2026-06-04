@@ -22,3 +22,8 @@
 **Vulnerability:** Security hardening that relies on standard Node.js HTTP response methods like `res.removeHeader` can cause runtime errors in test suites where response objects are mocked without full API parity.
 **Learning:** When applying security headers at the global server level, defensive checks for method existence (e.g., `typeof res.removeHeader === 'function'`) ensure that security logic doesn't break gameplay or regression tests that use lightweight mocks. Additionally, HSTS must be applied conditionally (only over secure connections or in test environments) to align with RFC 6797 and maintain local development accessibility.
 **Prevention:** Always wrap non-standard or late-added response methods in defensive type checks and ensure HSTS application logic respects the connection's security state.
+
+## 2026-06-04 - Rate Limiting for Automated Mutation Endpoints
+**Vulnerability:** The AI join endpoint (/api/ai/join) was authenticated but lacked rate limiting, making it susceptible to automated lobby-filling and resource exhaustion by authenticated users.
+**Learning:** Even internal-facing or "helper" mutation endpoints must implement rate limiting to prevent abuse from compromised accounts or buggy client implementations. Reusing the existing AuthAttemptThrottle with dedicated scopes provides a consistent protection layer across the API boundary.
+**Prevention:** Audit all state-mutating endpoints and ensure they are covered by the application's throttling infrastructure with appropriate scopes and limits.
