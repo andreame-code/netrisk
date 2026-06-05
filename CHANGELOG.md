@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.040 - 2026-06-05
+
+- Refined the mobile gameplay shell reference states for collapsed, half-open, expanded, and drawer-based command actions.
+
 ## 0.1.039 - 2026-06-05
 
 - Modularized the card system with validated card definitions, rendering metadata, and a registered reinforcement trade effect.
