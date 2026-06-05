@@ -28,7 +28,7 @@ type DiceRuleSummary = {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupCombatState(attackerArmies = 4, defenderArmies = 2) {
-  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]
+  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])];
   return {
     graph: makeGraph(territories),
     state: makeState({
