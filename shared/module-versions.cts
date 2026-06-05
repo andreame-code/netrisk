@@ -249,7 +249,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "authored-victory-objectives",
     name: "Authored Victory Objectives",
     kind: "admin",
-    version: "1.0.0",
+    version: "1.0.1",
     description:
       "Content Studio authored victory objective drafts, validation, and runtime output.",
     ownerPaths: [

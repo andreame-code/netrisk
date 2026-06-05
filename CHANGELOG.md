@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.043 - 2026-06-05
+
+- Added bounded admin authored-module request validation while preserving legacy authored-module storage compatibility.
+
 ## 0.1.042 - 2026-06-05
 
 - Added rate limiting for AI lobby join requests to reduce automated lobby filling and resource exhaustion.
