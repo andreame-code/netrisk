@@ -4,7 +4,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.033 - 2026-05-25
 
-- Implemented rate limiting on the AI join endpoint to mitigate automated lobby-filling and resource exhaustion.
+- Hardened input validation schemas by adding maximum length constraints to various request fields to prevent resource exhaustion and ensure data integrity.
 
 ## 0.1.032 - 2026-05-19
 

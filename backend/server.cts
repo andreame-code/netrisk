@@ -1600,8 +1600,7 @@ function createApp(options: CreateAppOptions = {}) {
         broadcastGame,
         snapshotForState,
         sendJson,
-        sendLocalizedError,
-        authAttemptThrottle
+        sendLocalizedError
       );
       return;
     }
