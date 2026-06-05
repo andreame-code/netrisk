@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.042 - 2026-06-05
+
+- Added rate limiting for AI lobby join requests to reduce automated lobby filling and resource exhaustion.
+
 ## 0.1.041 - 2026-06-05
 
 - Added focused victory objective assignment coverage and made generated validation sync skip unchanged files.
