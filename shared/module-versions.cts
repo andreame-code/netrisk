@@ -234,11 +234,12 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.0.3",
+    version: "1.0.4",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
       "backend/module-runtime.cts",
+      "backend/module-runtime-catalog-projection.cts",
       "backend/module-runtime-contributions.cts",
       "backend/routes/modules.cts",
       "shared/netrisk-modules.cts"
