@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const projectRoot = resolve(process.cwd());
@@ -15,6 +15,10 @@ function syncSharedValidationModule() {
   const sharedSource = readFileSync(sharedSourcePath, "utf8");
   const content =
     "// Generated from shared/runtime-validation.cts. Do not edit manually.\n" + sharedSource;
+
+  if (existsSync(frontendTargetPath) && readFileSync(frontendTargetPath, "utf8") === content) {
+    return;
+  }
 
   mkdirSync(dirname(frontendTargetPath), { recursive: true });
   writeFileSync(frontendTargetPath, content);

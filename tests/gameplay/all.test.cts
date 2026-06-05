@@ -20,6 +20,7 @@ const gameplayTestModules = [
   "./combat/banzai-attack.test.cjs",
   "./conquest/conquest-resolution.test.cjs",
   "./fortify/fortify-movement.test.cjs",
+  "./victory/victory-objectives.test.cjs",
   "./victory/victory-detection.test.cjs",
   "./victory/elimination-and-victory.test.cjs",
   "./regression/full-flows.test.cjs",

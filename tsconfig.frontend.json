@@ -8,6 +8,7 @@
     "checkJs": false,
     "noEmitOnError": true,
     "incremental": true,
+    "tsBuildInfoFile": "./.tsbuild/tsconfig.frontend.tsbuildinfo",
     "outDir": "./public",
     "rootDir": "./frontend/src",
     "lib": ["ES2022", "DOM"],
