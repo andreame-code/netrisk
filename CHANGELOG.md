@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.033 - 2026-06-05
+
+- Moved live reinforcement placement mutation into the dedicated reinforcement placement engine module.
+
 ## 0.1.032 - 2026-05-19
 
 - Hardened password hashing and verification by migrating to asynchronous non-blocking crypto operations.
@@ -57,7 +61,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.019 - 2026-05-13
 
-- Updated the grouped npm runtime, React, testing, linting, and build-tool dependencies.
+- Updated the grouped npm runtime, React, testing, and build-tool dependencies.
 
 ## 0.1.018 - 2026-05-13
 
@@ -67,7 +71,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 - Fixed the mobile mandatory card-trade layout so the map board remains fully visible above the command dock.
 
-## 0.1.016 - 2026-05-12
+## 0.1.016 - 2026-05-11
 
 - Added branch-focused coverage for AI turn resume guards, stale AI handoff, and localized AI failure handling.
 
