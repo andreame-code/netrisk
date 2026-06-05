@@ -4,7 +4,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.033 - 2026-05-25
 
-- Implemented rate limiting on the AI join endpoint to prevent automated lobby flooding and resource exhaustion.
+- Hardened authored victory objectives validation by enforcing maximum string lengths on input fields to mitigate Denial of Service (DoS) risks.
 
 ## 0.1.032 - 2026-05-19
 

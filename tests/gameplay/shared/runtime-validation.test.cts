@@ -1,6 +1,8 @@
 const assert = require("node:assert/strict");
 const {
   accountSettingsRequestSchema,
+  authoredModuleInputSchema,
+  authoredVictoryObjectiveBaseSchema,
   accountSettingsResponseSchema,
   authSessionResponseSchema,
   formatValidationPath,
@@ -306,4 +308,33 @@ register("shared runtime validation rejects passwords exceeding 128 characters",
     password: tooLongPassword
   });
   assert.equal(invalidRegister.success, false);
+});
+
+register("shared runtime validation rejects oversized authored module fields", () => {
+  const oversizedId = "a".repeat(65);
+  const oversizedTitle = "a".repeat(129);
+  const oversizedDescription = "a".repeat(513);
+  const oversizedVersion = "a".repeat(33);
+
+  const invalidObjective = authoredVictoryObjectiveBaseSchema.safeParse({
+    id: oversizedId,
+    title: oversizedTitle,
+    description: oversizedDescription,
+    enabled: true,
+    type: "control-territory-count"
+  });
+  assert.equal(invalidObjective.success, false);
+
+  const invalidModuleInput = authoredModuleInputSchema.safeParse({
+    id: oversizedId,
+    name: oversizedTitle,
+    description: oversizedDescription,
+    version: oversizedVersion,
+    moduleType: "victory-objectives",
+    content: {
+      mapId: oversizedId,
+      objectives: []
+    }
+  });
+  assert.equal(invalidModuleInput.success, false);
 });

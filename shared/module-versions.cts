@@ -222,7 +222,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "setup-flow",
     name: "Setup Flow",
     kind: "gameplay",
-    version: "1.0.1",
+    version: "1.0.0",
     description: "New-game setup, setup defaults, profiles, and setup route behavior.",
     ownerPaths: [
       "backend/engine/game-setup.cts",
@@ -248,7 +248,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "authored-victory-objectives",
     name: "Authored Victory Objectives",
     kind: "admin",
-    version: "1.0.0",
+    version: "1.0.1",
     description:
       "Content Studio authored victory objective drafts, validation, and runtime output.",
     ownerPaths: [
