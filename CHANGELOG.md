@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.034 - 2026-05-31
+
+- Hardened authored module metadata validation with maximum length constraints to prevent resource exhaustion and Denial of Service (DoS).
+- Implemented rate limiting on the AI join endpoint to prevent automated lobby-filling and resource exhaustion by authenticated users.
+
 ## 0.1.033 - 2026-05-26
 
 - Implemented rate limiting on the AI join endpoint to prevent automated lobby-filling and resource exhaustion by authenticated users.
