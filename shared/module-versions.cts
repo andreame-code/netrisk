@@ -160,7 +160,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "card-rule-sets",
     name: "Card Rule Sets",
     kind: "rule-family",
-    version: "1.0.0",
+    version: "1.0.1",
     description: "Card deck, trade-in, and route-facing card rule-set behavior.",
     ownerPaths: ["shared/cards.cts", "backend/routes/game-cards.cts"]
   },
@@ -222,7 +222,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "setup-flow",
     name: "Setup Flow",
     kind: "gameplay",
-    version: "1.0.0",
+    version: "1.0.1",
     description: "New-game setup, setup defaults, profiles, and setup route behavior.",
     ownerPaths: [
       "backend/engine/game-setup.cts",
