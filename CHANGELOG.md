@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.044 - 2026-06-05
+
+- Added branch-focused auth store coverage for legacy session migration, cleanup, validation, and public profile projection.
+
 ## 0.1.043 - 2026-06-05
 
 - Added bounded admin authored-module request validation while preserving legacy authored-module storage compatibility.
