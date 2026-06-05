@@ -7230,7 +7230,7 @@ register("API register + login + join completa il flusso di accesso", async () =
 register("API AI join applica il rate limiting dopo troppi tentativi", async () => {
   await withServer(async (baseUrl) => {
     const owner = await createAuthenticatedSession(baseUrl, uniqueName("ai_limit_host"));
-    const created = await fetch(`${baseUrl}/api/games`, {
+    const created = await fetch(baseUrl + "/api/games", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
       body: JSON.stringify({ name: "AI Limit Match" })
@@ -7239,24 +7239,24 @@ register("API AI join applica il rate limiting dopo troppi tentativi", async () 
     const createdPayload: any = await created.json();
     const gameId = createdPayload.game.id;
 
-    for (let index = 0; index < 5; index += 1) {
-      const response = await fetch(`${baseUrl}/api/ai/join`, {
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(baseUrl + "/api/ai/join", {
         method: "POST",
         headers: authHeaders(owner.sessionToken),
-        body: JSON.stringify({ gameId, name: `CPU ${index}` })
+        body: JSON.stringify({ gameId, name: `CPU ${i}` })
       });
-
-      assert.ok(response.status === 201 || response.status === 400);
+      // It might be 201 (Joined) or 400 (Lobby full), both should count towards rate limit.
+      assert.ok(res.status === 201 || res.status === 400);
     }
 
-    const limitedResponse = await fetch(`${baseUrl}/api/ai/join`, {
+    const limitedRes = await fetch(baseUrl + "/api/ai/join", {
       method: "POST",
       headers: authHeaders(owner.sessionToken),
       body: JSON.stringify({ gameId, name: "CPU Limited" })
     });
-    assert.equal(limitedResponse.status, 429);
-    assert.equal(limitedResponse.headers.get("retry-after"), "60");
-    const payload: any = await limitedResponse.json();
+    assert.equal(limitedRes.status, 429);
+    assert.equal(limitedRes.headers.get("retry-after"), "60");
+    const payload: any = await limitedRes.json();
     assert.equal(payload.code, "AUTH_RATE_LIMITED");
   });
 });

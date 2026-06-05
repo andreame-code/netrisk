@@ -26,7 +26,6 @@ import {
   type PlayerPieceSet,
   type Territory
 } from "../../shared/models.cjs";
-import { getCardEffectHandler } from "./card-effects.cjs";
 import { detectVictory } from "./victory-detection.cjs";
 import {
   assignVictoryObjectives,
@@ -35,7 +34,6 @@ import {
 } from "./victory-objectives.cjs";
 import { compareCombatDice, rollCombatDice } from "./combat-dice.cjs";
 import { calculateReinforcements } from "./reinforcement-calculator.cjs";
-import { placeReinforcementAction } from "./reinforcement-placement.cjs";
 import { findSupportedMap } from "../../shared/maps/index.cjs";
 const { secureRandom } = require("../random.cjs");
 
@@ -435,17 +433,38 @@ export function tradeCardSet(
   }
 
   const resolvedCards = selectedCards as Card[];
-  const cardEffectHandler = getCardEffectHandler(cardRuleSet.effect.type);
-  return cardEffectHandler.apply({
+  const validation = cardRuleSet.validateSet(resolvedCards);
+  if (!validation.ok) {
+    return createActionFailure(validation.reason, validation.reasonKey, validation.reasonParams);
+  }
+
+  const bonus = cardRuleSet.tradeBonusForIndex(state.tradeCount || 0);
+  state.hands[playerId] = hand.filter((card) => !card.id || !uniqueCardIds.includes(card.id));
+  if (!Array.isArray(state.discardPile)) {
+    state.discardPile = [];
+  }
+  state.discardPile.push(...resolvedCards);
+  state.tradeCount = (state.tradeCount || 0) + 1;
+  state.reinforcementPool += bonus;
+  state.lastAction = {
+    type: "tradeCards",
+    summary: player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
+    summaryKey: "game.log.tradeCompleted",
+    summaryParams: {
+      playerName: player.name,
+      bonus
+    }
+  };
+  appendLog(
     state,
-    player,
-    playerId,
-    hand,
-    selectedCards: resolvedCards,
-    selectedCardIds: uniqueCardIds,
-    cardRuleSet,
-    appendLog
-  });
+    player.name + " scambia un set di carte e riceve " + bonus + " rinforzi.",
+    "game.log.tradeCompleted",
+    {
+      playerName: player.name,
+      bonus
+    }
+  );
+  return { ok: true, bonus, validation };
 }
 
 function readableMapName(mapId: string | null | undefined): string | null {
@@ -694,7 +713,6 @@ export function publicState(state: EngineState) {
 
   const currentPlayer = getCurrentPlayer(snapshotState);
   const diceRuleSet = resolveDiceRuleSetFromState(snapshotState);
-  const cardRuleSet = getCardRuleSet(snapshotState.cardRuleSetId || "standard");
   const lastAction = snapshotState.lastAction as
     | ({ type?: string; combat?: CombatSnapshot | null } & Record<string, unknown>)
     | null;
@@ -781,11 +799,10 @@ export function publicState(state: EngineState) {
     conqueredTerritoryThisTurn: Boolean(snapshotState.conqueredTerritoryThisTurn),
     cardState: {
       ruleSetId: snapshotState.cardRuleSetId || "standard",
-      ruleSetName: cardRuleSet.name,
       tradeCount: Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0,
       deckCount: Array.isArray(snapshotState.deck) ? snapshotState.deck.length : 0,
       discardCount: Array.isArray(snapshotState.discardPile) ? snapshotState.discardPile.length : 0,
-      nextTradeBonus: cardRuleSet.tradeBonusForIndex(
+      nextTradeBonus: getCardRuleSet(snapshotState.cardRuleSetId || "standard").tradeBonusForIndex(
         Number.isInteger(snapshotState.tradeCount) ? snapshotState.tradeCount : 0
       ),
       maxHandBeforeForcedTrade: getForcedTradeLimit(snapshotState),
@@ -992,34 +1009,79 @@ export function applyReinforcement(
   territoryId: string,
   requestedAmount: number = 1
 ): BasicResult {
-  const result = placeReinforcementAction(state, playerId, territoryId, requestedAmount);
-  if (!result.ok) {
-    return result;
+  const territoryState = state.territories[territoryId];
+  const player = getPlayer(state, playerId);
+  const reinforcementAmount = Math.floor(Number(requestedAmount));
+
+  if (!player) {
+    return createActionFailure("Giocatore non valido.", "game.invalidPlayer");
   }
 
+  if (state.phase !== "active") {
+    return createActionFailure("La partita non e attiva.", "game.notActive");
+  }
+
+  if (!getCurrentPlayer(state) || getCurrentPlayer(state)?.id !== playerId) {
+    return createActionFailure("Non e il tuo turno.", "game.notYourTurn");
+  }
+
+  if (state.reinforcementPool <= 0) {
+    return createActionFailure("Non hai rinforzi disponibili.", "game.reinforce.noneAvailable");
+  }
+
+  if (!Number.isFinite(reinforcementAmount) || reinforcementAmount <= 0) {
+    return createActionFailure("Quantita rinforzi non valida.", "game.reinforce.invalidAmount");
+  }
+
+  if (reinforcementAmount > state.reinforcementPool) {
+    return createActionFailure(
+      "Stai tentando di usare piu rinforzi di quelli disponibili.",
+      "game.reinforce.tooMany"
+    );
+  }
+
+  if (!territoryState || territoryState.ownerId !== playerId) {
+    return createActionFailure(
+      "Puoi rinforzare solo un tuo territorio.",
+      "game.reinforce.mustOwnTerritory"
+    );
+  }
+
+  territoryState.armies += reinforcementAmount;
+  state.reinforcementPool -= reinforcementAmount;
+  state.lastAction = {
+    type: GameAction.REINFORCE,
+    summary: player.name + " rinforza " + territoryId + " con " + reinforcementAmount + " armate.",
+    summaryKey: "game.log.reinforced",
+    summaryParams: {
+      playerName: player.name,
+      reinforcementAmount,
+      territoryId,
+      reinforcementPool: state.reinforcementPool
+    }
+  };
   state.turnPhase =
     state.reinforcementPool === 0 && !playerMustTradeCards(state, playerId)
       ? TurnPhase.ATTACK
       : TurnPhase.REINFORCEMENT;
-  const { player, placement } = result;
   appendLog(
     state,
     player.name +
       " aggiunge " +
-      placement.placedArmies +
+      reinforcementAmount +
       " " +
-      (placement.placedArmies === 1 ? "armata" : "armate") +
+      (reinforcementAmount === 1 ? "armata" : "armate") +
       " a " +
       territoryId +
       ". Rinforzi rimasti: " +
-      placement.remainingReinforcements +
+      state.reinforcementPool +
       ".",
     "game.log.reinforced",
     {
       playerName: player.name,
-      reinforcementAmount: placement.placedArmies,
+      reinforcementAmount,
       territoryId,
-      reinforcementPool: placement.remainingReinforcements
+      reinforcementPool: state.reinforcementPool
     }
   );
   return { ok: true };

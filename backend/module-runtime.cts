@@ -5,13 +5,7 @@ const {
   ensureAllowedContentId,
   moduleEntriesForSelection
 } = require("./module-runtime-contributions.cjs");
-import type * as RuntimeCatalogProjectionModule from "./module-runtime-catalog-projection.cjs";
-const { projectRuntimeCatalogInputs } =
-  require("./module-runtime-catalog-projection.cjs") as typeof RuntimeCatalogProjectionModule;
-const {
-  findCardRuleSet: findBuiltInCardRuleSet,
-  listCardRuleSets
-} = require("../shared/cards.cjs");
+const { listCardRuleSets } = require("../shared/cards.cjs");
 const {
   findCoreBaseSupportedMap,
   listCoreBaseMapSummaries,
@@ -75,10 +69,8 @@ import type {
   NetRiskResolvedModuleSetup,
   NetRiskScenarioSetup,
   NetRiskServerModule,
-  NetRiskModuleCardRuleSetDefinition,
   NetRiskModuleSiteThemeDefinition
 } from "../shared/netrisk-modules.cjs";
-import type { CardRuleSetSummary } from "../shared/cards.cjs";
 import type { ContentPackSummary } from "../shared/content-packs.cjs";
 import type { DiceRuleSet, DiceRuleSetSummary } from "../shared/dice.cjs";
 import type {
@@ -132,11 +124,6 @@ type RuntimeModulePlayerPieceSetEntry = {
 type RuntimeModuleDiceRuleSetEntry = {
   moduleId: string;
   diceRuleSet: DiceRuleSet;
-};
-
-type RuntimeModuleCardRuleSetEntry = {
-  moduleId: string;
-  cardRuleSet: CardRuleSetSummary;
 };
 
 type RuntimeModuleSiteThemeEntry = {
@@ -230,12 +217,6 @@ function cloneDiceRuleSetSummary(ruleSet: DiceRuleSetSummary): DiceRuleSetSummar
 }
 
 function cloneDiceRuleSet(ruleSet: DiceRuleSet): DiceRuleSet {
-  return {
-    ...ruleSet
-  };
-}
-
-function cloneCardRuleSetSummary(ruleSet: CardRuleSetSummary): CardRuleSetSummary {
   return {
     ...ruleSet
   };
@@ -490,17 +471,6 @@ function buildRuntimeModuleDiceRuleSet(
     defenderMaxDice: ruleSetDefinition.defenderMaxDice,
     attackerMustLeaveOneArmyBehind: ruleSetDefinition.attackerMustLeaveOneArmyBehind,
     defenderWinsTies: ruleSetDefinition.defenderWinsTies
-  };
-}
-
-function buildRuntimeModuleCardRuleSet(
-  ruleSetDefinition: NetRiskModuleCardRuleSetDefinition
-): CardRuleSetSummary {
-  return {
-    id: ruleSetDefinition.id,
-    name: ruleSetDefinition.name,
-    description: ruleSetDefinition.description || "",
-    maxHandBeforeForcedTrade: ruleSetDefinition.maxHandBeforeForcedTrade
   };
 }
 
@@ -944,18 +914,6 @@ function filterDiceRuleSetsByAllowedIds(
   return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneDiceRuleSetSummary);
 }
 
-function filterCardRuleSetsByAllowedIds(
-  entries: CardRuleSetSummary[],
-  allowedIds: string[] | null | undefined
-): CardRuleSetSummary[] {
-  if (!Array.isArray(allowedIds) || !allowedIds.length) {
-    return entries.map(cloneCardRuleSetSummary);
-  }
-
-  const allowedIdSet = new Set(allowedIds);
-  return entries.filter((entry) => allowedIdSet.has(entry.id)).map(cloneCardRuleSetSummary);
-}
-
 function filterVictoryRuleSetsByAllowedIds(
   entries: VictoryRuleSet[],
   allowedIds: string[] | null | undefined
@@ -1008,27 +966,27 @@ function buildResolvedModuleCatalog(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
-  runtimeCardRuleSetEntries: RuntimeModuleCardRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
-  const {
-    enabledModules: enabled,
-    enabledRuntimeMapEntries,
-    enabledRuntimeContentPackEntries,
-    enabledRuntimePlayerPieceSetEntries,
-    enabledRuntimeDiceRuleSetEntries,
-    enabledRuntimeCardRuleSetEntries,
-    enabledRuntimeSiteThemeEntries
-  } = projectRuntimeCatalogInputs(
-    clonedModules,
-    runtimeMapEntries,
-    runtimeContentPackEntries,
-    runtimePlayerPieceSetEntries,
-    runtimeDiceRuleSetEntries,
-    runtimeCardRuleSetEntries,
-    runtimeSiteThemeEntries
+  const enabled = clonedModules.filter(
+    (moduleEntry) => moduleEntry.enabled && moduleEntry.compatible
+  );
+  const enabledRuntimeMapEntries = runtimeMapEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimeContentPackEntries = runtimeContentPackEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimePlayerPieceSetEntries = runtimePlayerPieceSetEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimeDiceRuleSetEntries = runtimeDiceRuleSetEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
+  );
+  const enabledRuntimeSiteThemeEntries = runtimeSiteThemeEntries.filter((entry) =>
+    enabled.some((moduleEntry) => moduleEntry.id === entry.moduleId)
   );
   const content = aggregateContentContribution(
     enabled,
@@ -1036,7 +994,6 @@ function buildResolvedModuleCatalog(
     enabledRuntimeContentPackEntries,
     enabledRuntimePlayerPieceSetEntries,
     enabledRuntimeDiceRuleSetEntries,
-    enabledRuntimeCardRuleSetEntries,
     enabledRuntimeSiteThemeEntries
   );
   const authoredVictoryRuleSetIds = authoredVictoryRuleSets.map((entry) => entry.id);
@@ -1088,15 +1045,6 @@ function buildResolvedModuleCatalog(
           .map(cloneDiceRuleSetSummary)
       ],
       content.diceRuleSetIds
-    ),
-    cardRuleSets: filterCardRuleSetsByAllowedIds(
-      [
-        ...listCardRuleSets().map(cloneCardRuleSetSummary),
-        ...enabledRuntimeCardRuleSetEntries
-          .map((entry) => entry.cardRuleSet)
-          .map(cloneCardRuleSetSummary)
-      ],
-      content.cardRuleSetIds
     ),
     contentPacks: filterContentPacksByAllowedIds(
       [
@@ -1153,7 +1101,6 @@ function buildModuleOptions(
   runtimeContentPackEntries: RuntimeModuleContentPackEntry[],
   runtimePlayerPieceSetEntries: RuntimeModulePlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
-  runtimeCardRuleSetEntries: RuntimeModuleCardRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
   authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
 ): ModuleOptionsSnapshot {
@@ -1163,7 +1110,6 @@ function buildModuleOptions(
     runtimeContentPackEntries,
     runtimePlayerPieceSetEntries,
     runtimeDiceRuleSetEntries,
-    runtimeCardRuleSetEntries,
     runtimeSiteThemeEntries,
     authoredVictoryRuleSets
   );
@@ -1299,7 +1245,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
   let runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
   let runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
-  let runtimeCardRuleSetsById = new Map<string, RuntimeModuleCardRuleSetEntry>();
   let runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
   let runtimeContentPackErrorsByModuleId = new Map<string, string[]>();
   let runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
@@ -1472,10 +1417,9 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       ...listDiceRuleSets().map((entry: { id: string }) => entry.id),
       ...usableRuntimeContributionIdsForModule(moduleId, manifest, modules, runtimeDiceRuleSetsById)
     ]);
-    const knownCardRuleSetIds = new Set([
-      ...listCardRuleSets().map((entry: { id: string }) => entry.id),
-      ...usableRuntimeContributionIdsForModule(moduleId, manifest, modules, runtimeCardRuleSetsById)
-    ]);
+    const knownCardRuleSetIds = new Set(
+      listCardRuleSets().map((entry: { id: string }) => entry.id)
+    );
     const knownVictoryRuleSetIds = new Set(
       listVictoryRuleSets().map((entry: { id: string }) => entry.id)
     );
@@ -1799,42 +1743,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     return errors;
   }
 
-  function registerServerModuleCardRuleSets(
-    moduleId: string,
-    serverModule: NetRiskServerModule,
-    sourcePath: string
-  ): string[] {
-    if (!Array.isArray(serverModule.cardRuleSets) || !serverModule.cardRuleSets.length) {
-      return [];
-    }
-
-    const errors: string[] = [];
-    serverModule.cardRuleSets.forEach((ruleSetDefinition) => {
-      try {
-        if (findBuiltInCardRuleSet(ruleSetDefinition.id)) {
-          throw new Error(
-            `Runtime module card rule set "${ruleSetDefinition.id}" conflicts with a built-in card rule set.`
-          );
-        }
-
-        if (runtimeCardRuleSetsById.has(ruleSetDefinition.id)) {
-          throw new Error(
-            `Duplicate runtime module card rule set "${ruleSetDefinition.id}" detected.`
-          );
-        }
-
-        runtimeCardRuleSetsById.set(ruleSetDefinition.id, {
-          moduleId,
-          cardRuleSet: buildRuntimeModuleCardRuleSet(ruleSetDefinition)
-        });
-      } catch (error: unknown) {
-        errors.push(`${sourcePath}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    });
-
-    return errors;
-  }
-
   function listEnabledRuntimeMaps(modules: NetRiskInstalledModule[]): RuntimeModuleMapEntry[] {
     const enabledIds = new Set(
       modules
@@ -1898,23 +1806,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       .map((entry) => ({
         moduleId: entry.moduleId,
         diceRuleSet: cloneDiceRuleSet(entry.diceRuleSet)
-      }));
-  }
-
-  function listEnabledRuntimeCardRuleSets(
-    modules: NetRiskInstalledModule[]
-  ): RuntimeModuleCardRuleSetEntry[] {
-    const enabledIds = new Set(
-      modules
-        .filter((moduleEntry) => moduleEntry.enabled && moduleEntry.compatible)
-        .map((moduleEntry) => moduleEntry.id)
-    );
-
-    return Array.from(runtimeCardRuleSetsById.values())
-      .filter((entry) => enabledIds.has(entry.moduleId))
-      .map((entry) => ({
-        moduleId: entry.moduleId,
-        cardRuleSet: cloneCardRuleSetSummary(entry.cardRuleSet)
       }));
   }
 
@@ -2034,7 +1925,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
     runtimeContentPacksById = new Map<string, RuntimeModuleContentPackEntry>();
     runtimePlayerPieceSetsById = new Map<string, RuntimeModulePlayerPieceSetEntry>();
     runtimeDiceRuleSetsById = new Map<string, RuntimeModuleDiceRuleSetEntry>();
-    runtimeCardRuleSetsById = new Map<string, RuntimeModuleCardRuleSetEntry>();
     runtimeSiteThemesById = new Map<string, RuntimeModuleSiteThemeEntry>();
     runtimeContentPackErrorsByModuleId = new Map<string, string[]>();
     runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
@@ -2118,17 +2008,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       );
       if (diceRuleSetErrors.length) {
         moduleEntry.errors.push(...diceRuleSetErrors);
-        moduleEntry.compatible = false;
-        moduleEntry.status = "error";
-      }
-
-      const cardRuleSetErrors = registerServerModuleCardRuleSets(
-        moduleEntry.id,
-        serverModule,
-        moduleEntry.sourcePath
-      );
-      if (cardRuleSetErrors.length) {
-        moduleEntry.errors.push(...cardRuleSetErrors);
         moduleEntry.compatible = false;
         moduleEntry.status = "error";
       }
@@ -2265,7 +2144,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       listEnabledRuntimeContentPacks(modules),
       listEnabledRuntimePlayerPieceSets(modules),
       listEnabledRuntimeDiceRuleSets(modules),
-      listEnabledRuntimeCardRuleSets(modules),
       listEnabledRuntimeSiteThemes(modules),
       authoredVictoryRuleSets
     );
@@ -2758,7 +2636,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         listEnabledRuntimeContentPacks(selectedModuleEntries),
         listEnabledRuntimePlayerPieceSets(selectedModuleEntries),
         listEnabledRuntimeDiceRuleSets(selectedModuleEntries),
-        listEnabledRuntimeCardRuleSets(selectedModuleEntries),
         listEnabledRuntimeSiteThemes(selectedModuleEntries)
       );
       if (authoredVictoryRuleSets.length) {

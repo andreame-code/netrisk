@@ -160,7 +160,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "card-rule-sets",
     name: "Card Rule Sets",
     kind: "rule-family",
-    version: "1.1.0",
+    version: "1.0.0",
     description: "Card deck, trade-in, and route-facing card rule-set behavior.",
     ownerPaths: ["shared/cards.cts", "backend/routes/game-cards.cts"]
   },
@@ -182,7 +182,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "reinforcement-rule-sets",
     name: "Reinforcement Rule Sets",
     kind: "gameplay",
-    version: "1.0.1",
+    version: "1.0.0",
     description: "Reinforcement calculation and placement behavior.",
     ownerPaths: [
       "shared/reinforcement-rule-sets.cts",
@@ -222,7 +222,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "setup-flow",
     name: "Setup Flow",
     kind: "gameplay",
-    version: "1.0.2",
+    version: "1.0.1",
     description: "New-game setup, setup defaults, profiles, and setup route behavior.",
     ownerPaths: [
       "backend/engine/game-setup.cts",
@@ -234,12 +234,11 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.1.0",
+    version: "1.0.3",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
       "backend/module-runtime.cts",
-      "backend/module-runtime-catalog-projection.cts",
       "backend/module-runtime-contributions.cts",
       "backend/routes/modules.cts",
       "shared/netrisk-modules.cts"
@@ -286,7 +285,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "public-state",
     name: "Public Game State",
     kind: "platform",
-    version: "1.1.0",
+    version: "1.0.2",
     description: "Public/read API game state contracts, snapshots, and shared game models.",
     ownerPaths: [
       "shared/api-contracts.cts",

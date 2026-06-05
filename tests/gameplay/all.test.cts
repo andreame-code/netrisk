@@ -1,6 +1,5 @@
 const gameplayTestModules = [
   "./shared/runtime-validation.test.cjs",
-  "./shared/cards.test.cjs",
   "./shared/map-graph.test.cjs",
   "./shared/map-loader.test.cjs",
   "./shared/typed-map-data.test.cjs",
@@ -20,7 +19,6 @@ const gameplayTestModules = [
   "./combat/banzai-attack.test.cjs",
   "./conquest/conquest-resolution.test.cjs",
   "./fortify/fortify-movement.test.cjs",
-  "./victory/victory-objectives.test.cjs",
   "./victory/victory-detection.test.cjs",
   "./victory/elimination-and-victory.test.cjs",
   "./regression/full-flows.test.cjs",

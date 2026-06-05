@@ -6,7 +6,7 @@ import type {
   NetRiskModuleProfile,
   NetRiskUiSlotContribution,
   ResolvedModuleCatalog
-} from "../generated/shared-runtime-validation.mjs";
+} from "./types.mjs";
 
 type CatalogCarrier = {
   resolvedCatalog?: ResolvedModuleCatalog;

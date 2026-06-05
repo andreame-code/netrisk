@@ -1,11 +1,7 @@
 import type * as HttpTypes from "node:http";
 const { handleAttackGameActionRoute } = require("./game-actions-attack.cjs");
 const { handleBasicGameActionRoute } = require("./game-actions-basic.cjs");
-const {
-  isInvalidExpectedVersion,
-  readExpectedVersionOrSendError,
-  sendVersionConflict
-} = require("./game-mutation.cjs");
+const { sendVersionConflict } = require("./game-mutation.cjs");
 const { handleTurnGameActionRoute } = require("./game-actions-turn.cjs");
 const {
   gameActionEnvelopeSchema,
@@ -113,12 +109,17 @@ async function handleGameActionRoute({
     return;
   }
 
-  const preflightExpectedVersion = readExpectedVersionOrSendError(
-    body,
-    res,
-    sendLocalizedError as SendLocalizedError
-  );
-  if (isInvalidExpectedVersion(preflightExpectedVersion)) {
+  if (
+    body.expectedVersion != null &&
+    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
+  ) {
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "expectedVersion non valida.",
+      "server.invalidExpectedVersion"
+    );
     return;
   }
 
@@ -139,7 +140,7 @@ async function handleGameActionRoute({
   const currentUser = authContext.user;
   const playerId = parsedEnvelope.playerId;
   const type = parsedEnvelope.type;
-  const expectedVersion = preflightExpectedVersion;
+  const expectedVersion = parsedEnvelope.expectedVersion ?? null;
   const nodeResponse = res as HttpTypes.ServerResponse;
   const sendGameplayMutationJson: SendJson = (targetRes, statusCode, payload, headers) => {
     sendValidatedJson(

@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameMutationResponse,
   GameSnapshot,
+  SnapshotCard,
   SnapshotPlayer,
   SnapshotTerritory
 } from "@frontend-generated/shared-runtime-validation.mts";
@@ -24,7 +25,6 @@ import {
   parsePositiveInteger,
   selectOrFallback
 } from "@react-shell/gameplay-selections";
-import { buildGameplayViewState } from "@react-shell/gameplay-view-state";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import { readCurrentPlayerId, storeCurrentPlayerId } from "@react-shell/player-session";
 import {
@@ -42,9 +42,6 @@ import {
   ActivityLogTrigger,
   CardsDrawer,
   CombatResultPanel,
-  cardDisplayName,
-  cardVisualTone,
-  cardVisualToken,
   GameActionDock,
   GameActionRail,
   GameHud,
@@ -112,6 +109,26 @@ function territoryOptionLabel(
 
 function territoryDockOptionLabel(territory: SnapshotTerritory): string {
   return territory.name;
+}
+
+function cardTypeLabel(card: SnapshotCard): string {
+  if (card.type === "infantry") {
+    return t("game.runtime.cardType.infantry");
+  }
+
+  if (card.type === "cavalry") {
+    return t("game.runtime.cardType.cavalry");
+  }
+
+  if (card.type === "artillery") {
+    return t("game.runtime.cardType.artillery");
+  }
+
+  if (card.type === "wild") {
+    return t("game.runtime.cardType.wild");
+  }
+
+  return t("game.runtime.cardType.default");
 }
 
 function logEntryMessageKey(entry: unknown): string {
@@ -335,8 +352,9 @@ export function GameRoute() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
-  const [commandDockSheetState, setCommandDockSheetState] =
-    useState<GameCommandDockSheetState>("collapsed");
+  const [commandDockSheetState, setCommandDockSheetState] = useState<GameCommandDockSheetState>(
+    () => (isMobileCommandDockViewport() ? "half-open" : "collapsed")
+  );
   const isCommandDockExpanded = commandDockSheetState !== "collapsed";
 
   const gameplayQuery = useQuery({
@@ -357,33 +375,57 @@ export function GameRoute() {
   const currentLocationPath = `${location.pathname}${location.search}`;
   const authenticatedUser = state.status === "authenticated" ? state.user : null;
 
+  const playersById: Record<string, SnapshotPlayer> = {};
+  for (const player of snapshot?.players || []) {
+    playersById[player.id] = player;
+  }
+
+  const territoriesById: Record<string, SnapshotTerritory> = {};
+  for (const territory of snapshot?.map || []) {
+    territoriesById[territory.id] = territory;
+  }
+
   const storedPlayerId = readCurrentPlayerId(resolvedGameId || null);
   const myPlayerId = snapshot?.playerId || storedPlayerId || null;
-  const {
-    playersById,
-    territoriesById,
-    me,
-    activePlayer,
-    winner,
-    playerHand,
-    myTerritories,
-    currentVersion,
-    mustTradeCards,
-    showLobbyControls,
-    showJoinLobby,
-    showStartGame,
-    showReinforceGroup,
-    showAttackGroup,
-    showConquestGroup,
-    showFortifyGroup,
-    showEndTurn,
-    showSurrender
-  } = buildGameplayViewState(snapshot, myPlayerId);
+  const me = myPlayerId ? playersById[myPlayerId] || null : null;
+  const activePlayer = snapshot?.currentPlayerId
+    ? playersById[snapshot.currentPlayerId] || null
+    : null;
+  const winner = snapshot?.winnerId ? playersById[snapshot.winnerId] || null : null;
+  const playerHand = Array.isArray(snapshot?.playerHand) ? snapshot.playerHand : [];
   const assignedVictoryObjective = snapshot?.assignedVictoryObjective || null;
   const activityLogEntries = activityLogEntriesForSnapshot(snapshot);
   const activityLogContentKey = activityLogEntries
     .map((entry) => `${entry.category}:${entry.text.length}:${entry.text}`)
     .join("|");
+  const myTerritories = (snapshot?.map || []).filter(
+    (territory) => territory.ownerId === myPlayerId
+  );
+  const currentVersion =
+    snapshot && Number.isInteger(snapshot.version) ? snapshot.version : undefined;
+  const isMyTurn = Boolean(
+    snapshot?.phase === "active" && myPlayerId && snapshot.currentPlayerId === myPlayerId
+  );
+  const mustTradeCards = Boolean(
+    isMyTurn && snapshot?.cardState?.currentPlayerMustTrade && playerHand.length
+  );
+  const showLobbyControls = snapshot?.phase === "lobby";
+  const showJoinLobby = snapshot?.phase === "lobby" && !myPlayerId;
+  const showStartGame = snapshot?.phase === "lobby" && Boolean(myPlayerId);
+  const showReinforceGroup = Boolean(
+    isMyTurn &&
+    snapshot?.turnPhase === "reinforcement" &&
+    Number(snapshot?.reinforcementPool || 0) > 0
+  );
+  const showAttackGroup = Boolean(
+    isMyTurn && snapshot?.turnPhase === "attack" && !snapshot?.pendingConquest
+  );
+  const showConquestGroup = Boolean(isMyTurn && snapshot?.pendingConquest);
+  const showFortifyGroup = Boolean(isMyTurn && snapshot?.turnPhase === "fortify");
+  const showEndTurn = Boolean(
+    isMyTurn && snapshot?.phase === "active" && snapshot?.turnPhase !== "reinforcement"
+  );
+  const showSurrender = Boolean(myPlayerId && snapshot?.phase === "active");
   const reinforceTerritoryId = selectOrFallback(
     selectedReinforceTerritoryId,
     myTerritories,
@@ -518,35 +560,43 @@ export function GameRoute() {
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return undefined;
+      return;
     }
 
     const mediaQuery = window.matchMedia("(max-width: 760px)");
-    const normalizeForViewport = (matchesMobile: boolean) => {
-      if (matchesMobile) {
+
+    function syncMobileCommandSheet(event: MediaQueryList | MediaQueryListEvent): void {
+      if (!event.matches) {
+        setCommandDockSheetState((current) => (current === "half-open" ? "collapsed" : current));
         return;
       }
 
-      setCommandDockSheetState((current) => (current === "half-open" ? "collapsed" : current));
-    };
-    const handleViewportChange = (event: MediaQueryListEvent) => {
-      normalizeForViewport(event.matches);
-    };
+      setCommandDockSheetState((current) => (current === "collapsed" ? "half-open" : current));
+    }
+
+    syncMobileCommandSheet(mediaQuery);
 
     if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleViewportChange);
-      return () => mediaQuery.removeEventListener("change", handleViewportChange);
+      mediaQuery.addEventListener("change", syncMobileCommandSheet);
+
+      return () => {
+        mediaQuery.removeEventListener("change", syncMobileCommandSheet);
+      };
     }
 
-    mediaQuery.addListener(handleViewportChange);
-    return () => mediaQuery.removeListener(handleViewportChange);
+    const legacyMediaQuery = mediaQuery as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
+      removeListener?: (listener: (event: MediaQueryList | MediaQueryListEvent) => void) => void;
+    };
+
+    if (typeof legacyMediaQuery.addListener === "function") {
+      legacyMediaQuery.addListener(syncMobileCommandSheet);
+
+      return () => {
+        legacyMediaQuery.removeListener?.(syncMobileCommandSheet);
+      };
+    }
   }, []);
-
-  useEffect(() => {
-    if (mustTradeCards) {
-      setCommandDockSheetState("expanded");
-    }
-  }, [mustTradeCards]);
 
   const applyMutationPayload = useEffectEvent(
     (payload: GameMutationResponse, options: { feedback?: string } = {}) => {
@@ -977,12 +1027,8 @@ export function GameRoute() {
     setActiveDrawer((current) => (current === drawer ? null : drawer));
   }
 
-  const pageClassName = `game-map-first-page${
-    activeDrawer || isActivityLogOpen ? " has-open-drawer" : ""
-  }`;
-
   return (
-    <section className={pageClassName} data-testid="react-shell-game-page">
+    <section className="game-map-first-page" data-testid="react-shell-game-page">
       <section
         className="battlefield-layout game-battlefield-layout"
         data-testid="battlefield-layout"
@@ -1143,13 +1189,14 @@ export function GameRoute() {
               />
             ) : null}
 
-            {activeDrawer === "cards" && !mustTradeCards ? (
+            {activeDrawer === "cards" ? (
               <CardsDrawer
                 canTradeCards={canTradeCards}
                 cardState={snapshot.cardState || null}
                 cards={playerHand}
                 feedbackIsError={gameFeedbackIsError}
                 feedbackMessage={gameFeedbackMessage}
+                getCardTypeLabel={cardTypeLabel}
                 mustTradeCards={mustTradeCards}
                 selectedCardIds={selectedTradeCardIds}
                 trading={gameplayCommands.isTrading}
@@ -1223,77 +1270,72 @@ export function GameRoute() {
         >
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
-              <section
-                className="game-card-tray"
-                aria-labelledby="card-trade-dock-heading"
-                aria-describedby="card-trade-dock-help"
-              >
-                <div className="game-card-tray-header">
-                  <div className="game-dock-field-label" id="card-trade-dock-heading">
-                    {t("game.commandDock.yourCards")}
-                    <span className="game-dock-label-badge">{playerHand.length}</span>
-                  </div>
-                  <div className="game-dock-field-label game-dock-selection-label">
-                    {t("game.commandDock.selectCardsToTrade")}
-                    <span>
-                      {t("game.commandDock.cardsSelected", {
-                        selected: selectedTradeCardIds.length
-                      })}
-                    </span>
-                  </div>
+              <section className="game-trade-hand">
+                <div className="game-dock-field-label">{t("game.commandDock.yourCards")}</div>
+                <div id="card-trade-dock-list" className="game-card-grid">
+                  {playerHand.map((card) => (
+                    <button
+                      key={card.id}
+                      type="button"
+                      className={`game-card-tile${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                      data-dock-card-id={card.id}
+                      onClick={() => toggleTradeCard(card.id)}
+                    >
+                      <strong>{card.territoryId || card.id}</strong>
+                      <span>{cardTypeLabel(card)}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="game-card-tray-scroll">
-                  <div
-                    id="card-trade-dock-list"
-                    className="game-card-row"
-                    data-card-count={playerHand.length}
+                <p id="card-trade-dock-help">{t("game.commandDock.mustTradeToContinue")}</p>
+              </section>
+              <section className="game-trade-selection">
+                <div className="game-dock-field-label">
+                  {t("game.commandDock.selectCardsToTrade")}
+                  <span>
+                    {t("game.commandDock.cardsSelected", {
+                      selected: selectedTradeCardIds.length
+                    })}
+                  </span>
+                </div>
+                <div className="game-selected-card-row">
+                  {selectedTradeCardIds.length ? (
+                    selectedTradeCardIds.map((cardId) => {
+                      const card = playerHand.find((entry) => entry.id === cardId);
+                      return (
+                        <button
+                          key={cardId}
+                          type="button"
+                          className="game-card-tile is-selected"
+                          onClick={() => toggleTradeCard(cardId)}
+                        >
+                          <strong>{card?.territoryId || cardId}</strong>
+                          <span>{card ? cardTypeLabel(card) : t("game.actions.cards")}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="action-help">{t("game.commandDock.chooseThreeCards")}</p>
+                  )}
+                </div>
+                <div className="game-trade-actions">
+                  <button
+                    type="button"
+                    className="game-command-secondary-action"
+                    onClick={() => setSelectedTradeCardIds([])}
+                    disabled={!selectedTradeCardIds.length || actionPending}
                   >
-                    {playerHand.map((card) => (
-                      <button
-                        key={card.id}
-                        type="button"
-                        className={`game-card-tile game-card-tone-${cardVisualTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
-                        data-dock-card-id={card.id}
-                        aria-pressed={selectedTradeCardIds.includes(card.id)}
-                        onClick={() => toggleTradeCard(card.id)}
-                      >
-                        <span className="game-card-selected-mark" aria-hidden="true" />
-                        <span className="game-card-visual" aria-hidden="true">
-                          <span className="game-card-silhouette">{cardVisualToken(card)}</span>
-                          <span className="game-card-territory-shape" />
-                        </span>
-                        <strong>{card.territoryId || card.id}</strong>
-                        <span>{cardDisplayName(card)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="game-card-tray-footer">
-                  <p id="card-trade-dock-help">
-                    {selectedTradeCardIds.length
-                      ? t("game.commandDock.mustTradeToContinue")
-                      : t("game.commandDock.chooseThreeCards")}
-                  </p>
-                  <div className="game-trade-actions">
-                    <button
-                      type="button"
-                      className="game-command-secondary-action"
-                      onClick={() => setSelectedTradeCardIds([])}
-                      disabled={!selectedTradeCardIds.length || actionPending}
-                    >
-                      {t("game.commandDock.clearSelection")}
-                    </button>
-                    <button
-                      id="card-trade-dock-button"
-                      type="button"
-                      onClick={() => void handleTradeCards()}
-                      disabled={!canTradeCards}
-                    >
-                      {gameplayCommands.isTrading
-                        ? t("game.commandDock.trading")
-                        : t("game.commandDock.tradeCards")}
-                    </button>
-                  </div>
+                    {t("game.commandDock.clearSelection")}
+                  </button>
+                  <button
+                    id="card-trade-dock-button"
+                    type="button"
+                    onClick={() => void handleTradeCards()}
+                    disabled={!canTradeCards}
+                  >
+                    {gameplayCommands.isTrading
+                      ? t("game.commandDock.trading")
+                      : t("game.commandDock.tradeCards")}
+                  </button>
                 </div>
               </section>
               <aside className="game-exchange-bonus">
@@ -1680,35 +1722,6 @@ export function GameRoute() {
               </button>
             </div>
           ) : null}
-
-          <nav
-            className="game-mobile-sheet-actions"
-            aria-label={t("game.command.heading")}
-            hidden={commandDockSheetState !== "expanded"}
-          >
-            {actionRailItems.map((item) => (
-              <button
-                key={item.drawer}
-                type="button"
-                className={activeDrawer === item.drawer ? "is-active" : ""}
-                aria-pressed={activeDrawer === item.drawer}
-                onClick={() => toggleDrawer(item.drawer)}
-              >
-                <WarTableIcon name={item.icon} />
-                <span>{item.label}</span>
-                {typeof item.badge === "number" ? <strong>{item.badge}</strong> : null}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={isActivityLogOpen ? "is-active" : ""}
-              aria-pressed={isActivityLogOpen}
-              onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
-            >
-              <WarTableIcon name="clock" />
-              <span>{t("game.drawer.activityLog")}</span>
-            </button>
-          </nav>
         </GameActionDock>
       </section>
     </section>

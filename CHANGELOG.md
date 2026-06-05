@@ -2,45 +2,9 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
-## 0.1.042 - 2026-06-05
+## 0.1.033 - 2026-05-20
 
-- Added rate limiting for AI lobby join requests to reduce automated lobby filling and resource exhaustion.
-
-## 0.1.041 - 2026-06-05
-
-- Added focused victory objective assignment coverage and made generated validation sync skip unchanged files.
-
-## 0.1.040 - 2026-06-05
-
-- Refined the mobile gameplay shell reference states for collapsed, half-open, expanded, and drawer-based command actions.
-
-## 0.1.039 - 2026-06-05
-
-- Modularized the card system with validated card definitions, rendering metadata, and a registered reinforcement trade effect.
-
-## 0.1.038 - 2026-06-05
-
-- Polished the mandatory card trade dock with a larger bottom-panel layout, clearer card selection states, and focused forced-trade interaction.
-
-## 0.1.037 - 2026-06-05
-
-- Moved frontend module catalog helpers onto generated runtime validation transport types.
-
-## 0.1.036 - 2026-06-05
-
-- Extracted module runtime catalog projection into a focused helper with direct coverage.
-
-## 0.1.035 - 2026-06-05
-
-- Extracted React gameplay view-state derivation into a focused helper with unit coverage.
-
-## 0.1.034 - 2026-06-05
-
-- Consolidated expected-version mutation preflight handling across game action, card trade, and join routes.
-
-## 0.1.033 - 2026-06-05
-
-- Moved live reinforcement placement mutation into the dedicated reinforcement placement engine module.
+- Implemented rate limiting for the AI join endpoint to mitigate automated lobby-filling and resource exhaustion.
 
 ## 0.1.032 - 2026-05-19
 
@@ -97,7 +61,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 ## 0.1.019 - 2026-05-13
 
-- Updated the grouped npm runtime, React, testing, and build-tool dependencies.
+- Updated the grouped npm runtime, React, testing, linting, and build-tool dependencies.
 
 ## 0.1.018 - 2026-05-13
 
@@ -107,7 +71,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 
 - Fixed the mobile mandatory card-trade layout so the map board remains fully visible above the command dock.
 
-## 0.1.016 - 2026-05-11
+## 0.1.016 - 2026-05-12
 
 - Added branch-focused coverage for AI turn resume guards, stale AI handoff, and localized AI failure handling.
 

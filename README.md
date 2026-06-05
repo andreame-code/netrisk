@@ -396,7 +396,6 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `TurnPhase`
 - `GameAction`
 - `CardType`
-- `CardEffectType`
 - `STANDARD_DICE_RULE_SET_ID`
 - `STANDARD_CARD_RULE_SET_ID`
 - `createPlayer`
@@ -414,8 +413,6 @@ The shared constructs exposed by `shared/models.cjs` are:
 - `getFortifyRuleSet`
 - `listFortifyRuleSets`
 - `getCardRuleSet`
-- `validateCardModuleManifest`
-- `standardCardModuleManifest`
 - `validateStandardCardSet`
 - `getVictoryRuleSet`
 - `listVictoryRuleSets`

@@ -52,9 +52,12 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
+
 type AuthAttemptThrottle = {
   check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
   recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
+  recordSuccess(key: Record<string, unknown>): void;
 };
 
 const {
@@ -64,12 +67,7 @@ const {
   startGameRequestSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
-const {
-  isInvalidExpectedVersion,
-  persistBroadcastAndSendMutation,
-  readExpectedVersionOrSendError,
-  sendVersionConflict
-} = require("./game-mutation.cjs");
+const { persistBroadcastAndSendMutation, sendVersionConflict } = require("./game-mutation.cjs");
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
 const { setRetryAfterHeader } = require("../http-response.cjs");
 
@@ -111,23 +109,14 @@ async function handleAiJoinRoute(
   }
 
   if (authAttemptThrottle) {
-    const throttleKey = createAuthThrottleKey(
-      "ai_join",
-      req,
-      authContext.user.id || authContext.user.username
-    );
+    const throttleKey = createAuthThrottleKey("ai_join", req, authContext.user.username);
     const throttleDecision = authAttemptThrottle.check(throttleKey);
     if (!throttleDecision.allowed) {
       setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
       sendLocalizedError(
         res,
         429,
-        {
-          error: "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
-          errorKey: "auth.throttle.tooManyAttempts",
-          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-          code: "AUTH_RATE_LIMITED"
-        },
+        null,
         "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
         "auth.throttle.tooManyAttempts",
         { retryAfterSeconds: throttleDecision.retryAfterSeconds },
@@ -136,7 +125,6 @@ async function handleAiJoinRoute(
       );
       return;
     }
-
     authAttemptThrottle.recordAttempt(throttleKey);
   }
 
@@ -205,12 +193,17 @@ async function handleJoinRoute(
     return;
   }
 
-  const preflightExpectedVersion = readExpectedVersionOrSendError(
-    body,
-    res,
-    sendLocalizedError as SendLocalizedError
-  );
-  if (isInvalidExpectedVersion(preflightExpectedVersion)) {
+  if (
+    body.expectedVersion != null &&
+    (!Number.isInteger(Number(body.expectedVersion)) || Number(body.expectedVersion) < 1)
+  ) {
+    sendLocalizedError(
+      res,
+      400,
+      null,
+      "expectedVersion non valida.",
+      "server.invalidExpectedVersion"
+    );
     return;
   }
 
