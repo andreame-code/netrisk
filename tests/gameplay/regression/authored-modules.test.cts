@@ -176,6 +176,48 @@ register(
     assert.equal(invalidCodes.includes("invalid-continent-id"), true);
     assert.equal(invalidCodes.includes("invalid-territory-count"), true);
 
+    const incompleteDraft = createVictoryDraft({ id: "victory.incomplete-draft" });
+    incompleteDraft.name = "";
+    incompleteDraft.description = "";
+    incompleteDraft.version = "";
+    incompleteDraft.content.mapId = "";
+    incompleteDraft.content.objectives = [
+      {
+        id: "",
+        title: "",
+        description: "",
+        enabled: true,
+        type: "control-continents",
+        continentIds: ["north_america"]
+      }
+    ];
+    const incompleteValidation = await service.validateDraft(incompleteDraft);
+    const incompleteCodes = incompleteValidation.validation.errors.map(
+      (entry: { code: string }) => entry.code
+    );
+    assert.equal(incompleteCodes.includes("required-name"), true);
+    assert.equal(incompleteCodes.includes("required-description"), true);
+    assert.equal(incompleteCodes.includes("required-version"), true);
+    assert.equal(incompleteCodes.includes("required-map"), true);
+    assert.equal(incompleteCodes.includes("required-objective-id"), true);
+    assert.equal(incompleteCodes.includes("required-objective-title"), true);
+    assert.equal(incompleteCodes.includes("required-objective-description"), true);
+
+    await assert.rejects(
+      () =>
+        service.saveDraft(
+          createVictoryDraft({
+            id: "victory.oversized-description",
+            description: "d".repeat(1025)
+          })
+        ),
+      (error: any) => {
+        assert.equal(error.statusCode, 400);
+        assert.match(error.message, /payload is not valid/i);
+        return true;
+      }
+    );
+
     const savedDraft = await service.saveDraft(createVictoryDraft({ id: "victory.lifecycle" }));
     assert.equal(savedDraft.module.status, "draft");
 

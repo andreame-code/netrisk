@@ -2,6 +2,8 @@ const assert = require("node:assert/strict");
 const {
   accountSettingsRequestSchema,
   accountSettingsResponseSchema,
+  adminAuthoredModuleUpsertRequestSchema,
+  authoredModuleSchema,
   authSessionResponseSchema,
   formatValidationPath,
   gameIdRequestSchema,
@@ -307,3 +309,114 @@ register("shared runtime validation rejects passwords exceeding 128 characters",
   });
   assert.equal(invalidRegister.success, false);
 });
+
+register(
+  "shared runtime validation bounds authored module requests without invalidating legacy storage",
+  () => {
+    const baseRequest = {
+      id: "victory.request-limits",
+      name: "Request Limits",
+      description: "Valid authored module metadata.",
+      version: "1.0.0",
+      moduleType: "victory-objectives",
+      content: {
+        mapId: "world-classic",
+        objectives: [
+          {
+            id: "hold-north-america",
+            title: "Hold North America",
+            description: "Control North America.",
+            enabled: true,
+            type: "control-continents",
+            continentIds: ["north_america"]
+          }
+        ]
+      }
+    };
+
+    const incompleteDraft = {
+      ...baseRequest,
+      name: "",
+      description: "",
+      version: "",
+      content: {
+        mapId: "",
+        objectives: [
+          {
+            ...baseRequest.content.objectives[0],
+            id: "",
+            title: "",
+            description: "",
+            continentIds: [""]
+          }
+        ]
+      }
+    };
+
+    assert.equal(adminAuthoredModuleUpsertRequestSchema.safeParse(incompleteDraft).success, true);
+
+    const oversizedRequests = [
+      { ...baseRequest, id: "a".repeat(65) },
+      { ...baseRequest, name: "n".repeat(129) },
+      { ...baseRequest, description: "d".repeat(1025) },
+      { ...baseRequest, version: "v".repeat(33) },
+      { ...baseRequest, content: { ...baseRequest.content, mapId: "m".repeat(65) } },
+      {
+        ...baseRequest,
+        content: {
+          ...baseRequest.content,
+          objectives: [{ ...baseRequest.content.objectives[0], id: "o".repeat(65) }]
+        }
+      },
+      {
+        ...baseRequest,
+        content: {
+          ...baseRequest.content,
+          objectives: [{ ...baseRequest.content.objectives[0], title: "t".repeat(256) }]
+        }
+      },
+      {
+        ...baseRequest,
+        content: {
+          ...baseRequest.content,
+          objectives: [{ ...baseRequest.content.objectives[0], description: "d".repeat(1025) }]
+        }
+      },
+      {
+        ...baseRequest,
+        content: {
+          ...baseRequest.content,
+          objectives: [{ ...baseRequest.content.objectives[0], continentIds: ["c".repeat(65)] }]
+        }
+      }
+    ];
+
+    oversizedRequests.forEach((request) => {
+      assert.equal(adminAuthoredModuleUpsertRequestSchema.safeParse(request).success, false);
+    });
+
+    const legacyStoredModule = {
+      ...baseRequest,
+      name: "n".repeat(129),
+      description: "d".repeat(1025),
+      version: "v".repeat(33),
+      content: {
+        mapId: "m".repeat(65),
+        objectives: [
+          {
+            ...baseRequest.content.objectives[0],
+            id: "o".repeat(65),
+            title: "t".repeat(256),
+            description: "d".repeat(1025),
+            continentIds: ["c".repeat(65)]
+          }
+        ]
+      },
+      status: "draft",
+      createdAt: "2026-06-05T10:00:00.000Z",
+      updatedAt: "2026-06-05T10:00:00.000Z"
+    };
+
+    assert.equal(authoredModuleSchema.safeParse(legacyStoredModule).success, true);
+  }
+);

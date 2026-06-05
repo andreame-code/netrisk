@@ -1,5 +1,5 @@
 const {
-  authoredModuleInputSchema,
+  adminAuthoredModuleUpsertRequestSchema,
   authoredModuleSchema
 } = require("../shared/runtime-validation.cjs");
 const { registeredMaps } = require("../shared/maps/index.cjs");
@@ -567,7 +567,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
   }
 
   function parseInput(input: unknown): AuthoredModuleInput {
-    const parsed = authoredModuleInputSchema.safeParse(input);
+    const parsed = adminAuthoredModuleUpsertRequestSchema.safeParse(input);
     if (!parsed.success) {
       throw createServiceError("Authored module payload is not valid.", 400);
     }

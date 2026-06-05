@@ -28,6 +28,17 @@ const AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES = [
   "control-territory-count"
 ] as const;
 const AUTHORED_MODULE_VALIDATION_SEVERITY_VALUES = ["warning", "error"] as const;
+const AUTHORED_MODULE_REQUEST_LIMITS = Object.freeze({
+  moduleId: 64,
+  moduleName: 128,
+  moduleDescription: 1024,
+  moduleVersion: 32,
+  mapId: 64,
+  objectiveId: 64,
+  objectiveTitle: 255,
+  objectiveDescription: 1024,
+  continentId: 64
+});
 
 type IssuePathSegment = string | number;
 
@@ -1269,6 +1280,36 @@ export const authoredModuleInputSchema = objectSchema({
 
 export type AuthoredModuleInput = z.infer<typeof authoredModuleInputSchema>;
 
+const authoredVictoryObjectiveRequestBaseSchema = objectSchema({
+  id: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.objectiveId),
+  title: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.objectiveTitle),
+  description: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.objectiveDescription),
+  enabled: z.boolean(),
+  type: z.enum(AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES)
+});
+
+const authoredVictoryControlContinentsObjectiveRequestSchema =
+  authoredVictoryObjectiveRequestBaseSchema.extend({
+    type: z.literal("control-continents"),
+    continentIds: z.array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId))
+  });
+
+const authoredVictoryTerritoryCountObjectiveRequestSchema =
+  authoredVictoryObjectiveRequestBaseSchema.extend({
+    type: z.literal("control-territory-count"),
+    territoryCount: z.number().int().nullable().optional()
+  });
+
+const authoredVictoryObjectiveRequestSchema = z.discriminatedUnion("type", [
+  authoredVictoryControlContinentsObjectiveRequestSchema,
+  authoredVictoryTerritoryCountObjectiveRequestSchema
+]);
+
+const authoredVictoryModuleContentRequestSchema = objectSchema({
+  mapId: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.mapId),
+  objectives: z.array(authoredVictoryObjectiveRequestSchema)
+});
+
 export const authoredModuleSchema = authoredModuleInputSchema.extend({
   status: z.enum(AUTHORED_MODULE_STATUS_VALUES),
   createdAt: z.string().min(1),
@@ -1573,7 +1614,14 @@ export type AdminAuthoredModuleDetailResponse = z.infer<
   typeof adminAuthoredModuleDetailResponseSchema
 >;
 
-export const adminAuthoredModuleUpsertRequestSchema = authoredModuleInputSchema;
+export const adminAuthoredModuleUpsertRequestSchema = objectSchema({
+  id: z.string().trim().min(1).max(AUTHORED_MODULE_REQUEST_LIMITS.moduleId),
+  name: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleName),
+  description: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleDescription),
+  version: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleVersion),
+  moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
+  content: authoredVictoryModuleContentRequestSchema
+});
 
 export type AdminAuthoredModuleUpsertRequest = z.infer<
   typeof adminAuthoredModuleUpsertRequestSchema
