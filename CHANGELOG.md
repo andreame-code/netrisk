@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.037 - 2026-06-05
+
+- Moved frontend module catalog helpers onto generated runtime validation transport types.
+
 ## 0.1.036 - 2026-06-05
 
 - Extracted module runtime catalog projection into a focused helper with direct coverage.
