@@ -9,6 +9,7 @@ export type RuntimeCatalogProjection<
   TContentPackEntry extends RuntimeContributionEntry,
   TPlayerPieceSetEntry extends RuntimeContributionEntry,
   TDiceRuleSetEntry extends RuntimeContributionEntry,
+  TCardRuleSetEntry extends RuntimeContributionEntry,
   TSiteThemeEntry extends RuntimeContributionEntry
 > = {
   enabledModules: NetRiskInstalledModule[];
@@ -16,6 +17,7 @@ export type RuntimeCatalogProjection<
   enabledRuntimeContentPackEntries: TContentPackEntry[];
   enabledRuntimePlayerPieceSetEntries: TPlayerPieceSetEntry[];
   enabledRuntimeDiceRuleSetEntries: TDiceRuleSetEntry[];
+  enabledRuntimeCardRuleSetEntries: TCardRuleSetEntry[];
   enabledRuntimeSiteThemeEntries: TSiteThemeEntry[];
 };
 
@@ -39,6 +41,7 @@ export function projectRuntimeCatalogInputs<
   TContentPackEntry extends RuntimeContributionEntry,
   TPlayerPieceSetEntry extends RuntimeContributionEntry,
   TDiceRuleSetEntry extends RuntimeContributionEntry,
+  TCardRuleSetEntry extends RuntimeContributionEntry,
   TSiteThemeEntry extends RuntimeContributionEntry
 >(
   modules: NetRiskInstalledModule[],
@@ -46,12 +49,14 @@ export function projectRuntimeCatalogInputs<
   runtimeContentPackEntries: TContentPackEntry[],
   runtimePlayerPieceSetEntries: TPlayerPieceSetEntry[],
   runtimeDiceRuleSetEntries: TDiceRuleSetEntry[],
+  runtimeCardRuleSetEntries: TCardRuleSetEntry[],
   runtimeSiteThemeEntries: TSiteThemeEntry[]
 ): RuntimeCatalogProjection<
   TMapEntry,
   TContentPackEntry,
   TPlayerPieceSetEntry,
   TDiceRuleSetEntry,
+  TCardRuleSetEntry,
   TSiteThemeEntry
 > {
   const enabledIds = enabledModuleIds(modules);
@@ -69,6 +74,10 @@ export function projectRuntimeCatalogInputs<
     ),
     enabledRuntimeDiceRuleSetEntries: entriesForEnabledModules(
       runtimeDiceRuleSetEntries,
+      enabledIds
+    ),
+    enabledRuntimeCardRuleSetEntries: entriesForEnabledModules(
+      runtimeCardRuleSetEntries,
       enabledIds
     ),
     enabledRuntimeSiteThemeEntries: entriesForEnabledModules(runtimeSiteThemeEntries, enabledIds)

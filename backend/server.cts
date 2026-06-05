@@ -103,6 +103,7 @@ const {
 } = require("./routes/setup.cjs");
 const { handleScheduledJobsRoute } = require("./routes/scheduled-jobs.cjs");
 const { NETRISK_ENGINE_VERSION } = require("../shared/netrisk-modules.cjs");
+const { getCardRuleSet } = require("../shared/cards.cjs");
 const { gameEventPayloadSchema } = require("../shared/runtime-validation.cjs");
 
 type Request = HttpTypes.IncomingMessage;
@@ -758,7 +759,11 @@ function createApp(options: CreateAppOptions = {}) {
       return [];
     }
 
-    return nextState.hands[player.id].map((card: any) => ({ ...card }));
+    const cardRuleSet = getCardRuleSet(nextState.cardRuleSetId || "standard");
+    return nextState.hands[player.id].map((card: any) => ({
+      ...card,
+      ...cardRuleSet.renderCard(card)
+    }));
   }
 
   function snapshotForUser(

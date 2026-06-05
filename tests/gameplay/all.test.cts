@@ -1,5 +1,6 @@
 const gameplayTestModules = [
   "./shared/runtime-validation.test.cjs",
+  "./shared/cards.test.cjs",
   "./shared/map-graph.test.cjs",
   "./shared/map-loader.test.cjs",
   "./shared/typed-map-data.test.cjs",
