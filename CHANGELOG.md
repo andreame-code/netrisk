@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.046 - 2026-06-05
+
+- Added Linux Playwright visual baselines and stabilized E2E card trade and attack dice assertions for local CI-style runs.
+
 ## 0.1.045 - 2026-06-05
 
 - Updated the npm dependency group for React, Vite, Vitest, ESLint, Sentry, Supabase CLI, and related type/runtime packages.
