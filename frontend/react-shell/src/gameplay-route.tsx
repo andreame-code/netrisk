@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   GameMutationResponse,
   GameSnapshot,
-  SnapshotCard,
   SnapshotPlayer,
   SnapshotTerritory
 } from "@frontend-generated/shared-runtime-validation.mts";
@@ -43,6 +42,9 @@ import {
   ActivityLogTrigger,
   CardsDrawer,
   CombatResultPanel,
+  cardDisplayName,
+  cardVisualTone,
+  cardVisualToken,
   GameActionDock,
   GameActionRail,
   GameHud,
@@ -110,58 +112,6 @@ function territoryOptionLabel(
 
 function territoryDockOptionLabel(territory: SnapshotTerritory): string {
   return territory.name;
-}
-
-function cardTypeLabel(card: SnapshotCard): string {
-  if (card.type === "infantry") {
-    return t("game.runtime.cardType.infantry");
-  }
-
-  if (card.type === "cavalry") {
-    return t("game.runtime.cardType.cavalry");
-  }
-
-  if (card.type === "artillery") {
-    return t("game.runtime.cardType.artillery");
-  }
-
-  if (card.type === "wild") {
-    return t("game.runtime.cardType.wild");
-  }
-
-  return t("game.runtime.cardType.default");
-}
-
-function dockCardTone(card: SnapshotCard | undefined): string {
-  if (card?.type === "artillery") {
-    return "artillery";
-  }
-
-  if (card?.type === "cavalry") {
-    return "cavalry";
-  }
-
-  if (card?.type === "wild") {
-    return "wild";
-  }
-
-  return "infantry";
-}
-
-function dockCardSymbol(card: SnapshotCard | undefined): string {
-  if (card?.type === "artillery") {
-    return "C";
-  }
-
-  if (card?.type === "cavalry") {
-    return "H";
-  }
-
-  if (card?.type === "wild") {
-    return "*";
-  }
-
-  return "I";
 }
 
 function logEntryMessageKey(entry: unknown): string {
@@ -1205,7 +1155,6 @@ export function GameRoute() {
                 cards={playerHand}
                 feedbackIsError={gameFeedbackIsError}
                 feedbackMessage={gameFeedbackMessage}
-                getCardTypeLabel={cardTypeLabel}
                 mustTradeCards={mustTradeCards}
                 selectedCardIds={selectedTradeCardIds}
                 trading={gameplayCommands.isTrading}
@@ -1308,18 +1257,18 @@ export function GameRoute() {
                       <button
                         key={card.id}
                         type="button"
-                        className={`game-card-tile game-card-tone-${dockCardTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
+                        className={`game-card-tile game-card-tone-${cardVisualTone(card)}${selectedTradeCardIds.includes(card.id) ? " is-selected" : ""}`}
                         data-dock-card-id={card.id}
                         aria-pressed={selectedTradeCardIds.includes(card.id)}
                         onClick={() => toggleTradeCard(card.id)}
                       >
                         <span className="game-card-selected-mark" aria-hidden="true" />
                         <span className="game-card-visual" aria-hidden="true">
-                          <span className="game-card-silhouette">{dockCardSymbol(card)}</span>
+                          <span className="game-card-silhouette">{cardVisualToken(card)}</span>
                           <span className="game-card-territory-shape" />
                         </span>
                         <strong>{card.territoryId || card.id}</strong>
-                        <span>{cardTypeLabel(card)}</span>
+                        <span>{cardDisplayName(card)}</span>
                       </button>
                     ))}
                   </div>

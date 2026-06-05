@@ -136,6 +136,7 @@ This section lists the operating rules players and admins need to understand the
 - Standard trade bonuses are 4, 6, 8, 10, 12, and 15 reinforcements.
 - After the sixth trade, each later trade adds 5 more reinforcements than the previous one.
 - If you have more than 5 cards, trading becomes mandatory.
+- Card names, descriptions, symbols, and rule effects are now provided by the active card module. The default module keeps the standard behavior above.
 
 ### Attacks
 

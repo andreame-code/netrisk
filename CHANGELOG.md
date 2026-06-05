@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.039 - 2026-06-05
+
+- Modularized the card system with validated card definitions, rendering metadata, and a registered reinforcement trade effect.
+
 ## 0.1.038 - 2026-06-05
 
 - Polished the mandatory card trade dock with a larger bottom-panel layout, clearer card selection states, and focused forced-trade interaction.

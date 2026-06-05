@@ -47,6 +47,7 @@ register("module runtime catalog projection include solo moduli abilitati e comp
     [],
     [],
     [],
+    [],
     []
   );
 
@@ -75,6 +76,10 @@ register("module runtime catalog projection filtra i contributi per modulo abili
     contribution("enabled", "dice-enabled"),
     contribution("missing", "dice-missing")
   ];
+  const cardRuleSetEntries = [
+    contribution("enabled", "cards-enabled"),
+    contribution("missing", "cards-missing")
+  ];
   const siteThemeEntries = [
     contribution("enabled", "theme-enabled"),
     contribution("disabled", "theme-disabled")
@@ -90,6 +95,7 @@ register("module runtime catalog projection filtra i contributi per modulo abili
     contentPackEntries,
     playerPieceSetEntries,
     diceRuleSetEntries,
+    cardRuleSetEntries,
     siteThemeEntries
   );
 
@@ -97,5 +103,6 @@ register("module runtime catalog projection filtra i contributi per modulo abili
   assert.deepEqual(projection.enabledRuntimeContentPackEntries, [contentPackEntries[0]]);
   assert.deepEqual(projection.enabledRuntimePlayerPieceSetEntries, [playerPieceSetEntries[0]]);
   assert.deepEqual(projection.enabledRuntimeDiceRuleSetEntries, [diceRuleSetEntries[0]]);
+  assert.deepEqual(projection.enabledRuntimeCardRuleSetEntries, [cardRuleSetEntries[0]]);
   assert.deepEqual(projection.enabledRuntimeSiteThemeEntries, [siteThemeEntries[0]]);
 });
