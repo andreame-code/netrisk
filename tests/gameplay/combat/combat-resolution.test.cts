@@ -28,7 +28,7 @@ type DiceRuleSummary = {
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
 function setupCombatState(attackerArmies = 4, defenderArmies = 2) {
-  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])];
+  const territories = [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]
   return {
     graph: makeGraph(territories),
     state: makeState({
@@ -106,6 +106,48 @@ register("resolveSingleAttackRoll supports one-die attacks", () => {
   assert.equal(result.combat.attackDiceCount, 1);
   assert.equal(result.combat.defendDiceCount, 1);
   assert.equal(result.combat.defenderReducedToZero, true);
+});
+
+register("resolveSingleAttackRoll returns validation failures without mutating armies", () => {
+  const { graph, state } = setupCombatState(4, 2);
+  state.turnPhase = TurnPhase.REINFORCEMENT;
+
+  const result = resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+    attackDice: 1,
+    defendDice: 1,
+    random: createFixedRandom(rollsToRandomValues([6, 1]))
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.combat, null);
+  assert.equal(state.territories.a.armies, 4);
+  assert.equal(state.territories.b.armies, 2);
+});
+
+register("resolveSingleAttackRoll rejects attack dice outside the allowed range", () => {
+  const { graph, state } = setupCombatState(2, 2);
+
+  assert.throws(
+    () =>
+      resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+        attackDice: 2,
+        defendDice: 1
+      }),
+    /Attacker dice must be between 1 and 1\./
+  );
+});
+
+register("resolveSingleAttackRoll rejects defender dice outside the allowed range", () => {
+  const { graph, state } = setupCombatState(4, 1);
+
+  assert.throws(
+    () =>
+      resolveSingleAttackRoll(state, graph, "p1", "a", "b", {
+        attackDice: 1,
+        defendDice: 2
+      }),
+    /Defender dice must be between 1 and 1\./
+  );
 });
 
 register("standard dice rule set espone i limiti classici di combattimento", () => {
