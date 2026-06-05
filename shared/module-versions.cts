@@ -182,7 +182,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "reinforcement-rule-sets",
     name: "Reinforcement Rule Sets",
     kind: "gameplay",
-    version: "1.0.0",
+    version: "1.0.1",
     description: "Reinforcement calculation and placement behavior.",
     ownerPaths: [
       "shared/reinforcement-rule-sets.cts",
