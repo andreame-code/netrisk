@@ -73,6 +73,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/setup-service.test.cjs",
   "../tests/gameplay/regression/attack-route-guard.test.cjs",
   "../tests/gameplay/regression/game-actions-basic-route.test.cjs",
+  "../tests/gameplay/regression/game-mutation.test.cjs",
   "../tests/gameplay/regression/game-read-auth-boundary.test.cjs",
   "../tests/gameplay/regression/game-read-routes.test.cjs",
   "../tests/gameplay/regression/game-overview-route.test.cjs",

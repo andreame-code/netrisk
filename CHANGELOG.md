@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.034 - 2026-06-05
+
+- Consolidated expected-version mutation preflight handling across game action, card trade, and join routes.
+
 ## 0.1.033 - 2026-06-05
 
 - Moved live reinforcement placement mutation into the dedicated reinforcement placement engine module.
