@@ -52,10 +52,7 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
-type AuthAttemptThrottle = {
-  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-};
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 
 const {
   aiJoinRequestSchema,
@@ -198,7 +195,8 @@ async function handleJoinRoute(
   snapshotForState: SnapshotForState,
   publicUser: (user: unknown) => unknown,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -226,6 +224,33 @@ async function handleJoinRoute(
   );
   if (!parsedBody) {
     return;
+  }
+
+  const throttleKey = authAttemptThrottle
+    ? createAuthThrottleKey("game_join", req, authContext.user.username)
+    : null;
+  if (authAttemptThrottle && throttleKey) {
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+      sendLocalizedError(
+        res,
+        429,
+        {
+          error: "Troppi tentativi di partecipazione partita. Riprova piu tardi.",
+          errorKey: "auth.throttle.tooManyAttempts",
+          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+          code: "AUTH_RATE_LIMITED"
+        },
+        "Troppi tentativi di partecipazione partita. Riprova piu tardi.",
+        "auth.throttle.tooManyAttempts",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        "AUTH_RATE_LIMITED",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      );
+      return;
+    }
+    authAttemptThrottle.recordAttempt(throttleKey);
   }
 
   const gameContext = await loadGameContext(parsedBody.gameId);

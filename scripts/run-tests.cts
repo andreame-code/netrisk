@@ -7286,6 +7286,65 @@ register("API registration applica il rate limiting dopo troppi tentativi", asyn
   });
 });
 
+register("API game creation applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const session = await createAuthenticatedSession(baseUrl, uniqueName("create_limit"));
+
+    for (let index = 0; index < 5; index += 1) {
+      const response = await fetch(`${baseUrl}/api/games`, {
+        method: "POST",
+        headers: authHeaders(session.sessionToken),
+        body: JSON.stringify({ name: `Game ${index}` })
+      });
+      assert.equal(response.status, 201);
+    }
+
+    const limitedResponse = await fetch(`${baseUrl}/api/games`, {
+      method: "POST",
+      headers: authHeaders(session.sessionToken),
+      body: JSON.stringify({ name: "Game Limited" })
+    });
+    assert.equal(limitedResponse.status, 429);
+    assert.equal(limitedResponse.headers.get("retry-after"), "60");
+    const payload: any = await limitedResponse.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
+register("API game join applica il rate limiting dopo troppi tentativi", async () => {
+  await withServer(async (baseUrl) => {
+    const owner = await createAuthenticatedSession(baseUrl, uniqueName("join_limit_host"));
+    const opponent = await createAuthenticatedSession(baseUrl, uniqueName("join_limit_opp"));
+
+    const created = await fetch(`${baseUrl}/api/games`, {
+      method: "POST",
+      headers: authHeaders(owner.sessionToken),
+      body: JSON.stringify({ name: "Join Limit Match" })
+    });
+    const { game } = (await created.json()) as { game: { id: string } };
+
+    for (let index = 0; index < 5; index += 1) {
+      const response = await fetch(`${baseUrl}/api/join`, {
+        method: "POST",
+        headers: authHeaders(opponent.sessionToken),
+        body: JSON.stringify({ gameId: game.id })
+      });
+      // 201 on first join, 200 on rejoin
+      assert.ok(response.status === 201 || response.status === 200);
+    }
+
+    const limitedResponse = await fetch(`${baseUrl}/api/join`, {
+      method: "POST",
+      headers: authHeaders(opponent.sessionToken),
+      body: JSON.stringify({ gameId: game.id })
+    });
+    assert.equal(limitedResponse.status, 429);
+    assert.equal(limitedResponse.headers.get("retry-after"), "60");
+    const payload: any = await limitedResponse.json();
+    assert.equal(payload.code, "AUTH_RATE_LIMITED");
+  });
+});
+
 async function run() {
   let failures = 0;
   for (const test of tests) {

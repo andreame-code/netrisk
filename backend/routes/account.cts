@@ -41,11 +41,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: {
-    check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-    recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-    recordSuccess(key: Record<string, unknown>): void;
-  };
+  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
