@@ -134,13 +134,17 @@ test("game page shows inline success after a valid trade and clears it on resele
   });
 
   await page.goto("/game");
+  await expect(page.locator("#game-status")).toContainText("Trade Success Match", {
+    timeout: 15000
+  });
+
+  await expect(page.locator("#card-trade-dock-list [data-dock-card-id]")).toHaveCount(4);
+  await page.locator('[data-dock-card-id="c1"]').click();
+  await page.locator('[data-dock-card-id="c2"]').click();
+  await page.locator('[data-dock-card-id="c3"]').click();
+  await page.locator("#card-trade-dock-button").click();
 
   await page.locator(".game-cards-drawer summary").click();
-  await page.locator('[data-card-id="c1"]').click();
-  await page.locator('[data-card-id="c2"]').click();
-  await page.locator('[data-card-id="c3"]').click();
-  await page.locator("#card-trade-button").click();
-
   await expect(page.locator("#card-trade-success")).toBeVisible();
   await expect(page.locator("#card-trade-success")).toContainText("Set valido: +4 rinforzi.");
 

@@ -29,12 +29,7 @@ type AuthStore = {
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
-type AuthAttemptThrottle = {
-  check(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-  recordAttempt(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-  recordFailure(key: Record<string, unknown>): { allowed: boolean; retryAfterSeconds: number };
-  recordSuccess(key: Record<string, unknown>): void;
-};
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 const {
   loginRequestSchema,
   loginResponseSchema,

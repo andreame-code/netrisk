@@ -103,7 +103,7 @@ test("attack UI sends the selected dice count to the backend", async ({ page }) 
   await page.locator("#attack-dice").selectOption("2");
   await page.locator("#attack-button").click();
 
-  expect(capturedAttackDice).toBe(2);
+  await expect.poll(() => capturedAttackDice).toBe(2);
   await expect(page.locator("#combat-attacker-rolls")).toContainText("6 · 5");
 });
 
@@ -156,5 +156,5 @@ test("attack UI normalizes stale dice values before submit", async ({ page }) =>
   });
   await page.locator("#attack-button").click();
 
-  expect(capturedAttackDice).toBe(1);
+  await expect.poll(() => capturedAttackDice).toBe(1);
 });

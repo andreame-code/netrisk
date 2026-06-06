@@ -47,6 +47,7 @@ type SnapshotForUser = (
 ) => unknown;
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 
 const {
   createGameRequestSchema,
@@ -55,6 +56,8 @@ const {
   gameMutationResponseSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 async function handleCreateGameRoute(
   req: unknown,
@@ -70,7 +73,8 @@ async function handleCreateGameRoute(
   broadcastGame: BroadcastGame,
   snapshot: Snapshot,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -87,7 +91,36 @@ async function handleCreateGameRoute(
     return;
   }
 
+  const throttleKey = authAttemptThrottle
+    ? createAuthThrottleKey("game_create", req, authContext.user.username)
+    : null;
+  if (authAttemptThrottle && throttleKey) {
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+      sendLocalizedError(
+        res,
+        429,
+        {
+          error: "Troppi tentativi di creazione partita. Riprova più tardi.",
+          errorKey: "auth.throttle.tooManyAttempts",
+          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+          code: "AUTH_RATE_LIMITED"
+        },
+        "Troppi tentativi di creazione partita. Riprova più tardi.",
+        "auth.throttle.tooManyAttempts",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        "AUTH_RATE_LIMITED",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      );
+      return;
+    }
+  }
+
   try {
+    if (authAttemptThrottle && throttleKey) {
+      authAttemptThrottle.recordAttempt(throttleKey);
+    }
     const policy = authorize("game:create", { user: authContext.user });
     const configured = await createConfiguredInitialState(parsedBody);
     const creatorJoin = addPlayer(configured.state, authContext.user.username, {

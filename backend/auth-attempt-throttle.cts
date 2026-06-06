@@ -1,6 +1,6 @@
 type HeaderValue = string | string[] | undefined;
 
-type AuthThrottleScope = "account" | "ai_join" | "login" | "register";
+type AuthThrottleScope = "account" | "ai_join" | "game_create" | "game_join" | "login" | "register";
 
 type AuthThrottleBucket = {
   attempts: number;
@@ -8,16 +8,23 @@ type AuthThrottleBucket = {
   lockedUntil: number;
 };
 
-type AuthThrottleKey = {
+export type AuthThrottleKey = {
   scope: AuthThrottleScope;
   ip: string;
   username: string;
 };
 
-type AuthThrottleDecision = {
+export type AuthThrottleDecision = {
   allowed: boolean;
   retryAfterSeconds: number;
 };
+
+export interface AuthAttemptThrottle {
+  check(key: AuthThrottleKey): AuthThrottleDecision;
+  recordAttempt(key: AuthThrottleKey): AuthThrottleDecision;
+  recordFailure(key: AuthThrottleKey): AuthThrottleDecision;
+  recordSuccess(key: AuthThrottleKey): void;
+}
 
 type AuthAttemptThrottleOptions = {
   cleanupIntervalMs?: number;
@@ -109,7 +116,7 @@ function createAuthThrottleKey(
   };
 }
 
-function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}) {
+function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}): AuthAttemptThrottle {
   const buckets = new Map<string, AuthThrottleBucket>();
   const maxAttempts = options.maxAttempts || DEFAULT_MAX_ATTEMPTS;
   const maxIpAttempts = options.maxIpAttempts || DEFAULT_MAX_IP_ATTEMPTS;
