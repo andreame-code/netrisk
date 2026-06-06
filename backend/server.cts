@@ -1431,7 +1431,8 @@ function createApp(options: CreateAppOptions = {}) {
         broadcastGame,
         snapshot,
         sendJson,
-        sendLocalizedError
+        sendLocalizedError,
+        authAttemptThrottle
       );
       return;
     }
@@ -1627,7 +1628,8 @@ function createApp(options: CreateAppOptions = {}) {
         snapshotForState,
         auth.publicUser,
         sendJson,
-        sendLocalizedError
+        sendLocalizedError,
+        authAttemptThrottle
       );
       return;
     }

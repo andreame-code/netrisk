@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.047 - 2026-06-05
+
+- Added rate limiting for game creation and joining requests to mitigate automated lobby creation and spam.
+
 ## 0.1.046 - 2026-06-05
 
 - Added Linux Playwright visual baselines and stabilized E2E card trade and attack dice assertions for local CI-style runs.
