@@ -102,12 +102,12 @@ async function handleCreateGameRoute(
         res,
         429,
         {
-          error: "Troppi tentativi di creazione partita. Riprova piu tardi.",
+          error: "Troppi tentativi di creazione partita. Riprova più tardi.",
           errorKey: "auth.throttle.tooManyAttempts",
           errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
           code: "AUTH_RATE_LIMITED"
         },
-        "Troppi tentativi di creazione partita. Riprova piu tardi.",
+        "Troppi tentativi di creazione partita. Riprova più tardi.",
         "auth.throttle.tooManyAttempts",
         { retryAfterSeconds: throttleDecision.retryAfterSeconds },
         "AUTH_RATE_LIMITED",
