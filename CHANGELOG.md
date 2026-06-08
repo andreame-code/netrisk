@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.048 - 2026-06-08
+
+- Enforced strict Content-Type: application/json for mutation requests (POST, PUT, PATCH) to enhance security.
+- Improved global error handling to respect custom status codes and localized messages while securely masking internal errors.
+- Fixed CI quality and release-gate issues related to type annotations and module versioning.
+
 ## 0.1.047 - 2026-06-05
 
 - Added rate limiting for game creation and joining requests to mitigate automated lobby creation and spam.
