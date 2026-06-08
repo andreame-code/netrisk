@@ -4,6 +4,7 @@ import type {
   ProfileResponseContract,
   AuthSessionResponseContract
 } from "../../shared/api-contracts.cjs";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 const {
   accountSettingsRequestSchema,
   accountSettingsResponseSchema,
@@ -41,7 +42,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };

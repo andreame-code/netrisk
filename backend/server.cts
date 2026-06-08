@@ -2000,8 +2000,10 @@ function createApp(options: CreateAppOptions = {}) {
       })
       .catch((error: any) => {
         const statusCode = Number(error?.statusCode) || 500;
-        const message = statusCode >= 500 ? "Errore interno." : error?.message || "Richiesta fallita.";
-        const messageKey = statusCode >= 500 ? "server.internalError" : error?.messageKey || "errors.requestFailed";
+        const message =
+          statusCode >= 500 ? "Errore interno." : error?.message || "Richiesta fallita.";
+        const messageKey =
+          statusCode >= 500 ? "server.internalError" : error?.messageKey || "errors.requestFailed";
 
         sendLocalizedError(res, statusCode, error, message, messageKey);
       });
