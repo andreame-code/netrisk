@@ -872,5 +872,6 @@ export const it = Object.freeze({
   "server.static.accessDenied": "Accesso negato.",
   "server.static.fileNotFound": "File non trovato.",
   "server.deploy.missingEnv": "Configurazione Vercel incompleta. Variabili mancanti: {keys}.",
-  "server.internalError": "Errore interno."
+  "server.internalError": "Errore interno.",
+  "server.unsupportedContentType": "Content-Type non supportato. Usa application/json."
 });

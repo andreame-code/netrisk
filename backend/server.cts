@@ -246,11 +246,26 @@ function defaultDbFile() {
 }
 
 function parseBody(req: Request): Promise<Record<string, any>> {
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
+  const method = String(req.method || "GET").toUpperCase();
+  const isMutation = method === "POST" || method === "PUT" || method === "PATCH";
+
   return new Promise((resolve, reject) => {
     let raw = "";
     req.on("error", () => {
       reject(createLocalizedError("Errore nel caricamento payload", "server.bodyReadError"));
     });
+
+    if (isMutation && contentType.indexOf("application/json") !== 0) {
+      const error = createLocalizedError(
+        "Content-Type non supportato. Usa application/json.",
+        "server.unsupportedContentType"
+      );
+      (error as any).statusCode = 415;
+      reject(error);
+      return;
+    }
+
     req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
@@ -1984,7 +1999,11 @@ function createApp(options: CreateAppOptions = {}) {
         return null;
       })
       .catch((error: any) => {
-        sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
+        const statusCode = Number(error?.statusCode) || 500;
+        const message = statusCode >= 500 ? "Errore interno." : error?.message || "Richiesta fallita.";
+        const messageKey = statusCode >= 500 ? "server.internalError" : error?.messageKey || "errors.requestFailed";
+
+        sendLocalizedError(res, statusCode, error, message, messageKey);
       });
   }
 
