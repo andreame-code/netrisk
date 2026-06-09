@@ -842,6 +842,7 @@ export const en = Object.freeze({
   "game.surrender.alreadySurrendered": "The player has already surrendered.",
   "game.surrender.alreadyEliminated": "The player is already eliminated.",
   "server.payloadTooLarge": "Payload too large.",
+  "server.unsupportedContentType": "Unsupported Content-Type (application/json required).",
   "server.invalidJson": "Invalid JSON.",
   "server.auth.invalidSession": "Invalid session.",
   "server.game.notFound": "Game not found.",
