@@ -4,6 +4,7 @@ const {
   forceEndTurn,
   startGame
 } = require("../../../backend/engine/game-engine.cjs");
+const { findExpiredTurn } = require("../../../backend/engine/turn-timeout.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -93,4 +94,52 @@ register("forceEndTurn usa un audit trail dedicato per il recovery AI", () => {
   assert.equal(result.ok, true);
   assert.equal(state.players[state.currentTurnIndex].id, "p2");
   assert.equal(state.lastAction.summaryKey, "game.log.aiTurnRecovered");
+});
+
+register("findExpiredTurn restituisce il turno scaduto con il giocatore corrente", () => {
+  const state = setupTimedGame();
+  const currentPlayer = state.players[state.currentTurnIndex];
+  state.turnStartedAt = "2026-04-10T08:00:00.000Z";
+
+  const expiredTurn = findExpiredTurn(state, new Date("2026-04-11T08:00:01.000Z"));
+
+  assert.deepEqual(expiredTurn, {
+    currentPlayerId: currentPlayer.id,
+    turnStartedAt: "2026-04-10T08:00:00.000Z",
+    turnTimeoutHours: 24,
+    elapsedMilliseconds: 86_401_000
+  });
+});
+
+register("findExpiredTurn ignora partite non attive, legacy o senza inizio turno valido", () => {
+  const state = setupTimedGame();
+  state.turnStartedAt = "2026-04-10T08:00:00.000Z";
+
+  assert.equal(
+    findExpiredTurn({ ...state, phase: "lobby" }, new Date("2026-04-12T08:00:00.000Z")),
+    null
+  );
+  assert.equal(
+    findExpiredTurn(
+      { ...state, gameConfig: { ...state.gameConfig, turnTimeoutHours: undefined } },
+      new Date("2026-04-12T08:00:00.000Z")
+    ),
+    null
+  );
+  assert.equal(
+    findExpiredTurn(
+      { ...state, turnStartedAt: "not-a-date" },
+      new Date("2026-04-12T08:00:00.000Z")
+    ),
+    null
+  );
+});
+
+register("findExpiredTurn considera ancora valido il turno esattamente alla soglia", () => {
+  const state = setupTimedGame();
+  state.turnStartedAt = "2026-04-10T08:00:00.000Z";
+
+  const expiredTurn = findExpiredTurn(state, new Date("2026-04-11T08:00:00.000Z"));
+
+  assert.equal(expiredTurn, null);
 });
