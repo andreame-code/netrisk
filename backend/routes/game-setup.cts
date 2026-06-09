@@ -52,7 +52,7 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
-import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cjs";
 
 const {
   aiJoinRequestSchema,

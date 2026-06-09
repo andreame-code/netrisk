@@ -1,5 +1,5 @@
 import type * as HttpTypes from "node:http";
-import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cjs";
 import type {
   AccountSettingsUpdateResponseContract,
   ProfileResponseContract,

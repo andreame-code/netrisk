@@ -28,7 +28,7 @@ type AuthStore = {
 
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
-import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cjs";
 type ClearSessionCookie = (req: unknown) => string;
 
 const {

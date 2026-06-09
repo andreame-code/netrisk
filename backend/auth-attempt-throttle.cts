@@ -47,13 +47,13 @@ const DEFAULT_LOCKOUT_MS = 60 * 1000;
 const DEFAULT_MAX_LOCKOUT_MS = 15 * 60 * 1000;
 const DEFAULT_CLEANUP_INTERVAL_MS = 60 * 1000;
 
-function normalizeUsername(username: unknown): string {
+export function normalizeUsername(username: unknown): string {
   return String(username || "")
     .trim()
     .toLowerCase();
 }
 
-function normalizeIp(ip: unknown): string {
+export function normalizeIp(ip: unknown): string {
   return String(ip || "")
     .trim()
     .toLowerCase();
@@ -84,7 +84,7 @@ function trustsForwardedHeaders(options: RequestIpOptions = {}): boolean {
   );
 }
 
-function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string {
+export function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string {
   const request = req as {
     headers?: Record<string, HeaderValue>;
     socket?: {
@@ -103,7 +103,7 @@ function resolveRequestIp(req: unknown, options: RequestIpOptions = {}): string 
   return normalizeIp(vercelForwardedFor || forwardedFor || realIp || socketIp || "unknown");
 }
 
-function createAuthThrottleKey(
+export function createAuthThrottleKey(
   scope: AuthThrottleScope,
   req: unknown,
   username: unknown,
@@ -116,7 +116,9 @@ function createAuthThrottleKey(
   };
 }
 
-function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}): AuthAttemptThrottle {
+export function createAuthAttemptThrottle(
+  options: AuthAttemptThrottleOptions = {}
+): AuthAttemptThrottle {
   const buckets = new Map<string, AuthThrottleBucket>();
   const maxAttempts = options.maxAttempts || DEFAULT_MAX_ATTEMPTS;
   const maxIpAttempts = options.maxIpAttempts || DEFAULT_MAX_IP_ATTEMPTS;
@@ -233,5 +235,7 @@ function createAuthAttemptThrottle(options: AuthAttemptThrottleOptions = {}): Au
 module.exports = {
   createAuthAttemptThrottle,
   createAuthThrottleKey,
-  resolveRequestIp
+  resolveRequestIp,
+  normalizeUsername,
+  normalizeIp
 };
