@@ -262,7 +262,7 @@ export const loginResponseSchema = objectSchema({
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
 export const themePreferenceRequestSchema = objectSchema({
-  theme: z.string().min(1)
+  theme: z.string().min(1).max(64)
 });
 
 export type ThemePreferenceRequest = z.infer<typeof themePreferenceRequestSchema>;
@@ -612,19 +612,19 @@ export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
 export const createGameRequestSchema = objectSchema({
   name: z.string().min(1).max(64).nullable().optional(),
   totalPlayers: z.number().int().nullable().optional(),
-  contentPackId: z.string().min(1).nullable().optional(),
-  ruleSetId: z.string().min(1).nullable().optional(),
-  mapId: z.string().min(1).nullable().optional(),
-  diceRuleSetId: z.string().min(1).nullable().optional(),
-  victoryRuleSetId: z.string().min(1).nullable().optional(),
-  pieceSetId: z.string().min(1).nullable().optional(),
-  themeId: z.string().min(1).nullable().optional(),
-  pieceSkinId: z.string().min(1).nullable().optional(),
-  gamePresetId: z.string().min(1).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1)).nullable().optional(),
-  contentProfileId: z.string().min(1).nullable().optional(),
-  gameplayProfileId: z.string().min(1).nullable().optional(),
-  uiProfileId: z.string().min(1).nullable().optional(),
+  contentPackId: z.string().min(1).max(64).nullable().optional(),
+  ruleSetId: z.string().min(1).max(64).nullable().optional(),
+  mapId: z.string().min(1).max(64).nullable().optional(),
+  diceRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  pieceSetId: z.string().min(1).max(64).nullable().optional(),
+  themeId: z.string().min(1).max(64).nullable().optional(),
+  pieceSkinId: z.string().min(1).max(64).nullable().optional(),
+  gamePresetId: z.string().min(1).max(64).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1).max(64)).nullable().optional(),
+  contentProfileId: z.string().min(1).max(64).nullable().optional(),
+  gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
+  uiProfileId: z.string().min(1).max(64).nullable().optional(),
   turnTimeoutHours: z.number().int().nullable().optional(),
   players: z.array(playerSlotConfigSchema).nullable().optional()
 });
@@ -655,22 +655,22 @@ export const gameSummarySchema = objectSchema({
 export type GameSummary = z.infer<typeof gameSummarySchema>;
 
 export const gameIdRequestSchema = objectSchema({
-  gameId: z.string().min(1)
+  gameId: z.string().min(1).max(64)
 });
 
 export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
 
 export const aiJoinRequestSchema = objectSchema({
-  gameId: z.string().min(1).nullable().optional(),
-  playerId: z.string().min(1).nullable().optional(),
+  gameId: z.string().min(1).max(64).nullable().optional(),
+  playerId: z.string().min(1).max(64).nullable().optional(),
   name: z.string().min(1).max(24)
 });
 
 export type AiJoinRequest = z.infer<typeof aiJoinRequestSchema>;
 
 const gameplayRequestBaseSchema = objectSchema({
-  gameId: z.string().min(1).nullable().optional(),
-  playerId: z.string().min(1),
+  gameId: z.string().min(1).max(64).nullable().optional(),
+  playerId: z.string().min(1).max(64),
   expectedVersion: z.number().int().min(1).nullable().optional()
 });
 

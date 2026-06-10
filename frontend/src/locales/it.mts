@@ -848,6 +848,7 @@ export const it = Object.freeze({
   "game.surrender.alreadySurrendered": "Il giocatore si e gia arreso.",
   "game.surrender.alreadyEliminated": "Il giocatore e gia eliminato.",
   "server.payloadTooLarge": "Payload troppo grande.",
+  "server.unsupportedContentType": "Content-Type non supportato.",
   "server.invalidJson": "JSON non valido.",
   "server.auth.invalidSession": "Sessione non valida.",
   "server.game.notFound": "Partita non trovata.",

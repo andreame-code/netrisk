@@ -247,6 +247,19 @@ function defaultDbFile() {
 
 function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
+    if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+      const contentType = String(req.headers["content-type"] || "").toLowerCase();
+      if (!contentType.includes("application/json")) {
+        reject(
+          Object.assign(
+            createLocalizedError("Content-Type non supportato.", "server.unsupportedContentType"),
+            { statusCode: 415, code: "UNSUPPORTED_MEDIA_TYPE" }
+          )
+        );
+        return;
+      }
+    }
+
     let raw = "";
     req.on("error", () => {
       reject(createLocalizedError("Errore nel caricamento payload", "server.bodyReadError"));
@@ -1984,7 +1997,8 @@ function createApp(options: CreateAppOptions = {}) {
         return null;
       })
       .catch((error: any) => {
-        sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
+        const statusCode = typeof error?.statusCode === "number" ? error.statusCode : 500;
+        sendLocalizedError(res, statusCode, error, "Errore interno.", "server.internalError");
       });
   }
 
