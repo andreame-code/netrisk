@@ -1,4 +1,5 @@
 import type * as HttpTypes from "node:http";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cjs";
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -52,7 +53,6 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 
 const {
   aiJoinRequestSchema,

@@ -1,4 +1,5 @@
 import type * as HttpTypes from "node:http";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cjs";
 type SendJson = (
   res: unknown,
   statusCode: number,
@@ -29,7 +30,7 @@ type AuthStore = {
 type ExtractSessionToken = (req: unknown, body?: Record<string, unknown>) => string | null;
 type BuildSessionCookie = (req: unknown, sessionToken: string) => string;
 type ClearSessionCookie = (req: unknown) => string;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+
 const {
   loginRequestSchema,
   loginResponseSchema,
