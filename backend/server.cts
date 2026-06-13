@@ -253,7 +253,8 @@ function parseBody(req: Request): Promise<Record<string, any>> {
     // Enforce application/json for mutations to mitigate CSRF (browsers require preflight for non-simple types)
     // and ensure the server doesn't attempt to parse incompatible data.
     const contentType = String(req.headers["content-type"] || "").toLowerCase();
-    if (!contentType.includes("application/json")) {
+    const mediaType = contentType.split(";")[0].trim();
+    if (mediaType !== "application/json") {
       const error = createLocalizedError(
         "Content-Type non supportato. Usa application/json.",
         "server.unsupportedContentType"
