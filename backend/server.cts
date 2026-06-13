@@ -246,6 +246,23 @@ function defaultDbFile() {
 }
 
 function parseBody(req: Request): Promise<Record<string, any>> {
+  const method = String(req.method || "GET").toUpperCase();
+  const isMutation = method === "POST" || method === "PUT" || method === "PATCH";
+
+  if (isMutation) {
+    // Enforce application/json for mutations to mitigate CSRF (browsers require preflight for non-simple types)
+    // and ensure the server doesn't attempt to parse incompatible data.
+    const contentType = String(req.headers["content-type"] || "").toLowerCase();
+    if (!contentType.includes("application/json")) {
+      const error = createLocalizedError(
+        "Content-Type non supportato. Usa application/json.",
+        "server.unsupportedContentType"
+      );
+      (error as any).statusCode = 415;
+      return Promise.reject(error);
+    }
+  }
+
   return new Promise((resolve, reject) => {
     let raw = "";
     req.on("error", () => {
@@ -1984,7 +2001,19 @@ function createApp(options: CreateAppOptions = {}) {
         return null;
       })
       .catch((error: any) => {
-        sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
+        const statusCode = error?.statusCode || 500;
+        const messageKey = error?.messageKey || "server.internalError";
+        const code = error?.code || null;
+
+        sendLocalizedError(
+          res,
+          statusCode,
+          error,
+          "Errore interno.",
+          messageKey,
+          error?.messageParams || {},
+          code
+        );
       });
   }
 
