@@ -266,16 +266,17 @@ function parseBody(req: Request): Promise<Record<string, any>> {
     let raw = "";
     req.on("error", () => {
       reject(
-        createLocalizedError("Errore nel caricamento payload", "server.bodyReadError")
-          .setStatusCode(400)
+        createLocalizedError(
+          "Errore nel caricamento payload",
+          "server.bodyReadError"
+        ).setStatusCode(400)
       );
     });
     req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
         reject(
-          createLocalizedError("Payload troppo grande", "server.payloadTooLarge")
-            .setStatusCode(400)
+          createLocalizedError("Payload troppo grande", "server.payloadTooLarge").setStatusCode(400)
         );
         req.destroy();
       }
@@ -289,10 +290,7 @@ function parseBody(req: Request): Promise<Record<string, any>> {
       try {
         resolve(JSON.parse(raw) as Record<string, any>);
       } catch (_error) {
-        reject(
-          createLocalizedError("JSON non valido", "server.invalidJson")
-            .setStatusCode(400)
-        );
+        reject(createLocalizedError("JSON non valido", "server.invalidJson").setStatusCode(400));
       }
     });
   });
