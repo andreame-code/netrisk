@@ -250,7 +250,8 @@ function parseBody(req: Request): Promise<Record<string, any>> {
     const method = String(req.method || "GET").toUpperCase();
     if (method === "POST" || method === "PUT" || method === "PATCH") {
       const contentType = String(req.headers["content-type"] || "").toLowerCase();
-      if (!contentType.startsWith("application/json")) {
+      const mediaType = contentType.split(";")[0]?.trim() || "";
+      if (mediaType !== "application/json") {
         reject(
           createLocalizedError(
             "Content-Type non supportato.",
@@ -2007,19 +2008,21 @@ function createApp(options: CreateAppOptions = {}) {
         return null;
       })
       .catch((error: any) => {
-        const statusCode = error?.statusCode || 500;
-        const message = error?.message || "Errore interno.";
-        const messageKey = error?.messageKey || "server.internalError";
-        const code = error?.code || null;
-        sendLocalizedError(
-          res,
-          statusCode,
-          error,
-          message,
-          messageKey,
-          error?.messageParams || {},
-          code
-        );
+        const rawStatusCode = Number(error?.statusCode);
+        const statusCode =
+          Number.isInteger(rawStatusCode) && rawStatusCode >= 400 && rawStatusCode < 600
+            ? rawStatusCode
+            : 500;
+        const isClientError = statusCode < 500;
+        const message = isClientError
+          ? error?.message || "Richiesta non valida."
+          : "Errore interno.";
+        const messageKey = isClientError
+          ? error?.messageKey || "server.request.invalid"
+          : "server.internalError";
+        const messageParams = isClientError ? error?.messageParams || {} : {};
+        const code = isClientError ? error?.code || null : null;
+        sendLocalizedError(res, statusCode, error, message, messageKey, messageParams, code);
       });
   }
 
