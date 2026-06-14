@@ -830,6 +830,7 @@ export function ActivityLogTrigger({ isOpen, onClick }: { isOpen: boolean; onCli
       className={`game-activity-trigger${isOpen ? " is-active" : ""}`}
       aria-pressed={isOpen}
       onClick={onClick}
+      data-testid="activity-log-trigger"
     >
       <WarTableIcon name="clock" />
       <span>{t("game.drawer.activityLog")}</span>

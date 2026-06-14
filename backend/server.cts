@@ -249,8 +249,7 @@ function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
     const contentType = String(req.headers["content-type"] || "")
       .split(";")[0]
-      .trim()
-      .toLowerCase();
+      .trim();
     if (
       (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") &&
       contentType !== "application/json"
