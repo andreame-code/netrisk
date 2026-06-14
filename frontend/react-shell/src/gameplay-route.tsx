@@ -335,6 +335,9 @@ export function GameRoute() {
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false);
   const [activityLogFilter, setActivityLogFilter] = useState<ActivityLogFilter>("all");
   const [isActivityLogCleared, setIsActivityLogCleared] = useState(false);
+  const [isMobileCommandDockViewportActive, setIsMobileCommandDockViewportActive] = useState(
+    isMobileCommandDockViewport
+  );
   const [commandDockSheetState, setCommandDockSheetState] =
     useState<GameCommandDockSheetState>("collapsed");
   const isCommandDockExpanded = commandDockSheetState !== "collapsed";
@@ -523,6 +526,7 @@ export function GameRoute() {
 
     const mediaQuery = window.matchMedia("(max-width: 760px)");
     const normalizeForViewport = (matchesMobile: boolean) => {
+      setIsMobileCommandDockViewportActive(matchesMobile);
       if (matchesMobile) {
         return;
       }
@@ -938,7 +942,7 @@ export function GameRoute() {
 
   function cycleCommandDockSheet(): void {
     setCommandDockSheetState((current) => {
-      if (!isMobileCommandDockViewport()) {
+      if (!isMobileCommandDockViewportActive) {
         return current === "collapsed" ? "expanded" : "collapsed";
       }
 
@@ -1684,7 +1688,7 @@ export function GameRoute() {
           <nav
             className="game-mobile-sheet-actions"
             aria-label={t("game.command.heading")}
-            hidden={commandDockSheetState !== "expanded"}
+            hidden={!isMobileCommandDockViewportActive || commandDockSheetState !== "expanded"}
           >
             {actionRailItems.map((item) => (
               <button
