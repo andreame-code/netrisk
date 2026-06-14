@@ -1701,7 +1701,7 @@ export function GameRoute() {
             ))}
             <button
               type="button"
-              className={isActivityLogOpen ? "is-active" : ""}
+              className={`game-activity-trigger ${isActivityLogOpen ? "is-active" : ""}`.trim()}
               aria-pressed={isActivityLogOpen}
               onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
             >
