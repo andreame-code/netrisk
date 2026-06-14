@@ -27,9 +27,12 @@ async function openWorldClassicGame(page) {
   await expect(joinAiResponse.ok()).toBeTruthy();
   await page.locator(".game-command-dock-toggle").click();
   await page.getByRole("button", { name: "Avvia partita" }).click();
-  await expect(page.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:\s*[1-9]\d*/i, {
-    timeout: 15000
-  });
+  await expect(page.getByTestId("status-summary")).toContainText(
+    /Rinforzi disponibili:\s*[1-9]\d*/i,
+    {
+      timeout: 15000
+    }
+  );
   await expect(page.locator(".map-board.has-custom-background")).toBeVisible({ timeout: 15000 });
 }
 
@@ -404,6 +407,17 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
         dock: boundsFor(".game-command-dock"),
         header: boundsFor("body[data-app-section='game'] .top-nav-bar"),
         hudDisplay: window.getComputedStyle(document.querySelector(".game-floating-hud")).display,
+        mobileActions: boundsFor(".game-mobile-sheet-actions"),
+        mobileActionButtons: Array.from(
+          document.querySelectorAll(".game-mobile-sheet-actions button")
+        ).map((button) => {
+          const rect = button.getBoundingClientRect();
+          return {
+            bottom: rect.bottom,
+            height: rect.height,
+            top: rect.top
+          };
+        }),
         primaryDockButton: primaryDockButton
           ? {
               bottom: primaryDockButton.getBoundingClientRect().bottom,
@@ -414,8 +428,12 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
         sheetState: document
           .querySelector(".game-command-dock")
           ?.getAttribute("data-command-sheet-state"),
+        toggle: boundsFor(".game-command-dock-toggle"),
         title: window
-          .getComputedStyle(document.querySelector("body[data-app-section='game'] .top-nav-title"), "::after")
+          .getComputedStyle(
+            document.querySelector("body[data-app-section='game'] .top-nav-title"),
+            "::after"
+          )
           .content.replaceAll('"', ""),
         viewport: {
           height: window.innerHeight,
@@ -432,10 +450,19 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
     expect(layout.board.height).toBeGreaterThanOrEqual(layout.viewport.height * 0.42);
     expect(layout.dock.left).toBeLessThanOrEqual(1);
     expect(layout.dock.right).toBeGreaterThanOrEqual(layout.viewport.width - 1);
-    expect(layout.dock.height).toBeGreaterThanOrEqual(70);
-    expect(layout.dock.height).toBeLessThanOrEqual(112);
+    expect(layout.dock.height).toBeGreaterThanOrEqual(132);
+    expect(layout.dock.height).toBeLessThanOrEqual(160);
     expect(layout.sheetState).toBe("collapsed");
     expect(layout.hudDisplay).toBe("none");
+    expect(layout.toggle.width).toBeLessThanOrEqual(56);
+    expect(layout.toggle.right).toBeGreaterThanOrEqual(layout.viewport.width - 58);
+    expect(layout.mobileActions.bottom).toBeLessThanOrEqual(layout.viewport.height + 1);
+    expect(layout.mobileActionButtons).toHaveLength(4);
+    for (const button of layout.mobileActionButtons) {
+      expect(button.height).toBeGreaterThanOrEqual(44);
+      expect(button.top).toBeGreaterThanOrEqual(0);
+      expect(button.bottom).toBeLessThanOrEqual(layout.viewport.height + 1);
+    }
 
     await page.locator(".game-command-dock-toggle").click();
     await expect(page.locator(".game-command-dock")).toHaveAttribute(
@@ -458,6 +485,25 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
 
       const dockRect = document.querySelector(".game-command-dock").getBoundingClientRect();
       const buttonRect = primaryDockButton.getBoundingClientRect();
+      const mobileActionsRect = document
+        .querySelector(".game-mobile-sheet-actions")
+        .getBoundingClientRect();
+      const reinforcementStepperControls = Array.from(
+        document.querySelectorAll("#reinforce-group .game-number-stepper button, #reinforce-amount")
+      ).map((control) => {
+        const rect = control.getBoundingClientRect();
+        return {
+          bottom: rect.bottom,
+          height: rect.height,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          width: rect.width
+        };
+      });
+      const toggleRect = document
+        .querySelector(".game-command-dock-toggle")
+        .getBoundingClientRect();
 
       return {
         dock: {
@@ -465,10 +511,23 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
           height: dockRect.height,
           top: dockRect.top
         },
+        mobileActions: {
+          bottom: mobileActionsRect.bottom,
+          height: mobileActionsRect.height,
+          top: mobileActionsRect.top
+        },
         primaryDockButton: {
           bottom: buttonRect.bottom,
           height: buttonRect.height,
           top: buttonRect.top
+        },
+        reinforcementStepperControls,
+        toggle: {
+          bottom: toggleRect.bottom,
+          height: toggleRect.height,
+          right: toggleRect.right,
+          top: toggleRect.top,
+          width: toggleRect.width
         },
         viewport: {
           height: window.innerHeight,
@@ -477,12 +536,22 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
       };
     });
 
-    expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(180);
-    expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(
-      halfOpenLayout.viewport.height * 0.32
-    );
+    expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(280);
+    expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(halfOpenLayout.viewport.height * 0.44);
     expect(halfOpenLayout.primaryDockButton.height).toBeGreaterThanOrEqual(44);
     expect(halfOpenLayout.primaryDockButton.bottom).toBeLessThanOrEqual(
+      halfOpenLayout.viewport.height + 1
+    );
+    expect(halfOpenLayout.reinforcementStepperControls).toHaveLength(3);
+    for (const control of halfOpenLayout.reinforcementStepperControls) {
+      expect(control.height).toBeGreaterThanOrEqual(44);
+      expect(control.left).toBeGreaterThanOrEqual(0);
+      expect(control.right).toBeLessThanOrEqual(halfOpenLayout.viewport.width + 1);
+    }
+    expect(halfOpenLayout.toggle.width).toBeLessThanOrEqual(56);
+    expect(halfOpenLayout.toggle.right).toBeGreaterThanOrEqual(halfOpenLayout.viewport.width - 58);
+    expect(halfOpenLayout.mobileActions.height).toBeGreaterThanOrEqual(44);
+    expect(halfOpenLayout.mobileActions.bottom).toBeLessThanOrEqual(
       halfOpenLayout.viewport.height + 1
     );
 
@@ -509,7 +578,7 @@ test("mobile attack sheet keeps primary actions visible and expands only seconda
   await expect(page.locator("#attack-button")).toBeVisible();
   await expect(page.locator("#attack-banzai-button")).toBeVisible();
   await expect(page.locator("#end-turn-button")).toBeVisible();
-  await expect(page.locator(".game-mobile-sheet-actions")).toBeHidden();
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
 
   const halfOpenLayout = await readMobileAttackLayout(page);
   for (const button of [
@@ -525,6 +594,9 @@ test("mobile attack sheet keeps primary actions visible and expands only seconda
   expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(390);
   expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(410);
   expect(halfOpenLayout.dock.top - halfOpenLayout.header.bottom).toBeGreaterThan(240);
+  expect(halfOpenLayout.mobileActions.bottom).toBeLessThanOrEqual(
+    halfOpenLayout.viewport.height + 1
+  );
 
   await page.locator(".game-command-dock-toggle").click();
   await expect(page.locator(".game-command-dock")).toHaveAttribute(
@@ -562,14 +634,10 @@ test("mobile fortify sheet keeps primary actions visible and expands only second
   );
   await expect(page.locator("#fortify-button")).toBeVisible();
   await expect(page.locator("#end-turn-button")).toBeVisible();
-  await expect(page.locator(".game-mobile-sheet-actions")).toBeHidden();
+  await expect(page.locator(".game-mobile-sheet-actions")).toBeVisible();
 
   const halfOpenLayout = await readMobileFortifyLayout(page);
-  for (const button of [
-    halfOpenLayout.fortify,
-    halfOpenLayout.endTurn,
-    halfOpenLayout.toggle
-  ]) {
+  for (const button of [halfOpenLayout.fortify, halfOpenLayout.endTurn, halfOpenLayout.toggle]) {
     expect(button.height).toBeGreaterThanOrEqual(44);
     expect(button.top).toBeGreaterThanOrEqual(0);
     expect(button.bottom).toBeLessThanOrEqual(halfOpenLayout.viewport.height + 1);
@@ -577,6 +645,9 @@ test("mobile fortify sheet keeps primary actions visible and expands only second
   expect(halfOpenLayout.dock.height).toBeGreaterThanOrEqual(390);
   expect(halfOpenLayout.dock.height).toBeLessThanOrEqual(410);
   expect(halfOpenLayout.dock.top - halfOpenLayout.header.bottom).toBeGreaterThan(240);
+  expect(halfOpenLayout.mobileActions.bottom).toBeLessThanOrEqual(
+    halfOpenLayout.viewport.height + 1
+  );
 
   await page.locator(".game-command-dock-toggle").click();
   await expect(page.locator(".game-command-dock")).toHaveAttribute(
