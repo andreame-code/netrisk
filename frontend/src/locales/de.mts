@@ -566,5 +566,6 @@ export const de = Object.freeze({
   "server.endpoint.notFound": "Endpoint nicht gefunden.",
   "server.static.accessDenied": "Zugriff verweigert.",
   "server.static.fileNotFound": "Datei nicht gefunden.",
+  "server.unsupportedContentType": "Nicht unterstuetzter Content-Type. Nur application/json ist erlaubt.",
   "server.internalError": "Interner Fehler."
 });
