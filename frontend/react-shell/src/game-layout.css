@@ -7339,7 +7339,7 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
 
   .game-map-first-page:has(.game-command-dock-sheet-collapsed),
   html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-sheet-collapsed) {
-    --game-command-dock-height: clamp(136px, 18svh, 152px) !important;
+    --game-command-dock-height: 76px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-sheet-expanded),
@@ -7659,13 +7659,6 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
     grid-template-columns: minmax(0, 1fr) 132px !important;
   }
 
-  .game-command-dock #reinforce-group .game-number-stepper {
-    width: 100% !important;
-    min-width: 0 !important;
-    grid-template-columns: 44px minmax(36px, 1fr) 44px !important;
-    gap: 4px !important;
-  }
-
   .game-command-dock #reinforce-group .action-row,
   .game-command-dock #conquest-group .action-row {
     grid-column: 1 / -1 !important;
@@ -7983,7 +7976,7 @@ html[data-theme="war-table"]
   html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-sheet-half-open),
   html[data-theme="war-table"]
     .game-map-first-page:has(.game-command-dock.game-command-dock-sheet-half-open.is-expanded) {
-    --game-command-dock-height: clamp(300px, 40svh, 340px) !important;
+    --game-command-dock-height: 214px !important;
   }
 
   .game-map-first-page:has(.game-command-dock-mandatory-trade),
@@ -8059,7 +8052,10 @@ html[data-theme="war-table"]
   }
 
   .game-command-dock-sheet-collapsed .game-mobile-sheet-actions,
-  .game-command-dock-sheet-half-open .game-mobile-sheet-actions,
+  .game-command-dock-sheet-half-open .game-mobile-sheet-actions {
+    display: none !important;
+  }
+
   .game-command-dock-sheet-expanded .game-mobile-sheet-actions {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -8113,40 +8109,30 @@ html[data-theme="war-table"]
     display: none !important;
   }
 
-  .game-command-dock-sheet-collapsed .game-command-dock-summary {
-    display: none !important;
-  }
-
   .game-command-dock-sheet-expanded,
   html[data-theme="war-table"] .game-map-first-page .game-command-dock-sheet-expanded {
     max-height: calc(100svh - 142px) !important;
   }
 
   .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-half-open),
-  html[data-theme="war-table"]
-    .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-half-open) {
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-half-open) {
     --game-command-dock-height: clamp(390px, 52svh, 410px) !important;
   }
 
   .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-expanded),
-  html[data-theme="war-table"]
-    .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-expanded) {
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-attack.game-command-dock-sheet-expanded) {
     --game-command-dock-height: clamp(430px, 58svh, 500px) !important;
   }
 
   .game-command-dock-attack.game-command-dock-sheet-expanded,
-  html[data-theme="war-table"]
-    .game-map-first-page
-    .game-command-dock-attack.game-command-dock-sheet-expanded {
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-attack.game-command-dock-sheet-expanded {
     height: clamp(430px, 58svh, 500px) !important;
     min-height: clamp(430px, 58svh, 500px) !important;
     max-height: clamp(430px, 58svh, 500px) !important;
   }
 
   .game-command-dock-attack.game-command-dock-sheet-half-open,
-  html[data-theme="war-table"]
-    .game-map-first-page
-    .game-command-dock-attack.game-command-dock-sheet-half-open {
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-attack.game-command-dock-sheet-half-open {
     height: clamp(390px, 52svh, 410px) !important;
     min-height: clamp(390px, 52svh, 410px) !important;
     max-height: clamp(390px, 52svh, 410px) !important;
@@ -8223,30 +8209,24 @@ html[data-theme="war-table"]
   }
 
   .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-half-open),
-  html[data-theme="war-table"]
-    .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-half-open) {
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-half-open) {
     --game-command-dock-height: clamp(390px, 52svh, 410px) !important;
   }
 
   .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-expanded),
-  html[data-theme="war-table"]
-    .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-expanded) {
+  html[data-theme="war-table"] .game-map-first-page:has(.game-command-dock-fortify.game-command-dock-sheet-expanded) {
     --game-command-dock-height: clamp(430px, 58svh, 500px) !important;
   }
 
   .game-command-dock-fortify.game-command-dock-sheet-expanded,
-  html[data-theme="war-table"]
-    .game-map-first-page
-    .game-command-dock-fortify.game-command-dock-sheet-expanded {
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-fortify.game-command-dock-sheet-expanded {
     height: clamp(430px, 58svh, 500px) !important;
     min-height: clamp(430px, 58svh, 500px) !important;
     max-height: clamp(430px, 58svh, 500px) !important;
   }
 
   .game-command-dock-fortify.game-command-dock-sheet-half-open,
-  html[data-theme="war-table"]
-    .game-map-first-page
-    .game-command-dock-fortify.game-command-dock-sheet-half-open {
+  html[data-theme="war-table"] .game-map-first-page .game-command-dock-fortify.game-command-dock-sheet-half-open {
     height: clamp(390px, 52svh, 410px) !important;
     min-height: clamp(390px, 52svh, 410px) !important;
     max-height: clamp(390px, 52svh, 410px) !important;
@@ -8332,43 +8312,5 @@ html[data-theme="war-table"]
     top: -42px !important;
     margin: -42px -18px 14px !important;
     padding: 42px 18px 14px !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .game-command-dock .game-command-dock-toggle,
-  html[data-theme="war-table"] .game-map-first-page .game-command-dock .game-command-dock-toggle {
-    position: absolute !important;
-    top: 8px !important;
-    right: 12px !important;
-    left: auto !important;
-    display: grid !important;
-    place-items: center !important;
-    width: 44px !important;
-    min-width: 44px !important;
-    max-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    max-height: 44px !important;
-    padding: 0 !important;
-    border-radius: 7px !important;
-  }
-
-  .game-command-dock-sheet-collapsed:not(.game-command-dock-mandatory-trade) .actions-section,
-  .game-command-dock-sheet-collapsed:not(.game-command-dock-mandatory-trade) .game-lobby-controls {
-    display: none !important;
-  }
-
-  .game-command-dock-sheet-collapsed .game-command-dock-summary {
-    display: none !important;
-  }
-
-  .game-command-dock-sheet-half-open .game-command-dock-summary {
-    display: none !important;
-  }
-
-  .game-command-dock-sheet-collapsed .game-mobile-sheet-actions,
-  .game-command-dock-sheet-half-open .game-mobile-sheet-actions {
-    margin-top: 8px !important;
   }
 }

@@ -645,7 +645,8 @@ describe("GameRoute integration", () => {
     await user.click(railButtons[2]);
     expect(screen.getByText(/Moduli attivi/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /registro attivita/i }));
+    const activityLogButton = container.querySelector(".game-activity-trigger") as HTMLElement;
+    await user.click(activityLogButton);
     expect(screen.getByText("Attack initiated: Commander attacked Bastion")).toBeInTheDocument();
     await user.click(
       within(screen.getByRole("tablist", { name: "Filtri registro attivita" })).getByRole("tab", {
@@ -677,10 +678,11 @@ describe("GameRoute integration", () => {
       })
     );
 
-    renderReactShell("/react/game/g-1");
+    const { container: logContainer } = renderReactShell("/react/game/g-1");
 
     expect(await screen.findByTestId("react-shell-game-page")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /registro attivita/i }));
+    const activityLogButton = logContainer.querySelector(".game-activity-trigger") as HTMLElement;
+    await user.click(activityLogButton);
     expect(screen.getByText("Attack initiated: Commander attacked Bastion")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cancella registro" }));
