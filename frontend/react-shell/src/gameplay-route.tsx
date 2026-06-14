@@ -1225,6 +1225,35 @@ export function GameRoute() {
           summaryTitle={commandDockSummaryTitle}
           onToggleExpanded={cycleCommandDockSheet}
         >
+          <nav
+            className="game-mobile-sheet-actions"
+            aria-label={t("game.command.heading")}
+            hidden={!isMobileCommandDockViewportActive || commandDockSheetState !== "expanded"}
+          >
+            {actionRailItems.map((item) => (
+              <button
+                key={item.drawer}
+                type="button"
+                className={activeDrawer === item.drawer ? "is-active" : ""}
+                aria-pressed={activeDrawer === item.drawer}
+                onClick={() => toggleDrawer(item.drawer)}
+              >
+                <WarTableIcon name={item.icon} />
+                <span>{item.label}</span>
+                {typeof item.badge === "number" ? <strong>{item.badge}</strong> : null}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={isActivityLogOpen ? "is-active" : ""}
+              aria-pressed={isActivityLogOpen}
+              onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
+            >
+              <WarTableIcon name="clock" />
+              <span>{t("game.drawer.activityLog")}</span>
+            </button>
+          </nav>
+
           {mustTradeCards ? (
             <div className="game-mandatory-trade-dock" id="card-trade-dock-group">
               <section
@@ -1684,35 +1713,6 @@ export function GameRoute() {
               </button>
             </div>
           ) : null}
-
-          <nav
-            className="game-mobile-sheet-actions"
-            aria-label={t("game.command.heading")}
-            hidden={!isMobileCommandDockViewportActive || commandDockSheetState !== "expanded"}
-          >
-            {actionRailItems.map((item) => (
-              <button
-                key={item.drawer}
-                type="button"
-                className={activeDrawer === item.drawer ? "is-active" : ""}
-                aria-pressed={activeDrawer === item.drawer}
-                onClick={() => toggleDrawer(item.drawer)}
-              >
-                <WarTableIcon name={item.icon} />
-                <span>{item.label}</span>
-                {typeof item.badge === "number" ? <strong>{item.badge}</strong> : null}
-              </button>
-            ))}
-            <button
-              type="button"
-              className={isActivityLogOpen ? "is-active" : ""}
-              aria-pressed={isActivityLogOpen}
-              onClick={() => setIsActivityLogOpen((isOpen) => !isOpen)}
-            >
-              <WarTableIcon name="clock" />
-              <span>{t("game.drawer.activityLog")}</span>
-            </button>
-          </nav>
         </GameActionDock>
       </section>
     </section>
