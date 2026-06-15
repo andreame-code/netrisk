@@ -41,7 +41,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
@@ -66,6 +66,7 @@ interface AccountRouteDeps {
   resolveStoredTheme: (theme: string) => string;
 }
 
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
 
 async function resolveRouteSupportedSiteThemes(deps: AccountRouteDeps): Promise<Set<string>> {
