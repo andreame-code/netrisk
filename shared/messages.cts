@@ -4,6 +4,8 @@ export interface LocalizedError extends Error {
   code?: string;
   messageKey: string | null;
   messageParams: MessageParams;
+  statusCode?: number;
+  setStatusCode(status: number): this;
 }
 
 export interface ActionFailure {
@@ -45,6 +47,10 @@ export function createLocalizedError(
   if (code) {
     error.code = code;
   }
+  error.setStatusCode = function (status: number) {
+    this.statusCode = status;
+    return this;
+  };
   return error;
 }
 

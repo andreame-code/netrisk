@@ -247,6 +247,23 @@ function defaultDbFile() {
 
 function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
+    const method = String(req.method || "").toUpperCase();
+    if (method === "POST" || method === "PUT" || method === "PATCH") {
+      const contentType = String(req.headers["content-type"] || "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      if (contentType !== "application/json") {
+        reject(
+          createLocalizedError(
+            "Tipo di contenuto non supportato.",
+            "server.unsupportedContentType"
+          ).setStatusCode(415)
+        );
+        return;
+      }
+    }
+
     let raw = "";
     req.on("error", () => {
       reject(createLocalizedError("Errore nel caricamento payload", "server.bodyReadError"));
