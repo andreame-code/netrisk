@@ -621,7 +621,7 @@ export const createGameRequestSchema = objectSchema({
   themeId: z.string().min(1).max(64).nullable().optional(),
   pieceSkinId: z.string().min(1).max(64).nullable().optional(),
   gamePresetId: z.string().min(1).max(64).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1).max(64)).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1)).nullable().optional(),
   contentProfileId: z.string().min(1).max(64).nullable().optional(),
   gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
   uiProfileId: z.string().min(1).max(64).nullable().optional(),

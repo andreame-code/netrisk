@@ -5,6 +5,7 @@ const {
   adminAuthoredModuleUpsertRequestSchema,
   authoredModuleSchema,
   authSessionResponseSchema,
+  createGameRequestSchema,
   formatValidationPath,
   gameIdRequestSchema,
   gameListResponseSchema,
@@ -228,6 +229,10 @@ register("shared runtime validation formats root issue paths deterministically",
 });
 
 register("shared runtime validation validates lobby route payload shapes", () => {
+  const longModuleId = "runtime-module-".repeat(8);
+  const validCreateGameRequest = createGameRequestSchema.safeParse({
+    activeModuleIds: [longModuleId]
+  });
   const invalidGameList = gameListResponseSchema.safeParse({
     games: [
       {
@@ -245,6 +250,7 @@ register("shared runtime validation validates lobby route payload shapes", () =>
     }
   });
 
+  assert.equal(validCreateGameRequest.success, true);
   assert.equal(invalidGameList.success, false);
   assert.equal(invalidJoinResponse.success, false);
   assert.deepEqual(

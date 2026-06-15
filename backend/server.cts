@@ -245,19 +245,36 @@ function defaultDbFile() {
   return path.join(projectRoot, "data", "netrisk.sqlite");
 }
 
+function isMutationMethod(method: string | undefined): boolean {
+  return method === "POST" || method === "PUT" || method === "PATCH";
+}
+
+function unsupportedContentTypeError(): Error {
+  return Object.assign(
+    createLocalizedError("Content-Type non supportato.", "server.unsupportedContentType"),
+    { statusCode: 415, code: "UNSUPPORTED_MEDIA_TYPE" }
+  );
+}
+
+function validateMutationContentType(req: Request): Error | null {
+  if (!isMutationMethod(req.method)) {
+    return null;
+  }
+
+  const contentType = String(req.headers["content-type"] || "").toLowerCase();
+  if (!contentType.includes("application/json")) {
+    return unsupportedContentTypeError();
+  }
+
+  return null;
+}
+
 function parseBody(req: Request): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
-    if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
-      const contentType = String(req.headers["content-type"] || "").toLowerCase();
-      if (!contentType.includes("application/json")) {
-        reject(
-          Object.assign(
-            createLocalizedError("Content-Type non supportato.", "server.unsupportedContentType"),
-            { statusCode: 415, code: "UNSUPPORTED_MEDIA_TYPE" }
-          )
-        );
-        return;
-      }
+    const contentTypeError = validateMutationContentType(req);
+    if (contentTypeError) {
+      reject(contentTypeError);
+      return;
     }
 
     let raw = "";
@@ -838,6 +855,13 @@ function createApp(options: CreateAppOptions = {}) {
 
   async function handleApi(req: Request, res: Response, url: URL) {
     ensureApiRequestContext(req, res, url);
+    const isE2ETestReset =
+      process.env.E2E === "true" && req.method === "POST" && url.pathname === "/api/test/reset";
+    const contentTypeError = isE2ETestReset ? null : validateMutationContentType(req);
+    if (contentTypeError) {
+      throw contentTypeError;
+    }
+
     await initializeActiveGame();
 
     if (req.method === "GET" && url.pathname === "/api/health") {
