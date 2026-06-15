@@ -53,7 +53,10 @@ function promoteUserToAdmin(username) {
 
 async function enableModule(page, sessionToken, moduleId) {
   const response = await page.request.post(`/api/modules/${encodeURIComponent(moduleId)}/enable`, {
-    headers: { Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}` }
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `netrisk_session=${encodeURIComponent(sessionToken)}`
+    }
   });
   await expect(response.ok()).toBeTruthy();
 }
@@ -115,7 +118,9 @@ test("react new game creates a session and opens the React gameplay route", asyn
   ).toBeTruthy();
 });
 
-test("react new game supports advanced module, profile, and option selections", async ({ page }) => {
+test("react new game supports advanced module, profile, and option selections", async ({
+  page
+}) => {
   await resetGame(page);
 
   const commander = uniqueUser("rsh_new_game_advanced");
@@ -144,12 +149,8 @@ test("react new game supports advanced module, profile, and option selections", 
     .selectOption("demo.command-center.command-ops");
   await expect(page.getByTestId("react-shell-new-game-map")).toHaveValue("world-classic");
   await expect(page.getByTestId("react-shell-new-game-dice")).toHaveValue("defense-3");
-  await expect(page.getByTestId("react-shell-new-game-victory")).toHaveValue(
-    "majority-control"
-  );
-  await expect(
-    page.getByTestId("react-shell-new-game-module-demo.command-center")
-  ).toBeChecked();
+  await expect(page.getByTestId("react-shell-new-game-victory")).toHaveValue("majority-control");
+  await expect(page.getByTestId("react-shell-new-game-module-demo.command-center")).toBeChecked();
   await expect(page.getByTestId("react-shell-new-game-content-profile")).toHaveValue(
     "demo.command-center.content"
   );
