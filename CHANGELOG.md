@@ -2,6 +2,13 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.049 - 2026-06-16
+
+- Hardened API boundary with strict `Content-Type: application/json` enforcement for mutation requests.
+- Improved global error handling to respect status codes and localized message keys.
+- Resolved integration test ambiguity for the activity log button in dual desktop/mobile views.
+- Fixed lint warnings related to inline `import()` type annotations.
+
 ## 0.1.048 - 2026-06-06
 
 - Added branch-focused engine coverage for turn timeout expiration and combat resolution edge cases.

@@ -50,9 +50,10 @@ type SnapshotForUser = (
 type Authorize = (action: string, context: Record<string, unknown>) => void;
 type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
+
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 
 const {
   aiJoinRequestSchema,

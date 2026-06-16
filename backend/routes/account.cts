@@ -21,6 +21,8 @@ type RequireAuthFn = (
   body: Record<string, unknown>
 ) => Promise<{ user: { id: string; username: string } } | null>;
 
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
+
 type SupportedSiteThemesSource = Set<string> | (() => Promise<Set<string>> | Set<string>);
 
 interface AccountRouteDeps {
@@ -41,7 +43,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
