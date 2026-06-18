@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.049 - 2026-05-30
+
+- Hardened API request parsing to enforce JSON content type for mutations and correct HTTP status codes for early parsing failures.
+- Improved global request error handling to securely propagate specific 4xx error details while masking internal 5xx technical leakage.
+- Added localized error messages for unsupported content types in English, Italian, German, and Spanish.
+
 ## 0.1.048 - 2026-06-06
 
 - Added branch-focused engine coverage for turn timeout expiration and combat resolution edge cases.
