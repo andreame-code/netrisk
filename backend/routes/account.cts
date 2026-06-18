@@ -14,6 +14,7 @@ const {
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const { setRetryAfterHeader } = require("../http-response.cjs");
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 
 type RequireAuthFn = (
   req: HttpTypes.IncomingMessage,
@@ -41,7 +42,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
