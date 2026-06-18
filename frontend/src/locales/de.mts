@@ -546,6 +546,7 @@ export const de = Object.freeze({
   "game.surrender.alreadyEliminated": "Der Spieler ist bereits eliminiert.",
   "server.payloadTooLarge": "Payload zu gross.",
   "server.invalidJson": "Ungueltiges JSON.",
+  "server.unsupportedContentType": "Nicht unterstuetzter Content-Type.",
   "server.auth.invalidSession": "Ungueltige Sitzung.",
   "server.game.notFound": "Partie nicht gefunden.",
   "server.game.readUnauthorized": "Nicht autorisierter Partiezugriff.",

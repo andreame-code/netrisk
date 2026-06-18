@@ -246,6 +246,25 @@ function defaultDbFile() {
 }
 
 function parseBody(req: Request): Promise<Record<string, any>> {
+  const method = String(req.method || "GET").toUpperCase();
+  const isMutation = method === "POST" || method === "PUT" || method === "PATCH";
+
+  if (isMutation) {
+    const contentType = String(req.headers["content-type"] || "").toLowerCase();
+    // Enforce application/json for mutations to mitigate CSRF and prevent incompatible data parsing.
+    if (contentType.indexOf("application/json") !== 0) {
+      return Promise.reject(
+        Object.assign(
+          createLocalizedError(
+            "Tipo di contenuto non supportato.",
+            "server.unsupportedContentType"
+          ),
+          { statusCode: 415 }
+        )
+      );
+    }
+  }
+
   return new Promise((resolve, reject) => {
     let raw = "";
     req.on("error", () => {
@@ -254,7 +273,12 @@ function parseBody(req: Request): Promise<Record<string, any>> {
     req.on("data", (chunk: Buffer | string) => {
       raw += chunk;
       if (raw.length > 1000000) {
-        reject(createLocalizedError("Payload troppo grande", "server.payloadTooLarge"));
+        // Enforce a hard 1MB limit for raw payloads to prevent DoS.
+        reject(
+          Object.assign(createLocalizedError("Payload troppo grande", "server.payloadTooLarge"), {
+            statusCode: 413
+          })
+        );
         req.destroy();
       }
     });
@@ -267,7 +291,11 @@ function parseBody(req: Request): Promise<Record<string, any>> {
       try {
         resolve(JSON.parse(raw) as Record<string, any>);
       } catch (_error) {
-        reject(createLocalizedError("JSON non valido", "server.invalidJson"));
+        reject(
+          Object.assign(createLocalizedError("JSON non valido", "server.invalidJson"), {
+            statusCode: 400
+          })
+        );
       }
     });
   });
@@ -1984,7 +2012,19 @@ function createApp(options: CreateAppOptions = {}) {
         return null;
       })
       .catch((error: any) => {
-        sendLocalizedError(res, 500, error, "Errore interno.", "server.internalError");
+        const statusCode = Number(error?.statusCode) || 500;
+        const messageKey = error?.messageKey || (statusCode >= 500 ? "server.internalError" : null);
+        const code = error?.code || null;
+
+        sendLocalizedError(
+          res,
+          statusCode,
+          error,
+          statusCode >= 500 ? "Errore interno." : error.message || "Errore interno.",
+          messageKey,
+          error?.messageParams || {},
+          code
+        );
       });
   }
 
