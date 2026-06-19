@@ -54,6 +54,7 @@ const gameplayTestModules = [
   "../tests/gameplay/regression/full-flows.test.cjs",
   "../tests/gameplay/regression/game-management-routes.test.cjs",
   "../tests/gameplay/regression/game-summary-stores.test.cjs",
+  "../tests/gameplay/regression/server-request-parsing.test.cjs",
   "../tests/gameplay/regression/module-runtime.test.cjs",
   "../tests/gameplay/regression/module-runtime-catalog-projection.test.cjs",
   "../tests/gameplay/regression/admin-console-routes.test.cjs",
