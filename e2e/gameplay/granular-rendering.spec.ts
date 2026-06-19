@@ -157,6 +157,7 @@ test("attack preserves selected controls and skips unrelated rerenders", async (
   await registerLoginAndJoin(secondPage, secondUser);
 
   await firstPage.getByRole("button", { name: "Avvia partita" }).click();
+  await expect(firstPage.getByTestId("status-summary")).toContainText(/Rinforzi disponibili:/i);
   const gameState = await loadGameState(firstPage, firstJoin.sessionToken, firstJoin.gameId);
   const attackPair = findAttackPairFromState(gameState);
   await firstPage.locator("#reinforce-select").selectOption(attackPair.fromId);
