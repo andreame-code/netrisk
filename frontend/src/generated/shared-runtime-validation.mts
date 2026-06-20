@@ -424,16 +424,16 @@ export const netRiskModuleManifestSchema = objectSchema({
 export type NetRiskModuleManifest = z.infer<typeof netRiskModuleManifestSchema>;
 
 export const netRiskContentContributionSchema = objectSchema({
-  mapIds: z.array(z.string().min(1)).optional(),
-  siteThemeIds: z.array(z.string().min(1)).optional(),
-  pieceSkinIds: z.array(z.string().min(1)).optional(),
-  playerPieceSetIds: z.array(z.string().min(1)).optional(),
-  contentPackIds: z.array(z.string().min(1)).optional(),
-  diceRuleSetIds: z.array(z.string().min(1)).optional(),
-  cardRuleSetIds: z.array(z.string().min(1)).optional(),
-  victoryRuleSetIds: z.array(z.string().min(1)).optional(),
-  fortifyRuleSetIds: z.array(z.string().min(1)).optional(),
-  reinforcementRuleSetIds: z.array(z.string().min(1)).optional()
+  mapIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  siteThemeIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  pieceSkinIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  playerPieceSetIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  contentPackIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  diceRuleSetIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  cardRuleSetIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  victoryRuleSetIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  fortifyRuleSetIds: z.array(z.string().min(1).max(64)).max(50).optional(),
+  reinforcementRuleSetIds: z.array(z.string().min(1).max(64)).max(50).optional()
 });
 
 export type NetRiskContentContribution = z.infer<typeof netRiskContentContributionSchema>;
@@ -621,12 +621,12 @@ export const createGameRequestSchema = objectSchema({
   themeId: z.string().min(1).max(64).nullable().optional(),
   pieceSkinId: z.string().min(1).max(64).nullable().optional(),
   gamePresetId: z.string().min(1).max(64).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1).max(64)).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1).max(64)).max(50).nullable().optional(),
   contentProfileId: z.string().min(1).max(64).nullable().optional(),
   gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
   uiProfileId: z.string().min(1).max(64).nullable().optional(),
   turnTimeoutHours: z.number().int().nullable().optional(),
-  players: z.array(playerSlotConfigSchema).nullable().optional()
+  players: z.array(playerSlotConfigSchema).max(8).nullable().optional()
 });
 
 export type CreateGameRequest = z.infer<typeof createGameRequestSchema>;
@@ -776,12 +776,12 @@ export const adminGameDefaultsSchema = objectSchema({
   themeId: z.string().min(1).max(64).nullable().optional(),
   pieceSkinId: z.string().min(1).max(64).nullable().optional(),
   gamePresetId: z.string().min(1).max(64).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1).max(64)).optional(),
+  activeModuleIds: z.array(z.string().min(1).max(64)).max(50).optional(),
   contentProfileId: z.string().min(1).max(64).nullable().optional(),
   gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
   uiProfileId: z.string().min(1).max(64).nullable().optional(),
   turnTimeoutHours: z.number().int().nullable().optional(),
-  players: z.array(playerSlotConfigSchema).nullable().optional()
+  players: z.array(playerSlotConfigSchema).max(8).nullable().optional()
 });
 
 export type AdminGameDefaults = z.infer<typeof adminGameDefaultsSchema>;
@@ -1291,7 +1291,9 @@ const authoredVictoryObjectiveRequestBaseSchema = objectSchema({
 const authoredVictoryControlContinentsObjectiveRequestSchema =
   authoredVictoryObjectiveRequestBaseSchema.extend({
     type: z.literal("control-continents"),
-    continentIds: z.array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId))
+    continentIds: z
+      .array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId))
+      .max(50)
   });
 
 const authoredVictoryTerritoryCountObjectiveRequestSchema =
@@ -1307,7 +1309,7 @@ const authoredVictoryObjectiveRequestSchema = z.discriminatedUnion("type", [
 
 const authoredVictoryModuleContentRequestSchema = objectSchema({
   mapId: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.mapId),
-  objectives: z.array(authoredVictoryObjectiveRequestSchema)
+  objectives: z.array(authoredVictoryObjectiveRequestSchema).max(50)
 });
 
 export const authoredModuleSchema = authoredModuleInputSchema.extend({

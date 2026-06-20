@@ -1,4 +1,5 @@
 import type * as HttpTypes from "node:http";
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 import type {
   AccountSettingsUpdateResponseContract,
   ProfileResponseContract,
@@ -41,7 +42,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
