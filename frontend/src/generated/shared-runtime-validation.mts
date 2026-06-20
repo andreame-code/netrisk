@@ -1291,9 +1291,7 @@ const authoredVictoryObjectiveRequestBaseSchema = objectSchema({
 const authoredVictoryControlContinentsObjectiveRequestSchema =
   authoredVictoryObjectiveRequestBaseSchema.extend({
     type: z.literal("control-continents"),
-    continentIds: z
-      .array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId))
-      .max(50)
+    continentIds: z.array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId)).max(50)
   });
 
 const authoredVictoryTerritoryCountObjectiveRequestSchema =
