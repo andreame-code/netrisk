@@ -261,7 +261,7 @@ export const loginResponseSchema = objectSchema({
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
 export const themePreferenceRequestSchema = objectSchema({
-  theme: z.string().min(1)
+  theme: z.string().min(1).max(64)
 });
 
 export type ThemePreferenceRequest = z.infer<typeof themePreferenceRequestSchema>;
@@ -602,8 +602,8 @@ export type ResolvedModuleCatalog = z.infer<typeof resolvedModuleCatalogSchema>;
 
 export const playerSlotConfigSchema = objectSchema({
   slot: z.number().int().nullable().optional(),
-  type: z.string().min(1).nullable().optional(),
-  name: z.string().min(1).nullable().optional()
+  type: z.string().min(1).max(32).nullable().optional(),
+  name: z.string().min(1).max(64).nullable().optional()
 });
 
 export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
@@ -611,19 +611,19 @@ export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
 export const createGameRequestSchema = objectSchema({
   name: z.string().min(1).max(64).nullable().optional(),
   totalPlayers: z.number().int().nullable().optional(),
-  contentPackId: z.string().min(1).nullable().optional(),
-  ruleSetId: z.string().min(1).nullable().optional(),
-  mapId: z.string().min(1).nullable().optional(),
-  diceRuleSetId: z.string().min(1).nullable().optional(),
-  victoryRuleSetId: z.string().min(1).nullable().optional(),
-  pieceSetId: z.string().min(1).nullable().optional(),
-  themeId: z.string().min(1).nullable().optional(),
-  pieceSkinId: z.string().min(1).nullable().optional(),
-  gamePresetId: z.string().min(1).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1)).nullable().optional(),
-  contentProfileId: z.string().min(1).nullable().optional(),
-  gameplayProfileId: z.string().min(1).nullable().optional(),
-  uiProfileId: z.string().min(1).nullable().optional(),
+  contentPackId: z.string().min(1).max(64).nullable().optional(),
+  ruleSetId: z.string().min(1).max(64).nullable().optional(),
+  mapId: z.string().min(1).max(64).nullable().optional(),
+  diceRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  pieceSetId: z.string().min(1).max(64).nullable().optional(),
+  themeId: z.string().min(1).max(64).nullable().optional(),
+  pieceSkinId: z.string().min(1).max(64).nullable().optional(),
+  gamePresetId: z.string().min(1).max(64).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1).max(64)).nullable().optional(),
+  contentProfileId: z.string().min(1).max(64).nullable().optional(),
+  gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
+  uiProfileId: z.string().min(1).max(64).nullable().optional(),
   turnTimeoutHours: z.number().int().nullable().optional(),
   players: z.array(playerSlotConfigSchema).nullable().optional()
 });
@@ -654,22 +654,22 @@ export const gameSummarySchema = objectSchema({
 export type GameSummary = z.infer<typeof gameSummarySchema>;
 
 export const gameIdRequestSchema = objectSchema({
-  gameId: z.string().min(1)
+  gameId: z.string().min(1).max(64)
 });
 
 export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
 
 export const aiJoinRequestSchema = objectSchema({
-  gameId: z.string().min(1).nullable().optional(),
-  playerId: z.string().min(1).nullable().optional(),
+  gameId: z.string().min(1).max(64).nullable().optional(),
+  playerId: z.string().min(1).max(64).nullable().optional(),
   name: z.string().min(1).max(24)
 });
 
 export type AiJoinRequest = z.infer<typeof aiJoinRequestSchema>;
 
 const gameplayRequestBaseSchema = objectSchema({
-  gameId: z.string().min(1).nullable().optional(),
-  playerId: z.string().min(1),
+  gameId: z.string().min(1).max(64).nullable().optional(),
+  playerId: z.string().min(1).max(64),
   expectedVersion: z.number().int().min(1).nullable().optional()
 });
 
@@ -679,7 +679,7 @@ export type StartGameRequest = z.infer<typeof startGameRequestSchema>;
 
 export const gameActionReinforceRequestSchema = gameplayRequestBaseSchema.extend({
   type: z.literal("reinforce"),
-  territoryId: z.string().min(1),
+  territoryId: z.string().min(1).max(64),
   amount: z.number().int().min(1).nullable().optional()
 });
 
@@ -693,8 +693,8 @@ export type GameActionEnvelope = z.infer<typeof gameActionEnvelopeSchema>;
 
 export const gameActionAttackRequestSchema = gameplayRequestBaseSchema.extend({
   type: z.literal("attack"),
-  fromId: z.string().min(1),
-  toId: z.string().min(1),
+  fromId: z.string().min(1).max(64),
+  toId: z.string().min(1).max(64),
   attackDice: z.number().int().min(1).nullable().optional()
 });
 
@@ -702,8 +702,8 @@ export type GameActionAttackRequest = z.infer<typeof gameActionAttackRequestSche
 
 export const gameActionAttackBanzaiRequestSchema = gameplayRequestBaseSchema.extend({
   type: z.literal("attackBanzai"),
-  fromId: z.string().min(1),
-  toId: z.string().min(1),
+  fromId: z.string().min(1).max(64),
+  toId: z.string().min(1).max(64),
   attackDice: z.number().int().min(1).nullable().optional()
 });
 
@@ -720,8 +720,8 @@ export type GameActionMoveAfterConquestRequest = z.infer<
 
 export const gameActionFortifyRequestSchema = gameplayRequestBaseSchema.extend({
   type: z.literal("fortify"),
-  fromId: z.string().min(1),
-  toId: z.string().min(1),
+  fromId: z.string().min(1).max(64),
+  toId: z.string().min(1).max(64),
   armies: z.number().int().min(1)
 });
 
@@ -752,7 +752,7 @@ export const gameActionRequestSchema = z.discriminatedUnion("type", [
 export type GameActionRequest = z.infer<typeof gameActionRequestSchema>;
 
 export const tradeCardsRequestSchema = gameplayRequestBaseSchema.extend({
-  cardIds: z.array(z.string().min(1)).length(3)
+  cardIds: z.array(z.string().min(1).max(64)).length(3)
 });
 
 export type TradeCardsRequest = z.infer<typeof tradeCardsRequestSchema>;
@@ -766,19 +766,19 @@ export type GameListResponse = z.infer<typeof gameListResponseSchema>;
 
 export const adminGameDefaultsSchema = objectSchema({
   totalPlayers: z.number().int().nullable().optional(),
-  contentPackId: z.string().min(1).nullable().optional(),
-  ruleSetId: z.string().min(1).nullable().optional(),
-  mapId: z.string().min(1).nullable().optional(),
-  diceRuleSetId: z.string().min(1).nullable().optional(),
-  victoryRuleSetId: z.string().min(1).nullable().optional(),
-  pieceSetId: z.string().min(1).nullable().optional(),
-  themeId: z.string().min(1).nullable().optional(),
-  pieceSkinId: z.string().min(1).nullable().optional(),
-  gamePresetId: z.string().min(1).nullable().optional(),
-  activeModuleIds: z.array(z.string().min(1)).optional(),
-  contentProfileId: z.string().min(1).nullable().optional(),
-  gameplayProfileId: z.string().min(1).nullable().optional(),
-  uiProfileId: z.string().min(1).nullable().optional(),
+  contentPackId: z.string().min(1).max(64).nullable().optional(),
+  ruleSetId: z.string().min(1).max(64).nullable().optional(),
+  mapId: z.string().min(1).max(64).nullable().optional(),
+  diceRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  victoryRuleSetId: z.string().min(1).max(64).nullable().optional(),
+  pieceSetId: z.string().min(1).max(64).nullable().optional(),
+  themeId: z.string().min(1).max(64).nullable().optional(),
+  pieceSkinId: z.string().min(1).max(64).nullable().optional(),
+  gamePresetId: z.string().min(1).max(64).nullable().optional(),
+  activeModuleIds: z.array(z.string().min(1).max(64)).optional(),
+  contentProfileId: z.string().min(1).max(64).nullable().optional(),
+  gameplayProfileId: z.string().min(1).max(64).nullable().optional(),
+  uiProfileId: z.string().min(1).max(64).nullable().optional(),
   turnTimeoutHours: z.number().int().nullable().optional(),
   players: z.array(playerSlotConfigSchema).nullable().optional()
 });
@@ -1480,7 +1480,7 @@ export const adminUsersResponseSchema = objectSchema({
 export type AdminUsersResponse = z.infer<typeof adminUsersResponseSchema>;
 
 export const adminUserRoleUpdateRequestSchema = objectSchema({
-  userId: z.string().min(1),
+  userId: z.string().min(1).max(64),
   role: z.enum(["admin", "user"])
 });
 
@@ -1513,9 +1513,9 @@ export const adminGameDetailsResponseSchema = objectSchema({
 export type AdminGameDetailsResponse = z.infer<typeof adminGameDetailsResponseSchema>;
 
 export const adminGameActionRequestSchema = objectSchema({
-  gameId: z.string().min(1),
+  gameId: z.string().min(1).max(64),
   action: z.enum(["close-lobby", "terminate-game", "repair-game-config"]),
-  confirmation: z.string().min(1).nullable().optional()
+  confirmation: z.string().min(1).max(64).nullable().optional()
 });
 
 export type AdminGameActionRequest = z.infer<typeof adminGameActionRequestSchema>;

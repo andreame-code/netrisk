@@ -2,6 +2,10 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.050 - 2026-06-07
+
+- Hardened input validation schemas with maximum string length constraints for identifiers, names, and configuration IDs to mitigate Denial of Service (DoS) risks and resource exhaustion.
+
 ## 0.1.049 - 2026-06-06
 
 - Hardened API request parsing by enforcing strict `Content-Type: application/json` for mutation requests (POST, PUT, PATCH).
