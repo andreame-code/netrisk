@@ -37,30 +37,7 @@ const {
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
-const { setRetryAfterHeader } = require("../http-response.cjs");
-
-function sendTooManyAuthAttempts(
-  res: unknown,
-  sendLocalizedError: SendLocalizedError,
-  retryAfterSeconds: number
-): void {
-  setRetryAfterHeader(res, retryAfterSeconds);
-  sendLocalizedError(
-    res,
-    429,
-    {
-      error: "Troppi tentativi di accesso. Riprova piu tardi.",
-      errorKey: "auth.throttle.tooManyAttempts",
-      errorParams: { retryAfterSeconds },
-      code: "AUTH_RATE_LIMITED"
-    },
-    "Troppi tentativi di accesso. Riprova piu tardi.",
-    "auth.throttle.tooManyAttempts",
-    { retryAfterSeconds },
-    "AUTH_RATE_LIMITED",
-    { retryAfterSeconds }
-  );
-}
+const { sendTooManyAttemptsError } = require("../http-response.cjs");
 
 async function handleRegisterRoute(
   req: unknown,
@@ -84,7 +61,12 @@ async function handleRegisterRoute(
   const throttleKey = createAuthThrottleKey("register", req, parsedBody.username);
   const throttleDecision = authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
-    sendTooManyAuthAttempts(res, sendLocalizedError, throttleDecision.retryAfterSeconds);
+    sendTooManyAttemptsError(
+      res as HttpTypes.ServerResponse,
+      throttleDecision.retryAfterSeconds,
+      "Troppi tentativi di registrazione. Riprova più tardi.",
+      sendLocalizedError
+    );
     return;
   }
 
@@ -144,7 +126,12 @@ async function handleLoginRoute(
   const throttleKey = createAuthThrottleKey("login", req, parsedBody.username);
   const throttleDecision = authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
-    sendTooManyAuthAttempts(res, sendLocalizedError, throttleDecision.retryAfterSeconds);
+    sendTooManyAttemptsError(
+      res as HttpTypes.ServerResponse,
+      throttleDecision.retryAfterSeconds,
+      "Troppi tentativi di accesso. Riprova più tardi.",
+      sendLocalizedError
+    );
     return;
   }
 

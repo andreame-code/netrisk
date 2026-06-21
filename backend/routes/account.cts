@@ -13,7 +13,7 @@ const {
   themePreferenceResponseSchema
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
-const { setRetryAfterHeader } = require("../http-response.cjs");
+const { sendTooManyAttemptsError, setRetryAfterHeader } = require("../http-response.cjs");
 
 type RequireAuthFn = (
   req: HttpTypes.IncomingMessage,
@@ -197,21 +197,11 @@ export async function handleAccountSettingsRoute(
   const throttleKey = createAuthThrottleKey("account", deps.req, authContext.user.username);
   const throttleDecision = deps.authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
-    setRetryAfterHeader(deps.res, throttleDecision.retryAfterSeconds);
-    deps.sendLocalizedError(
+    sendTooManyAttemptsError(
       deps.res,
-      429,
-      {
-        error: "Troppi tentativi di verifica password. Riprova piu tardi.",
-        errorKey: "auth.throttle.tooManyAttempts",
-        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-        code: "AUTH_RATE_LIMITED"
-      },
+      throttleDecision.retryAfterSeconds,
       "Troppi tentativi di verifica password. Riprova piu tardi.",
-      "auth.throttle.tooManyAttempts",
-      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-      "AUTH_RATE_LIMITED",
-      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      deps.sendLocalizedError
     );
     return true;
   }
