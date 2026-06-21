@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.050 - 2026-06-21
+
+- Implemented rate limiting for gameplay start and card trade endpoints to mitigate DoS and spam.
+- Standardized rate-limiting response logic across the backend with a centralized helper.
+- Hardened the custom HTTP response helper to maintain compatibility with test mock objects.
+
 ## 0.1.049 - 2026-06-06
 
 - Hardened API request parsing by enforcing strict `Content-Type: application/json` for mutation requests (POST, PUT, PATCH).
