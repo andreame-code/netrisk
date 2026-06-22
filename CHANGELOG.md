@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.050 - 2025-06-07
+
+- Added rate limiting for game-starting and card-trading endpoints to mitigate automation and spam.
+- Hardened the `game_start` and `game_trade` scopes with standard attempt-based lockout policies via `AuthAttemptThrottle`.
+
 ## 0.1.049 - 2026-06-06
 
 - Hardened API request parsing by enforcing strict `Content-Type: application/json` for mutation requests (POST, PUT, PATCH).

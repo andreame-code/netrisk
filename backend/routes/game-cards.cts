@@ -51,6 +51,10 @@ type SnapshotForUser = (
   gameName: string | null,
   user: unknown
 ) => unknown;
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 async function handleCardsTradeRoute(
   req: unknown,
@@ -67,11 +71,42 @@ async function handleCardsTradeRoute(
   broadcastGame: BroadcastGame,
   snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
     return;
+  }
+
+  if (authAttemptThrottle) {
+    const throttleKey = createAuthThrottleKey(
+      "game_trade",
+      req,
+      authContext.user.id || authContext.user.username
+    );
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+      sendLocalizedError(
+        res,
+        429,
+        {
+          error: "Troppi tentativi di scambio carte. Riprova piu tardi.",
+          errorKey: "auth.throttle.tooManyAttempts",
+          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+          code: "AUTH_RATE_LIMITED"
+        },
+        "Troppi tentativi di scambio carte. Riprova piu tardi.",
+        "auth.throttle.tooManyAttempts",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        "AUTH_RATE_LIMITED",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      );
+      return;
+    }
+
+    authAttemptThrottle.recordAttempt(throttleKey);
   }
 
   const preflightExpectedVersion = readExpectedVersionOrSendError(

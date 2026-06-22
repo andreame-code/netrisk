@@ -307,11 +307,42 @@ async function handleStartRoute(
   broadcastGame: BroadcastGame,
   snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
     return;
+  }
+
+  if (authAttemptThrottle) {
+    const throttleKey = createAuthThrottleKey(
+      "game_start",
+      req,
+      authContext.user.id || authContext.user.username
+    );
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+      sendLocalizedError(
+        res,
+        429,
+        {
+          error: "Troppi tentativi di avvio partita. Riprova piu tardi.",
+          errorKey: "auth.throttle.tooManyAttempts",
+          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+          code: "AUTH_RATE_LIMITED"
+        },
+        "Troppi tentativi di avvio partita. Riprova piu tardi.",
+        "auth.throttle.tooManyAttempts",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        "AUTH_RATE_LIMITED",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      );
+      return;
+    }
+
+    authAttemptThrottle.recordAttempt(throttleKey);
   }
 
   const resolvedBody = {
