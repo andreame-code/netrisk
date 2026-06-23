@@ -112,7 +112,7 @@ async function handleCardsTradeRoute(
       sendTooManyAttemptsError(
         nodeResponse,
         throttleDecision.retryAfterSeconds,
-        "Troppi tentativi di scambio carte. Riprova più tardi.",
+        "Troppi tentativi di scambio carte. Riprova piu tardi.",
         sendLocalizedError as SendLocalizedError
       );
       return;

@@ -100,7 +100,7 @@ async function handleCreateGameRoute(
       sendTooManyAttemptsError(
         res as HttpTypes.ServerResponse,
         throttleDecision.retryAfterSeconds,
-        "Troppi tentativi di creazione partita. Riprova più tardi.",
+        "Troppi tentativi di creazione partita. Riprova piu tardi.",
         sendLocalizedError as SendLocalizedError
       );
       return;
