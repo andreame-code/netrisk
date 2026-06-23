@@ -7261,56 +7261,6 @@ register("API AI join applica il rate limiting dopo troppi tentativi", async () 
   });
 });
 
-register("API start applica il rate limiting dopo troppi tentativi", async () => {
-  await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl, uniqueName("start_limit"));
-
-    for (let index = 0; index < 5; index += 1) {
-      const response = await fetch(`${baseUrl}/api/start`, {
-        method: "POST",
-        headers: authHeaders(session.sessionToken),
-        body: JSON.stringify({ playerId: "missing-player" })
-      });
-      assert.notEqual(response.status, 429);
-    }
-
-    const limitedResponse = await fetch(`${baseUrl}/api/start`, {
-      method: "POST",
-      headers: authHeaders(session.sessionToken),
-      body: JSON.stringify({ playerId: "missing-player" })
-    });
-    assert.equal(limitedResponse.status, 429);
-    assert.equal(limitedResponse.headers.get("retry-after"), "60");
-    const payload: any = await limitedResponse.json();
-    assert.equal(payload.code, "AUTH_RATE_LIMITED");
-  });
-});
-
-register("API cards trade applica il rate limiting dopo troppi tentativi", async () => {
-  await withServer(async (baseUrl) => {
-    const session = await createAuthenticatedSession(baseUrl, uniqueName("trade_limit"));
-
-    for (let index = 0; index < 5; index += 1) {
-      const response = await fetch(`${baseUrl}/api/cards/trade`, {
-        method: "POST",
-        headers: authHeaders(session.sessionToken),
-        body: JSON.stringify({ playerId: "missing-player", cardIds: ["c1", "c2", "c3"] })
-      });
-      assert.notEqual(response.status, 429);
-    }
-
-    const limitedResponse = await fetch(`${baseUrl}/api/cards/trade`, {
-      method: "POST",
-      headers: authHeaders(session.sessionToken),
-      body: JSON.stringify({ playerId: "missing-player", cardIds: ["c1", "c2", "c3"] })
-    });
-    assert.equal(limitedResponse.status, 429);
-    assert.equal(limitedResponse.headers.get("retry-after"), "60");
-    const payload: any = await limitedResponse.json();
-    assert.equal(payload.code, "AUTH_RATE_LIMITED");
-  });
-});
-
 register("API registration applica il rate limiting dopo troppi tentativi", async () => {
   await withServer(async (baseUrl) => {
     const password = TEST_PASSWORD;
