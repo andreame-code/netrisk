@@ -22,3 +22,8 @@
 **Vulnerability:** Security hardening that relies on standard Node.js HTTP response methods like `res.removeHeader` can cause runtime errors in test suites where response objects are mocked without full API parity.
 **Learning:** When applying security headers at the global server level, defensive checks for method existence (e.g., `typeof res.removeHeader === 'function'`) ensure that security logic doesn't break gameplay or regression tests that use lightweight mocks. Additionally, HSTS must be applied conditionally (only over secure connections or in test environments) to align with RFC 6797 and maintain local development accessibility.
 **Prevention:** Always wrap non-standard or late-added response methods in defensive type checks and ensure HSTS application logic respects the connection's security state.
+
+## 2025-05-28 - Centralized Rate Limiting and Hardened Game Action Endpoints
+**Vulnerability:** Sensitive game state transitions (starting a game and trading cards) were not rate-limited, allowing for potential spam and resource exhaustion. Additionally, rate-limiting error handling was duplicated across multiple routes, leading to inconsistent responses and maintenance overhead.
+**Learning:** Centralizing security-related responses (like HTTP 429) ensures that critical headers like `Retry-After` and standardized error codes like `AUTH_RATE_LIMITED` are applied consistently. Hardening all mutation-heavy endpoints, even those requiring authentication, provides defense-in-depth against automated abuse from compromised or malicious accounts.
+**Prevention:** Use a centralized helper for common security responses and audit all mutation endpoints for rate-limiting coverage during the development of new features.

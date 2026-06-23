@@ -52,7 +52,7 @@ type GetGame = (gameId: string | null) => Promise<any>;
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type StartGame = (state: any) => any;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 
 const {
   aiJoinRequestSchema,
@@ -68,7 +68,7 @@ const {
   sendVersionConflict
 } = require("./game-mutation.cjs");
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
-const { setRetryAfterHeader } = require("../http-response.cjs");
+const { sendTooManyAttemptsError } = require("../http-response.cjs");
 
 async function handleAiJoinRoute(
   req: unknown,
@@ -115,21 +115,11 @@ async function handleAiJoinRoute(
     );
     const throttleDecision = authAttemptThrottle.check(throttleKey);
     if (!throttleDecision.allowed) {
-      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
-      sendLocalizedError(
-        res,
-        429,
-        {
-          error: "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
-          errorKey: "auth.throttle.tooManyAttempts",
-          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-          code: "AUTH_RATE_LIMITED"
-        },
+      sendTooManyAttemptsError(
+        res as HttpTypes.ServerResponse,
+        throttleDecision.retryAfterSeconds,
         "Troppi tentativi di aggiunta AI. Riprova piu tardi.",
-        "auth.throttle.tooManyAttempts",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-        "AUTH_RATE_LIMITED",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+        sendLocalizedError as SendLocalizedError
       );
       return;
     }
@@ -232,21 +222,11 @@ async function handleJoinRoute(
   if (authAttemptThrottle && throttleKey) {
     const throttleDecision = authAttemptThrottle.check(throttleKey);
     if (!throttleDecision.allowed) {
-      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
-      sendLocalizedError(
-        res,
-        429,
-        {
-          error: "Troppi tentativi di partecipazione partita. Riprova più tardi.",
-          errorKey: "auth.throttle.tooManyAttempts",
-          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-          code: "AUTH_RATE_LIMITED"
-        },
+      sendTooManyAttemptsError(
+        res as HttpTypes.ServerResponse,
+        throttleDecision.retryAfterSeconds,
         "Troppi tentativi di partecipazione partita. Riprova più tardi.",
-        "auth.throttle.tooManyAttempts",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-        "AUTH_RATE_LIMITED",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+        sendLocalizedError as SendLocalizedError
       );
       return;
     }
@@ -307,7 +287,8 @@ async function handleStartRoute(
   broadcastGame: BroadcastGame,
   snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -330,6 +311,23 @@ async function handleStartRoute(
 
   const nodeResponse = res as HttpTypes.ServerResponse;
   const expectedVersion = parsedBody.expectedVersion ?? null;
+
+  const throttleKey = authAttemptThrottle
+    ? createAuthThrottleKey("game_start", req, authContext.user.username)
+    : null;
+  if (authAttemptThrottle && throttleKey) {
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      sendTooManyAttemptsError(
+        nodeResponse,
+        throttleDecision.retryAfterSeconds,
+        "Troppi tentativi di avvio partita. Riprova piu tardi.",
+        sendLocalizedError as SendLocalizedError
+      );
+      return;
+    }
+    authAttemptThrottle.recordAttempt(throttleKey);
+  }
 
   try {
     const activeGame = await getGame(parsedBody.gameId ?? null);
