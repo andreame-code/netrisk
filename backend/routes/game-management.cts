@@ -47,7 +47,8 @@ type SnapshotForUser = (
 ) => unknown;
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 
 const {
   createGameRequestSchema,
