@@ -109,15 +109,29 @@ export function sendJson(
     return;
   }
 
-  res.writeHead(statusCode, {
+  const responseHeaders = {
     "Content-Type": "application/json; charset=utf-8",
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
     Pragma: "no-cache",
     Expires: "0",
     ...headers
-  });
-  res.end(JSON.stringify(payload));
+  };
+
+  if (typeof res.writeHead === "function") {
+    res.writeHead(statusCode, responseHeaders);
+  } else {
+    (res as any).statusCode = statusCode;
+    Object.entries(responseHeaders).forEach(([key, value]) => {
+      setResponseHeader(res, key, value);
+    });
+  }
+
+  if (typeof res.end === "function") {
+    res.end(JSON.stringify(payload));
+  } else if (res && typeof res === "object" && !Object.prototype.hasOwnProperty.call(res, "body")) {
+    (res as any).body = JSON.stringify(payload);
+  }
 }
 
 export function localizedPayload(
@@ -178,4 +192,29 @@ export function sendLocalizedError(
     code: sanitizedCode,
     ...(isInternalError ? {} : extra)
   });
+}
+
+export function sendTooManyAttemptsError(
+  res: unknown,
+  retryAfterSeconds: number,
+  fallbackMessage: string,
+  sendLocalizedErrorFn?: typeof sendLocalizedError
+): void {
+  const sendError = sendLocalizedErrorFn || sendLocalizedError;
+  setRetryAfterHeader(res, retryAfterSeconds);
+  sendError(
+    res as HttpTypes.ServerResponse,
+    429,
+    {
+      error: fallbackMessage,
+      errorKey: "auth.throttle.tooManyAttempts",
+      errorParams: { retryAfterSeconds },
+      code: "AUTH_RATE_LIMITED"
+    },
+    fallbackMessage,
+    "auth.throttle.tooManyAttempts",
+    { retryAfterSeconds },
+    "AUTH_RATE_LIMITED",
+    { retryAfterSeconds }
+  );
 }

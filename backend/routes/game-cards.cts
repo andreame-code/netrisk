@@ -1,6 +1,8 @@
 import type * as HttpTypes from "node:http";
 const { tradeCardsRequestSchema } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { sendTooManyAttemptsError } = require("../http-response.cjs");
 const {
   isInvalidExpectedVersion,
   persistBroadcastAndSendMutation,
@@ -44,6 +46,7 @@ type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type TradeCardSet = (state: any, playerId: string, cardIds: string[]) => any;
 type PersistGameContext = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
 type BroadcastGame = (gameContext: any) => void;
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 type SnapshotForUser = (
   state: any,
   gameId: string | null,
@@ -67,7 +70,8 @@ async function handleCardsTradeRoute(
   broadcastGame: BroadcastGame,
   snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
@@ -98,6 +102,22 @@ async function handleCardsTradeRoute(
   }
 
   const nodeResponse = res as HttpTypes.ServerResponse;
+
+  if (authAttemptThrottle) {
+    const throttleKey = createAuthThrottleKey("game_trade", req, authContext.user.username);
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      sendTooManyAttemptsError(
+        nodeResponse,
+        throttleDecision.retryAfterSeconds,
+        "Troppi tentativi di scambio carte. Riprova più tardi.",
+        sendLocalizedError
+      );
+      return;
+    }
+
+    authAttemptThrottle.recordAttempt(throttleKey);
+  }
   const gameContext = await loadGameContext(parsedBody.gameId ?? null);
   const player = getPlayer(gameContext.state, parsedBody.playerId);
   if (!player || !playerBelongsToUser(player, authContext.user)) {
