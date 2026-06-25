@@ -47,7 +47,7 @@ type SnapshotForUser = (
 ) => unknown;
 type ResumeAiTurnsForRead = (gameContext: any) => Promise<any>;
 type ResolvePlayerForUser = (state: any, user: unknown) => any;
-type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 
 const {
   createGameRequestSchema,
@@ -57,7 +57,7 @@ const {
 } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
-const { setRetryAfterHeader } = require("../http-response.cjs");
+const { sendTooManyAttemptsError } = require("../http-response.cjs");
 
 async function handleCreateGameRoute(
   req: unknown,
@@ -97,21 +97,11 @@ async function handleCreateGameRoute(
   if (authAttemptThrottle && throttleKey) {
     const throttleDecision = authAttemptThrottle.check(throttleKey);
     if (!throttleDecision.allowed) {
-      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
-      sendLocalizedError(
-        res,
-        429,
-        {
-          error: "Troppi tentativi di creazione partita. Riprova più tardi.",
-          errorKey: "auth.throttle.tooManyAttempts",
-          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-          code: "AUTH_RATE_LIMITED"
-        },
-        "Troppi tentativi di creazione partita. Riprova più tardi.",
-        "auth.throttle.tooManyAttempts",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-        "AUTH_RATE_LIMITED",
-        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      sendTooManyAttemptsError(
+        res as HttpTypes.ServerResponse,
+        throttleDecision.retryAfterSeconds,
+        "Troppi tentativi di creazione partita. Riprova piu tardi.",
+        sendLocalizedError as SendLocalizedError
       );
       return;
     }

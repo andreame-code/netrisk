@@ -12,8 +12,8 @@ const {
   themePreferenceRequestSchema,
   themePreferenceResponseSchema
 } = require("../../shared/runtime-validation.cjs");
+import type { AuthAttemptThrottle } from "../auth-attempt-throttle.cts";
 const { parseRequestOrSendError, sendValidatedJson } = require("../route-validation.cjs");
-const { setRetryAfterHeader } = require("../http-response.cjs");
 
 type RequireAuthFn = (
   req: HttpTypes.IncomingMessage,
@@ -41,7 +41,7 @@ interface AccountRouteDeps {
       theme: string
     ): Promise<{ preferences?: { theme?: string | null } } | null>;
   };
-  authAttemptThrottle?: import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
+  authAttemptThrottle?: AuthAttemptThrottle;
   playerProfiles: {
     getPlayerProfile(username: string): Promise<Record<string, unknown>> | Record<string, unknown>;
   };
@@ -67,6 +67,7 @@ interface AccountRouteDeps {
 }
 
 const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
+const { sendTooManyAttemptsError } = require("../http-response.cjs");
 
 async function resolveRouteSupportedSiteThemes(deps: AccountRouteDeps): Promise<Set<string>> {
   return typeof deps.supportedSiteThemes === "function"
@@ -197,21 +198,11 @@ export async function handleAccountSettingsRoute(
   const throttleKey = createAuthThrottleKey("account", deps.req, authContext.user.username);
   const throttleDecision = deps.authAttemptThrottle?.check(throttleKey);
   if (throttleDecision && !throttleDecision.allowed) {
-    setRetryAfterHeader(deps.res, throttleDecision.retryAfterSeconds);
-    deps.sendLocalizedError(
+    sendTooManyAttemptsError(
       deps.res,
-      429,
-      {
-        error: "Troppi tentativi di verifica password. Riprova piu tardi.",
-        errorKey: "auth.throttle.tooManyAttempts",
-        errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-        code: "AUTH_RATE_LIMITED"
-      },
+      throttleDecision.retryAfterSeconds,
       "Troppi tentativi di verifica password. Riprova piu tardi.",
-      "auth.throttle.tooManyAttempts",
-      { retryAfterSeconds: throttleDecision.retryAfterSeconds },
-      "AUTH_RATE_LIMITED",
-      { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      deps.sendLocalizedError
     );
     return true;
   }
