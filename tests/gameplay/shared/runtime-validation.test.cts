@@ -6,11 +6,13 @@ const {
   authoredModuleSchema,
   authSessionResponseSchema,
   formatValidationPath,
+  createGameRequestSchema,
   gameIdRequestSchema,
   gameListResponseSchema,
   gameMutationResponseSchema,
   loginRequestSchema,
   logoutResponseSchema,
+  tradeCardsRequestSchema,
   messagePayloadSchema,
   netRiskUiSlotContributionSchema,
   parseWithSchema,
@@ -288,6 +290,34 @@ register("shared runtime validation constrains module UI slot routes to same-ori
     assert.equal(result.success, false, `Expected route to be rejected: ${route}`);
   });
 });
+
+register(
+  "shared runtime validation accepts long module ids and card ids used by engine and setup",
+  () => {
+    const longModuleId = `module.${"x".repeat(96)}`;
+    const longCardId = `card-${"y".repeat(68)}`;
+
+    const createGameRequest = parseWithSchema(createGameRequestSchema, {
+      name: "Long-id game",
+      activeModuleIds: [longModuleId]
+    });
+    assert.equal(createGameRequest.activeModuleIds?.[0], longModuleId);
+
+    const adminDefaults = parseWithSchema(createGameRequestSchema, {
+      activeModuleIds: [longModuleId],
+      players: []
+    });
+    assert.equal(adminDefaults.activeModuleIds?.[0], longModuleId);
+
+    const tradeCards = parseWithSchema(tradeCardsRequestSchema, {
+      playerId: "p-1",
+      expectedVersion: 1,
+      cardIds: [longCardId, longCardId, longCardId]
+    });
+    assert.equal(tradeCards.cardIds.length, 3);
+    assert.equal(tradeCards.cardIds[0], longCardId);
+  }
+);
 
 register("shared runtime validation rejects passwords exceeding 128 characters", () => {
   const tooLongPassword = "a".repeat(129);

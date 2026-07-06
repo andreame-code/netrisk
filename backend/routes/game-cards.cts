@@ -1,12 +1,14 @@
 import type * as HttpTypes from "node:http";
 const { tradeCardsRequestSchema } = require("../../shared/runtime-validation.cjs");
 const { parseRequestOrSendError } = require("../route-validation.cjs");
+const { createAuthThrottleKey } = require("../auth-attempt-throttle.cjs");
 const {
   isInvalidExpectedVersion,
   persistBroadcastAndSendMutation,
   readExpectedVersionOrSendError,
   sendVersionConflict
 } = require("./game-mutation.cjs");
+const { setRetryAfterHeader } = require("../http-response.cjs");
 
 type SendJson = (
   res: unknown,
@@ -42,6 +44,7 @@ type GetTargetGameId = (body?: Record<string, unknown>, url?: URL | null) => str
 type GetPlayer = (state: any, playerId: string) => any;
 type PlayerBelongsToUser = (player: any, user: AuthContext["user"]) => boolean;
 type TradeCardSet = (state: any, playerId: string, cardIds: string[]) => any;
+type AuthAttemptThrottle = import("../auth-attempt-throttle.cts").AuthAttemptThrottle;
 type PersistGameContext = (gameContext: any, expectedVersion?: number | null) => Promise<any>;
 type BroadcastGame = (gameContext: any) => void;
 type SnapshotForUser = (
@@ -67,11 +70,48 @@ async function handleCardsTradeRoute(
   broadcastGame: BroadcastGame,
   snapshotForUser: SnapshotForUser,
   sendJson: SendJson,
-  sendLocalizedError: SendLocalizedError
+  sendLocalizedError: SendLocalizedError,
+  authAttemptThrottle?: AuthAttemptThrottle
 ): Promise<void> {
   const authContext = await requireAuth(req, res, body);
   if (!authContext) {
     return;
+  }
+
+  const resolvedBody = {
+    ...body,
+    gameId: getTargetGameId(body, url)
+  };
+  const throttleKey = resolvedBody.gameId
+    ? createAuthThrottleKey(
+        "game_trade",
+        req,
+        `${authContext.user.id || authContext.user.username}:${resolvedBody.gameId}`
+      )
+    : null;
+  if (authAttemptThrottle && throttleKey) {
+    const throttleDecision = authAttemptThrottle.check(throttleKey);
+    if (!throttleDecision.allowed) {
+      setRetryAfterHeader(res, throttleDecision.retryAfterSeconds);
+      sendLocalizedError(
+        res,
+        429,
+        {
+          error: "Troppi tentativi di scambio carte. Riprova piu tardi.",
+          errorKey: "auth.throttle.tooManyAttempts",
+          errorParams: { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+          code: "AUTH_RATE_LIMITED"
+        },
+        "Troppi tentativi di scambio carte. Riprova piu tardi.",
+        "auth.throttle.tooManyAttempts",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds },
+        "AUTH_RATE_LIMITED",
+        { retryAfterSeconds: throttleDecision.retryAfterSeconds }
+      );
+      return;
+    }
+
+    authAttemptThrottle.recordAttempt(throttleKey);
   }
 
   const preflightExpectedVersion = readExpectedVersionOrSendError(
@@ -83,10 +123,6 @@ async function handleCardsTradeRoute(
     return;
   }
 
-  const resolvedBody = {
-    ...body,
-    gameId: getTargetGameId(body, url)
-  };
   const parsedBody = parseRequestOrSendError(
     res as HttpTypes.ServerResponse,
     resolvedBody,

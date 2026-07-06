@@ -1,6 +1,6 @@
 type HeaderValue = string | string[] | undefined;
 
-type AuthThrottleScope = "account" | "ai_join" | "game_create" | "game_join" | "login" | "register";
+type AuthThrottleScope = "account" | "ai_join" | "game_create" | "game_join" | "game_trade" | "login" | "register";
 
 type AuthThrottleBucket = {
   attempts: number;

@@ -1669,7 +1669,8 @@ function createApp(options: CreateAppOptions = {}) {
         broadcastGame,
         snapshotForUser,
         sendJson,
-        sendLocalizedError
+        sendLocalizedError,
+        authAttemptThrottle
       );
       return;
     }

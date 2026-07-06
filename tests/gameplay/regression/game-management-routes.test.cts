@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { handleOpenGameRoute } = require("../../../backend/routes/game-management.cjs");
 const { handleAiJoinRoute } = require("../../../backend/routes/game-setup.cjs");
+const { handleCardsTradeRoute } = require("../../../backend/routes/game-cards.cjs");
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
 
@@ -252,4 +253,103 @@ register("handleAiJoinRoute returns 200 when an existing AI rejoins the lobby", 
       isAi: true
     }
   });
+});
+
+register("handleCardsTradeRoute keeps throttles scoped to game id", async () => {
+  const throttleState: Record<string, number> = {};
+  const authAttemptThrottle = {
+    check(key: any) {
+      const usernameKey = String(key.username || "");
+      return {
+        allowed: (throttleState[usernameKey] || 0) < 1,
+        retryAfterSeconds: 30
+      };
+    },
+    recordAttempt(key: any) {
+      const usernameKey = String(key.username || "");
+      throttleState[usernameKey] = (throttleState[usernameKey] || 0) + 1;
+    },
+    recordFailure() {
+      return { allowed: false, retryAfterSeconds: 30 };
+    },
+    recordSuccess() {}
+  };
+
+  const tradeCalls: Array<{ gameId: string | null; cardIds: string[] }> = [];
+  const snapshotForUserCalls: string[] = [];
+  const payloadCalls: Array<{ statusCode: number; payload: Record<string, unknown> }> = [];
+  const localizedErrors: any[] = [];
+  const loadCalls: string[] = [];
+
+  const runTrade = async (gameId: string) => {
+    return handleCardsTradeRoute(
+      {
+        headers: {},
+        socket: { remoteAddress: "198.51.100.1" }
+      },
+      {},
+      {
+        playerId: "p-1",
+        cardIds: ["c1", "c2", "c3"]
+      },
+      new URL(`http://localhost/api/cards/trade?gameId=${encodeURIComponent(gameId)}`),
+      async () => ({
+        user: {
+          id: "u-1",
+          username: "hero"
+        }
+      }),
+      async (targetGameId: string | null) => {
+        loadCalls.push(String(targetGameId));
+        return {
+          state: { phase: "lobby" },
+          gameId: targetGameId,
+          version: 1,
+          gameName: `Game ${targetGameId}`
+        };
+      },
+      (body: Record<string, any>) => body.gameId || "",
+      (state: any, playerId: string) => ({ id: playerId }),
+      (player: any) => player?.id === "p-1",
+      () => {
+        tradeCalls.push({ gameId, cardIds: ["c1", "c2", "c3"] });
+        return {
+          ok: true,
+          bonus: { armies: 5 },
+          validation: {}
+        };
+      },
+      async (gameContext: any) => gameContext,
+      () => {
+        return;
+      },
+      (state: any, gameId: string | null, version: number | null, gameName: string | null) => {
+        const snapshot = { state, gameId, version, gameName };
+        snapshotForUserCalls.push(`snapshot:${gameId}:${version}`);
+        return snapshot;
+      },
+      (_res: unknown, statusCode: number, payload: Record<string, unknown>) => {
+        payloadCalls.push({ statusCode, payload });
+      },
+      (...args: any[]) => {
+        localizedErrors.push(args);
+      },
+      authAttemptThrottle
+    );
+  };
+
+  await runTrade("game-a");
+  await runTrade("game-b");
+  await runTrade("game-a");
+
+  assert.equal(tradeCalls.length, 2);
+  assert.equal(loadCalls.length, 2);
+  assert.equal(payloadCalls.length, 2);
+  assert.equal(payloadCalls[0]?.statusCode, 200);
+  assert.equal(payloadCalls[1]?.statusCode, 200);
+  assert.equal(localizedErrors.length, 1);
+  assert.equal(localizedErrors[0]?.[1], 429);
+  assert.deepEqual(Object.keys(throttleState).sort(), ["u-1:game-a", "u-1:game-b"].sort());
+  assert.equal(snapshotForUserCalls.length, 2);
+  assert.equal(snapshotForUserCalls[0], "snapshot:game-a:1");
 });
