@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.058 - 2026-08-05
+
+- Localized login and registration metadata and content across Italian, English, German, and Spanish on canonical and React alias routes.
+- Removed internal registration copy, translated Italian shell navigation, and corrected Italian landing and authentication diacritics.
+- Prevented unauthenticated admin redirects from leaving stale admin titles and added route/locale regression coverage.
+
 ## 0.1.057 - 2026-08-05
 
 - Split the direct landing and authenticated React shell entries and deferred the optional Sentry integration until after the initial render.
