@@ -72,6 +72,7 @@ jobs:
       - name: Note skipped Vercel env parity check
         if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.vercel_auth.outcome != 'success' }}
         run: |
+          echo "::warning title=Vercel environment audit skipped::VERCEL_TOKEN is missing or invalid; production environment parity was not verified."
           echo "Skipping Vercel env parity check because VERCEL_TOKEN is missing or invalid for this run." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Vercel env parity check

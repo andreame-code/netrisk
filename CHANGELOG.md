@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.054 - 2026-08-05
+
+- Made Vercel-to-GitHub deployment registration resilient to missing, expired, or unauthorized API tokens by falling back to the successful Vercel status URL.
+- Preserved Production versus Preview classification during token-free deployment registration.
+- Added a visible GitHub Actions warning when Vercel environment parity cannot be audited, plus regression coverage for both workflows.
+
 ## 0.1.053 - 2026-08-05
 
 - Added selectable easy, medium, and hard difficulty for each AI player, with legacy AI slots defaulting to medium.

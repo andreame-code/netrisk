@@ -25,6 +25,10 @@ function loadVercelConfig(): VercelConfig {
   return JSON.parse(fs.readFileSync(configPath, "utf8"));
 }
 
+function loadWorkflow(name: string): string {
+  return fs.readFileSync(path.join(process.cwd(), ".github", "workflows", name), "utf8");
+}
+
 function hasRewriteRule(rewrites: RewriteRule[], source: string, destination: string): boolean {
   return rewrites.some((entry) => entry.source === source && entry.destination === destination);
 }
@@ -133,4 +137,49 @@ register("vercel preview rewrites React shell deep links to the shell entry docu
       value: "(?<gameId>.+)"
     }
   ]);
+});
+
+register("vercel deployment registration survives an unavailable API token", () => {
+  const workflow = loadWorkflow("vercel-github-deployment.yml");
+
+  assert.match(
+    workflow,
+    /VERCEL_TOKEN is unavailable; registering the Vercel dashboard URL instead\./,
+    "Expected the deployment workflow to document its token-free fallback."
+  );
+  assert.match(
+    workflow,
+    /const deploymentUrl = vercelDeployment\?\.url[\s\S]*?: statusUrl;/,
+    "Expected the dashboard status URL to be registered when the Vercel API is unavailable."
+  );
+  assert.match(
+    workflow,
+    /statusIsForDefaultBranch[\s\S]*?\? "Production"[\s\S]*?: "Preview";/,
+    "Expected token-free deployment registration to preserve production classification."
+  );
+  assert.match(
+    workflow,
+    /github\.rest\.repos\.getBranch\([\s\S]*?branch: defaultBranch/,
+    "Expected production classification to fall back to the current default-branch SHA."
+  );
+  assert.doesNotMatch(
+    workflow,
+    /VERCEL_TOKEN is required to resolve the Vercel deployment URL/,
+    "The deployment status workflow must not fail only because its optional lookup token expired."
+  );
+});
+
+register("quality workflow exposes skipped Vercel environment audits", () => {
+  const workflow = loadWorkflow("quality.yml");
+
+  assert.match(
+    workflow,
+    /::warning title=Vercel environment audit skipped::/,
+    "Expected an invalid Vercel token to create a visible GitHub Actions warning."
+  );
+  assert.match(
+    workflow,
+    /production environment parity was not verified/,
+    "Expected the warning to state which production check did not run."
+  );
 });
