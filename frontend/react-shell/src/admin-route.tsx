@@ -2647,10 +2647,15 @@ export function AdminRoute() {
   const activeItem = navItems.find((item) => item.id === section) || navItems[0];
 
   useEffect(() => {
-    if (currentUser?.role === "admin") {
-      document.title = `NetRisk Admin · ${activeItem.label}`;
+    if (!currentUser) {
+      return;
     }
-  }, [activeItem.label, currentUser?.role]);
+
+    document.title =
+      currentUser.role === "admin"
+        ? `NetRisk Admin · ${activeItem.label}`
+        : "NetRisk Admin · Access denied";
+  }, [activeItem.label, currentUser]);
 
   useEffect(() => {
     setNavOpen(false);
