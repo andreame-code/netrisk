@@ -1996,10 +1996,17 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           cachedState?.enabledById[moduleId] !== false
       );
       if (developmentModuleIds.length) {
+        const games = await listGames();
+        const safelyDisabledModuleIds = developmentModuleIds.filter(
+          (moduleId) => !activeGameUsesModule(moduleId, games)
+        );
+        if (!safelyDisabledModuleIds.length) {
+          return cachedState;
+        }
         cachedState = {
           enabledById: {
             ...cachedState.enabledById,
-            ...Object.fromEntries(developmentModuleIds.map((moduleId) => [moduleId, false]))
+            ...Object.fromEntries(safelyDisabledModuleIds.map((moduleId) => [moduleId, false]))
           },
           updatedAt: new Date().toISOString()
         };

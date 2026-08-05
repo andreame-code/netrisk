@@ -456,11 +456,15 @@ function appendUnreportedRepairChanges(
   path: string,
   changes: AdminGameRepairChange[]
 ): void {
+  const existingChangeIndex = changes.findIndex((change) => change.path === path);
   if (valuesEqual(before, after)) {
+    if (existingChangeIndex >= 0) {
+      changes.splice(existingChangeIndex, 1);
+    }
     return;
   }
 
-  const existingChange = changes.find((change) => change.path === path);
+  const existingChange = existingChangeIndex >= 0 ? changes[existingChangeIndex] : undefined;
   if (existingChange) {
     if (!valuesEqual(existingChange.after, after)) {
       existingChange.after = safeClone(after);
@@ -529,7 +533,45 @@ function findUnavailableCatalogOwner(
   );
 }
 
-function migratePersistedDevelopmentModuleDefaults(input: Record<string, unknown>): {
+function installedSelectionOwners(
+  installedModules: Array<Record<string, unknown>>
+): Map<string, Map<string, string>> {
+  const ownersByField = new Map<string, Map<string, string>>(
+    [...REPAIR_PROFILE_FIELDS, "gamePresetId"].map((field) => [field, new Map()])
+  );
+
+  installedModules.forEach((moduleEntry) => {
+    const moduleId = asNonEmptyString(moduleEntry.id);
+    const clientManifest = asRecord(moduleEntry.clientManifest);
+    if (!moduleId || !clientManifest) {
+      return;
+    }
+
+    const profiles = asRecord(clientManifest.profiles);
+    const entriesByField: Record<string, Array<Record<string, unknown>>> = {
+      contentProfileId: asRecordArray(profiles?.content) || [],
+      gameplayProfileId: asRecordArray(profiles?.gameplay) || [],
+      uiProfileId: asRecordArray(profiles?.ui) || [],
+      gamePresetId: asRecordArray(clientManifest.gamePresets) || []
+    };
+
+    Object.entries(entriesByField).forEach(([field, entries]) => {
+      entries.forEach((entry) => {
+        const selectionId = asNonEmptyString(entry.id);
+        if (selectionId) {
+          ownersByField.get(field)?.set(selectionId, asNonEmptyString(entry.moduleId) || moduleId);
+        }
+      });
+    });
+  });
+
+  return ownersByField;
+}
+
+function migratePersistedDevelopmentModuleDefaults(
+  input: Record<string, unknown>,
+  installedModules: Array<Record<string, unknown>>
+): {
   defaults: Record<string, unknown>;
   changed: boolean;
 } {
@@ -550,9 +592,19 @@ function migratePersistedDevelopmentModuleDefaults(input: Record<string, unknown
       (moduleId) => !removedModuleIds.includes(moduleId)
     );
   }
+  const ownersByField = installedSelectionOwners(installedModules);
+  const developmentModuleIds = new Set(
+    installedModules
+      .map((moduleEntry) => asNonEmptyString(moduleEntry.id))
+      .filter(
+        (moduleId): moduleId is string =>
+          Boolean(moduleId) && isDevelopmentOnlyModuleId(moduleId as string)
+      )
+  );
   [...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
     const selectionId = asNonEmptyString(defaults[field]);
-    if (selectionId && isDevelopmentOnlyModuleId(selectionId)) {
+    const ownerId = selectionId ? ownersByField.get(field)?.get(selectionId) : null;
+    if (ownerId && developmentModuleIds.has(ownerId)) {
       defaults[field] = null;
       changed = true;
     }
@@ -693,9 +745,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
         `Clear preset owned by unavailable module ${presetOwner}.`
       );
     } else if (gamePresetId && orphanedModuleIds.length) {
-      const resolvedPreset = await options.moduleRuntime.resolveGamePreset({ gamePresetId });
-      if (!resolvedPreset) {
-        blockers.push(`gamePresetId "${gamePresetId}" cannot be resolved safely.`);
+      try {
+        const resolvedPreset = await options.moduleRuntime.resolveGamePreset({ gamePresetId });
+        if (!resolvedPreset) {
+          blockers.push(`gamePresetId "${gamePresetId}" cannot be resolved safely.`);
+        }
+      } catch (error: unknown) {
+        blockers.push(
+          `gamePresetId "${gamePresetId}" cannot be resolved safely: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -833,7 +891,11 @@ function createAdminConsole(options: AdminConsoleOptions) {
       source.defaults && typeof source.defaults === "object"
         ? (source.defaults as Record<string, unknown>)
         : {};
-    const defaultsMigration = migratePersistedDevelopmentModuleDefaults(rawDefaults);
+    const installedModules = await options.moduleRuntime.listInstalledModules();
+    const defaultsMigration = migratePersistedDevelopmentModuleDefaults(
+      rawDefaults,
+      installedModules
+    );
     const defaults = await resolveAdminDefaults(defaultsMigration.defaults);
     if (defaultsMigration.changed) {
       await maybeResolve(

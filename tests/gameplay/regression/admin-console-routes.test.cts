@@ -966,6 +966,166 @@ register(
   }
 );
 
+register(
+  "persistent default migration uses catalog ownership instead of selection name prefixes",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "community.operations",
+          manifest: {
+            schemaVersion: 1,
+            id: "community.operations",
+            version: "1.0.0",
+            displayName: "Community Operations",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: { clientManifest: "client-manifest.json" }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "demo-mode", name: "Demo Mode" }],
+              gameplay: [{ id: "test-rules", name: "Test Rules" }],
+              ui: [{ id: "fixture-ui", name: "Fixture UI" }]
+            },
+            gamePresets: [
+              {
+                id: "demo-preset",
+                name: "Demo Preset",
+                activeModuleIds: ["community.operations"]
+              }
+            ]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: {
+              "core.base": true,
+              "community.operations": true
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.setAppState("adminConsoleConfig", {
+            defaults: {
+              activeModuleIds: ["community.operations"],
+              gamePresetId: "demo-preset",
+              contentProfileId: "demo-mode",
+              gameplayProfileId: "test-rules",
+              uiProfileId: "fixture-ui",
+              totalPlayers: 2
+            },
+            maintenance: { staleLobbyDays: 7, auditLogLimit: 120 },
+            updatedAt: "2026-08-01T00:00:00.000Z",
+            updatedBy: null
+          });
+
+          const response = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(response.statusCode, 200, JSON.stringify(response.payload));
+          assert.deepEqual(response.payload.config.defaults.activeModuleIds, [
+            "core.base",
+            "community.operations"
+          ]);
+          assert.equal(response.payload.config.defaults.gamePresetId, "demo-preset");
+          assert.equal(response.payload.config.defaults.contentProfileId, "demo-mode");
+          assert.equal(response.payload.config.defaults.gameplayProfileId, "test-rules");
+          assert.equal(response.payload.config.defaults.uiProfileId, "fixture-ui");
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
+register(
+  "persistent catalog migration preserves development modules used by live games",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "demo.live",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.live",
+            version: "1.0.0",
+            displayName: "Demo Live",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: { clientManifest: "client-manifest.json" }
+          },
+          clientManifest: {}
+        }
+      ],
+      async ({ app }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: { "core.base": true, "demo.live": true },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.createGame({
+            id: "live-development-module",
+            name: "Live Development Module",
+            version: 1,
+            creatorUserId: null,
+            state: {
+              phase: "lobby",
+              players: [],
+              territories: {},
+              hands: {},
+              gameConfig: {
+                activeModules: [
+                  { id: "core.base", version: "1.0.0" },
+                  { id: "demo.live", version: "1.0.0" }
+                ]
+              }
+            },
+            createdAt: "2026-08-01T00:00:00.000Z",
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+
+          const installedModules = await app.moduleRuntime.rescan();
+          assert.equal(
+            installedModules.find((entry: any) => entry.id === "demo.live")?.enabled,
+            true
+          );
+          const catalogState = await app.datastore.getAppState("moduleCatalogState");
+          assert.equal(catalogState.enabledById["demo.live"], true);
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
 register("public game options ignore stale invalid admin defaults instead of failing", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const configResponse = await callApp(
@@ -1015,6 +1175,57 @@ register("public game options ignore stale invalid admin defaults instead of fai
     );
     assert.equal(createGameResponse.statusCode, 201);
     assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
+  });
+});
+
+register("admin orphan preview converts preset lookup failures into blockers", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const createResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      { name: "Unknown Preset Orphan" },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createResponse.statusCode, 201, JSON.stringify(createResponse.payload));
+    const gameId = createResponse.payload.game.id;
+    const storedGame = await app.datastore.findGameById(gameId);
+    assert.ok(storedGame);
+    storedGame.state.gameConfig.activeModules = [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.missing", version: "1.0.0" }
+    ];
+    storedGame.state.gameConfig.gamePresetId = "unknown-preset";
+    storedGame.updatedAt = new Date().toISOString();
+    await app.datastore.updateGame(storedGame);
+    await activateSeparateGame(app, adminSessionToken);
+
+    const detailResponse = await callApp(
+      app,
+      "GET",
+      `/api/admin/games/${gameId}`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+    assert.equal(detailResponse.payload.repairPreview.status, "blocked");
+    assert.equal(
+      detailResponse.payload.repairPreview.blockers.some((blocker: string) =>
+        blocker.includes('Unknown game preset "unknown-preset"')
+      ),
+      true
+    );
+
+    const closeResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      { gameId, action: "close-lobby", confirmation: gameId },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(closeResponse.statusCode, 200, JSON.stringify(closeResponse.payload));
+    assert.equal(closeResponse.payload.game.phase, "finished");
+    assert.equal(closeResponse.payload.repairPreview.status, "blocked");
   });
 });
 
@@ -1858,6 +2069,23 @@ register(
         }
       },
       {
+        id: "finished-core-unavailable",
+        name: "Finished Core Unavailable",
+        version: 1,
+        creatorUserId: "admin-1",
+        createdAt: "2026-04-18T10:00:00.000Z",
+        updatedAt: "2026-04-18T12:00:00.000Z",
+        state: {
+          phase: "finished",
+          players: [],
+          territories: {},
+          hands: {},
+          gameConfig: {
+            activeModules: [{ id: "core.base", version: "1.0.0" }]
+          }
+        }
+      },
+      {
         id: "broken-lobby",
         name: "Broken Lobby",
         version: 1,
@@ -1966,6 +2194,26 @@ register(
         mapName: null,
         diceRuleSetId: null,
         activeModules: [{ id: "module.retired", version: "1.0.0" }],
+        gamePresetId: null,
+        contentProfileId: null,
+        gameplayProfileId: null,
+        uiProfileId: null,
+        updatedAt: "2026-04-18T12:00:00.000Z",
+        createdAt: "2026-04-18T10:00:00.000Z"
+      },
+      {
+        id: "finished-core-unavailable",
+        name: "Finished Core Unavailable",
+        version: 1,
+        phase: "finished",
+        playerCount: 0,
+        totalPlayers: null,
+        creatorUserId: "admin-1",
+        contentPackId: null,
+        mapId: null,
+        mapName: null,
+        diceRuleSetId: null,
+        activeModules: [{ id: "core.base", version: "1.0.0" }],
         gamePresetId: null,
         contentProfileId: null,
         gameplayProfileId: null,
@@ -2310,6 +2558,21 @@ register(
       [{ id: "core.base", version: "1.0.0" }]
     );
 
+    const unavailableCoreDetail = await adminConsole.getGameDetails("finished-core-unavailable");
+    assert.equal(unavailableCoreDetail.repairPreview.status, "blocked");
+    assert.equal(
+      unavailableCoreDetail.repairPreview.changes.some(
+        (change: any) => change.path === "gameConfig.activeModules"
+      ),
+      false
+    );
+    assert.equal(
+      unavailableCoreDetail.repairPreview.blockers.some((blocker: string) =>
+        blocker.includes("core.base module is unavailable")
+      ),
+      true
+    );
+
     const config = await adminConsole.getConfig();
     assert.equal(config.config.defaults.activeModuleIds[0], "module.safe");
     assert.equal(config.config.updatedBy.username, "admin_commander");
@@ -2317,7 +2580,7 @@ register(
     const maintenanceReport = await adminConsole.getMaintenanceReport();
     assert.equal(maintenanceReport.summary.staleLobbies, 1);
     assert.equal(maintenanceReport.summary.invalidGames >= 2, true);
-    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 3);
+    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 4);
 
     const audit = await adminConsole.listAudit();
     assert.equal(audit.entries.length, 3);
