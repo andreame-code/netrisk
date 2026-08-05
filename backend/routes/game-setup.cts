@@ -145,7 +145,10 @@ async function handleAiJoinRoute(
   }
 
   const gameContext = await loadGameContext(gameId);
-  const result = addPlayer(gameContext.state, parsedBody.name, { isAi: true });
+  const result = addPlayer(gameContext.state, parsedBody.name, {
+    isAi: true,
+    ...(parsedBody.difficulty ? { aiDifficulty: parsedBody.difficulty } : {})
+  });
   if (!result.ok) {
     sendLocalizedError(
       res,

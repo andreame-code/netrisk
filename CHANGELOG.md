@@ -2,6 +2,13 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.053 - 2026-08-05
+
+- Added selectable easy, medium, and hard difficulty for each AI player, with legacy AI slots defaulting to medium.
+- Expanded AI decisions with difficulty-specific risk tolerance, continent completion and opponent-blocking pressure, proactive hard-mode card trades, and stronger conquest/fortification choices.
+- Persisted per-AI balancing metrics for turns, reinforcements, attacks, conquests, card trades, and fortifications, and exposed them through validated game snapshots.
+- Added gameplay, configuration, transport-validation, and React setup tests for AI difficulty and metrics.
+
 ## 0.1.052 - 2026-08-05
 
 - Added map authoring to the admin Content Studio with persisted drafts, structured territory and continent editing, live validation, and publish/disable lifecycle controls.

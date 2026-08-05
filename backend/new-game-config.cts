@@ -54,7 +54,12 @@ import type { SupportedMap } from "../shared/maps/index.cjs";
 import type { AuthoredVictoryModuleRuntime } from "../shared/runtime-validation.cjs";
 const { secureRandom } = require("./random.cjs");
 import { createLocalizedError } from "../shared/messages.cjs";
-import type { GameState } from "../shared/models.cjs";
+import {
+  isAiDifficulty,
+  normalizeAiDifficulty,
+  type AiDifficulty,
+  type GameState
+} from "../shared/models.cjs";
 
 type AddPlayerResult =
   | { ok: true }
@@ -69,7 +74,7 @@ type CreateInitialStateFn = (selectedMap?: SupportedMap | null) => GameState & {
 type AddPlayerFn = (
   state: GameState,
   name: string | null,
-  options?: { isAi?: boolean }
+  options?: { isAi?: boolean; aiDifficulty?: AiDifficulty }
 ) => AddPlayerResult;
 
 const { addPlayer, createInitialState } = require("./engine/game-engine.cjs") as {
@@ -100,12 +105,14 @@ type PlayerType = "human" | "ai";
 
 interface RequestedPlayerSlot {
   type?: string;
+  difficulty?: string | null;
 }
 
 interface ValidatedPlayerSlot {
   slot: number;
   type: PlayerType;
   name: string | null;
+  difficulty: AiDifficulty | null;
 }
 
 interface NewGameConfigInput {
@@ -262,7 +269,8 @@ function buildResolvedGameConfig(
     players: config.players.map((player) => ({
       slot: player.slot,
       type: player.type,
-      name: player.name
+      name: player.name,
+      difficulty: player.difficulty
     }))
   };
 }
@@ -471,7 +479,7 @@ export function validateNewGameConfig(
     );
   }
 
-  const requestedPlayers = Array.isArray(input.players)
+  const requestedPlayers: RequestedPlayerSlot[] = Array.isArray(input.players)
     ? input.players
     : Array.from({ length: totalPlayers }, () => ({ type: "human" }));
 
@@ -498,10 +506,17 @@ export function validateNewGameConfig(
 
   const players = requestedPlayers.map((slot, index) => {
     const type = index === 0 ? "human" : normalizePlayerType(slot && slot.type);
+    if (type === "ai" && slot?.difficulty != null && !isAiDifficulty(slot.difficulty)) {
+      throw createLocalizedError(
+        "Il livello AI selezionato non e supportato.",
+        "newGame.invalidAiDifficulty"
+      );
+    }
     return {
       slot: index + 1,
       type,
-      name: type === "ai" ? aiNames[nextAiIndex++] : null
+      name: type === "ai" ? aiNames[nextAiIndex++] : null,
+      difficulty: type === "ai" ? normalizeAiDifficulty(slot?.difficulty) : null
     };
   });
 
@@ -790,7 +805,10 @@ export function createConfiguredInitialState(
             return;
           }
 
-          const result = addPlayer(state, player.name, { isAi: true });
+          const result = addPlayer(state, player.name, {
+            isAi: true,
+            aiDifficulty: player.difficulty || "medium"
+          });
           if (!result.ok) {
             throw createLocalizedError(
               result.error || "Impossibile aggiungere il giocatore AI.",

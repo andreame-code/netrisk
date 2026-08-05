@@ -11,6 +11,7 @@ const { createCard, CardType } = require("../../../shared/models.cjs");
 const {
   makePlayers,
   makeState,
+  makeContinent,
   makeTerritory,
   territoryStates,
   TurnPhase
@@ -44,6 +45,7 @@ type AiStateOptions = {
   tradeCount?: number;
   pendingConquest?: ExtendedAiState["pendingConquest"];
   attacksThisTurn?: number;
+  continents?: ReturnType<typeof makeContinent>[];
 };
 
 declare function register(name: string, fn: () => void | Promise<void>): void;
@@ -72,7 +74,8 @@ function createAiState(options: AiStateOptions = {}): ExtendedAiState {
     turnPhase: options.turnPhase || TurnPhase.REINFORCEMENT,
     currentTurnIndex: options.currentTurnIndex || 0,
     reinforcementPool: options.reinforcementPool || 0,
-    attacksThisTurn: options.attacksThisTurn || 0
+    attacksThisTurn: options.attacksThisTurn || 0,
+    continents: options.continents || []
   }) as ExtendedAiState;
 
   state.mapTerritories = territories;
@@ -120,6 +123,61 @@ register("chooseAttack selects the highest-value favorable attack", () => {
     fromId: "c",
     toId: "d",
     score: 39
+  });
+});
+
+register("AI difficulty changes risk tolerance without changing the medium baseline", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 4 },
+      { id: "b", ownerId: "p2", armies: 2 }
+    ]),
+    mapTerritories: [makeTerritory("a", ["b"]), makeTerritory("b", ["a"])]
+  });
+
+  assert.deepEqual(chooseAttack(state, "p1", { difficulty: "medium" }), {
+    fromId: "a",
+    toId: "b",
+    score: 18
+  });
+  assert.equal(chooseAttack(state, "p1", { difficulty: "easy" }), null);
+  assert.deepEqual(chooseAttack(state, "p1", { difficulty: "hard" }), {
+    fromId: "a",
+    toId: "b",
+    score: 18
+  });
+});
+
+register("hard AI blocks an opponent continent before taking an easier target", () => {
+  const state = createAiState({
+    turnPhase: TurnPhase.ATTACK,
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 5 },
+      { id: "b", ownerId: "p2", armies: 2 },
+      { id: "c", ownerId: "p2", armies: 2 },
+      { id: "d", ownerId: "p1", armies: 7 },
+      { id: "e", ownerId: "p2", armies: 1 }
+    ]),
+    mapTerritories: [
+      makeTerritory("a", ["b"]),
+      makeTerritory("b", ["a", "c"], { continentId: "north" }),
+      makeTerritory("c", ["b"], { continentId: "north" }),
+      makeTerritory("d", ["e"]),
+      makeTerritory("e", ["d"])
+    ],
+    continents: [makeContinent("north", ["b", "c"], 5)]
+  });
+
+  assert.deepEqual(chooseAttack(state, "p1", { difficulty: "medium" }), {
+    fromId: "d",
+    toId: "e",
+    score: 59
+  });
+  assert.deepEqual(chooseAttack(state, "p1", { difficulty: "hard" }), {
+    fromId: "a",
+    toId: "b",
+    score: 88
   });
 });
 
@@ -391,6 +449,52 @@ register("runAiTurn trades cards, attacks, resolves conquest, and ends the turn"
   assert.equal(state.territories.b.armies, 1);
   assert.equal(state.hands.p1.length, 4);
   assert.equal(state.discardPile.length, 3);
+});
+
+register("hard AI trades proactively and persists balancing metrics", () => {
+  const players = makePlayers(["CPU Alpha", "Bob"]);
+  players[0].isAi = true;
+  players[0].aiDifficulty = "hard";
+  const state = createAiState({
+    players,
+    hands: {
+      p1: [
+        createCard({ id: "i1", type: CardType.INFANTRY }),
+        createCard({ id: "i2", type: CardType.INFANTRY }),
+        createCard({ id: "i3", type: CardType.INFANTRY })
+      ]
+    },
+    territories: territoryStates([
+      { id: "a", ownerId: "p1", armies: 2 },
+      { id: "d", ownerId: "p2", armies: 2 }
+    ]),
+    mapTerritories: [makeTerritory("a", []), makeTerritory("d", [])],
+    reinforcementPool: 0,
+    turnPhase: TurnPhase.REINFORCEMENT
+  });
+
+  const report = runAiTurn(state, { random: () => 0.5 });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.difficulty, "hard");
+  assert.deepEqual(report.tradedCardSets, [["i1", "i2", "i3"]]);
+  assert.equal(report.endedTurn, true);
+  assert.deepEqual(state.aiMetrics, {
+    schemaVersion: 1,
+    humanPlayerCount: 1,
+    aiPlayerCount: 1,
+    players: {
+      p1: {
+        difficulty: "hard",
+        turns: 1,
+        reinforcementsPlaced: 4,
+        attacks: 0,
+        territoriesConquered: 0,
+        cardSetsTraded: 1,
+        fortifications: 0
+      }
+    }
+  });
 });
 
 register("runAiTurnsIfNeeded skips a stale AI turn that points to an eliminated CPU", () => {

@@ -372,6 +372,45 @@ register(
   }
 );
 
+register("new game config validates and persists AI difficulty per slot", () => {
+  const configured = createConfiguredInitialState(
+    {
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai", difficulty: "hard" }]
+    },
+    { random: () => 0 }
+  );
+
+  assert.equal(configured.config.players[0].difficulty, null);
+  assert.equal(configured.config.players[1].difficulty, "hard");
+  assert.equal(configured.state.players[0].isAi, true);
+  assert.equal(configured.state.players[0].aiDifficulty, "hard");
+  assert.deepEqual(configured.state.gameConfig.players, [
+    { slot: 1, type: "human", name: null, difficulty: null },
+    { slot: 2, type: "ai", name: "Hannibal", difficulty: "hard" }
+  ]);
+});
+
+register("new game config defaults legacy AI slots to medium and rejects unknown levels", () => {
+  const legacyConfig = validateNewGameConfig(
+    {
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    { random: () => 0 }
+  );
+  assert.equal(legacyConfig.players[1].difficulty, "medium");
+
+  assert.throws(
+    () =>
+      validateNewGameConfig({
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai", difficulty: "impossible" }]
+      }),
+    /livello AI/i
+  );
+});
+
 register("validateNewGameConfig rejects unsupported victory rules", () => {
   assert.throws(
     () =>
