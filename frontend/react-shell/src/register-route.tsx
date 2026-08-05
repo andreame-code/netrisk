@@ -38,8 +38,10 @@ export function RegisterRoute() {
   const nextPath = normalizeNextPath(searchParams.get("next"), buildProfilePath(namespace));
 
   useEffect(() => {
-    document.title = t("register.title");
-  }, [currentLocale]);
+    if (state.status === "unauthenticated") {
+      document.title = t("register.title");
+    }
+  }, [currentLocale, state.status]);
 
   if (state.status === "loading") {
     return (
