@@ -16,7 +16,7 @@ The NetRisk administrator area lives at `/admin`, with `/react/admin` kept as th
 - `Games`: searchable list of games/lobbies, issue summary, player/config inspection, raw state view, close/terminate/repair actions
 - `Configurations`: global admin defaults, enabled modules, profiles, runtime defaults, and maintenance thresholds
 - `Runtime / Modules`: module catalog management through the existing module admin tooling
-- `Content Studio`: constrained authoring for gameplay modules; currently supports `victory-objectives`
+- `Content Studio`: constrained authoring for gameplay modules; supports validated maps and `victory-objectives`
 - `Maintenance`: validation report and guarded cleanup/repair actions
 - `System Health`: diagnostics view for module references, game snapshots, stale lobbies, and maintenance findings
 - `Audit Log`: persistent log of admin mutations with actor, action, target, and result
@@ -50,7 +50,8 @@ Notes:
 ## Safety notes
 
 - module disable now refuses when the module is still referenced by admin defaults
-- Content Studio modules are schema-validated server-side before publish/enable and never execute arbitrary uploaded code
+- Content Studio maps and objective modules are schema-validated server-side before publish/enable and never execute arbitrary uploaded code
+- authored maps cannot be disabled while referenced by active games or admin defaults
 - game repair preserves runtime-resolved IDs while synchronizing stale top-level snapshot fields
 - cleanup and destructive actions are audit logged on both success and failure paths where applicable
 
@@ -58,7 +59,7 @@ Notes:
 
 - `frontend/react-shell/src/__tests__/admin-route.integration.test.tsx` verifies admin route gating, non-admin navigation hiding, and overview-shell loading in the React shell
 - `tests/gameplay/regression/admin-console-routes.test.cts` verifies admin API protection for anonymous and non-admin callers, role mutation, destructive confirmation enforcement, failure audit logging, maintenance actions, and admin-default runtime preservation
-- `tests/gameplay/regression/admin-content-studio-routes.test.cts` verifies authored module route protection, validation, publish/enable/disable behavior, and runtime integration
+- `tests/gameplay/regression/admin-content-studio-routes.test.cts` verifies authored module route protection, map/objective validation, publish/enable/disable behavior, runtime integration, and authored-map game creation
 - `tests/gameplay/regression/vercel-routing-config.test.cts` verifies `/admin` and `/react/admin` continue to route correctly through the deployed rewrite layer
 
 Notable backend regressions covered today:

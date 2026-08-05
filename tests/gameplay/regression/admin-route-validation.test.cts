@@ -376,7 +376,11 @@ register(
     await handleAdminContentStudioValidateRoute(
       {},
       {},
-      { id: "", content: { mapId: 7, objectives: "invalid" } },
+      {
+        id: "",
+        moduleType: "victory-objectives",
+        content: { mapId: 7, objectives: "invalid" }
+      },
       async () => createAuthContext(),
       () => undefined,
       {

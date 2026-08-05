@@ -1253,10 +1253,8 @@ function createAdminConsole(options: AdminConsoleOptions) {
 
   async function authoredModuleDisableGuard(moduleId: string): Promise<void> {
     const config = await loadConfigRecord();
-    if (config.defaults.victoryRuleSetId === moduleId) {
-      throw new Error(
-        `Victory objective module "${moduleId}" is still referenced by admin defaults.`
-      );
+    if (config.defaults.victoryRuleSetId === moduleId || config.defaults.mapId === moduleId) {
+      throw new Error(`Authored module "${moduleId}" is still referenced by admin defaults.`);
     }
 
     const rawGames = asArray(await maybeResolve(options.gameSessions.datastore.listGames()));
@@ -1266,13 +1264,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
       }
 
       const gameConfig = ensureGameConfig(game?.state || {});
-      return asNonEmptyString(gameConfig.victoryRuleSetId) === moduleId;
+      return (
+        asNonEmptyString(gameConfig.victoryRuleSetId) === moduleId ||
+        asNonEmptyString(gameConfig.mapId) === moduleId ||
+        asNonEmptyString(game?.state?.mapId) === moduleId
+      );
     });
 
     if (activeReference) {
-      throw new Error(
-        `Victory objective module "${moduleId}" is still referenced by an active game.`
-      );
+      throw new Error(`Authored module "${moduleId}" is still referenced by an active game.`);
     }
   }
 

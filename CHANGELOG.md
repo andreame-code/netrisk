@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.052 - 2026-08-05
+
+- Added map authoring to the admin Content Studio with persisted drafts, structured territory and continent editing, live validation, and publish/disable lifecycle controls.
+- Integrated published authored maps into runtime game options and game creation while preserving existing victory-objective modules and blocking unsafe map disable operations when referenced.
+- Added regression coverage for map topology validation, API persistence, UI authoring, runtime catalog exposure, and game creation.
+
 ## 0.1.051 - 2026-08-05
 
 - Hardened sensitive game state transitions (starting a game and trading cards) with rate limiting to mitigate spam and automated abuse.

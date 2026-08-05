@@ -1,13 +1,14 @@
-# Content Studio Victory Objectives
+# Content Studio Authored Gameplay
 
-This document describes the first authored gameplay-module flow shipped through the admin console.
+This document describes the authored gameplay-module flows shipped through the admin console.
 
 ## Scope
 
-The new `Content Studio` admin area is the first constrained authoring surface for gameplay modules.
-In this phase it supports one module type:
+The `Content Studio` admin area is a constrained authoring surface for gameplay modules. It
+supports two module types:
 
 - `victory-objectives`
+- `map`
 
 The system is intentionally schema-driven. Admins can author validated objective modules without
 editing source files, but they cannot execute arbitrary code or upload scripts.
@@ -20,7 +21,7 @@ Victory objective modules move through three states:
 - `published`: validated and available in runtime victory-rule catalogs
 - `disabled`: previously published content that is hidden from runtime selection
 
-The admin UI supports:
+The admin UI supports both module types through the same lifecycle:
 
 - listing existing authored modules
 - starting a new draft
@@ -29,6 +30,9 @@ The admin UI supports:
 - publishing a valid draft
 - disabling or re-enabling a published module
 - inspecting the generated runtime JSON
+
+Map drafts additionally provide structured editors for territories, normalized coordinates,
+bidirectional neighbor links, continents, membership, and reinforcement bonuses.
 
 The section is available from the admin console at `/admin/content-studio` and `/react/admin/content-studio`.
 
@@ -51,7 +55,7 @@ The authored module shape includes:
 - `updatedAt`
 - `content`
 
-For `victory-objectives`, `content` currently contains:
+For `victory-objectives`, `content` contains:
 
 - `mapId`
 - `objectives[]`
@@ -60,6 +64,14 @@ Supported objective types in this phase:
 
 - `control-continents`
 - `control-territory-count`
+
+For `map`, `content` contains:
+
+- `territories[]` with stable ids, names, continent assignment, normalized `x`/`y` coordinates,
+  and neighbor ids
+- `continents[]` with stable ids, names, whole-number reinforcement bonuses, and territory ids
+
+The authored map module id is also its runtime map id.
 
 ## Persistence
 
@@ -89,17 +101,41 @@ Current rules include:
 - at least one objective
 - at least one enabled objective before publish
 
+Map validation additionally requires:
+
+- at least two territories and one continent
+- unique, portable ids for territories and continents
+- coordinates between `0` and `1`
+- known, non-duplicated, bidirectional neighbor links
+- a single connected map graph
+- exactly one consistent continent assignment per territory
+- non-negative whole-number continent bonuses
+
 Drafts may remain invalid. Publishing and enabling require a clean validation result.
 
 ## Runtime integration
 
-Published authored victory modules are merged into the runtime catalog by `backend/module-runtime.cts`.
+Published authored victory modules and maps are merged into the runtime catalog by
+`backend/module-runtime.cts`.
 
 That means they now appear in:
 
 - `GET /api/game/options`
 - admin default selection flows
 - runtime victory-rule catalogs used during game creation
+
+Published maps additionally appear in the map catalog used by `GET /api/game/options`, admin
+defaults, new-game setup, and the game engine. Their validated territory graph, positions,
+continents, and bonuses are used directly when a game is created.
+
+## Pluggable rules and bonuses
+
+Authored maps use the same runtime contribution model as installed NetRisk modules rather than a
+parallel rules engine. Map continent bonuses are stored in the authored map definition. Broader
+custom gameplay rules remain data-driven module contributions, including dice and card rule sets,
+reinforcement adjustments, combat/fortify limits, scenario territory bonuses, victory rules, and
+setup profiles. The Content Studio can add more constrained editors for those contribution types
+without allowing uploaded scripts or arbitrary code execution.
 
 When a game is created with an authored victory module:
 
@@ -146,6 +182,7 @@ The authoring screen owns:
 - live validation
 - player-facing preview
 - generated runtime JSON
+- structured map territory and continent editors
 
 Regression coverage lives in:
 

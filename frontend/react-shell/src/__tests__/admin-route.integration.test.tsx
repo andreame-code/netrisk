@@ -536,7 +536,7 @@ function createMaintenanceReport(): AdminMaintenanceReport {
 
 function createContentStudioOptionsResponse(): AdminAuthoredModuleEditorOptionsResponse {
   return {
-    moduleTypes: ["victory-objectives"],
+    moduleTypes: ["victory-objectives", "map"],
     maps: [
       {
         id: "classic-mini",
@@ -562,8 +562,13 @@ function createContentStudioOptionsResponse(): AdminAuthoredModuleEditorOptionsR
   };
 }
 
+type VictoryObjectivesAuthoredModule = Extract<
+  AdminAuthoredModuleDetailResponse["module"],
+  { moduleType: "victory-objectives" }
+>;
+
 function createAuthoredModuleDetail(
-  overrides: Partial<AdminAuthoredModuleDetailResponse["module"]> = {}
+  overrides: Partial<VictoryObjectivesAuthoredModule> = {}
 ): AdminAuthoredModuleDetailResponse {
   return {
     module: {
@@ -665,7 +670,7 @@ function createAuthoredValidationResponse(): AdminAuthoredModuleValidateResponse
 }
 
 function createAuthoredMutationResponse(
-  overrides: Partial<AdminAuthoredModuleDetailResponse["module"]> = {}
+  overrides: Partial<VictoryObjectivesAuthoredModule> = {}
 ): AdminAuthoredModuleMutationResponse {
   const detail = createAuthoredModuleDetail(overrides);
 
@@ -977,7 +982,7 @@ describe("Admin route integration", () => {
   it("loads the content studio editor, shows preview data, and saves a draft", async () => {
     const { user } = renderReactShell("/react/admin/content-studio");
 
-    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+    expect(await screen.findByText("Author maps and gameplay modules")).toBeInTheDocument();
     expect(await screen.findByText("North America and Asia")).toBeInTheDocument();
     expect(
       await screen.findByText("Win condition: Control North America and Asia simultaneously.")
@@ -1049,7 +1054,7 @@ describe("Admin route integration", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const { user } = renderReactShell("/react/admin/content-studio");
 
-    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+    expect(await screen.findByText("Author maps and gameplay modules")).toBeInTheDocument();
     expect(await screen.findByDisplayValue("objective-1")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Remove objective" }));
@@ -1081,7 +1086,7 @@ describe("Admin route integration", () => {
   it("starts a new draft with a generated module id and saves it", async () => {
     const { user } = renderReactShell("/react/admin/content-studio");
 
-    expect(await screen.findByText("Author victory objective modules")).toBeInTheDocument();
+    expect(await screen.findByText("Author maps and gameplay modules")).toBeInTheDocument();
 
     validateAdminAuthoredModuleMock.mockClear();
     createAdminAuthoredModuleMock.mockClear();
@@ -1097,7 +1102,7 @@ describe("Admin route integration", () => {
         })
       );
 
-    await user.click(screen.getByRole("button", { name: "New draft" }));
+    await user.click(screen.getByRole("button", { name: "New objective draft" }));
 
     const moduleIdField = (await screen.findByDisplayValue(
       "victory.new-draft"
@@ -1126,7 +1131,7 @@ describe("Admin route integration", () => {
       );
     });
 
-    await user.click(screen.getByRole("button", { name: "New draft" }));
+    await user.click(screen.getByRole("button", { name: "New objective draft" }));
 
     const nextModuleIdField = (await screen.findByDisplayValue(
       "victory.new-draft-2"
@@ -1141,6 +1146,54 @@ describe("Admin route integration", () => {
         expect.objectContaining({
           id: "victory.new-draft-2",
           moduleType: "victory-objectives"
+        }),
+        expect.anything()
+      );
+    });
+  });
+
+  it("starts, validates, and saves an authored map draft from the UI", async () => {
+    const { user } = renderReactShell("/react/admin/content-studio");
+
+    expect(await screen.findByText("Author maps and gameplay modules")).toBeInTheDocument();
+    validateAdminAuthoredModuleMock.mockClear();
+    createAdminAuthoredModuleMock.mockClear();
+
+    await user.click(screen.getByRole("button", { name: "New map draft" }));
+
+    expect(await screen.findByDisplayValue("map.new-draft")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add territory" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add continent" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("territory-1")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(validateAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "map.new-draft",
+          moduleType: "map",
+          content: expect.objectContaining({
+            territories: expect.arrayContaining([
+              expect.objectContaining({
+                id: "territory-1",
+                neighbors: ["territory-2", "territory-4"]
+              })
+            ]),
+            continents: expect.arrayContaining([
+              expect.objectContaining({ id: "continent-1", bonus: 2 })
+            ])
+          })
+        }),
+        expect.anything()
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    await waitFor(() => {
+      expect(createAdminAuthoredModuleMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "map.new-draft",
+          moduleType: "map"
         }),
         expect.anything()
       );

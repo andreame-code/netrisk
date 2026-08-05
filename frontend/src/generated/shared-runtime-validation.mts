@@ -22,7 +22,7 @@ export const NETRISK_UI_SLOT_ID_VALUES = [
   "top-nav-bar"
 ] as const;
 const AUTHORED_MODULE_STATUS_VALUES = ["draft", "published", "disabled"] as const;
-const AUTHORED_MODULE_TYPE_VALUES = ["victory-objectives"] as const;
+const AUTHORED_MODULE_TYPE_VALUES = ["victory-objectives", "map"] as const;
 const AUTHORED_VICTORY_OBJECTIVE_TYPE_VALUES = [
   "control-continents",
   "control-territory-count"
@@ -37,7 +37,13 @@ const AUTHORED_MODULE_REQUEST_LIMITS = Object.freeze({
   objectiveId: 64,
   objectiveTitle: 255,
   objectiveDescription: 1024,
-  continentId: 64
+  continentId: 64,
+  territoryId: 64,
+  territoryName: 128,
+  continentName: 128,
+  mapTerritories: 250,
+  mapContinents: 50,
+  mapNeighbors: 50
 });
 
 type IssuePathSegment = string | number;
@@ -1269,14 +1275,56 @@ export const authoredVictoryModuleContentSchema = objectSchema({
 
 export type AuthoredVictoryModuleContent = z.infer<typeof authoredVictoryModuleContentSchema>;
 
-export const authoredModuleInputSchema = objectSchema({
+export const authoredMapTerritorySchema = objectSchema({
+  id: z.string(),
+  name: z.string(),
+  continentId: z.string().nullable(),
+  x: z.number(),
+  y: z.number(),
+  neighbors: z.array(z.string())
+});
+
+export type AuthoredMapTerritory = z.infer<typeof authoredMapTerritorySchema>;
+
+export const authoredMapContinentSchema = objectSchema({
+  id: z.string(),
+  name: z.string(),
+  bonus: z.number(),
+  territoryIds: z.array(z.string())
+});
+
+export type AuthoredMapContinent = z.infer<typeof authoredMapContinentSchema>;
+
+export const authoredMapModuleContentSchema = objectSchema({
+  territories: z.array(authoredMapTerritorySchema),
+  continents: z.array(authoredMapContinentSchema)
+});
+
+export type AuthoredMapModuleContent = z.infer<typeof authoredMapModuleContentSchema>;
+
+const authoredModuleInputBaseShape = {
   id: z.string().trim().min(1),
   name: z.string(),
   description: z.string(),
-  version: z.string(),
-  moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
+  version: z.string()
+};
+
+export const authoredVictoryModuleInputSchema = objectSchema({
+  ...authoredModuleInputBaseShape,
+  moduleType: z.literal("victory-objectives"),
   content: authoredVictoryModuleContentSchema
 });
+
+export const authoredMapModuleInputSchema = objectSchema({
+  ...authoredModuleInputBaseShape,
+  moduleType: z.literal("map"),
+  content: authoredMapModuleContentSchema
+});
+
+export const authoredModuleInputSchema = z.discriminatedUnion("moduleType", [
+  authoredVictoryModuleInputSchema,
+  authoredMapModuleInputSchema
+]);
 
 export type AuthoredModuleInput = z.infer<typeof authoredModuleInputSchema>;
 
@@ -1310,17 +1358,58 @@ const authoredVictoryModuleContentRequestSchema = objectSchema({
   objectives: z.array(authoredVictoryObjectiveRequestSchema).max(50)
 });
 
-export const authoredModuleSchema = authoredModuleInputSchema.extend({
+const authoredMapTerritoryRequestSchema = objectSchema({
+  id: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.territoryId),
+  name: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.territoryName),
+  continentId: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId).nullable(),
+  x: z.number(),
+  y: z.number(),
+  neighbors: z
+    .array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.territoryId))
+    .max(AUTHORED_MODULE_REQUEST_LIMITS.mapNeighbors)
+});
+
+const authoredMapContinentRequestSchema = objectSchema({
+  id: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentId),
+  name: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.continentName),
+  bonus: z.number(),
+  territoryIds: z
+    .array(z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.territoryId))
+    .max(AUTHORED_MODULE_REQUEST_LIMITS.mapTerritories)
+});
+
+const authoredMapModuleContentRequestSchema = objectSchema({
+  territories: z
+    .array(authoredMapTerritoryRequestSchema)
+    .max(AUTHORED_MODULE_REQUEST_LIMITS.mapTerritories),
+  continents: z
+    .array(authoredMapContinentRequestSchema)
+    .max(AUTHORED_MODULE_REQUEST_LIMITS.mapContinents)
+});
+
+const authoredModuleStatusShape = {
   status: z.enum(AUTHORED_MODULE_STATUS_VALUES),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
-});
+};
+
+export const authoredVictoryModuleSchema =
+  authoredVictoryModuleInputSchema.extend(authoredModuleStatusShape);
+
+export const authoredMapModuleSchema =
+  authoredMapModuleInputSchema.extend(authoredModuleStatusShape);
+
+export const authoredModuleSchema = z.discriminatedUnion("moduleType", [
+  authoredVictoryModuleSchema,
+  authoredMapModuleSchema
+]);
 
 export type AuthoredModule = z.infer<typeof authoredModuleSchema>;
 
 export const authoredModulePreviewSchema = objectSchema({
   summary: z.string(),
-  objectiveSummaries: z.array(z.string())
+  objectiveSummaries: z.array(z.string()),
+  detailSummaries: z.array(z.string()).optional()
 });
 
 export type AuthoredModulePreview = z.infer<typeof authoredModulePreviewSchema>;
@@ -1374,7 +1463,28 @@ export const authoredVictoryModuleRuntimeSchema = objectSchema({
 
 export type AuthoredVictoryModuleRuntime = z.infer<typeof authoredVictoryModuleRuntimeSchema>;
 
-export const authoredModuleRuntimeSchema = authoredVictoryModuleRuntimeSchema;
+export const authoredMapModuleRuntimeSchema = objectSchema({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  moduleType: z.literal("map"),
+  kind: z.literal("authored-map"),
+  map: objectSchema({
+    id: z.string(),
+    name: z.string(),
+    territoryRecords: z.array(authoredMapTerritorySchema),
+    continentRecords: z.array(authoredMapContinentSchema)
+  }),
+  preview: authoredModulePreviewSchema
+});
+
+export type AuthoredMapModuleRuntime = z.infer<typeof authoredMapModuleRuntimeSchema>;
+
+export const authoredModuleRuntimeSchema = z.discriminatedUnion("moduleType", [
+  authoredVictoryModuleRuntimeSchema,
+  authoredMapModuleRuntimeSchema
+]);
 
 export type AuthoredModuleRuntime = z.infer<typeof authoredModuleRuntimeSchema>;
 
@@ -1397,13 +1507,20 @@ export const authoredMapOptionSchema = objectSchema({
 
 export type AuthoredMapOption = z.infer<typeof authoredMapOptionSchema>;
 
-export const authoredModuleSummarySchema = authoredModuleSchema.extend({
+const authoredModuleSummaryShape = {
   validation: authoredModuleValidationSchema,
   preview: authoredModulePreviewSchema,
   map: authoredMapOptionSchema.omit({ continents: true }).nullable().optional(),
   objectiveCount: z.number().int(),
-  enabledObjectiveCount: z.number().int()
-});
+  enabledObjectiveCount: z.number().int(),
+  territoryCount: z.number().int().nonnegative().optional(),
+  continentCount: z.number().int().nonnegative().optional()
+};
+
+export const authoredModuleSummarySchema = z.discriminatedUnion("moduleType", [
+  authoredVictoryModuleSchema.extend(authoredModuleSummaryShape),
+  authoredMapModuleSchema.extend(authoredModuleSummaryShape)
+]);
 
 export type AuthoredModuleSummary = z.infer<typeof authoredModuleSummarySchema>;
 
@@ -1614,14 +1731,29 @@ export type AdminAuthoredModuleDetailResponse = z.infer<
   typeof adminAuthoredModuleDetailResponseSchema
 >;
 
-export const adminAuthoredModuleUpsertRequestSchema = objectSchema({
+const adminAuthoredModuleUpsertBaseShape = {
   id: z.string().trim().min(1).max(AUTHORED_MODULE_REQUEST_LIMITS.moduleId),
   name: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleName),
   description: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleDescription),
-  version: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleVersion),
-  moduleType: z.enum(AUTHORED_MODULE_TYPE_VALUES),
+  version: z.string().max(AUTHORED_MODULE_REQUEST_LIMITS.moduleVersion)
+};
+
+export const adminAuthoredVictoryModuleUpsertRequestSchema = objectSchema({
+  ...adminAuthoredModuleUpsertBaseShape,
+  moduleType: z.literal("victory-objectives"),
   content: authoredVictoryModuleContentRequestSchema
 });
+
+export const adminAuthoredMapModuleUpsertRequestSchema = objectSchema({
+  ...adminAuthoredModuleUpsertBaseShape,
+  moduleType: z.literal("map"),
+  content: authoredMapModuleContentRequestSchema
+});
+
+export const adminAuthoredModuleUpsertRequestSchema = z.discriminatedUnion("moduleType", [
+  adminAuthoredVictoryModuleUpsertRequestSchema,
+  adminAuthoredMapModuleUpsertRequestSchema
+]);
 
 export type AdminAuthoredModuleUpsertRequest = z.infer<
   typeof adminAuthoredModuleUpsertRequestSchema
