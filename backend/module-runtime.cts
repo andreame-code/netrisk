@@ -166,6 +166,7 @@ type AuthoredPublishedMap = {
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
+const DEVELOPMENT_ONLY_MODULE_ID = /^(?:demo|test|fixture)(?:[.-]|$)/i;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -173,6 +174,24 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isPersistentVercelEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
+  const vercelEnvironment = String(env.VERCEL_ENV || "")
+    .trim()
+    .toLowerCase();
+  return vercelEnvironment === "preview" || vercelEnvironment === "production";
+}
+
+function assertPersistentModuleIdAllowed(
+  moduleId: string,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  if (isPersistentVercelEnvironment(env) && DEVELOPMENT_ONLY_MODULE_ID.test(moduleId)) {
+    throw new Error(
+      `Development-only module "${moduleId}" cannot be enabled or persisted in a Vercel deployment.`
+    );
+  }
 }
 
 function toModuleProfileArray(
@@ -2497,6 +2516,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       return enabledReferences(await ensureCatalog());
     },
     async enableModule(moduleId: string) {
+      assertPersistentModuleIdAllowed(moduleId);
       const installedModules = await ensureCatalog();
       const target = installedModules.find((moduleEntry) => moduleEntry.id === moduleId);
       if (!target || !target.manifest) {
@@ -2779,6 +2799,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
+      requestedIds.forEach((moduleId) => assertPersistentModuleIdAllowed(moduleId));
       const selectedModuleRefs = requestedIds.map((moduleId) => {
         const match = optionsSnapshot.gameModules.find(
           (moduleEntry) => moduleEntry.id === moduleId
@@ -2876,5 +2897,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 }
 
 module.exports = {
-  createModuleRuntime
+  assertPersistentModuleIdAllowed,
+  createModuleRuntime,
+  isPersistentVercelEnvironment
 };

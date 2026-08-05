@@ -1314,12 +1314,9 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
       return;
     }
 
-    const destructive = action === "close-lobby" || action === "terminate-game";
-    const confirmation = destructive
-      ? window.prompt(`Type ${selectedGameId} to confirm ${action}.`)
-      : null;
+    const confirmation = window.prompt(`Type ${selectedGameId} to confirm ${action}.`);
 
-    if (destructive && !confirmation?.trim()) {
+    if (!confirmation?.trim()) {
       return;
     }
 
@@ -1397,6 +1394,15 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
           </p>
         </section>
       ) : null}
+      {actionMutation.isSuccess ? (
+        <section className="status-panel status-panel-success" role="status">
+          <p className="status-label">Games</p>
+          <h2>Game action completed</h2>
+          <p className="status-copy">
+            The server persisted the guarded action and recorded it in the admin audit log.
+          </p>
+        </section>
+      ) : null}
 
       <div className="grid-shell admin-games-grid">
         <section className="card-panel">
@@ -1460,9 +1466,13 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
                 type="button"
                 className="refresh-button"
                 onClick={() => handleGameAction("repair-game-config")}
-                disabled={!selectedGameId || actionMutation.isPending}
+                disabled={
+                  !selectedGameId ||
+                  actionMutation.isPending ||
+                  detailsQuery.data?.repairPreview.status !== "safe"
+                }
               >
-                Repair config
+                Apply safe repair
               </button>
               <button
                 type="button"
@@ -1578,6 +1588,67 @@ function GamesSection({ frameContext }: { frameContext: AdminFrameContext }) {
                   />
                 </section>
               </div>
+
+              <section
+                className="admin-subpanel"
+                data-testid="admin-game-repair-preview"
+                aria-label="Game repair preview"
+              >
+                <div className="card-header">
+                  <div>
+                    <p className="status-label">Repair preview</p>
+                    <h3>Guarded configuration normalization</h3>
+                  </div>
+                  <span
+                    className={`status-pill ${
+                      detailsQuery.data.repairPreview.status === "safe"
+                        ? "success"
+                        : detailsQuery.data.repairPreview.status === "blocked"
+                          ? "danger"
+                          : "neutral"
+                    }`}
+                  >
+                    {detailsQuery.data.repairPreview.status}
+                  </span>
+                </div>
+
+                {detailsQuery.data.repairPreview.orphanedModuleIds.length ? (
+                  <p className="status-copy">
+                    Unavailable modules:{" "}
+                    {detailsQuery.data.repairPreview.orphanedModuleIds.join(", ")}
+                  </p>
+                ) : null}
+                {detailsQuery.data.repairPreview.relatedProfileIds.length ? (
+                  <p className="status-copy">
+                    Related profiles: {detailsQuery.data.repairPreview.relatedProfileIds.join(", ")}
+                  </p>
+                ) : null}
+
+                {detailsQuery.data.repairPreview.changes.length ? (
+                  <ul className="admin-note-list">
+                    {detailsQuery.data.repairPreview.changes.map((change) => (
+                      <li key={change.path}>
+                        <strong>{change.path}</strong>: {JSON.stringify(change.before)} →{" "}
+                        {JSON.stringify(change.after)}. {change.reason}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="status-copy">No safe configuration changes are required.</p>
+                )}
+
+                {detailsQuery.data.repairPreview.blockers.length ? (
+                  <ul className="admin-note-list">
+                    {detailsQuery.data.repairPreview.blockers.map((blocker) => (
+                      <li key={blocker}>{blocker}</li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                <p className="status-copy">
+                  Preserved: {detailsQuery.data.repairPreview.preservedFields.join(", ")}.
+                </p>
+              </section>
 
               <details className="admin-debug-panel">
                 <summary>Advanced and debug state</summary>

@@ -300,6 +300,22 @@ export interface AdminGamePlayerContract {
   cardCount: number;
 }
 
+export interface AdminGameRepairChangeContract {
+  path: string;
+  before: unknown;
+  after: unknown;
+  reason: string;
+}
+
+export interface AdminGameRepairPreviewContract {
+  status: "safe" | "blocked" | "not-needed";
+  orphanedModuleIds: string[];
+  relatedProfileIds: string[];
+  changes: AdminGameRepairChangeContract[];
+  blockers: string[];
+  preservedFields: string[];
+}
+
 export interface AdminOverviewResponseContract {
   summary: {
     totalUsers: number;
@@ -343,6 +359,7 @@ export interface AdminGameDetailsResponseContract {
   game: AdminGameSummaryContract;
   players: AdminGamePlayerContract[];
   rawState: Record<string, unknown>;
+  repairPreview: AdminGameRepairPreviewContract;
 }
 
 export interface AdminGameActionResponseContract {
@@ -350,6 +367,7 @@ export interface AdminGameActionResponseContract {
   game: AdminGameSummaryContract;
   players: AdminGamePlayerContract[];
   rawState: Record<string, unknown>;
+  repairPreview: AdminGameRepairPreviewContract;
   audit: AdminAuditEntryContract;
 }
 

@@ -329,6 +329,21 @@ function createGameDetailsResponse(): AdminGameDetailsResponse {
     rawState: {
       phase: "lobby",
       turnIndex: 0
+    },
+    repairPreview: {
+      status: "safe",
+      orphanedModuleIds: ["demo.defaults"],
+      relatedProfileIds: ["demo.defaults.content", "demo.defaults.gameplay", "demo.defaults.ui"],
+      changes: [
+        {
+          path: "gameConfig.activeModules",
+          before: ["core.base", "demo.defaults"],
+          after: ["core.base"],
+          reason: "Remove the unavailable demo.defaults module."
+        }
+      ],
+      blockers: [],
+      preservedFields: ["players", "territories", "turn and phase state"]
     }
   };
 }
@@ -902,6 +917,7 @@ describe("Admin route integration", () => {
       rawState: {
         phase: "finished"
       },
+      repairPreview: createGameDetailsResponse().repairPreview,
       audit: createAuditEntry({
         action: "game.close-lobby",
         targetType: "game",
@@ -933,6 +949,46 @@ describe("Admin route integration", () => {
         {
           gameId: "game-1",
           action: "close-lobby",
+          confirmation: "game-1"
+        },
+        expect.anything()
+      );
+    });
+  });
+
+  it("shows the guarded orphan repair preview and requires the game id before applying it", async () => {
+    listAdminGamesMock.mockResolvedValue(createGamesResponse());
+    const gameDetails = createGameDetailsResponse();
+    getAdminGameDetailsMock.mockResolvedValue(gameDetails);
+    runAdminGameActionMock.mockResolvedValue({
+      ok: true,
+      ...gameDetails,
+      audit: createAuditEntry({
+        action: "game.repair-game-config",
+        targetType: "game",
+        targetId: "game-1",
+        targetLabel: "Border Siege"
+      })
+    });
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue("game-1");
+    const { user } = renderReactShell("/react/admin/games");
+
+    const preview = await screen.findByTestId("admin-game-repair-preview");
+    expect(within(preview).getByText(/Unavailable modules: demo.defaults/)).toBeInTheDocument();
+    expect(
+      within(preview).getByText(/demo.defaults.content, demo.defaults.gameplay, demo.defaults.ui/)
+    ).toBeInTheDocument();
+    expect(within(preview).getByText(/gameConfig.activeModules/)).toBeInTheDocument();
+    expect(within(preview).getByText(/Preserved: players, territories/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Apply safe repair" }));
+
+    expect(promptSpy).toHaveBeenCalledWith("Type game-1 to confirm repair-game-config.");
+    await waitFor(() => {
+      expect(runAdminGameActionMock).toHaveBeenCalledWith(
+        {
+          gameId: "game-1",
+          action: "repair-game-config",
           confirmation: "game-1"
         },
         expect.anything()
