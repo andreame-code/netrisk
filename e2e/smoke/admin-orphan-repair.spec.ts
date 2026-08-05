@@ -183,8 +183,10 @@ test("admin safely previews, repairs, and audits a finished orphaned game", asyn
 
   await page.goto("/admin/maintenance");
   await expect(page.getByText("No maintenance issues detected.")).toBeVisible();
-  await expect(page.getByText("Orphaned module refs").locator("..")).toContainText("0");
-  await expect(page.getByText("Invalid games").locator("..")).toContainText("0");
+  await expect(page.getByText("Orphaned module refs").locator("..").locator("..")).toContainText(
+    "0"
+  );
+  await expect(page.getByText("Invalid games").locator("..").locator("..")).toContainText("0");
 
   await page.goto("/admin/system-health");
   await expect(page.getByText("Module references").locator("..")).toContainText("OK");
