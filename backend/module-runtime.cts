@@ -1979,15 +1979,13 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   }
 
   async function loadCatalogState(): Promise<CatalogState> {
-    if (cachedState) {
-      return cachedState;
+    if (!cachedState) {
+      const rawState =
+        typeof options.datastore.getAppState === "function"
+          ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
+          : null;
+      cachedState = normalizeCatalogState(rawState);
     }
-
-    const rawState =
-      typeof options.datastore.getAppState === "function"
-        ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
-        : null;
-    cachedState = normalizeCatalogState(rawState);
     if (isPersistentVercelEnvironment()) {
       const developmentModuleIds = Object.keys(cachedState.enabledById).filter(
         (moduleId) =>
@@ -2310,6 +2308,13 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   }
 
   async function ensureCatalog(): Promise<NetRiskInstalledModule[]> {
+    if (cachedModules.length && isPersistentVercelEnvironment()) {
+      const previousCatalogState = cachedState;
+      await loadCatalogState();
+      if (cachedState !== previousCatalogState) {
+        cachedModules = [];
+      }
+    }
     if (cachedModules.length) {
       return cachedModules.map(cloneInstalledModule);
     }

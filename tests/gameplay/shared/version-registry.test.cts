@@ -34,6 +34,7 @@ function cleanupSqliteFiles(dbFile: string) {
 }
 
 register("version manifest exports the central compatibility fields", () => {
+  assert.equal(apiVersion, "1.1.0");
   assert.deepEqual(versionManifest, {
     appVersion,
     engineVersion,

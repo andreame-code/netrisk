@@ -7,6 +7,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 - Added a guarded admin preview and repair flow for finished games with orphaned runtime module and profile references while preserving valid gameplay state and selections.
 - Added explicit game-ID confirmation, fail-closed validation, and success/failure audit evidence for configuration repairs.
 - Prevented development-only demo, test, and fixture module IDs from being enabled or persisted in Vercel preview and production deployments.
+- Advanced the central API compatibility version to 1.1.0 for the additive required admin repair-preview response fields.
 
 ## 0.1.058 - 2026-08-05
 

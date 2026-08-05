@@ -568,6 +568,19 @@ function installedSelectionOwners(
   return ownersByField;
 }
 
+function mergeSelectionOwnerCatalogs(
+  ...catalogs: Array<Map<string, string | null> | Map<string, string> | null | undefined>
+): Map<string, string | null> | null {
+  const availableCatalogs = catalogs.filter(
+    (catalog): catalog is Map<string, string | null> | Map<string, string> => Boolean(catalog)
+  );
+  if (!availableCatalogs.length) {
+    return null;
+  }
+
+  return new Map(availableCatalogs.flatMap((catalog) => Array.from(catalog.entries())));
+}
+
 function migratePersistedDevelopmentModuleDefaults(
   input: Record<string, unknown>,
   installedModules: Array<Record<string, unknown>>
@@ -628,6 +641,17 @@ function asRecordArray(value: unknown): Array<Record<string, unknown>> | null {
 }
 
 function createAdminConsole(options: AdminConsoleOptions) {
+  let configMutationQueue: Promise<void> = Promise.resolve();
+
+  function withConfigMutationLock<T>(operation: () => Promise<T>): Promise<T> {
+    const next = configMutationQueue.then(operation, operation);
+    configMutationQueue = next.then(
+      () => undefined,
+      () => undefined
+    );
+    return next;
+  }
+
   async function ensureRuntimeCatalogReady(): Promise<Record<string, unknown> | null> {
     if (typeof options.moduleRuntime.getModuleOptions !== "function") {
       return null;
@@ -648,6 +672,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
       ensureRuntimeCatalogReady()
     ]);
     const installedById = new Map(installedModules.map((entry) => [String(entry.id || ""), entry]));
+    const installedOwnersByField = installedSelectionOwners(installedModules);
     const activeModules = asArray(
       originalConfig.activeModules as Array<{ id?: string; version?: string }> | null
     )
@@ -691,7 +716,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
       );
     }
 
-    const profileCatalogByField = new Map<string, Map<string, string | null> | null>([
+    const availableProfileCatalogByField = new Map<string, Map<string, string | null> | null>([
       ["contentProfileId", profileCatalogById(moduleOptions?.contentProfiles)],
       ["gameplayProfileId", profileCatalogById(moduleOptions?.gameplayProfiles)],
       ["uiProfileId", profileCatalogById(moduleOptions?.uiProfiles)]
@@ -704,11 +729,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
         return;
       }
 
-      const availableProfiles = profileCatalogByField.get(field) || null;
+      const availableProfiles = availableProfileCatalogByField.get(field) || null;
+      const ownershipCatalog = mergeSelectionOwnerCatalogs(
+        installedOwnersByField.get(field),
+        availableProfiles
+      );
       const owningOrphan = findUnavailableCatalogOwner(
         profileId,
         orphanedModuleIds,
-        availableProfiles
+        ownershipCatalog
       );
       if (owningOrphan) {
         relatedProfileIds.push(profileId);
@@ -733,7 +762,11 @@ function createAdminConsole(options: AdminConsoleOptions) {
     const gamePresetId = asNonEmptyString(originalConfig.gamePresetId);
     const gamePresetCatalog = profileCatalogById(moduleOptions?.gamePresets);
     const presetOwner = gamePresetId
-      ? findUnavailableCatalogOwner(gamePresetId, orphanedModuleIds, gamePresetCatalog)
+      ? findUnavailableCatalogOwner(
+          gamePresetId,
+          orphanedModuleIds,
+          mergeSelectionOwnerCatalogs(installedOwnersByField.get("gamePresetId"), gamePresetCatalog)
+        )
       : null;
     if (gamePresetId && presetOwner) {
       nextConfig.gamePresetId = null;
@@ -781,7 +814,19 @@ function createAdminConsole(options: AdminConsoleOptions) {
       }
     }
 
+    const resolvedCatalog = asRecord(moduleOptions?.resolvedCatalog) || moduleOptions;
+    const retainedRuntimeThemeId = asNonEmptyString(nextConfig.themeId);
+    const retainedRuntimeThemeIsAvailable = Boolean(
+      retainedRuntimeThemeId &&
+      asRecordArray(resolvedCatalog?.themes)?.some(
+        (theme) => asNonEmptyString(theme.id) === retainedRuntimeThemeId
+      )
+    );
+
     normalizeGameStateForRepair(nextState);
+    if (retainedRuntimeThemeId && retainedRuntimeThemeIsAvailable) {
+      ensureGameConfig(nextState).themeId = retainedRuntimeThemeId;
+    }
     REPAIR_ROOT_CONFIG_FIELDS.forEach((field) => {
       pushRepairChange(
         changes,
@@ -886,7 +931,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
   }
 
   async function loadConfigRecord(): Promise<AdminConfigRecord> {
-    const source = await readConfigSource();
+    let source = await readConfigSource();
     const rawDefaults =
       source.defaults && typeof source.defaults === "object"
         ? (source.defaults as Record<string, unknown>)
@@ -896,14 +941,42 @@ function createAdminConsole(options: AdminConsoleOptions) {
       rawDefaults,
       installedModules
     );
-    const defaults = await resolveAdminDefaults(defaultsMigration.defaults);
+    let defaults: Record<string, unknown>;
     if (defaultsMigration.changed) {
-      await maybeResolve(
-        options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
-          ...source,
-          defaults: safeClone(defaults)
-        })
-      );
+      const migrationResult = await withConfigMutationLock(async () => {
+        const latestSource = await readConfigSource();
+        const latestRawDefaults =
+          latestSource.defaults && typeof latestSource.defaults === "object"
+            ? (latestSource.defaults as Record<string, unknown>)
+            : {};
+        const latestMigration = migratePersistedDevelopmentModuleDefaults(
+          latestRawDefaults,
+          installedModules
+        );
+        const latestResolvedDefaults = await resolveAdminDefaults(latestMigration.defaults);
+        if (!latestMigration.changed) {
+          return { source: latestSource, defaults: latestResolvedDefaults };
+        }
+
+        const mergedDefaults: Record<string, unknown> = safeClone(latestRawDefaults);
+        const migratedDefaults = latestMigration.defaults as unknown as Record<string, unknown>;
+        const resolvedDefaults = latestResolvedDefaults as unknown as Record<string, unknown>;
+        ["activeModuleIds", ...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
+          if (!valuesEqual(latestRawDefaults[field], migratedDefaults[field])) {
+            mergedDefaults[field] = safeClone(resolvedDefaults[field]);
+          }
+        });
+        const persistedSource = {
+          ...latestSource,
+          defaults: mergedDefaults
+        };
+        await maybeResolve(options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, persistedSource));
+        return { source: persistedSource, defaults: latestResolvedDefaults };
+      });
+      source = migrationResult.source;
+      defaults = migrationResult.defaults;
+    } else {
+      defaults = await resolveAdminDefaults(defaultsMigration.defaults);
     }
     const updatedBySource =
       source.updatedBy && typeof source.updatedBy === "object"
@@ -919,13 +992,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
   }
 
   async function saveConfigRecord(record: AdminConfigRecord): Promise<AdminConfigRecord> {
-    await maybeResolve(
-      options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
-        defaults: safeClone(record.defaults),
-        maintenance: safeClone(record.maintenance),
-        updatedAt: record.updatedAt,
-        updatedBy: record.updatedBy
-      })
+    await withConfigMutationLock(() =>
+      maybeResolve(
+        options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
+          defaults: safeClone(record.defaults),
+          maintenance: safeClone(record.maintenance),
+          updatedAt: record.updatedAt,
+          updatedBy: record.updatedBy
+        })
+      )
     );
 
     return loadConfigRecord();
