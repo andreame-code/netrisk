@@ -56,6 +56,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Trust the container checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:

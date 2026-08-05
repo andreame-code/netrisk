@@ -165,6 +165,7 @@ async function main(): Promise<void> {
     };
     await runVisualEnvironmentPreflight();
   }
+  await fs.promises.mkdir(dataDir, { recursive: true });
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
   const serverChild = spawn(
