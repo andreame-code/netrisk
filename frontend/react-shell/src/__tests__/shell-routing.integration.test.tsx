@@ -257,7 +257,7 @@ describe("React shell routing and session integration", () => {
 
     expect(await screen.findByTestId("react-shell-lobby-page")).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("react-shell-nav")).getByRole("link", { name: "Game" })
+      within(screen.getByTestId("react-shell-nav")).getByRole("link", { name: "Partita" })
     ).toHaveAttribute("href", "/react/lobby");
   });
 
