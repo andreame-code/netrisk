@@ -1,10 +1,9 @@
-import * as Sentry from "@sentry/react";
-
 import {
   registerFrontendObservabilityReporter,
   reportFrontendException,
   type FrontendObservabilityContext
 } from "@frontend-core/observability.mts";
+import type * as SentryReact from "@sentry/react";
 
 export type ReactShellObservabilityConfig = {
   enabled: boolean;
@@ -18,6 +17,12 @@ type ReactRootErrorInfo = {
 };
 
 let initialized = false;
+let initializationScheduled = false;
+let observabilityGeneration = 0;
+type SentryModule = typeof SentryReact;
+let sentryPromise: Promise<SentryModule> | null = null;
+
+export type ObservabilityScheduler = (callback: () => void) => void;
 
 function firstNonEmpty(...values: unknown[]): string | null {
   for (const value of values) {
@@ -75,7 +80,16 @@ export function resolveReactShellObservabilityConfig(
   };
 }
 
-function applyObservabilityScope(error: Error, context: FrontendObservabilityContext = {}): void {
+function loadSentry(): Promise<SentryModule> {
+  sentryPromise ??= import("@sentry/react");
+  return sentryPromise;
+}
+
+function applyObservabilityScope(
+  Sentry: SentryModule,
+  error: Error,
+  context: FrontendObservabilityContext = {}
+): void {
   Sentry.withScope((scope) => {
     scope.setLevel("error");
     scope.setTag("app.area", context.area || "react-shell");
@@ -116,29 +130,61 @@ function applyObservabilityScope(error: Error, context: FrontendObservabilityCon
   });
 }
 
+function initializeSentry(config: ReactShellObservabilityConfig): Promise<SentryModule> {
+  return loadSentry().then((Sentry) => {
+    if (!initialized) {
+      Sentry.init({
+        dsn: config.dsn || undefined,
+        environment: config.environment,
+        release: config.release,
+        sendDefaultPii: false
+      });
+      initialized = true;
+    }
+    return Sentry;
+  });
+}
+
+function scheduleAfterInitialRender(callback: () => void): void {
+  const targetWindow = window as Window & {
+    requestIdleCallback?: (idleCallback: () => void, options?: { timeout: number }) => number;
+  };
+
+  if (typeof targetWindow.requestIdleCallback === "function") {
+    targetWindow.requestIdleCallback(callback, { timeout: 3_000 });
+    return;
+  }
+
+  window.setTimeout(callback, 1_500);
+}
+
 export function initReactShellObservability(
-  config: ReactShellObservabilityConfig = resolveReactShellObservabilityConfig()
+  config: ReactShellObservabilityConfig = resolveReactShellObservabilityConfig(),
+  schedule: ObservabilityScheduler = scheduleAfterInitialRender
 ): ReactShellObservabilityConfig {
   registerFrontendObservabilityReporter((error, context) => {
     if (!config.enabled) {
       return;
     }
 
-    applyObservabilityScope(toError(error), context);
+    void initializeSentry(config)
+      .then((Sentry) => applyObservabilityScope(Sentry, toError(error), context))
+      .catch(() => {});
   });
 
-  if (!config.enabled || initialized) {
+  if (!config.enabled || initialized || initializationScheduled) {
     return config;
   }
 
-  Sentry.init({
-    dsn: config.dsn || undefined,
-    environment: config.environment,
-    release: config.release,
-    sendDefaultPii: false
+  initializationScheduled = true;
+  const generation = observabilityGeneration;
+  schedule(() => {
+    if (generation !== observabilityGeneration) {
+      return;
+    }
+    initializationScheduled = false;
+    void initializeSentry(config).catch(() => {});
   });
-
-  initialized = true;
   return config;
 }
 
@@ -177,6 +223,9 @@ export function createReactShellRootOptions(): {
 }
 
 export function resetReactShellObservabilityForTests(): void {
+  observabilityGeneration += 1;
   initialized = false;
+  initializationScheduled = false;
+  sentryPromise = null;
   registerFrontendObservabilityReporter(null);
 }

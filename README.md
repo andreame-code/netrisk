@@ -295,6 +295,7 @@ npm run test:all:e2e:split
 - `npm run test:e2e:serial`: explicit single-process Playwright runner
 - `npm run test:e2e:headed`: headed Playwright run for local debugging
 - `npm run test:e2e:update`: intentionally updates Playwright visual baselines after an approved UI change
+- `npm run build:react-shell`: builds the React shell and enforces the documented [landing/lobby initial-transfer budgets](docs/react-shell-performance.md)
 - `npm run test:all`: repository + gameplay tests
 - `npm run test:all:e2e`: repository + gameplay + e2e tests
 - `npm run test:all:e2e:split`: repository + gameplay tests plus split E2E shards

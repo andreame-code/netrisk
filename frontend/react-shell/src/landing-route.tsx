@@ -156,14 +156,14 @@ export function LandingRoute() {
               </select>
             </label>
             {setupPageAvailable ? (
-              <Link className="ld-btn-ghost" to="/setup">
+              <Link className="ld-btn-ghost" to="/setup" reloadDocument>
                 Setup
               </Link>
             ) : null}
-            <Link className="ld-btn-ghost" to={buildLobbyPath("canonical")}>
+            <Link className="ld-btn-ghost" to={buildLobbyPath("canonical")} reloadDocument>
               {t("auth.login")}
             </Link>
-            <Link className="ld-btn-primary" to={buildRegisterPath("canonical")}>
+            <Link className="ld-btn-primary" to={buildRegisterPath("canonical")} reloadDocument>
               {t("auth.register")}
             </Link>
           </div>
@@ -202,7 +202,11 @@ export function LandingRoute() {
             </h1>
             <p className="ld-hero-desc">{t("landing.hero.desc")}</p>
             <div className="ld-hero-cta">
-              <Link className="ld-btn-primary ld-btn-lg" to={buildRegisterPath("canonical")}>
+              <Link
+                className="ld-btn-primary ld-btn-lg"
+                to={buildRegisterPath("canonical")}
+                reloadDocument
+              >
                 {t("landing.hero.ctaPrimary")}
               </Link>
               <a className="ld-btn-ghost ld-btn-lg" href="#maps">
@@ -432,10 +436,18 @@ export function LandingRoute() {
             <h2>{t("landing.final.heading")}</h2>
             <p className="ld-final-cta-desc">{t("landing.final.desc")}</p>
             <div className="ld-final-cta-btns">
-              <Link className="ld-btn-primary ld-btn-lg" to={buildRegisterPath("canonical")}>
+              <Link
+                className="ld-btn-primary ld-btn-lg"
+                to={buildRegisterPath("canonical")}
+                reloadDocument
+              >
                 {t("landing.final.ctaPrimary")}
               </Link>
-              <Link className="ld-btn-ghost ld-btn-lg" to={buildLobbyPath("canonical")}>
+              <Link
+                className="ld-btn-ghost ld-btn-lg"
+                to={buildLobbyPath("canonical")}
+                reloadDocument
+              >
                 {t("landing.final.ctaSecondary")}
               </Link>
             </div>
@@ -450,9 +462,15 @@ export function LandingRoute() {
             <span className="ld-brand-name">Frontline Dominion</span>
           </Link>
           <nav className="ld-footer-links" aria-label={t("landing.footer.aria")}>
-            <Link to={buildLobbyPath("canonical")}>{t("nav.lobby")}</Link>
-            <Link to={buildGameIndexPath("canonical")}>{t("landing.footer.game")}</Link>
-            <Link to={buildRegisterPath("canonical")}>{t("auth.register")}</Link>
+            <Link to={buildLobbyPath("canonical")} reloadDocument>
+              {t("nav.lobby")}
+            </Link>
+            <Link to={buildGameIndexPath("canonical")} reloadDocument>
+              {t("landing.footer.game")}
+            </Link>
+            <Link to={buildRegisterPath("canonical")} reloadDocument>
+              {t("auth.register")}
+            </Link>
             <a href="#top">{t("landing.footer.backToTop")}</a>
           </nav>
         </div>

@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.057 - 2026-08-05
+
+- Split the direct landing and authenticated React shell entries and deferred the optional Sentry integration until after the initial render.
+- Moved landing styles into a route-owned CSS chunk and kept shared game-shell styles behind the lazy authenticated shell boundary, reducing initial transfers without changing route layouts.
+- Added documented, route-aware initial JavaScript/CSS budgets that fail the production build and CI with a clear regression report.
+
 ## 0.1.056 - 2026-08-05
 
 - Pinned Playwright 1.61.1, Chromium 149.0.7827.55 (revision 1228), Ubuntu 24.04, and the Linux font dependencies used by visual baselines.
