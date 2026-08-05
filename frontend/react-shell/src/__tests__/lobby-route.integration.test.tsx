@@ -23,6 +23,8 @@ import {
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const useAuthMock = vi.hoisted(() => vi.fn());
+
 vi.mock("@frontend-core/api/client.mts", () => ({
   createGame: vi.fn(),
   getGameOptions: vi.fn(),
@@ -32,7 +34,11 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 }));
 
 vi.mock("@react-shell/auth", () => ({
-  useAuth: () => ({
+  useAuth: useAuthMock
+}));
+
+function authenticatedAuthContext() {
+  return {
     state: {
       status: "authenticated",
       user: {
@@ -43,10 +49,11 @@ vi.mock("@react-shell/auth", () => ({
         }
       }
     }
-  })
-}));
+  };
+}
 
 vi.mock("@react-shell/game-navigation", () => ({
+  buildShellGamePath: vi.fn((gameId: string) => `/react/game/${encodeURIComponent(gameId)}`),
   openShellGame: vi.fn()
 }));
 
@@ -165,6 +172,8 @@ beforeEach(() => {
   storeCurrentPlayerIdMock.mockClear();
   subscribeCurrentPlayerIdChangesMock.mockReset();
   subscribeCurrentPlayerIdChangesMock.mockReturnValue(() => undefined);
+  useAuthMock.mockReset();
+  useAuthMock.mockReturnValue(authenticatedAuthContext());
 });
 
 describe("LobbyRoute War Table theme behavior", () => {
@@ -214,6 +223,69 @@ describe("LobbyRoute War Table theme behavior", () => {
     });
     expect(storeCurrentPlayerIdMock).toHaveBeenCalledWith("player-2", "joinable-game");
     expect(openShellGameMock).toHaveBeenCalledWith("joinable-game");
+  });
+
+  it("sends guests to login with the selected game preserved instead of opening it", async () => {
+    useAuthMock.mockReturnValue({
+      state: {
+        status: "unauthenticated",
+        message: "Sign in to continue."
+      }
+    });
+    listGamesMock.mockResolvedValue(
+      createLobbyGames([
+        createGameSummary({
+          id: "active-game",
+          name: "Active Campaign",
+          phase: "active"
+        })
+      ])
+    );
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("war-table");
+
+    const row = await screen.findByTestId("react-shell-lobby-row-active-game");
+    const loginLink = within(row).getByRole("link", { name: "Log in to view" });
+
+    expect(loginLink).toHaveAttribute("href", "/react/login?next=%2Fgame%2Factive-game");
+    expect(screen.getByTestId("react-shell-lobby-open-selected-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Factive-game"
+    );
+    expect(screen.getByTestId("react-shell-lobby-open-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Factive-game"
+    );
+    expect(screen.queryByTestId("react-shell-lobby-join-inline-login")).not.toBeInTheDocument();
+    expect(openGameMock).not.toHaveBeenCalled();
+    expect(joinGameMock).not.toHaveBeenCalled();
+    expect(openShellGameMock).not.toHaveBeenCalled();
+  });
+
+  it("sends guest detail-panel join actions to login without calling protected APIs", async () => {
+    useAuthMock.mockReturnValue({
+      state: {
+        status: "unauthenticated",
+        message: "Sign in to continue."
+      }
+    });
+    listGamesMock.mockResolvedValue(createLobbyGames([createGameSummary()]));
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("command");
+
+    expect(await screen.findByTestId("react-shell-lobby-open-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Fjoinable-game"
+    );
+    expect(screen.getByTestId("react-shell-lobby-join-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Fjoinable-game"
+    );
+    expect(openGameMock).not.toHaveBeenCalled();
+    expect(joinGameMock).not.toHaveBeenCalled();
+    expect(openShellGameMock).not.toHaveBeenCalled();
   });
 
   it("uses one War Table game icon color and glyph for each game state", async () => {

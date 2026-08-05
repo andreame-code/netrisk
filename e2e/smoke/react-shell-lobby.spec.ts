@@ -48,6 +48,60 @@ test("react lobby keeps guest access inline with the shared auth copy", async ({
   );
 });
 
+test("react lobby sends a guest to login before viewing an active game", async ({ page }) => {
+  await resetGame(page);
+
+  const ownerSession = await createAuthenticatedSession(page, uniqueUser("rsh_guest_view_owner"));
+  const gameName = uniqueUser("rsh_guest_view_active");
+  const requestHeaders = {
+    Cookie: `netrisk_session=${encodeURIComponent(ownerSession)}`
+  };
+  const createResponse = await page.request.post("/api/games", {
+    headers: requestHeaders,
+    data: {
+      name: gameName,
+      totalPlayers: 2,
+      players: [
+        { slot: 1, type: "human" },
+        { slot: 2, type: "ai" }
+      ]
+    }
+  });
+  await expect(createResponse.ok()).toBeTruthy();
+  const createdGame = await createResponse.json();
+
+  const startResponse = await page.request.post("/api/start", {
+    headers: requestHeaders,
+    data: {
+      gameId: createdGame.game.id,
+      playerId: createdGame.playerId
+    }
+  });
+  await expect(startResponse.ok()).toBeTruthy();
+
+  await page.context().clearCookies();
+  await page.addInitScript(() => {
+    window.localStorage.setItem("netrisk.theme", "war-table");
+  });
+  await page.goto("/react/lobby");
+
+  const targetRow = page.locator("[data-testid^='react-shell-lobby-row-']", {
+    hasText: gameName
+  });
+  await expect(targetRow).toBeVisible({ timeout: 15000 });
+
+  const loginLink = targetRow.getByRole("link", { name: /Log in to view|Accedi per vedere/i });
+  await expect(loginLink).toHaveAttribute(
+    "href",
+    `/react/login?next=%2Fgame%2F${encodeURIComponent(createdGame.game.id)}`
+  );
+  await loginLink.click();
+
+  await expect(page).toHaveURL(new RegExp(`/react/login\\?next=%2Fgame%2F${createdGame.game.id}$`));
+  await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
+  await expect(page.getByText("Sessione non valida.")).toHaveCount(0);
+});
+
 test("react lobby shows the first page and can reveal the full session list", async ({ page }) => {
   await resetGame(page);
 

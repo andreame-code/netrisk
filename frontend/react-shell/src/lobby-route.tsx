@@ -13,14 +13,14 @@ import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { openShellGame } from "@react-shell/game-navigation";
+import { buildShellGamePath, openShellGame } from "@react-shell/game-navigation";
 import { LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
 import {
   readCurrentPlayerId,
   storeCurrentPlayerId,
   subscribeCurrentPlayerIdChanges
 } from "@react-shell/player-session";
-import { buildNewGamePath } from "@react-shell/public-auth-paths";
+import { buildLoginHref, buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
@@ -426,7 +426,7 @@ export function LobbyRoute() {
   }, [canLoadMoreGames, displayGames.length]);
 
   async function handleOpenGame(game: GameSummary | null): Promise<void> {
-    if (!game) {
+    if (!game || !authenticatedUser) {
       return;
     }
 
@@ -452,7 +452,7 @@ export function LobbyRoute() {
   }
 
   async function handleJoinGame(game: GameSummary | null): Promise<void> {
-    if (!game || !canJoinGame(game)) {
+    if (!game || !authenticatedUser || !canJoinGame(game)) {
       return;
     }
 
@@ -570,16 +570,27 @@ export function LobbyRoute() {
             >
               {t("lobby.createGame")}
             </Link>
-            <button
-              type="button"
-              id="open-game-button"
-              className="ghost-button"
-              onClick={() => void handleOpenSelectedGame()}
-              disabled={!selectedGame || actionPending}
-              data-testid="react-shell-lobby-open-selected"
-            >
-              {openMutation.isPending ? openingSelectedLabel : openSelectedLabel}
-            </button>
+            {selectedGame && !authenticatedUser ? (
+              <Link
+                id="open-game-button"
+                className="ghost-button"
+                to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                data-testid="react-shell-lobby-open-selected-login"
+              >
+                {t("lobby.loginToOpen")}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                id="open-game-button"
+                className="ghost-button"
+                onClick={() => void handleOpenSelectedGame()}
+                disabled={!selectedGame || actionPending}
+                data-testid="react-shell-lobby-open-selected"
+              >
+                {openMutation.isPending ? openingSelectedLabel : openSelectedLabel}
+              </button>
+            )}
           </div>
         </div>
 
@@ -781,18 +792,31 @@ export function LobbyRoute() {
                       className="war-table-row-action-cell"
                       data-cell-label={t("warTable.lobby.table.action")}
                     >
-                      <button
-                        type="button"
-                        className="war-table-row-action"
-                        disabled={actionPending}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedGameId(game.id);
-                          void (canJoinGame(game) ? handleJoinGame(game) : handleOpenGame(game));
-                        }}
-                      >
-                        {canJoinGame(game) ? t("warTable.lobby.join") : t("warTable.lobby.view")}
-                      </button>
+                      {!authenticatedUser ? (
+                        <Link
+                          className="war-table-row-action"
+                          to={buildLoginHref(buildShellGamePath(game.id))}
+                          data-testid={`react-shell-lobby-login-${game.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {canJoinGame(game)
+                            ? t("warTable.lobby.loginToJoin")
+                            : t("warTable.lobby.loginToView")}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className="war-table-row-action"
+                          disabled={actionPending}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedGameId(game.id);
+                            void (canJoinGame(game) ? handleJoinGame(game) : handleOpenGame(game));
+                          }}
+                        >
+                          {canJoinGame(game) ? t("warTable.lobby.join") : t("warTable.lobby.view")}
+                        </button>
+                      )}
                     </span>
                   </div>
                 ) : (
@@ -923,15 +947,26 @@ export function LobbyRoute() {
                   </div>
                   <div className="session-detail-note">{t("lobby.details.note")}</div>
                   <div className="session-detail-actions">
-                    <button
-                      type="button"
-                      id="open-selected-inline"
-                      onClick={() => void handleOpenSelectedGame()}
-                      disabled={actionPending}
-                    >
-                      {openMutation.isPending ? "Opening..." : t("lobby.details.open")}
-                    </button>
-                    {canJoinGame(selectedGame) ? (
+                    {authenticatedUser ? (
+                      <button
+                        type="button"
+                        id="open-selected-inline"
+                        onClick={() => void handleOpenSelectedGame()}
+                        disabled={actionPending}
+                      >
+                        {openMutation.isPending ? "Opening..." : t("lobby.details.open")}
+                      </button>
+                    ) : (
+                      <Link
+                        id="open-selected-inline"
+                        className="refresh-button"
+                        to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                        data-testid="react-shell-lobby-open-inline-login"
+                      >
+                        {t("lobby.loginToOpen")}
+                      </Link>
+                    )}
+                    {canJoinGame(selectedGame) && authenticatedUser ? (
                       <button
                         type="button"
                         id="join-selected-inline"
@@ -946,6 +981,15 @@ export function LobbyRoute() {
                             ? t("warTable.lobby.joinBattle")
                             : t("lobby.details.joinOpen")}
                       </button>
+                    ) : canJoinGame(selectedGame) ? (
+                      <Link
+                        id="join-selected-inline"
+                        className="ghost-button"
+                        to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                        data-testid="react-shell-lobby-join-inline-login"
+                      >
+                        {t("lobby.loginToJoin")}
+                      </Link>
                     ) : null}
                   </div>
                 </>
