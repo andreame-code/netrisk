@@ -135,8 +135,10 @@ function LoginPage() {
   const nextPath = normalizeNextPath(searchParams.get("next"), buildLobbyPath(namespace));
 
   useEffect(() => {
-    document.title = t("login.title");
-  }, [currentLocale]);
+    if (state.status === "unauthenticated") {
+      document.title = t("login.title");
+    }
+  }, [currentLocale, state.status]);
 
   if (state.status === "loading") {
     return (
