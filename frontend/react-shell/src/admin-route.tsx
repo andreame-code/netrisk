@@ -2647,8 +2647,10 @@ export function AdminRoute() {
   const activeItem = navItems.find((item) => item.id === section) || navItems[0];
 
   useEffect(() => {
-    document.title = `NetRisk Admin · ${activeItem.label}`;
-  }, [activeItem.label]);
+    if (currentUser?.role === "admin") {
+      document.title = `NetRisk Admin · ${activeItem.label}`;
+    }
+  }, [activeItem.label, currentUser?.role]);
 
   useEffect(() => {
     setNavOpen(false);
