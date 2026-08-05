@@ -740,6 +740,7 @@ describe("Admin route integration", () => {
     renderReactShell("/react/admin");
 
     expect(await screen.findByTestId("admin-forbidden-page")).toBeInTheDocument();
+    expect(document.title).toBe("NetRisk Admin · Access denied");
     expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
   });
 
