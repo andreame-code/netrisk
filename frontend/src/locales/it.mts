@@ -158,6 +158,7 @@ export const it = Object.freeze({
   "lobby.createMultiplayerGame": "Multigiocatore",
   "lobby.openSelected": "Apri selezionata",
   "lobby.loginToOpen": "Accedi per aprire",
+  "lobby.loginToJoin": "Accedi per entrare",
   "lobby.overviewAria": "Panoramica lobby",
   "lobby.visibleSessions.label": "Sessioni visibili",
   "lobby.visibleSessions.copy": "Tutte le partite persistite disponibili nel backend.",

@@ -249,11 +249,42 @@ describe("LobbyRoute War Table theme behavior", () => {
     const loginLink = within(row).getByRole("link", { name: "Log in to view" });
 
     expect(loginLink).toHaveAttribute("href", "/react/login?next=%2Fgame%2Factive-game");
-    expect(screen.getByRole("link", { name: "Log in to open" })).toHaveAttribute(
+    expect(screen.getByTestId("react-shell-lobby-open-selected-login")).toHaveAttribute(
       "href",
       "/react/login?next=%2Fgame%2Factive-game"
     );
+    expect(screen.getByTestId("react-shell-lobby-open-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Factive-game"
+    );
+    expect(screen.queryByTestId("react-shell-lobby-join-inline-login")).not.toBeInTheDocument();
     expect(openGameMock).not.toHaveBeenCalled();
+    expect(joinGameMock).not.toHaveBeenCalled();
+    expect(openShellGameMock).not.toHaveBeenCalled();
+  });
+
+  it("sends guest detail-panel join actions to login without calling protected APIs", async () => {
+    useAuthMock.mockReturnValue({
+      state: {
+        status: "unauthenticated",
+        message: "Sign in to continue."
+      }
+    });
+    listGamesMock.mockResolvedValue(createLobbyGames([createGameSummary()]));
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    renderLobbyRoute("command");
+
+    expect(await screen.findByTestId("react-shell-lobby-open-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Fjoinable-game"
+    );
+    expect(screen.getByTestId("react-shell-lobby-join-inline-login")).toHaveAttribute(
+      "href",
+      "/react/login?next=%2Fgame%2Fjoinable-game"
+    );
+    expect(openGameMock).not.toHaveBeenCalled();
+    expect(joinGameMock).not.toHaveBeenCalled();
     expect(openShellGameMock).not.toHaveBeenCalled();
   });
 

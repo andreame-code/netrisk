@@ -452,7 +452,7 @@ export function LobbyRoute() {
   }
 
   async function handleJoinGame(game: GameSummary | null): Promise<void> {
-    if (!game || !canJoinGame(game)) {
+    if (!game || !authenticatedUser || !canJoinGame(game)) {
       return;
     }
 
@@ -947,15 +947,26 @@ export function LobbyRoute() {
                   </div>
                   <div className="session-detail-note">{t("lobby.details.note")}</div>
                   <div className="session-detail-actions">
-                    <button
-                      type="button"
-                      id="open-selected-inline"
-                      onClick={() => void handleOpenSelectedGame()}
-                      disabled={actionPending}
-                    >
-                      {openMutation.isPending ? "Opening..." : t("lobby.details.open")}
-                    </button>
-                    {canJoinGame(selectedGame) ? (
+                    {authenticatedUser ? (
+                      <button
+                        type="button"
+                        id="open-selected-inline"
+                        onClick={() => void handleOpenSelectedGame()}
+                        disabled={actionPending}
+                      >
+                        {openMutation.isPending ? "Opening..." : t("lobby.details.open")}
+                      </button>
+                    ) : (
+                      <Link
+                        id="open-selected-inline"
+                        className="refresh-button"
+                        to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                        data-testid="react-shell-lobby-open-inline-login"
+                      >
+                        {t("lobby.loginToOpen")}
+                      </Link>
+                    )}
+                    {canJoinGame(selectedGame) && authenticatedUser ? (
                       <button
                         type="button"
                         id="join-selected-inline"
@@ -970,6 +981,15 @@ export function LobbyRoute() {
                             ? t("warTable.lobby.joinBattle")
                             : t("lobby.details.joinOpen")}
                       </button>
+                    ) : canJoinGame(selectedGame) ? (
+                      <Link
+                        id="join-selected-inline"
+                        className="ghost-button"
+                        to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                        data-testid="react-shell-lobby-join-inline-login"
+                      >
+                        {t("lobby.loginToJoin")}
+                      </Link>
                     ) : null}
                   </div>
                 </>
