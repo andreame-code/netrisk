@@ -53,4 +53,19 @@ register("visual preflight cannot be bypassed by grep or snapshot-update selecto
   );
   assert.equal(requiresVisualEnvironmentPreflight(["e2e/smoke", "--grep", "app loads"]), false);
   assert.equal(requiresVisualEnvironmentPreflight(["./e2e/00-visual/main-screen.spec.ts"]), true);
+  assert.equal(requiresVisualEnvironmentPreflight(["--output", "e2e/tmp"]), true);
+  assert.equal(requiresVisualEnvironmentPreflight(["e2e/(00-visual|profile)"]), true);
+  assert.equal(requiresVisualEnvironmentPreflight(["--update-snapshots", "e2e/smoke"]), true);
+  assert.equal(
+    requiresVisualEnvironmentPreflight(["--update-snapshots=changed", "e2e/smoke"]),
+    false
+  );
+  assert.equal(requiresVisualEnvironmentPreflight(["--unknown", "e2e/smoke"]), true);
+});
+
+register("visual environment rejects unsupported non-Linux hosts", () => {
+  for (const platform of ["darwin", "win32"]) {
+    const errors = validateVisualEnvironment(supportedSnapshot({ platform }));
+    assert.ok(errors.some((error: string) => error.includes(`found ${platform}`)));
+  }
 });

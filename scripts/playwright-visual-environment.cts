@@ -47,18 +47,114 @@ export const supportedVisualEnvironment = Object.freeze({
   })
 });
 
-export function requiresVisualEnvironmentPreflight(args: string[]): boolean {
-  const explicitE2ePaths = args
-    .map((arg) => arg.replace(/^\.\//, ""))
-    .filter((arg) => arg === "e2e" || arg.startsWith("e2e/"));
+const playwrightOptionsWithRequiredValues = new Set([
+  "--browser",
+  "-c",
+  "--config",
+  "-g",
+  "--grep",
+  "-G",
+  "--grep-invert",
+  "--global-timeout",
+  "-j",
+  "--workers",
+  "--last-failed-file",
+  "--max-failures",
+  "--output",
+  "--project",
+  "--repeat-each",
+  "--reporter",
+  "--retries",
+  "--run-agents",
+  "--shard",
+  "--test-list",
+  "--test-list-invert",
+  "--timeout",
+  "--trace",
+  "--tsconfig",
+  "--ui-host",
+  "--ui-port",
+  "--update-source-method"
+]);
 
-  if (explicitE2ePaths.length === 0) {
+const playwrightOptionsWithOptionalValues = new Set([
+  "--debug",
+  "--only-changed",
+  "-u",
+  "--update-snapshots"
+]);
+
+const playwrightBooleanOptions = new Set([
+  "--fail-on-flaky-tests",
+  "--forbid-only",
+  "--fully-parallel",
+  "--headed",
+  "--ignore-snapshots",
+  "--last-failed",
+  "--list",
+  "--no-deps",
+  "--pass-with-no-tests",
+  "--quiet",
+  "--ui",
+  "-x"
+]);
+
+function getLiteralTestFilters(args: string[]): string[] | null {
+  const filters: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--") {
+      filters.push(...args.slice(index + 1));
+      break;
+    }
+
+    if (!arg.startsWith("-")) {
+      filters.push(arg);
+      continue;
+    }
+
+    const optionName = arg.split("=", 1)[0];
+    if (arg.includes("=")) {
+      if (
+        !playwrightOptionsWithRequiredValues.has(optionName) &&
+        !playwrightOptionsWithOptionalValues.has(optionName)
+      ) {
+        return null;
+      }
+      continue;
+    }
+
+    if (playwrightOptionsWithRequiredValues.has(optionName)) {
+      if (index + 1 >= args.length) {
+        return null;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (playwrightOptionsWithOptionalValues.has(optionName)) {
+      return null;
+    }
+
+    if (!playwrightBooleanOptions.has(optionName)) {
+      return null;
+    }
+  }
+
+  return filters;
+}
+
+export function requiresVisualEnvironmentPreflight(args: string[]): boolean {
+  const filters = getLiteralTestFilters(args);
+  if (!filters || filters.length === 0) {
     return true;
   }
 
-  return explicitE2ePaths.some(
-    (arg) => arg === "e2e/00-visual" || arg.startsWith("e2e/00-visual/")
-  );
+  return !filters.every((filter) => {
+    const normalized = filter.replace(/^\.\//, "");
+    return /^e2e\/(?!00-visual(?:\/|$))[A-Za-z0-9._/-]+$/.test(normalized);
+  });
 }
 
 export function validateVisualEnvironment(snapshot: VisualEnvironmentSnapshot): string[] {
@@ -83,6 +179,9 @@ export function validateVisualEnvironment(snapshot: VisualEnvironmentSnapshot): 
   }
 
   if (snapshot.platform !== "linux") {
+    errors.push(
+      `Visual snapshots require Linux ${supportedVisualEnvironment.linux.osId} ${supportedVisualEnvironment.linux.osVersionId}; found ${snapshot.platform}.`
+    );
     return errors;
   }
 
