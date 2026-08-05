@@ -235,7 +235,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.1.0",
+    version: "1.1.1",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
@@ -250,9 +250,9 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "authored-victory-objectives",
     name: "Authored Victory Objectives",
     kind: "admin",
-    version: "1.0.1",
+    version: "1.1.0",
     description:
-      "Content Studio authored victory objective drafts, validation, and runtime output.",
+      "Content Studio authored map and victory objective drafts, validation, and runtime output.",
     ownerPaths: [
       "backend/authored-modules.cts",
       "backend/routes/admin-content-studio.cts",

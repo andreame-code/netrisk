@@ -107,6 +107,7 @@ type ModuleRuntimeOptions = {
     listPublishedVictoryRuleSets?: () =>
       | AuthoredPublishedVictoryRuleSet[]
       | Promise<AuthoredPublishedVictoryRuleSet[]>;
+    listPublishedMaps?: () => AuthoredPublishedMap[] | Promise<AuthoredPublishedMap[]>;
   };
 };
 
@@ -153,6 +154,15 @@ type AuthoredPublishedVictoryRuleSet = {
   objectiveCount?: number;
   moduleType?: string | null;
   runtime: AuthoredVictoryModuleRuntime;
+};
+
+type AuthoredPublishedMap = {
+  id: string;
+  name: string;
+  description: string;
+  source: "authored";
+  moduleType: "map";
+  map: SupportedMap;
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
@@ -1010,7 +1020,8 @@ function buildResolvedModuleCatalog(
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
   runtimeCardRuleSetEntries: RuntimeModuleCardRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
-  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [],
+  authoredMaps: AuthoredPublishedMap[] = []
 ): NetRiskResolvedModuleCatalog {
   const clonedModules = modules.map(cloneInstalledModule);
   const {
@@ -1046,6 +1057,11 @@ function buildResolvedModuleCatalog(
       new Set([...(content.victoryRuleSetIds || []), ...authoredVictoryRuleSetIds])
     );
   }
+  if (authoredMaps.length) {
+    content.mapIds = Array.from(
+      new Set([...(content.mapIds || []), ...authoredMaps.map((entry) => entry.id)])
+    );
+  }
 
   return {
     modules: clonedModules,
@@ -1057,7 +1073,8 @@ function buildResolvedModuleCatalog(
     maps: filterMapsByAllowedIds(
       [
         ...listCoreBaseMapSummaries().map(cloneMapSummary),
-        ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
+        ...enabledRuntimeMapEntries.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary),
+        ...authoredMaps.map((entry) => summarizeMap(entry.map)).map(cloneMapSummary)
       ],
       content.mapIds
     ),
@@ -1155,7 +1172,8 @@ function buildModuleOptions(
   runtimeDiceRuleSetEntries: RuntimeModuleDiceRuleSetEntry[],
   runtimeCardRuleSetEntries: RuntimeModuleCardRuleSetEntry[],
   runtimeSiteThemeEntries: RuntimeModuleSiteThemeEntry[],
-  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = []
+  authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [],
+  authoredMaps: AuthoredPublishedMap[] = []
 ): ModuleOptionsSnapshot {
   const resolvedCatalog = buildResolvedModuleCatalog(
     modules,
@@ -1165,7 +1183,8 @@ function buildModuleOptions(
     runtimeDiceRuleSetEntries,
     runtimeCardRuleSetEntries,
     runtimeSiteThemeEntries,
-    authoredVictoryRuleSets
+    authoredVictoryRuleSets,
+    authoredMaps
   );
 
   return {
@@ -1305,6 +1324,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   let runtimeSiteThemeErrorsByModuleId = new Map<string, string[]>();
   let authoredVictoryRuleSets: AuthoredPublishedVictoryRuleSet[] = [];
   let authoredVictoryRuleSetRuntimesById = new Map<string, AuthoredVictoryModuleRuntime>();
+  let authoredMapsById = new Map<string, AuthoredPublishedMap>();
 
   function registerServerModuleMaps(
     moduleId: string,
@@ -2258,7 +2278,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function getModuleOptions() {
     const modules = await ensureCatalog();
-    await refreshAuthoredVictoryRuleSets();
+    await refreshAuthoredContent();
     return buildModuleOptions(
       modules,
       listEnabledRuntimeMaps(modules),
@@ -2267,27 +2287,52 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       listEnabledRuntimeDiceRuleSets(modules),
       listEnabledRuntimeCardRuleSets(modules),
       listEnabledRuntimeSiteThemes(modules),
-      authoredVictoryRuleSets
+      authoredVictoryRuleSets,
+      Array.from(authoredMapsById.values())
     );
   }
 
-  async function refreshAuthoredVictoryRuleSets() {
+  async function refreshAuthoredContent() {
     if (typeof options.authoredModules?.listPublishedVictoryRuleSets !== "function") {
       authoredVictoryRuleSets = [];
       authoredVictoryRuleSetRuntimesById = new Map();
+    } else {
+      const published = await options.authoredModules.listPublishedVictoryRuleSets();
+      authoredVictoryRuleSets = Array.isArray(published)
+        ? published.map((entry) => ({
+            ...entry,
+            runtime: cloneAuthoredVictoryRuntime(entry.runtime)
+          }))
+        : [];
+      authoredVictoryRuleSetRuntimesById = new Map(
+        authoredVictoryRuleSets.map((entry) => [
+          entry.id,
+          cloneAuthoredVictoryRuntime(entry.runtime)
+        ])
+      );
+    }
+
+    if (typeof options.authoredModules?.listPublishedMaps !== "function") {
+      authoredMapsById = new Map();
       return;
     }
 
-    const published = await options.authoredModules.listPublishedVictoryRuleSets();
-    authoredVictoryRuleSets = Array.isArray(published)
-      ? published.map((entry) => ({
-          ...entry,
-          runtime: cloneAuthoredVictoryRuntime(entry.runtime)
-        }))
-      : [];
-    authoredVictoryRuleSetRuntimesById = new Map(
-      authoredVictoryRuleSets.map((entry) => [entry.id, cloneAuthoredVictoryRuntime(entry.runtime)])
-    );
+    const publishedMaps = await options.authoredModules.listPublishedMaps();
+    const nextMaps = new Map<string, AuthoredPublishedMap>();
+    (Array.isArray(publishedMaps) ? publishedMaps : []).forEach((entry) => {
+      if (
+        findCoreBaseSupportedMap(entry.id) ||
+        runtimeMapsById.has(entry.id) ||
+        nextMaps.has(entry.id)
+      ) {
+        return;
+      }
+      nextMaps.set(entry.id, {
+        ...entry,
+        map: cloneSupportedMap(entry.map)
+      });
+    });
+    authoredMapsById = nextMaps;
   }
 
   return {
@@ -2314,8 +2359,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
           return Boolean(ownerModule?.enabled && ownerModule.compatible);
         })
         .map((runtimeEntry) => cloneSupportedMap(runtimeEntry.map));
+      const authoredMaps = Array.from(authoredMapsById.values()).map((entry) =>
+        cloneSupportedMap(entry.map)
+      );
 
-      return [...builtInMaps, ...runtimeMaps];
+      return [...builtInMaps, ...runtimeMaps, ...authoredMaps];
     },
     findSupportedMap(mapId: string): SupportedMap | null {
       const builtInMap = findCoreBaseSupportedMap(mapId);
@@ -2324,18 +2372,17 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }
 
       const runtimeEntry = runtimeMapsById.get(mapId);
-      if (!runtimeEntry) {
-        return null;
+      if (runtimeEntry) {
+        const ownerModule = cachedModules.find(
+          (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
+        );
+        if (ownerModule?.enabled && ownerModule.compatible) {
+          return cloneSupportedMap(runtimeEntry.map);
+        }
       }
 
-      const ownerModule = cachedModules.find(
-        (moduleEntry) => moduleEntry.id === runtimeEntry.moduleId
-      );
-      if (!ownerModule || !ownerModule.enabled || !ownerModule.compatible) {
-        return null;
-      }
-
-      return cloneSupportedMap(runtimeEntry.map);
+      const authoredMap = authoredMapsById.get(mapId);
+      return authoredMap ? cloneSupportedMap(authoredMap.map) : null;
     },
     findContentPack(contentPackId: string): ContentPackSummary | null {
       const builtInContentPack = findBuiltInContentPack(contentPackId);
@@ -2767,6 +2814,11 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
             ...(selectedContent.victoryRuleSetIds || []),
             ...authoredVictoryRuleSets.map((entry) => entry.id)
           ])
+        );
+      }
+      if (authoredMapsById.size) {
+        selectedContent.mapIds = Array.from(
+          new Set([...(selectedContent.mapIds || []), ...authoredMapsById.keys()])
         );
       }
       const availableContentProfiles = new Set(

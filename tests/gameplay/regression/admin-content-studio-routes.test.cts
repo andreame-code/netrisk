@@ -161,6 +161,44 @@ function createVictoryDraft(
   };
 }
 
+function createMapDraft() {
+  return {
+    id: "map.route-training",
+    name: "Route Training",
+    description: "A compact map authored through the admin API.",
+    version: "1.0.0",
+    moduleType: "map",
+    content: {
+      territories: [
+        {
+          id: "alpha",
+          name: "Alpha",
+          continentId: "arena",
+          x: 0.2,
+          y: 0.5,
+          neighbors: ["bravo"]
+        },
+        {
+          id: "bravo",
+          name: "Bravo",
+          continentId: "arena",
+          x: 0.8,
+          y: 0.5,
+          neighbors: ["alpha"]
+        }
+      ],
+      continents: [
+        {
+          id: "arena",
+          name: "Arena",
+          bonus: 1,
+          territoryIds: ["alpha", "bravo"]
+        }
+      ]
+    }
+  };
+}
+
 register("content studio routes expose CRUD, validation, and enable toggles", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const draft = createVictoryDraft();
@@ -303,6 +341,77 @@ register("content studio routes expose CRUD, validation, and enable toggles", as
       reenabledOptionsResponse.payload.victoryRuleSets.some(
         (entry: { id?: string }) => entry.id === draft.id
       ),
+      true
+    );
+  });
+});
+
+register("content studio publishes authored maps into runtime game options", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const draft = createMapDraft();
+    const createResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/content-studio/modules",
+      draft,
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createResponse.statusCode, 201);
+    assert.equal(createResponse.payload.validation.valid, true);
+    assert.equal(createResponse.payload.runtime.kind, "authored-map");
+
+    const publishResponse = await callApp(
+      app,
+      "POST",
+      `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/publish`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(publishResponse.statusCode, 200);
+
+    const optionsResponse = await callApp(app, "GET", "/api/game/options");
+    assert.equal(optionsResponse.statusCode, 200);
+    assert.equal(
+      optionsResponse.payload.maps.some((entry: { id?: string }) => entry.id === draft.id),
+      true
+    );
+    assert.equal(app.moduleRuntime.findSupportedMap(draft.id)?.territories.length, 2);
+
+    const createGameResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      {
+        name: "Authored Map Match",
+        mapId: draft.id,
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "human" }]
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createGameResponse.statusCode, 201);
+    assert.equal(createGameResponse.payload.state.gameConfig.mapId, draft.id);
+    assert.equal(createGameResponse.payload.state.map.length, 2);
+
+    const disableInUseResponse = await callApp(
+      app,
+      "POST",
+      `/api/admin/content-studio/modules/${encodeURIComponent(draft.id)}/disable`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(disableInUseResponse.statusCode, 400);
+    assert.match(String(disableInUseResponse.payload.error || ""), /active game/i);
+
+    const studioOptions = await callApp(
+      app,
+      "GET",
+      "/api/admin/content-studio/options",
+      undefined,
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(
+      studioOptions.payload.maps.some((entry: { id?: string }) => entry.id === draft.id),
       true
     );
   });

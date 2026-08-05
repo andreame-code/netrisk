@@ -3,10 +3,12 @@ const {
   authoredModuleSchema
 } = require("../shared/runtime-validation.cjs");
 const { registeredMaps } = require("../shared/maps/index.cjs");
+const { buildContinentDefinition, buildMapDefinition } = require("../shared/typed-map-data.cjs");
 const { listVictoryRuleSets } = require("../shared/victory-rule-sets.cjs");
 
 import type {
   AuthoredMapOption,
+  AuthoredMapModuleRuntime,
   AuthoredModule,
   AuthoredModuleInput,
   AuthoredModulePreview,
@@ -105,6 +107,9 @@ const builtInVictoryRuleSetIds = new Set(
     .map((entry: { id?: unknown }) => normalizeString(entry?.id))
     .filter(isNonEmptyString)
 );
+const builtInMapIds = new Set(
+  registeredMaps.map((entry: SupportedMap) => normalizeString(entry?.id)).filter(isNonEmptyString)
+);
 
 function buildMapOption(map: SupportedMap): AuthoredMapOption {
   const territories = Array.isArray(map?.territories) ? map.territories : [];
@@ -166,6 +171,12 @@ function objectiveSummary(objective: AuthoredVictoryObjective, map: SupportedMap
 }
 
 function moduleSummaryText(moduleEntry: AuthoredModule, map: SupportedMap | null): string {
+  if (moduleEntry.moduleType === "map") {
+    const territoryCount = moduleEntry.content.territories.length;
+    const continentCount = moduleEntry.content.continents.length;
+    return `${moduleEntry.name || moduleEntry.id || "Custom map"}: ${territoryCount} territories across ${continentCount} continents.`;
+  }
+
   const enabledObjectives = (moduleEntry.content.objectives || []).filter(
     (objective) => objective.enabled
   );
@@ -184,11 +195,53 @@ function buildPreview(
   moduleEntry: AuthoredModule,
   map: SupportedMap | null
 ): AuthoredModulePreview {
+  if (moduleEntry.moduleType === "map") {
+    const detailSummaries = [
+      `${moduleEntry.content.territories.length} territories`,
+      `${moduleEntry.content.continents.length} continents`,
+      `${moduleEntry.content.territories.reduce((total, territory) => total + territory.neighbors.length, 0) / 2} borders`
+    ];
+    return {
+      summary: moduleSummaryText(moduleEntry, map),
+      objectiveSummaries: [],
+      detailSummaries
+    };
+  }
+
   return {
     summary: moduleSummaryText(moduleEntry, map),
     objectiveSummaries: (moduleEntry.content.objectives || []).map((objective) =>
       objectiveSummary(objective as AuthoredVictoryObjective, map)
-    )
+    ),
+    detailSummaries: []
+  };
+}
+
+function buildAuthoredSupportedMap(moduleEntry: AuthoredModule): SupportedMap {
+  if (moduleEntry.moduleType !== "map") {
+    throw new Error(`Authored module "${moduleEntry.id}" is not a map module.`);
+  }
+
+  const source = `authored:${moduleEntry.id}`;
+  const mapDefinition = buildMapDefinition(source, moduleEntry.content.territories);
+  const continentDefinition = buildContinentDefinition(source, moduleEntry.content.continents, {
+    validTerritoryIds: mapDefinition.territories
+      .map((entry: { territory: { id?: string | null } }) => entry.territory.id)
+      .filter((territoryId: unknown): territoryId is string => isNonEmptyString(territoryId))
+  });
+
+  return {
+    id: moduleEntry.id,
+    name: moduleEntry.name,
+    territories: mapDefinition.territories.map(
+      (entry: { territory: SupportedMap["territories"][number] }) => entry.territory
+    ),
+    positions: mapDefinition.positions,
+    continents: continentDefinition.continents,
+    mapDefinition: {
+      ...mapDefinition,
+      continents: continentDefinition.continents
+    }
   };
 }
 
@@ -196,6 +249,25 @@ function buildRuntime(
   moduleEntry: AuthoredModule,
   map: SupportedMap | null
 ): AuthoredModuleRuntime {
+  if (moduleEntry.moduleType === "map") {
+    const runtime: AuthoredMapModuleRuntime = {
+      id: moduleEntry.id,
+      name: moduleEntry.name,
+      description: moduleEntry.description,
+      version: moduleEntry.version,
+      moduleType: "map",
+      kind: "authored-map",
+      map: {
+        id: moduleEntry.id,
+        name: moduleEntry.name,
+        territoryRecords: clone(moduleEntry.content.territories),
+        continentRecords: clone(moduleEntry.content.continents)
+      },
+      preview: buildPreview(moduleEntry, map)
+    };
+    return runtime;
+  }
+
   const mapOption = map ? buildMapOption(map) : null;
 
   return {
@@ -256,6 +328,257 @@ function buildRuntime(
   };
 }
 
+function validateModuleMetadata(
+  moduleEntry: AuthoredModule,
+  errors: AuthoredModuleValidationIssue[]
+): void {
+  const moduleId = normalizeString(moduleEntry.id);
+  if (!moduleId) {
+    errors.push(issue("required-id", "id", "Module id is required."));
+  } else if (!ID_PATTERN.test(moduleId)) {
+    errors.push(
+      issue(
+        "invalid-id",
+        "id",
+        "Use letters, numbers, dashes, underscores, or dots for the module id."
+      )
+    );
+  } else if (
+    (moduleEntry.moduleType === "victory-objectives" && builtInVictoryRuleSetIds.has(moduleId)) ||
+    (moduleEntry.moduleType === "map" && builtInMapIds.has(moduleId))
+  ) {
+    errors.push(
+      issue(
+        "reserved-module-id",
+        "id",
+        `Module id "${moduleId}" is already used by built-in content.`
+      )
+    );
+  }
+
+  if (!normalizeString(moduleEntry.name)) {
+    errors.push(issue("required-name", "name", "Module name is required."));
+  }
+
+  if (!normalizeString(moduleEntry.description)) {
+    errors.push(issue("required-description", "description", "Module description is required."));
+  }
+
+  if (!normalizeString(moduleEntry.version)) {
+    errors.push(issue("required-version", "version", "Module version is required."));
+  }
+}
+
+function validateAuthoredMap(
+  moduleEntry: Extract<AuthoredModule, { moduleType: "map" }>,
+  errors: AuthoredModuleValidationIssue[]
+): SupportedMap | null {
+  const territories = moduleEntry.content.territories;
+  const continents = moduleEntry.content.continents;
+  const territoryIds = new Set<string>();
+  const continentIds = new Set<string>();
+
+  if (territories.length < 2) {
+    errors.push(
+      issue("required-territories", "content.territories", "Add at least two territories.")
+    );
+  }
+  if (!continents.length) {
+    errors.push(issue("required-continents", "content.continents", "Add at least one continent."));
+  }
+
+  territories.forEach((territory, index) => {
+    const basePath = `content.territories.${index}`;
+    const territoryId = normalizeString(territory.id);
+    if (!territoryId) {
+      errors.push(issue("required-territory-id", `${basePath}.id`, "Territory id is required."));
+    } else if (!ID_PATTERN.test(territoryId)) {
+      errors.push(
+        issue("invalid-territory-id", `${basePath}.id`, "Territory id has invalid characters.")
+      );
+    } else if (territoryIds.has(territoryId)) {
+      errors.push(
+        issue(
+          "duplicate-territory-id",
+          `${basePath}.id`,
+          `Territory id "${territoryId}" is already used.`
+        )
+      );
+    } else {
+      territoryIds.add(territoryId);
+    }
+
+    if (!normalizeString(territory.name)) {
+      errors.push(
+        issue("required-territory-name", `${basePath}.name`, "Territory name is required.")
+      );
+    }
+    if (!normalizeString(territory.continentId)) {
+      errors.push(
+        issue(
+          "required-territory-continent",
+          `${basePath}.continentId`,
+          "Assign the territory to a continent."
+        )
+      );
+    }
+    if (!Number.isFinite(territory.x) || territory.x < 0 || territory.x > 1) {
+      errors.push(issue("invalid-territory-x", `${basePath}.x`, "X must be between 0 and 1."));
+    }
+    if (!Number.isFinite(territory.y) || territory.y < 0 || territory.y > 1) {
+      errors.push(issue("invalid-territory-y", `${basePath}.y`, "Y must be between 0 and 1."));
+    }
+    if (!territory.neighbors.length) {
+      errors.push(
+        issue(
+          "required-neighbor",
+          `${basePath}.neighbors`,
+          "Add at least one neighboring territory."
+        )
+      );
+    }
+  });
+
+  continents.forEach((continent, index) => {
+    const basePath = `content.continents.${index}`;
+    const continentId = normalizeString(continent.id);
+    if (!continentId) {
+      errors.push(issue("required-continent-id", `${basePath}.id`, "Continent id is required."));
+    } else if (!ID_PATTERN.test(continentId)) {
+      errors.push(
+        issue("invalid-continent-id", `${basePath}.id`, "Continent id has invalid characters.")
+      );
+    } else if (continentIds.has(continentId)) {
+      errors.push(
+        issue(
+          "duplicate-continent-id",
+          `${basePath}.id`,
+          `Continent id "${continentId}" is already used.`
+        )
+      );
+    } else {
+      continentIds.add(continentId);
+    }
+
+    if (!normalizeString(continent.name)) {
+      errors.push(
+        issue("required-continent-name", `${basePath}.name`, "Continent name is required.")
+      );
+    }
+    if (!Number.isInteger(continent.bonus) || continent.bonus < 0) {
+      errors.push(
+        issue(
+          "invalid-continent-bonus",
+          `${basePath}.bonus`,
+          "Continent bonus must be a non-negative whole number."
+        )
+      );
+    }
+    if (!continent.territoryIds.length) {
+      errors.push(
+        issue(
+          "required-continent-territories",
+          `${basePath}.territoryIds`,
+          "Assign at least one territory to the continent."
+        )
+      );
+    }
+  });
+
+  territories.forEach((territory, index) => {
+    const continentId = normalizeString(territory.continentId);
+    if (continentId && !continentIds.has(continentId)) {
+      errors.push(
+        issue(
+          "unknown-territory-continent",
+          `content.territories.${index}.continentId`,
+          `Continent "${continentId}" does not exist.`
+        )
+      );
+    }
+
+    const owners = continents.filter((continent) => continent.territoryIds.includes(territory.id));
+    if (owners.length !== 1 || owners[0]?.id !== continentId) {
+      errors.push(
+        issue(
+          "inconsistent-continent-membership",
+          `content.territories.${index}.continentId`,
+          `Territory "${territory.id || index + 1}" must appear exactly once in its assigned continent.`
+        )
+      );
+    }
+  });
+
+  continents.forEach((continent, continentIndex) => {
+    const seenTerritories = new Set<string>();
+    continent.territoryIds.forEach((territoryId, territoryIndex) => {
+      const normalizedTerritoryId = normalizeString(territoryId);
+      const path = `content.continents.${continentIndex}.territoryIds.${territoryIndex}`;
+      if (!territoryIds.has(normalizedTerritoryId)) {
+        errors.push(
+          issue(
+            "unknown-continent-territory",
+            path,
+            `Territory "${normalizedTerritoryId}" does not exist.`
+          )
+        );
+      } else if (seenTerritories.has(normalizedTerritoryId)) {
+        errors.push(
+          issue(
+            "duplicate-continent-territory",
+            path,
+            `Territory "${normalizedTerritoryId}" is listed more than once.`
+          )
+        );
+      }
+      seenTerritories.add(normalizedTerritoryId);
+    });
+  });
+
+  if (errors.length) {
+    return null;
+  }
+
+  try {
+    const map = buildAuthoredSupportedMap(moduleEntry);
+    const visited = new Set<string>();
+    const queue = [map.territories[0]?.id].filter(isNonEmptyString);
+    while (queue.length) {
+      const territoryId = queue.shift() as string;
+      if (visited.has(territoryId)) {
+        continue;
+      }
+      visited.add(territoryId);
+      const territory = map.territories.find((entry) => entry.id === territoryId);
+      (territory?.neighbors || []).forEach((neighborId) => {
+        if (!visited.has(neighborId)) {
+          queue.push(neighborId);
+        }
+      });
+    }
+    if (visited.size !== map.territories.length) {
+      errors.push(
+        issue(
+          "disconnected-map",
+          "content.territories",
+          "All territories must form one connected map."
+        )
+      );
+      return null;
+    }
+    return map;
+  } catch (error: unknown) {
+    errors.push(
+      issue(
+        "invalid-map-graph",
+        "content.territories",
+        error instanceof Error ? error.message : String(error)
+      )
+    );
+    return null;
+  }
+}
+
 function validateModule(
   moduleEntry: AuthoredModule,
   mapCatalog: MapCatalog
@@ -269,10 +592,25 @@ function validateModule(
 } {
   const errors: AuthoredModuleValidationIssue[] = [];
   const warnings: AuthoredModuleValidationIssue[] = [];
-  const moduleId = normalizeString(moduleEntry.id);
-  const name = normalizeString(moduleEntry.name);
-  const description = normalizeString(moduleEntry.description);
-  const version = normalizeString(moduleEntry.version);
+  validateModuleMetadata(moduleEntry, errors);
+
+  if (moduleEntry.moduleType === "map") {
+    const authoredMap = validateAuthoredMap(moduleEntry, errors);
+    const mapOption = authoredMap ? buildMapOption(authoredMap) : null;
+    return {
+      validation: {
+        valid: errors.length === 0,
+        errors,
+        warnings
+      },
+      preview: buildPreview(moduleEntry, authoredMap),
+      runtime: buildRuntime(moduleEntry, authoredMap),
+      map: mapOption,
+      objectiveCount: 0,
+      enabledObjectiveCount: 0
+    };
+  }
+
   const mapId = normalizeString(moduleEntry.content?.mapId);
   const map = mapId ? mapCatalog.resolveMap(mapId) : null;
   const mapOption = map ? buildMapOption(map) : null;
@@ -282,38 +620,6 @@ function validateModule(
   const enabledObjectiveCount = objectives.filter((objective) => objective?.enabled).length;
   const seenObjectiveIds = new Set<string>();
   const validContinentIds = new Set((mapOption?.continents || []).map((continent) => continent.id));
-
-  if (!moduleId) {
-    errors.push(issue("required-id", "id", "Module id is required."));
-  } else if (!ID_PATTERN.test(moduleId)) {
-    errors.push(
-      issue(
-        "invalid-id",
-        "id",
-        "Use letters, numbers, dashes, underscores, or dots for the module id."
-      )
-    );
-  } else if (builtInVictoryRuleSetIds.has(moduleId)) {
-    errors.push(
-      issue(
-        "reserved-module-id",
-        "id",
-        `Module id "${moduleId}" is already used by a built-in victory rule set.`
-      )
-    );
-  }
-
-  if (!name) {
-    errors.push(issue("required-name", "name", "Module name is required."));
-  }
-
-  if (!description) {
-    errors.push(issue("required-description", "description", "Module description is required."));
-  }
-
-  if (!version) {
-    errors.push(issue("required-version", "version", "Module version is required."));
-  }
 
   if (!mapId) {
     errors.push(
@@ -506,7 +812,11 @@ function toSummaryPayload(
         }
       : null,
     objectiveCount: detail.objectiveCount,
-    enabledObjectiveCount: detail.enabledObjectiveCount
+    enabledObjectiveCount: detail.enabledObjectiveCount,
+    territoryCount:
+      moduleEntry.moduleType === "map" ? moduleEntry.content.territories.length : undefined,
+    continentCount:
+      moduleEntry.moduleType === "map" ? moduleEntry.content.continents.length : undefined
   };
 }
 
@@ -523,6 +833,38 @@ function sortModules(modules: AuthoredModule[]): AuthoredModule[] {
 
 function createAuthoredModulesService(options: AuthoredModulesOptions) {
   let mapCatalog = defaultMapCatalog();
+
+  function effectiveMapCatalog(modules: AuthoredModule[]): MapCatalog {
+    const authoredMaps = modules
+      .filter(
+        (entry): entry is Extract<AuthoredModule, { moduleType: "map" }> =>
+          entry.moduleType === "map" && entry.status === "published"
+      )
+      .map((entry) => {
+        const validation = validateModule(entry, mapCatalog);
+        if (!validation.validation.valid) {
+          return null;
+        }
+        try {
+          return buildAuthoredSupportedMap(entry);
+        } catch {
+          return null;
+        }
+      })
+      .filter((entry): entry is SupportedMap => Boolean(entry));
+    const authoredById = new Map(authoredMaps.map((entry) => [entry.id, entry]));
+
+    return {
+      listMaps() {
+        const externalMaps = mapCatalog.listMaps().filter((entry) => !authoredById.has(entry.id));
+        return [...externalMaps, ...authoredMaps].map(clone);
+      },
+      resolveMap(mapId: string) {
+        const authoredMap = authoredById.get(mapId);
+        return authoredMap ? clone(authoredMap) : mapCatalog.resolveMap(mapId);
+      }
+    };
+  }
 
   async function readModules(): Promise<AuthoredModule[]> {
     if (typeof options.datastore.getAppState !== "function") {
@@ -556,16 +898,6 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     );
   }
 
-  async function getModuleOrThrow(moduleId: string): Promise<AuthoredModule> {
-    const modules = await readModules();
-    const match = modules.find((entry) => entry.id === moduleId) || null;
-    if (!match) {
-      throw createServiceError(`Authored module "${moduleId}" was not found.`, 404);
-    }
-
-    return match;
-  }
-
   function parseInput(input: unknown): AuthoredModuleInput {
     const parsed = adminAuthoredModuleUpsertRequestSchema.safeParse(input);
     if (!parsed.success) {
@@ -577,13 +909,14 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
 
   async function validateDraft(input: unknown): Promise<AdminAuthoredModuleValidateResponse> {
     const parsed = parseInput(input);
+    const modules = await readModules();
     const moduleEntry: AuthoredModule = {
       ...parsed,
       status: "draft",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    const detail = toDetailPayload(moduleEntry, mapCatalog);
+    const detail = toDetailPayload(moduleEntry, effectiveMapCatalog(modules));
 
     return {
       validation: detail.validation,
@@ -620,7 +953,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     }
 
     await writeModules(modules);
-    return toDetailPayload(nextEntry, mapCatalog);
+    return toDetailPayload(nextEntry, effectiveMapCatalog(modules));
   }
 
   async function publishModule(moduleId: string): Promise<AdminAuthoredModuleDetailResponse> {
@@ -630,7 +963,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       throw createServiceError(`Authored module "${moduleId}" was not found.`, 404);
     }
 
-    const detail = toDetailPayload(modules[index] as AuthoredModule, mapCatalog);
+    const detail = toDetailPayload(modules[index] as AuthoredModule, effectiveMapCatalog(modules));
     if (!detail.validation.valid) {
       throw createServiceError(
         "This module still has validation errors and cannot be published.",
@@ -645,7 +978,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       updatedAt: new Date().toISOString()
     };
     await writeModules(modules);
-    return toDetailPayload(modules[index] as AuthoredModule, mapCatalog);
+    return toDetailPayload(modules[index] as AuthoredModule, effectiveMapCatalog(modules));
   }
 
   async function disableModule(moduleId: string): Promise<AdminAuthoredModuleDetailResponse> {
@@ -661,7 +994,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       updatedAt: new Date().toISOString()
     };
     await writeModules(modules);
-    return toDetailPayload(modules[index] as AuthoredModule, mapCatalog);
+    return toDetailPayload(modules[index] as AuthoredModule, effectiveMapCatalog(modules));
   }
 
   async function enableModule(moduleId: string): Promise<AdminAuthoredModuleDetailResponse> {
@@ -671,7 +1004,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       throw createServiceError(`Authored module "${moduleId}" was not found.`, 404);
     }
 
-    const detail = toDetailPayload(modules[index] as AuthoredModule, mapCatalog);
+    const detail = toDetailPayload(modules[index] as AuthoredModule, effectiveMapCatalog(modules));
     if (!detail.validation.valid) {
       throw createServiceError(
         "This module no longer validates cleanly and cannot be enabled.",
@@ -686,7 +1019,7 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       updatedAt: new Date().toISOString()
     };
     await writeModules(modules);
-    return toDetailPayload(modules[index] as AuthoredModule, mapCatalog);
+    return toDetailPayload(modules[index] as AuthoredModule, effectiveMapCatalog(modules));
   }
 
   return {
@@ -702,9 +1035,11 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
       };
     },
     async listEditorOptions(): Promise<AdminAuthoredModuleEditorOptionsResponse> {
+      const modules = await readModules();
+      const catalog = effectiveMapCatalog(modules);
       return {
-        moduleTypes: ["victory-objectives"],
-        maps: mapCatalog
+        moduleTypes: ["victory-objectives", "map"],
+        maps: catalog
           .listMaps()
           .map((entry) => buildMapOption(entry))
           .sort((left, right) => left.name.localeCompare(right.name))
@@ -712,10 +1047,16 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     },
     async listModules(): Promise<AuthoredModuleSummary[]> {
       const modules = await readModules();
-      return modules.map((moduleEntry) => toSummaryPayload(moduleEntry, mapCatalog));
+      const catalog = effectiveMapCatalog(modules);
+      return modules.map((moduleEntry) => toSummaryPayload(moduleEntry, catalog));
     },
     async getModule(moduleId: string): Promise<AdminAuthoredModuleDetailResponse> {
-      return toDetailPayload(await getModuleOrThrow(moduleId), mapCatalog);
+      const modules = await readModules();
+      const moduleEntry = modules.find((entry) => entry.id === moduleId);
+      if (!moduleEntry) {
+        throw createServiceError(`Authored module "${moduleId}" was not found.`, 404);
+      }
+      return toDetailPayload(moduleEntry, effectiveMapCatalog(modules));
     },
     async validateDraft(input: unknown) {
       return validateDraft(input);
@@ -734,11 +1075,17 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     },
     async listPublishedVictoryRuleSets() {
       const modules = await readModules();
+      const catalog = effectiveMapCatalog(modules);
       return modules
-        .filter((moduleEntry) => moduleEntry.status === "published")
+        .filter(
+          (
+            moduleEntry
+          ): moduleEntry is Extract<AuthoredModule, { moduleType: "victory-objectives" }> =>
+            moduleEntry.status === "published" && moduleEntry.moduleType === "victory-objectives"
+        )
         .map((moduleEntry) => ({
           moduleEntry,
-          detail: toDetailPayload(moduleEntry, mapCatalog)
+          detail: toDetailPayload(moduleEntry, catalog)
         }))
         .filter((entry) => entry.detail.validation.valid)
         .map(({ moduleEntry, detail }) => ({
@@ -758,14 +1105,38 @@ function createAuthoredModulesService(options: AuthoredModulesOptions) {
     ): Promise<AuthoredModuleRuntime | null> {
       const modules = await readModules();
       const moduleEntry = modules.find(
-        (entry) => entry.id === moduleId && entry.status === "published"
+        (entry) =>
+          entry.id === moduleId &&
+          entry.status === "published" &&
+          entry.moduleType === "victory-objectives"
       );
       if (!moduleEntry) {
         return null;
       }
 
-      const detail = toDetailPayload(moduleEntry, mapCatalog);
+      const detail = toDetailPayload(moduleEntry, effectiveMapCatalog(modules));
       return detail.validation.valid ? detail.runtime : null;
+    },
+    async listPublishedMaps() {
+      const modules = await readModules();
+      return modules
+        .filter(
+          (entry): entry is Extract<AuthoredModule, { moduleType: "map" }> =>
+            entry.moduleType === "map" && entry.status === "published"
+        )
+        .map((moduleEntry) => ({
+          moduleEntry,
+          detail: validateModule(moduleEntry, mapCatalog)
+        }))
+        .filter((entry) => entry.detail.validation.valid)
+        .map(({ moduleEntry }) => ({
+          id: moduleEntry.id,
+          name: moduleEntry.name,
+          description: moduleEntry.description,
+          source: "authored" as const,
+          moduleType: moduleEntry.moduleType,
+          map: buildAuthoredSupportedMap(moduleEntry)
+        }));
     },
     async isModuleStored(moduleId: string): Promise<boolean> {
       const modules = await readModules();

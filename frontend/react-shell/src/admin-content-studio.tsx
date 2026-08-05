@@ -5,7 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AdminAuthoredModuleDetailResponse,
   AdminAuthoredModuleUpsertRequest,
+  AuthoredMapContinent,
   AuthoredMapOption,
+  AuthoredMapTerritory,
   AuthoredVictoryObjective
 } from "@frontend-generated/shared-runtime-validation.mts";
 
@@ -52,6 +54,8 @@ type EditorDraft = AdminAuthoredModuleUpsertRequest & {
   createdAt?: string;
   updatedAt?: string;
 };
+type VictoryEditorDraft = Extract<EditorDraft, { moduleType: "victory-objectives" }>;
+type MapEditorDraft = Extract<EditorDraft, { moduleType: "map" }>;
 
 const NEW_MODULE_KEY = "__content-studio-new__";
 
@@ -142,8 +146,11 @@ function createObjective(
   };
 }
 
-function createDefaultModuleId(existingModuleIds: string[]): string {
-  const baseId = "victory.new-draft";
+function createDefaultModuleId(
+  existingModuleIds: string[],
+  moduleType: EditorDraft["moduleType"]
+): string {
+  const baseId = moduleType === "map" ? "map.new-draft" : "victory.new-draft";
   if (!existingModuleIds.includes(baseId)) {
     return baseId;
   }
@@ -175,12 +182,12 @@ function reservedModuleIds(
   return [...ids];
 }
 
-function createEmptyDraft(
+function createEmptyVictoryDraft(
   mapOption: AuthoredMapOption | null,
   existingModuleIds: string[] = []
-): EditorDraft {
+): VictoryEditorDraft {
   return {
-    id: createDefaultModuleId(existingModuleIds),
+    id: createDefaultModuleId(existingModuleIds, "victory-objectives"),
     name: "",
     description: "",
     version: "1.0.0",
@@ -192,18 +199,90 @@ function createEmptyDraft(
   };
 }
 
+function createEmptyMapDraft(existingModuleIds: string[] = []): MapEditorDraft {
+  return {
+    id: createDefaultModuleId(existingModuleIds, "map"),
+    name: "",
+    description: "",
+    version: "1.0.0",
+    moduleType: "map",
+    content: {
+      territories: [
+        {
+          id: "territory-1",
+          name: "Territory 1",
+          continentId: "continent-1",
+          x: 0.2,
+          y: 0.2,
+          neighbors: ["territory-2", "territory-4"]
+        },
+        {
+          id: "territory-2",
+          name: "Territory 2",
+          continentId: "continent-1",
+          x: 0.8,
+          y: 0.2,
+          neighbors: ["territory-1", "territory-3"]
+        },
+        {
+          id: "territory-3",
+          name: "Territory 3",
+          continentId: "continent-1",
+          x: 0.8,
+          y: 0.8,
+          neighbors: ["territory-2", "territory-4"]
+        },
+        {
+          id: "territory-4",
+          name: "Territory 4",
+          continentId: "continent-1",
+          x: 0.2,
+          y: 0.8,
+          neighbors: ["territory-1", "territory-3"]
+        }
+      ],
+      continents: [
+        {
+          id: "continent-1",
+          name: "Continent 1",
+          bonus: 2,
+          territoryIds: ["territory-1", "territory-2", "territory-3", "territory-4"]
+        }
+      ]
+    }
+  };
+}
+
 function toUpsertRequest(draft: EditorDraft): AdminAuthoredModuleUpsertRequest {
+  if (draft.moduleType === "map") {
+    return {
+      id: draft.id,
+      name: draft.name,
+      description: draft.description,
+      version: draft.version,
+      moduleType: "map",
+      content: clone(draft.content)
+    };
+  }
+
   return {
     id: draft.id,
     name: draft.name,
     description: draft.description,
     version: draft.version,
-    moduleType: draft.moduleType,
+    moduleType: "victory-objectives",
     content: {
       mapId: draft.content.mapId,
       objectives: draft.content.objectives.map((objective) => clone(objective))
     }
   };
+}
+
+function splitIds(value: string): string[] {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 function currentInspection(
@@ -297,7 +376,10 @@ function PreviewPanel({ inspection }: { inspection: ContentStudioInspection | nu
       </div>
       <p className="content-studio-summary">{inspection?.preview.summary || "No preview yet."}</p>
       <ul className="content-studio-preview-list">
-        {(inspection?.preview.objectiveSummaries || []).map((entry, index) => (
+        {(inspection?.preview.detailSummaries?.length
+          ? inspection.preview.detailSummaries
+          : inspection?.preview.objectiveSummaries || []
+        ).map((entry, index) => (
           <li key={`${entry}-${index}`}>{entry}</li>
         ))}
       </ul>
@@ -368,7 +450,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       return;
     }
 
-    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
+    const nextDraft = createEmptyVictoryDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setDraft(nextDraft);
     setInspection(null);
     setActiveObjectiveId(nextDraft.content.objectives[0]?.id || null);
@@ -385,11 +467,15 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       preview: detailQuery.data.preview,
       runtime: detailQuery.data.runtime
     });
-    setActiveObjectiveId(detailQuery.data.module.content.objectives[0]?.id || null);
+    setActiveObjectiveId(
+      detailQuery.data.module.moduleType === "victory-objectives"
+        ? detailQuery.data.module.content.objectives[0]?.id || null
+        : null
+    );
   }, [detailQuery.data, selectedModuleId]);
 
   useEffect(() => {
-    if (!draft?.content.objectives.length) {
+    if (!draft || draft.moduleType !== "victory-objectives" || !draft.content.objectives.length) {
       setActiveObjectiveId(null);
       return;
     }
@@ -429,7 +515,11 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
         preview: payload.preview,
         runtime: payload.runtime
       });
-      setActiveObjectiveId(payload.module.content.objectives[0]?.id || null);
+      setActiveObjectiveId(
+        payload.module.moduleType === "victory-objectives"
+          ? payload.module.content.objectives[0]?.id || null
+          : null
+      );
       listMutationKeys.forEach((queryKey) => {
         void queryClient.invalidateQueries({ queryKey });
       });
@@ -501,12 +591,19 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
     return () => window.clearTimeout(timeoutId);
   }, [deferredDraft, detailQuery.data?.module.status, isNewDraft]);
 
-  function startNewDraft() {
-    const nextDraft = createEmptyDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
+  function startNewDraft(moduleType: EditorDraft["moduleType"]) {
+    const nextDraft =
+      moduleType === "map"
+        ? createEmptyMapDraft(draftReservedModuleIds)
+        : createEmptyVictoryDraft(firstMap(optionsQuery.data), draftReservedModuleIds);
     setSelectedEditorKey(NEW_MODULE_KEY);
     setDraft(nextDraft);
     setInspection(null);
-    setActiveObjectiveId(nextDraft.content.objectives[0]?.id || null);
+    setActiveObjectiveId(
+      nextDraft.moduleType === "victory-objectives"
+        ? nextDraft.content.objectives[0]?.id || null
+        : null
+    );
   }
 
   function updateDraft(nextDraft: EditorDraft) {
@@ -528,7 +625,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
     objectiveId: string,
     transform: (objective: AuthoredVictoryObjective) => AuthoredVictoryObjective
   ) {
-    if (!draft) {
+    if (!draft || draft.moduleType !== "victory-objectives") {
       return;
     }
 
@@ -544,7 +641,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }
 
   function addObjective(type: AuthoredVictoryObjective["type"]) {
-    if (!draft) {
+    if (!draft || draft.moduleType !== "victory-objectives") {
       return;
     }
 
@@ -560,7 +657,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }
 
   function removeObjective(objectiveId: string) {
-    if (!draft) {
+    if (!draft || draft.moduleType !== "victory-objectives") {
       return;
     }
 
@@ -582,6 +679,182 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
       }
     });
     setActiveObjectiveId(nextObjectives[0]?.id || null);
+  }
+
+  function updateMapTerritory(
+    index: number,
+    transform: (territory: AuthoredMapTerritory) => AuthoredMapTerritory
+  ) {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+
+    const previous = draft.content.territories[index];
+    if (!previous) {
+      return;
+    }
+    const nextTerritory = transform(previous);
+    const nextTerritories = draft.content.territories.map((territory, territoryIndex) => {
+      if (territoryIndex === index) {
+        return nextTerritory;
+      }
+      return previous.id !== nextTerritory.id
+        ? {
+            ...territory,
+            neighbors: territory.neighbors.map((neighborId) =>
+              neighborId === previous.id ? nextTerritory.id : neighborId
+            )
+          }
+        : territory;
+    });
+    const nextContinents = draft.content.continents.map((continent) => ({
+      ...continent,
+      territoryIds: nextTerritories
+        .filter((territory) => territory.continentId === continent.id)
+        .map((territory) => territory.id)
+    }));
+
+    updateDraft({
+      ...draft,
+      content: {
+        territories: nextTerritories,
+        continents: nextContinents
+      }
+    });
+  }
+
+  function addMapTerritory() {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+    let index = draft.content.territories.length + 1;
+    while (draft.content.territories.some((entry) => entry.id === `territory-${index}`)) {
+      index += 1;
+    }
+    const continentId = draft.content.continents[0]?.id || null;
+    const nextTerritory: AuthoredMapTerritory = {
+      id: `territory-${index}`,
+      name: `Territory ${index}`,
+      continentId,
+      x: 0.5,
+      y: 0.5,
+      neighbors: []
+    };
+    const nextTerritories = [...draft.content.territories, nextTerritory];
+    updateDraft({
+      ...draft,
+      content: {
+        territories: nextTerritories,
+        continents: draft.content.continents.map((continent) => ({
+          ...continent,
+          territoryIds: nextTerritories
+            .filter((territory) => territory.continentId === continent.id)
+            .map((territory) => territory.id)
+        }))
+      }
+    });
+  }
+
+  function removeMapTerritory(index: number) {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+    const target = draft.content.territories[index];
+    if (!target || !window.confirm(`Remove territory "${target.name || target.id}"?`)) {
+      return;
+    }
+    const nextTerritories = draft.content.territories
+      .filter((_, territoryIndex) => territoryIndex !== index)
+      .map((territory) => ({
+        ...territory,
+        neighbors: territory.neighbors.filter((neighborId) => neighborId !== target.id)
+      }));
+    updateDraft({
+      ...draft,
+      content: {
+        territories: nextTerritories,
+        continents: draft.content.continents.map((continent) => ({
+          ...continent,
+          territoryIds: nextTerritories
+            .filter((territory) => territory.continentId === continent.id)
+            .map((territory) => territory.id)
+        }))
+      }
+    });
+  }
+
+  function updateMapContinent(
+    index: number,
+    transform: (continent: AuthoredMapContinent) => AuthoredMapContinent
+  ) {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+    const previous = draft.content.continents[index];
+    if (!previous) {
+      return;
+    }
+    const nextContinent = transform(previous);
+    const nextTerritories = draft.content.territories.map((territory) => ({
+      ...territory,
+      continentId: territory.continentId === previous.id ? nextContinent.id : territory.continentId
+    }));
+    const nextContinents = draft.content.continents.map((continent, continentIndex) => ({
+      ...(continentIndex === index ? nextContinent : continent),
+      territoryIds: nextTerritories
+        .filter(
+          (territory) =>
+            territory.continentId === (continentIndex === index ? nextContinent.id : continent.id)
+        )
+        .map((territory) => territory.id)
+    }));
+    updateDraft({
+      ...draft,
+      content: {
+        territories: nextTerritories,
+        continents: nextContinents
+      }
+    });
+  }
+
+  function addMapContinent() {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+    let index = draft.content.continents.length + 1;
+    while (draft.content.continents.some((entry) => entry.id === `continent-${index}`)) {
+      index += 1;
+    }
+    updateDraft({
+      ...draft,
+      content: {
+        ...draft.content,
+        continents: [
+          ...draft.content.continents,
+          { id: `continent-${index}`, name: `Continent ${index}`, bonus: 0, territoryIds: [] }
+        ]
+      }
+    });
+  }
+
+  function removeMapContinent(index: number) {
+    if (!draft || draft.moduleType !== "map") {
+      return;
+    }
+    const target = draft.content.continents[index];
+    if (!target || !window.confirm(`Remove continent "${target.name || target.id}"?`)) {
+      return;
+    }
+    updateDraft({
+      ...draft,
+      content: {
+        territories: draft.content.territories.map((territory) => ({
+          ...territory,
+          continentId: territory.continentId === target.id ? null : territory.continentId
+        })),
+        continents: draft.content.continents.filter((_, continentIndex) => continentIndex !== index)
+      }
+    });
   }
 
   function handleSaveDraft() {
@@ -624,9 +897,13 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
   }
 
   const selectedMap =
-    optionsQuery.data?.maps.find((entry) => entry.id === draft?.content.mapId) || null;
+    draft?.moduleType === "victory-objectives"
+      ? optionsQuery.data?.maps.find((entry) => entry.id === draft.content.mapId) || null
+      : null;
   const activeObjective =
-    draft?.content.objectives.find((objective) => objective.id === activeObjectiveId) || null;
+    draft?.moduleType === "victory-objectives"
+      ? draft.content.objectives.find((objective) => objective.id === activeObjectiveId) || null
+      : null;
   const latestInspection = currentInspection(detailQuery.data, inspection);
   const modules = authoredModules;
   const isEditableDraft = Boolean(
@@ -676,10 +953,10 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
             <span>Content Studio</span>
           </div>
           <p className="status-label">Content Studio</p>
-          <h1>Author victory objective modules</h1>
+          <h1>Author maps and gameplay modules</h1>
           <p className="status-copy">
-            Create validated, publishable objective packs without editing source files. Published
-            modules flow into the runtime victory-rule catalog and are stored for engine use.
+            Create validated maps and objective packs without editing source files. Published
+            modules flow into the runtime catalog and are stored for engine use.
           </p>
         </div>
         <div className="admin-hero-side">
@@ -691,12 +968,19 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
             <div className="admin-toolbar-summary">
               <span className="chip">Maps {optionsQuery.data?.maps.length || 0}</span>
               <span className="chip">Modules {modules.length}</span>
-              <span className="chip">Type victory-objectives</span>
+              <span className="chip">Types {optionsQuery.data?.moduleTypes.length || 0}</span>
             </div>
           </section>
           <div className="hero-actions admin-hero-actions">
-            <button type="button" className="refresh-button" onClick={startNewDraft}>
-              New draft
+            <button
+              type="button"
+              className="refresh-button"
+              onClick={() => startNewDraft("victory-objectives")}
+            >
+              New objective draft
+            </button>
+            <button type="button" className="ghost-action" onClick={() => startNewDraft("map")}>
+              New map draft
             </button>
           </div>
         </div>
@@ -713,7 +997,11 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
             <span className={`chip ${validationTone(latestInspection?.validation.valid)}`}>
               {latestInspection?.validation.valid ? "Valid" : "Validation pending"}
             </span>
-            <span className="chip">Objectives {draft?.content.objectives.length || 0}</span>
+            <span className="chip">
+              {draft?.moduleType === "map"
+                ? `Territories ${draft.content.territories.length}`
+                : `Objectives ${draft?.content.objectives.length || 0}`}
+            </span>
             <span className="chip">
               Updated {formatTimestamp((detailQuery.data?.module || null)?.updatedAt)}
             </span>
@@ -814,7 +1102,11 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
                     <span className={`badge ${validationTone(moduleEntry.validation.valid)}`}>
                       {moduleEntry.validation.valid ? "valid" : "draft"}
                     </span>
-                    <span className="badge">{moduleEntry.enabledObjectiveCount} enabled</span>
+                    <span className="badge">
+                      {moduleEntry.moduleType === "map"
+                        ? `${moduleEntry.territoryCount || 0} territories`
+                        : `${moduleEntry.enabledObjectiveCount} enabled`}
+                    </span>
                   </div>
                 </button>
               ))
@@ -823,7 +1115,7 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
                 <p className="status-label">Content Studio</p>
                 <h2>No authored modules yet</h2>
                 <p className="status-copy">
-                  Start with a draft victory-objective module and publish it when validation is
+                  Start with a map or victory-objective draft and publish it when validation is
                   clean.
                 </p>
               </section>
@@ -894,29 +1186,37 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
                         disabled={!isEditableDraft}
                       />
                     </label>
-                    <label className="shell-field admin-field">
-                      <span>Target map</span>
-                      <select
-                        value={draft.content.mapId}
-                        onChange={(event) =>
-                          updateDraft({
-                            ...draft,
-                            content: {
-                              ...draft.content,
-                              mapId: event.target.value
-                            }
-                          })
-                        }
-                        disabled={!isEditableDraft}
-                      >
-                        <option value="">Select a map</option>
-                        {optionsQuery.data?.maps.map((entry) => (
-                          <option key={entry.id} value={entry.id}>
-                            {entry.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    {draft.moduleType === "victory-objectives" ? (
+                      <label className="shell-field admin-field">
+                        <span>Target map</span>
+                        <select
+                          value={draft.content.mapId}
+                          onChange={(event) =>
+                            updateDraft({
+                              ...draft,
+                              content: {
+                                ...draft.content,
+                                mapId: event.target.value
+                              }
+                            })
+                          }
+                          disabled={!isEditableDraft}
+                        >
+                          <option value="">Select a map</option>
+                          {optionsQuery.data?.maps.map((entry) => (
+                            <option key={entry.id} value={entry.id}>
+                              {entry.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="shell-field admin-field">
+                        <span>Module type</span>
+                        <input value="Map" disabled />
+                        <small>The module id becomes the runtime map id.</small>
+                      </label>
+                    )}
                     <label className="shell-field admin-field admin-card-span">
                       <span>Description</span>
                       <textarea
@@ -928,254 +1228,492 @@ export function AdminContentStudioSection({ frameContext }: { frameContext: Admi
                     </label>
                   </div>
                   <div className="content-studio-map-meta">
-                    <span className="chip">{selectedMap?.name || "No map selected"}</span>
-                    <span className="chip">Territories {selectedMap?.territoryCount || 0}</span>
-                    <span className="chip">Continents {selectedMap?.continentCount || 0}</span>
+                    <span className="chip">
+                      {draft.moduleType === "map"
+                        ? draft.name || "Unnamed map"
+                        : selectedMap?.name || "No map selected"}
+                    </span>
+                    <span className="chip">
+                      Territories{" "}
+                      {draft.moduleType === "map"
+                        ? draft.content.territories.length
+                        : selectedMap?.territoryCount || 0}
+                    </span>
+                    <span className="chip">
+                      Continents{" "}
+                      {draft.moduleType === "map"
+                        ? draft.content.continents.length
+                        : selectedMap?.continentCount || 0}
+                    </span>
                   </div>
                 </section>
 
-                <section className="card-panel content-studio-form-panel">
-                  <div className="card-header">
-                    <div>
-                      <p className="status-label">Objectives</p>
-                      <h2>Victory conditions</h2>
-                    </div>
-                    <div className="admin-inline-actions">
-                      <button
-                        type="button"
-                        className="ghost-action"
-                        onClick={() => addObjective("control-continents")}
-                        disabled={!isEditableDraft}
-                      >
-                        Add continent objective
-                      </button>
-                      <button
-                        type="button"
-                        className="ghost-action"
-                        onClick={() => addObjective("control-territory-count")}
-                        disabled={!isEditableDraft}
-                      >
-                        Add territory objective
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="content-studio-objective-layout">
-                    <div className="content-studio-objective-list">
-                      {draft.content.objectives.map((objective, index) => (
-                        <button
-                          key={objective.id}
-                          type="button"
-                          className={`admin-list-button${
-                            activeObjectiveId === objective.id ? " is-selected" : ""
-                          }`}
-                          onClick={() => setActiveObjectiveId(objective.id)}
-                        >
-                          <div className="admin-list-copy">
-                            <strong>{objective.title || `Objective ${index + 1}`}</strong>
-                            <span>
-                              {objective.description || "No player-facing description yet."}
-                            </span>
-                            <span className="admin-item-meta">
-                              {objective.id || "missing-id"} · {objectiveTypeLabel(objective.type)}
-                            </span>
-                          </div>
-                          <div className="content-studio-list-meta">
-                            <span className={`badge ${objective.enabled ? "success" : "muted"}`}>
-                              {objective.enabled ? "Enabled" : "Off"}
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {activeObjective ? (
-                      <div className="content-studio-objective-editor">
-                        <div className="admin-form-grid admin-form-grid-2">
-                          <label className="shell-field admin-field">
-                            <span>Objective id</span>
-                            <input
-                              value={activeObjective.id}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => ({
-                                  ...objective,
-                                  id: event.target.value
-                                }))
-                              }
-                              disabled={!isEditableDraft}
-                            />
-                          </label>
-                          <label className="shell-field admin-field">
-                            <span>Objective type</span>
-                            <select
-                              value={activeObjective.type}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => {
-                                  const baseObjective = {
-                                    id: objective.id,
-                                    title: objective.title,
-                                    description: objective.description,
-                                    enabled: objective.enabled
-                                  };
-
-                                  return event.target.value === "control-territory-count"
-                                    ? {
-                                        ...baseObjective,
-                                        type: "control-territory-count",
-                                        territoryCount:
-                                          objective.type === "control-territory-count"
-                                            ? objective.territoryCount
-                                            : 24
-                                      }
-                                    : {
-                                        ...baseObjective,
-                                        type: "control-continents",
-                                        continentIds:
-                                          objective.type === "control-continents"
-                                            ? objective.continentIds
-                                            : []
-                                      };
-                                })
-                              }
-                              disabled={!isEditableDraft}
-                            >
-                              <option value="control-continents">
-                                Control specific continents
-                              </option>
-                              <option value="control-territory-count">
-                                Control minimum territory count
-                              </option>
-                            </select>
-                          </label>
-                          <label className="shell-field admin-field">
-                            <span>Title</span>
-                            <input
-                              value={activeObjective.title}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => ({
-                                  ...objective,
-                                  title: event.target.value
-                                }))
-                              }
-                              disabled={!isEditableDraft}
-                            />
-                          </label>
-                          <label className="shell-field admin-field">
-                            <span>Enabled</span>
-                            <select
-                              value={activeObjective.enabled ? "true" : "false"}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => ({
-                                  ...objective,
-                                  enabled: event.target.value === "true"
-                                }))
-                              }
-                              disabled={!isEditableDraft}
-                            >
-                              <option value="true">Enabled</option>
-                              <option value="false">Disabled</option>
-                            </select>
-                          </label>
-                          <label className="shell-field admin-field admin-card-span">
-                            <span>Player-facing description</span>
-                            <textarea
-                              rows={3}
-                              value={activeObjective.description}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) => ({
-                                  ...objective,
-                                  description: event.target.value
-                                }))
-                              }
-                              disabled={!isEditableDraft}
-                            />
-                          </label>
-                        </div>
-
-                        {activeObjective.type === "control-continents" ? (
-                          <div className="content-studio-chip-group">
-                            <p className="admin-item-meta">
-                              Select one or more continents from the active map.
-                            </p>
-                            <div className="content-studio-chip-row">
-                              {(selectedMap?.continents || []).map((continent) => {
-                                const selected = activeObjective.continentIds.includes(
-                                  continent.id
-                                );
-                                return (
-                                  <button
-                                    key={continent.id}
-                                    type="button"
-                                    className={`content-studio-chip${selected ? " is-selected" : ""}`}
-                                    onClick={() =>
-                                      updateObjective(activeObjective.id, (objective) => {
-                                        if (objective.type !== "control-continents") {
-                                          return objective;
-                                        }
-
-                                        return {
-                                          ...objective,
-                                          continentIds: selected
-                                            ? objective.continentIds.filter(
-                                                (entry) => entry !== continent.id
-                                              )
-                                            : [...objective.continentIds, continent.id]
-                                        };
-                                      })
-                                    }
-                                    disabled={!isEditableDraft}
-                                  >
-                                    <strong>{continent.name}</strong>
-                                    <span>
-                                      {continent.territoryCount} territories · bonus{" "}
-                                      {continent.bonus}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ) : (
-                          <label className="shell-field admin-field">
-                            <span>Minimum territory count</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={selectedMap?.territoryCount || 42}
-                              value={String(activeObjective.territoryCount)}
-                              onChange={(event) =>
-                                updateObjective(activeObjective.id, (objective) =>
-                                  objective.type !== "control-territory-count"
-                                    ? objective
-                                    : {
-                                        ...objective,
-                                        territoryCount: Number(event.target.value || "0")
-                                      }
-                                )
-                              }
-                              disabled={!isEditableDraft}
-                            />
-                            <small>
-                              Must be between 1 and {selectedMap?.territoryCount || "the map limit"}
-                              .
-                            </small>
-                          </label>
-                        )}
-
-                        <div className="admin-inline-actions">
-                          <button
-                            type="button"
-                            className="ghost-action"
-                            onClick={() => removeObjective(activeObjective.id)}
-                            disabled={!isEditableDraft}
-                          >
-                            Remove objective
-                          </button>
-                        </div>
+                {draft.moduleType === "victory-objectives" ? (
+                  <section className="card-panel content-studio-form-panel">
+                    <div className="card-header">
+                      <div>
+                        <p className="status-label">Objectives</p>
+                        <h2>Victory conditions</h2>
                       </div>
-                    ) : null}
-                  </div>
-                </section>
+                      <div className="admin-inline-actions">
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={() => addObjective("control-continents")}
+                          disabled={!isEditableDraft}
+                        >
+                          Add continent objective
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={() => addObjective("control-territory-count")}
+                          disabled={!isEditableDraft}
+                        >
+                          Add territory objective
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="content-studio-objective-layout">
+                      <div className="content-studio-objective-list">
+                        {draft.content.objectives.map((objective, index) => (
+                          <button
+                            key={objective.id}
+                            type="button"
+                            className={`admin-list-button${
+                              activeObjectiveId === objective.id ? " is-selected" : ""
+                            }`}
+                            onClick={() => setActiveObjectiveId(objective.id)}
+                          >
+                            <div className="admin-list-copy">
+                              <strong>{objective.title || `Objective ${index + 1}`}</strong>
+                              <span>
+                                {objective.description || "No player-facing description yet."}
+                              </span>
+                              <span className="admin-item-meta">
+                                {objective.id || "missing-id"} ·{" "}
+                                {objectiveTypeLabel(objective.type)}
+                              </span>
+                            </div>
+                            <div className="content-studio-list-meta">
+                              <span className={`badge ${objective.enabled ? "success" : "muted"}`}>
+                                {objective.enabled ? "Enabled" : "Off"}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {activeObjective ? (
+                        <div className="content-studio-objective-editor">
+                          <div className="admin-form-grid admin-form-grid-2">
+                            <label className="shell-field admin-field">
+                              <span>Objective id</span>
+                              <input
+                                value={activeObjective.id}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) => ({
+                                    ...objective,
+                                    id: event.target.value
+                                  }))
+                                }
+                                disabled={!isEditableDraft}
+                              />
+                            </label>
+                            <label className="shell-field admin-field">
+                              <span>Objective type</span>
+                              <select
+                                value={activeObjective.type}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) => {
+                                    const baseObjective = {
+                                      id: objective.id,
+                                      title: objective.title,
+                                      description: objective.description,
+                                      enabled: objective.enabled
+                                    };
+
+                                    return event.target.value === "control-territory-count"
+                                      ? {
+                                          ...baseObjective,
+                                          type: "control-territory-count",
+                                          territoryCount:
+                                            objective.type === "control-territory-count"
+                                              ? objective.territoryCount
+                                              : 24
+                                        }
+                                      : {
+                                          ...baseObjective,
+                                          type: "control-continents",
+                                          continentIds:
+                                            objective.type === "control-continents"
+                                              ? objective.continentIds
+                                              : []
+                                        };
+                                  })
+                                }
+                                disabled={!isEditableDraft}
+                              >
+                                <option value="control-continents">
+                                  Control specific continents
+                                </option>
+                                <option value="control-territory-count">
+                                  Control minimum territory count
+                                </option>
+                              </select>
+                            </label>
+                            <label className="shell-field admin-field">
+                              <span>Title</span>
+                              <input
+                                value={activeObjective.title}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) => ({
+                                    ...objective,
+                                    title: event.target.value
+                                  }))
+                                }
+                                disabled={!isEditableDraft}
+                              />
+                            </label>
+                            <label className="shell-field admin-field">
+                              <span>Enabled</span>
+                              <select
+                                value={activeObjective.enabled ? "true" : "false"}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) => ({
+                                    ...objective,
+                                    enabled: event.target.value === "true"
+                                  }))
+                                }
+                                disabled={!isEditableDraft}
+                              >
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                              </select>
+                            </label>
+                            <label className="shell-field admin-field admin-card-span">
+                              <span>Player-facing description</span>
+                              <textarea
+                                rows={3}
+                                value={activeObjective.description}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) => ({
+                                    ...objective,
+                                    description: event.target.value
+                                  }))
+                                }
+                                disabled={!isEditableDraft}
+                              />
+                            </label>
+                          </div>
+
+                          {activeObjective.type === "control-continents" ? (
+                            <div className="content-studio-chip-group">
+                              <p className="admin-item-meta">
+                                Select one or more continents from the active map.
+                              </p>
+                              <div className="content-studio-chip-row">
+                                {(selectedMap?.continents || []).map((continent) => {
+                                  const selected = activeObjective.continentIds.includes(
+                                    continent.id
+                                  );
+                                  return (
+                                    <button
+                                      key={continent.id}
+                                      type="button"
+                                      className={`content-studio-chip${selected ? " is-selected" : ""}`}
+                                      onClick={() =>
+                                        updateObjective(activeObjective.id, (objective) => {
+                                          if (objective.type !== "control-continents") {
+                                            return objective;
+                                          }
+
+                                          return {
+                                            ...objective,
+                                            continentIds: selected
+                                              ? objective.continentIds.filter(
+                                                  (entry) => entry !== continent.id
+                                                )
+                                              : [...objective.continentIds, continent.id]
+                                          };
+                                        })
+                                      }
+                                      disabled={!isEditableDraft}
+                                    >
+                                      <strong>{continent.name}</strong>
+                                      <span>
+                                        {continent.territoryCount} territories · bonus{" "}
+                                        {continent.bonus}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="shell-field admin-field">
+                              <span>Minimum territory count</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={selectedMap?.territoryCount || 42}
+                                value={String(activeObjective.territoryCount)}
+                                onChange={(event) =>
+                                  updateObjective(activeObjective.id, (objective) =>
+                                    objective.type !== "control-territory-count"
+                                      ? objective
+                                      : {
+                                          ...objective,
+                                          territoryCount: Number(event.target.value || "0")
+                                        }
+                                  )
+                                }
+                                disabled={!isEditableDraft}
+                              />
+                              <small>
+                                Must be between 1 and{" "}
+                                {selectedMap?.territoryCount || "the map limit"}.
+                              </small>
+                            </label>
+                          )}
+
+                          <div className="admin-inline-actions">
+                            <button
+                              type="button"
+                              className="ghost-action"
+                              onClick={() => removeObjective(activeObjective.id)}
+                              disabled={!isEditableDraft}
+                            >
+                              Remove objective
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </section>
+                ) : null}
+
+                {draft.moduleType === "map" ? (
+                  <>
+                    <section className="card-panel content-studio-form-panel">
+                      <div className="card-header">
+                        <div>
+                          <p className="status-label">Map topology</p>
+                          <h2>Territories</h2>
+                        </div>
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={addMapTerritory}
+                          disabled={!isEditableDraft}
+                        >
+                          Add territory
+                        </button>
+                      </div>
+                      <p className="admin-item-meta">
+                        Coordinates use values from 0 to 1. Neighbor links must be bidirectional;
+                        validation blocks disconnected or inconsistent maps.
+                      </p>
+                      <div className="content-studio-objective-list">
+                        {draft.content.territories.map((territory, index) => (
+                          <div
+                            key={`${territory.id}-${index}`}
+                            className="content-studio-objective-editor"
+                          >
+                            <div className="admin-form-grid admin-form-grid-2">
+                              <label className="shell-field admin-field">
+                                <span>Territory id</span>
+                                <input
+                                  value={territory.id}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      id: event.target.value
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Name</span>
+                                <input
+                                  value={territory.name}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      name: event.target.value
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Continent</span>
+                                <select
+                                  value={territory.continentId || ""}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      continentId: event.target.value || null
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                >
+                                  <option value="">Select a continent</option>
+                                  {draft.content.continents.map((continent) => (
+                                    <option key={continent.id} value={continent.id}>
+                                      {continent.name || continent.id}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Neighbors</span>
+                                <input
+                                  value={territory.neighbors.join(", ")}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      neighbors: splitIds(event.target.value)
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                                <small>Comma-separated territory ids.</small>
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>X position</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={1}
+                                  step={0.01}
+                                  value={territory.x}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      x: Number(event.target.value)
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Y position</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={1}
+                                  step={0.01}
+                                  value={territory.y}
+                                  onChange={(event) =>
+                                    updateMapTerritory(index, (entry) => ({
+                                      ...entry,
+                                      y: Number(event.target.value)
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                            </div>
+                            <button
+                              type="button"
+                              className="ghost-action"
+                              onClick={() => removeMapTerritory(index)}
+                              disabled={!isEditableDraft}
+                            >
+                              Remove territory
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+
+                    <section className="card-panel content-studio-form-panel">
+                      <div className="card-header">
+                        <div>
+                          <p className="status-label">Map rules</p>
+                          <h2>Continents and bonuses</h2>
+                        </div>
+                        <button
+                          type="button"
+                          className="ghost-action"
+                          onClick={addMapContinent}
+                          disabled={!isEditableDraft}
+                        >
+                          Add continent
+                        </button>
+                      </div>
+                      <div className="content-studio-objective-list">
+                        {draft.content.continents.map((continent, index) => (
+                          <div
+                            key={`${continent.id}-${index}`}
+                            className="content-studio-objective-editor"
+                          >
+                            <div className="admin-form-grid admin-form-grid-2">
+                              <label className="shell-field admin-field">
+                                <span>Continent id</span>
+                                <input
+                                  value={continent.id}
+                                  onChange={(event) =>
+                                    updateMapContinent(index, (entry) => ({
+                                      ...entry,
+                                      id: event.target.value
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Name</span>
+                                <input
+                                  value={continent.name}
+                                  onChange={(event) =>
+                                    updateMapContinent(index, (entry) => ({
+                                      ...entry,
+                                      name: event.target.value
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Reinforcement bonus</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={continent.bonus}
+                                  onChange={(event) =>
+                                    updateMapContinent(index, (entry) => ({
+                                      ...entry,
+                                      bonus: Number(event.target.value)
+                                    }))
+                                  }
+                                  disabled={!isEditableDraft}
+                                />
+                              </label>
+                              <label className="shell-field admin-field">
+                                <span>Territories</span>
+                                <input value={continent.territoryIds.join(", ")} disabled />
+                                <small>Derived from the territory assignments above.</small>
+                              </label>
+                            </div>
+                            <button
+                              type="button"
+                              className="ghost-action"
+                              onClick={() => removeMapContinent(index)}
+                              disabled={!isEditableDraft}
+                            >
+                              Remove continent
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                ) : null}
 
                 {!isEditableDraft && selectedModuleId ? (
                   <section className="status-panel">

@@ -62,6 +62,61 @@ function createVictoryDraft(
   };
 }
 
+function createMapDraft(
+  overrides: Partial<{
+    id: string;
+    name: string;
+    description: string;
+    version: string;
+    territories: any[];
+    continents: any[];
+  }> = {}
+) {
+  return {
+    id: overrides.id || "map.training-ground",
+    name: overrides.name || "Training Ground",
+    description: overrides.description || "A compact authored map for fast matches.",
+    version: overrides.version || "1.0.0",
+    moduleType: "map",
+    content: {
+      territories: overrides.territories || [
+        {
+          id: "north",
+          name: "North",
+          continentId: "training",
+          x: 0.5,
+          y: 0.15,
+          neighbors: ["east", "west"]
+        },
+        {
+          id: "east",
+          name: "East",
+          continentId: "training",
+          x: 0.85,
+          y: 0.75,
+          neighbors: ["north", "west"]
+        },
+        {
+          id: "west",
+          name: "West",
+          continentId: "training",
+          x: 0.15,
+          y: 0.75,
+          neighbors: ["north", "east"]
+        }
+      ],
+      continents: overrides.continents || [
+        {
+          id: "training",
+          name: "Training Grounds",
+          bonus: 2,
+          territoryIds: ["north", "east", "west"]
+        }
+      ]
+    }
+  };
+}
+
 function toStoredModule(
   input: ReturnType<typeof createVictoryDraft>,
   overrides: Record<string, unknown> = {}
@@ -107,7 +162,7 @@ register("authored modules service filters stored modules and exposes editor opt
   const service = createAuthoredModulesService({ datastore });
 
   const options = await service.listEditorOptions();
-  assert.deepEqual(options.moduleTypes, ["victory-objectives"]);
+  assert.deepEqual(options.moduleTypes, ["victory-objectives", "map"]);
   assert.equal(
     options.maps.some((entry: { id?: string }) => entry.id === "world-classic"),
     true
@@ -244,6 +299,79 @@ register(
     );
   }
 );
+
+register("authored modules service validates and publishes runtime maps", async () => {
+  const datastore = createMemoryDatastore();
+  const service = createAuthoredModulesService({ datastore });
+
+  const reservedId = await service.validateDraft(createMapDraft({ id: "world-classic" }));
+  assert.equal(reservedId.validation.valid, false);
+  assert.equal(
+    reservedId.validation.errors.some(
+      (entry: { code?: string }) => entry.code === "reserved-module-id"
+    ),
+    true
+  );
+
+  const invalidAdjacency = createMapDraft({ id: "map.invalid-adjacency" });
+  invalidAdjacency.content.territories[0].neighbors = ["east"];
+  const invalid = await service.validateDraft(invalidAdjacency);
+  assert.equal(invalid.validation.valid, false);
+  assert.equal(
+    invalid.validation.errors.some(
+      (entry: { code?: string }) => entry.code === "invalid-map-graph"
+    ),
+    true
+  );
+
+  const draft = createMapDraft();
+  const validated = await service.validateDraft(draft);
+  assert.equal(validated.validation.valid, true);
+  assert.equal(validated.runtime.moduleType, "map");
+  assert.equal(validated.runtime.map.territoryRecords.length, 3);
+
+  await service.saveDraft(draft);
+  const published = await service.publishModule(draft.id);
+  assert.equal(published.module.status, "published");
+  assert.equal(published.preview.detailSummaries.includes("3 territories"), true);
+
+  const maps = await service.listPublishedMaps();
+  assert.equal(maps.length, 1);
+  assert.equal(maps[0].map.id, draft.id);
+  assert.equal(maps[0].map.territories.length, 3);
+  assert.equal(maps[0].map.continents[0].bonus, 2);
+
+  const options = await service.listEditorOptions();
+  assert.equal(
+    options.maps.some((entry: { id: string }) => entry.id === draft.id),
+    true
+  );
+
+  const objectiveForAuthoredMap = await service.validateDraft(
+    createVictoryDraft({
+      id: "victory.training",
+      mapId: draft.id,
+      objectives: [
+        {
+          id: "hold-training",
+          title: "Hold the training grounds",
+          description: "Control the training continent.",
+          enabled: true,
+          type: "control-continents",
+          continentIds: ["training"]
+        }
+      ]
+    })
+  );
+  assert.equal(objectiveForAuthoredMap.validation.valid, true);
+
+  await service.disableModule(draft.id);
+  const optionsAfterDisable = await service.listEditorOptions();
+  assert.equal(
+    optionsAfterDisable.maps.some((entry: { id: string }) => entry.id === draft.id),
+    false
+  );
+});
 
 register("authored modules service blocks published edits and invalid re-enabling", async () => {
   const datastore = createMemoryDatastore();
