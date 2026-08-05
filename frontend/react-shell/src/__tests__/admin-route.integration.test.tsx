@@ -562,8 +562,13 @@ function createContentStudioOptionsResponse(): AdminAuthoredModuleEditorOptionsR
   };
 }
 
+type VictoryObjectivesAuthoredModule = Extract<
+  AdminAuthoredModuleDetailResponse["module"],
+  { moduleType: "victory-objectives" }
+>;
+
 function createAuthoredModuleDetail(
-  overrides: Partial<AdminAuthoredModuleDetailResponse["module"]> = {}
+  overrides: Partial<VictoryObjectivesAuthoredModule> = {}
 ): AdminAuthoredModuleDetailResponse {
   return {
     module: {
@@ -665,7 +670,7 @@ function createAuthoredValidationResponse(): AdminAuthoredModuleValidateResponse
 }
 
 function createAuthoredMutationResponse(
-  overrides: Partial<AdminAuthoredModuleDetailResponse["module"]> = {}
+  overrides: Partial<VictoryObjectivesAuthoredModule> = {}
 ): AdminAuthoredModuleMutationResponse {
   const detail = createAuthoredModuleDetail(overrides);
 
