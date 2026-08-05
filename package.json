@@ -39,6 +39,9 @@
     "test:e2e:parallel": "npm run build:ts && node .tsbuild/scripts/run-e2e-default.cjs",
     "test:e2e:serial": "npm run build:ts && node .tsbuild/scripts/run-e2e.cjs",
     "test:e2e:smoke": "npm run build:ts && node .tsbuild/scripts/run-e2e.cjs e2e/smoke",
+    "test:e2e:visual": "npm run build:ts && node .tsbuild/scripts/run-e2e.cjs e2e/00-visual",
+    "e2e:visual:install": "npx playwright install --with-deps chromium",
+    "e2e:visual:preflight": "npm run build:ts && node .tsbuild/scripts/check-playwright-visual-env.cjs",
     "test:e2e:update": "npm run build:ts && node .tsbuild/scripts/run-e2e.cjs --update-snapshots",
     "test:gameplay": "npm run build:ts && node .tsbuild/scripts/run-gameplay-tests.cjs",
     "test:all": "npm run build:ts && npm run test:react && node .tsbuild/scripts/run-tests.cjs && node .tsbuild/scripts/run-gameplay-tests.cjs",
@@ -47,7 +50,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "1.61.1",
     "@sentry/vite-plugin": "^5.3.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

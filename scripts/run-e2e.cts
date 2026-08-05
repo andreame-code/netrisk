@@ -15,6 +15,14 @@ interface ExitResult {
   signal: NodeJS.Signals | null;
 }
 
+function includesVisualSnapshots(args: string[]): boolean {
+  const positionalArgs = args.filter((arg) => !arg.startsWith("-"));
+  return (
+    positionalArgs.length === 0 ||
+    positionalArgs.some((arg) => arg === "e2e/00-visual" || arg.startsWith("e2e/00-visual/"))
+  );
+}
+
 function canBind(port: number): Promise<boolean> {
   return new Promise((resolve: (value: boolean) => void) => {
     const server = net.createServer();
@@ -151,6 +159,12 @@ async function main(): Promise<void> {
       process.env.NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS || "1000",
     PLAYWRIGHT_SKIP_WEBSERVER: "true"
   };
+  if (includesVisualSnapshots(args)) {
+    const { runVisualEnvironmentPreflight } = require("./check-playwright-visual-env.cjs") as {
+      runVisualEnvironmentPreflight: () => Promise<void>;
+    };
+    await runVisualEnvironmentPreflight();
+  }
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
   const serverChild = spawn(

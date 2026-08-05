@@ -257,6 +257,9 @@ npm test
 npm run test:gameplay
 npm run test:e2e
 npm run test:e2e:smoke
+npm run test:e2e:visual
+npm run e2e:visual:install
+npm run e2e:visual:preflight
 npm run test:e2e:split
 npm run test:e2e:parallel
 npm run test:e2e:serial
@@ -285,6 +288,9 @@ npm run test:all:e2e:split
 - `npm run test:gameplay`: game engine validation
 - `npm run test:e2e`: Playwright tests for user flows
 - `npm run test:e2e:smoke`: fast Playwright smoke coverage
+- `npm run test:e2e:visual`: runs screenshot assertions after enforcing the pinned browser, OS, and font environment documented in [docs/visual-regression.md](docs/visual-regression.md)
+- `npm run e2e:visual:install`: installs the exact Chromium build and Linux dependencies selected by the pinned Playwright version
+- `npm run e2e:visual:preflight`: reports and validates the rendering environment without running snapshots
 - `npm run test:e2e:split` / `npm run test:e2e:parallel`: isolated Playwright shard runners
 - `npm run test:e2e:serial`: explicit single-process Playwright runner
 - `npm run test:e2e:headed`: headed Playwright run for local debugging
