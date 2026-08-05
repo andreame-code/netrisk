@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Create GitHub deployment for Vercel preview
+      - name: Create GitHub deployment for Vercel status
         uses: actions/github-script@v9
         env:
           VERCEL_ORG_ID: team_KZLHaqyM8HI03cxJQzg1e9Wz
@@ -48,11 +48,6 @@ jobs:
 
             if (!deploymentKey) {
               core.setFailed(`Unable to parse Vercel deployment id from ${statusUrl}.`);
-              return;
-            }
-
-            if (!process.env.VERCEL_TOKEN) {
-              core.setFailed("VERCEL_TOKEN is required to resolve the Vercel deployment URL.");
               return;
             }
 
@@ -92,6 +87,13 @@ jobs:
             }
 
             async function fetchVercelDeployment() {
+              if (!process.env.VERCEL_TOKEN) {
+                core.warning(
+                  "VERCEL_TOKEN is unavailable; registering the Vercel dashboard URL instead."
+                );
+                return null;
+              }
+
               const failures = [];
 
               for (const lookupUrl of uniqueDeploymentLookupUrls()) {
@@ -111,26 +113,38 @@ jobs:
                 core.info(`Vercel deployment lookup failed at ${lookupUrl}: ${response.status}`);
               }
 
-              core.setFailed(
-                `Unable to fetch Vercel deployment ${deploymentKey}: ${failures.join(" | ")}`
+              core.warning(
+                `Unable to resolve Vercel deployment ${deploymentKey}; ` +
+                  `registering the dashboard URL instead. ${failures.join(" | ")}`
               );
               return null;
             }
 
             const vercelDeployment = await fetchVercelDeployment();
+            const deploymentUrl = vercelDeployment?.url
+              ? `https://${vercelDeployment.url}`
+              : statusUrl;
+            const defaultBranch = String(context.payload.repository?.default_branch || "main");
+            const statusBranches = Array.isArray(status.branches) ? status.branches : [];
+            let statusIsForDefaultBranch = statusBranches.some(
+              (branch) => String(branch?.name || "") === defaultBranch
+            );
 
-            if (!vercelDeployment) {
-              return;
+            if (!statusIsForDefaultBranch) {
+              const defaultBranchResponse = await github.rest.repos.getBranch({
+                owner,
+                repo,
+                branch: defaultBranch,
+              });
+              statusIsForDefaultBranch =
+                String(defaultBranchResponse.data.commit?.sha || "") === sha;
             }
 
-            const deploymentUrl = vercelDeployment.url ? `https://${vercelDeployment.url}` : "";
-
-            if (!deploymentUrl) {
-              core.setFailed(`Vercel deployment ${deploymentKey} did not include a URL.`);
-              return;
-            }
-
-            const environment = vercelDeployment.target === "production" ? "Production" : "Preview";
+            const environment =
+              vercelDeployment?.target === "production" ||
+              (!vercelDeployment && statusIsForDefaultBranch)
+                ? "Production"
+                : "Preview";
             const deployments = await github.paginate(github.rest.repos.listDeployments, {
               owner,
               repo,
