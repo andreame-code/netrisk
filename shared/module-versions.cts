@@ -236,7 +236,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.1.1",
+    version: "1.1.2",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
@@ -288,7 +288,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "public-state",
     name: "Public Game State",
     kind: "platform",
-    version: "1.2.0",
+    version: "1.2.1",
     description: "Public/read API game state contracts, snapshots, and shared game models.",
     ownerPaths: [
       "shared/api-contracts.cts",
