@@ -189,8 +189,10 @@ test("admin safely previews, repairs, and audits a finished orphaned game", asyn
   await expect(page.getByText("Invalid games").locator("..").locator("..")).toContainText("0");
 
   await page.goto("/admin/system-health");
-  await expect(page.getByText("Module references").locator("..")).toContainText("OK");
-  await expect(page.getByText("Game snapshots").locator("..")).toContainText("OK");
+  await expect(page.getByText("Module references", { exact: true }).locator("..")).toContainText(
+    "OK"
+  );
+  await expect(page.getByText("Game snapshots", { exact: true }).locator("..")).toContainText("OK");
 
   await page.goto("/admin/audit");
   await expect(page.getByText("game.repair-game-config")).toBeVisible();
