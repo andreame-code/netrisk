@@ -8,10 +8,6 @@ import { resolveLocale, setLocale } from "@frontend-i18n";
 import { createReactShellRootOptions } from "@react-shell/observability";
 import { applyStoredRegisteredShellTheme, installShellThemeBridge } from "@react-shell/theme";
 
-import "./styles.css";
-import "./shell-reset.css";
-import "./theme-tokens.css";
-
 const LandingApp = lazy(async () => ({
   default: (await import("@react-shell/landing-app")).LandingApp
 }));

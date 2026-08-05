@@ -10,8 +10,6 @@ import {
   buildRegisterPath
 } from "@react-shell/public-auth-paths";
 
-import "./landing.css";
-
 const landingNavLinks = [
   { href: "#features", labelKey: "landing.nav.features" },
   { href: "#maps", labelKey: "landing.nav.maps" },

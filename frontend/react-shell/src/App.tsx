@@ -4,7 +4,7 @@ import { AppRoutes } from "@react-shell/routes";
 import { queryClient } from "@react-shell/react-query";
 import { ShellErrorBoundary } from "@react-shell/shell-error-boundary";
 
-import "./game-layout.css";
+import "./shell-app.css";
 
 export function App() {
   return (

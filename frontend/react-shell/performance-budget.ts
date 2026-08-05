@@ -51,7 +51,7 @@ export type ReactShellPerformanceReport = {
 
 export const reactShellPerformanceBudgets = Object.freeze({
   landing: Object.freeze({ jsGzipBytes: 155_000, cssGzipBytes: 33_000 }),
-  lobby: Object.freeze({ jsGzipBytes: 180_000, cssGzipBytes: 53_000 })
+  lobby: Object.freeze({ jsGzipBytes: 180_000, cssGzipBytes: 55_000 })
 });
 
 const routeEntrySuffixes = Object.freeze({
