@@ -179,3 +179,27 @@ export function sendLocalizedError(
     ...(isInternalError ? {} : extra)
   });
 }
+
+export function sendTooManyAttemptsError(
+  res: HttpTypes.ServerResponse,
+  retryAfterSeconds: number,
+  fallbackMessage: string,
+  sendLocalizedErrorFn: typeof sendLocalizedError
+): void {
+  setRetryAfterHeader(res, retryAfterSeconds);
+  sendLocalizedErrorFn(
+    res,
+    429,
+    {
+      error: fallbackMessage,
+      errorKey: "auth.throttle.tooManyAttempts",
+      errorParams: { retryAfterSeconds },
+      code: "AUTH_RATE_LIMITED"
+    },
+    fallbackMessage,
+    "auth.throttle.tooManyAttempts",
+    { retryAfterSeconds },
+    "AUTH_RATE_LIMITED",
+    { retryAfterSeconds }
+  );
+}
