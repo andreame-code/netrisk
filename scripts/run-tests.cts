@@ -3921,6 +3921,24 @@ register("addPlayer aggiunge giocatori e impedisce lobby oltre 4", () => {
   assert.equal(overflow.error, "La lobby e piena.");
 });
 
+register("addPlayer preserves AI difficulty on legacy rejoins", () => {
+  const state = createInitialState();
+  const created = addPlayer(state, "Hannibal", { isAi: true, aiDifficulty: "hard" });
+  assert.equal(created.ok, true);
+  assert.equal(created.player.aiDifficulty, "hard");
+
+  const legacyRejoin = addPlayer(state, "Hannibal", { isAi: true });
+  assert.equal(legacyRejoin.ok, true);
+  assert.equal(legacyRejoin.player.aiDifficulty, "hard");
+
+  const explicitUpdate = addPlayer(state, "Hannibal", {
+    isAi: true,
+    aiDifficulty: "easy"
+  });
+  assert.equal(explicitUpdate.ok, true);
+  assert.equal(explicitUpdate.player.aiDifficulty, "easy");
+});
+
 register("startGame distribuisce tutti i territori e assegna rinforzi iniziali", () => {
   const { state, first, second } = setupLobby();
   startGame(state, () => 0);

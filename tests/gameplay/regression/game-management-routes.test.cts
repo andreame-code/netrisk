@@ -116,7 +116,7 @@ register("handleAiJoinRoute maps authorization failures before mutating the lobb
   await handleAiJoinRoute(
     {},
     {},
-    { name: "CPU" },
+    { name: "CPU", difficulty: "hard" },
     new URL("http://localhost/api/ai/join?gameId=g-1"),
     async () => ({
       user: {
@@ -173,7 +173,7 @@ register("handleAiJoinRoute returns 200 when an existing AI rejoins the lobby", 
   await handleAiJoinRoute(
     {},
     {},
-    { name: "CPU" },
+    { name: "CPU", difficulty: "hard" },
     new URL("http://localhost/api/ai/join?gameId=g-1"),
     async () => ({
       user: {
@@ -198,6 +198,7 @@ register("handleAiJoinRoute returns 200 when an existing AI rejoins the lobby", 
       assert.equal(lobbyState, state);
       assert.equal(name, "CPU");
       assert.equal(options.isAi, true);
+      assert.equal(options.aiDifficulty, "hard");
       return {
         ok: true,
         rejoined: true,

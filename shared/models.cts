@@ -19,13 +19,19 @@ export {
 } from "./compatibility.cjs";
 export type { GameStateVersionMetadata, VersionSnapshot } from "./compatibility.cjs";
 export {
+  AI_DIFFICULTIES,
   TurnPhase,
   createContinent,
   createGameState,
   createPlayer,
-  createTerritory
+  createTerritory,
+  isAiDifficulty,
+  normalizeAiDifficulty
 } from "./core-domain.cjs";
 export type {
+  AiDifficulty,
+  AiGameMetrics,
+  AiPlayerMetrics,
   Continent,
   CreateContinentInput,
   CreateGameStateInput,

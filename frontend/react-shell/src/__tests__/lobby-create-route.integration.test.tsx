@@ -610,8 +610,10 @@ describe("LobbyCreateRoute integration", () => {
       const { user, route } = await renderLobbyCreateRoute(
         "/react/lobby/new?mode=single-player&players=3&turnHours=48&modules="
       );
+      const firstAiDifficulty = await route.findByTestId("react-shell-new-game-slot-2-difficulty");
       const quickConfirmButton = await route.findByTestId("react-shell-new-game-confirm-default");
 
+      await user.selectOptions(firstAiDifficulty, "hard");
       await user.click(quickConfirmButton);
 
       await waitFor(() => {
@@ -628,11 +630,13 @@ describe("LobbyCreateRoute integration", () => {
             },
             {
               slot: 2,
-              type: "ai"
+              type: "ai",
+              difficulty: "hard"
             },
             {
               slot: 3,
-              type: "ai"
+              type: "ai",
+              difficulty: "medium"
             }
           ]
         }),

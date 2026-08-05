@@ -1,7 +1,10 @@
 const { secureRandom } = require("../random.cjs");
 import {
   TurnPhase,
+  normalizeAiDifficulty,
   validateStandardCardSet,
+  type AiDifficulty,
+  type AiGameMetrics,
   type Card,
   type GameState,
   type Territory
@@ -18,6 +21,7 @@ interface EnginePlayer {
   id: string | null;
   name: string;
   isAi: boolean;
+  aiDifficulty?: AiDifficulty | null;
 }
 
 interface ActionFailure {
@@ -54,6 +58,7 @@ interface GameplayEffectsLike {
 interface AiTurnReport {
   ok: true;
   playerId: string | null;
+  difficulty: AiDifficulty;
   tradedCardSets: string[][];
   reinforcementTargets: string[];
   attacks: AttackChoice[];
@@ -69,7 +74,54 @@ type EngineState = GameState & {
   reinforcementPool: number;
   turnPhase: string;
   hands: Record<string, Card[]>;
+  aiMetrics?: AiGameMetrics | null;
 };
+
+type StrategyOptions = {
+  difficulty?: AiDifficulty;
+  random?: () => number;
+};
+
+function resolveAiDifficulty(state: EngineState, playerId: string): AiDifficulty {
+  const player = state.players.find((entry) => entry.id === playerId);
+  return normalizeAiDifficulty(player?.aiDifficulty);
+}
+
+function strategyNoise(options: StrategyOptions, amplitude: number): number {
+  if (typeof options.random !== "function" || options.difficulty === "medium") {
+    return 0;
+  }
+  return Math.round((options.random() - 0.5) * amplitude);
+}
+
+function continentPressureBonus(
+  state: EngineState,
+  playerId: string,
+  targetTerritoryId: string
+): number {
+  const continent = state.continents.find((entry) =>
+    entry.territoryIds.includes(targetTerritoryId)
+  );
+  const targetOwnerId = state.territories[targetTerritoryId]?.ownerId || null;
+  if (!continent || !targetOwnerId) {
+    return 0;
+  }
+
+  const otherTerritoryIds = continent.territoryIds.filter(
+    (territoryId) => territoryId !== targetTerritoryId
+  );
+  const completesContinent = otherTerritoryIds.every(
+    (territoryId) => state.territories[territoryId]?.ownerId === playerId
+  );
+  const blocksOpponent = otherTerritoryIds.every(
+    (territoryId) => state.territories[territoryId]?.ownerId === targetOwnerId
+  );
+
+  return (
+    (completesContinent ? 35 + continent.bonus * 3 : 0) +
+    (blocksOpponent ? 45 + continent.bonus * 3 : 0)
+  );
+}
 
 function resolveFortifyMinimumArmies(state: EngineState, maxMove: number): number {
   const moduleMinimum =
@@ -179,12 +231,17 @@ function listEnemyNeighbors(
     ) as Array<{ territoryId: string; state: { ownerId: string | null; armies: number } }>;
 }
 
-export function chooseReinforcementTarget(state: EngineState, playerId: string): string | null {
+export function chooseReinforcementTarget(
+  state: EngineState,
+  playerId: string,
+  options: StrategyOptions = {}
+): string | null {
   const owned = territoriesOwnedBy(state, playerId);
   if (!owned.length) {
     return null;
   }
 
+  const difficulty = options.difficulty || resolveAiDifficulty(state, playerId);
   const ranked = owned
     .filter((territory): territory is Territory & { id: string } => Boolean(territory.id))
     .map((territory) => {
@@ -194,9 +251,13 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
         (max, entry) => Math.max(max, entry.state.armies),
         0
       );
-      const score = enemyNeighbors.length
+      const baselineScore = enemyNeighbors.length
         ? armies - strongestEnemy + enemyNeighbors.length * 2
         : -100 + armies;
+      const score =
+        baselineScore +
+        (difficulty === "hard" ? Math.max(0, strongestEnemy - armies) * 8 : 0) +
+        strategyNoise({ ...options, difficulty }, difficulty === "easy" ? 8 : 4);
 
       return {
         territoryId: territory.id,
@@ -218,9 +279,11 @@ export function chooseReinforcementTarget(state: EngineState, playerId: string):
 export function chooseAttack(
   state: EngineState,
   playerId: string,
-  options: { forceLegalAttack?: boolean } = {}
+  options: StrategyOptions & { forceLegalAttack?: boolean } = {}
 ): AttackChoice | null {
   const candidates: AttackChoice[] = [];
+  const difficulty = options.difficulty || resolveAiDifficulty(state, playerId);
+  const minimumAdvantage = difficulty === "easy" ? 3 : difficulty === "hard" ? 0 : 2;
   const minimumAttackArmies = resolveAttackMinimumArmies(state);
   const attackLimitPerTurn = resolveAttackLimitPerTurn(state);
   const attacksThisTurn =
@@ -241,14 +304,20 @@ export function chooseAttack(
 
       listEnemyNeighbors(state, territory.id, playerId).forEach((neighbor) => {
         const advantage = fromState.armies - neighbor.state.armies;
-        if (!options.forceLegalAttack && advantage < 2) {
+        if (!options.forceLegalAttack && advantage < minimumAdvantage) {
           return;
         }
 
+        const strategicBonus =
+          difficulty === "hard" ? continentPressureBonus(state, playerId, neighbor.territoryId) : 0;
         candidates.push({
           fromId: territory.id,
           toId: neighbor.territoryId,
-          score: advantage * 10 - neighbor.state.armies
+          score:
+            advantage * 10 -
+            neighbor.state.armies +
+            strategicBonus +
+            strategyNoise({ ...options, difficulty }, difficulty === "easy" ? 10 : 6)
         });
       });
     });
@@ -259,13 +328,23 @@ export function chooseAttack(
       left.fromId.localeCompare(right.fromId) ||
       left.toId.localeCompare(right.toId)
   );
+  if (
+    difficulty === "easy" &&
+    !options.forceLegalAttack &&
+    candidates.length > 0 &&
+    typeof options.random === "function" &&
+    options.random() < 0.35
+  ) {
+    return null;
+  }
   return candidates[0] || null;
 }
 
 export function chooseConquestMove(
   state: EngineState,
   playerId: string,
-  pending: PendingConquest | null | undefined
+  pending: PendingConquest | null | undefined,
+  options: StrategyOptions = {}
 ): number | null {
   if (!pending) {
     return null;
@@ -276,15 +355,27 @@ export function chooseConquestMove(
     return pending.minArmies;
   }
 
+  const difficulty = options.difficulty || resolveAiDifficulty(state, playerId);
+  if (difficulty === "easy") {
+    return pending.minArmies;
+  }
+  if (difficulty === "hard") {
+    return Math.max(
+      pending.minArmies,
+      Math.min(pending.maxArmies, Math.ceil(pending.maxArmies * 0.7))
+    );
+  }
+
   return Math.max(pending.minArmies, Math.min(pending.maxArmies, 2));
 }
 
 export function chooseFortify(
   state: EngineState,
   playerId: string,
-  options: { forceLegalMove?: boolean } = {}
+  options: StrategyOptions & { forceLegalMove?: boolean } = {}
 ): FortifyChoice | null {
   const owned = territoriesOwnedBy(state, playerId);
+  const difficulty = options.difficulty || resolveAiDifficulty(state, playerId);
   const borderIds = new Set(
     owned
       .filter((territory): territory is Territory & { id: string } => Boolean(territory.id))
@@ -332,8 +423,18 @@ export function chooseFortify(
           return;
         }
 
-        const armies = Math.min(movableArmies, Math.max(minimumArmies, 2));
-        const score = 8 + targetEnemyNeighbors * 4 + (fromState.armies - neighborState.armies);
+        const armies =
+          difficulty === "hard"
+            ? Math.min(movableArmies, Math.max(minimumArmies, Math.ceil(movableArmies * 0.7)))
+            : difficulty === "easy"
+              ? minimumArmies
+              : Math.min(movableArmies, Math.max(minimumArmies, 2));
+        const score =
+          8 +
+          targetEnemyNeighbors * 4 +
+          (fromState.armies - neighborState.armies) +
+          (difficulty === "hard" ? targetEnemyNeighbors * 4 : 0) +
+          strategyNoise({ ...options, difficulty }, difficulty === "easy" ? 8 : 4);
         if (!options.forceLegalMove && score < 3) {
           return;
         }
@@ -373,6 +474,56 @@ function chooseTradeSet(state: EngineState, playerId: string): string[] | null {
   return null;
 }
 
+function shouldTradeVoluntarily(
+  state: EngineState,
+  playerId: string,
+  difficulty: AiDifficulty
+): boolean {
+  return difficulty === "hard" && Boolean(chooseTradeSet(state, playerId));
+}
+
+function completeAiTurn(
+  state: EngineState,
+  player: EnginePlayer,
+  report: AiTurnReport
+): AiTurnReport {
+  if (!player.id) {
+    return report;
+  }
+
+  const metrics: AiGameMetrics =
+    state.aiMetrics && state.aiMetrics.schemaVersion === 1 && state.aiMetrics.players
+      ? state.aiMetrics
+      : {
+          schemaVersion: 1,
+          humanPlayerCount: 0,
+          aiPlayerCount: 0,
+          players: {}
+        };
+  metrics.humanPlayerCount = state.players.filter((entry) => !entry.isAi).length;
+  metrics.aiPlayerCount = state.players.filter((entry) => entry.isAi).length;
+
+  const playerMetrics = metrics.players[player.id] || {
+    difficulty: report.difficulty,
+    turns: 0,
+    reinforcementsPlaced: 0,
+    attacks: 0,
+    territoriesConquered: 0,
+    cardSetsTraded: 0,
+    fortifications: 0
+  };
+  playerMetrics.difficulty = report.difficulty;
+  playerMetrics.turns += 1;
+  playerMetrics.reinforcementsPlaced += report.reinforcementTargets.length;
+  playerMetrics.attacks += report.attacks.length;
+  playerMetrics.territoriesConquered += report.conquestMoves.length;
+  playerMetrics.cardSetsTraded += report.tradedCardSets.length;
+  playerMetrics.fortifications += report.fortify ? 1 : 0;
+  metrics.players[player.id] = playerMetrics;
+  state.aiMetrics = metrics;
+  return report;
+}
+
 export function runAiTurn(
   state: EngineState,
   options: { random?: () => number } = {}
@@ -391,9 +542,12 @@ export function runAiTurn(
     return { ok: false, error: "La partita non e attiva." };
   }
 
+  const difficulty = normalizeAiDifficulty(player.aiDifficulty);
+
   const report: AiTurnReport = {
     ok: true,
     playerId: player.id,
+    difficulty,
     tradedCardSets: [],
     reinforcementTargets: [],
     attacks: [],
@@ -408,18 +562,18 @@ export function runAiTurn(
 
     if (state.winnerId || state.phase !== "active") {
       report.endedTurn = true;
-      return report;
+      return completeAiTurn(state, player, report);
     }
 
     const current = getCurrentPlayer(state);
     if (!current || current.id !== player.id) {
       report.endedTurn = true;
-      return report;
+      return completeAiTurn(state, player, report);
     }
 
     if (state.pendingConquest) {
       const pending = state.pendingConquest;
-      const armiesToMove = chooseConquestMove(state, player.id || "", pending);
+      const armiesToMove = chooseConquestMove(state, player.id || "", pending, { difficulty });
       const move = moveAfterConquest(state, player.id || "", armiesToMove);
       if (!move.ok) {
         return { ok: false, error: move.message, report };
@@ -435,7 +589,8 @@ export function runAiTurn(
     if (
       state.turnPhase === TurnPhase.REINFORCEMENT &&
       player.id &&
-      playerMustTradeCards(state, player.id)
+      (playerMustTradeCards(state, player.id) ||
+        shouldTradeVoluntarily(state, player.id, difficulty))
     ) {
       const cardIds = chooseTradeSet(state, player.id);
       if (!cardIds) {
@@ -452,7 +607,10 @@ export function runAiTurn(
     }
 
     if (state.reinforcementPool > 0 || state.turnPhase === TurnPhase.REINFORCEMENT) {
-      const territoryId = chooseReinforcementTarget(state, player.id || "");
+      const territoryId = chooseReinforcementTarget(state, player.id || "", {
+        difficulty,
+        random
+      });
       if (!territoryId || !player.id) {
         return { ok: false, error: "AI senza territorio valido per i rinforzi.", report };
       }
@@ -473,7 +631,9 @@ export function runAiTurn(
           ? state.attacksThisTurn
           : 0;
       const attack = chooseAttack(state, player.id || "", {
-        forceLegalAttack: minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn
+        forceLegalAttack: minimumAttacksPerTurn !== null && attacksThisTurn < minimumAttacksPerTurn,
+        difficulty,
+        random
       });
       if (attack && player.id) {
         const result = resolveAttack(state, player.id, attack.fromId, attack.toId, random);
@@ -493,7 +653,9 @@ export function runAiTurn(
 
     if (state.turnPhase === TurnPhase.FORTIFY) {
       const fortify = chooseFortify(state, player.id || "", {
-        forceLegalMove: resolveRequiredFortifyWhenAvailable(state)
+        forceLegalMove: resolveRequiredFortifyWhenAvailable(state),
+        difficulty,
+        random
       });
       if (fortify && player.id) {
         const result = applyFortify(state, player.id, fortify.fromId, fortify.toId, fortify.armies);
@@ -509,7 +671,7 @@ export function runAiTurn(
       }
 
       report.endedTurn = true;
-      return report;
+      return completeAiTurn(state, player, report);
     }
 
     const fallback = endTurn(state, player.id || "");

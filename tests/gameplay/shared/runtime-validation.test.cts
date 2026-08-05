@@ -3,9 +3,11 @@ const {
   accountSettingsRequestSchema,
   accountSettingsResponseSchema,
   adminAuthoredModuleUpsertRequestSchema,
+  aiJoinRequestSchema,
   authoredModuleSchema,
   authSessionResponseSchema,
   formatValidationPath,
+  createGameRequestSchema,
   gameIdRequestSchema,
   gameListResponseSchema,
   gameMutationResponseSchema,
@@ -255,6 +257,31 @@ register("shared runtime validation validates lobby route payload shapes", () =>
     toValidationErrors(invalidJoinResponse.error).map((entry: { path: string }) => entry.path),
     ["user.id"]
   );
+});
+
+register("shared runtime validation constrains AI difficulty at API boundaries", () => {
+  const validCreate = createGameRequestSchema.safeParse({
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai", difficulty: "hard" }]
+  });
+  const validJoin = aiJoinRequestSchema.safeParse({
+    gameId: "g-1",
+    name: "Hannibal",
+    difficulty: "easy"
+  });
+  const invalidCreate = createGameRequestSchema.safeParse({
+    totalPlayers: 2,
+    players: [{ type: "human" }, { type: "ai", difficulty: "impossible" }]
+  });
+  const invalidJoin = aiJoinRequestSchema.safeParse({
+    name: "Hannibal",
+    difficulty: "impossible"
+  });
+
+  assert.equal(validCreate.success, true);
+  assert.equal(validJoin.success, true);
+  assert.equal(invalidCreate.success, false);
+  assert.equal(invalidJoin.success, false);
 });
 
 register("shared runtime validation constrains module UI slot routes to same-origin paths", () => {

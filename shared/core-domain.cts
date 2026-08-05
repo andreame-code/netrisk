@@ -13,12 +13,44 @@ export const TurnPhase = Object.freeze({
 
 export type TurnPhaseValue = (typeof TurnPhase)[keyof typeof TurnPhase];
 
+export const AI_DIFFICULTIES = Object.freeze(["easy", "medium", "hard"] as const);
+export type AiDifficulty = (typeof AI_DIFFICULTIES)[number];
+
+export interface AiPlayerMetrics {
+  difficulty: AiDifficulty;
+  turns: number;
+  reinforcementsPlaced: number;
+  attacks: number;
+  territoriesConquered: number;
+  cardSetsTraded: number;
+  fortifications: number;
+}
+
+export interface AiGameMetrics {
+  schemaVersion: 1;
+  humanPlayerCount: number;
+  aiPlayerCount: number;
+  players: Record<string, AiPlayerMetrics>;
+}
+
+export function isAiDifficulty(value: unknown): value is AiDifficulty {
+  return typeof value === "string" && AI_DIFFICULTIES.includes(value as AiDifficulty);
+}
+
+export function normalizeAiDifficulty(
+  value: unknown,
+  fallback: AiDifficulty = "medium"
+): AiDifficulty {
+  return isAiDifficulty(value) ? value : fallback;
+}
+
 export interface Player {
   id: string | null;
   name: string;
   color: string;
   connected: boolean;
   isAi: boolean;
+  aiDifficulty?: AiDifficulty | null;
   linkedUserId: string | null;
   surrendered: boolean;
 }
@@ -110,6 +142,7 @@ export interface GameState {
   tradeCount: number;
   conqueredTerritoryThisTurn: boolean;
   gameConfig?: GameConfig | null;
+  aiMetrics?: AiGameMetrics | null;
 }
 
 export type CreatePlayerInput = Partial<Player>;
@@ -118,12 +151,14 @@ export type CreateContinentInput = Partial<Continent>;
 export type CreateGameStateInput = Partial<GameState>;
 
 export function createPlayer(input: CreatePlayerInput = {}): Player {
+  const isAi = Boolean(input.isAi);
   return {
     id: input.id || null,
     name: input.name || "",
     color: input.color || "#9aa6b2",
     connected: Boolean(input.connected),
-    isAi: Boolean(input.isAi),
+    isAi,
+    aiDifficulty: isAi ? normalizeAiDifficulty(input.aiDifficulty) : null,
     linkedUserId: input.linkedUserId || null,
     surrendered: Boolean(input.surrendered)
   };
@@ -195,6 +230,7 @@ export function createGameState(input: CreateGameStateInput = {}): GameState {
         ? input.tradeCount
         : 0,
     conqueredTerritoryThisTurn: Boolean(input.conqueredTerritoryThisTurn),
-    gameConfig: input.gameConfig && typeof input.gameConfig === "object" ? input.gameConfig : null
+    gameConfig: input.gameConfig && typeof input.gameConfig === "object" ? input.gameConfig : null,
+    aiMetrics: input.aiMetrics && typeof input.aiMetrics === "object" ? input.aiMetrics : null
   };
 }

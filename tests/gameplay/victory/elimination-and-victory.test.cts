@@ -83,6 +83,34 @@ register("publicState preserves runtime setup ids without mutating live state", 
   assert.equal(state.gameConfig?.pieceSkinId, "runtime.skin");
 });
 
+register("publicState exposes AI difficulty and persisted balancing metrics", () => {
+  const state = setupLiveState();
+  state.players[1].isAi = true;
+  state.players[1].aiDifficulty = "hard";
+  state.aiMetrics = {
+    schemaVersion: 1,
+    humanPlayerCount: 1,
+    aiPlayerCount: 1,
+    players: {
+      p2: {
+        difficulty: "hard",
+        turns: 3,
+        reinforcementsPlaced: 9,
+        attacks: 4,
+        territoriesConquered: 2,
+        cardSetsTraded: 1,
+        fortifications: 2
+      }
+    }
+  };
+
+  const snapshot = publicState(state);
+
+  assert.equal(snapshot.players[1].aiDifficulty, "hard");
+  assert.deepEqual(snapshot.aiMetrics, state.aiMetrics);
+  assert.notEqual(snapshot.aiMetrics, state.aiMetrics);
+});
+
 register("startGame assigns authored victory objectives to each player", () => {
   const state = createInitialState();
   state.players = [

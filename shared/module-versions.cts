@@ -222,9 +222,10 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "setup-flow",
     name: "Setup Flow",
     kind: "gameplay",
-    version: "1.0.5",
+    version: "1.1.0",
     description: "New-game setup, setup defaults, profiles, and setup route behavior.",
     ownerPaths: [
+      "backend/new-game-config.cts",
       "backend/engine/game-setup.cts",
       "backend/routes/game-management.cts",
       "backend/routes/game-setup.cts",
@@ -287,12 +288,13 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "public-state",
     name: "Public Game State",
     kind: "platform",
-    version: "1.1.0",
+    version: "1.2.0",
     description: "Public/read API game state contracts, snapshots, and shared game models.",
     ownerPaths: [
       "shared/api-contracts.cts",
       "shared/models.cts",
       "shared/core-domain.cts",
+      "shared/runtime-validation.cts",
       "backend/routes/game-read.cts",
       "backend/routes/game-overview.cts"
     ]
@@ -301,9 +303,13 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "ai-players",
     name: "AI Players",
     kind: "gameplay",
-    version: "1.0.0",
-    description: "AI turn decisions and AI turn recovery behavior.",
-    ownerPaths: ["backend/engine/ai-player.cts", "backend/engine/ai-turn-resume.cts"]
+    version: "1.1.0",
+    description: "Difficulty-aware AI decisions, balancing metrics, and AI turn recovery behavior.",
+    ownerPaths: [
+      "backend/engine/ai-player.cts",
+      "backend/engine/ai-turn-resume.cts",
+      "docs/ai-difficulty.md"
+    ]
   }
 ] as FunctionalModuleVersion[]);
 

@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
+  AiDifficulty,
   ContentPackSummary,
   CreateGameRequest,
   GameListResponse,
@@ -43,6 +44,7 @@ type NewGameFormState = {
   turnTimeoutHours: string;
   totalPlayers: number;
   playerTypes: string[];
+  playerDifficulties: AiDifficulty[];
   selectedModuleIds: string[];
   gamePresetId: string;
   contentProfileId: string;
@@ -66,6 +68,16 @@ function ensurePlayerTypes(playerTypes: string[], totalPlayers: number): string[
     }
 
     return playerTypes[index] === "ai" ? "ai" : "human";
+  });
+}
+
+function ensurePlayerDifficulties(
+  playerDifficulties: readonly string[],
+  totalPlayers: number
+): AiDifficulty[] {
+  return Array.from({ length: totalPlayers }, (_, index) => {
+    const difficulty = playerDifficulties[index];
+    return difficulty === "easy" || difficulty === "hard" ? difficulty : "medium";
   });
 }
 
@@ -316,6 +328,12 @@ function buildInitialForm(options: GameOptionsResponse): NewGameFormState {
     playerTypes: ensurePlayerTypes(
       Array.isArray(adminDefaults.players)
         ? adminDefaults.players.map((slot) => (slot?.type === "ai" ? "ai" : "human"))
+        : [],
+      initialTotalPlayers
+    ),
+    playerDifficulties: ensurePlayerDifficulties(
+      Array.isArray(adminDefaults.players)
+        ? adminDefaults.players.map((slot) => slot?.difficulty || "medium")
         : [],
       initialTotalPlayers
     ),
@@ -654,7 +672,15 @@ export function LobbyCreateRoute() {
       players: ensurePlayerTypes(formState.playerTypes, formState.totalPlayers).map(
         (type, index) => ({
           slot: index + 1,
-          type
+          type,
+          ...(type === "ai"
+            ? {
+                difficulty: ensurePlayerDifficulties(
+                  formState.playerDifficulties,
+                  formState.totalPlayers
+                )[index]
+              }
+            : {})
         })
       )
     };
@@ -1223,6 +1249,10 @@ export function LobbyCreateRoute() {
                         playerTypes: ensurePlayerTypes(
                           formState.playerTypes,
                           Number(event.target.value)
+                        ),
+                        playerDifficulties: ensurePlayerDifficulties(
+                          formState.playerDifficulties,
+                          Number(event.target.value)
                         )
                       })
                     }
@@ -1300,31 +1330,67 @@ export function LobbyCreateRoute() {
                             </p>
                           </>
                         ) : (
-                          <label className="field-stack">
-                            <span>{t("newGame.slot.typeLabel")}</span>
-                            <select
-                              data-role="type"
-                              value={playerType}
-                              onChange={(event) => {
-                                const nextPlayerTypes = ensurePlayerTypes(
-                                  formState.playerTypes,
-                                  formState.totalPlayers
-                                );
-                                nextPlayerTypes[index] = event.target.value;
-                                updateFormState({
-                                  ...formState,
-                                  playerTypes: nextPlayerTypes
-                                });
-                              }}
-                              data-testid={`react-shell-new-game-slot-${index + 1}`}
-                            >
-                              <option value="human">{t("newGame.slot.humanOption")}</option>
-                              <option value="ai">{t("newGame.slot.aiOption")}</option>
-                            </select>
-                            <small className="setup-slot-note" data-role="note">
-                              {playerSlotDescription(playerType, index)}
-                            </small>
-                          </label>
+                          <>
+                            <label className="field-stack">
+                              <span>{t("newGame.slot.typeLabel")}</span>
+                              <select
+                                data-role="type"
+                                value={playerType}
+                                onChange={(event) => {
+                                  const nextPlayerTypes = ensurePlayerTypes(
+                                    formState.playerTypes,
+                                    formState.totalPlayers
+                                  );
+                                  nextPlayerTypes[index] = event.target.value;
+                                  updateFormState({
+                                    ...formState,
+                                    playerTypes: nextPlayerTypes
+                                  });
+                                }}
+                                data-testid={`react-shell-new-game-slot-${index + 1}`}
+                              >
+                                <option value="human">{t("newGame.slot.humanOption")}</option>
+                                <option value="ai">{t("newGame.slot.aiOption")}</option>
+                              </select>
+                              <small className="setup-slot-note" data-role="note">
+                                {playerSlotDescription(playerType, index)}
+                              </small>
+                            </label>
+                            {playerType === "ai" ? (
+                              <label className="field-stack">
+                                <span>{t("newGame.slot.difficultyLabel")}</span>
+                                <select
+                                  value={
+                                    ensurePlayerDifficulties(
+                                      formState.playerDifficulties,
+                                      formState.totalPlayers
+                                    )[index]
+                                  }
+                                  onChange={(event) => {
+                                    const nextDifficulties = ensurePlayerDifficulties(
+                                      formState.playerDifficulties,
+                                      formState.totalPlayers
+                                    );
+                                    nextDifficulties[index] =
+                                      event.target.value === "easy" || event.target.value === "hard"
+                                        ? event.target.value
+                                        : "medium";
+                                    updateFormState({
+                                      ...formState,
+                                      playerDifficulties: nextDifficulties
+                                    });
+                                  }}
+                                  data-testid={`react-shell-new-game-slot-${index + 1}-difficulty`}
+                                >
+                                  <option value="easy">{t("newGame.slot.difficultyEasy")}</option>
+                                  <option value="medium">
+                                    {t("newGame.slot.difficultyMedium")}
+                                  </option>
+                                  <option value="hard">{t("newGame.slot.difficultyHard")}</option>
+                                </select>
+                              </label>
+                            ) : null}
+                          </>
                         )}
                       </article>
                     )

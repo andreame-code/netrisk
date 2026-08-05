@@ -16,7 +16,9 @@ import {
   getPieceSkin,
   migrateGameConfigExtensions,
   migrateGameStateExtensions,
+  normalizeAiDifficulty,
   type ActionFailure,
+  type AiDifficulty,
   type Card,
   type CardSetValidationResult,
   type DomainFailure,
@@ -122,6 +124,7 @@ type EngineState = GameState & {
 
 type AddPlayerOptions = {
   isAi?: boolean;
+  aiDifficulty?: AiDifficulty;
   linkedUserId?: string | null;
 };
 
@@ -708,6 +711,7 @@ export function publicState(state: EngineState) {
       color: player.color,
       connected: player.connected,
       isAi: Boolean(player.isAi),
+      aiDifficulty: player.isAi ? player.aiDifficulty || "medium" : null,
       surrendered: Boolean(player.surrendered),
       territoryCount: player.id ? territoriesOwnedBy(snapshotState, player.id).length : 0,
       eliminated: snapshotState.phase !== "lobby" && !isPlayerAlive(snapshotState, player),
@@ -738,6 +742,9 @@ export function publicState(state: EngineState) {
     currentPlayerId: currentPlayer ? currentPlayer.id : null,
     reinforcementPool: snapshotState.reinforcementPool,
     winnerId: snapshotState.winnerId,
+    aiMetrics: snapshotState.aiMetrics
+      ? (JSON.parse(JSON.stringify(snapshotState.aiMetrics)) as typeof snapshotState.aiMetrics)
+      : null,
     gameConfig: snapshotState.gameConfig
       ? {
           ...snapshotState.gameConfig,
@@ -821,6 +828,27 @@ export function startGame(
   state.fortifyUsed = false;
   state.attacksThisTurn = 0;
   state.conqueredTerritoryThisTurn = false;
+  state.aiMetrics = {
+    schemaVersion: 1,
+    humanPlayerCount: state.players.filter((player) => !player.isAi).length,
+    aiPlayerCount: state.players.filter((player) => player.isAi).length,
+    players: Object.fromEntries(
+      state.players
+        .filter((player) => player.isAi && player.id)
+        .map((player) => [
+          player.id as string,
+          {
+            difficulty: normalizeAiDifficulty(player.aiDifficulty),
+            turns: 0,
+            reinforcementsPlaced: 0,
+            attacks: 0,
+            territoriesConquered: 0,
+            cardSetsTraded: 0,
+            fortifications: 0
+          }
+        ])
+    )
+  };
   assignVictoryObjectives(state, random);
 
   shuffledTerritories.forEach((territoryId) => {
@@ -953,6 +981,7 @@ export function addPlayer(
     existing.connected = true;
     if (options.isAi) {
       existing.isAi = true;
+      existing.aiDifficulty = options.aiDifficulty || existing.aiDifficulty || "medium";
     } else if (linkedUserId && !existing.linkedUserId) {
       existing.linkedUserId = linkedUserId;
     }
@@ -977,6 +1006,7 @@ export function addPlayer(
     color: pieceSet.palette[state.players.length % pieceSet.palette.length] as string,
     connected: true,
     isAi: Boolean(options.isAi),
+    aiDifficulty: options.aiDifficulty,
     linkedUserId
   });
   state.players.push(player);

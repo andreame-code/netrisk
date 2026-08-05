@@ -606,10 +606,15 @@ export const resolvedModuleCatalogSchema = objectSchema({
 
 export type ResolvedModuleCatalog = z.infer<typeof resolvedModuleCatalogSchema>;
 
+export const aiDifficultySchema = z.enum(["easy", "medium", "hard"]);
+
+export type AiDifficulty = z.infer<typeof aiDifficultySchema>;
+
 export const playerSlotConfigSchema = objectSchema({
   slot: z.number().int().nullable().optional(),
   type: z.string().min(1).max(32).nullable().optional(),
-  name: z.string().min(1).max(64).nullable().optional()
+  name: z.string().min(1).max(64).nullable().optional(),
+  difficulty: aiDifficultySchema.nullable().optional()
 });
 
 export type PlayerSlotConfig = z.infer<typeof playerSlotConfigSchema>;
@@ -668,7 +673,8 @@ export type GameIdRequest = z.infer<typeof gameIdRequestSchema>;
 export const aiJoinRequestSchema = objectSchema({
   gameId: z.string().min(1).max(64).nullable().optional(),
   playerId: z.string().min(1).max(64).nullable().optional(),
-  name: z.string().min(1).max(24)
+  name: z.string().min(1).max(24),
+  difficulty: aiDifficultySchema.nullable().optional()
 });
 
 export type AiJoinRequest = z.infer<typeof aiJoinRequestSchema>;
@@ -863,6 +869,7 @@ export const snapshotPlayerSchema = objectSchema({
   color: z.string().min(1),
   connected: z.boolean().optional(),
   isAi: z.boolean().optional(),
+  aiDifficulty: aiDifficultySchema.nullable().optional(),
   surrendered: z.boolean().optional(),
   territoryCount: z.number().optional(),
   eliminated: z.boolean().optional(),
@@ -870,6 +877,25 @@ export const snapshotPlayerSchema = objectSchema({
 });
 
 export type SnapshotPlayer = z.infer<typeof snapshotPlayerSchema>;
+
+export const aiPlayerMetricsSchema = objectSchema({
+  difficulty: aiDifficultySchema,
+  turns: z.number().int().min(0),
+  reinforcementsPlaced: z.number().int().min(0),
+  attacks: z.number().int().min(0),
+  territoriesConquered: z.number().int().min(0),
+  cardSetsTraded: z.number().int().min(0),
+  fortifications: z.number().int().min(0)
+});
+
+export const aiGameMetricsSchema = objectSchema({
+  schemaVersion: z.literal(1),
+  humanPlayerCount: z.number().int().min(0),
+  aiPlayerCount: z.number().int().min(0),
+  players: z.record(z.string(), aiPlayerMetricsSchema)
+});
+
+export type AiGameMetrics = z.infer<typeof aiGameMetricsSchema>;
 
 export const snapshotTerritorySchema = objectSchema({
   id: z.string().min(1),
@@ -1054,6 +1080,7 @@ export const gameSnapshotSchema = objectSchema({
   mapVisual: snapshotMapVisualSchema.nullable().optional(),
   diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
   assignedVictoryObjective: snapshotVictoryObjectiveSchema.nullable().optional(),
+  aiMetrics: aiGameMetricsSchema.nullable().optional(),
   fortifyUsed: z.boolean().optional(),
   attacksThisTurn: z.number().optional(),
   conqueredTerritoryThisTurn: z.boolean().optional(),
@@ -1085,6 +1112,7 @@ export const gameMutationStateSchema = objectSchema({
   mapVisual: snapshotMapVisualSchema.nullable().optional(),
   diceRuleSet: snapshotDiceRuleSetSchema.nullable().optional(),
   assignedVictoryObjective: snapshotVictoryObjectiveSchema.nullable().optional(),
+  aiMetrics: aiGameMetricsSchema.nullable().optional(),
   fortifyUsed: z.boolean().optional(),
   attacksThisTurn: z.number().optional(),
   conqueredTerritoryThisTurn: z.boolean().optional(),
