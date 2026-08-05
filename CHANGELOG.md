@@ -5,7 +5,7 @@ NetRisk uses the application version from `shared/version-manifest.cts` as the r
 ## 0.1.057 - 2026-08-05
 
 - Split the direct landing and authenticated React shell entries and deferred the optional Sentry integration until after the initial render.
-- Moved landing and gameplay styles into route-owned CSS chunks, reducing initial landing and lobby transfers without changing their behavior.
+- Moved landing styles into a route-owned CSS chunk and kept shared game-shell styles behind the lazy authenticated shell boundary, reducing initial transfers without changing route layouts.
 - Added documented, route-aware initial JavaScript/CSS budgets that fail the production build and CI with a clear regression report.
 
 ## 0.1.056 - 2026-08-05

@@ -9,16 +9,16 @@ The baseline was recorded from `main` at `891f48f67e1553d2ae30a5cab25155505f71b8
 | Route   | Baseline JS raw / gzip | Current JS raw / gzip | Baseline CSS raw / gzip | Current CSS raw / gzip |
 | ------- | ---------------------: | --------------------: | ----------------------: | ---------------------: |
 | Landing |     664.15 / 189.43 kB |    518.48 / 145.85 kB |       345.00 / 52.86 kB |      179.20 / 30.74 kB |
-| Lobby   |     693.09 / 197.05 kB |    596.97 / 170.05 kB |       345.00 / 52.86 kB |      165.42 / 27.48 kB |
+| Lobby   |     693.09 / 197.05 kB |    596.97 / 170.03 kB |       345.00 / 52.86 kB |      331.98 / 51.08 kB |
 
-The landing and authenticated shell are selected through dynamic entries. Sentry is loaded after the initial render during an idle window (or immediately for the first reportable error), and the 204 kB source gameplay stylesheet is emitted with the gameplay route instead of the entry stylesheet. Landing-specific CSS is emitted only with the landing route.
+The landing and authenticated shell are selected through dynamic entries. Sentry is loaded after the initial render during an idle window (or immediately for the first reportable error). Landing-specific CSS is emitted only with the landing route, while `game-layout.css` stays at the lazy authenticated-shell boundary because it also contains the shared lobby, profile, and new-game layouts.
 
 ## Enforced budgets
 
 | Route   | Initial JS gzip | Initial CSS gzip |
 | ------- | --------------: | ---------------: |
 | Landing |          155 kB |            33 kB |
-| Lobby   |          180 kB |            30 kB |
+| Lobby   |          180 kB |            53 kB |
 
 `npm run build:react-shell` and the normal production/CI build print raw and gzip measurements, then fail with a route-specific error if a budget is exceeded. The budget implementation lives in `frontend/react-shell/performance-budget.ts`.
 

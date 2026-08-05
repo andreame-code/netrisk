@@ -39,7 +39,8 @@ describe("React shell performance budget", () => {
       }),
       chunk("assets/app.js", {
         facadeModuleId: "/repo/frontend/react-shell/src/App.tsx",
-        imports: ["assets/vendor.js"]
+        imports: ["assets/vendor.js"],
+        viteMetadata: { importedCss: new Set(["assets/shell.css"]) }
       }),
       chunk("assets/lobby.js", {
         facadeModuleId: "/repo/frontend/react-shell/src/lobby-route.tsx",
@@ -47,7 +48,8 @@ describe("React shell performance budget", () => {
       }),
       chunk("assets/query.js"),
       { type: "asset", fileName: "assets/base.css", source: "base" },
-      { type: "asset", fileName: "assets/landing.css", source: "landing" }
+      { type: "asset", fileName: "assets/landing.css", source: "landing" },
+      { type: "asset", fileName: "assets/shell.css", source: "shell" }
     ];
 
     const report = analyzeReactShellBundle(outputs, "/repo");
@@ -63,6 +65,7 @@ describe("React shell performance budget", () => {
       "assets/query.js",
       "assets/vendor.js"
     ]);
+    expect(lobby?.cssFiles).toEqual(["assets/base.css", "assets/shell.css"]);
     expect(report.largestEntryModules[0]).toEqual({
       module: "src/main.tsx",
       renderedBytes: 20
