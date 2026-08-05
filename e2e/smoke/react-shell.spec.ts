@@ -277,6 +277,7 @@ test("react login returns the user to the requested gameplay route", async ({ pa
   await loginPage.getByRole("button", { name: /Sign in|Accedi/i }).click();
 
   await expect(page).toHaveURL(new RegExp(`/react/game/${createdGame.game.id}$`));
+  await expect(page).toHaveTitle("Frontline Dominion");
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
 });
 
