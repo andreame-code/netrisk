@@ -2,6 +2,11 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.051 - 2026-08-05
+
+- Hardened sensitive game state transitions (starting a game and trading cards) with rate limiting to mitigate spam and automated abuse.
+- Centralized rate-limiting error handling with a reusable helper to ensure consistent responses and standardized security headers.
+
 ## 0.1.050 - 2026-06-07
 
 - Hardened input validation schemas with maximum string length constraints for identifiers, names, and configuration IDs to mitigate Denial of Service (DoS) risks and resource exhaustion.
