@@ -13,14 +13,14 @@ import { messageFromError } from "@frontend-core/errors.mts";
 import { formatDate, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
-import { openShellGame } from "@react-shell/game-navigation";
+import { buildShellGamePath, openShellGame } from "@react-shell/game-navigation";
 import { LobbyWarTablePanels } from "@react-shell/lobby-war-table-panels";
 import {
   readCurrentPlayerId,
   storeCurrentPlayerId,
   subscribeCurrentPlayerIdChanges
 } from "@react-shell/player-session";
-import { buildNewGamePath } from "@react-shell/public-auth-paths";
+import { buildLoginHref, buildNewGamePath } from "@react-shell/public-auth-paths";
 import { lobbyGamesQueryKey } from "@react-shell/react-query";
 import { currentShellTheme } from "@react-shell/theme";
 import { themeCopy } from "@react-shell/theme-copy";
@@ -426,7 +426,7 @@ export function LobbyRoute() {
   }, [canLoadMoreGames, displayGames.length]);
 
   async function handleOpenGame(game: GameSummary | null): Promise<void> {
-    if (!game) {
+    if (!game || !authenticatedUser) {
       return;
     }
 
@@ -570,16 +570,27 @@ export function LobbyRoute() {
             >
               {t("lobby.createGame")}
             </Link>
-            <button
-              type="button"
-              id="open-game-button"
-              className="ghost-button"
-              onClick={() => void handleOpenSelectedGame()}
-              disabled={!selectedGame || actionPending}
-              data-testid="react-shell-lobby-open-selected"
-            >
-              {openMutation.isPending ? openingSelectedLabel : openSelectedLabel}
-            </button>
+            {selectedGame && !authenticatedUser ? (
+              <Link
+                id="open-game-button"
+                className="ghost-button"
+                to={buildLoginHref(buildShellGamePath(selectedGame.id))}
+                data-testid="react-shell-lobby-open-selected-login"
+              >
+                {t("lobby.loginToOpen")}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                id="open-game-button"
+                className="ghost-button"
+                onClick={() => void handleOpenSelectedGame()}
+                disabled={!selectedGame || actionPending}
+                data-testid="react-shell-lobby-open-selected"
+              >
+                {openMutation.isPending ? openingSelectedLabel : openSelectedLabel}
+              </button>
+            )}
           </div>
         </div>
 
@@ -781,18 +792,31 @@ export function LobbyRoute() {
                       className="war-table-row-action-cell"
                       data-cell-label={t("warTable.lobby.table.action")}
                     >
-                      <button
-                        type="button"
-                        className="war-table-row-action"
-                        disabled={actionPending}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedGameId(game.id);
-                          void (canJoinGame(game) ? handleJoinGame(game) : handleOpenGame(game));
-                        }}
-                      >
-                        {canJoinGame(game) ? t("warTable.lobby.join") : t("warTable.lobby.view")}
-                      </button>
+                      {!authenticatedUser ? (
+                        <Link
+                          className="war-table-row-action"
+                          to={buildLoginHref(buildShellGamePath(game.id))}
+                          data-testid={`react-shell-lobby-login-${game.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {canJoinGame(game)
+                            ? t("warTable.lobby.loginToJoin")
+                            : t("warTable.lobby.loginToView")}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className="war-table-row-action"
+                          disabled={actionPending}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedGameId(game.id);
+                            void (canJoinGame(game) ? handleJoinGame(game) : handleOpenGame(game));
+                          }}
+                        >
+                          {canJoinGame(game) ? t("warTable.lobby.join") : t("warTable.lobby.view")}
+                        </button>
+                      )}
                     </span>
                   </div>
                 ) : (

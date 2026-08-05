@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.055 - 2026-08-05
+
+- Replaced unauthenticated lobby open/join requests with explicit login links that preserve the selected game destination.
+- Prevented valid public lobby sessions from surfacing the misleading `Sessione non valida.` error to signed-out visitors.
+- Added React and browser regression coverage for the guest active-game flow.
+
 ## 0.1.054 - 2026-08-05
 
 - Made Vercel-to-GitHub deployment registration resilient to missing, expired, or unauthorized API tokens by falling back to the successful Vercel status URL.

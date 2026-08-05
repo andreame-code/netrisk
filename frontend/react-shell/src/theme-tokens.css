@@ -4719,6 +4719,9 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-row-actio
 }
 
 html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 132px;
   min-height: 32px;
   border: 1px solid rgba(242, 169, 31, 0.72);
@@ -4728,6 +4731,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .war-table-row-actio
   box-shadow: none;
   font-size: 0.82rem;
   font-weight: 850;
+  text-decoration: none;
   text-transform: uppercase;
 }
 
