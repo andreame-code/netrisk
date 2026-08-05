@@ -47,6 +47,20 @@ export const supportedVisualEnvironment = Object.freeze({
   })
 });
 
+export function requiresVisualEnvironmentPreflight(args: string[]): boolean {
+  const explicitE2ePaths = args
+    .map((arg) => arg.replace(/^\.\//, ""))
+    .filter((arg) => arg === "e2e" || arg.startsWith("e2e/"));
+
+  if (explicitE2ePaths.length === 0) {
+    return true;
+  }
+
+  return explicitE2ePaths.some(
+    (arg) => arg === "e2e/00-visual" || arg.startsWith("e2e/00-visual/")
+  );
+}
+
 export function validateVisualEnvironment(snapshot: VisualEnvironmentSnapshot): string[] {
   const errors: string[] = [];
 

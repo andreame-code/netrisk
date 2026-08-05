@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {
+  requiresVisualEnvironmentPreflight,
   supportedVisualEnvironment,
   validateVisualEnvironment
 } = require("../../../scripts/playwright-visual-environment.cjs");
@@ -41,4 +42,15 @@ register("visual environment rejects browser, OS, and font drift before snapshot
   assert.ok(errors.some((error: string) => error.includes("font package is missing")));
   assert.ok(errors.some((error: string) => error.includes("font family is missing")));
   assert.ok(errors.some((error: string) => error.includes("Unsupported host font Arial")));
+});
+
+register("visual preflight cannot be bypassed by grep or snapshot-update selectors", () => {
+  assert.equal(requiresVisualEnvironmentPreflight([]), true);
+  assert.equal(requiresVisualEnvironmentPreflight(["--grep", "battlefield layout"]), true);
+  assert.equal(
+    requiresVisualEnvironmentPreflight(["--update-snapshots", "--grep", "battlefield layout"]),
+    true
+  );
+  assert.equal(requiresVisualEnvironmentPreflight(["e2e/smoke", "--grep", "app loads"]), false);
+  assert.equal(requiresVisualEnvironmentPreflight(["./e2e/00-visual/main-screen.spec.ts"]), true);
 });
