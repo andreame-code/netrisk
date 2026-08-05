@@ -45,6 +45,11 @@ export const es = Object.freeze({
   "common.skipToContent": "Saltar al contenido principal",
   "errors.requestFailed": "Solicitud fallida.",
   "errors.loginFailed": "Inicio de sesion fallido.",
+  "login.title": "Frontline Dominion - Iniciar sesión",
+  "login.eyebrow": "Acceso",
+  "login.heading": "Inicia sesión en el centro de mando",
+  "login.copy": "Inicia sesión y vuelve directamente a la página solicitada.",
+  "login.submitting": "Iniciando sesión...",
   "index.heading": "Abriendo juego",
   "index.copy": "Redirigiendo a la pagina dedicada del juego.",
   "landing.meta.title": "Frontline Dominion - Conquista el Mundo",
@@ -278,6 +283,7 @@ export const es = Object.freeze({
   "profile.runtime.noStats":
     "Sin estadisticas: termina al menos una partida para construir el registro.",
   "register.title": "Frontline Dominion - Registro",
+  "register.eyebrow": "Configuración de cuenta",
   "register.heading": "Crea tu perfil de comandante",
   "register.copy":
     "Registro estandar, email opcional, contrasena fuerte y datos sensibles protegidos en el servidor.",
