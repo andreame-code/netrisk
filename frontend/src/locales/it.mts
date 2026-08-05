@@ -13,8 +13,8 @@ export const it = Object.freeze({
   "common.phase.finished": "Conclusa",
   "common.phase.lobby": "Lobby",
   "nav.lobby": "Lobby",
-  "nav.game": "Game",
-  "nav.profile": "Profile",
+  "nav.game": "Partita",
+  "nav.profile": "Profilo",
   "nav.localeLabel": "Lingua",
   "nav.aria.primary": "Sezioni principali",
   "auth.usernamePlaceholder": "Utente",
@@ -30,7 +30,7 @@ export const it = Object.freeze({
   "auth.status.required": "Accesso richiesto.",
   "auth.userProfile": "Profilo utente",
   "auth.login.invalidCredentials": "Credenziali non valide.",
-  "auth.throttle.tooManyAttempts": "Troppi tentativi. Riprova piu tardi.",
+  "auth.throttle.tooManyAttempts": "Troppi tentativi. Riprova più tardi.",
   "auth.register.requiredFields": "Inserisci utente e password.",
   "auth.register.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",
@@ -38,7 +38,7 @@ export const it = Object.freeze({
   "auth.register.invalidEmail": "Email non valida.",
   "auth.register.emailProtectionUnavailable":
     "Email opzionale disponibile solo con AUTH_ENCRYPTION_KEY configurata sul server.",
-  "auth.register.userExists": "Utente gia registrato.",
+  "auth.register.userExists": "Utente già registrato.",
   "auth.account.noChanges": "Nessuna modifica da salvare.",
   "auth.account.newPasswordRequired": "Inserisci la nuova password.",
   "auth.account.passwordMismatch": "Le password non coincidono.",
@@ -48,6 +48,11 @@ export const it = Object.freeze({
   "common.skipToContent": "Salta al contenuto principale",
   "errors.requestFailed": "Richiesta fallita.",
   "errors.loginFailed": "Accesso non riuscito.",
+  "login.title": "Frontline Dominion - Accedi",
+  "login.eyebrow": "Accesso",
+  "login.heading": "Accedi al comando",
+  "login.copy": "Accedi e torna subito sul percorso richiesto.",
+  "login.submitting": "Accesso in corso...",
   "index.title": "Frontline Dominion",
   "index.eyebrow": "Redirect",
   "index.heading": "Apertura partita",
@@ -65,7 +70,7 @@ export const it = Object.freeze({
   "landing.hero.titleLine1": "Conquista il Mondo.",
   "landing.hero.titleLine2": "Comanda le Armate.",
   "landing.hero.desc":
-    "Pianifica come un generale. Attacca nei momenti decisivi. Difendi cio che hai conquistato. Frontline Dominion e il teatro di guerra strategico che mette alla prova mente e nervi.",
+    "Pianifica come un generale. Attacca nei momenti decisivi. Difendi ciò che hai conquistato. Frontline Dominion è il teatro di guerra strategico che mette alla prova mente e nervi.",
   "landing.hero.ctaPrimary": "Inizia Gratis",
   "landing.hero.ctaSecondary": "Scopri le Mappe",
   "landing.hero.statsAria": "Statistiche di gioco",
@@ -75,13 +80,13 @@ export const it = Object.freeze({
   "landing.features.eyebrow": "Caratteristiche",
   "landing.features.heading": "Un gioco di mente e coraggio",
   "landing.features.desc":
-    "Ogni partita e una campagna militare. Pianifica l'espansione, difendi i confini e scegli il momento giusto per colpire.",
+    "Ogni partita è una campagna militare. Pianifica l'espansione, difendi i confini e scegli il momento giusto per colpire.",
   "landing.features.cards.maps.title": "Due Teatri di Guerra",
   "landing.features.cards.maps.body":
     "Combatti su mappe epiche: il <strong>Mondo Classico</strong> con 42 territori e la leggendaria <strong>Terra di Mezzo</strong>. Ogni mappa porta nuove sfide tattiche e rotte strategiche da dominare.",
   "landing.features.cards.strategy.title": "Strategia Pura",
   "landing.features.cards.strategy.body":
-    "Rinforza i confini vulnerabili, pianifica catene d'attacco in profondita, fortifica le regioni chiave. Ogni mossa ha conseguenze: non esistono turni sprecati.",
+    "Rinforza i confini vulnerabili, pianifica catene d'attacco in profondità, fortifica le regioni chiave. Ogni mossa ha conseguenze: non esistono turni sprecati.",
   "landing.features.cards.multiplayer.title": "Multiplayer Persistente",
   "landing.features.cards.multiplayer.body":
     "Fino a <strong>6 condottieri</strong> in campo. Le partite si salvano in automatico: riprendi quando vuoi e decidi tu quando attaccare. Nessuna fretta, solo tattica.",
@@ -102,7 +107,7 @@ export const it = Object.freeze({
   "landing.maps.classic.hudBottom.phase": "Fase di attacco",
   "landing.maps.classic.title": "Mondo Classico",
   "landing.maps.classic.body":
-    "Il teatro originale. Sei continenti, 42 territori, infinite possibilita. Domina l'Europa, consolida l'Asia, taglia le rotte avversarie dal Sudamerica. La mappa che ha definito il genere.",
+    "Il teatro originale. Sei continenti, 42 territori, infinite possibilità. Domina l'Europa, consolida l'Asia, taglia le rotte avversarie dal Sudamerica. La mappa che ha definito il genere.",
   "landing.maps.classic.tags.territories": "42 Territori",
   "landing.maps.classic.tags.continents": "6 Continenti",
   "landing.maps.classic.tags.players": "Fino a 6 giocatori",
@@ -117,7 +122,7 @@ export const it = Object.freeze({
   "landing.maps.middleEarth.hudBottom.phase": "Fase rinforzo",
   "landing.maps.middleEarth.title": "Terra di Mezzo",
   "landing.maps.middleEarth.body":
-    "Un teatro di guerra leggendario. Dalla Contea alle Terre di Mordor, ogni regione porta il peso della storia. Chi dominera i Regni degli Uomini e le pianure di Rohan?",
+    "Un teatro di guerra leggendario. Dalla Contea alle Terre di Mordor, ogni regione porta il peso della storia. Chi dominerà i Regni degli Uomini e le pianure di Rohan?",
   "landing.maps.middleEarth.tags.kind": "Mappa Fantasy",
   "landing.maps.middleEarth.tags.regions": "Regioni iconiche",
   "landing.maps.middleEarth.tags.setting": "Ambientazione epica",
@@ -132,11 +137,11 @@ export const it = Object.freeze({
     "Dalla Lobby di Comando, crea una nuova partita o unisciti a una sessione esistente. Scegli la mappa e sfida i tuoi avversari.",
   "landing.howto.step3.title": "Conquista il mondo",
   "landing.howto.step3.body":
-    "Rinforza i tuoi eserciti, pianifica gli attacchi, espandi il dominio. Il territorio e tuo, finche qualcuno non ti sfida.",
+    "Rinforza i tuoi eserciti, pianifica gli attacchi, espandi il dominio. Il territorio è tuo, finché qualcuno non ti sfida.",
   "landing.final.eyebrow": "Unisciti alla guerra",
   "landing.final.heading": "Il tuo esercito ti aspetta.",
   "landing.final.desc":
-    "Il tuo territorio di partenza e ancora libero. Ogni giorno nuove campagne iniziano: non restare a guardare.",
+    "Il tuo territorio di partenza è ancora libero. Ogni giorno nuove campagne iniziano: non restare a guardare.",
   "landing.final.ctaPrimary": "Registrati Gratis",
   "landing.final.ctaSecondary": "Entra in Lobby",
   "landing.footer.aria": "Link pie di pagina",
@@ -557,7 +562,7 @@ export const it = Object.freeze({
   "profile.runtime.loggedOutFeedback":
     "Sessione chiusa. Accedi di nuovo dalla pagina Game per consultare il profilo.",
   "register.title": "Frontline Dominion - Registrazione",
-  "register.eyebrow": "Account Setup",
+  "register.eyebrow": "Creazione account",
   "register.heading": "Crea il tuo profilo comandante",
   "register.copy":
     "Registrazione standard, email facoltativa, password forte e dati sensibili protetti lato server.",
@@ -575,7 +580,7 @@ export const it = Object.freeze({
   "register.guideline.email": "Email non obbligatoria.",
   "register.guideline.password": "Password: tra 8 e 128 caratteri.",
   "register.submit": "Registrati",
-  "register.auth.loggedIn": "Hai gia effettuato l'accesso come {username}.",
+  "register.auth.loggedIn": "Hai già effettuato l'accesso come {username}.",
   "register.errors.requiredFields": "Compila i campi obbligatori.",
   "register.errors.invalidUsername":
     "Username valido: 3-32 caratteri, lettere, numeri, underscore e trattino.",
