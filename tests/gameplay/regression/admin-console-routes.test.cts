@@ -2303,6 +2303,12 @@ register(
         reason: "Normalize legacy persisted state before applying the module repair."
       }
     );
+    assert.deepEqual(
+      legacyRepairDetail.repairPreview.changes.find(
+        (change: any) => change.path === "gameConfig.activeModules"
+      )?.after,
+      [{ id: "core.base", version: "1.0.0" }]
+    );
 
     const config = await adminConsole.getConfig();
     assert.equal(config.config.defaults.activeModuleIds[0], "module.safe");

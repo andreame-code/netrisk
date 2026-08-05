@@ -444,12 +444,9 @@ function profileBelongsToModule(profileId: string, moduleId: string): boolean {
   return profileId === moduleId || profileId.startsWith(`${moduleId}.`);
 }
 
-function repairChangeCoversPath(changes: AdminGameRepairChange[], path: string): boolean {
-  return changes.some(
-    (change) =>
-      change.path === path ||
-      path.startsWith(`${change.path}.`) ||
-      path.startsWith(`${change.path}[`)
+function repairChangeAncestor(changes: AdminGameRepairChange[], path: string) {
+  return changes.find(
+    (change) => path.startsWith(`${change.path}.`) || path.startsWith(`${change.path}[`)
   );
 }
 
@@ -459,7 +456,19 @@ function appendUnreportedRepairChanges(
   path: string,
   changes: AdminGameRepairChange[]
 ): void {
-  if (valuesEqual(before, after) || repairChangeCoversPath(changes, path)) {
+  if (valuesEqual(before, after)) {
+    return;
+  }
+
+  const existingChange = changes.find((change) => change.path === path);
+  if (existingChange) {
+    if (!valuesEqual(existingChange.after, after)) {
+      existingChange.after = safeClone(after);
+    }
+    return;
+  }
+
+  if (repairChangeAncestor(changes, path)) {
     return;
   }
 
