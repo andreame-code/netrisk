@@ -8,8 +8,8 @@ The baseline was recorded from `main` at `891f48f67e1553d2ae30a5cab25155505f71b8
 
 | Route   | Baseline JS raw / gzip | Current JS raw / gzip | Baseline CSS raw / gzip | Current CSS raw / gzip |
 | ------- | ---------------------: | --------------------: | ----------------------: | ---------------------: |
-| Landing |     664.15 / 189.43 kB |    518.32 / 145.84 kB |       345.00 / 52.86 kB |      179.20 / 30.74 kB |
-| Lobby   |     693.09 / 197.05 kB |    596.97 / 170.03 kB |       345.00 / 52.86 kB |      165.42 / 27.48 kB |
+| Landing |     664.15 / 189.43 kB |    518.48 / 145.85 kB |       345.00 / 52.86 kB |      179.20 / 30.74 kB |
+| Lobby   |     693.09 / 197.05 kB |    596.97 / 170.05 kB |       345.00 / 52.86 kB |      165.42 / 27.48 kB |
 
 The landing and authenticated shell are selected through dynamic entries. Sentry is loaded after the initial render during an idle window (or immediately for the first reportable error), and the 204 kB source gameplay stylesheet is emitted with the gameplay route instead of the entry stylesheet. Landing-specific CSS is emitted only with the landing route.
 
