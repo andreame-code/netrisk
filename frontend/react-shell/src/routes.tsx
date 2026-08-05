@@ -1,4 +1,4 @@
-import { Suspense, lazy, startTransition, useState, type FormEvent } from "react";
+import { Suspense, lazy, startTransition, useEffect, useState, type FormEvent } from "react";
 import {
   BrowserRouter,
   Link,
@@ -21,7 +21,7 @@ import {
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import { messageFromError } from "@frontend-core/errors.mts";
-import { t } from "@frontend-i18n";
+import { getLocale, t } from "@frontend-i18n";
 
 const RegisterRoute = lazy(async () => ({
   default: (await import("@react-shell/register-route")).RegisterRoute
@@ -130,8 +130,15 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const currentLocale = getLocale();
 
   const nextPath = normalizeNextPath(searchParams.get("next"), buildLobbyPath(namespace));
+
+  useEffect(() => {
+    if (state.status === "unauthenticated") {
+      document.title = t("login.title");
+    }
+  }, [currentLocale, state.status]);
 
   if (state.status === "loading") {
     return (
@@ -178,13 +185,13 @@ function LoginPage() {
 
   return (
     <section data-testid="react-shell-login-page">
-      <p className="status-label">Accesso</p>
-      <h2>Accedi al comando</h2>
-      <p className="status-copy">Accedi e torna subito sul percorso richiesto.</p>
+      <p className="status-label">{t("login.eyebrow")}</p>
+      <h2>{t("login.heading")}</h2>
+      <p className="status-copy">{t("login.copy")}</p>
 
       <form className="shell-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="shell-field">
-          <span>Username</span>
+          <span>{t("auth.usernameLabel")}</span>
           <input
             name="username"
             autoComplete="username"
@@ -195,7 +202,7 @@ function LoginPage() {
         </label>
 
         <label className="shell-field">
-          <span>Password</span>
+          <span>{t("auth.passwordLabel")}</span>
           <input
             type="password"
             name="password"
@@ -214,7 +221,7 @@ function LoginPage() {
 
         <div className="shell-actions">
           <button type="submit" className="refresh-button" disabled={isSubmitting}>
-            {isSubmitting ? "Accesso in corso..." : t("auth.login")}
+            {isSubmitting ? t("login.submitting") : t("auth.login")}
           </button>
           <Link className="ghost-action" to={buildRegisterHref(nextPath, namespace)}>
             {t("auth.register")}

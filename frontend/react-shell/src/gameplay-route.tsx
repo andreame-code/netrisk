@@ -13,7 +13,7 @@ import type {
 import type { ApiClientError } from "@frontend-core/api/http.mts";
 import { extractGameVersionConflict, getGameState } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
-import { t, translateServerMessage } from "@frontend-i18n";
+import { getLocale, t, translateServerMessage } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { useGameplayCommands } from "@react-shell/gameplay-commands";
@@ -302,6 +302,7 @@ export function GameRoute() {
   const { state, signIn } = useAuth();
   const namespace = useShellNamespace();
   const queryClient = useQueryClient();
+  const currentLocale = getLocale();
   const routeGameId = typeof gameId === "string" ? gameId : "";
   const lobbyHref = buildLobbyPath(namespace);
   const shouldLoadGameState =
@@ -338,6 +339,10 @@ export function GameRoute() {
   const [commandDockSheetState, setCommandDockSheetState] =
     useState<GameCommandDockSheetState>("collapsed");
   const isCommandDockExpanded = commandDockSheetState !== "collapsed";
+
+  useEffect(() => {
+    document.title = t("game.title");
+  }, [currentLocale]);
 
   const gameplayQuery = useQuery({
     queryKey,

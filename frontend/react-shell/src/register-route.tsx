@@ -1,10 +1,10 @@
-import { startTransition, useState, type FormEvent } from "react";
+import { startTransition, useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { register } from "@frontend-core/api/client.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
 import { validateRegistrationInput } from "@frontend-core/register-validation.mts";
-import { t } from "@frontend-i18n";
+import { getLocale, t } from "@frontend-i18n";
 
 import { useAuth } from "@react-shell/auth";
 import { LoadingAnimation } from "@react-shell/loading-animation";
@@ -33,8 +33,15 @@ export function RegisterRoute() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const currentLocale = getLocale();
 
   const nextPath = normalizeNextPath(searchParams.get("next"), buildProfilePath(namespace));
+
+  useEffect(() => {
+    if (state.status === "unauthenticated") {
+      document.title = t("register.title");
+    }
+  }, [currentLocale, state.status]);
 
   if (state.status === "loading") {
     return (
@@ -112,7 +119,7 @@ export function RegisterRoute() {
 
   return (
     <section data-testid="react-shell-register-page">
-      <p className="status-label">Public route</p>
+      <p className="status-label">{t("register.eyebrow")}</p>
       <h2>{t("register.heading")}</h2>
       <p className="status-copy">{t("register.copy")}</p>
 

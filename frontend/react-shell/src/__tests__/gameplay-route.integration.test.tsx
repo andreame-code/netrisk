@@ -231,6 +231,7 @@ describe("GameRoute integration", () => {
     const errorPanel = await screen.findByTestId("react-shell-game-error");
     const authLinks = within(errorPanel).getAllByRole("link");
     expect(errorPanel).toBeInTheDocument();
+    expect(document.title).toBe("Frontline Dominion");
     expect(authLinks[0]).toHaveAttribute("href", "/react/login?next=%2Fgame%2Fg-1");
     expect(authLinks[1]).toHaveAttribute("href", "/react/register?next=%2Fgame%2Fg-1");
     expect(subscribeToGameEventsMock).not.toHaveBeenCalled();

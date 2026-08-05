@@ -730,6 +730,7 @@ describe("Admin route integration", () => {
     expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
     await waitFor(() => {
       expect(window.location.pathname).toBe("/react/login");
+      expect(document.title).toBe("Frontline Dominion - Accedi");
     });
   });
 
@@ -739,6 +740,7 @@ describe("Admin route integration", () => {
     renderReactShell("/react/admin");
 
     expect(await screen.findByTestId("admin-forbidden-page")).toBeInTheDocument();
+    expect(document.title).toBe("NetRisk Admin · Access denied");
     expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
   });
 

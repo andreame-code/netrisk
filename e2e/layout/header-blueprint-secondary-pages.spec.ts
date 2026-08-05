@@ -18,8 +18,8 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
   await expect(lobbyHeader.locator(".top-nav-links")).toBeVisible();
   await expect(lobbyHeader.locator(".top-nav-actions")).toBeVisible();
   await expect(lobbyHeader.getByRole("link", { name: "Lobby" })).toBeVisible();
-  await expect(lobbyHeader.getByRole("link", { name: "Game" })).toBeVisible();
-  await expect(lobbyHeader.getByRole("link", { name: "Profile" })).toBeVisible();
+  await expect(lobbyHeader.getByRole("link", { name: /Game|Partita/i })).toBeVisible();
+  await expect(lobbyHeader.getByRole("link", { name: /Profile|Profilo/i })).toBeVisible();
   await expect(lobbyHeader.getByRole("button", { name: "Esci" })).toBeVisible();
   await expect(lobbyHeader.locator("#nav-avatar")).toBeVisible();
   await expect(lobbyHeader.getByText(/Create Game|Crea partita/i)).toHaveCount(0);
@@ -35,11 +35,10 @@ test("lobby and profile headers follow the shared single-row blueprint", async (
   await expect(profileHeader.locator(".top-nav-links")).toBeVisible();
   await expect(profileHeader.locator(".top-nav-actions")).toBeVisible();
   await expect(profileHeader.getByRole("link", { name: "Lobby" })).toBeVisible();
-  await expect(profileHeader.getByRole("link", { name: "Game" })).toBeVisible();
-  await expect(profileHeader.getByRole("link", { name: "Profile" })).toBeVisible();
+  await expect(profileHeader.getByRole("link", { name: /Game|Partita/i })).toBeVisible();
+  await expect(profileHeader.getByRole("link", { name: /Profile|Profilo/i })).toBeVisible();
   await expect(profileHeader.getByRole("button", { name: "Esci" })).toBeVisible();
   await expect(profileHeader.locator("#nav-avatar")).toBeVisible();
   await expect(profileHeader.getByText(/Create Game|Crea partita/i)).toHaveCount(0);
   await expect(page.locator(".content-meta-line.profile-meta-line")).toBeVisible();
 });
-

@@ -15,8 +15,8 @@ test("game header follows the single-row blueprint", async ({ page }) => {
   await expect(header.locator(".top-nav-actions")).toBeVisible();
 
   await expect(header.getByRole("link", { name: "Lobby" })).toHaveCount(0);
-  await expect(header.getByRole("link", { name: "Game" })).toBeVisible();
-  await expect(header.getByRole("link", { name: "Profile" })).toBeVisible();
+  await expect(header.getByRole("link", { name: /Game|Partita/i })).toBeVisible();
+  await expect(header.getByRole("link", { name: /Profile|Profilo/i })).toBeVisible();
   await expect(header.getByRole("button", { name: "Esci" })).toBeVisible();
   await expect(header.locator("#nav-avatar")).toBeVisible();
 

@@ -272,11 +272,12 @@ test("react login returns the user to the requested gameplay route", async ({ pa
   await expect(page).toHaveURL(new RegExp(`/react/login\\?next=%2Fgame%2F${createdGame.game.id}$`));
 
   const loginPage = page.getByTestId("react-shell-login-page");
-  await loginPage.getByLabel("Username").fill(username);
+  await loginPage.getByLabel(/Username|Nome utente/i).fill(username);
   await loginPage.getByLabel("Password").fill(password);
   await loginPage.getByRole("button", { name: /Sign in|Accedi/i }).click();
 
   await expect(page).toHaveURL(new RegExp(`/react/game/${createdGame.game.id}$`));
+  await expect(page).toHaveTitle("Frontline Dominion");
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
 });
 

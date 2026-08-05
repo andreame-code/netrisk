@@ -45,6 +45,11 @@ export const de = Object.freeze({
   "common.skipToContent": "Zum Hauptinhalt springen",
   "errors.requestFailed": "Anfrage fehlgeschlagen.",
   "errors.loginFailed": "Anmeldung fehlgeschlagen.",
+  "login.title": "Frontline Dominion - Anmelden",
+  "login.eyebrow": "Anmeldung",
+  "login.heading": "Bei der Kommandozentrale anmelden",
+  "login.copy": "Melde dich an und kehre direkt zur angeforderten Seite zurück.",
+  "login.submitting": "Anmeldung läuft...",
   "index.heading": "Spiel wird geoeffnet",
   "index.copy": "Weiterleitung zur dedizierten Spielseite.",
   "landing.meta.title": "Frontline Dominion - Erobere die Welt",
@@ -280,6 +285,7 @@ export const de = Object.freeze({
   "profile.runtime.noStats":
     "Keine Statistiken verfuegbar: Beende mindestens eine Partie, um den Bericht aufzubauen.",
   "register.title": "Frontline Dominion - Registrierung",
+  "register.eyebrow": "Kontoeinrichtung",
   "register.heading": "Erstelle dein Kommandantenprofil",
   "register.copy":
     "Standardregistrierung, optionale E-Mail, starkes Passwort und serverseitig geschuetzte sensible Daten.",
