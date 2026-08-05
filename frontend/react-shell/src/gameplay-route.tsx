@@ -56,6 +56,8 @@ import {
   type GameDrawerKey
 } from "@react-shell/gameplay-ui-panels";
 
+import "./game-layout.css";
+
 function phaseLabel(phase: string | null | undefined): string {
   if (phase === "active") {
     return t("common.phase.active");

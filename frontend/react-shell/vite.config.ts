@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import { reactShellPerformanceBudgetPlugin } from "./performance-budget";
 
 const reactShellRoot = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(reactShellRoot, "..", "..");
@@ -69,7 +70,7 @@ if (shouldValidateDeployEnv && reactShellObservabilityEnabled && !hasSentryUploa
 }
 
 const shouldUploadSentryArtifacts = reactShellObservabilityEnabled && hasSentryUploadCredentials;
-const reactShellPlugins = [react()];
+const reactShellPlugins = [react(), reactShellPerformanceBudgetPlugin(projectRoot)];
 if (shouldUploadSentryArtifacts) {
   reactShellPlugins.push(
     sentryVitePlugin({

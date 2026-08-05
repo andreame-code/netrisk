@@ -80,33 +80,58 @@ describe("react shell observability", () => {
     });
   });
 
-  it("initializes Sentry only for preview and production when the DSN is configured", () => {
+  it("initializes Sentry only for preview and production when the DSN is configured", async () => {
     const config = resolveReactShellObservabilityConfig({
       dsn: "https://public@example.ingest.sentry.io/123",
       environment: "preview",
       release: "sha-preview"
     });
 
-    const resolved = initReactShellObservability(config);
+    const resolved = initReactShellObservability(config, (callback) => callback());
 
     expect(resolved.enabled).toBe(true);
-    expect(sentryMocks.init).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dsn: "https://public@example.ingest.sentry.io/123",
-        environment: "preview",
-        release: "sha-preview",
-        sendDefaultPii: false
-      })
+    await vi.waitFor(() =>
+      expect(sentryMocks.init).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dsn: "https://public@example.ingest.sentry.io/123",
+          environment: "preview",
+          release: "sha-preview",
+          sendDefaultPii: false
+        })
+      )
     );
   });
 
-  it("forwards registered frontend errors to Sentry with request correlation context", () => {
-    initReactShellObservability({
-      enabled: true,
-      dsn: "https://public@example.ingest.sentry.io/123",
-      environment: "production",
-      release: "sha-prod"
-    });
+  it("defers the optional Sentry download until the post-render scheduler runs", async () => {
+    const scheduledCallbacks: Array<() => void> = [];
+    initReactShellObservability(
+      {
+        enabled: true,
+        dsn: "https://public@example.ingest.sentry.io/123",
+        environment: "production",
+        release: "sha-prod"
+      },
+      (callback) => {
+        scheduledCallbacks.push(callback);
+      }
+    );
+
+    expect(sentryMocks.init).not.toHaveBeenCalled();
+    expect(scheduledCallbacks).toHaveLength(1);
+    scheduledCallbacks[0]();
+    await vi.waitFor(() => expect(sentryMocks.init).toHaveBeenCalledOnce());
+  });
+
+  it("forwards registered frontend errors to Sentry with request correlation context", async () => {
+    initReactShellObservability(
+      {
+        enabled: true,
+        dsn: "https://public@example.ingest.sentry.io/123",
+        environment: "production",
+        release: "sha-prod"
+      },
+      (callback) => callback()
+    );
 
     const error = new Error("Unexpected HTTP failure.");
     reportFrontendException(error, {
@@ -119,7 +144,7 @@ describe("react shell observability", () => {
       schemaName: "ProfileResponse"
     });
 
-    expect(sentryMocks.captureException).toHaveBeenCalledWith(error);
+    await vi.waitFor(() => expect(sentryMocks.captureException).toHaveBeenCalledWith(error));
     expect(sentryMocks.scope.setTag).toHaveBeenCalledWith("app.request_id", "req-42");
     expect(sentryMocks.scope.setExtra).toHaveBeenCalledWith("statusCode", 500);
     expect(sentryMocks.scope.setExtra).toHaveBeenCalledWith("schemaName", "ProfileResponse");

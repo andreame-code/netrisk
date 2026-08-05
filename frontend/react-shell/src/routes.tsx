@@ -11,7 +11,6 @@ import {
 } from "react-router-dom";
 import { AppShellLayout } from "@react-shell/app-shell-layout";
 import { useAuth, AuthProvider } from "@react-shell/auth";
-import { LandingRoute } from "@react-shell/landing-route";
 import { LoadingAnimation } from "@react-shell/loading-animation";
 import {
   buildBootstrapPath,
@@ -26,6 +25,9 @@ import { t } from "@frontend-i18n";
 
 const RegisterRoute = lazy(async () => ({
   default: (await import("@react-shell/register-route")).RegisterRoute
+}));
+const LandingRoute = lazy(async () => ({
+  default: (await import("@react-shell/landing-route")).LandingRoute
 }));
 const SetupRoute = lazy(async () => ({
   default: (await import("@react-shell/setup-route")).SetupRoute
@@ -274,7 +276,18 @@ export function AppRoutes() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<LandingRoute />} />
+          <Route
+            path="/"
+            element={
+              <Suspense
+                fallback={
+                  <LoadingPanel title="Loading NetRisk" copy="Preparing the public landing page." />
+                }
+              >
+                <LandingRoute />
+              </Suspense>
+            }
+          />
           <Route path="/react" element={<BootstrapRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/login" element={<LoginPage />} />
