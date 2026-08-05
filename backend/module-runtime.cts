@@ -183,11 +183,15 @@ function isPersistentVercelEnvironment(env: NodeJS.ProcessEnv = process.env): bo
   return vercelEnvironment === "preview" || vercelEnvironment === "production";
 }
 
+function isDevelopmentOnlyModuleId(moduleId: string): boolean {
+  return DEVELOPMENT_ONLY_MODULE_ID.test(moduleId);
+}
+
 function assertPersistentModuleIdAllowed(
   moduleId: string,
   env: NodeJS.ProcessEnv = process.env
 ): void {
-  if (isPersistentVercelEnvironment(env) && DEVELOPMENT_ONLY_MODULE_ID.test(moduleId)) {
+  if (isPersistentVercelEnvironment(env) && isDevelopmentOnlyModuleId(moduleId)) {
     throw new Error(
       `Development-only module "${moduleId}" cannot be enabled or persisted in a Vercel deployment.`
     );
@@ -1984,6 +1988,26 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
         : null;
     cachedState = normalizeCatalogState(rawState);
+    if (isPersistentVercelEnvironment()) {
+      const developmentModuleIds = Object.keys(cachedState.enabledById).filter(
+        (moduleId) =>
+          moduleId !== CORE_MODULE_ID &&
+          isDevelopmentOnlyModuleId(moduleId) &&
+          cachedState?.enabledById[moduleId] !== false
+      );
+      if (developmentModuleIds.length) {
+        cachedState = {
+          enabledById: {
+            ...cachedState.enabledById,
+            ...Object.fromEntries(developmentModuleIds.map((moduleId) => [moduleId, false]))
+          },
+          updatedAt: new Date().toISOString()
+        };
+        if (typeof options.datastore.setAppState === "function") {
+          await options.datastore.setAppState(MODULE_CATALOG_STATE_KEY, cachedState);
+        }
+      }
+    }
     return cachedState;
   }
 
@@ -2899,5 +2923,6 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 module.exports = {
   assertPersistentModuleIdAllowed,
   createModuleRuntime,
+  isDevelopmentOnlyModuleId,
   isPersistentVercelEnvironment
 };

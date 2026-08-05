@@ -823,6 +823,149 @@ register(
   }
 );
 
+register(
+  "persistent deployments migrate enabled development modules and saved admin defaults",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "demo.command-center",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.command-center",
+            version: "1.0.0",
+            displayName: "Demo Command Center",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "demo.command-center.content", name: "Demo Content" }],
+              gameplay: [{ id: "demo.command-center.gameplay", name: "Demo Gameplay" }],
+              ui: [{ id: "demo.command-center.ui", name: "Demo UI" }]
+            },
+            gamePresets: [
+              {
+                id: "demo.command-center.command-ops",
+                name: "Command Ops",
+                activeModuleIds: ["demo.command-center"]
+              }
+            ]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: {
+              "core.base": true,
+              "demo.command-center": true
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.setAppState("adminConsoleConfig", {
+            defaults: {
+              activeModuleIds: ["demo.command-center"],
+              gamePresetId: "demo.command-center.command-ops",
+              contentProfileId: "demo.command-center.content",
+              gameplayProfileId: "demo.command-center.gameplay",
+              uiProfileId: "demo.command-center.ui",
+              totalPlayers: 2
+            },
+            maintenance: {
+              staleLobbyDays: 7,
+              auditLogLimit: 120
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z",
+            updatedBy: null
+          });
+
+          const installedModules = await app.moduleRuntime.rescan();
+          const migratedDevelopmentModule = installedModules.find(
+            (entry: any) => entry.id === "demo.command-center"
+          );
+          assert.ok(migratedDevelopmentModule);
+          assert.equal(migratedDevelopmentModule.enabled, false);
+          const catalogState = await app.datastore.getAppState("moduleCatalogState");
+          assert.equal(catalogState.enabledById["demo.command-center"], false);
+
+          const configResponse = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(configResponse.statusCode, 200, JSON.stringify(configResponse.payload));
+          assert.deepEqual(configResponse.payload.config.defaults.activeModuleIds, ["core.base"]);
+          assert.equal(configResponse.payload.config.defaults.gamePresetId, null);
+          assert.equal(configResponse.payload.config.defaults.contentProfileId, null);
+          assert.equal(configResponse.payload.config.defaults.gameplayProfileId, null);
+          assert.equal(configResponse.payload.config.defaults.uiProfileId, null);
+
+          const persistedConfig = await app.datastore.getAppState("adminConsoleConfig");
+          assert.deepEqual(persistedConfig.defaults.activeModuleIds, ["core.base"]);
+          assert.equal(persistedConfig.defaults.gamePresetId, null);
+
+          await app.datastore.setAppState("adminConsoleConfig", {
+            ...persistedConfig,
+            defaults: {
+              gamePresetId: "demo.command-center.command-ops",
+              contentProfileId: "demo.command-center.content",
+              totalPlayers: 2
+            }
+          });
+          const presetOnlyConfigResponse = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(
+            presetOnlyConfigResponse.statusCode,
+            200,
+            JSON.stringify(presetOnlyConfigResponse.payload)
+          );
+          assert.equal(presetOnlyConfigResponse.payload.config.defaults.gamePresetId, null);
+          assert.equal(presetOnlyConfigResponse.payload.config.defaults.contentProfileId, null);
+
+          const createGameResponse = await callApp(
+            app,
+            "POST",
+            "/api/games",
+            { name: "Migrated production defaults" },
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(
+            createGameResponse.statusCode,
+            201,
+            JSON.stringify(createGameResponse.payload)
+          );
+          assert.deepEqual(createGameResponse.payload.state.gameConfig.activeModules, [
+            { id: "core.base", version: "1.0.0" }
+          ]);
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
 register("public game options ignore stale invalid admin defaults instead of failing", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const configResponse = await callApp(
@@ -1243,6 +1386,129 @@ register("admin previews and repairs a finished game with an orphaned runtime mo
   });
 });
 
+register(
+  "admin orphan repair retains a catalog profile whose id only shares an orphan prefix",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "acme.extra",
+          manifest: {
+            schemaVersion: 1,
+            id: "acme.extra",
+            version: "1.0.0",
+            displayName: "Acme Extra",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "gameplay-hook",
+                scope: "game",
+                hook: "setup.profile",
+                description: "Catalog ownership collision fixture"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "acme.extra.standard", name: "Acme Extra Standard" }],
+              gameplay: [],
+              ui: []
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/acme.extra/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200, JSON.stringify(enableResponse.payload));
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Profile ownership collision",
+            activeModuleIds: ["acme.extra"],
+            contentProfileId: "acme.extra.standard",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(
+          createGameResponse.statusCode,
+          201,
+          JSON.stringify(createGameResponse.payload)
+        );
+
+        const gameId = createGameResponse.payload.game.id;
+        const storedGame = await app.datastore.findGameById(gameId);
+        assert.ok(storedGame);
+        storedGame.state.phase = "finished";
+        storedGame.state.turnPhase = "finished";
+        storedGame.state.gameConfig.activeModules = [
+          { id: "core.base", version: "1.0.0" },
+          { id: "acme", version: "1.0.0" },
+          { id: "acme.extra", version: "1.0.0" }
+        ];
+        storedGame.updatedAt = new Date().toISOString();
+        await app.datastore.updateGame(storedGame);
+        await activateSeparateGame(app, adminSessionToken);
+
+        const detailResponse = await callApp(
+          app,
+          "GET",
+          `/api/admin/games/${gameId}`,
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+        assert.equal(detailResponse.payload.repairPreview.status, "safe");
+        assert.deepEqual(detailResponse.payload.repairPreview.orphanedModuleIds, ["acme"]);
+        assert.deepEqual(detailResponse.payload.repairPreview.relatedProfileIds, []);
+        assert.equal(
+          detailResponse.payload.repairPreview.changes.some(
+            (change: any) => change.path === "gameConfig.contentProfileId"
+          ),
+          false
+        );
+
+        const repairResponse = await callApp(
+          app,
+          "POST",
+          "/api/admin/games/action",
+          {
+            gameId,
+            action: "repair-game-config",
+            confirmation: gameId
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(repairResponse.statusCode, 200, JSON.stringify(repairResponse.payload));
+        assert.equal(
+          repairResponse.payload.rawState.gameConfig.contentProfileId,
+          "acme.extra.standard"
+        );
+        assert.deepEqual(repairResponse.payload.rawState.gameConfig.activeModules, [
+          { id: "core.base", version: "1.0.0" },
+          { id: "acme.extra", version: "1.0.0" }
+        ]);
+      }
+    );
+  }
+);
+
 register("admin orphan repair fails closed for a live game", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const createGameResponse = await callApp(
@@ -1585,7 +1851,10 @@ register(
             "p-user": [{ id: "card-1" }],
             "p-admin": []
           },
-          gameConfig: {}
+          gameConfig: {
+            extensionSchemaVersion: 0,
+            activeModules: [{ id: "module.retired", version: "1.0.0" }]
+          }
         }
       },
       {
@@ -1696,7 +1965,7 @@ register(
         mapId: null,
         mapName: null,
         diceRuleSetId: null,
-        activeModules: [],
+        activeModules: [{ id: "module.retired", version: "1.0.0" }],
         gamePresetId: null,
         contentProfileId: null,
         gameplayProfileId: null,
@@ -2021,6 +2290,20 @@ register(
     assert.equal(gameDetail.players[0].territoryCount, 1);
     assert.equal(gameDetail.players[1].cardCount, 1);
 
+    const legacyRepairDetail = await adminConsole.getGameDetails("finished-user-win");
+    assert.equal(legacyRepairDetail.repairPreview.status, "safe");
+    assert.deepEqual(
+      legacyRepairDetail.repairPreview.changes.find(
+        (change: any) => change.path === "gameConfig.extensionSchemaVersion"
+      ),
+      {
+        path: "gameConfig.extensionSchemaVersion",
+        before: 0,
+        after: 1,
+        reason: "Normalize legacy persisted state before applying the module repair."
+      }
+    );
+
     const config = await adminConsole.getConfig();
     assert.equal(config.config.defaults.activeModuleIds[0], "module.safe");
     assert.equal(config.config.updatedBy.username, "admin_commander");
@@ -2028,7 +2311,7 @@ register(
     const maintenanceReport = await adminConsole.getMaintenanceReport();
     assert.equal(maintenanceReport.summary.staleLobbies, 1);
     assert.equal(maintenanceReport.summary.invalidGames >= 2, true);
-    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 2);
+    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 3);
 
     const audit = await adminConsole.listAudit();
     assert.equal(audit.entries.length, 3);

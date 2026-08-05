@@ -264,9 +264,14 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "admin-console",
     name: "Admin Console",
     kind: "admin",
-    version: "1.0.1",
+    version: "1.1.0",
     description: "Admin routes and operational admin workflows.",
-    ownerPaths: ["backend/routes/admin.cts", "docs/admin-console.md", "docs/admin-console-plan.md"]
+    ownerPaths: [
+      "backend/admin-console.cts",
+      "backend/routes/admin.cts",
+      "docs/admin-console.md",
+      "docs/admin-console-plan.md"
+    ]
   },
   {
     id: "datastore",

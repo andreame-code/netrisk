@@ -5,6 +5,10 @@ const {
   findVisualTheme,
   migrateGameStateExtensions
 } = require("../shared/extensions.cjs");
+const {
+  isDevelopmentOnlyModuleId,
+  isPersistentVercelEnvironment
+} = require("./module-runtime.cjs");
 
 type PublicUser = {
   id: string;
@@ -414,7 +418,7 @@ const REPAIR_PROFILE_FIELDS = Object.freeze([
 ]);
 
 function valuesEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function pushRepairChange(
@@ -438,6 +442,114 @@ function pushRepairChange(
 
 function profileBelongsToModule(profileId: string, moduleId: string): boolean {
   return profileId === moduleId || profileId.startsWith(`${moduleId}.`);
+}
+
+function repairChangeCoversPath(changes: AdminGameRepairChange[], path: string): boolean {
+  return changes.some(
+    (change) =>
+      change.path === path ||
+      path.startsWith(`${change.path}.`) ||
+      path.startsWith(`${change.path}[`)
+  );
+}
+
+function appendUnreportedRepairChanges(
+  before: unknown,
+  after: unknown,
+  path: string,
+  changes: AdminGameRepairChange[]
+): void {
+  if (valuesEqual(before, after) || repairChangeCoversPath(changes, path)) {
+    return;
+  }
+
+  const beforeRecord = asRecord(before);
+  const afterRecord = asRecord(after);
+  if (beforeRecord && afterRecord && !Array.isArray(before) && !Array.isArray(after)) {
+    const keys = Array.from(new Set([...Object.keys(beforeRecord), ...Object.keys(afterRecord)]));
+    keys.forEach((key) =>
+      appendUnreportedRepairChanges(
+        beforeRecord[key],
+        afterRecord[key],
+        path ? `${path}.${key}` : key,
+        changes
+      )
+    );
+    return;
+  }
+
+  if (path) {
+    pushRepairChange(
+      changes,
+      path,
+      before,
+      after,
+      "Normalize legacy persisted state before applying the module repair."
+    );
+  }
+}
+
+function profileCatalogById(value: unknown): Map<string, string | null> | null {
+  const entries = asRecordArray(value);
+  if (!entries) {
+    return null;
+  }
+
+  return new Map(
+    entries
+      .map((entry) => {
+        const id = asNonEmptyString(entry.id);
+        return id ? ([id, asNonEmptyString(entry.moduleId)] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, string | null] => Boolean(entry))
+  );
+}
+
+function findUnavailableCatalogOwner(
+  selectionId: string,
+  orphanedModuleIds: string[],
+  catalog: Map<string, string | null> | null
+): string | null {
+  if (catalog?.has(selectionId)) {
+    const explicitOwner = catalog.get(selectionId) || null;
+    return explicitOwner && orphanedModuleIds.includes(explicitOwner) ? explicitOwner : null;
+  }
+
+  return (
+    orphanedModuleIds.find((moduleId) => profileBelongsToModule(selectionId, moduleId)) || null
+  );
+}
+
+function migratePersistedDevelopmentModuleDefaults(input: Record<string, unknown>): {
+  defaults: Record<string, unknown>;
+  changed: boolean;
+} {
+  if (!isPersistentVercelEnvironment()) {
+    return { defaults: input, changed: false };
+  }
+
+  const defaults = safeClone(input);
+  const activeModuleIds = asArray(defaults.activeModuleIds as string[] | undefined).filter(
+    (moduleId): moduleId is string => typeof moduleId === "string" && moduleId.trim().length > 0
+  );
+  const removedModuleIds = activeModuleIds.filter((moduleId) =>
+    isDevelopmentOnlyModuleId(moduleId)
+  );
+  let changed = removedModuleIds.length > 0;
+  if (changed) {
+    defaults.activeModuleIds = activeModuleIds.filter(
+      (moduleId) => !removedModuleIds.includes(moduleId)
+    );
+  }
+  [...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
+    const selectionId = asNonEmptyString(defaults[field]);
+    if (selectionId && isDevelopmentOnlyModuleId(selectionId)) {
+      defaults[field] = null;
+      changed = true;
+    }
+  });
+
+  return { defaults, changed };
 }
 
 async function maybeResolve<T>(value: Promise<T> | T): Promise<T> {
@@ -518,37 +630,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
       );
     }
 
-    const profileCatalogByField = new Map<string, Set<string> | null>([
-      [
-        "contentProfileId",
-        asRecordArray(moduleOptions?.contentProfiles)
-          ? new Set(
-              asRecordArray(moduleOptions?.contentProfiles)
-                ?.map((entry) => asNonEmptyString(entry.id))
-                .filter((value): value is string => Boolean(value)) || []
-            )
-          : null
-      ],
-      [
-        "gameplayProfileId",
-        asRecordArray(moduleOptions?.gameplayProfiles)
-          ? new Set(
-              asRecordArray(moduleOptions?.gameplayProfiles)
-                ?.map((entry) => asNonEmptyString(entry.id))
-                .filter((value): value is string => Boolean(value)) || []
-            )
-          : null
-      ],
-      [
-        "uiProfileId",
-        asRecordArray(moduleOptions?.uiProfiles)
-          ? new Set(
-              asRecordArray(moduleOptions?.uiProfiles)
-                ?.map((entry) => asNonEmptyString(entry.id))
-                .filter((value): value is string => Boolean(value)) || []
-            )
-          : null
-      ]
+    const profileCatalogByField = new Map<string, Map<string, string | null> | null>([
+      ["contentProfileId", profileCatalogById(moduleOptions?.contentProfiles)],
+      ["gameplayProfileId", profileCatalogById(moduleOptions?.gameplayProfiles)],
+      ["uiProfileId", profileCatalogById(moduleOptions?.uiProfiles)]
     ]);
     const relatedProfileIds: string[] = [];
 
@@ -558,10 +643,12 @@ function createAdminConsole(options: AdminConsoleOptions) {
         return;
       }
 
-      const owningOrphan = orphanedModuleIds.find((moduleId) =>
-        profileBelongsToModule(profileId, moduleId)
-      );
       const availableProfiles = profileCatalogByField.get(field) || null;
+      const owningOrphan = findUnavailableCatalogOwner(
+        profileId,
+        orphanedModuleIds,
+        availableProfiles
+      );
       if (owningOrphan) {
         relatedProfileIds.push(profileId);
         nextConfig[field] = null;
@@ -583,8 +670,9 @@ function createAdminConsole(options: AdminConsoleOptions) {
     });
 
     const gamePresetId = asNonEmptyString(originalConfig.gamePresetId);
+    const gamePresetCatalog = profileCatalogById(moduleOptions?.gamePresets);
     const presetOwner = gamePresetId
-      ? orphanedModuleIds.find((moduleId) => profileBelongsToModule(gamePresetId, moduleId))
+      ? findUnavailableCatalogOwner(gamePresetId, orphanedModuleIds, gamePresetCatalog)
       : null;
     if (gamePresetId && presetOwner) {
       nextConfig.gamePresetId = null;
@@ -636,6 +724,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
         `Synchronize the persisted root value with gameConfig.${field}.`
       );
     });
+    appendUnreportedRepairChanges(originalState, nextState, "", changes);
 
     return {
       status: blockers.length ? "blocked" : changes.length ? "safe" : "not-needed",
@@ -731,11 +820,20 @@ function createAdminConsole(options: AdminConsoleOptions) {
 
   async function loadConfigRecord(): Promise<AdminConfigRecord> {
     const source = await readConfigSource();
-    const defaults = await resolveAdminDefaults(
+    const rawDefaults =
       source.defaults && typeof source.defaults === "object"
         ? (source.defaults as Record<string, unknown>)
-        : {}
-    );
+        : {};
+    const defaultsMigration = migratePersistedDevelopmentModuleDefaults(rawDefaults);
+    const defaults = await resolveAdminDefaults(defaultsMigration.defaults);
+    if (defaultsMigration.changed) {
+      await maybeResolve(
+        options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
+          ...source,
+          defaults: safeClone(defaults)
+        })
+      );
+    }
     const updatedBySource =
       source.updatedBy && typeof source.updatedBy === "object"
         ? (source.updatedBy as StoredUser | PublicUser)
