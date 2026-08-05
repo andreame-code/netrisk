@@ -8,10 +8,10 @@ import { resetAuthState } from "@react-shell/auth-store";
 import { createReactQueryClient } from "@react-shell/react-query";
 import { AppRoutes } from "@react-shell/routes";
 
-export function renderReactShell(path = "/react/") {
+export function renderReactShell(path = "/react/", locale = DEFAULT_LOCALE) {
   window.history.replaceState({}, "", path);
   resetAuthState();
-  setLocale(DEFAULT_LOCALE, {
+  setLocale(locale, {
     storage: window.localStorage,
     applyDocument: true
   });
