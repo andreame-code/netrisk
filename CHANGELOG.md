@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.056 - 2026-08-05
+
+- Pinned Playwright 1.61.1, Chromium 149.0.7827.55 (revision 1228), Ubuntu 24.04, and the Linux font dependencies used by visual baselines.
+- Added a visual-test environment preflight that reports and rejects browser, operating-system, or font drift before snapshot assertions run.
+- Added a reproducible visual-regression CI/container workflow while retaining Playwright expected, actual, and diff artifacts on failures.
+
 ## 0.1.055 - 2026-08-05
 
 - Replaced unauthenticated lobby open/join requests with explicit login links that preserve the selected game destination.

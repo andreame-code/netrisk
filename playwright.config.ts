@@ -7,6 +7,8 @@ const includeHtmlReport = process.env.CI || process.env.PLAYWRIGHT_HTML_REPORT =
 
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: "test-results",
+  preserveOutput: "failures-only",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -25,18 +27,20 @@ export default defineConfig({
     video: process.env.CI ? "retain-on-failure" : "off",
     viewport: { width: 1440, height: 960 }
   },
-  webServer: skipWebServer ? undefined : {
-    command: "node .tsbuild/scripts/start-e2e.cjs",
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-    env: {
-      ...process.env,
-      PORT: String(e2ePort),
-      E2E_PORT: String(e2ePort),
-      E2E_BASE_URL: baseURL
-    }
-  },
+  webServer: skipWebServer
+    ? undefined
+    : {
+        command: "node .tsbuild/scripts/start-e2e.cjs",
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+        env: {
+          ...process.env,
+          PORT: String(e2ePort),
+          E2E_PORT: String(e2ePort),
+          E2E_BASE_URL: baseURL
+        }
+      },
   projects: [
     {
       name: "chromium",

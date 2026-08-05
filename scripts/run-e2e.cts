@@ -151,6 +151,16 @@ async function main(): Promise<void> {
       process.env.NETRISK_AUTH_THROTTLE_MAX_IP_ATTEMPTS || "1000",
     PLAYWRIGHT_SKIP_WEBSERVER: "true"
   };
+  const { requiresVisualEnvironmentPreflight } = require("./playwright-visual-environment.cjs") as {
+    requiresVisualEnvironmentPreflight: (runnerArgs: string[]) => boolean;
+  };
+  if (requiresVisualEnvironmentPreflight(args)) {
+    const { runVisualEnvironmentPreflight } = require("./check-playwright-visual-env.cjs") as {
+      runVisualEnvironmentPreflight: () => Promise<void>;
+    };
+    await runVisualEnvironmentPreflight();
+  }
+  await fs.promises.mkdir(dataDir, { recursive: true });
   await cleanupStaleE2eDatabases(dataDir);
   await cleanupSqliteFiles(dbFile);
   const serverChild = spawn(
