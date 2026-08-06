@@ -277,6 +277,12 @@ function createDatastore(options: DatastoreOptions = {}) {
     ) as Statement<AppStateRow | null>,
     setAppState: db.prepare(
       "INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json"
+    ) as Statement<unknown>,
+    compareAndSetAppState: db.prepare(
+      "UPDATE app_state SET value_json = ? WHERE key = ? AND value_json = ?"
+    ) as Statement<unknown>,
+    insertAppStateIfMissing: db.prepare(
+      "INSERT INTO app_state (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO NOTHING"
     ) as Statement<unknown>
   };
 
@@ -542,6 +548,28 @@ function createDatastore(options: DatastoreOptions = {}) {
         statements.setAppState.run(String(key || ""), JSON.stringify(value ?? null));
       });
       return datastore.getAppState(key);
+    },
+    compareAndSetAppState(key: string, expectedValue: unknown, nextValue: unknown) {
+      return transaction(() => {
+        const normalizedKey = String(key || "");
+        const expectedJson = JSON.stringify(expectedValue ?? null);
+        const nextJson = JSON.stringify(nextValue ?? null);
+        const updated = statements.compareAndSetAppState.run(
+          nextJson,
+          normalizedKey,
+          expectedJson
+        ) as { changes?: number };
+        if (Number(updated.changes) === 1) {
+          return true;
+        }
+        if (expectedValue == null) {
+          const inserted = statements.insertAppStateIfMissing.run(normalizedKey, nextJson) as {
+            changes?: number;
+          };
+          return Number(inserted.changes) === 1;
+        }
+        return false;
+      });
     },
     setActiveGameId(gameId: string | null) {
       transaction(() => {

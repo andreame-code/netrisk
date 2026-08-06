@@ -72,6 +72,21 @@ function authHeaders(sessionToken: string): HeaderMap {
   };
 }
 
+async function activateSeparateGame(app: any, sessionToken: string): Promise<void> {
+  const response = await callApp(
+    app,
+    "POST",
+    "/api/games",
+    {
+      name: "Active cache fixture",
+      totalPlayers: 2,
+      players: [{ type: "human" }, { type: "ai" }]
+    },
+    authHeaders(sessionToken)
+  );
+  assert.equal(response.statusCode, 201, JSON.stringify(response.payload));
+}
+
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
@@ -808,6 +823,495 @@ register(
   }
 );
 
+register(
+  "persistent deployments migrate enabled development modules and saved admin defaults",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "demo.command-center",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.command-center",
+            version: "1.0.0",
+            displayName: "Demo Command Center",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "demo.command-center.content", name: "Demo Content" }],
+              gameplay: [{ id: "demo.command-center.gameplay", name: "Demo Gameplay" }],
+              ui: [{ id: "demo.command-center.ui", name: "Demo UI" }]
+            },
+            gamePresets: [
+              {
+                id: "demo.command-center.command-ops",
+                name: "Command Ops",
+                activeModuleIds: ["demo.command-center"]
+              }
+            ]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: {
+              "core.base": true,
+              "demo.command-center": true
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.setAppState("adminConsoleConfig", {
+            defaults: {
+              activeModuleIds: ["demo.command-center"],
+              gamePresetId: "demo.command-center.command-ops",
+              contentProfileId: "demo.command-center.content",
+              gameplayProfileId: "demo.command-center.gameplay",
+              uiProfileId: "demo.command-center.ui",
+              totalPlayers: 2
+            },
+            maintenance: {
+              staleLobbyDays: 7,
+              auditLogLimit: 120
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z",
+            updatedBy: null
+          });
+
+          const installedModules = await app.moduleRuntime.rescan();
+          const migratedDevelopmentModule = installedModules.find(
+            (entry: any) => entry.id === "demo.command-center"
+          );
+          assert.ok(migratedDevelopmentModule);
+          assert.equal(migratedDevelopmentModule.enabled, false);
+          const catalogState = await app.datastore.getAppState("moduleCatalogState");
+          assert.equal(catalogState.enabledById["demo.command-center"], false);
+
+          const configResponse = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(configResponse.statusCode, 200, JSON.stringify(configResponse.payload));
+          assert.deepEqual(configResponse.payload.config.defaults.activeModuleIds, ["core.base"]);
+          assert.equal(configResponse.payload.config.defaults.gamePresetId, null);
+          assert.equal(configResponse.payload.config.defaults.contentProfileId, null);
+          assert.equal(configResponse.payload.config.defaults.gameplayProfileId, null);
+          assert.equal(configResponse.payload.config.defaults.uiProfileId, null);
+
+          const persistedConfig = await app.datastore.getAppState("adminConsoleConfig");
+          assert.deepEqual(persistedConfig.defaults.activeModuleIds, ["core.base"]);
+          assert.equal(persistedConfig.defaults.gamePresetId, null);
+
+          await app.datastore.setAppState("adminConsoleConfig", {
+            ...persistedConfig,
+            defaults: {
+              gamePresetId: "demo.command-center.command-ops",
+              contentProfileId: "demo.command-center.content",
+              totalPlayers: 2
+            }
+          });
+          const presetOnlyConfigResponse = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(
+            presetOnlyConfigResponse.statusCode,
+            200,
+            JSON.stringify(presetOnlyConfigResponse.payload)
+          );
+          assert.equal(presetOnlyConfigResponse.payload.config.defaults.gamePresetId, null);
+          assert.equal(presetOnlyConfigResponse.payload.config.defaults.contentProfileId, null);
+
+          const createGameResponse = await callApp(
+            app,
+            "POST",
+            "/api/games",
+            { name: "Migrated production defaults" },
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(
+            createGameResponse.statusCode,
+            201,
+            JSON.stringify(createGameResponse.payload)
+          );
+          assert.deepEqual(createGameResponse.payload.state.gameConfig.activeModules, [
+            { id: "core.base", version: "1.0.0" }
+          ]);
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
+register(
+  "persistent default migration uses catalog ownership instead of selection name prefixes",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "community.operations",
+          manifest: {
+            schemaVersion: 1,
+            id: "community.operations",
+            version: "1.0.0",
+            displayName: "Community Operations",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: { clientManifest: "client-manifest.json" }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "demo-mode", name: "Demo Mode" }],
+              gameplay: [{ id: "test-rules", name: "Test Rules" }],
+              ui: [{ id: "fixture-ui", name: "Fixture UI" }]
+            },
+            gamePresets: [
+              {
+                id: "demo-preset",
+                name: "Demo Preset",
+                activeModuleIds: ["community.operations"]
+              }
+            ]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: {
+              "core.base": true,
+              "community.operations": true
+            },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.setAppState("adminConsoleConfig", {
+            defaults: {
+              activeModuleIds: ["community.operations"],
+              gamePresetId: "demo-preset",
+              contentProfileId: "demo-mode",
+              gameplayProfileId: "test-rules",
+              uiProfileId: "fixture-ui",
+              totalPlayers: 2
+            },
+            maintenance: { staleLobbyDays: 7, auditLogLimit: 120 },
+            updatedAt: "2026-08-01T00:00:00.000Z",
+            updatedBy: null
+          });
+
+          const response = await callApp(
+            app,
+            "GET",
+            "/api/admin/config",
+            {},
+            authHeaders(adminSessionToken)
+          );
+          assert.equal(response.statusCode, 200, JSON.stringify(response.payload));
+          assert.deepEqual(response.payload.config.defaults.activeModuleIds, [
+            "core.base",
+            "community.operations"
+          ]);
+          assert.equal(response.payload.config.defaults.gamePresetId, "demo-preset");
+          assert.equal(response.payload.config.defaults.contentProfileId, "demo-mode");
+          assert.equal(response.payload.config.defaults.gameplayProfileId, "test-rules");
+          assert.equal(response.payload.config.defaults.uiProfileId, "fixture-ui");
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
+register(
+  "persistent catalog migration preserves development modules used by live games",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "demo.live",
+          manifest: {
+            schemaVersion: 1,
+            id: "demo.live",
+            version: "1.0.0",
+            displayName: "Demo Live",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [],
+            entrypoints: { clientManifest: "client-manifest.json" }
+          },
+          clientManifest: {
+            gamePresets: [
+              {
+                id: "demo-live-preset",
+                name: "Demo Live Preset",
+                activeModuleIds: ["demo.live"]
+              }
+            ],
+            profiles: {
+              content: [{ id: "demo-live-content", name: "Demo Live Content" }]
+            }
+          }
+        }
+      ],
+      async ({ app }) => {
+        const originalVercelEnvironment = process.env.VERCEL_ENV;
+        process.env.VERCEL_ENV = "production";
+
+        try {
+          await app.datastore.setAppState("moduleCatalogState", {
+            enabledById: { "core.base": true, "demo.live": true },
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+          await app.datastore.createGame({
+            id: "live-development-module",
+            name: "Live Development Module",
+            version: 1,
+            creatorUserId: null,
+            state: {
+              phase: "lobby",
+              players: [],
+              territories: {},
+              hands: {},
+              gameConfig: {
+                activeModules: [
+                  { id: "core.base", version: "1.0.0" },
+                  { id: "demo.live", version: "1.0.0" }
+                ]
+              }
+            },
+            createdAt: "2026-08-01T00:00:00.000Z",
+            updatedAt: "2026-08-01T00:00:00.000Z"
+          });
+
+          const installedModules = await app.moduleRuntime.rescan();
+          assert.equal(
+            installedModules.find((entry: any) => entry.id === "demo.live")?.enabled,
+            true
+          );
+          const catalogState = await app.datastore.getAppState("moduleCatalogState");
+          assert.equal(catalogState.enabledById["demo.live"], true);
+          const creationOptions = await app.moduleRuntime.getModuleOptions();
+          assert.equal(
+            creationOptions.gameModules.some((entry: any) => entry.id === "demo.live"),
+            false
+          );
+          assert.equal(
+            creationOptions.gamePresets.some((entry: any) => entry.id === "demo-live-preset"),
+            false
+          );
+          assert.equal(
+            creationOptions.contentProfiles.some((entry: any) => entry.id === "demo-live-content"),
+            false
+          );
+          assert.equal(
+            (await app.moduleRuntime.getEnabledModules()).some(
+              (entry: any) => entry.id === "demo.live"
+            ),
+            true
+          );
+
+          const liveGame = await app.datastore.findGameById("live-development-module");
+          assert.ok(liveGame);
+          liveGame.state.phase = "finished";
+          liveGame.updatedAt = "2026-08-01T01:00:00.000Z";
+          await app.datastore.updateGame(liveGame);
+
+          const originalCompareAndSetAppState = app.datastore.compareAndSetAppState.bind(
+            app.datastore
+          );
+          let concurrentCatalogUpdateInjected = false;
+          app.datastore.compareAndSetAppState = async (
+            key: string,
+            expectedValue: unknown,
+            nextValue: unknown
+          ) => {
+            if (key === "moduleCatalogState" && !concurrentCatalogUpdateInjected) {
+              concurrentCatalogUpdateInjected = true;
+              const concurrentState = (await app.datastore.getAppState(
+                "moduleCatalogState"
+              )) as any;
+              await app.datastore.setAppState("moduleCatalogState", {
+                ...concurrentState,
+                enabledById: {
+                  ...concurrentState.enabledById,
+                  "community.production": true
+                },
+                updatedAt: "2026-08-01T01:30:00.000Z"
+              });
+            }
+            return originalCompareAndSetAppState(key, expectedValue, nextValue);
+          };
+
+          const cleanedModules = await app.moduleRuntime.listInstalledModules();
+          assert.equal(
+            cleanedModules.find((entry: any) => entry.id === "demo.live")?.enabled,
+            false
+          );
+          const cleanedCatalogState = await app.datastore.getAppState("moduleCatalogState");
+          assert.equal(cleanedCatalogState.enabledById["demo.live"], false);
+          assert.equal(cleanedCatalogState.enabledById["community.production"], true);
+        } finally {
+          if (typeof originalVercelEnvironment === "undefined") {
+            delete process.env.VERCEL_ENV;
+          } else {
+            process.env.VERCEL_ENV = originalVercelEnvironment;
+          }
+        }
+      }
+    );
+  }
+);
+
+register("read-time default migration preserves a concurrent newer admin config", async () => {
+  await withModuleAdminApp(
+    [
+      {
+        dir: "demo.concurrent",
+        manifest: {
+          schemaVersion: 1,
+          id: "demo.concurrent",
+          version: "1.0.0",
+          displayName: "Demo Concurrent",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [],
+          entrypoints: { clientManifest: "client-manifest.json" }
+        },
+        clientManifest: {}
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const originalVercelEnvironment = process.env.VERCEL_ENV;
+      process.env.VERCEL_ENV = "production";
+
+      try {
+        await app.datastore.setAppState("moduleCatalogState", {
+          enabledById: { "core.base": true, "demo.concurrent": true },
+          updatedAt: "2026-08-01T00:00:00.000Z"
+        });
+        await app.datastore.setAppState("adminConsoleConfig", {
+          defaults: { activeModuleIds: ["demo.concurrent"], totalPlayers: 2 },
+          maintenance: { staleLobbyDays: 7, auditLogLimit: 120 },
+          updatedAt: "2026-08-01T00:00:00.000Z",
+          updatedBy: null
+        });
+
+        const originalListInstalledModules = app.moduleRuntime.listInstalledModules.bind(
+          app.moduleRuntime
+        );
+        let concurrentUpdateInjected = false;
+        app.moduleRuntime.listInstalledModules = async () => {
+          const installedModules = await originalListInstalledModules();
+          if (!concurrentUpdateInjected) {
+            concurrentUpdateInjected = true;
+            await app.datastore.setAppState("adminConsoleConfig", {
+              defaults: {
+                activeModuleIds: ["demo.concurrent"],
+                totalPlayers: 4,
+                turnTimeoutHours: 72
+              },
+              maintenance: { staleLobbyDays: 31, auditLogLimit: 77 },
+              updatedAt: "2026-08-01T00:30:00.000Z",
+              updatedBy: null
+            });
+          }
+          return installedModules;
+        };
+
+        const originalCompareAndSetAppState = app.datastore.compareAndSetAppState.bind(
+          app.datastore
+        );
+        let concurrentCompareAndSetUpdateInjected = false;
+        app.datastore.compareAndSetAppState = async (
+          key: string,
+          expectedValue: unknown,
+          nextValue: unknown
+        ) => {
+          if (key === "adminConsoleConfig" && !concurrentCompareAndSetUpdateInjected) {
+            concurrentCompareAndSetUpdateInjected = true;
+            await app.datastore.setAppState("adminConsoleConfig", {
+              defaults: {
+                activeModuleIds: ["demo.concurrent"],
+                totalPlayers: 3,
+                turnTimeoutHours: 48
+              },
+              maintenance: { staleLobbyDays: 45, auditLogLimit: 88 },
+              updatedAt: "2026-08-01T00:45:00.000Z",
+              updatedBy: null
+            });
+          }
+          return originalCompareAndSetAppState(key, expectedValue, nextValue);
+        };
+
+        const response = await callApp(
+          app,
+          "GET",
+          "/api/admin/config",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(response.statusCode, 200, JSON.stringify(response.payload));
+        assert.equal(response.payload.config.defaults.totalPlayers, 3);
+        assert.equal(response.payload.config.defaults.turnTimeoutHours, 48);
+        assert.deepEqual(response.payload.config.defaults.activeModuleIds, ["core.base"]);
+        assert.equal(response.payload.config.maintenance.staleLobbyDays, 45);
+        assert.equal(response.payload.config.maintenance.auditLogLimit, 88);
+        assert.equal(response.payload.config.updatedAt, "2026-08-01T00:45:00.000Z");
+
+        const persisted = await app.datastore.getAppState("adminConsoleConfig");
+        assert.equal(persisted.defaults.totalPlayers, 3);
+        assert.equal(persisted.defaults.turnTimeoutHours, 48);
+        assert.deepEqual(persisted.defaults.activeModuleIds, ["core.base"]);
+        assert.equal(persisted.maintenance.staleLobbyDays, 45);
+        assert.equal(persisted.updatedAt, "2026-08-01T00:45:00.000Z");
+      } finally {
+        if (typeof originalVercelEnvironment === "undefined") {
+          delete process.env.VERCEL_ENV;
+        } else {
+          process.env.VERCEL_ENV = originalVercelEnvironment;
+        }
+      }
+    }
+  );
+});
+
 register("public game options ignore stale invalid admin defaults instead of failing", async () => {
   await withAdminApp(async ({ app, adminSessionToken }) => {
     const configResponse = await callApp(
@@ -857,6 +1361,57 @@ register("public game options ignore stale invalid admin defaults instead of fai
     );
     assert.equal(createGameResponse.statusCode, 201);
     assert.equal(createGameResponse.payload.state.gameConfig.mapId, "world-classic");
+  });
+});
+
+register("admin orphan preview converts preset lookup failures into blockers", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const createResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      { name: "Unknown Preset Orphan" },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createResponse.statusCode, 201, JSON.stringify(createResponse.payload));
+    const gameId = createResponse.payload.game.id;
+    const storedGame = await app.datastore.findGameById(gameId);
+    assert.ok(storedGame);
+    storedGame.state.gameConfig.activeModules = [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.missing", version: "1.0.0" }
+    ];
+    storedGame.state.gameConfig.gamePresetId = "unknown-preset";
+    storedGame.updatedAt = new Date().toISOString();
+    await app.datastore.updateGame(storedGame);
+    await activateSeparateGame(app, adminSessionToken);
+
+    const detailResponse = await callApp(
+      app,
+      "GET",
+      `/api/admin/games/${gameId}`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+    assert.equal(detailResponse.payload.repairPreview.status, "blocked");
+    assert.equal(
+      detailResponse.payload.repairPreview.blockers.some((blocker: string) =>
+        blocker.includes('Unknown game preset "unknown-preset"')
+      ),
+      true
+    );
+
+    const closeResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      { gameId, action: "close-lobby", confirmation: gameId },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(closeResponse.statusCode, 200, JSON.stringify(closeResponse.payload));
+    assert.equal(closeResponse.payload.game.phase, "finished");
+    assert.equal(closeResponse.payload.repairPreview.status, "blocked");
   });
 });
 
@@ -1042,8 +1597,11 @@ register(
         storedGame.state.gameConfig.diceRuleSetId = "demo-barrage";
         storedGame.state.gameConfig.diceRuleSetName = "Demo Barrage";
         storedGame.state.diceRuleSetId = "standard";
+        storedGame.state.phase = "finished";
+        storedGame.state.turnPhase = "finished";
         storedGame.updatedAt = new Date().toISOString();
         await app.datastore.updateGame(storedGame);
+        await activateSeparateGame(app, adminSessionToken);
 
         const repairResponse = await callApp(
           app,
@@ -1051,17 +1609,647 @@ register(
           "/api/admin/games/action",
           {
             gameId,
-            action: "repair-game-config"
+            action: "repair-game-config",
+            confirmation: gameId
           },
           authHeaders(adminSessionToken)
         );
 
-        assert.equal(repairResponse.statusCode, 200);
+        assert.equal(repairResponse.statusCode, 200, JSON.stringify(repairResponse.payload));
         assert.equal(repairResponse.payload.rawState.gameConfig.diceRuleSetId, "demo-barrage");
         assert.equal(repairResponse.payload.rawState.gameConfig.diceRuleSetName, "Demo Barrage");
         assert.equal(repairResponse.payload.rawState.diceRuleSetId, "demo-barrage");
       }
     );
+  }
+);
+
+register("admin previews and repairs a finished game with an orphaned runtime module", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const createGameResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      {
+        name: "Orphan repair fixture",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(createGameResponse.statusCode, 201);
+
+    const gameId = createGameResponse.payload.game.id;
+    const storedGame = await app.datastore.findGameById(gameId);
+    assert.ok(storedGame);
+    storedGame.state.phase = "finished";
+    storedGame.state.turnPhase = "finished";
+    storedGame.state.gameConfig.activeModules = [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.defaults", version: "1.0.0" }
+    ];
+    storedGame.state.gameConfig.contentProfileId = "demo.defaults.content";
+    storedGame.state.gameConfig.gameplayProfileId = "demo.defaults.gameplay";
+    storedGame.state.gameConfig.uiProfileId = "demo.defaults.ui";
+    storedGame.state.gameConfig.scenarioSetup = {
+      logMessage: "Persisted scenario output",
+      territoryBonuses: [{ territoryId: "aurora", armies: 1 }]
+    };
+    storedGame.updatedAt = new Date().toISOString();
+    await app.datastore.updateGame(storedGame);
+    await activateSeparateGame(app, adminSessionToken);
+
+    const preservedBefore = JSON.parse(
+      JSON.stringify({
+        players: storedGame.state.players,
+        territories: storedGame.state.territories,
+        hands: storedGame.state.hands,
+        turnPhase: storedGame.state.turnPhase,
+        currentTurnIndex: storedGame.state.currentTurnIndex,
+        winnerId: storedGame.state.winnerId,
+        versionInfo: storedGame.state.versionInfo,
+        scenarioSetup: storedGame.state.gameConfig.scenarioSetup
+      })
+    );
+
+    const detailResponse = await callApp(
+      app,
+      "GET",
+      `/api/admin/games/${gameId}`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+    assert.equal(detailResponse.payload.repairPreview.status, "safe");
+    assert.deepEqual(detailResponse.payload.repairPreview.orphanedModuleIds, ["demo.defaults"]);
+    assert.deepEqual(detailResponse.payload.repairPreview.relatedProfileIds, [
+      "demo.defaults.content",
+      "demo.defaults.gameplay",
+      "demo.defaults.ui"
+    ]);
+    assert.deepEqual(
+      detailResponse.payload.repairPreview.changes.map((change: any) => change.path),
+      [
+        "gameConfig.activeModules",
+        "gameConfig.contentProfileId",
+        "gameConfig.gameplayProfileId",
+        "gameConfig.uiProfileId"
+      ]
+    );
+    assert.equal(
+      detailResponse.payload.game.issues[0].message.includes("demo.defaults.content"),
+      true
+    );
+
+    const unconfirmedResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      {
+        gameId,
+        action: "repair-game-config"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(unconfirmedResponse.statusCode, 400);
+
+    const repairResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      {
+        gameId,
+        action: "repair-game-config",
+        confirmation: gameId
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(repairResponse.statusCode, 200, JSON.stringify(repairResponse.payload));
+    assert.equal(repairResponse.payload.repairPreview.status, "safe");
+    assert.deepEqual(repairResponse.payload.rawState.gameConfig.activeModules, [
+      { id: "core.base", version: "1.0.0" }
+    ]);
+    assert.equal(repairResponse.payload.rawState.gameConfig.contentProfileId, null);
+    assert.equal(repairResponse.payload.rawState.gameConfig.gameplayProfileId, null);
+    assert.equal(repairResponse.payload.rawState.gameConfig.uiProfileId, null);
+    assert.deepEqual(
+      JSON.parse(
+        JSON.stringify({
+          players: repairResponse.payload.rawState.players,
+          territories: repairResponse.payload.rawState.territories,
+          hands: repairResponse.payload.rawState.hands,
+          turnPhase: repairResponse.payload.rawState.turnPhase,
+          currentTurnIndex: repairResponse.payload.rawState.currentTurnIndex,
+          winnerId: repairResponse.payload.rawState.winnerId,
+          versionInfo: repairResponse.payload.rawState.versionInfo,
+          scenarioSetup: repairResponse.payload.rawState.gameConfig.scenarioSetup
+        })
+      ),
+      preservedBefore
+    );
+
+    const maintenanceResponse = await callApp(
+      app,
+      "GET",
+      "/api/admin/maintenance",
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(maintenanceResponse.statusCode, 200);
+    assert.equal(maintenanceResponse.payload.summary.orphanedModuleReferences, 0);
+    assert.equal(maintenanceResponse.payload.summary.invalidGames, 0);
+
+    const auditResponse = await callApp(
+      app,
+      "GET",
+      "/api/admin/audit",
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(auditResponse.statusCode, 200);
+    assert.equal(
+      auditResponse.payload.entries.some(
+        (entry: any) =>
+          entry.action === "game.repair-game-config" &&
+          entry.result === "success" &&
+          entry.details.orphanedModuleIds.includes("demo.defaults")
+      ),
+      true
+    );
+    assert.equal(
+      auditResponse.payload.entries.some(
+        (entry: any) => entry.action === "game.repair-game-config" && entry.result === "failure"
+      ),
+      true
+    );
+  });
+});
+
+register(
+  "admin orphan repair retains a catalog profile whose id only shares an orphan prefix",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "acme.extra",
+          manifest: {
+            schemaVersion: 1,
+            id: "acme.extra",
+            version: "1.0.0",
+            displayName: "Acme Extra",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "gameplay-hook",
+                scope: "game",
+                hook: "setup.profile",
+                description: "Catalog ownership collision fixture"
+              }
+            ],
+            entrypoints: {
+              clientManifest: "client-manifest.json"
+            }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "acme.extra.standard", name: "Acme Extra Standard" }],
+              gameplay: [],
+              ui: []
+            }
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/acme.extra/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200, JSON.stringify(enableResponse.payload));
+
+        const createGameResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Profile ownership collision",
+            activeModuleIds: ["acme.extra"],
+            contentProfileId: "acme.extra.standard",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(
+          createGameResponse.statusCode,
+          201,
+          JSON.stringify(createGameResponse.payload)
+        );
+
+        const gameId = createGameResponse.payload.game.id;
+        const storedGame = await app.datastore.findGameById(gameId);
+        assert.ok(storedGame);
+        storedGame.state.phase = "finished";
+        storedGame.state.turnPhase = "finished";
+        storedGame.state.gameConfig.activeModules = [
+          { id: "core.base", version: "1.0.0" },
+          { id: "acme", version: "1.0.0" },
+          { id: "acme.extra", version: "1.0.0" }
+        ];
+        storedGame.updatedAt = new Date().toISOString();
+        await app.datastore.updateGame(storedGame);
+        await activateSeparateGame(app, adminSessionToken);
+
+        const detailResponse = await callApp(
+          app,
+          "GET",
+          `/api/admin/games/${gameId}`,
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+        assert.equal(detailResponse.payload.repairPreview.status, "safe");
+        assert.deepEqual(detailResponse.payload.repairPreview.orphanedModuleIds, ["acme"]);
+        assert.deepEqual(detailResponse.payload.repairPreview.relatedProfileIds, []);
+        assert.equal(
+          detailResponse.payload.repairPreview.changes.some(
+            (change: any) => change.path === "gameConfig.contentProfileId"
+          ),
+          false
+        );
+
+        const repairResponse = await callApp(
+          app,
+          "POST",
+          "/api/admin/games/action",
+          {
+            gameId,
+            action: "repair-game-config",
+            confirmation: gameId
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(repairResponse.statusCode, 200, JSON.stringify(repairResponse.payload));
+        assert.equal(
+          repairResponse.payload.rawState.gameConfig.contentProfileId,
+          "acme.extra.standard"
+        );
+        assert.deepEqual(repairResponse.payload.rawState.gameConfig.activeModules, [
+          { id: "core.base", version: "1.0.0" },
+          { id: "acme.extra", version: "1.0.0" }
+        ]);
+      }
+    );
+  }
+);
+
+register(
+  "admin orphan repair reads arbitrary profile and preset ownership from disabled manifests",
+  async () => {
+    await withModuleAdminApp(
+      [
+        {
+          dir: "community.retired",
+          manifest: {
+            schemaVersion: 1,
+            id: "community.retired",
+            version: "1.0.0",
+            displayName: "Community Retired",
+            engineVersion: "1.0.0",
+            kind: "hybrid",
+            dependencies: [{ id: "core.base", version: "1.x" }],
+            conflicts: [],
+            capabilities: [
+              {
+                kind: "gameplay-hook",
+                scope: "game",
+                hook: "setup.profile",
+                description: "Arbitrary profile ownership fixture"
+              }
+            ],
+            entrypoints: { clientManifest: "client-manifest.json" }
+          },
+          clientManifest: {
+            profiles: {
+              content: [{ id: "hardcore", name: "Hardcore" }],
+              gameplay: [],
+              ui: []
+            },
+            gamePresets: [
+              {
+                id: "ironman",
+                name: "Ironman",
+                activeModuleIds: ["community.retired"]
+              }
+            ]
+          }
+        }
+      ],
+      async ({ app, adminSessionToken }) => {
+        const enableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/community.retired/enable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(enableResponse.statusCode, 200, JSON.stringify(enableResponse.payload));
+
+        const createResponse = await callApp(
+          app,
+          "POST",
+          "/api/games",
+          {
+            name: "Arbitrary Ownership Repair",
+            activeModuleIds: ["community.retired"],
+            gamePresetId: "ironman",
+            contentProfileId: "hardcore",
+            totalPlayers: 2,
+            players: [{ type: "human" }, { type: "ai" }]
+          },
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(createResponse.statusCode, 201, JSON.stringify(createResponse.payload));
+        const gameId = createResponse.payload.game.id;
+        const storedGame = await app.datastore.findGameById(gameId);
+        assert.ok(storedGame);
+        storedGame.state.phase = "finished";
+        storedGame.state.turnPhase = "finished";
+        storedGame.updatedAt = new Date().toISOString();
+        await app.datastore.updateGame(storedGame);
+        await activateSeparateGame(app, adminSessionToken);
+
+        const disableResponse = await callApp(
+          app,
+          "POST",
+          "/api/modules/community.retired/disable",
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(disableResponse.statusCode, 200, JSON.stringify(disableResponse.payload));
+
+        const detailResponse = await callApp(
+          app,
+          "GET",
+          `/api/admin/games/${gameId}`,
+          {},
+          authHeaders(adminSessionToken)
+        );
+        assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+        assert.equal(detailResponse.payload.repairPreview.status, "safe");
+        assert.deepEqual(detailResponse.payload.repairPreview.orphanedModuleIds, [
+          "community.retired"
+        ]);
+        assert.deepEqual(detailResponse.payload.repairPreview.relatedProfileIds, ["hardcore"]);
+        assert.equal(
+          detailResponse.payload.repairPreview.changes.some(
+            (change: any) => change.path === "gameConfig.contentProfileId" && change.after === null
+          ),
+          true
+        );
+        assert.equal(
+          detailResponse.payload.repairPreview.changes.some(
+            (change: any) => change.path === "gameConfig.gamePresetId" && change.after === null
+          ),
+          true
+        );
+      }
+    );
+  }
+);
+
+register("admin orphan repair preserves a valid retained runtime theme", async () => {
+  await withModuleAdminApp(
+    [
+      {
+        dir: "community.themes",
+        manifest: {
+          schemaVersion: 1,
+          id: "community.themes",
+          version: "1.0.0",
+          displayName: "Community Themes",
+          engineVersion: "1.0.0",
+          kind: "hybrid",
+          dependencies: [{ id: "core.base", version: "1.x" }],
+          conflicts: [],
+          capabilities: [
+            { kind: "site-theme", scope: "global", description: "Runtime theme fixture" }
+          ],
+          entrypoints: {
+            clientManifest: "client-manifest.json",
+            server: "server-module.cjs"
+          }
+        },
+        clientManifest: {
+          ui: {
+            themeTokens: ['html[data-theme="demo-aurora"] { --accent: #77ffee; }']
+          }
+        },
+        serverEntryPath: "server-module.cjs",
+        serverEntrySource: `module.exports = {
+  siteThemes: [
+    {
+      id: "demo-aurora",
+      name: "Demo Aurora",
+      description: "Runtime theme supplied by a retained module."
+    }
+  ]
+};`
+      }
+    ],
+    async ({ app, adminSessionToken }) => {
+      const enableResponse = await callApp(
+        app,
+        "POST",
+        "/api/modules/community.themes/enable",
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(enableResponse.statusCode, 200, JSON.stringify(enableResponse.payload));
+
+      const createResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Runtime Theme Repair",
+          activeModuleIds: ["community.themes"],
+          themeId: "demo-aurora",
+          totalPlayers: 2,
+          players: [{ type: "human" }, { type: "ai" }]
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(createResponse.statusCode, 201, JSON.stringify(createResponse.payload));
+      const gameId = createResponse.payload.game.id;
+      const storedGame = await app.datastore.findGameById(gameId);
+      assert.ok(storedGame);
+      storedGame.state.phase = "finished";
+      storedGame.state.turnPhase = "finished";
+      storedGame.state.gameConfig.activeModules.push({
+        id: "module.retired",
+        version: "1.0.0"
+      });
+      storedGame.updatedAt = new Date().toISOString();
+      await app.datastore.updateGame(storedGame);
+      await activateSeparateGame(app, adminSessionToken);
+
+      const detailResponse = await callApp(
+        app,
+        "GET",
+        `/api/admin/games/${gameId}`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+      assert.equal(detailResponse.payload.repairPreview.status, "safe");
+      assert.equal(detailResponse.payload.rawState.gameConfig.themeId, "demo-aurora");
+      assert.equal(
+        detailResponse.payload.repairPreview.changes.some(
+          (change: any) => change.path === "gameConfig.themeId"
+        ),
+        false
+      );
+
+      const repairResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/games/action",
+        { gameId, action: "repair-game-config", confirmation: gameId },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(repairResponse.statusCode, 200, JSON.stringify(repairResponse.payload));
+      assert.equal(repairResponse.payload.rawState.gameConfig.themeId, "demo-aurora");
+    }
+  );
+});
+
+register("admin orphan repair fails closed for a live game", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const createGameResponse = await callApp(
+      app,
+      "POST",
+      "/api/games",
+      {
+        name: "Live orphan fixture",
+        totalPlayers: 2,
+        players: [{ type: "human" }, { type: "ai" }]
+      },
+      authHeaders(adminSessionToken)
+    );
+    const gameId = createGameResponse.payload.game.id;
+    const storedGame = await app.datastore.findGameById(gameId);
+    assert.ok(storedGame);
+    storedGame.state.phase = "active";
+    storedGame.state.gameConfig.activeModules = [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.defaults", version: "1.0.0" }
+    ];
+    storedGame.updatedAt = new Date().toISOString();
+    await app.datastore.updateGame(storedGame);
+
+    const detailResponse = await callApp(
+      app,
+      "GET",
+      `/api/admin/games/${gameId}`,
+      {},
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(detailResponse.statusCode, 200);
+    assert.equal(detailResponse.payload.repairPreview.status, "blocked");
+    assert.equal(
+      detailResponse.payload.repairPreview.blockers.some((blocker: string) =>
+        blocker.includes("finished games")
+      ),
+      true
+    );
+
+    const repairResponse = await callApp(
+      app,
+      "POST",
+      "/api/admin/games/action",
+      {
+        gameId,
+        action: "repair-game-config",
+        confirmation: gameId
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(repairResponse.statusCode, 400);
+    const unchangedGame = await app.datastore.findGameById(gameId);
+    assert.deepEqual(unchangedGame?.state.gameConfig.activeModules, [
+      { id: "core.base", version: "1.0.0" },
+      { id: "demo.defaults", version: "1.0.0" }
+    ]);
+  });
+});
+
+register(
+  "admin configuration repair blocks legacy normalization on a live core-only game",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const createGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Live legacy normalization fixture",
+          totalPlayers: 2,
+          players: [{ type: "human" }, { type: "ai" }]
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(createGameResponse.statusCode, 201, JSON.stringify(createGameResponse.payload));
+      const gameId = createGameResponse.payload.game.id;
+      const storedGame = await app.datastore.findGameById(gameId);
+      assert.ok(storedGame);
+      storedGame.state.phase = "active";
+      storedGame.state.diceRuleSetId = "legacy-stale";
+      storedGame.updatedAt = new Date().toISOString();
+      await app.datastore.updateGame(storedGame);
+      const beforeRepair = await app.datastore.findGameById(gameId);
+      assert.ok(beforeRepair);
+
+      const detailResponse = await callApp(
+        app,
+        "GET",
+        `/api/admin/games/${gameId}`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+      assert.equal(detailResponse.payload.repairPreview.orphanedModuleIds.length, 0);
+      assert.equal(detailResponse.payload.repairPreview.status, "blocked");
+      assert.equal(
+        detailResponse.payload.repairPreview.changes.some(
+          (change: any) => change.path === "diceRuleSetId"
+        ),
+        true
+      );
+      assert.equal(
+        detailResponse.payload.repairPreview.blockers.some((blocker: string) =>
+          blocker.includes("finished games")
+        ),
+        true
+      );
+
+      const repairResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/games/action",
+        { gameId, action: "repair-game-config", confirmation: gameId },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(repairResponse.statusCode, 400, JSON.stringify(repairResponse.payload));
+      const afterRepair = await app.datastore.findGameById(gameId);
+      assert.equal(afterRepair?.version, beforeRepair.version);
+      assert.equal(afterRepair?.state.diceRuleSetId, "legacy-stale");
+    });
   }
 );
 
@@ -1347,7 +2535,27 @@ register(
             "p-user": [{ id: "card-1" }],
             "p-admin": []
           },
-          gameConfig: {}
+          gameConfig: {
+            extensionSchemaVersion: 0,
+            activeModules: [{ id: "module.retired", version: "1.0.0" }]
+          }
+        }
+      },
+      {
+        id: "finished-core-unavailable",
+        name: "Finished Core Unavailable",
+        version: 1,
+        creatorUserId: "admin-1",
+        createdAt: "2026-04-18T10:00:00.000Z",
+        updatedAt: "2026-04-18T12:00:00.000Z",
+        state: {
+          phase: "finished",
+          players: [],
+          territories: {},
+          hands: {},
+          gameConfig: {
+            activeModules: [{ id: "core.base", version: "1.0.0" }]
+          }
         }
       },
       {
@@ -1458,7 +2666,27 @@ register(
         mapId: null,
         mapName: null,
         diceRuleSetId: null,
-        activeModules: [],
+        activeModules: [{ id: "module.retired", version: "1.0.0" }],
+        gamePresetId: null,
+        contentProfileId: null,
+        gameplayProfileId: null,
+        uiProfileId: null,
+        updatedAt: "2026-04-18T12:00:00.000Z",
+        createdAt: "2026-04-18T10:00:00.000Z"
+      },
+      {
+        id: "finished-core-unavailable",
+        name: "Finished Core Unavailable",
+        version: 1,
+        phase: "finished",
+        playerCount: 0,
+        totalPlayers: null,
+        creatorUserId: "admin-1",
+        contentPackId: null,
+        mapId: null,
+        mapName: null,
+        diceRuleSetId: null,
+        activeModules: [{ id: "core.base", version: "1.0.0" }],
         gamePresetId: null,
         contentProfileId: null,
         gameplayProfileId: null,
@@ -1783,6 +3011,41 @@ register(
     assert.equal(gameDetail.players[0].territoryCount, 1);
     assert.equal(gameDetail.players[1].cardCount, 1);
 
+    const legacyRepairDetail = await adminConsole.getGameDetails("finished-user-win");
+    assert.equal(legacyRepairDetail.repairPreview.status, "safe");
+    assert.deepEqual(
+      legacyRepairDetail.repairPreview.changes.find(
+        (change: any) => change.path === "gameConfig.extensionSchemaVersion"
+      ),
+      {
+        path: "gameConfig.extensionSchemaVersion",
+        before: 0,
+        after: 1,
+        reason: "Normalize legacy persisted state before applying the module repair."
+      }
+    );
+    assert.deepEqual(
+      legacyRepairDetail.repairPreview.changes.find(
+        (change: any) => change.path === "gameConfig.activeModules"
+      )?.after,
+      [{ id: "core.base", version: "1.0.0" }]
+    );
+
+    const unavailableCoreDetail = await adminConsole.getGameDetails("finished-core-unavailable");
+    assert.equal(unavailableCoreDetail.repairPreview.status, "blocked");
+    assert.equal(
+      unavailableCoreDetail.repairPreview.changes.some(
+        (change: any) => change.path === "gameConfig.activeModules"
+      ),
+      false
+    );
+    assert.equal(
+      unavailableCoreDetail.repairPreview.blockers.some((blocker: string) =>
+        blocker.includes("core.base module is unavailable")
+      ),
+      true
+    );
+
     const config = await adminConsole.getConfig();
     assert.equal(config.config.defaults.activeModuleIds[0], "module.safe");
     assert.equal(config.config.updatedBy.username, "admin_commander");
@@ -1790,7 +3053,7 @@ register(
     const maintenanceReport = await adminConsole.getMaintenanceReport();
     assert.equal(maintenanceReport.summary.staleLobbies, 1);
     assert.equal(maintenanceReport.summary.invalidGames >= 2, true);
-    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 2);
+    assert.equal(maintenanceReport.summary.orphanedModuleReferences, 4);
 
     const audit = await adminConsole.listAudit();
     assert.equal(audit.entries.length, 3);

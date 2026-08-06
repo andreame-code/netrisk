@@ -46,6 +46,7 @@ const allowedPathPatterns = [
   /^docs\/assets\/.+\.(png|jpg|jpeg|svg|webp)$/i,
   /^docs\/openapi\.json$/i,
   /^e2e\/.+-snapshots\/.+\.png$/i,
+  /^supabase\/migrations\/[0-9]+_[a-z0-9_]+\.sql$/i,
   /(^|\/)[^/]+\.md$/i
 ];
 

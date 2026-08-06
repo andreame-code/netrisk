@@ -1596,6 +1596,26 @@ export const adminGamePlayerSchema = objectSchema({
 
 export type AdminGamePlayer = z.infer<typeof adminGamePlayerSchema>;
 
+export const adminGameRepairChangeSchema = objectSchema({
+  path: z.string().min(1),
+  before: z.unknown(),
+  after: z.unknown(),
+  reason: z.string().min(1)
+});
+
+export type AdminGameRepairChange = z.infer<typeof adminGameRepairChangeSchema>;
+
+export const adminGameRepairPreviewSchema = objectSchema({
+  status: z.enum(["safe", "blocked", "not-needed"]),
+  orphanedModuleIds: z.array(z.string().min(1)),
+  relatedProfileIds: z.array(z.string().min(1)),
+  changes: z.array(adminGameRepairChangeSchema),
+  blockers: z.array(z.string().min(1)),
+  preservedFields: z.array(z.string().min(1))
+});
+
+export type AdminGameRepairPreview = z.infer<typeof adminGameRepairPreviewSchema>;
+
 export const adminOverviewResponseSchema = objectSchema({
   summary: objectSchema({
     totalUsers: z.number().int(),
@@ -1653,7 +1673,8 @@ export type AdminGamesResponse = z.infer<typeof adminGamesResponseSchema>;
 export const adminGameDetailsResponseSchema = objectSchema({
   game: adminGameSummarySchema,
   players: z.array(adminGamePlayerSchema),
-  rawState: z.record(z.string(), z.unknown())
+  rawState: z.record(z.string(), z.unknown()),
+  repairPreview: adminGameRepairPreviewSchema
 });
 
 export type AdminGameDetailsResponse = z.infer<typeof adminGameDetailsResponseSchema>;
@@ -1671,6 +1692,7 @@ export const adminGameActionResponseSchema = objectSchema({
   game: adminGameSummarySchema,
   players: z.array(adminGamePlayerSchema),
   rawState: z.record(z.string(), z.unknown()),
+  repairPreview: adminGameRepairPreviewSchema,
   audit: adminAuditEntrySchema
 });
 

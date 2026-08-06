@@ -101,6 +101,11 @@ type ModuleRuntimeOptions = {
   datastore: {
     getAppState?: (key: string) => unknown | Promise<unknown>;
     setAppState?: (key: string, value: unknown) => unknown | Promise<unknown>;
+    compareAndSetAppState?: (
+      key: string,
+      expectedValue: unknown,
+      nextValue: unknown
+    ) => boolean | Promise<boolean>;
     listGames?: () => Array<Record<string, unknown>> | Promise<Array<Record<string, unknown>>>;
   };
   authoredModules?: {
@@ -166,6 +171,7 @@ type AuthoredPublishedMap = {
 };
 
 const MODULE_CATALOG_STATE_KEY = "moduleCatalogState";
+const DEVELOPMENT_ONLY_MODULE_ID = /^(?:demo|test|fixture)(?:[.-]|$)/i;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -173,6 +179,28 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isPersistentVercelEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
+  const vercelEnvironment = String(env.VERCEL_ENV || "")
+    .trim()
+    .toLowerCase();
+  return vercelEnvironment === "preview" || vercelEnvironment === "production";
+}
+
+function isDevelopmentOnlyModuleId(moduleId: string): boolean {
+  return DEVELOPMENT_ONLY_MODULE_ID.test(moduleId);
+}
+
+function assertPersistentModuleIdAllowed(
+  moduleId: string,
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  if (isPersistentVercelEnvironment(env) && isDevelopmentOnlyModuleId(moduleId)) {
+    throw new Error(
+      `Development-only module "${moduleId}" cannot be enabled or persisted in a Vercel deployment.`
+    );
+  }
 }
 
 function toModuleProfileArray(
@@ -669,6 +697,14 @@ function normalizeCatalogState(raw: unknown): CatalogState {
     enabledById,
     updatedAt: isNonEmptyString(raw.updatedAt) ? String(raw.updatedAt) : null
   };
+}
+
+function catalogStatesEqual(left: CatalogState | null, right: CatalogState): boolean {
+  return Boolean(
+    left &&
+    left.updatedAt === right.updatedAt &&
+    JSON.stringify(left.enabledById) === JSON.stringify(right.enabledById)
+  );
 }
 
 function safeReadJson(filePath: string): unknown {
@@ -1955,24 +1991,91 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       }));
   }
 
-  async function loadCatalogState(): Promise<CatalogState> {
-    if (cachedState) {
-      return cachedState;
-    }
-
-    const rawState =
+  async function readCatalogStateSnapshot(): Promise<{ raw: unknown; state: CatalogState }> {
+    const raw =
       typeof options.datastore.getAppState === "function"
         ? await options.datastore.getAppState(MODULE_CATALOG_STATE_KEY)
         : null;
-    cachedState = normalizeCatalogState(rawState);
+    return { raw, state: normalizeCatalogState(raw) };
+  }
+
+  function cacheCatalogState(nextState: CatalogState): CatalogState {
+    if (catalogStatesEqual(cachedState, nextState)) {
+      return cachedState as CatalogState;
+    }
+    cachedState = nextState;
     return cachedState;
   }
 
-  async function saveCatalogState(nextState: CatalogState): Promise<void> {
-    cachedState = nextState;
-    if (typeof options.datastore.setAppState === "function") {
-      await options.datastore.setAppState(MODULE_CATALOG_STATE_KEY, nextState);
+  async function updateCatalogState(
+    update: (currentState: CatalogState) => CatalogState | Promise<CatalogState>
+  ): Promise<CatalogState> {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const snapshot = await readCatalogStateSnapshot();
+      const nextState = await update(snapshot.state);
+      if (catalogStatesEqual(snapshot.state, nextState)) {
+        return cacheCatalogState(snapshot.state);
+      }
+
+      if (typeof options.datastore.compareAndSetAppState === "function") {
+        const updated = await options.datastore.compareAndSetAppState(
+          MODULE_CATALOG_STATE_KEY,
+          snapshot.raw,
+          nextState
+        );
+        if (!updated) {
+          continue;
+        }
+        return cacheCatalogState(nextState);
+      }
+
+      if (isPersistentVercelEnvironment()) {
+        throw new Error("Atomic app-state updates are required in persistent Vercel environments.");
+      }
+      if (typeof options.datastore.setAppState === "function") {
+        await options.datastore.setAppState(MODULE_CATALOG_STATE_KEY, nextState);
+      }
+      return cacheCatalogState(nextState);
     }
+
+    throw new Error("Module catalog changed repeatedly during an atomic update.");
+  }
+
+  async function loadCatalogState(): Promise<CatalogState> {
+    if (!isPersistentVercelEnvironment()) {
+      if (cachedState) {
+        return cachedState;
+      }
+      return cacheCatalogState((await readCatalogStateSnapshot()).state);
+    }
+
+    return updateCatalogState(async (currentState) => {
+      const developmentModuleIds = Object.keys(currentState.enabledById).filter(
+        (moduleId) =>
+          moduleId !== CORE_MODULE_ID &&
+          isDevelopmentOnlyModuleId(moduleId) &&
+          currentState.enabledById[moduleId] !== false
+      );
+      if (!developmentModuleIds.length) {
+        return currentState;
+      }
+
+      const games = await listGames();
+      const safelyDisabledModuleIds = developmentModuleIds.filter(
+        (moduleId) => !activeGameUsesModule(moduleId, games)
+      );
+      if (!safelyDisabledModuleIds.length) {
+        return currentState;
+      }
+
+      return {
+        enabledById: {
+          ...currentState.enabledById,
+          ...Object.fromEntries(safelyDisabledModuleIds.map((moduleId) => [moduleId, false]))
+        },
+        updatedAt: new Date().toISOString()
+      };
+    });
   }
 
   function scanFilesystemModules(enabledById: Record<string, boolean>): NetRiskInstalledModule[] {
@@ -2260,6 +2363,13 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
   }
 
   async function ensureCatalog(): Promise<NetRiskInstalledModule[]> {
+    if (cachedModules.length && isPersistentVercelEnvironment()) {
+      const previousCatalogState = cachedState;
+      await loadCatalogState();
+      if (cachedState !== previousCatalogState) {
+        cachedModules = [];
+      }
+    }
     if (cachedModules.length) {
       return cachedModules.map(cloneInstalledModule);
     }
@@ -2278,15 +2388,21 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function getModuleOptions() {
     const modules = await ensureCatalog();
+    const optionModules = isPersistentVercelEnvironment()
+      ? modules.filter(
+          (moduleEntry) =>
+            moduleEntry.id === CORE_MODULE_ID || !isDevelopmentOnlyModuleId(moduleEntry.id)
+        )
+      : modules;
     await refreshAuthoredContent();
     return buildModuleOptions(
-      modules,
-      listEnabledRuntimeMaps(modules),
-      listEnabledRuntimeContentPacks(modules),
-      listEnabledRuntimePlayerPieceSets(modules),
-      listEnabledRuntimeDiceRuleSets(modules),
-      listEnabledRuntimeCardRuleSets(modules),
-      listEnabledRuntimeSiteThemes(modules),
+      optionModules,
+      listEnabledRuntimeMaps(optionModules),
+      listEnabledRuntimeContentPacks(optionModules),
+      listEnabledRuntimePlayerPieceSets(optionModules),
+      listEnabledRuntimeDiceRuleSets(optionModules),
+      listEnabledRuntimeCardRuleSets(optionModules),
+      listEnabledRuntimeSiteThemes(optionModules),
       authoredVictoryRuleSets,
       Array.from(authoredMapsById.values())
     );
@@ -2497,6 +2613,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       return enabledReferences(await ensureCatalog());
     },
     async enableModule(moduleId: string) {
+      assertPersistentModuleIdAllowed(moduleId);
       const installedModules = await ensureCatalog();
       const target = installedModules.find((moduleEntry) => moduleEntry.id === moduleId);
       if (!target || !target.manifest) {
@@ -2513,17 +2630,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         );
       }
 
-      const catalogState = await loadCatalogState();
-      const nextState: CatalogState = {
+      await updateCatalogState((catalogState) => ({
         enabledById: {
           ...catalogState.enabledById,
           [moduleId]: true,
           [CORE_MODULE_ID]: true
         },
         updatedAt: new Date().toISOString()
-      };
-
-      await saveCatalogState(nextState);
+      }));
       cachedModules = [];
       return ensureCatalog();
     },
@@ -2543,17 +2657,14 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
         throw new Error(`Module "${moduleId}" is still referenced by an active game.`);
       }
 
-      const catalogState = await loadCatalogState();
-      const nextState: CatalogState = {
+      await updateCatalogState((catalogState) => ({
         enabledById: {
           ...catalogState.enabledById,
           [moduleId]: false,
           [CORE_MODULE_ID]: true
         },
         updatedAt: new Date().toISOString()
-      };
-
-      await saveCatalogState(nextState);
+      }));
       cachedModules = [];
       return ensureCatalog();
     },
@@ -2779,6 +2890,7 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
       const requestedIds = Array.isArray(input.activeModuleIds)
         ? Array.from(new Set(input.activeModuleIds.filter((value) => isNonEmptyString(value))))
         : [];
+      requestedIds.forEach((moduleId) => assertPersistentModuleIdAllowed(moduleId));
       const selectedModuleRefs = requestedIds.map((moduleId) => {
         const match = optionsSnapshot.gameModules.find(
           (moduleEntry) => moduleEntry.id === moduleId
@@ -2876,5 +2988,8 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 }
 
 module.exports = {
-  createModuleRuntime
+  assertPersistentModuleIdAllowed,
+  createModuleRuntime,
+  isDevelopmentOnlyModuleId,
+  isPersistentVercelEnvironment
 };

@@ -43,6 +43,18 @@ register("module version manifest centrally lists current functional modules", (
   assert.equal(moduleIds.includes("public-state"), true);
 
   assert.equal(getFunctionalModuleVersion("maps")?.version, "1.0.0");
+  assert.equal(getFunctionalModuleVersion("admin-console")?.version, "1.1.0");
+  assert.equal(getFunctionalModuleVersion("module-runtime")?.version, "1.2.0");
+  assert.equal(getFunctionalModuleVersion("public-state")?.version, "1.3.0");
+  assert.equal(getFunctionalModuleVersion("datastore")?.version, "1.1.0");
+  assert.equal(
+    getFunctionalModuleVersion("admin-console")?.ownerPaths.includes("backend/admin-console.cts"),
+    true
+  );
+  assert.equal(
+    getFunctionalModuleVersion("datastore")?.ownerPaths.includes("backend/datastore-supabase.cts"),
+    true
+  );
   assert.equal(Boolean(MODULE_VERSION_BUMP_RULES.patch), true);
   assert.equal(Boolean(MODULE_VERSION_BUMP_RULES.minor), true);
   assert.equal(Boolean(MODULE_VERSION_BUMP_RULES.major), true);

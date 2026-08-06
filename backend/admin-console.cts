@@ -5,6 +5,10 @@ const {
   findVisualTheme,
   migrateGameStateExtensions
 } = require("../shared/extensions.cjs");
+const {
+  isDevelopmentOnlyModuleId,
+  isPersistentVercelEnvironment
+} = require("./module-runtime.cjs");
 
 type PublicUser = {
   id: string;
@@ -119,6 +123,37 @@ type AdminIssue = {
   actionId?: string | null;
 };
 
+type AdminGameRepairChange = {
+  path: string;
+  before: unknown;
+  after: unknown;
+  reason: string;
+};
+
+type AdminGameRepairPreview = {
+  status: "safe" | "blocked" | "not-needed";
+  orphanedModuleIds: string[];
+  relatedProfileIds: string[];
+  changes: AdminGameRepairChange[];
+  blockers: string[];
+  preservedFields: string[];
+};
+
+type AdminGameRepairPlan = AdminGameRepairPreview & {
+  nextState: GameState;
+};
+
+function toAdminGameRepairPreview(plan: AdminGameRepairPlan): AdminGameRepairPreview {
+  return {
+    status: plan.status,
+    orphanedModuleIds: plan.orphanedModuleIds,
+    relatedProfileIds: plan.relatedProfileIds,
+    changes: plan.changes,
+    blockers: plan.blockers,
+    preservedFields: plan.preservedFields
+  };
+}
+
 type AdminConsoleOptions = {
   datastore: {
     listUsers(): Promise<StoredUser[]> | StoredUser[];
@@ -127,6 +162,11 @@ type AdminConsoleOptions = {
     deleteSessionsForUser?(userId: string): Promise<void> | void;
     getAppState(key: string): Promise<unknown> | unknown;
     setAppState(key: string, value: unknown): Promise<unknown> | unknown;
+    compareAndSetAppState?(
+      key: string,
+      expectedValue: unknown,
+      nextValue: unknown
+    ): Promise<boolean> | boolean;
   };
   auth: {
     publicUser(user: StoredUser | null | undefined): PublicUser | null;
@@ -358,6 +398,239 @@ function normalizeGameStateForRepair(state: GameState): GameState {
   return state;
 }
 
+const REPAIR_PRESERVED_FIELDS = Object.freeze([
+  "players",
+  "territories",
+  "hands and cards",
+  "turn and phase state",
+  "winner and version metadata",
+  "resolved map, rules, theme, and piece selections"
+]);
+
+const REPAIR_ROOT_CONFIG_FIELDS = Object.freeze([
+  "contentPackId",
+  "diceRuleSetId",
+  "victoryRuleSetId",
+  "pieceSetId",
+  "mapId",
+  "mapName"
+]);
+
+const REPAIR_PROFILE_FIELDS = Object.freeze([
+  "contentProfileId",
+  "gameplayProfileId",
+  "uiProfileId"
+]);
+
+function valuesEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function pushRepairChange(
+  changes: AdminGameRepairChange[],
+  path: string,
+  before: unknown,
+  after: unknown,
+  reason: string
+) {
+  if (valuesEqual(before, after)) {
+    return;
+  }
+
+  changes.push({
+    path,
+    before: safeClone(before),
+    after: safeClone(after),
+    reason
+  });
+}
+
+function profileBelongsToModule(profileId: string, moduleId: string): boolean {
+  return profileId === moduleId || profileId.startsWith(`${moduleId}.`);
+}
+
+function repairChangeAncestor(changes: AdminGameRepairChange[], path: string) {
+  return changes.find(
+    (change) => path.startsWith(`${change.path}.`) || path.startsWith(`${change.path}[`)
+  );
+}
+
+function appendUnreportedRepairChanges(
+  before: unknown,
+  after: unknown,
+  path: string,
+  changes: AdminGameRepairChange[]
+): void {
+  const existingChangeIndex = changes.findIndex((change) => change.path === path);
+  if (valuesEqual(before, after)) {
+    if (existingChangeIndex >= 0) {
+      changes.splice(existingChangeIndex, 1);
+    }
+    return;
+  }
+
+  const existingChange = existingChangeIndex >= 0 ? changes[existingChangeIndex] : undefined;
+  if (existingChange) {
+    if (!valuesEqual(existingChange.after, after)) {
+      existingChange.after = safeClone(after);
+    }
+    return;
+  }
+
+  if (repairChangeAncestor(changes, path)) {
+    return;
+  }
+
+  const beforeRecord = asRecord(before);
+  const afterRecord = asRecord(after);
+  if (beforeRecord && afterRecord && !Array.isArray(before) && !Array.isArray(after)) {
+    const keys = Array.from(new Set([...Object.keys(beforeRecord), ...Object.keys(afterRecord)]));
+    keys.forEach((key) =>
+      appendUnreportedRepairChanges(
+        beforeRecord[key],
+        afterRecord[key],
+        path ? `${path}.${key}` : key,
+        changes
+      )
+    );
+    return;
+  }
+
+  if (path) {
+    pushRepairChange(
+      changes,
+      path,
+      before,
+      after,
+      "Normalize legacy persisted state before applying the module repair."
+    );
+  }
+}
+
+function profileCatalogById(value: unknown): Map<string, string | null> | null {
+  const entries = asRecordArray(value);
+  if (!entries) {
+    return null;
+  }
+
+  return new Map(
+    entries
+      .map((entry) => {
+        const id = asNonEmptyString(entry.id);
+        return id ? ([id, asNonEmptyString(entry.moduleId)] as const) : null;
+      })
+      .filter((entry): entry is readonly [string, string | null] => Boolean(entry))
+  );
+}
+
+function findUnavailableCatalogOwner(
+  selectionId: string,
+  orphanedModuleIds: string[],
+  catalog: Map<string, string | null> | null
+): string | null {
+  if (catalog?.has(selectionId)) {
+    const explicitOwner = catalog.get(selectionId) || null;
+    return explicitOwner && orphanedModuleIds.includes(explicitOwner) ? explicitOwner : null;
+  }
+
+  return (
+    orphanedModuleIds.find((moduleId) => profileBelongsToModule(selectionId, moduleId)) || null
+  );
+}
+
+function installedSelectionOwners(
+  installedModules: Array<Record<string, unknown>>
+): Map<string, Map<string, string>> {
+  const ownersByField = new Map<string, Map<string, string>>(
+    [...REPAIR_PROFILE_FIELDS, "gamePresetId"].map((field) => [field, new Map()])
+  );
+
+  installedModules.forEach((moduleEntry) => {
+    const moduleId = asNonEmptyString(moduleEntry.id);
+    const clientManifest = asRecord(moduleEntry.clientManifest);
+    if (!moduleId || !clientManifest) {
+      return;
+    }
+
+    const profiles = asRecord(clientManifest.profiles);
+    const entriesByField: Record<string, Array<Record<string, unknown>>> = {
+      contentProfileId: asRecordArray(profiles?.content) || [],
+      gameplayProfileId: asRecordArray(profiles?.gameplay) || [],
+      uiProfileId: asRecordArray(profiles?.ui) || [],
+      gamePresetId: asRecordArray(clientManifest.gamePresets) || []
+    };
+
+    Object.entries(entriesByField).forEach(([field, entries]) => {
+      entries.forEach((entry) => {
+        const selectionId = asNonEmptyString(entry.id);
+        if (selectionId) {
+          ownersByField.get(field)?.set(selectionId, asNonEmptyString(entry.moduleId) || moduleId);
+        }
+      });
+    });
+  });
+
+  return ownersByField;
+}
+
+function mergeSelectionOwnerCatalogs(
+  ...catalogs: Array<Map<string, string | null> | Map<string, string> | null | undefined>
+): Map<string, string | null> | null {
+  const availableCatalogs = catalogs.filter(
+    (catalog): catalog is Map<string, string | null> | Map<string, string> => Boolean(catalog)
+  );
+  if (!availableCatalogs.length) {
+    return null;
+  }
+
+  return new Map(availableCatalogs.flatMap((catalog) => Array.from(catalog.entries())));
+}
+
+function migratePersistedDevelopmentModuleDefaults(
+  input: Record<string, unknown>,
+  installedModules: Array<Record<string, unknown>>
+): {
+  defaults: Record<string, unknown>;
+  changed: boolean;
+} {
+  if (!isPersistentVercelEnvironment()) {
+    return { defaults: input, changed: false };
+  }
+
+  const defaults = safeClone(input);
+  const activeModuleIds = asArray(defaults.activeModuleIds as string[] | undefined).filter(
+    (moduleId): moduleId is string => typeof moduleId === "string" && moduleId.trim().length > 0
+  );
+  const removedModuleIds = activeModuleIds.filter((moduleId) =>
+    isDevelopmentOnlyModuleId(moduleId)
+  );
+  let changed = removedModuleIds.length > 0;
+  if (changed) {
+    defaults.activeModuleIds = activeModuleIds.filter(
+      (moduleId) => !removedModuleIds.includes(moduleId)
+    );
+  }
+  const ownersByField = installedSelectionOwners(installedModules);
+  const developmentModuleIds = new Set(
+    installedModules
+      .map((moduleEntry) => asNonEmptyString(moduleEntry.id))
+      .filter(
+        (moduleId): moduleId is string =>
+          Boolean(moduleId) && isDevelopmentOnlyModuleId(moduleId as string)
+      )
+  );
+  [...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
+    const selectionId = asNonEmptyString(defaults[field]);
+    const ownerId = selectionId ? ownersByField.get(field)?.get(selectionId) : null;
+    if (ownerId && developmentModuleIds.has(ownerId)) {
+      defaults[field] = null;
+      changed = true;
+    }
+  });
+
+  return { defaults, changed };
+}
+
 async function maybeResolve<T>(value: Promise<T> | T): Promise<T> {
   return value;
 }
@@ -373,12 +646,211 @@ function asRecordArray(value: unknown): Array<Record<string, unknown>> | null {
 }
 
 function createAdminConsole(options: AdminConsoleOptions) {
+  let configMutationQueue: Promise<void> = Promise.resolve();
+
+  function withConfigMutationLock<T>(operation: () => Promise<T>): Promise<T> {
+    const next = configMutationQueue.then(operation, operation);
+    configMutationQueue = next.then(
+      () => undefined,
+      () => undefined
+    );
+    return next;
+  }
+
   async function ensureRuntimeCatalogReady(): Promise<Record<string, unknown> | null> {
     if (typeof options.moduleRuntime.getModuleOptions !== "function") {
       return null;
     }
 
     return asRecord(await maybeResolve(options.moduleRuntime.getModuleOptions()));
+  }
+
+  async function buildGameRepairPlan(state: GameState): Promise<AdminGameRepairPlan> {
+    const originalState = safeClone(state);
+    const nextState = safeClone(state);
+    const originalConfig = ensureGameConfig(originalState);
+    const nextConfig = ensureGameConfig(nextState);
+    const changes: AdminGameRepairChange[] = [];
+    const blockers: string[] = [];
+    const [installedModules, moduleOptions] = await Promise.all([
+      options.moduleRuntime.listInstalledModules(),
+      ensureRuntimeCatalogReady()
+    ]);
+    const installedById = new Map(installedModules.map((entry) => [String(entry.id || ""), entry]));
+    const installedOwnersByField = installedSelectionOwners(installedModules);
+    const activeModules = asArray(
+      originalConfig.activeModules as Array<{ id?: string; version?: string }> | null
+    )
+      .map((entry) => ({
+        id: asNonEmptyString(entry?.id),
+        version: asNonEmptyString(entry?.version)
+      }))
+      .filter((entry): entry is { id: string; version: string | null } => Boolean(entry.id));
+    const orphanedModuleIds = activeModules
+      .filter((reference) => {
+        const installed = installedById.get(reference.id);
+        return !installed || installed.enabled === false || installed.compatible === false;
+      })
+      .map((reference) => reference.id);
+    const orphanedModuleIdSet = new Set(orphanedModuleIds);
+
+    if (orphanedModuleIdSet.has("core.base")) {
+      blockers.push("The core.base module is unavailable; automatic repair cannot continue.");
+    }
+
+    const retainedModules = activeModules
+      .filter((reference) => !orphanedModuleIdSet.has(reference.id))
+      .map((reference) => ({
+        id: reference.id,
+        ...(reference.version ? { version: reference.version } : {})
+      }));
+    if (orphanedModuleIds.length) {
+      nextConfig.activeModules = retainedModules;
+      pushRepairChange(
+        changes,
+        "gameConfig.activeModules",
+        originalConfig.activeModules,
+        retainedModules,
+        `Remove unavailable module reference${orphanedModuleIds.length === 1 ? "" : "s"}: ${orphanedModuleIds.join(", ")}.`
+      );
+    }
+
+    const availableProfileCatalogByField = new Map<string, Map<string, string | null> | null>([
+      ["contentProfileId", profileCatalogById(moduleOptions?.contentProfiles)],
+      ["gameplayProfileId", profileCatalogById(moduleOptions?.gameplayProfiles)],
+      ["uiProfileId", profileCatalogById(moduleOptions?.uiProfiles)]
+    ]);
+    const relatedProfileIds: string[] = [];
+
+    REPAIR_PROFILE_FIELDS.forEach((field) => {
+      const profileId = asNonEmptyString(originalConfig[field]);
+      if (!profileId) {
+        return;
+      }
+
+      const availableProfiles = availableProfileCatalogByField.get(field) || null;
+      const ownershipCatalog = mergeSelectionOwnerCatalogs(
+        installedOwnersByField.get(field),
+        availableProfiles
+      );
+      const owningOrphan = findUnavailableCatalogOwner(
+        profileId,
+        orphanedModuleIds,
+        ownershipCatalog
+      );
+      if (owningOrphan) {
+        relatedProfileIds.push(profileId);
+        nextConfig[field] = null;
+        pushRepairChange(
+          changes,
+          `gameConfig.${field}`,
+          profileId,
+          null,
+          `Clear profile owned by unavailable module ${owningOrphan}.`
+        );
+        return;
+      }
+
+      if (orphanedModuleIds.length && availableProfiles && !availableProfiles.has(profileId)) {
+        blockers.push(
+          `${field} "${profileId}" is unresolved and is not owned by an identified orphaned module.`
+        );
+      }
+    });
+
+    const gamePresetId = asNonEmptyString(originalConfig.gamePresetId);
+    const gamePresetCatalog = profileCatalogById(moduleOptions?.gamePresets);
+    const presetOwner = gamePresetId
+      ? findUnavailableCatalogOwner(
+          gamePresetId,
+          orphanedModuleIds,
+          mergeSelectionOwnerCatalogs(installedOwnersByField.get("gamePresetId"), gamePresetCatalog)
+        )
+      : null;
+    if (gamePresetId && presetOwner) {
+      nextConfig.gamePresetId = null;
+      pushRepairChange(
+        changes,
+        "gameConfig.gamePresetId",
+        gamePresetId,
+        null,
+        `Clear preset owned by unavailable module ${presetOwner}.`
+      );
+    } else if (gamePresetId && orphanedModuleIds.length) {
+      try {
+        const resolvedPreset = await options.moduleRuntime.resolveGamePreset({ gamePresetId });
+        if (!resolvedPreset) {
+          blockers.push(`gamePresetId "${gamePresetId}" cannot be resolved safely.`);
+        }
+      } catch (error: unknown) {
+        blockers.push(
+          `gamePresetId "${gamePresetId}" cannot be resolved safely: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    if (orphanedModuleIds.length && !blockers.length) {
+      try {
+        await options.moduleRuntime.resolveGameSelection({
+          activeModuleIds: retainedModules
+            .map((entry) => entry.id)
+            .filter((moduleId) => moduleId !== "core.base"),
+          contentProfileId: asNonEmptyString(nextConfig.contentProfileId),
+          gameplayProfileId: asNonEmptyString(nextConfig.gameplayProfileId),
+          uiProfileId: asNonEmptyString(nextConfig.uiProfileId),
+          contentPackId: asNonEmptyString(nextConfig.contentPackId),
+          pieceSetId: asNonEmptyString(nextConfig.pieceSetId),
+          mapId: asNonEmptyString(nextConfig.mapId),
+          diceRuleSetId: asNonEmptyString(nextConfig.diceRuleSetId),
+          victoryRuleSetId: asNonEmptyString(nextConfig.victoryRuleSetId),
+          themeId: asNonEmptyString(nextConfig.themeId),
+          pieceSkinId: asNonEmptyString(nextConfig.pieceSkinId)
+        });
+      } catch (error: unknown) {
+        blockers.push(
+          `The remaining runtime selections cannot be resolved: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    const resolvedCatalog = asRecord(moduleOptions?.resolvedCatalog) || moduleOptions;
+    const retainedRuntimeThemeId = asNonEmptyString(nextConfig.themeId);
+    const retainedRuntimeThemeIsAvailable = Boolean(
+      retainedRuntimeThemeId &&
+      asRecordArray(resolvedCatalog?.themes)?.some(
+        (theme) => asNonEmptyString(theme.id) === retainedRuntimeThemeId
+      )
+    );
+
+    normalizeGameStateForRepair(nextState);
+    if (retainedRuntimeThemeId && retainedRuntimeThemeIsAvailable) {
+      ensureGameConfig(nextState).themeId = retainedRuntimeThemeId;
+    }
+    REPAIR_ROOT_CONFIG_FIELDS.forEach((field) => {
+      pushRepairChange(
+        changes,
+        field,
+        originalState[field],
+        nextState[field],
+        `Synchronize the persisted root value with gameConfig.${field}.`
+      );
+    });
+    appendUnreportedRepairChanges(originalState, nextState, "", changes);
+    if (changes.length && originalState.phase !== "finished") {
+      blockers.push(
+        "Automatic configuration repair is limited to finished games so live gameplay semantics cannot change."
+      );
+    }
+
+    return {
+      status: blockers.length ? "blocked" : changes.length ? "safe" : "not-needed",
+      orphanedModuleIds,
+      relatedProfileIds,
+      changes,
+      blockers,
+      preservedFields: [...REPAIR_PRESERVED_FIELDS],
+      nextState
+    };
   }
 
   async function resolveAdminDefaults(input: Record<string, unknown> = {}) {
@@ -457,18 +929,92 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
-  async function readConfigSource(): Promise<Record<string, unknown>> {
+  async function readConfigSourceSnapshot(): Promise<{
+    expectedValue: unknown;
+    source: Record<string, unknown>;
+  }> {
     const raw = await maybeResolve(options.datastore.getAppState(ADMIN_CONFIG_STATE_KEY));
-    return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    return {
+      expectedValue: raw,
+      source: raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {}
+    };
+  }
+
+  async function readConfigSource(): Promise<Record<string, unknown>> {
+    return (await readConfigSourceSnapshot()).source;
+  }
+
+  async function compareAndSetConfigSource(
+    expectedValue: unknown,
+    nextSource: Record<string, unknown>
+  ): Promise<boolean> {
+    if (typeof options.datastore.compareAndSetAppState === "function") {
+      return Boolean(
+        await maybeResolve(
+          options.datastore.compareAndSetAppState(ADMIN_CONFIG_STATE_KEY, expectedValue, nextSource)
+        )
+      );
+    }
+    if (isPersistentVercelEnvironment()) {
+      throw new Error("Atomic app-state updates are required in persistent Vercel environments.");
+    }
+    await maybeResolve(options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, nextSource));
+    return true;
   }
 
   async function loadConfigRecord(): Promise<AdminConfigRecord> {
-    const source = await readConfigSource();
-    const defaults = await resolveAdminDefaults(
+    let source = await readConfigSource();
+    const rawDefaults =
       source.defaults && typeof source.defaults === "object"
         ? (source.defaults as Record<string, unknown>)
-        : {}
+        : {};
+    const installedModules = await options.moduleRuntime.listInstalledModules();
+    const defaultsMigration = migratePersistedDevelopmentModuleDefaults(
+      rawDefaults,
+      installedModules
     );
+    let defaults: Record<string, unknown>;
+    if (defaultsMigration.changed) {
+      const migrationResult = await withConfigMutationLock(async () => {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const latestSnapshot = await readConfigSourceSnapshot();
+          const latestSource = latestSnapshot.source;
+          const latestRawDefaults =
+            latestSource.defaults && typeof latestSource.defaults === "object"
+              ? (latestSource.defaults as Record<string, unknown>)
+              : {};
+          const latestMigration = migratePersistedDevelopmentModuleDefaults(
+            latestRawDefaults,
+            installedModules
+          );
+          const latestResolvedDefaults = await resolveAdminDefaults(latestMigration.defaults);
+          if (!latestMigration.changed) {
+            return { source: latestSource, defaults: latestResolvedDefaults };
+          }
+
+          const mergedDefaults: Record<string, unknown> = safeClone(latestRawDefaults);
+          const migratedDefaults = latestMigration.defaults as unknown as Record<string, unknown>;
+          const resolvedDefaults = latestResolvedDefaults as unknown as Record<string, unknown>;
+          ["activeModuleIds", ...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
+            if (!valuesEqual(latestRawDefaults[field], migratedDefaults[field])) {
+              mergedDefaults[field] = safeClone(resolvedDefaults[field]);
+            }
+          });
+          const persistedSource = {
+            ...latestSource,
+            defaults: mergedDefaults
+          };
+          if (await compareAndSetConfigSource(latestSnapshot.expectedValue, persistedSource)) {
+            return { source: persistedSource, defaults: latestResolvedDefaults };
+          }
+        }
+        throw new Error("Admin configuration changed repeatedly during automatic migration.");
+      });
+      source = migrationResult.source;
+      defaults = migrationResult.defaults;
+    } else {
+      defaults = await resolveAdminDefaults(defaultsMigration.defaults);
+    }
     const updatedBySource =
       source.updatedBy && typeof source.updatedBy === "object"
         ? (source.updatedBy as StoredUser | PublicUser)
@@ -483,13 +1029,15 @@ function createAdminConsole(options: AdminConsoleOptions) {
   }
 
   async function saveConfigRecord(record: AdminConfigRecord): Promise<AdminConfigRecord> {
-    await maybeResolve(
-      options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
-        defaults: safeClone(record.defaults),
-        maintenance: safeClone(record.maintenance),
-        updatedAt: record.updatedAt,
-        updatedBy: record.updatedBy
-      })
+    await withConfigMutationLock(() =>
+      maybeResolve(
+        options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, {
+          defaults: safeClone(record.defaults),
+          maintenance: safeClone(record.maintenance),
+          updatedAt: record.updatedAt,
+          updatedBy: record.updatedBy
+        })
+      )
     );
 
     return loadConfigRecord();
@@ -601,11 +1149,20 @@ function createAdminConsole(options: AdminConsoleOptions) {
 
     activeModules.forEach((moduleRef) => {
       const moduleEntry = installedById.get(moduleRef.id);
+      const relatedProfiles = REPAIR_PROFILE_FIELDS.flatMap((field) => {
+        const profileId = asNonEmptyString(config[field]);
+        return profileId && profileBelongsToModule(profileId, moduleRef.id)
+          ? [`${field}="${profileId}"`]
+          : [];
+      });
+      const relatedCopy = relatedProfiles.length
+        ? ` Profili collegati: ${relatedProfiles.join(", ")}.`
+        : "";
       if (!moduleEntry) {
         issues.push({
           code: "orphaned-module-reference",
           severity: "error",
-          message: `La partita riferisce il modulo mancante "${moduleRef.id}".`,
+          message: `La partita riferisce il modulo mancante "${moduleRef.id}".${relatedCopy}`,
           gameId: summary.id
         });
         return;
@@ -615,7 +1172,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
         issues.push({
           code: "disabled-module-reference",
           severity: "error",
-          message: `La partita dipende dal modulo non disponibile "${moduleRef.id}".`,
+          message: `La partita dipende dal modulo non disponibile "${moduleRef.id}".${relatedCopy}`,
           gameId: summary.id
         });
       }
@@ -970,11 +1527,13 @@ function createAdminConsole(options: AdminConsoleOptions) {
       },
       config.maintenance.staleLobbyDays
     );
+    const repairPreview = toAdminGameRepairPreview(await buildGameRepairPlan(record.state));
 
     return {
       game: summary,
       players: buildPlayerSummaries(record.state),
-      rawState: safeClone(record.state)
+      rawState: safeClone(record.state),
+      repairPreview
     };
   }
 
@@ -997,9 +1556,10 @@ function createAdminConsole(options: AdminConsoleOptions) {
       throw new Error(`Partita "${input.gameId}" non trovata.`);
     }
 
-    const nextState = safeClone(gameContext.state);
+    let nextState = safeClone(gameContext.state);
     const beforeState = JSON.stringify(nextState);
     const now = new Date().toISOString();
+    let appliedRepairPreview: AdminGameRepairPreview | null = null;
 
     if (input.action === "close-lobby") {
       requireConfirmation(input.gameId, input.confirmation);
@@ -1014,7 +1574,16 @@ function createAdminConsole(options: AdminConsoleOptions) {
       }
       nextState.phase = "finished";
     } else {
-      normalizeGameStateForRepair(nextState);
+      requireConfirmation(input.gameId, input.confirmation);
+      const repairPlan = await buildGameRepairPlan(nextState);
+      if (repairPlan.status === "blocked") {
+        throw new Error(`Riparazione bloccata: ${repairPlan.blockers.join(" ")}`);
+      }
+      if (repairPlan.status === "not-needed") {
+        throw new Error("La partita non richiede alcuna riparazione sicura.");
+      }
+      nextState = repairPlan.nextState;
+      appliedRepairPreview = toAdminGameRepairPreview(repairPlan);
     }
 
     nextState.adminMeta = {
@@ -1049,13 +1618,21 @@ function createAdminConsole(options: AdminConsoleOptions) {
       targetLabel: detail.game.name,
       result: "success",
       details: {
-        changed
+        changed,
+        ...(appliedRepairPreview
+          ? {
+              orphanedModuleIds: appliedRepairPreview.orphanedModuleIds,
+              relatedProfileIds: appliedRepairPreview.relatedProfileIds,
+              changes: appliedRepairPreview.changes
+            }
+          : {})
       }
     });
 
     return {
       ok: true,
       ...detail,
+      ...(appliedRepairPreview ? { repairPreview: appliedRepairPreview } : {}),
       audit
     };
   }

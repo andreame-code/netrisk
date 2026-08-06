@@ -2,6 +2,15 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.059 - 2026-08-06
+
+- Added a guarded admin preview and repair flow for finished games with orphaned runtime module and profile references while preserving valid gameplay state and selections.
+- Added explicit game-ID confirmation, fail-closed validation, and success/failure audit evidence for configuration repairs.
+- Prevented development-only demo, test, and fixture module IDs from being enabled or persisted in Vercel preview and production deployments.
+- Advanced the central API compatibility version to 1.1.0 for the additive required admin repair-preview response fields.
+- Added atomic app-state compare-and-set persistence and advanced the datastore schema to version 2 so concurrent Vercel instances cannot overwrite newer admin configuration or module catalog changes during cleanup migrations.
+- Recorded minor functional versions for the changed module runtime, public-state contract, and datastore concurrency surface.
+
 ## 0.1.058 - 2026-08-05
 
 - Localized login and registration metadata and content across Italian, English, German, and Spanish on canonical and React alias routes.

@@ -60,6 +60,51 @@ register("Supabase auth lookup uses a case-insensitive exact filter", async () =
   }
 });
 
+register("Supabase app-state compare-and-set uses the atomic service-role RPC", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestUrl = "";
+  let requestInit: RequestInit | undefined;
+
+  globalThis.fetch = async (input: unknown, init?: RequestInit) => {
+    requestUrl = String(input || "");
+    requestInit = init;
+    return new Response("true", {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  try {
+    const datastore = createSupabaseDatastore({
+      supabaseUrl: "https://example.supabase.co",
+      supabaseServiceRoleKey: "service-role-key"
+    });
+    const updated = await datastore.compareAndSetAppState(
+      "adminConsoleConfig",
+      { defaults: { totalPlayers: 3 } },
+      { defaults: { totalPlayers: 4 } }
+    );
+
+    assert.equal(updated, true);
+    assert.equal(
+      requestUrl,
+      "https://example.supabase.co/rest/v1/rpc/netrisk_compare_and_set_app_state"
+    );
+    assert.equal(requestInit?.method, "POST");
+    assert.deepEqual(JSON.parse(String(requestInit?.body || "{}")), {
+      app_state_key: "adminConsoleConfig",
+      expected_value_json: JSON.stringify({ defaults: { totalPlayers: 3 } }),
+      next_value_json: JSON.stringify({ defaults: { totalPlayers: 4 } })
+    });
+    assert.equal(
+      (requestInit?.headers as Record<string, string>).Authorization,
+      "Bearer service-role-key"
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 register("Supabase connection check probes core REST tables without exposing secrets", async () => {
   const requestedUrls: string[] = [];
   const requestedHeaders: Array<Record<string, string>> = [];
@@ -212,6 +257,13 @@ register("Supabase datastore ignores public keys and requires the service role k
 
 register("Supabase schema enables RLS and revokes browser role table access", () => {
   const schemaSql = getSupabaseSchemaSql();
+  const migrationSql = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "supabase/migrations/202608060001_add_atomic_app_state_compare_and_set.sql"
+    ),
+    "utf8"
+  );
 
   ["users", "sessions", "games", "app_state"].forEach((table) => {
     assert.match(schemaSql, new RegExp(`alter table public\\.${table} enable row level security;`));
@@ -224,6 +276,19 @@ register("Supabase schema enables RLS and revokes browser role table access", ()
   assert.match(
     schemaSql,
     /revoke all on table public\.users, public\.sessions, public\.games, public\.app_state from authenticated;/
+  );
+  assert.match(schemaSql, /create or replace function public\.netrisk_compare_and_set_app_state/);
+  assert.match(
+    schemaSql,
+    /grant execute on function public\.netrisk_compare_and_set_app_state\(text, text, text\) to service_role;/
+  );
+  assert.match(
+    migrationSql,
+    /create or replace function public\.netrisk_compare_and_set_app_state/
+  );
+  assert.match(
+    migrationSql,
+    /grant execute on function public\.netrisk_compare_and_set_app_state\(text, text, text\) to service_role;/
   );
 });
 

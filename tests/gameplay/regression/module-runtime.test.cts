@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createApp } = require("../../../backend/server.cjs");
+const { assertPersistentModuleIdAllowed } = require("../../../backend/module-runtime.cjs");
 const { moduleEntriesForSelection } = require("../../../backend/module-runtime-contributions.cjs");
 const {
   listCoreBaseMapSummaries,
@@ -67,6 +68,23 @@ register("module runtime selection accetta una baseline core configurabile", () 
   assert.deepEqual(
     selectedModules.map((moduleEntry: { id: string }) => moduleEntry.id),
     ["core.alt", "demo.extra"]
+  );
+});
+
+register("Vercel deployments reject development-only module ids before persistence", () => {
+  assert.doesNotThrow(() =>
+    assertPersistentModuleIdAllowed("demo.defaults", { VERCEL_ENV: "development" })
+  );
+  assert.doesNotThrow(() =>
+    assertPersistentModuleIdAllowed("community.weather", { VERCEL_ENV: "production" })
+  );
+  assert.throws(
+    () => assertPersistentModuleIdAllowed("demo.defaults", { VERCEL_ENV: "production" }),
+    /Development-only module/
+  );
+  assert.throws(
+    () => assertPersistentModuleIdAllowed("test.fixture", { VERCEL_ENV: "preview" }),
+    /Development-only module/
   );
 });
 

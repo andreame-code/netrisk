@@ -2723,7 +2723,7 @@ register("frontend API client valida sessione, profilo e lobby list al boundary"
       assert.equal(profile.profile.gamesPlayed, 3);
       assert.equal(games.games[0].id, "game-1");
       assert.equal(versionInfo.compatible, true);
-      assert.equal(versionInfo.apiVersion, "1.0.0");
+      assert.equal(versionInfo.apiVersion, "1.1.0");
     }
   );
 

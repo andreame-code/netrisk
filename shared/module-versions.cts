@@ -236,7 +236,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "module-runtime",
     name: "Module Runtime",
     kind: "platform",
-    version: "1.1.1",
+    version: "1.2.0",
     description:
       "Filesystem module discovery, validation, enablement, and resolved catalog output.",
     ownerPaths: [
@@ -264,20 +264,26 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "admin-console",
     name: "Admin Console",
     kind: "admin",
-    version: "1.0.1",
+    version: "1.1.0",
     description: "Admin routes and operational admin workflows.",
-    ownerPaths: ["backend/routes/admin.cts", "docs/admin-console.md", "docs/admin-console-plan.md"]
+    ownerPaths: [
+      "backend/admin-console.cts",
+      "backend/routes/admin.cts",
+      "docs/admin-console.md",
+      "docs/admin-console-plan.md"
+    ]
   },
   {
     id: "datastore",
     name: "Datastore",
     kind: "platform",
-    version: "1.0.2",
+    version: "1.1.0",
     description:
       "Game/session persistence, app state persistence, backups, and datastore schema use.",
     ownerPaths: [
       "backend/game-session-store.cts",
       "backend/datastore.cts",
+      "backend/datastore-supabase.cts",
       "backend/sqlite-datastore.cts",
       "scripts/backup-datastore.cts",
       "scripts/check-backup.cts",
@@ -288,7 +294,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "public-state",
     name: "Public Game State",
     kind: "platform",
-    version: "1.2.0",
+    version: "1.3.0",
     description: "Public/read API game state contracts, snapshots, and shared game models.",
     ownerPaths: [
       "shared/api-contracts.cts",
