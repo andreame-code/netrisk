@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.063 - 2026-08-07
+
+- Redirected anonymous profile and game-setup routes to login before protected content or data requests are loaded.
+- Preserved canonical and `/react` destinations, query parameters, and locale across authentication.
+- Distinguished expired session cookies from first-time anonymous access, cleared stale cookies, and added a localized login notice.
+
 ## 0.1.062 - 2026-08-06
 
 - Replaced the anonymous mobile quick-login form with one compact login action that preserves the requested destination.

@@ -153,6 +153,18 @@ register("unauthenticated creatorless legacy state reads require authentication"
   });
 });
 
+register("expired gameplay cookies preserve the auth-required compatibility response", async () => {
+  await withLegacyCreatorlessApp(async ({ app, gameId }) => {
+    const response = await callApp(app, "GET", `/api/state?gameId=${encodeURIComponent(gameId)}`, {
+      cookie: "netrisk_session=expired-gameplay-session"
+    });
+
+    assert.equal(response.statusCode, 401);
+    assert.equal(response.payload.code, "AUTH_REQUIRED");
+    assert.equal(response.headers["Set-Cookie"], undefined);
+  });
+});
+
 register("unauthenticated creatorless legacy event streams require authentication", async () => {
   await withLegacyCreatorlessApp(async ({ app, gameId }) => {
     const response = await callApp(app, "GET", `/api/events?gameId=${encodeURIComponent(gameId)}`);

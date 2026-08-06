@@ -24,21 +24,21 @@ function isReservedAuthPath(pathname: string): boolean {
 }
 
 function isReactRelativeShellPath(pathname: string): boolean {
+  const pathWithoutSearchOrHash = pathname.split(/[?#]/, 1)[0] || "/";
+  const normalizedPathname =
+    pathWithoutSearchOrHash.length > 1
+      ? pathWithoutSearchOrHash.replace(/\/+$/, "")
+      : pathWithoutSearchOrHash;
+
   return (
-    pathname === "/lobby" ||
-    pathname.startsWith("/lobby?") ||
-    pathname === "/lobby/new" ||
-    pathname.startsWith("/lobby/new?") ||
-    pathname === "/admin" ||
-    pathname.startsWith("/admin?") ||
-    pathname.startsWith("/admin/") ||
-    pathname === "/profile" ||
-    pathname.startsWith("/profile?") ||
-    pathname === "/game" ||
-    pathname.startsWith("/game?") ||
-    /^\/game\/[^?#]+/.test(pathname) ||
-    pathname === "/unauthorized" ||
-    pathname.startsWith("/unauthorized?")
+    normalizedPathname === "/lobby" ||
+    normalizedPathname === "/lobby/new" ||
+    normalizedPathname === "/admin" ||
+    normalizedPathname.startsWith("/admin/") ||
+    normalizedPathname === "/profile" ||
+    normalizedPathname === "/game" ||
+    normalizedPathname.startsWith("/game/") ||
+    normalizedPathname === "/unauthorized"
   );
 }
 

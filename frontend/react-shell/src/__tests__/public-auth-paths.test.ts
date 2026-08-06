@@ -8,6 +8,15 @@ describe("normalizeNextPath", () => {
     expect(normalizeNextPath("/game/g-42", "/react/lobby")).toBe("/react/game/g-42");
   });
 
+  it("keeps trailing-slash protected paths inside the react namespace", () => {
+    expect(normalizeNextPath("/profile/?tab=stats", "/react/lobby")).toBe(
+      "/react/profile/?tab=stats"
+    );
+    expect(normalizeNextPath("/lobby/new/?map=world-classic", "/react/lobby")).toBe(
+      "/react/lobby/new/?map=world-classic"
+    );
+  });
+
   it("falls back for reserved auth destinations", () => {
     expect(normalizeNextPath("/login", "/lobby")).toBe("/lobby");
     expect(normalizeNextPath("/react/register", "/react/lobby")).toBe("/react/lobby");

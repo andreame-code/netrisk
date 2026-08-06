@@ -686,19 +686,24 @@ function createApp(options: CreateAppOptions = {}) {
     req: Request,
     res: Response,
     body: Record<string, any>,
-    url: URL | null = null
+    url: URL | null = null,
+    options: { distinguishExpiredSession?: boolean } = {}
   ) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
+      const sessionExpired = Boolean(sessionToken) && options.distinguishExpiredSession === true;
+      if (sessionExpired) {
+        res.setHeader("Set-Cookie", clearSessionCookie(req));
+      }
       sendLocalizedError(
         res,
         401,
         null,
-        "Sessione non valida.",
-        "server.auth.invalidSession",
+        sessionExpired ? "Sessione scaduta." : "Sessione non valida.",
+        sessionExpired ? "auth.sessionExpired" : "server.auth.invalidSession",
         {},
-        "AUTH_REQUIRED"
+        sessionExpired ? "SESSION_EXPIRED" : "AUTH_REQUIRED"
       );
       return null;
     }
@@ -1491,7 +1496,14 @@ function createApp(options: CreateAppOptions = {}) {
       await handleAuthSessionRoute({
         req,
         res,
-        requireAuth,
+        requireAuth: (
+          sessionReq: Request,
+          sessionRes: Response,
+          sessionBody: Record<string, unknown>
+        ) =>
+          requireAuth(sessionReq, sessionRes, sessionBody, url, {
+            distinguishExpiredSession: true
+          }),
         auth,
         playerProfiles,
         sendJson,
