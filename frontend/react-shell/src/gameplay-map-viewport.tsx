@@ -118,11 +118,7 @@ export function calculateMinimumViewportScale({
   }
 
   return clampNumber(
-    Math.min(
-      MAP_VIEWPORT_DEFAULT_SCALE,
-      surfaceWidth / boardWidth,
-      surfaceHeight / boardHeight
-    ),
+    Math.min(MAP_VIEWPORT_DEFAULT_SCALE, surfaceWidth / boardWidth, surfaceHeight / boardHeight),
     MAP_VIEWPORT_ABSOLUTE_MIN_SCALE,
     MAP_VIEWPORT_DEFAULT_SCALE
   );
