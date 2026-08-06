@@ -650,6 +650,7 @@ export const en = Object.freeze({
   "game.meta.noOptionalModules": "No optional modules",
   "game.map.zoomIn": "Zoom in",
   "game.map.zoomOut": "Zoom out",
+  "game.map.fit": "Fit map to view",
   "game.map.reset": "Reset",
   "game.meta.access": "Access",
   "game.meta.accessCopy": "Register or log in to join the lobby.",

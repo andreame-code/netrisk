@@ -29,6 +29,20 @@ async function expectWithinViewport(page, locator) {
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
 }
 
+async function expectUsableWithReducedViewport(page, locator, viewport, additionalLocators = []) {
+  await page.setViewportSize({
+    width: viewport.width,
+    height: Math.max(420, viewport.height - 360)
+  });
+  await locator.focus();
+  await expect(locator).toBeFocused();
+  await expectWithinViewport(page, locator);
+  for (const additionalLocator of additionalLocators) {
+    await expectWithinViewport(page, additionalLocator);
+  }
+  await page.setViewportSize(viewport);
+}
+
 test.describe("anonymous mobile authentication header", () => {
   for (const viewport of phoneViewports) {
     test(`${viewport.width}x${viewport.height} keeps one compact login flow`, async ({ page }) => {
@@ -49,6 +63,7 @@ test.describe("anonymous mobile authentication header", () => {
       expect(headerBox.height).toBeLessThanOrEqual(120);
 
       await expect(page.locator("#header-login-form")).toBeHidden();
+      await expect(page.locator(".war-nav-user")).toBeHidden();
       await expectTouchTarget(page.locator("#header-login-link"));
       await expectTouchTarget(page.locator(".top-nav-brand"));
       await expectTouchTarget(page.locator(".top-nav-locale"));
@@ -68,11 +83,15 @@ test.describe("anonymous mobile authentication header", () => {
       await expect(page.locator("body")).toHaveAttribute("data-app-section", "game");
       await expect(page.getByTestId("react-shell-game-error")).toBeVisible();
       await expect(page.locator("#header-login-form")).toBeHidden();
+      await expect(page.locator(".war-nav-user")).toBeHidden();
       await expectTouchTarget(page.locator("#header-login-link"));
       const gameLocaleBox = await page.locator(".top-nav-locale").boundingBox();
       const gameLoginBox = await page.locator("#header-login-link").boundingBox();
       expect(gameLocaleBox).not.toBeNull();
       expect(gameLoginBox).not.toBeNull();
+      await expectTouchTarget(page.locator(".top-nav-locale"));
+      await expectWithinViewport(page, page.locator(".top-nav-locale"));
+      await expectWithinViewport(page, page.locator("#header-login-link"));
       expect(gameLocaleBox.x + gameLocaleBox.width).toBeLessThanOrEqual(gameLoginBox.x);
       if (viewport.width === 390) {
         expect(gameLocaleBox.width).toBeGreaterThanOrEqual(52);
@@ -96,15 +115,8 @@ test.describe("anonymous mobile authentication header", () => {
       await expect(username).toHaveAttribute("autocomplete", "username");
       await expect(password).toHaveAttribute("autocomplete", "current-password");
 
-      await username.focus();
-      await expect(username).toBeFocused();
-      await expectWithinViewport(page, username);
-      await password.focus();
-      await expect(password).toBeFocused();
-      await expectWithinViewport(page, password);
-      await submit.focus();
-      await expect(submit).toBeFocused();
-      await expectWithinViewport(page, submit);
+      await expectUsableWithReducedViewport(page, username, viewport);
+      await expectUsableWithReducedViewport(page, password, viewport, [submit]);
     });
   }
 

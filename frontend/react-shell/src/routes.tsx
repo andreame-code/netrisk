@@ -184,7 +184,7 @@ function LoginPage() {
   }
 
   return (
-    <section data-testid="react-shell-login-page">
+    <section className="auth-route-page auth-login-page" data-testid="react-shell-login-page">
       <p className="status-label">{t("login.eyebrow")}</p>
       <h2>{t("login.heading")}</h2>
       <p className="status-copy">{t("login.copy")}</p>

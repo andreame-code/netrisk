@@ -374,6 +374,7 @@ export const de = Object.freeze({
   "game.meta.noOptionalModules": "Keine optionalen Module",
   "game.map.zoomIn": "Hineinzoomen",
   "game.map.zoomOut": "Herauszoomen",
+  "game.map.fit": "Karte an Ansicht anpassen",
   "game.map.reset": "Zuruecksetzen",
   "game.meta.access": "Zugang",
   "game.meta.accessCopy": "Registriere dich oder melde dich an, um der Lobby beizutreten.",
