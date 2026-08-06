@@ -564,6 +564,119 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
   }
 });
 
+test("mobile map can fit the whole board and supports two-finger pinch zoom", async ({ page }) => {
+  await page.setViewportSize(mobileViewports[0]);
+  await openWorldClassicGame(page);
+
+  const surface = page.locator("[data-map-surface]");
+  await expect(surface).toBeVisible();
+  const initialScale = Number(await surface.getAttribute("data-map-scale"));
+  const minimumScale = Number(await surface.getAttribute("data-map-min-scale"));
+  expect(initialScale).toBeCloseTo(1, 3);
+  expect(minimumScale).toBeGreaterThanOrEqual(0.5);
+  expect(minimumScale).toBeLessThan(1);
+
+  await page.locator("[data-map-control='focus']").click();
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(minimumScale, 3);
+
+  const fittedLayout = await page.evaluate(() => {
+    const surfaceElement = document.querySelector("[data-map-surface]");
+    const board = document.querySelector(".game-map-stage .map-board");
+    if (!surfaceElement || !board) {
+      throw new Error("Missing map surface or board");
+    }
+
+    const surfaceRect = surfaceElement.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    return {
+      boardHeight: boardRect.height,
+      boardWidth: boardRect.width,
+      surfaceHeight: surfaceRect.height,
+      surfaceWidth: surfaceRect.width
+    };
+  });
+  expect(fittedLayout.boardWidth).toBeLessThanOrEqual(fittedLayout.surfaceWidth + 1);
+  expect(fittedLayout.boardHeight).toBeLessThanOrEqual(fittedLayout.surfaceHeight + 1);
+
+  await page.evaluate(() => {
+    const surfaceElement = document.querySelector("[data-map-surface]");
+    if (!surfaceElement) {
+      throw new Error("Missing map surface");
+    }
+
+    const rect = surfaceElement.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dispatchTouchPointer = (type, pointerId, clientX, clientY) => {
+      surfaceElement.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons: type === "pointerup" ? 0 : 1,
+          clientX,
+          clientY,
+          isPrimary: pointerId === 41,
+          pointerId,
+          pointerType: "touch"
+        })
+      );
+    };
+
+    dispatchTouchPointer("pointerdown", 41, centerX - 40, centerY);
+    dispatchTouchPointer("pointerdown", 42, centerX + 40, centerY);
+    dispatchTouchPointer("pointermove", 41, centerX - 80, centerY);
+    dispatchTouchPointer("pointermove", 42, centerX + 80, centerY);
+    dispatchTouchPointer("pointerup", 41, centerX - 80, centerY);
+    dispatchTouchPointer("pointerup", 42, centerX + 80, centerY);
+  });
+
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeGreaterThan(minimumScale + 0.2);
+  const zoomedScale = Number(await surface.getAttribute("data-map-scale"));
+
+  await page.evaluate(() => {
+    const surfaceElement = document.querySelector("[data-map-surface]");
+    if (!surfaceElement) {
+      throw new Error("Missing map surface");
+    }
+
+    const rect = surfaceElement.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dispatchTouchPointer = (type, pointerId, clientX, clientY) => {
+      surfaceElement.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons: type === "pointerup" ? 0 : 1,
+          clientX,
+          clientY,
+          isPrimary: pointerId === 51,
+          pointerId,
+          pointerType: "touch"
+        })
+      );
+    };
+
+    dispatchTouchPointer("pointerdown", 51, centerX - 80, centerY);
+    dispatchTouchPointer("pointerdown", 52, centerX + 80, centerY);
+    dispatchTouchPointer("pointermove", 51, centerX - 10, centerY);
+    dispatchTouchPointer("pointermove", 52, centerX + 10, centerY);
+    dispatchTouchPointer("pointerup", 51, centerX - 10, centerY);
+    dispatchTouchPointer("pointerup", 52, centerX + 10, centerY);
+  });
+
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeLessThan(zoomedScale);
+  await expect
+    .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+    .toBeCloseTo(minimumScale, 3);
+});
+
 test("mobile attack sheet keeps primary actions visible and expands only secondary actions", async ({
   page
 }) => {

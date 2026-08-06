@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.061 - 2026-08-06
+
+- Added fit-to-view zoom for horizontally cropped mobile maps so the complete board can be displayed on screen.
+- Added native two-pointer pinch-to-zoom while preserving one-pointer panning, mouse wheel zoom, and the existing zoom controls.
+- Added unit and mobile browser regressions for minimum-scale calculation, full-board visibility, and pinch gesture behavior.
+
 ## 0.1.060 - 2026-08-06
 
 - Replaced stale-lobby phase mutation with atomic deletion guarded by game ID, version, and update timestamp so concurrent activity is never removed.
