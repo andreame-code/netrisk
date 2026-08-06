@@ -70,6 +70,10 @@ type Statement<Row> = {
   run(...args: unknown[]): unknown;
 };
 
+type StatementRunResult = {
+  changes?: number | bigint;
+};
+
 type DatastoreOptions = {
   driver?: string;
   dbFile?: string;
@@ -272,6 +276,9 @@ function createDatastore(options: DatastoreOptions = {}) {
       "UPDATE games SET name = ?, version = ?, creator_user_id = ?, state_json = ?, updated_at = ? WHERE id = ?"
     ) as Statement<unknown>,
     deleteGame: db.prepare("DELETE FROM games WHERE id = ?") as Statement<unknown>,
+    deleteGameIfUnchanged: db.prepare(
+      "DELETE FROM games WHERE id = ? AND version = ? AND updated_at = ?"
+    ) as Statement<unknown>,
     getAppState: db.prepare(
       "SELECT value_json FROM app_state WHERE key = ?"
     ) as Statement<AppStateRow | null>,
@@ -533,6 +540,20 @@ function createDatastore(options: DatastoreOptions = {}) {
         if (activeGameId === gameId) {
           statements.setAppState.run("activeGameId", JSON.stringify(null));
         }
+      });
+    },
+    deleteGameIfUnchanged(gameId: string, expectedVersion: number, expectedUpdatedAt: string) {
+      return transaction(() => {
+        const result = statements.deleteGameIfUnchanged.run(
+          gameId,
+          expectedVersion,
+          expectedUpdatedAt
+        ) as StatementRunResult;
+        const deleted = Number(result.changes || 0) === 1;
+        if (deleted && datastore.getActiveGameId() === gameId) {
+          statements.setAppState.run("activeGameId", JSON.stringify(null));
+        }
+        return deleted;
       });
     },
     getActiveGameId() {

@@ -181,8 +181,15 @@ type AdminConsoleOptions = {
         };
     datastore: {
       listGames(): Promise<RawGameRecord[]> | RawGameRecord[];
+      findGameById?(gameId: string): Promise<RawGameRecord | null> | RawGameRecord | null;
+      deleteGameIfUnchanged?(
+        gameId: string,
+        expectedVersion: number,
+        expectedUpdatedAt: string
+      ): Promise<boolean> | boolean;
     };
   };
+  onGameDeleted?(gameId: string): Promise<void> | void;
   loadGameContext(gameId: string | null): Promise<GameContext>;
   persistGameContext(gameContext: GameContext, expectedVersion?: number | null): Promise<unknown>;
   broadcastGame(gameContext: GameContext): void;
@@ -359,6 +366,15 @@ function isStale(updatedAt: string | null | undefined, staleLobbyDays: number): 
 
   const ageMs = Date.now() - parsed.getTime();
   return ageMs > staleLobbyDays * 24 * 60 * 60 * 1000;
+}
+
+function staleAgeDays(updatedAt: string | null | undefined): number {
+  const parsed = new Date(String(updatedAt || ""));
+  if (Number.isNaN(parsed.getTime())) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((Date.now() - parsed.getTime()) / (24 * 60 * 60 * 1000)));
 }
 
 function ensureGameConfig(state: GameState): Record<string, unknown> {
@@ -1699,8 +1715,20 @@ function createAdminConsole(options: AdminConsoleOptions) {
       )
     );
     const issues = enrichedGames.flatMap((game) => game.issues);
+    const eligibleStaleLobbies = enrichedGames
+      .filter((game) => game.phase === "lobby" && game.stale)
+      .map((game) => ({
+        id: game.id,
+        name: game.name,
+        version:
+          Number.isInteger(game.version) && Number(game.version) > 0 ? Number(game.version) : 1,
+        updatedAt: game.updatedAt,
+        ageDays: staleAgeDays(game.updatedAt)
+      }));
 
     return {
+      staleLobbyDays: config.maintenance.staleLobbyDays,
+      eligibleStaleLobbies,
       summary: {
         totalGames: enrichedGames.length,
         staleLobbies: enrichedGames.filter((game) => game.stale).length,
@@ -1739,6 +1767,7 @@ function createAdminConsole(options: AdminConsoleOptions) {
         ok: true,
         report,
         affectedGameIds: [],
+        cleanup: null,
         audit
       };
     }
@@ -1748,48 +1777,62 @@ function createAdminConsole(options: AdminConsoleOptions) {
     }
 
     const config = await loadConfigRecord();
-    const games = await listGames({ status: "lobby" });
-    const staleGames = games.games.filter(
-      (game) => game.stale || game.issues.some((issue) => issue.code === "stale-lobby")
-    );
-    const affectedGameIds: string[] = [];
+    const initialReport = await getMaintenanceReport();
+    const eligibleGameIds = initialReport.eligibleStaleLobbies.map((game) => game.id);
+    const removedGameIds: string[] = [];
+    const skippedGames: Array<{ gameId: string; reason: string }> = [];
+    const failedGames: Array<{ gameId: string; reason: string }> = [];
 
-    for (const game of staleGames) {
-      const context = await options.loadGameContext(game.id);
-      if (!context?.gameId) {
-        continue;
-      }
-
-      if (String(context.state?.phase || "") !== "lobby") {
-        continue;
-      }
-
-      const nextState = safeClone(context.state);
-      nextState.phase = "finished";
-      nextState.adminMeta = {
-        ...(nextState.adminMeta && typeof nextState.adminMeta === "object"
-          ? (nextState.adminMeta as Record<string, unknown>)
-          : {}),
-        lastAction: "cleanup-stale-lobbies",
-        actedAt: new Date().toISOString(),
-        actedBy: {
-          id: actor.id,
-          username: actor.username
+    for (const candidate of initialReport.eligibleStaleLobbies) {
+      try {
+        if (
+          typeof options.gameSessions.datastore.findGameById !== "function" ||
+          typeof options.gameSessions.datastore.deleteGameIfUnchanged !== "function"
+        ) {
+          throw new Error("Il datastore non supporta la cancellazione atomica delle lobby.");
         }
-      };
 
-      await options.persistGameContext(
-        {
-          ...context,
-          state: nextState
-        },
-        context.version
-      );
-      options.broadcastGame({
-        ...context,
-        state: nextState
-      });
-      affectedGameIds.push(game.id);
+        const current = await maybeResolve(
+          options.gameSessions.datastore.findGameById(candidate.id)
+        );
+        if (!current) {
+          skippedGames.push({ gameId: candidate.id, reason: "already-removed" });
+          continue;
+        }
+        if (String(current.state?.phase || "") !== "lobby") {
+          skippedGames.push({ gameId: candidate.id, reason: "phase-changed" });
+          continue;
+        }
+        if (!isStale(current.updatedAt, config.maintenance.staleLobbyDays)) {
+          skippedGames.push({ gameId: candidate.id, reason: "no-longer-stale" });
+          continue;
+        }
+
+        const currentVersion =
+          Number.isInteger(current.version) && Number(current.version) > 0
+            ? Number(current.version)
+            : 1;
+        const deleted = await maybeResolve(
+          options.gameSessions.datastore.deleteGameIfUnchanged(
+            current.id,
+            currentVersion,
+            current.updatedAt
+          )
+        );
+        if (!deleted) {
+          skippedGames.push({ gameId: candidate.id, reason: "changed-during-cleanup" });
+          continue;
+        }
+
+        removedGameIds.push(candidate.id);
+        try {
+          await maybeResolve(options.onGameDeleted?.(candidate.id));
+        } catch (error) {
+          console.error("Failed to clear runtime state after stale lobby deletion:", error);
+        }
+      } catch (_error) {
+        failedGames.push({ gameId: candidate.id, reason: "delete-failed" });
+      }
     }
 
     const report = await getMaintenanceReport();
@@ -1799,17 +1842,26 @@ function createAdminConsole(options: AdminConsoleOptions) {
       targetType: "maintenance",
       targetId: "cleanup-stale-lobbies",
       targetLabel: "Stale lobby cleanup",
-      result: "success",
+      result: failedGames.length ? "failure" : "success",
       details: {
         staleLobbyDays: config.maintenance.staleLobbyDays,
-        affectedGameIds
+        eligibleGameIds,
+        removedGameIds,
+        skippedGames,
+        failedGames
       }
     });
 
     return {
       ok: true,
       report,
-      affectedGameIds,
+      affectedGameIds: removedGameIds,
+      cleanup: {
+        eligibleGameIds,
+        removedGameIds,
+        skippedGames,
+        failedGames
+      },
       audit
     };
   }

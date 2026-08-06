@@ -442,6 +442,18 @@ function createApp(options: CreateAppOptions = {}) {
     loadGameContext,
     persistGameContext,
     broadcastGame,
+    onGameDeleted(gameId: string) {
+      const clients = clientsByGameId.get(gameId);
+      clients?.forEach((client) => client.res.end());
+      clientsByGameId.delete(gameId);
+      if (gameId === activeGameId) {
+        activeGameId = null;
+        activeGameVersion = null;
+        activeGameName = null;
+        activeGameCreatorUserId = null;
+        replaceState(createInitialState());
+      }
+    },
     createConfiguredInitialState,
     moduleRuntime,
     authoredModules

@@ -80,6 +80,11 @@ interface GameSessionStoreOptions {
     getActiveGameId(): string | null | Promise<string | null>;
     updateGame(entry: GameEntry): GameEntry | Promise<GameEntry>;
     deleteGame?(gameId: string): void | Promise<void>;
+    deleteGameIfUnchanged?(
+      gameId: string,
+      expectedVersion: number,
+      expectedUpdatedAt: string
+    ): boolean | Promise<boolean>;
   };
   dbFile?: string;
   dataFile?: string;

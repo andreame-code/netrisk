@@ -2,6 +2,14 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.060 - 2026-08-06
+
+- Replaced stale-lobby phase mutation with atomic deletion guarded by game ID, version, and update timestamp so concurrent activity is never removed.
+- Added an exact maintenance candidate report with the configured age threshold and immediate post-cleanup revalidation.
+- Added per-lobby removed, skipped, and failed results to the admin UI and persistent maintenance audit trail.
+- Added SQLite, Supabase, API, and React regressions for stale, recent, active, finished, concurrent-change, and deletion-failure cases.
+- Advanced the additive admin maintenance API contract to 1.2.0 and the admin-console, datastore, and public-state module versions.
+
 ## 0.1.059 - 2026-08-06
 
 - Added a guarded admin preview and repair flow for finished games with orphaned runtime module and profile references while preserving valid gameplay state and selections.

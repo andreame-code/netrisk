@@ -1720,6 +1720,16 @@ export const adminConfigUpdateResponseSchema = objectSchema({
 export type AdminConfigUpdateResponse = z.infer<typeof adminConfigUpdateResponseSchema>;
 
 export const adminMaintenanceReportSchema = objectSchema({
+  staleLobbyDays: z.number().int().min(1).max(365),
+  eligibleStaleLobbies: z.array(
+    objectSchema({
+      id: z.string().min(1),
+      name: z.string().min(1),
+      version: z.number().int().positive(),
+      updatedAt: z.string().min(1),
+      ageDays: z.number().int().nonnegative()
+    })
+  ),
   summary: objectSchema({
     totalGames: z.number().int(),
     staleLobbies: z.number().int(),
@@ -1742,6 +1752,22 @@ export const adminMaintenanceActionResponseSchema = objectSchema({
   ok: z.literal(true),
   report: adminMaintenanceReportSchema,
   affectedGameIds: z.array(z.string().min(1)),
+  cleanup: objectSchema({
+    eligibleGameIds: z.array(z.string().min(1)),
+    removedGameIds: z.array(z.string().min(1)),
+    skippedGames: z.array(
+      objectSchema({
+        gameId: z.string().min(1),
+        reason: z.string().min(1)
+      })
+    ),
+    failedGames: z.array(
+      objectSchema({
+        gameId: z.string().min(1),
+        reason: z.string().min(1)
+      })
+    )
+  }).nullable(),
   audit: adminAuditEntrySchema
 });
 

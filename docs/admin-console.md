@@ -17,7 +17,7 @@ The NetRisk administrator area lives at `/admin`, with `/react/admin` kept as th
 - `Configurations`: global admin defaults, enabled modules, profiles, runtime defaults, and maintenance thresholds
 - `Runtime / Modules`: module catalog management through the existing module admin tooling
 - `Content Studio`: constrained authoring for gameplay modules; supports validated maps and `victory-objectives`
-- `Maintenance`: validation report and guarded cleanup/repair actions
+- `Maintenance`: validation report with the configured stale threshold, exact eligible lobby list, and guarded cleanup/repair actions
 - `System Health`: diagnostics view for module references, game snapshots, stale lobbies, and maintenance findings
 - `Audit Log`: persistent log of admin mutations with actor, action, target, and result
 
@@ -53,6 +53,8 @@ Notes:
 - Content Studio maps and objective modules are schema-validated server-side before publish/enable and never execute arbitrary uploaded code
 - authored maps cannot be disabled while referenced by active games or admin defaults
 - game repair preserves runtime-resolved IDs while synchronizing stale top-level snapshot fields
+- stale-lobby cleanup deletes only a row that is still a lobby, still older than the configured threshold, and still has the version/timestamp inspected immediately before deletion
+- cleanup revalidates the report immediately and audits exact eligible, removed, skipped, and failed game IDs
 - cleanup and destructive actions are audit logged on both success and failure paths where applicable
 
 ## Regression coverage
@@ -66,4 +68,5 @@ Notable backend regressions covered today:
 
 - create-game requests that provide an explicit `ruleSetId` but omit `pieceSetId` still preserve valid admin defaults for piece sets
 - destructive admin actions fail closed without explicit confirmation and emit audit entries on the failure path
+- stale, recent, active, and finished fixtures verify cleanup eligibility; concurrent phase/version/timestamp changes verify that live lobbies are skipped
 - anonymous and authenticated non-admin callers receive `AUTH_REQUIRED` or `ADMIN_ONLY` on protected admin mutations

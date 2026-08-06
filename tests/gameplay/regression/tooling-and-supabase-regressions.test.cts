@@ -105,6 +105,109 @@ register("Supabase app-state compare-and-set uses the atomic service-role RPC", 
   }
 });
 
+register("Supabase stale-lobby deletion uses exact optimistic-concurrency filters", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests: Array<{ url: string; init?: RequestInit }> = [];
+  const expectedUpdatedAt = "2026-07-20T10:00:00.000Z";
+
+  globalThis.fetch = async (input: unknown, init?: RequestInit) => {
+    const url = String(input || "");
+    requests.push({ url, init });
+    if (url.includes("/games?")) {
+      return new Response(JSON.stringify([{ id: "stale-lobby" }]), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    if (url.endsWith("/rpc/netrisk_compare_and_set_app_state")) {
+      return new Response("true", {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return new Response("[]", {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  try {
+    const datastore = createSupabaseDatastore({
+      supabaseUrl: "https://example.supabase.co",
+      supabaseServiceRoleKey: "service-role-key"
+    });
+    const deleted = await datastore.deleteGameIfUnchanged("stale-lobby", 4, expectedUpdatedAt);
+
+    assert.equal(deleted, true);
+    const deleteRequest = requests.find((request) => request.init?.method === "DELETE");
+    if (!deleteRequest) {
+      throw new Error("Expected an atomic Supabase DELETE request.");
+    }
+    const deleteUrl = new URL(deleteRequest.url);
+    assert.equal(deleteUrl.pathname, "/rest/v1/games");
+    assert.equal(deleteUrl.searchParams.get("id"), "eq.stale-lobby");
+    assert.equal(deleteUrl.searchParams.get("version"), "eq.4");
+    assert.equal(deleteUrl.searchParams.get("updated_at"), `eq.${expectedUpdatedAt}`);
+    assert.equal(
+      (deleteRequest.init?.headers as Record<string, string>).Prefer,
+      "return=representation"
+    );
+    const compareAndSetRequest = requests.find((request) =>
+      request.url.endsWith("/rpc/netrisk_compare_and_set_app_state")
+    );
+    assert.equal(compareAndSetRequest?.init?.method, "POST");
+    assert.deepEqual(JSON.parse(String(compareAndSetRequest?.init?.body || "{}")), {
+      app_state_key: "activeGameId",
+      expected_value_json: JSON.stringify("stale-lobby"),
+      next_value_json: JSON.stringify(null)
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+register("Supabase stale-lobby deletion preserves success when pointer cleanup fails", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalConsoleError = console.error;
+  const errors: unknown[][] = [];
+
+  globalThis.fetch = async (input: unknown) => {
+    const url = String(input || "");
+    if (url.includes("/games?")) {
+      return new Response(JSON.stringify([{ id: "stale-lobby" }]), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return new Response(JSON.stringify({ message: "simulated app-state outage" }), {
+      status: 503,
+      headers: { "content-type": "application/json" }
+    });
+  };
+  console.error = (...args: unknown[]) => {
+    errors.push(args);
+  };
+
+  try {
+    const datastore = createSupabaseDatastore({
+      supabaseUrl: "https://example.supabase.co",
+      supabaseServiceRoleKey: "service-role-key"
+    });
+    const deleted = await datastore.deleteGameIfUnchanged(
+      "stale-lobby",
+      4,
+      "2026-07-20T10:00:00.000Z"
+    );
+
+    assert.equal(deleted, true);
+    assert.equal(errors.length, 1);
+    assert.match(String(errors[0]?.[0]), /Failed to clear active game/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalConsoleError;
+  }
+});
+
 register("Supabase connection check probes core REST tables without exposing secrets", async () => {
   const requestedUrls: string[] = [];
   const requestedHeaders: Array<Record<string, string>> = [];
