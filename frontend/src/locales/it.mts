@@ -654,6 +654,7 @@ export const it = Object.freeze({
   "game.meta.noOptionalModules": "Nessun modulo opzionale",
   "game.map.zoomIn": "Zoom avanti",
   "game.map.zoomOut": "Zoom indietro",
+  "game.map.fit": "Adatta mappa alla schermata",
   "game.map.reset": "Reset",
   "game.meta.access": "Access",
   "game.meta.accessCopy": "Registrati o accedi per entrare nella lobby.",
