@@ -1567,6 +1567,8 @@ register(
         storedGame.state.gameConfig.diceRuleSetId = "demo-barrage";
         storedGame.state.gameConfig.diceRuleSetName = "Demo Barrage";
         storedGame.state.diceRuleSetId = "standard";
+        storedGame.state.phase = "finished";
+        storedGame.state.turnPhase = "finished";
         storedGame.updatedAt = new Date().toISOString();
         await app.datastore.updateGame(storedGame);
         await activateSeparateGame(app, adminSessionToken);
@@ -2156,6 +2158,70 @@ register("admin orphan repair fails closed for a live game", async () => {
     ]);
   });
 });
+
+register(
+  "admin configuration repair blocks legacy normalization on a live core-only game",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const createGameResponse = await callApp(
+        app,
+        "POST",
+        "/api/games",
+        {
+          name: "Live legacy normalization fixture",
+          totalPlayers: 2,
+          players: [{ type: "human" }, { type: "ai" }]
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(createGameResponse.statusCode, 201, JSON.stringify(createGameResponse.payload));
+      const gameId = createGameResponse.payload.game.id;
+      const storedGame = await app.datastore.findGameById(gameId);
+      assert.ok(storedGame);
+      storedGame.state.phase = "active";
+      storedGame.state.diceRuleSetId = "legacy-stale";
+      storedGame.updatedAt = new Date().toISOString();
+      await app.datastore.updateGame(storedGame);
+      const beforeRepair = await app.datastore.findGameById(gameId);
+      assert.ok(beforeRepair);
+
+      const detailResponse = await callApp(
+        app,
+        "GET",
+        `/api/admin/games/${gameId}`,
+        {},
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(detailResponse.statusCode, 200, JSON.stringify(detailResponse.payload));
+      assert.equal(detailResponse.payload.repairPreview.orphanedModuleIds.length, 0);
+      assert.equal(detailResponse.payload.repairPreview.status, "blocked");
+      assert.equal(
+        detailResponse.payload.repairPreview.changes.some(
+          (change: any) => change.path === "diceRuleSetId"
+        ),
+        true
+      );
+      assert.equal(
+        detailResponse.payload.repairPreview.blockers.some((blocker: string) =>
+          blocker.includes("finished games")
+        ),
+        true
+      );
+
+      const repairResponse = await callApp(
+        app,
+        "POST",
+        "/api/admin/games/action",
+        { gameId, action: "repair-game-config", confirmation: gameId },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(repairResponse.statusCode, 400, JSON.stringify(repairResponse.payload));
+      const afterRepair = await app.datastore.findGameById(gameId);
+      assert.equal(afterRepair?.version, beforeRepair.version);
+      assert.equal(afterRepair?.state.diceRuleSetId, "legacy-stale");
+    });
+  }
+);
 
 register(
   "admin console routes expose operational reads, maintenance validation, termination, and audit history",

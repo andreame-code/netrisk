@@ -698,12 +698,6 @@ function createAdminConsole(options: AdminConsoleOptions) {
       blockers.push("The core.base module is unavailable; automatic repair cannot continue.");
     }
 
-    if (orphanedModuleIds.length && nextState.phase !== "finished") {
-      blockers.push(
-        "Automatic orphan repair is limited to finished games so live gameplay semantics cannot change."
-      );
-    }
-
     const retainedModules = activeModules
       .filter((reference) => !orphanedModuleIdSet.has(reference.id))
       .map((reference) => ({
@@ -842,6 +836,11 @@ function createAdminConsole(options: AdminConsoleOptions) {
       );
     });
     appendUnreportedRepairChanges(originalState, nextState, "", changes);
+    if (changes.length && originalState.phase !== "finished") {
+      blockers.push(
+        "Automatic configuration repair is limited to finished games so live gameplay semantics cannot change."
+      );
+    }
 
     return {
       status: blockers.length ? "blocked" : changes.length ? "safe" : "not-needed",
