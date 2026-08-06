@@ -659,6 +659,18 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
       );
       return datastore.getAppState(key);
     },
+    async compareAndSetAppState(key: string, expectedValue: unknown, nextValue: unknown) {
+      await ensureInitialized();
+      const updated = await request("/rpc/netrisk_compare_and_set_app_state", {
+        method: "POST",
+        body: {
+          app_state_key: String(key || ""),
+          expected_value_json: JSON.stringify(expectedValue ?? null),
+          next_value_json: JSON.stringify(nextValue ?? null)
+        }
+      });
+      return updated === true;
+    },
     async setActiveGameId(gameId: string | null) {
       await ensureInitialized();
       await upsertRows(

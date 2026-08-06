@@ -162,6 +162,11 @@ type AdminConsoleOptions = {
     deleteSessionsForUser?(userId: string): Promise<void> | void;
     getAppState(key: string): Promise<unknown> | unknown;
     setAppState(key: string, value: unknown): Promise<unknown> | unknown;
+    compareAndSetAppState?(
+      key: string,
+      expectedValue: unknown,
+      nextValue: unknown
+    ): Promise<boolean> | boolean;
   };
   auth: {
     publicUser(user: StoredUser | null | undefined): PublicUser | null;
@@ -925,9 +930,37 @@ function createAdminConsole(options: AdminConsoleOptions) {
     };
   }
 
-  async function readConfigSource(): Promise<Record<string, unknown>> {
+  async function readConfigSourceSnapshot(): Promise<{
+    expectedValue: unknown;
+    source: Record<string, unknown>;
+  }> {
     const raw = await maybeResolve(options.datastore.getAppState(ADMIN_CONFIG_STATE_KEY));
-    return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    return {
+      expectedValue: raw,
+      source: raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {}
+    };
+  }
+
+  async function readConfigSource(): Promise<Record<string, unknown>> {
+    return (await readConfigSourceSnapshot()).source;
+  }
+
+  async function compareAndSetConfigSource(
+    expectedValue: unknown,
+    nextSource: Record<string, unknown>
+  ): Promise<boolean> {
+    if (typeof options.datastore.compareAndSetAppState === "function") {
+      return Boolean(
+        await maybeResolve(
+          options.datastore.compareAndSetAppState(ADMIN_CONFIG_STATE_KEY, expectedValue, nextSource)
+        )
+      );
+    }
+    if (isPersistentVercelEnvironment()) {
+      throw new Error("Atomic app-state updates are required in persistent Vercel environments.");
+    }
+    await maybeResolve(options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, nextSource));
+    return true;
   }
 
   async function loadConfigRecord(): Promise<AdminConfigRecord> {
@@ -944,34 +977,39 @@ function createAdminConsole(options: AdminConsoleOptions) {
     let defaults: Record<string, unknown>;
     if (defaultsMigration.changed) {
       const migrationResult = await withConfigMutationLock(async () => {
-        const latestSource = await readConfigSource();
-        const latestRawDefaults =
-          latestSource.defaults && typeof latestSource.defaults === "object"
-            ? (latestSource.defaults as Record<string, unknown>)
-            : {};
-        const latestMigration = migratePersistedDevelopmentModuleDefaults(
-          latestRawDefaults,
-          installedModules
-        );
-        const latestResolvedDefaults = await resolveAdminDefaults(latestMigration.defaults);
-        if (!latestMigration.changed) {
-          return { source: latestSource, defaults: latestResolvedDefaults };
-        }
-
-        const mergedDefaults: Record<string, unknown> = safeClone(latestRawDefaults);
-        const migratedDefaults = latestMigration.defaults as unknown as Record<string, unknown>;
-        const resolvedDefaults = latestResolvedDefaults as unknown as Record<string, unknown>;
-        ["activeModuleIds", ...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
-          if (!valuesEqual(latestRawDefaults[field], migratedDefaults[field])) {
-            mergedDefaults[field] = safeClone(resolvedDefaults[field]);
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const latestSnapshot = await readConfigSourceSnapshot();
+          const latestSource = latestSnapshot.source;
+          const latestRawDefaults =
+            latestSource.defaults && typeof latestSource.defaults === "object"
+              ? (latestSource.defaults as Record<string, unknown>)
+              : {};
+          const latestMigration = migratePersistedDevelopmentModuleDefaults(
+            latestRawDefaults,
+            installedModules
+          );
+          const latestResolvedDefaults = await resolveAdminDefaults(latestMigration.defaults);
+          if (!latestMigration.changed) {
+            return { source: latestSource, defaults: latestResolvedDefaults };
           }
-        });
-        const persistedSource = {
-          ...latestSource,
-          defaults: mergedDefaults
-        };
-        await maybeResolve(options.datastore.setAppState(ADMIN_CONFIG_STATE_KEY, persistedSource));
-        return { source: persistedSource, defaults: latestResolvedDefaults };
+
+          const mergedDefaults: Record<string, unknown> = safeClone(latestRawDefaults);
+          const migratedDefaults = latestMigration.defaults as unknown as Record<string, unknown>;
+          const resolvedDefaults = latestResolvedDefaults as unknown as Record<string, unknown>;
+          ["activeModuleIds", ...REPAIR_PROFILE_FIELDS, "gamePresetId"].forEach((field) => {
+            if (!valuesEqual(latestRawDefaults[field], migratedDefaults[field])) {
+              mergedDefaults[field] = safeClone(resolvedDefaults[field]);
+            }
+          });
+          const persistedSource = {
+            ...latestSource,
+            defaults: mergedDefaults
+          };
+          if (await compareAndSetConfigSource(latestSnapshot.expectedValue, persistedSource)) {
+            return { source: persistedSource, defaults: latestResolvedDefaults };
+          }
+        }
+        throw new Error("Admin configuration changed repeatedly during automatic migration.");
       });
       source = migrationResult.source;
       defaults = migrationResult.defaults;

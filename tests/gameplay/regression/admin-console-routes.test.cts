@@ -1121,6 +1121,32 @@ register(
           liveGame.updatedAt = "2026-08-01T01:00:00.000Z";
           await app.datastore.updateGame(liveGame);
 
+          const originalCompareAndSetAppState = app.datastore.compareAndSetAppState.bind(
+            app.datastore
+          );
+          let concurrentCatalogUpdateInjected = false;
+          app.datastore.compareAndSetAppState = async (
+            key: string,
+            expectedValue: unknown,
+            nextValue: unknown
+          ) => {
+            if (key === "moduleCatalogState" && !concurrentCatalogUpdateInjected) {
+              concurrentCatalogUpdateInjected = true;
+              const concurrentState = (await app.datastore.getAppState(
+                "moduleCatalogState"
+              )) as any;
+              await app.datastore.setAppState("moduleCatalogState", {
+                ...concurrentState,
+                enabledById: {
+                  ...concurrentState.enabledById,
+                  "community.production": true
+                },
+                updatedAt: "2026-08-01T01:30:00.000Z"
+              });
+            }
+            return originalCompareAndSetAppState(key, expectedValue, nextValue);
+          };
+
           const cleanedModules = await app.moduleRuntime.listInstalledModules();
           assert.equal(
             cleanedModules.find((entry: any) => entry.id === "demo.live")?.enabled,
@@ -1128,6 +1154,7 @@ register(
           );
           const cleanedCatalogState = await app.datastore.getAppState("moduleCatalogState");
           assert.equal(cleanedCatalogState.enabledById["demo.live"], false);
+          assert.equal(cleanedCatalogState.enabledById["community.production"], true);
         } finally {
           if (typeof originalVercelEnvironment === "undefined") {
             delete process.env.VERCEL_ENV;
@@ -1198,6 +1225,31 @@ register("read-time default migration preserves a concurrent newer admin config"
           return installedModules;
         };
 
+        const originalCompareAndSetAppState = app.datastore.compareAndSetAppState.bind(
+          app.datastore
+        );
+        let concurrentCompareAndSetUpdateInjected = false;
+        app.datastore.compareAndSetAppState = async (
+          key: string,
+          expectedValue: unknown,
+          nextValue: unknown
+        ) => {
+          if (key === "adminConsoleConfig" && !concurrentCompareAndSetUpdateInjected) {
+            concurrentCompareAndSetUpdateInjected = true;
+            await app.datastore.setAppState("adminConsoleConfig", {
+              defaults: {
+                activeModuleIds: ["demo.concurrent"],
+                totalPlayers: 3,
+                turnTimeoutHours: 48
+              },
+              maintenance: { staleLobbyDays: 45, auditLogLimit: 88 },
+              updatedAt: "2026-08-01T00:45:00.000Z",
+              updatedBy: null
+            });
+          }
+          return originalCompareAndSetAppState(key, expectedValue, nextValue);
+        };
+
         const response = await callApp(
           app,
           "GET",
@@ -1206,19 +1258,19 @@ register("read-time default migration preserves a concurrent newer admin config"
           authHeaders(adminSessionToken)
         );
         assert.equal(response.statusCode, 200, JSON.stringify(response.payload));
-        assert.equal(response.payload.config.defaults.totalPlayers, 4);
-        assert.equal(response.payload.config.defaults.turnTimeoutHours, 72);
+        assert.equal(response.payload.config.defaults.totalPlayers, 3);
+        assert.equal(response.payload.config.defaults.turnTimeoutHours, 48);
         assert.deepEqual(response.payload.config.defaults.activeModuleIds, ["core.base"]);
-        assert.equal(response.payload.config.maintenance.staleLobbyDays, 31);
-        assert.equal(response.payload.config.maintenance.auditLogLimit, 77);
-        assert.equal(response.payload.config.updatedAt, "2026-08-01T00:30:00.000Z");
+        assert.equal(response.payload.config.maintenance.staleLobbyDays, 45);
+        assert.equal(response.payload.config.maintenance.auditLogLimit, 88);
+        assert.equal(response.payload.config.updatedAt, "2026-08-01T00:45:00.000Z");
 
         const persisted = await app.datastore.getAppState("adminConsoleConfig");
-        assert.equal(persisted.defaults.totalPlayers, 4);
-        assert.equal(persisted.defaults.turnTimeoutHours, 72);
+        assert.equal(persisted.defaults.totalPlayers, 3);
+        assert.equal(persisted.defaults.turnTimeoutHours, 48);
         assert.deepEqual(persisted.defaults.activeModuleIds, ["core.base"]);
-        assert.equal(persisted.maintenance.staleLobbyDays, 31);
-        assert.equal(persisted.updatedAt, "2026-08-01T00:30:00.000Z");
+        assert.equal(persisted.maintenance.staleLobbyDays, 45);
+        assert.equal(persisted.updatedAt, "2026-08-01T00:45:00.000Z");
       } finally {
         if (typeof originalVercelEnvironment === "undefined") {
           delete process.env.VERCEL_ENV;
