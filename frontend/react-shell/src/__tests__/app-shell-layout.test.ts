@@ -188,11 +188,26 @@ describe("resolveCurrentGameId", () => {
     expect(view.container.querySelector("#header-login-link")).toBeNull();
   });
 
+  it("omits the quick login controls from login routes with trailing slashes", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/login/?next=%2Fprofile");
+
+    expect(view.container.querySelector(".top-nav-bar")?.classList.contains("is-anonymous")).toBe(
+      true
+    );
+    expect(view.container.querySelector("#header-login-form")).toBeNull();
+    expect(view.container.querySelector("#header-login-link")).toBeNull();
+  });
+
   it("keeps desktop quick login and exposes one mobile login link outside the login route", () => {
     getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
 
     const view = renderLayout("/react/profile");
 
+    expect(view.container.querySelector(".top-nav-bar")?.classList.contains("is-anonymous")).toBe(
+      true
+    );
     expect(view.container.querySelectorAll("#header-login-form")).toHaveLength(1);
     expect(view.container.querySelectorAll("#header-auth-username")).toHaveLength(1);
     expect(view.container.querySelectorAll("#header-auth-password")).toHaveLength(1);
@@ -216,6 +231,9 @@ describe("resolveCurrentGameId", () => {
 
     const view = renderLayout("/react/game");
 
+    expect(
+      view.container.querySelector(".top-nav-bar")?.classList.contains("is-authenticated")
+    ).toBe(true);
     expect(view.container.querySelector("#auth-status")?.textContent).toBe("Logged in as Player.");
   });
 });

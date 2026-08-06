@@ -1,5 +1,10 @@
 const { test, expect } = require("@playwright/test");
-const { resetGame } = require("../support/game-helpers");
+const {
+  attachSessionCookie,
+  createAuthenticatedSession,
+  resetGame,
+  uniqueUser
+} = require("../support/game-helpers");
 
 const phoneViewports = [
   { width: 360, height: 780 },
@@ -28,6 +33,12 @@ test.describe("anonymous mobile authentication header", () => {
   for (const viewport of phoneViewports) {
     test(`${viewport.width}x${viewport.height} keeps one compact login flow`, async ({ page }) => {
       await page.setViewportSize(viewport);
+      await page.addInitScript(
+        (theme) => {
+          window.localStorage.setItem("netrisk.theme", theme);
+        },
+        viewport.width === 390 ? "war-table" : "command"
+      );
       await resetGame(page);
       await page.goto("/lobby");
       await expect(page.getByTestId("game-lobby-shell")).toBeVisible();
@@ -41,12 +52,24 @@ test.describe("anonymous mobile authentication header", () => {
       await expectTouchTarget(page.locator("#header-login-link"));
       await expectTouchTarget(page.locator(".top-nav-brand"));
       await expectTouchTarget(page.locator(".top-nav-locale"));
+      const localeBox = await page.locator(".top-nav-locale").boundingBox();
+      const loginBox = await page.locator("#header-login-link").boundingBox();
+      expect(localeBox).not.toBeNull();
+      expect(loginBox).not.toBeNull();
+      expect(localeBox.x + localeBox.width).toBeLessThanOrEqual(loginBox.x);
 
       const navLinks = page.locator("#primary-top-nav .nav-link");
       await expect(navLinks).toHaveCount(3);
       for (let index = 0; index < (await navLinks.count()); index += 1) {
         await expectTouchTarget(navLinks.nth(index));
       }
+
+      await page.goto("/game");
+      await expect(page.locator("body")).toHaveAttribute("data-app-section", "game");
+      await expect(page.locator("#header-login-form")).toBeHidden();
+      await expectTouchTarget(page.locator("#header-login-link"));
+
+      await page.goto("/lobby");
 
       await page.locator("#header-login-link").click();
       await expect(page).toHaveURL(/\/login\?next=%2Flobby$/);
@@ -83,7 +106,7 @@ test.describe("anonymous mobile authentication header", () => {
     await expect(page.locator("#header-login-form")).toBeVisible();
     await expect(page.locator("#header-login-link")).toBeHidden();
 
-    await page.goto("/login");
+    await page.goto("/login/");
     await expect(page.locator("#header-login-form")).toHaveCount(0);
     await expect(page.locator("#header-auth-username")).toHaveCount(0);
     await expect(page.locator("#header-auth-password")).toHaveCount(0);
@@ -93,5 +116,34 @@ test.describe("anonymous mobile authentication header", () => {
     await expect(
       page.getByTestId("react-shell-login-page").locator('input[name="password"]')
     ).toHaveCount(1);
+  });
+
+  test("authenticated mobile headers keep their existing layout without overlap", async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      window.localStorage.setItem("netrisk.theme", "war-table");
+    });
+    await resetGame(page);
+    const sessionToken = await createAuthenticatedSession(page, uniqueUser("mobile_header"));
+    await attachSessionCookie(page, sessionToken);
+    await page.goto("/profile");
+    await expect(page.getByTestId("player-profile-shell")).toBeVisible();
+
+    const header = page.locator(".top-nav-bar");
+    await expect(header).toHaveClass(/is-authenticated/);
+    await expect(header).not.toHaveClass(/is-anonymous/);
+    await expect(page.locator("#header-login-form")).toHaveCount(0);
+    await expect(page.locator("#header-login-link")).toHaveCount(0);
+    await expect(page.locator(".war-nav-user")).toBeVisible();
+
+    const actionsBox = await page.locator(".top-nav-actions").boundingBox();
+    const navBox = await page.locator("#primary-top-nav").boundingBox();
+    expect(actionsBox).not.toBeNull();
+    expect(navBox).not.toBeNull();
+    const verticallySeparated =
+      actionsBox.y + actionsBox.height <= navBox.y || navBox.y + navBox.height <= actionsBox.y;
+    expect(verticallySeparated).toBe(true);
   });
 });

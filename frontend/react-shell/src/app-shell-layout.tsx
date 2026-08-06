@@ -36,32 +36,34 @@ type ModuleOptionsQueryResult = {
 };
 
 function resolveAppSection(pathname: string): AppSection {
-  if (pathname === "/login" || pathname === "/react/login") {
+  const normalizedPathname = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+  if (normalizedPathname === "/login" || normalizedPathname === "/react/login") {
     return "login";
   }
 
-  if (pathname === "/register" || pathname === "/react/register") {
+  if (normalizedPathname === "/register" || normalizedPathname === "/react/register") {
     return "register";
   }
 
-  if (pathname === "/profile" || pathname === "/react/profile") {
+  if (normalizedPathname === "/profile" || normalizedPathname === "/react/profile") {
     return "profile";
   }
 
   if (
-    pathname === "/admin" ||
-    pathname === "/react/admin" ||
-    pathname.startsWith("/admin/") ||
-    pathname.startsWith("/react/admin/")
+    normalizedPathname === "/admin" ||
+    normalizedPathname === "/react/admin" ||
+    normalizedPathname.startsWith("/admin/") ||
+    normalizedPathname.startsWith("/react/admin/")
   ) {
     return "admin";
   }
 
   if (
-    pathname === "/game" ||
-    pathname === "/react/game" ||
-    /^\/game\/[^/]+$/.test(pathname) ||
-    /^\/react\/game\/[^/]+$/.test(pathname)
+    normalizedPathname === "/game" ||
+    normalizedPathname === "/react/game" ||
+    /^\/game\/[^/]+$/.test(normalizedPathname) ||
+    /^\/react\/game\/[^/]+$/.test(normalizedPathname)
   ) {
     return "game";
   }
@@ -283,7 +285,9 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
       : "panel shared-bottom-shell";
   const content = (
     <div className="shell-header" style={{ display: "contents" }}>
-      <header className="panel top-nav-bar campaign-nav">
+      <header
+        className={`panel top-nav-bar campaign-nav ${isAuthenticated ? "is-authenticated" : "is-anonymous"}`}
+      >
         <button
           type="button"
           className="mobile-nav-toggle"
