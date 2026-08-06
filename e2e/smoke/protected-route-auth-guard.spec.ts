@@ -14,6 +14,11 @@ const protectedRoutes = [
     nextPath: "/profile?tab=stats"
   },
   {
+    requestedPath: "/react/profile/?tab=stats",
+    loginPath: "/react/login",
+    nextPath: "/profile/?tab=stats"
+  },
+  {
     requestedPath: "/lobby/new",
     loginPath: "/login",
     nextPath: "/lobby/new"
@@ -22,6 +27,11 @@ const protectedRoutes = [
     requestedPath: "/react/lobby/new?map=world-classic",
     loginPath: "/react/login",
     nextPath: "/lobby/new?map=world-classic"
+  },
+  {
+    requestedPath: "/react/lobby/new/?map=world-classic",
+    loginPath: "/react/login",
+    nextPath: "/lobby/new/?map=world-classic"
   }
 ];
 
@@ -64,12 +74,12 @@ test.describe("protected mobile route authentication guard", () => {
     await expect(registerResponse.ok()).toBeTruthy();
     await page.context().clearCookies();
 
-    await page.goto("/profile?lang=en&tab=stats");
+    await page.goto("/react/profile/?lang=en&tab=stats");
 
     await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
     let currentUrl = new URL(page.url());
-    expect(currentUrl.pathname).toBe("/login");
-    expect(currentUrl.searchParams.get("next")).toBe("/profile?lang=en&tab=stats");
+    expect(currentUrl.pathname).toBe("/react/login");
+    expect(currentUrl.searchParams.get("next")).toBe("/profile/?lang=en&tab=stats");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("heading", { name: "Log in to command" })).toBeVisible();
 
@@ -80,7 +90,7 @@ test.describe("protected mobile route authentication guard", () => {
 
     await expect(page.getByTestId("player-profile-shell")).toBeVisible();
     currentUrl = new URL(page.url());
-    expect(currentUrl.pathname).toBe("/profile");
+    expect(currentUrl.pathname).toBe("/react/profile/");
     expect(currentUrl.search).toBe("?lang=en&tab=stats");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
@@ -117,5 +127,30 @@ test.describe("protected mobile route authentication guard", () => {
     expect(
       (await page.context().cookies()).some((cookie) => cookie.name === "netrisk_session")
     ).toBe(false);
+  });
+
+  test("keeps login recovery actions for gameplay requests with an expired cookie", async ({
+    page
+  }) => {
+    const resetPayload = await resetGame(page);
+    const gameId = resetPayload?.state?.gameId;
+    expect(gameId).toBeTruthy();
+    await page.context().addCookies([
+      {
+        name: "netrisk_session",
+        value: "expired-gameplay-session",
+        url: getE2EBaseURL(),
+        httpOnly: true,
+        sameSite: "Lax"
+      }
+    ]);
+
+    await page.goto(`/react/game/${encodeURIComponent(gameId)}`);
+
+    const gameError = page.getByTestId("react-shell-game-error");
+    await expect(gameError).toBeVisible();
+    await expect(gameError.getByRole("link", { name: /Accedi|Log in/i })).toBeVisible();
+    await expect(gameError.getByRole("link", { name: /Registrati|Register/i })).toBeVisible();
+    await expect(gameError.getByRole("button", { name: /Retry game/i })).toHaveCount(0);
   });
 });

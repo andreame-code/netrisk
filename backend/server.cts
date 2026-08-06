@@ -686,12 +686,13 @@ function createApp(options: CreateAppOptions = {}) {
     req: Request,
     res: Response,
     body: Record<string, any>,
-    url: URL | null = null
+    url: URL | null = null,
+    options: { distinguishExpiredSession?: boolean } = {}
   ) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
-      const sessionExpired = Boolean(sessionToken);
+      const sessionExpired = Boolean(sessionToken) && options.distinguishExpiredSession === true;
       if (sessionExpired) {
         res.setHeader("Set-Cookie", clearSessionCookie(req));
       }
@@ -1495,7 +1496,14 @@ function createApp(options: CreateAppOptions = {}) {
       await handleAuthSessionRoute({
         req,
         res,
-        requireAuth,
+        requireAuth: (
+          sessionReq: Request,
+          sessionRes: Response,
+          sessionBody: Record<string, unknown>
+        ) =>
+          requireAuth(sessionReq, sessionRes, sessionBody, url, {
+            distinguishExpiredSession: true
+          }),
         auth,
         playerProfiles,
         sendJson,

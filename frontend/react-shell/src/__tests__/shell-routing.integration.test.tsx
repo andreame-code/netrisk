@@ -268,14 +268,14 @@ describe("React shell routing and session integration", () => {
       }
     });
 
-    const { user } = renderReactShell("/react/profile?lang=en&tab=stats", "en");
+    const { user } = renderReactShell("/react/profile/?lang=en&tab=stats", "en");
 
     const loginPage = await screen.findByTestId("react-shell-login-page");
     expect(
       within(loginPage).getByRole("heading", { name: "Log in to command" })
     ).toBeInTheDocument();
     expect(new URLSearchParams(window.location.search).get("next")).toBe(
-      "/profile?lang=en&tab=stats"
+      "/profile/?lang=en&tab=stats"
     );
 
     await user.type(within(loginPage).getByLabelText("Username"), "Commander");
@@ -283,7 +283,7 @@ describe("React shell routing and session integration", () => {
     await user.click(within(loginPage).getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/react/profile");
+    expect(window.location.pathname).toBe("/react/profile/");
     expect(window.location.search).toBe("?lang=en&tab=stats");
     expect(document.documentElement.lang).toBe("en");
     await waitFor(() => expect(getProfileMock).toHaveBeenCalledTimes(1));
