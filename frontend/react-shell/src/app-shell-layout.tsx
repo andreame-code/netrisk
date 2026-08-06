@@ -20,6 +20,7 @@ import {
   buildBootstrapPath,
   buildGameIndexPath,
   buildGamePath,
+  buildLoginHref,
   buildLobbyPath,
   buildProfilePath,
   buildRegisterPath,
@@ -211,6 +212,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const profileHref = buildProfilePath(namespace);
   const registerHref = buildRegisterPath(namespace);
   const bootstrapHref = buildBootstrapPath(namespace);
+  const loginHref = buildLoginHref(`${location.pathname}${location.search}`, namespace);
   const gameHref = isAuthenticated
     ? currentGameId
       ? buildGamePath(currentGameId, namespace)
@@ -382,61 +384,67 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           >
             <WarTableIcon name="bell" />
           </button>
-          <form
-            id="header-login-form"
-            className="top-nav-auth-form"
-            method="post"
-            hidden={isAuthenticated}
-            onSubmit={(event) => void handleHeaderLogin(event)}
-          >
-            <label className="top-nav-field">
-              <span className="visually-hidden">{t("auth.usernameLabel")}</span>
-              <input
-                id="header-auth-username"
-                name="header-username"
-                maxLength={32}
-                placeholder={t("auth.usernamePlaceholder")}
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                disabled={isSubmittingLogin}
-              />
-            </label>
-            <label className="top-nav-field">
-              <span className="visually-hidden">{t("auth.passwordLabel")}</span>
-              <input
-                id="header-auth-password"
-                name="header-password"
-                type="password"
-                placeholder={t("auth.passwordPlaceholder")}
-                autoComplete="current-password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={isSubmittingLogin}
-              />
-            </label>
-            <button
-              type="submit"
-              id="header-login-button"
-              className="ghost-button top-nav-login"
-              disabled={isSubmittingLogin}
+          {!isAuthenticated && section !== "login" ? (
+            <form
+              id="header-login-form"
+              className="top-nav-auth-form"
+              method="post"
+              onSubmit={(event) => void handleHeaderLogin(event)}
             >
-              {isSubmittingLogin ? "..." : t("auth.login")}
-            </button>
-            <Link
-              to={registerHref}
-              id="header-register-link"
-              className="ghost-button top-nav-register"
-            >
-              {t("auth.register")}
+              <label className="top-nav-field">
+                <span className="visually-hidden">{t("auth.usernameLabel")}</span>
+                <input
+                  id="header-auth-username"
+                  name="header-username"
+                  maxLength={32}
+                  placeholder={t("auth.usernamePlaceholder")}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  disabled={isSubmittingLogin}
+                />
+              </label>
+              <label className="top-nav-field">
+                <span className="visually-hidden">{t("auth.passwordLabel")}</span>
+                <input
+                  id="header-auth-password"
+                  name="header-password"
+                  type="password"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isSubmittingLogin}
+                />
+              </label>
+              <button
+                type="submit"
+                id="header-login-button"
+                className="ghost-button top-nav-login"
+                disabled={isSubmittingLogin}
+              >
+                {isSubmittingLogin ? "..." : t("auth.login")}
+              </button>
+              <Link
+                to={registerHref}
+                id="header-register-link"
+                className="ghost-button top-nav-register"
+              >
+                {t("auth.register")}
+              </Link>
+            </form>
+          ) : null}
+          {!isAuthenticated && section !== "login" ? (
+            <Link to={loginHref} id="header-login-link" className="ghost-button top-nav-login-link">
+              {t("auth.login")}
             </Link>
-          </form>
+          ) : null}
           <p
             id="top-nav-auth-feedback"
             className={`auth-feedback top-nav-auth-feedback${loginError ? " is-error" : ""}`}

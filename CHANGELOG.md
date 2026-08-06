@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.061 - 2026-08-06
+
+- Replaced the anonymous mobile quick-login form with one compact login action that preserves the requested destination.
+- Removed duplicate header credentials from the dedicated login route at every viewport size while retaining desktop quick login elsewhere.
+- Kept the mobile app header within two 44 px action rows across supported phone widths and added functional browser coverage for form counts, focus visibility, and touch targets.
+
 ## 0.1.060 - 2026-08-06
 
 - Replaced stale-lobby phase mutation with atomic deletion guarded by game ID, version, and update timestamp so concurrent activity is never removed.

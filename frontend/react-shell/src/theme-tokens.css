@@ -4938,3 +4938,99 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     scroll-behavior: auto !important;
   }
 }
+
+/* Anonymous mobile shell: keep authentication in the dedicated route. */
+.top-nav-login-link {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 44px 44px;
+    align-items: center;
+    gap: 4px 8px;
+    min-height: 104px;
+    max-height: 120px;
+    padding: 6px 10px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-brand {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 44px;
+    overflow: hidden;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-links {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-bar .nav-link {
+    min-height: 44px;
+    padding-inline: 6px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-actions {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-auth-form {
+    display: none !important;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-login-link {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-locale {
+    flex: 0 0 52px;
+    width: 52px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-locale-select {
+    width: 100%;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .nav-avatar,
+  body[data-shell-kind="app"]:not([data-app-section="game"]) .top-nav-auth-feedback {
+    display: none;
+  }
+
+  body[data-shell-kind="app"][data-app-section="game"] .top-nav-login-link {
+    display: inline-flex !important;
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+}
