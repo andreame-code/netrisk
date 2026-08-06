@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clampViewportTranslation,
   calculateFittedBoardSize,
   calculateMinimumViewportScale
 } from "@react-shell/gameplay-map-viewport";
@@ -61,5 +62,24 @@ describe("GameplayMapViewport fitting", () => {
     expect(frame.width).toBeGreaterThan(390);
     expect(frame.width).toBeLessThanOrEqual(390 * 1.9);
     expect(frame.height).toBeLessThanOrEqual(640);
+  });
+
+  it("clamps panning around an off-center safe-area anchor", () => {
+    const translation = clampViewportTranslation({
+      anchorX: 195,
+      anchorY: 289,
+      boardHeight: 641,
+      boardWidth: 975,
+      scale: 1,
+      surfaceHeight: 786,
+      surfaceWidth: 390,
+      translateX: 0,
+      translateY: 500,
+      viewportBottom: 466,
+      viewportTop: 112
+    });
+
+    expect(translation.x).toBe(0);
+    expect(translation.y).toBeCloseTo(143.5, 5);
   });
 });
