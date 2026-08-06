@@ -653,8 +653,12 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
         }
       );
       const deleted = Array.isArray(deletedRows) && deletedRows.length === 1;
-      if (deleted && (await datastore.getActiveGameId()) === gameId) {
-        await datastore.setActiveGameId(null);
+      if (deleted) {
+        try {
+          await datastore.compareAndSetAppState("activeGameId", gameId, null);
+        } catch (error) {
+          console.error("Failed to clear active game after deleting a stale lobby:", error);
+        }
       }
       return deleted;
     },
