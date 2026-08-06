@@ -635,6 +635,29 @@ function createSupabaseDatastore(options: SupabaseDatastoreOptions = {}) {
         await datastore.setActiveGameId(null);
       }
     },
+    async deleteGameIfUnchanged(
+      gameId: string,
+      expectedVersion: number,
+      expectedUpdatedAt: string
+    ) {
+      await ensureInitialized();
+      const deletedRows = await request(
+        `/games${toQueryString({
+          id: `eq.${gameId}`,
+          version: `eq.${expectedVersion}`,
+          updated_at: `eq.${expectedUpdatedAt}`
+        })}`,
+        {
+          method: "DELETE",
+          prefer: "return=representation"
+        }
+      );
+      const deleted = Array.isArray(deletedRows) && deletedRows.length === 1;
+      if (deleted && (await datastore.getActiveGameId()) === gameId) {
+        await datastore.setActiveGameId(null);
+      }
+      return deleted;
+    },
     async getActiveGameId() {
       await ensureInitialized();
       const row = await selectOne<AppStateRow>("app_state", { key: "eq.activeGameId" });

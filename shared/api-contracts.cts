@@ -382,6 +382,14 @@ export interface AdminConfigUpdateResponseContract {
 }
 
 export interface AdminMaintenanceReportContract {
+  staleLobbyDays: number;
+  eligibleStaleLobbies: Array<{
+    id: string;
+    name: string;
+    version: number;
+    updatedAt: string;
+    ageDays: number;
+  }>;
   summary: {
     totalGames: number;
     staleLobbies: number;
@@ -395,6 +403,12 @@ export interface AdminMaintenanceActionResponseContract {
   ok: boolean;
   report: AdminMaintenanceReportContract;
   affectedGameIds: string[];
+  cleanup: {
+    eligibleGameIds: string[];
+    removedGameIds: string[];
+    skippedGames: Array<{ gameId: string; reason: string }>;
+    failedGames: Array<{ gameId: string; reason: string }>;
+  } | null;
   audit: AdminAuditEntryContract;
 }
 

@@ -2245,7 +2245,7 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
             type="button"
             className="ghost-action admin-danger-action"
             onClick={handleCleanup}
-            disabled={actionMutation.isPending}
+            disabled={actionMutation.isPending || !reportQuery.data?.eligibleStaleLobbies.length}
           >
             Cleanup stale lobbies
           </button>
@@ -2256,6 +2256,7 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
           <div className="admin-toolbar-summary">
             <span className="chip">{reportQuery.data?.summary.totalGames || 0} games checked</span>
             <span className="chip">{reportQuery.data?.issues.length || 0} findings</span>
+            <span className="chip">Stale after {reportQuery.data?.staleLobbyDays || 0} days</span>
             <span className="chip">{actionMutation.isPending ? "Operation running" : "Idle"}</span>
           </div>
         </div>
@@ -2275,8 +2276,17 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
           <p className="status-label">Last operation</p>
           <h2>{actionMutation.data.audit.action}</h2>
           <p className="status-copy">
-            Result {actionMutation.data.audit.result} · affected games{" "}
-            {actionMutation.data.affectedGameIds.length}
+            Result {actionMutation.data.audit.result}
+            {actionMutation.data.cleanup ? (
+              <>
+                {" "}
+                · removed {actionMutation.data.cleanup.removedGameIds.length} · skipped{" "}
+                {actionMutation.data.cleanup.skippedGames.length} · failed{" "}
+                {actionMutation.data.cleanup.failedGames.length}
+              </>
+            ) : (
+              <> · validation complete</>
+            )}
           </p>
         </section>
       ) : null}
@@ -2310,6 +2320,11 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
               hint="Candidates for cleanup"
             />
             <AdminMetric
+              label="Stale threshold"
+              value={`${reportQuery.data.staleLobbyDays} days`}
+              hint="Configured inactivity window"
+            />
+            <AdminMetric
               label="Invalid games"
               value={reportQuery.data.summary.invalidGames}
               tone={reportQuery.data.summary.invalidGames > 0 ? "danger" : "success"}
@@ -2324,6 +2339,27 @@ function MaintenanceSection({ frameContext }: { frameContext: AdminFrameContext 
           </div>
 
           <div className="grid-shell admin-maintenance-grid">
+            <section className="card-panel admin-card-span">
+              <div className="card-header">
+                <div>
+                  <p className="status-label">Cleanup candidates</p>
+                  <h2>Exact stale lobbies eligible for removal</h2>
+                </div>
+              </div>
+              {reportQuery.data.eligibleStaleLobbies.length ? (
+                <ul className="admin-note-list">
+                  {reportQuery.data.eligibleStaleLobbies.map((game) => (
+                    <li key={game.id}>
+                      <strong>{game.name}</strong> · {game.id} · {game.ageDays} days old · version{" "}
+                      {game.version} · updated {new Date(game.updatedAt).toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="status-copy">No stale lobbies are currently eligible.</p>
+              )}
+            </section>
+
             <section className="card-panel admin-card-span">
               <div className="card-header">
                 <div>

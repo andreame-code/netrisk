@@ -105,6 +105,52 @@ register("Supabase app-state compare-and-set uses the atomic service-role RPC", 
   }
 });
 
+register("Supabase stale-lobby deletion uses exact optimistic-concurrency filters", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests: Array<{ url: string; init?: RequestInit }> = [];
+  const expectedUpdatedAt = "2026-07-20T10:00:00.000Z";
+
+  globalThis.fetch = async (input: unknown, init?: RequestInit) => {
+    const url = String(input || "");
+    requests.push({ url, init });
+    if (url.includes("/games?")) {
+      return new Response(JSON.stringify([{ id: "stale-lobby" }]), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return new Response("[]", {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  try {
+    const datastore = createSupabaseDatastore({
+      supabaseUrl: "https://example.supabase.co",
+      supabaseServiceRoleKey: "service-role-key"
+    });
+    const deleted = await datastore.deleteGameIfUnchanged("stale-lobby", 4, expectedUpdatedAt);
+
+    assert.equal(deleted, true);
+    const deleteRequest = requests.find((request) => request.init?.method === "DELETE");
+    if (!deleteRequest) {
+      throw new Error("Expected an atomic Supabase DELETE request.");
+    }
+    const deleteUrl = new URL(deleteRequest.url);
+    assert.equal(deleteUrl.pathname, "/rest/v1/games");
+    assert.equal(deleteUrl.searchParams.get("id"), "eq.stale-lobby");
+    assert.equal(deleteUrl.searchParams.get("version"), "eq.4");
+    assert.equal(deleteUrl.searchParams.get("updated_at"), `eq.${expectedUpdatedAt}`);
+    assert.equal(
+      (deleteRequest.init?.headers as Record<string, string>).Prefer,
+      "return=representation"
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 register("Supabase connection check probes core REST tables without exposing secrets", async () => {
   const requestedUrls: string[] = [];
   const requestedHeaders: Array<Record<string, string>> = [];

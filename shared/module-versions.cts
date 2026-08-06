@@ -264,7 +264,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "admin-console",
     name: "Admin Console",
     kind: "admin",
-    version: "1.1.0",
+    version: "1.2.0",
     description: "Admin routes and operational admin workflows.",
     ownerPaths: [
       "backend/admin-console.cts",
@@ -277,7 +277,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "datastore",
     name: "Datastore",
     kind: "platform",
-    version: "1.1.0",
+    version: "1.2.0",
     description:
       "Game/session persistence, app state persistence, backups, and datastore schema use.",
     ownerPaths: [
@@ -294,7 +294,7 @@ export const functionalModuleVersions: readonly FunctionalModuleVersion[] = Obje
     id: "public-state",
     name: "Public Game State",
     kind: "platform",
-    version: "1.3.0",
+    version: "1.4.0",
     description: "Public/read API game state contracts, snapshots, and shared game models.",
     ownerPaths: [
       "shared/api-contracts.cts",

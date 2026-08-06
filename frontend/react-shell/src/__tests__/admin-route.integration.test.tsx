@@ -531,6 +531,16 @@ function createGameOptionsResponse(): GameOptionsResponse {
 
 function createMaintenanceReport(): AdminMaintenanceReport {
   return {
+    staleLobbyDays: 7,
+    eligibleStaleLobbies: [
+      {
+        id: "game-2",
+        name: "Stale test lobby",
+        version: 3,
+        updatedAt: "2026-07-20T10:00:00.000Z",
+        ageDays: 17
+      }
+    ],
     summary: {
       totalGames: 4,
       staleLobbies: 1,
@@ -1003,6 +1013,12 @@ describe("Admin route integration", () => {
       ok: true,
       report,
       affectedGameIds: ["game-2"],
+      cleanup: {
+        eligibleGameIds: ["game-2", "game-race"],
+        removedGameIds: ["game-2"],
+        skippedGames: [{ gameId: "game-race", reason: "phase-changed" }],
+        failedGames: []
+      },
       audit: createAuditEntry({
         action: "maintenance.cleanup-stale-lobbies",
         targetType: "maintenance",
@@ -1018,6 +1034,9 @@ describe("Admin route integration", () => {
     const { user } = renderReactShell("/react/admin/maintenance");
 
     await screen.findByText("Validation and repair operations");
+    const candidateName = await screen.findByText("Stale test lobby");
+    expect(candidateName.closest("li")).toHaveTextContent("game-2");
+    expect(candidateName.closest("li")).toHaveTextContent("17 days old");
 
     await user.click(screen.getByRole("button", { name: "Cleanup stale lobbies" }));
 
@@ -1035,6 +1054,7 @@ describe("Admin route integration", () => {
         expect.anything()
       );
     });
+    expect(await screen.findByText(/removed 1 · skipped 1 · failed 0/)).toBeInTheDocument();
   });
 
   it("loads the content studio editor, shows preview data, and saves a draft", async () => {

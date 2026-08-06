@@ -3153,9 +3153,189 @@ register(
   }
 );
 
-register("stale lobby cleanup skips games that become active before mutation", async () => {
-  const persistedStates: Array<{ gameId: string; phase: string }> = [];
-  const broadcastStates: Array<{ gameId: string; phase: string }> = [];
+register(
+  "stale lobby cleanup deletes only eligible lobbies and immediately revalidates the report",
+  async () => {
+    await withAdminApp(async ({ app, adminSessionToken }) => {
+      const now = Date.now();
+      const staleUpdatedAt = new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString();
+      const recentUpdatedAt = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+      const fixtures = [
+        { id: "stale-lobby", phase: "lobby", updatedAt: staleUpdatedAt },
+        { id: "recent-lobby", phase: "lobby", updatedAt: recentUpdatedAt },
+        { id: "active-game", phase: "active", updatedAt: staleUpdatedAt },
+        { id: "finished-game", phase: "finished", updatedAt: staleUpdatedAt }
+      ];
+
+      for (const fixture of fixtures) {
+        await app.datastore.createGame({
+          id: fixture.id,
+          name: fixture.id,
+          version: 4,
+          creatorUserId: null,
+          state: {
+            phase: fixture.phase,
+            players: [],
+            territories: {},
+            hands: {},
+            gameConfig: {}
+          },
+          createdAt: staleUpdatedAt,
+          updatedAt: fixture.updatedAt
+        });
+      }
+
+      const reportBefore = await callApp(
+        app,
+        "GET",
+        "/api/admin/maintenance",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(reportBefore.statusCode, 200, JSON.stringify(reportBefore.payload));
+      assert.equal(reportBefore.payload.staleLobbyDays, 7);
+      assert.deepEqual(
+        reportBefore.payload.eligibleStaleLobbies.map((game: any) => game.id),
+        ["stale-lobby"]
+      );
+
+      const cleanup = await callApp(
+        app,
+        "POST",
+        "/api/admin/maintenance",
+        {
+          action: "cleanup-stale-lobbies",
+          confirmation: "cleanup-stale-lobbies"
+        },
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(cleanup.statusCode, 200, JSON.stringify(cleanup.payload));
+      assert.deepEqual(cleanup.payload.cleanup, {
+        eligibleGameIds: ["stale-lobby"],
+        removedGameIds: ["stale-lobby"],
+        skippedGames: [],
+        failedGames: []
+      });
+      assert.equal(cleanup.payload.report.summary.staleLobbies, 0);
+      assert.deepEqual(cleanup.payload.report.eligibleStaleLobbies, []);
+      assert.equal(await app.datastore.findGameById("stale-lobby"), null);
+      assert.equal((await app.datastore.findGameById("recent-lobby"))?.state.phase, "lobby");
+      assert.equal((await app.datastore.findGameById("active-game"))?.state.phase, "active");
+      assert.equal((await app.datastore.findGameById("finished-game"))?.state.phase, "finished");
+
+      const audit = await callApp(
+        app,
+        "GET",
+        "/api/admin/audit",
+        undefined,
+        authHeaders(adminSessionToken)
+      );
+      assert.equal(audit.statusCode, 200);
+      const cleanupAudit = audit.payload.entries.find(
+        (entry: any) => entry.action === "maintenance.cleanup-stale-lobbies"
+      );
+      assert.deepEqual(cleanupAudit.details.removedGameIds, ["stale-lobby"]);
+      assert.deepEqual(cleanupAudit.details.skippedGames, []);
+      assert.deepEqual(cleanupAudit.details.failedGames, []);
+    });
+  }
+);
+
+register("stale lobby cleanup skips a lobby changed during atomic deletion", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const staleUpdatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    await app.datastore.createGame({
+      id: "changed-lobby",
+      name: "changed-lobby",
+      version: 2,
+      creatorUserId: null,
+      state: {
+        phase: "lobby",
+        players: [],
+        territories: {},
+        hands: {},
+        gameConfig: {}
+      },
+      createdAt: staleUpdatedAt,
+      updatedAt: staleUpdatedAt
+    });
+
+    const atomicDelete = app.datastore.deleteGameIfUnchanged.bind(app.datastore);
+    app.datastore.deleteGameIfUnchanged = async (
+      gameId: string,
+      expectedVersion: number,
+      expectedUpdatedAt: string
+    ) => {
+      const current = await app.datastore.findGameById(gameId);
+      await app.datastore.updateGame({
+        ...current,
+        version: Number(current.version) + 1,
+        updatedAt: new Date().toISOString()
+      });
+      return atomicDelete(gameId, expectedVersion, expectedUpdatedAt);
+    };
+
+    const cleanup = await callApp(
+      app,
+      "POST",
+      "/api/admin/maintenance",
+      {
+        action: "cleanup-stale-lobbies",
+        confirmation: "cleanup-stale-lobbies"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(cleanup.statusCode, 200, JSON.stringify(cleanup.payload));
+    assert.deepEqual(cleanup.payload.cleanup.removedGameIds, []);
+    assert.deepEqual(cleanup.payload.cleanup.skippedGames, [
+      { gameId: "changed-lobby", reason: "changed-during-cleanup" }
+    ]);
+    assert.equal(cleanup.payload.cleanup.failedGames.length, 0);
+    assert.equal((await app.datastore.findGameById("changed-lobby"))?.version, 3);
+  });
+});
+
+register("stale lobby cleanup reports and audits individual deletion failures", async () => {
+  await withAdminApp(async ({ app, adminSessionToken }) => {
+    const staleUpdatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    await app.datastore.createGame({
+      id: "failed-lobby",
+      name: "failed-lobby",
+      version: 1,
+      creatorUserId: null,
+      state: { phase: "lobby", players: [], gameConfig: {} },
+      createdAt: staleUpdatedAt,
+      updatedAt: staleUpdatedAt
+    });
+    app.datastore.deleteGameIfUnchanged = async () => {
+      throw new Error("simulated datastore outage");
+    };
+
+    const cleanup = await callApp(
+      app,
+      "POST",
+      "/api/admin/maintenance",
+      {
+        action: "cleanup-stale-lobbies",
+        confirmation: "cleanup-stale-lobbies"
+      },
+      authHeaders(adminSessionToken)
+    );
+    assert.equal(cleanup.statusCode, 200, JSON.stringify(cleanup.payload));
+    assert.deepEqual(cleanup.payload.cleanup.failedGames, [
+      { gameId: "failed-lobby", reason: "delete-failed" }
+    ]);
+    assert.equal(cleanup.payload.audit.result, "failure");
+    assert.deepEqual(cleanup.payload.audit.details.failedGames, [
+      { gameId: "failed-lobby", reason: "delete-failed" }
+    ]);
+    assert.equal((await app.datastore.findGameById("failed-lobby"))?.state.phase, "lobby");
+  });
+});
+
+register("stale lobby cleanup skips games that become active before deletion", async () => {
+  let deleteAttempts = 0;
+  const staleUpdatedAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
   const adminConsole = createAdminConsole({
     datastore: {
       listUsers() {
@@ -3200,7 +3380,7 @@ register("stale lobby cleanup skips games that become active before mutation", a
             version: 1,
             phase: "lobby",
             playerCount: 1,
-            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+            updatedAt: staleUpdatedAt
           }
         ];
       },
@@ -3212,7 +3392,7 @@ register("stale lobby cleanup skips games that become active before mutation", a
             version: 1,
             phase: "lobby",
             playerCount: 1,
-            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+            updatedAt: staleUpdatedAt
           },
           state: {
             phase: "lobby",
@@ -3232,7 +3412,7 @@ register("stale lobby cleanup skips games that become active before mutation", a
               version: 1,
               creatorUserId: null,
               createdAt: new Date().toISOString(),
-              updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+              updatedAt: staleUpdatedAt,
               state: {
                 phase: "lobby",
                 players: [],
@@ -3242,6 +3422,27 @@ register("stale lobby cleanup skips games that become active before mutation", a
               }
             }
           ];
+        },
+        findGameById() {
+          return {
+            id: "game-race",
+            name: "Race Lobby",
+            version: 2,
+            creatorUserId: null,
+            createdAt: staleUpdatedAt,
+            updatedAt: new Date().toISOString(),
+            state: {
+              phase: "active",
+              players: [],
+              territories: {},
+              hands: {},
+              gameConfig: {}
+            }
+          };
+        },
+        deleteGameIfUnchanged() {
+          deleteAttempts += 1;
+          return true;
         }
       }
     },
@@ -3259,19 +3460,10 @@ register("stale lobby cleanup skips games that become active before mutation", a
         }
       };
     },
-    persistGameContext(gameContext: any) {
-      persistedStates.push({
-        gameId: gameContext.gameId,
-        phase: String(gameContext.state?.phase || "")
-      });
-      return null;
+    persistGameContext() {
+      throw new Error("persistGameContext should not be used by cleanup");
     },
-    broadcastGame(gameContext: any) {
-      broadcastStates.push({
-        gameId: gameContext.gameId,
-        phase: String(gameContext.state?.phase || "")
-      });
-    },
+    broadcastGame() {},
     createConfiguredInitialState() {
       return {
         state: {
@@ -3334,6 +3526,8 @@ register("stale lobby cleanup skips games that become active before mutation", a
   );
 
   assert.deepEqual(actionResponse.affectedGameIds, []);
-  assert.deepEqual(persistedStates, []);
-  assert.deepEqual(broadcastStates, []);
+  assert.equal(deleteAttempts, 0);
+  assert.deepEqual(actionResponse.cleanup?.skippedGames, [
+    { gameId: "game-race", reason: "phase-changed" }
+  ]);
 });
