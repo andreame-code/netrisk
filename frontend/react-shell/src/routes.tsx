@@ -298,7 +298,9 @@ export function AppRoutes() {
           <Route path="/react" element={<BootstrapRoute />} />
           <Route element={<ShellLayout />}>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/login/" element={<LoginPage />} />
             <Route path="/react/login" element={<LoginPage />} />
+            <Route path="/react/login/" element={<LoginPage />} />
             <Route path="/setup" element={<SetupRoute />} />
             <Route path="/react/setup" element={<SetupRoute />} />
             <Route path="/register" element={<RegisterRoute />} />

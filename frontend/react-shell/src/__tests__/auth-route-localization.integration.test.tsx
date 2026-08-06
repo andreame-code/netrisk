@@ -103,6 +103,12 @@ beforeEach(() => {
 });
 
 describe.each(namespaces)("$label public authentication routes", ({ prefix }) => {
+  it("accepts the login route with a trailing slash", async () => {
+    renderReactShell(`${prefix}/login/`, "it");
+
+    expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
+  });
+
   it.each(localeExpectations)(
     "localizes login metadata, content, and navigation in $locale",
     async ({ locale, loginTitle, loginEyebrow, loginHeading, navGame, navProfile }) => {

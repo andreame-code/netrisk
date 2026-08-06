@@ -64,8 +64,9 @@ test.describe("anonymous mobile authentication header", () => {
         await expectTouchTarget(navLinks.nth(index));
       }
 
-      await page.goto("/game");
+      await page.goto("/game/header-uat-missing");
       await expect(page.locator("body")).toHaveAttribute("data-app-section", "game");
+      await expect(page.getByTestId("react-shell-game-error")).toBeVisible();
       await expect(page.locator("#header-login-form")).toBeHidden();
       await expectTouchTarget(page.locator("#header-login-link"));
 
