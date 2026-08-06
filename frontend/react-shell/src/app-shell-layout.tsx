@@ -20,9 +20,11 @@ import {
   buildBootstrapPath,
   buildGameIndexPath,
   buildGamePath,
+  buildLoginHref,
   buildLobbyPath,
   buildProfilePath,
   buildRegisterPath,
+  normalizeNextPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
@@ -35,32 +37,34 @@ type ModuleOptionsQueryResult = {
 };
 
 function resolveAppSection(pathname: string): AppSection {
-  if (pathname === "/login" || pathname === "/react/login") {
+  const normalizedPathname = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
+  if (normalizedPathname === "/login" || normalizedPathname === "/react/login") {
     return "login";
   }
 
-  if (pathname === "/register" || pathname === "/react/register") {
+  if (normalizedPathname === "/register" || normalizedPathname === "/react/register") {
     return "register";
   }
 
-  if (pathname === "/profile" || pathname === "/react/profile") {
+  if (normalizedPathname === "/profile" || normalizedPathname === "/react/profile") {
     return "profile";
   }
 
   if (
-    pathname === "/admin" ||
-    pathname === "/react/admin" ||
-    pathname.startsWith("/admin/") ||
-    pathname.startsWith("/react/admin/")
+    normalizedPathname === "/admin" ||
+    normalizedPathname === "/react/admin" ||
+    normalizedPathname.startsWith("/admin/") ||
+    normalizedPathname.startsWith("/react/admin/")
   ) {
     return "admin";
   }
 
   if (
-    pathname === "/game" ||
-    pathname === "/react/game" ||
-    /^\/game\/[^/]+$/.test(pathname) ||
-    /^\/react\/game\/[^/]+$/.test(pathname)
+    normalizedPathname === "/game" ||
+    normalizedPathname === "/react/game" ||
+    /^\/game\/[^/]+$/.test(normalizedPathname) ||
+    /^\/react\/game\/[^/]+$/.test(normalizedPathname)
   ) {
     return "game";
   }
@@ -178,6 +182,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsMobileNavOpen(false);
     setIsUserMenuOpen(false);
+    setLoginError("");
   }, [location.pathname]);
 
   useEffect(() => {
@@ -211,6 +216,14 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const profileHref = buildProfilePath(namespace);
   const registerHref = buildRegisterPath(namespace);
   const bootstrapHref = buildBootstrapPath(namespace);
+  const headerLoginReturnPath =
+    section === "register"
+      ? normalizeNextPath(
+          new URLSearchParams(location.search).get("next"),
+          buildProfilePath(namespace)
+        )
+      : `${location.pathname}${location.search}`;
+  const loginHref = buildLoginHref(headerLoginReturnPath, namespace);
   const gameHref = isAuthenticated
     ? currentGameId
       ? buildGamePath(currentGameId, namespace)
@@ -281,7 +294,9 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
       : "panel shared-bottom-shell";
   const content = (
     <div className="shell-header" style={{ display: "contents" }}>
-      <header className="panel top-nav-bar campaign-nav">
+      <header
+        className={`panel top-nav-bar campaign-nav ${isAuthenticated ? "is-authenticated" : "is-anonymous"}`}
+      >
         <button
           type="button"
           className="mobile-nav-toggle"
@@ -382,66 +397,72 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           >
             <WarTableIcon name="bell" />
           </button>
-          <form
-            id="header-login-form"
-            className="top-nav-auth-form"
-            method="post"
-            hidden={isAuthenticated}
-            onSubmit={(event) => void handleHeaderLogin(event)}
-          >
-            <label className="top-nav-field">
-              <span className="visually-hidden">{t("auth.usernameLabel")}</span>
-              <input
-                id="header-auth-username"
-                name="header-username"
-                maxLength={32}
-                placeholder={t("auth.usernamePlaceholder")}
-                autoComplete="username"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                disabled={isSubmittingLogin}
-              />
-            </label>
-            <label className="top-nav-field">
-              <span className="visually-hidden">{t("auth.passwordLabel")}</span>
-              <input
-                id="header-auth-password"
-                name="header-password"
-                type="password"
-                placeholder={t("auth.passwordPlaceholder")}
-                autoComplete="current-password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                disabled={isSubmittingLogin}
-              />
-            </label>
-            <button
-              type="submit"
-              id="header-login-button"
-              className="ghost-button top-nav-login"
-              disabled={isSubmittingLogin}
+          {!isAuthenticated && section !== "login" ? (
+            <form
+              id="header-login-form"
+              className="top-nav-auth-form"
+              method="post"
+              onSubmit={(event) => void handleHeaderLogin(event)}
             >
-              {isSubmittingLogin ? "..." : t("auth.login")}
-            </button>
-            <Link
-              to={registerHref}
-              id="header-register-link"
-              className="ghost-button top-nav-register"
-            >
-              {t("auth.register")}
+              <label className="top-nav-field">
+                <span className="visually-hidden">{t("auth.usernameLabel")}</span>
+                <input
+                  id="header-auth-username"
+                  name="header-username"
+                  maxLength={32}
+                  placeholder={t("auth.usernamePlaceholder")}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  disabled={isSubmittingLogin}
+                />
+              </label>
+              <label className="top-nav-field">
+                <span className="visually-hidden">{t("auth.passwordLabel")}</span>
+                <input
+                  id="header-auth-password"
+                  name="header-password"
+                  type="password"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  autoComplete="current-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isSubmittingLogin}
+                />
+              </label>
+              <button
+                type="submit"
+                id="header-login-button"
+                className="ghost-button top-nav-login"
+                disabled={isSubmittingLogin}
+              >
+                {isSubmittingLogin ? "..." : t("auth.login")}
+              </button>
+              <Link
+                to={registerHref}
+                id="header-register-link"
+                className="ghost-button top-nav-register"
+              >
+                {t("auth.register")}
+              </Link>
+            </form>
+          ) : null}
+          {!isAuthenticated && section !== "login" ? (
+            <Link to={loginHref} id="header-login-link" className="ghost-button top-nav-login-link">
+              {t("auth.login")}
             </Link>
-          </form>
+          ) : null}
           <p
             id="top-nav-auth-feedback"
             className={`auth-feedback top-nav-auth-feedback${loginError ? " is-error" : ""}`}
             aria-live="polite"
-            hidden={!loginError}
+            hidden={section === "login" || !loginError}
           >
             {loginError}
           </p>

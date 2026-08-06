@@ -177,6 +177,56 @@ describe("resolveCurrentGameId", () => {
     expect(moduleStyleMocks.syncModuleStyleAssets).not.toHaveBeenCalled();
   });
 
+  it("omits the quick login controls from the dedicated login route", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/login?next=%2Fprofile");
+
+    expect(view.container.querySelector("#header-login-form")).toBeNull();
+    expect(view.container.querySelector("#header-auth-username")).toBeNull();
+    expect(view.container.querySelector("#header-auth-password")).toBeNull();
+    expect(view.container.querySelector("#header-login-link")).toBeNull();
+  });
+
+  it("omits the quick login controls from login routes with trailing slashes", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/login/?next=%2Fprofile");
+
+    expect(view.container.querySelector(".top-nav-bar")?.classList.contains("is-anonymous")).toBe(
+      true
+    );
+    expect(view.container.querySelector("#header-login-form")).toBeNull();
+    expect(view.container.querySelector("#header-login-link")).toBeNull();
+  });
+
+  it("keeps desktop quick login and exposes one mobile login link outside the login route", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/profile");
+
+    expect(view.container.querySelector(".top-nav-bar")?.classList.contains("is-anonymous")).toBe(
+      true
+    );
+    expect(view.container.querySelectorAll("#header-login-form")).toHaveLength(1);
+    expect(view.container.querySelectorAll("#header-auth-username")).toHaveLength(1);
+    expect(view.container.querySelectorAll("#header-auth-password")).toHaveLength(1);
+    expect(view.container.querySelectorAll("#header-login-link")).toHaveLength(1);
+    expect(
+      view.container.querySelector<HTMLAnchorElement>("#header-login-link")?.getAttribute("href")
+    ).toBe("/react/login?next=%2Fprofile");
+  });
+
+  it("preserves the registration return target in the header login link", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/register?next=%2Fgame%2Fcampaign-7");
+
+    expect(
+      view.container.querySelector<HTMLAnchorElement>("#header-login-link")?.getAttribute("href")
+    ).toBe("/react/login?next=%2Fgame%2Fcampaign-7");
+  });
+
   it("localizes the hidden game auth status", () => {
     setLocale("en", { applyDocument: false });
     authMocks.state = {
@@ -191,6 +241,9 @@ describe("resolveCurrentGameId", () => {
 
     const view = renderLayout("/react/game");
 
+    expect(
+      view.container.querySelector(".top-nav-bar")?.classList.contains("is-authenticated")
+    ).toBe(true);
     expect(view.container.querySelector("#auth-status")?.textContent).toBe("Logged in as Player.");
   });
 });
