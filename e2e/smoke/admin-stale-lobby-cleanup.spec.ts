@@ -129,7 +129,9 @@ test("admin removes only an eligible stale lobby and refreshes health and audit"
   });
 
   await page.goto("/admin/system-health");
-  await expect(page.getByText("Stale lobbies", { exact: true }).locator("..")).toContainText("OK");
+  await expect(page.getByText("Stale lobbies", { exact: true }).locator("..")).toContainText(
+    "All clear"
+  );
 
   await page.goto("/admin/audit");
   await expect(page.getByText("maintenance.cleanup-stale-lobbies")).toBeVisible();
