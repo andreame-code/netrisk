@@ -564,11 +564,16 @@ test("mobile game shell keeps the map-first sheet layout playable", async ({ pag
   }
 });
 
-async function pinchMap(page, { endHalfDistance, pointerId, startHalfDistance }) {
+async function pinchMap(
+  page,
+  { endCenterOffsetX = 0, endHalfDistance, pointerId, startCenterOffsetX = 0, startHalfDistance }
+) {
   await page.evaluate(
     ({
+      endCenterOffsetX: endOffsetX,
       endHalfDistance: endDistance,
       pointerId: firstPointerId,
+      startCenterOffsetX: startOffsetX,
       startHalfDistance: startDistance
     }) => {
       const surfaceElement = document.querySelector("[data-map-surface]");
@@ -579,6 +584,8 @@ async function pinchMap(page, { endHalfDistance, pointerId, startHalfDistance })
       const rect = surfaceElement.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
+      const startCenterX = centerX + startOffsetX;
+      const endCenterX = centerX + endOffsetX;
       const dispatchTouchPointer = (type, currentPointerId, clientX) => {
         surfaceElement.dispatchEvent(
           new PointerEvent(type, {
@@ -594,14 +601,54 @@ async function pinchMap(page, { endHalfDistance, pointerId, startHalfDistance })
         );
       };
 
-      dispatchTouchPointer("pointerdown", firstPointerId, centerX - startDistance);
-      dispatchTouchPointer("pointerdown", firstPointerId + 1, centerX + startDistance);
-      dispatchTouchPointer("pointermove", firstPointerId, centerX - endDistance);
-      dispatchTouchPointer("pointermove", firstPointerId + 1, centerX + endDistance);
-      dispatchTouchPointer("pointerup", firstPointerId, centerX - endDistance);
-      dispatchTouchPointer("pointerup", firstPointerId + 1, centerX + endDistance);
+      dispatchTouchPointer("pointerdown", firstPointerId, startCenterX - startDistance);
+      dispatchTouchPointer("pointerdown", firstPointerId + 1, startCenterX + startDistance);
+      dispatchTouchPointer("pointermove", firstPointerId, endCenterX - endDistance);
+      dispatchTouchPointer("pointermove", firstPointerId + 1, endCenterX + endDistance);
+      dispatchTouchPointer("pointerup", firstPointerId, endCenterX - endDistance);
+      dispatchTouchPointer("pointerup", firstPointerId + 1, endCenterX + endDistance);
     },
-    { endHalfDistance, pointerId, startHalfDistance }
+    {
+      endCenterOffsetX,
+      endHalfDistance,
+      pointerId,
+      startCenterOffsetX,
+      startHalfDistance
+    }
+  );
+}
+
+async function dragMap(page, { deltaY, pointerId }) {
+  await page.evaluate(
+    ({ deltaY: verticalDelta, pointerId: currentPointerId }) => {
+      const surfaceElement = document.querySelector("[data-map-surface]");
+      if (!surfaceElement) {
+        throw new Error("Missing map surface");
+      }
+
+      const rect = surfaceElement.getBoundingClientRect();
+      const clientX = rect.left + rect.width / 2;
+      const startClientY = rect.top + rect.height / 2;
+      const dispatchTouchPointer = (type, clientY) => {
+        surfaceElement.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            button: 0,
+            buttons: type === "pointerup" ? 0 : 1,
+            clientX,
+            clientY,
+            isPrimary: true,
+            pointerId: currentPointerId,
+            pointerType: "touch"
+          })
+        );
+      };
+
+      dispatchTouchPointer("pointerdown", startClientY);
+      dispatchTouchPointer("pointermove", startClientY + verticalDelta);
+      dispatchTouchPointer("pointerup", startClientY + verticalDelta);
+    },
+    { deltaY, pointerId }
   );
 }
 
@@ -625,6 +672,7 @@ test("mobile map can fit the whole board and supports two-finger pinch zoom", as
     expect(initialScale).toBeCloseTo(1, 3);
     expect(minimumScale).toBeGreaterThan(0);
     expect(minimumScale).toBeLessThan(1);
+    await expect(page.getByRole("button", { name: "Adatta mappa alla schermata" })).toBeVisible();
 
     await page.locator("[data-map-control='focus']").click();
     await expect
@@ -640,15 +688,33 @@ test("mobile map can fit the whole board and supports two-finger pinch zoom", as
 
       const surfaceRect = surfaceElement.getBoundingClientRect();
       const boardRect = board.getBoundingClientRect();
+      const viewportTop = Number(surfaceElement.getAttribute("data-map-viewport-top"));
+      const viewportBottom = Number(surfaceElement.getAttribute("data-map-viewport-bottom"));
       return {
+        boardBottom: boardRect.bottom,
         boardHeight: boardRect.height,
+        boardLeft: boardRect.left,
+        boardRight: boardRect.right,
+        boardTop: boardRect.top,
+        surfaceBottom: surfaceRect.bottom,
         boardWidth: boardRect.width,
         surfaceHeight: surfaceRect.height,
+        surfaceLeft: surfaceRect.left,
+        surfaceRight: surfaceRect.right,
+        surfaceSafeBottom: surfaceRect.top + viewportBottom,
+        surfaceSafeTop: surfaceRect.top + viewportTop,
+        surfaceTop: surfaceRect.top,
         surfaceWidth: surfaceRect.width
       };
     });
     expect(fittedLayout.boardWidth).toBeLessThanOrEqual(fittedLayout.surfaceWidth + 1);
     expect(fittedLayout.boardHeight).toBeLessThanOrEqual(fittedLayout.surfaceHeight + 1);
+    expect(fittedLayout.boardLeft).toBeGreaterThanOrEqual(fittedLayout.surfaceLeft - 1);
+    expect(fittedLayout.boardRight).toBeLessThanOrEqual(fittedLayout.surfaceRight + 1);
+    expect(fittedLayout.boardTop).toBeGreaterThanOrEqual(fittedLayout.surfaceTop - 1);
+    expect(fittedLayout.boardBottom).toBeLessThanOrEqual(fittedLayout.surfaceBottom + 1);
+    expect(fittedLayout.boardTop).toBeGreaterThanOrEqual(fittedLayout.surfaceSafeTop - 1);
+    expect(fittedLayout.boardBottom).toBeLessThanOrEqual(fittedLayout.surfaceSafeBottom + 1);
 
     const pointerId = 41 + viewportIndex * 20;
     await pinchMap(page, { endHalfDistance: 80, pointerId, startHalfDistance: 40 });
@@ -656,6 +722,27 @@ test("mobile map can fit the whole board and supports two-finger pinch zoom", as
       .poll(async () => Number(await surface.getAttribute("data-map-scale")))
       .toBeGreaterThan(minimumScale + 0.2);
     const zoomedScale = Number(await surface.getAttribute("data-map-scale"));
+    const symmetricPinchTranslateX = Number(await surface.getAttribute("data-map-translate-x"));
+    expect(Math.abs(symmetricPinchTranslateX)).toBeLessThanOrEqual(1);
+
+    const beforeVerticalDrag = Number(await surface.getAttribute("data-map-translate-y"));
+    await dragMap(page, { deltaY: 60, pointerId: pointerId + 2 });
+    await expect
+      .poll(async () => Number(await surface.getAttribute("data-map-translate-y")))
+      .toBeGreaterThan(beforeVerticalDrag + 20);
+
+    await pinchMap(page, {
+      endCenterOffsetX: 30,
+      endHalfDistance: 60,
+      pointerId: pointerId + 4,
+      startHalfDistance: 60
+    });
+    await expect
+      .poll(async () => Number(await surface.getAttribute("data-map-scale")))
+      .toBeCloseTo(zoomedScale, 3);
+    await expect
+      .poll(async () => Number(await surface.getAttribute("data-map-translate-x")))
+      .toBeGreaterThan(symmetricPinchTranslateX + 20);
 
     await pinchMap(page, {
       endHalfDistance: 10,
