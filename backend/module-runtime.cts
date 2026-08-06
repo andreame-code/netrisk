@@ -2388,15 +2388,21 @@ function createModuleRuntime(options: ModuleRuntimeOptions) {
 
   async function getModuleOptions() {
     const modules = await ensureCatalog();
+    const optionModules = isPersistentVercelEnvironment()
+      ? modules.filter(
+          (moduleEntry) =>
+            moduleEntry.id === CORE_MODULE_ID || !isDevelopmentOnlyModuleId(moduleEntry.id)
+        )
+      : modules;
     await refreshAuthoredContent();
     return buildModuleOptions(
-      modules,
-      listEnabledRuntimeMaps(modules),
-      listEnabledRuntimeContentPacks(modules),
-      listEnabledRuntimePlayerPieceSets(modules),
-      listEnabledRuntimeDiceRuleSets(modules),
-      listEnabledRuntimeCardRuleSets(modules),
-      listEnabledRuntimeSiteThemes(modules),
+      optionModules,
+      listEnabledRuntimeMaps(optionModules),
+      listEnabledRuntimeContentPacks(optionModules),
+      listEnabledRuntimePlayerPieceSets(optionModules),
+      listEnabledRuntimeDiceRuleSets(optionModules),
+      listEnabledRuntimeCardRuleSets(optionModules),
+      listEnabledRuntimeSiteThemes(optionModules),
       authoredVictoryRuleSets,
       Array.from(authoredMapsById.values())
     );

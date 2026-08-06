@@ -257,6 +257,13 @@ register("Supabase datastore ignores public keys and requires the service role k
 
 register("Supabase schema enables RLS and revokes browser role table access", () => {
   const schemaSql = getSupabaseSchemaSql();
+  const migrationSql = fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "supabase/migrations/202608060001_add_atomic_app_state_compare_and_set.sql"
+    ),
+    "utf8"
+  );
 
   ["users", "sessions", "games", "app_state"].forEach((table) => {
     assert.match(schemaSql, new RegExp(`alter table public\\.${table} enable row level security;`));
@@ -273,6 +280,14 @@ register("Supabase schema enables RLS and revokes browser role table access", ()
   assert.match(schemaSql, /create or replace function public\.netrisk_compare_and_set_app_state/);
   assert.match(
     schemaSql,
+    /grant execute on function public\.netrisk_compare_and_set_app_state\(text, text, text\) to service_role;/
+  );
+  assert.match(
+    migrationSql,
+    /create or replace function public\.netrisk_compare_and_set_app_state/
+  );
+  assert.match(
+    migrationSql,
     /grant execute on function public\.netrisk_compare_and_set_app_state\(text, text, text\) to service_role;/
   );
 });

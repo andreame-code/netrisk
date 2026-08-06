@@ -1074,7 +1074,18 @@ register(
             capabilities: [],
             entrypoints: { clientManifest: "client-manifest.json" }
           },
-          clientManifest: {}
+          clientManifest: {
+            gamePresets: [
+              {
+                id: "demo-live-preset",
+                name: "Demo Live Preset",
+                activeModuleIds: ["demo.live"]
+              }
+            ],
+            profiles: {
+              content: [{ id: "demo-live-content", name: "Demo Live Content" }]
+            }
+          }
         }
       ],
       async ({ app }) => {
@@ -1114,6 +1125,25 @@ register(
           );
           const catalogState = await app.datastore.getAppState("moduleCatalogState");
           assert.equal(catalogState.enabledById["demo.live"], true);
+          const creationOptions = await app.moduleRuntime.getModuleOptions();
+          assert.equal(
+            creationOptions.gameModules.some((entry: any) => entry.id === "demo.live"),
+            false
+          );
+          assert.equal(
+            creationOptions.gamePresets.some((entry: any) => entry.id === "demo-live-preset"),
+            false
+          );
+          assert.equal(
+            creationOptions.contentProfiles.some((entry: any) => entry.id === "demo-live-content"),
+            false
+          );
+          assert.equal(
+            (await app.moduleRuntime.getEnabledModules()).some(
+              (entry: any) => entry.id === "demo.live"
+            ),
+            true
+          );
 
           const liveGame = await app.datastore.findGameById("live-development-module");
           assert.ok(liveGame);
