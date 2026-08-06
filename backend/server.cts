@@ -691,14 +691,18 @@ function createApp(options: CreateAppOptions = {}) {
     const sessionToken = extractSessionToken(req, body, url);
     const user = await auth.getUserFromSession(sessionToken);
     if (!user) {
+      const sessionExpired = Boolean(sessionToken);
+      if (sessionExpired) {
+        res.setHeader("Set-Cookie", clearSessionCookie(req));
+      }
       sendLocalizedError(
         res,
         401,
         null,
-        "Sessione non valida.",
-        "server.auth.invalidSession",
+        sessionExpired ? "Sessione scaduta." : "Sessione non valida.",
+        sessionExpired ? "auth.sessionExpired" : "server.auth.invalidSession",
         {},
-        "AUTH_REQUIRED"
+        sessionExpired ? "SESSION_EXPIRED" : "AUTH_REQUIRED"
       );
       return null;
     }

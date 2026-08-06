@@ -39,18 +39,17 @@ test("react shell bootstrap keeps guests on the canonical landing route", async 
   await expect(page.getByRole("link", { name: "Accedi" })).toBeVisible();
 });
 
-test("react profile keeps guest access inline and preserves the requested destination", async ({ page }) => {
+test("react profile redirects guests to login and preserves the requested destination", async ({
+  page
+}) => {
   await resetGame(page);
 
   await page.goto("/react/profile?tab=stats");
 
-  await expect(page).toHaveURL(/\/react\/profile\?tab=stats$/);
-  await expect(page.getByTestId("react-shell-profile-page")).toBeVisible();
+  await expect(page).toHaveURL(/\/react\/login\?next=%2Fprofile%3Ftab%3Dstats$/);
+  await expect(page.getByTestId("react-shell-login-page")).toBeVisible();
   await expect(page.getByTestId("react-shell-session-status")).toContainText(/guest/i);
-  await expect(page.locator("#profile-feedback")).toContainText(
-    /Accedi prima di consultare il profilo giocatore|Log in before opening the player profile/i
-  );
-  await expect(page.locator("#profile-content")).toHaveAttribute("hidden", "");
+  await expect(page.getByTestId("react-shell-profile-page")).toHaveCount(0);
 });
 
 test("authenticated sessions can open a protected react route directly", async ({ page }) => {
@@ -66,7 +65,9 @@ test("authenticated sessions can open a protected react route directly", async (
   await expect(page.getByTestId("react-shell-session-status")).toContainText(/Authenticated/i);
 });
 
-test("react profile shows query loading before resolving into the empty-history state", async ({ page }) => {
+test("react profile shows query loading before resolving into the empty-history state", async ({
+  page
+}) => {
   await resetGame(page);
 
   const username = uniqueUser("rsh_prof_load");
@@ -93,7 +94,9 @@ test("react profile shows query loading before resolving into the empty-history 
   await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("war-table");
 });
 
-test("react profile shows the empty-history state for a new authenticated user", async ({ page }) => {
+test("react profile shows the empty-history state for a new authenticated user", async ({
+  page
+}) => {
   await resetGame(page);
 
   const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_prof_empty"));
@@ -109,7 +112,9 @@ test("react profile shows the empty-history state for a new authenticated user",
   );
 });
 
-test("react profile theme mutation keeps shell theme coherent across navigation", async ({ page }) => {
+test("react profile theme mutation keeps shell theme coherent across navigation", async ({
+  page
+}) => {
   await resetGame(page);
 
   const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_theme"));
@@ -127,9 +132,9 @@ test("react profile theme mutation keeps shell theme coherent across navigation"
   await expect(page.getByTestId("react-shell-profile-theme-status")).toContainText(
     /Theme applied|Tema applicato|Midnight|Mezzanotte/
   );
-  await expect.poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme"))).toBe(
-    "midnight"
-  );
+  await expect
+    .poll(async () => page.evaluate(() => window.localStorage.getItem("netrisk.theme")))
+    .toBe("midnight");
 
   await page.goto("/react/lobby");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "midnight");
@@ -138,7 +143,9 @@ test("react profile theme mutation keeps shell theme coherent across navigation"
   await expect(page.getByTestId("react-shell-profile-theme-select")).toHaveValue("midnight");
 });
 
-test("react profile shows controlled feedback when the query payload is invalid", async ({ page }) => {
+test("react profile shows controlled feedback when the query payload is invalid", async ({
+  page
+}) => {
   await resetGame(page);
 
   const sessionToken = await createAuthenticatedSession(page, uniqueUser("rsh_prof_bad"));
@@ -196,9 +203,9 @@ test("react profile participating games open the React gameplay route", async ({
 
   await openLink.click();
 
-  await expect.poll(() => page.url(), { timeout: 15000 }).toMatch(
-    new RegExp(`/react/game/${createdGame.game.id}$`)
-  );
+  await expect
+    .poll(() => page.url(), { timeout: 15000 })
+    .toMatch(new RegExp(`/react/game/${createdGame.game.id}$`));
   await expect(page.getByTestId("react-shell-game-page")).toBeVisible();
   await expect(page.locator("#game-status")).toContainText(gameName);
   await expect(page.locator("#players")).toContainText(username, { timeout: 15000 });

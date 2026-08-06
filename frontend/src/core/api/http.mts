@@ -180,7 +180,16 @@ export function isApiClientError(error: unknown): error is ApiClientError {
 }
 
 export function isAuthApiError(error: unknown): error is ApiClientError {
-  return isApiClientError(error) && (error.category === "auth" || error.code === "AUTH_REQUIRED");
+  return (
+    isApiClientError(error) &&
+    (error.category === "auth" ||
+      error.code === "AUTH_REQUIRED" ||
+      error.code === "SESSION_EXPIRED")
+  );
+}
+
+export function isExpiredSessionApiError(error: unknown): error is ApiClientError {
+  return isApiClientError(error) && error.code === "SESSION_EXPIRED";
 }
 
 function extractRequestId(response: Response): string | null {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { registerFrontendObservabilityReporter } from "@frontend-core/observability.mts";
-import { requestJson } from "@frontend-core/api/http.mts";
+import { isAuthApiError, isExpiredSessionApiError, requestJson } from "@frontend-core/api/http.mts";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -240,6 +240,15 @@ describe("frontend API observability boundary", () => {
     });
 
     expect(reporter).not.toHaveBeenCalled();
+  });
+
+  it("classifies an expired session as an expected authentication error", async () => {
+    const error = Object.assign(new Error("Session expired."), {
+      code: "SESSION_EXPIRED"
+    });
+
+    expect(isAuthApiError(error)).toBe(true);
+    expect(isExpiredSessionApiError(error)).toBe(true);
   });
 
   it("wraps request schema mismatches as controlled validation errors", async () => {

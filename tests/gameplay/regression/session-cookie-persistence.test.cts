@@ -110,3 +110,22 @@ register(
     });
   }
 );
+
+register("session bootstrap distinguishes missing and expired session cookies", async () => {
+  await withApp(async (app: any) => {
+    const anonymousResponse = await callApp(app, "GET", "/api/auth/session");
+
+    assert.equal(anonymousResponse.statusCode, 401);
+    assert.equal(anonymousResponse.payload.code, "AUTH_REQUIRED");
+    assert.equal(anonymousResponse.headers["Set-Cookie"], undefined);
+
+    const expiredResponse = await callApp(app, "GET", "/api/auth/session", undefined, {
+      cookie: "netrisk_session=expired-session-token"
+    });
+
+    assert.equal(expiredResponse.statusCode, 401);
+    assert.equal(expiredResponse.payload.code, "SESSION_EXPIRED");
+    assert.equal(expiredResponse.payload.messageKey, "auth.sessionExpired");
+    assert.match(expiredResponse.headers["Set-Cookie"] || "", /(?:^|;\s*)Max-Age=0(?:;|$)/);
+  });
+});

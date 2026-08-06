@@ -6,6 +6,7 @@ import {
   Outlet,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useSearchParams
 } from "react-router-dom";
@@ -15,6 +16,7 @@ import { LoadingAnimation } from "@react-shell/loading-animation";
 import {
   buildBootstrapPath,
   buildLobbyPath,
+  buildLoginHref,
   buildLoginPath,
   buildRegisterHref,
   normalizeNextPath,
@@ -121,6 +123,32 @@ function BootstrapRoute() {
   );
 }
 
+function ProtectedRoute() {
+  const { state, refresh } = useAuth();
+  const location = useLocation();
+  const namespace = useShellNamespace();
+
+  if (state.status === "loading") {
+    return (
+      <LoadingPanel
+        title="Checking your session"
+        copy="Confirming access before the protected page is loaded."
+      />
+    );
+  }
+
+  if (state.status === "error") {
+    return <ErrorPanel title="Unable to verify access" message={state.message} onRetry={refresh} />;
+  }
+
+  if (state.status === "unauthenticated") {
+    const requestedPath = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to={buildLoginHref(requestedPath, namespace)} replace />;
+  }
+
+  return <Outlet />;
+}
+
 function LoginPage() {
   const { state, signIn, refresh } = useAuth();
   const navigate = useNavigate();
@@ -188,6 +216,16 @@ function LoginPage() {
       <p className="status-label">{t("login.eyebrow")}</p>
       <h2>{t("login.heading")}</h2>
       <p className="status-copy">{t("login.copy")}</p>
+
+      {state.reason === "session-expired" ? (
+        <p
+          className="auth-feedback is-error"
+          role="alert"
+          data-testid="react-shell-session-expired"
+        >
+          {t("auth.sessionExpired")}
+        </p>
+      ) : null}
 
       <form className="shell-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="shell-field">
@@ -309,12 +347,14 @@ export function AppRoutes() {
             <Route path="/react/unauthorized" element={<UnauthorizedPage />} />
             <Route path="/lobby" element={<LobbyRoute />} />
             <Route path="/react/lobby" element={<LobbyRoute />} />
-            <Route path="/lobby/new" element={<LobbyCreateRoute />} />
-            <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
             <Route path="/admin/*" element={<AdminRoute />} />
             <Route path="/react/admin/*" element={<AdminRoute />} />
-            <Route path="/profile" element={<ProfileRoute />} />
-            <Route path="/react/profile" element={<ProfileRoute />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/lobby/new" element={<LobbyCreateRoute />} />
+              <Route path="/react/lobby/new" element={<LobbyCreateRoute />} />
+              <Route path="/profile" element={<ProfileRoute />} />
+              <Route path="/react/profile" element={<ProfileRoute />} />
+            </Route>
             <Route path="/game" element={<GameRoute />} />
             <Route path="/game/:gameId" element={<GameRoute />} />
             <Route path="/react/game" element={<GameRoute />} />

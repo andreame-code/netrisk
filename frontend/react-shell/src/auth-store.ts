@@ -5,6 +5,7 @@ import type { AuthSessionResponse } from "@frontend-generated/shared-runtime-val
 import { create } from "zustand";
 
 export type SessionUser = AuthSessionResponse["user"];
+export type UnauthenticatedReason = "auth-required" | "session-expired" | "signed-out";
 
 export type AuthState =
   | {
@@ -17,6 +18,7 @@ export type AuthState =
   | {
       status: "unauthenticated";
       message: string;
+      reason?: UnauthenticatedReason;
     }
   | {
       status: "error";

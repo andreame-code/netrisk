@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 
 import { getSession, login, logout } from "@frontend-core/api/client.mts";
-import { isAuthApiError } from "@frontend-core/api/http.mts";
+import { isAuthApiError, isExpiredSessionApiError } from "@frontend-core/api/http.mts";
 import { messageFromError } from "@frontend-core/errors.mts";
+import { t } from "@frontend-i18n";
 import {
   initialAuthState,
   setAuthState,
@@ -41,9 +42,11 @@ async function resolveSessionState(): Promise<AuthState> {
     };
   } catch (error) {
     if (isAuthRequired(error)) {
+      const sessionExpired = isExpiredSessionApiError(error);
       return {
         status: "unauthenticated",
-        message: "Sign in to continue."
+        message: sessionExpired ? t("auth.sessionExpired") : "Sign in to continue.",
+        reason: sessionExpired ? "session-expired" : "auth-required"
       };
     }
 
@@ -126,7 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setAuthState({
       status: "unauthenticated",
-      message: "Signed out."
+      message: "Signed out.",
+      reason: "signed-out"
     });
   }
 

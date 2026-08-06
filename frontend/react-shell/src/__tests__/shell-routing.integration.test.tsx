@@ -10,9 +10,11 @@ import type {
 import {
   getGameOptions,
   getModuleOptions,
+  getProfile,
   getSession,
   getSetupStatus,
   listGames,
+  login,
   logout
 } from "@frontend-core/api/client.mts";
 
@@ -39,14 +41,23 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
 const getGameOptionsMock = vi.mocked(getGameOptions);
+const getProfileMock = vi.mocked(getProfile);
 const getSessionMock = vi.mocked(getSession);
 const getSetupStatusMock = vi.mocked(getSetupStatus);
 const listGamesMock = vi.mocked(listGames);
+const loginMock = vi.mocked(login);
 const logoutMock = vi.mocked(logout);
 
 function createAuthRequiredError(): Error & { code: string } {
   const error = new Error("Sign in to continue.") as Error & { code: string };
   error.code = "AUTH_REQUIRED";
+  return error;
+}
+
+function createSessionExpiredError(): Error & { category: "auth"; code: string } {
+  const error = new Error("Session expired.") as Error & { category: "auth"; code: string };
+  error.category = "auth";
+  error.code = "SESSION_EXPIRED";
   return error;
 }
 
@@ -145,6 +156,7 @@ function resolvedCatalogModuleOptions(): ModuleOptionsResponse {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
   getModuleOptionsMock.mockResolvedValue(emptyModuleOptions());
   getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
   getSetupStatusMock.mockResolvedValue({
@@ -180,30 +192,115 @@ describe("React shell routing and session integration", () => {
     expect(screen.getByTestId("loading-animation")).toBeInTheDocument();
   });
 
-  it("shows the profile loading state while the session request is pending", async () => {
+  it("keeps protected route content unmounted while the session request is pending", async () => {
     const sessionRequest = createDeferred<AuthSessionResponse>();
 
     getSessionMock.mockReturnValue(sessionRequest.promise);
 
     renderReactShell("/react/profile");
 
-    expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
-    expect(screen.getByText("Caricamento dati giocatore...")).toBeInTheDocument();
-    expect(screen.getByText("Verifica della sessione in corso...")).toBeInTheDocument();
+    expect(await screen.findByTestId("react-shell-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("player-profile-shell")).not.toBeInTheDocument();
+    expect(getProfileMock).not.toHaveBeenCalled();
   });
 
-  it("keeps unauthenticated profile routes inline and shows the guest state", async () => {
-    getSessionMock.mockRejectedValue(createAuthRequiredError());
+  it.each([
+    {
+      requestedPath: "/profile",
+      loginPath: "/login",
+      nextPath: "/profile"
+    },
+    {
+      requestedPath: "/react/profile?tab=stats",
+      loginPath: "/react/login",
+      nextPath: "/profile?tab=stats"
+    },
+    {
+      requestedPath: "/lobby/new",
+      loginPath: "/login",
+      nextPath: "/lobby/new"
+    },
+    {
+      requestedPath: "/react/lobby/new?map=world-classic",
+      loginPath: "/react/login",
+      nextPath: "/lobby/new?map=world-classic"
+    }
+  ])(
+    "redirects an anonymous $requestedPath request before protected content mounts",
+    async ({ requestedPath, loginPath, nextPath }) => {
+      getSessionMock.mockRejectedValue(createAuthRequiredError());
 
-    renderReactShell("/react/profile?tab=stats");
+      renderReactShell(requestedPath);
+
+      expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
+      expect(window.location.pathname).toBe(loginPath);
+      expect(new URLSearchParams(window.location.search).get("next")).toBe(nextPath);
+      expect(screen.queryByTestId("player-profile-shell")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("new-game-shell")).not.toBeInTheDocument();
+      expect(getProfileMock).not.toHaveBeenCalled();
+      expect(getGameOptionsMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it("preserves locale and the exact protected destination through login", async () => {
+    getSessionMock.mockRejectedValue(createAuthRequiredError());
+    loginMock.mockResolvedValue({
+      ok: true,
+      user: createSession().user
+    });
+    getProfileMock.mockResolvedValue({
+      profile: {
+        playerName: "Commander",
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        winRate: null,
+        gamesInProgress: 0,
+        hasHistory: false,
+        participatingGames: [],
+        placeholders: {
+          recentGames: true,
+          ranking: true
+        },
+        preferences: {
+          theme: "command"
+        }
+      }
+    });
+
+    const { user } = renderReactShell("/react/profile?lang=en&tab=stats", "en");
+
+    const loginPage = await screen.findByTestId("react-shell-login-page");
+    expect(
+      within(loginPage).getByRole("heading", { name: "Log in to command" })
+    ).toBeInTheDocument();
+    expect(new URLSearchParams(window.location.search).get("next")).toBe(
+      "/profile?lang=en&tab=stats"
+    );
+
+    await user.type(within(loginPage).getByLabelText("Username"), "Commander");
+    await user.type(within(loginPage).getByLabelText("Password"), "secret123");
+    await user.click(within(loginPage).getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByTestId("player-profile-shell")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/react/profile");
-    expect(new URLSearchParams(window.location.search).get("tab")).toBe("stats");
-    expect(
-      screen.getByText("Accedi prima di consultare il profilo giocatore.")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Sessione non disponibile.")).toBeInTheDocument();
+    expect(window.location.search).toBe("?lang=en&tab=stats");
+    expect(document.documentElement.lang).toBe("en");
+    await waitFor(() => expect(getProfileMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("redirects an expired protected session with a clear login message", async () => {
+    getSessionMock.mockRejectedValue(createSessionExpiredError());
+
+    renderReactShell("/profile");
+
+    expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-session-expired")).toHaveTextContent(
+      "Sessione scaduta."
+    );
+    expect(window.location.pathname).toBe("/login");
+    expect(new URLSearchParams(window.location.search).get("next")).toBe("/profile");
+    expect(getProfileMock).not.toHaveBeenCalled();
   });
 
   it("routes authenticated bootstrap traffic from the shell root to the lobby", async () => {
