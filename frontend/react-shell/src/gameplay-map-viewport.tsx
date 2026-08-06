@@ -19,7 +19,6 @@ import { t } from "@frontend-i18n";
 import { WarTableIcon } from "@react-shell/war-table-icons";
 
 const MAP_VIEWPORT_DEFAULT_SCALE = 1;
-const MAP_VIEWPORT_ABSOLUTE_MIN_SCALE = 0.5;
 const MAP_VIEWPORT_MAX_SCALE = 3;
 const MAP_VIEWPORT_WHEEL_FACTOR = 1.18;
 const MAP_VIEWPORT_BUTTON_STEP = 0.2;
@@ -117,10 +116,10 @@ export function calculateMinimumViewportScale({
     return MAP_VIEWPORT_DEFAULT_SCALE;
   }
 
-  return clampNumber(
-    Math.min(MAP_VIEWPORT_DEFAULT_SCALE, surfaceWidth / boardWidth, surfaceHeight / boardHeight),
-    MAP_VIEWPORT_ABSOLUTE_MIN_SCALE,
-    MAP_VIEWPORT_DEFAULT_SCALE
+  return Math.min(
+    MAP_VIEWPORT_DEFAULT_SCALE,
+    surfaceWidth / boardWidth,
+    surfaceHeight / boardHeight
   );
 }
 
