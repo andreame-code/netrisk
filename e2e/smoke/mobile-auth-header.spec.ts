@@ -69,6 +69,15 @@ test.describe("anonymous mobile authentication header", () => {
       await expect(page.getByTestId("react-shell-game-error")).toBeVisible();
       await expect(page.locator("#header-login-form")).toBeHidden();
       await expectTouchTarget(page.locator("#header-login-link"));
+      const gameLocaleBox = await page.locator(".top-nav-locale").boundingBox();
+      const gameLoginBox = await page.locator("#header-login-link").boundingBox();
+      expect(gameLocaleBox).not.toBeNull();
+      expect(gameLoginBox).not.toBeNull();
+      expect(gameLocaleBox.x + gameLocaleBox.width).toBeLessThanOrEqual(gameLoginBox.x);
+      if (viewport.width === 390) {
+        expect(gameLocaleBox.width).toBeGreaterThanOrEqual(52);
+        expect(gameLocaleBox.height).toBeGreaterThanOrEqual(44);
+      }
 
       await page.goto("/lobby");
 

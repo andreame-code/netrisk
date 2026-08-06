@@ -5045,7 +5045,7 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
   }
 
   html[data-theme="war-table"]
-    body[data-shell-kind="app"]:not([data-app-section="game"])
+    body[data-shell-kind="app"]
     .top-nav-bar.is-anonymous
     .top-nav-locale {
     position: absolute;
@@ -5053,15 +5053,18 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     left: 0;
     width: 52px;
     min-width: 52px;
+    height: 44px;
+    min-height: 44px;
   }
 
   html[data-theme="war-table"]
-    body[data-shell-kind="app"]:not([data-app-section="game"])
+    body[data-shell-kind="app"]
     .top-nav-bar.is-anonymous
     .war-nav-locale-icon {
     width: 52px;
     min-width: 52px;
     height: 44px;
+    min-height: 44px;
   }
 
   body[data-shell-kind="app"][data-app-section="game"]
