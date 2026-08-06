@@ -96,7 +96,20 @@ test.describe("anonymous mobile authentication header", () => {
       if (viewport.width === 390) {
         expect(gameLocaleBox.width).toBeGreaterThanOrEqual(52);
         expect(gameLocaleBox.height).toBeGreaterThanOrEqual(44);
+        await expect(page.locator(".top-nav-locale-select")).toHaveCSS("opacity", "0");
+        await expect(page.locator(".war-nav-locale-icon")).toBeVisible();
+      } else {
+        expect(gameLocaleBox.width).toBeGreaterThanOrEqual(96);
+        await expect(page.locator(".top-nav-locale-select")).toHaveCSS("opacity", "1");
+        await expect(page.locator(".war-nav-locale-icon")).toBeHidden();
       }
+
+      await page.goto("/register?next=%2Fgame%2Fheader-return-target");
+      await expect(page.getByTestId("react-shell-register-page")).toBeVisible();
+      await expect(page.locator("#header-login-link")).toHaveAttribute(
+        "href",
+        "/login?next=%2Fgame%2Fheader-return-target"
+      );
 
       await page.goto("/lobby");
 

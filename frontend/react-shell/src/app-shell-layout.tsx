@@ -24,6 +24,7 @@ import {
   buildLobbyPath,
   buildProfilePath,
   buildRegisterPath,
+  normalizeNextPath,
   useShellNamespace
 } from "@react-shell/public-auth-paths";
 import { applyShellTheme, setAvailableShellThemes } from "@react-shell/theme";
@@ -215,7 +216,14 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   const profileHref = buildProfilePath(namespace);
   const registerHref = buildRegisterPath(namespace);
   const bootstrapHref = buildBootstrapPath(namespace);
-  const loginHref = buildLoginHref(`${location.pathname}${location.search}`, namespace);
+  const headerLoginReturnPath =
+    section === "register"
+      ? normalizeNextPath(
+          new URLSearchParams(location.search).get("next"),
+          buildProfilePath(namespace)
+        )
+      : `${location.pathname}${location.search}`;
+  const loginHref = buildLoginHref(headerLoginReturnPath, namespace);
   const gameHref = isAuthenticated
     ? currentGameId
       ? buildGamePath(currentGameId, namespace)

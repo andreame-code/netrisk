@@ -217,6 +217,16 @@ describe("resolveCurrentGameId", () => {
     ).toBe("/react/login?next=%2Fprofile");
   });
 
+  it("preserves the registration return target in the header login link", () => {
+    getModuleOptionsMock.mockResolvedValue(createModuleOptionsResponse([]));
+
+    const view = renderLayout("/react/register?next=%2Fgame%2Fcampaign-7");
+
+    expect(
+      view.container.querySelector<HTMLAnchorElement>("#header-login-link")?.getAttribute("href")
+    ).toBe("/react/login?next=%2Fgame%2Fcampaign-7");
+  });
+
   it("localizes the hidden game auth status", () => {
     setLocale("en", { applyDocument: false });
     authMocks.state = {

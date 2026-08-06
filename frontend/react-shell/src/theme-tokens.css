@@ -5109,7 +5109,38 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     gap: 6px !important;
   }
 
-  body[data-shell-kind="app"][data-app-section="game"]
+  html:not([data-theme="war-table"])
+    body[data-shell-kind="app"][data-app-section="game"]
+    .top-nav-bar.is-anonymous
+    .war-nav-locale-icon {
+    display: none !important;
+  }
+
+  html:not([data-theme="war-table"])
+    body[data-shell-kind="app"][data-app-section="game"]
+    .top-nav-bar.is-anonymous
+    .top-nav-locale {
+    position: static !important;
+    display: inline-flex !important;
+    flex: 0 0 96px;
+    width: 96px !important;
+    min-width: 96px !important;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  html:not([data-theme="war-table"])
+    body[data-shell-kind="app"][data-app-section="game"]
+    .top-nav-bar.is-anonymous
+    .top-nav-locale-select {
+    width: 96px !important;
+    min-width: 96px !important;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  html[data-theme="war-table"]
+    body[data-shell-kind="app"][data-app-section="game"]
     .top-nav-bar.is-anonymous
     .war-nav-locale-icon {
     display: grid !important;
@@ -5132,7 +5163,8 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     display: none !important;
   }
 
-  body[data-shell-kind="app"][data-app-section="game"]
+  html[data-theme="war-table"]
+    body[data-shell-kind="app"][data-app-section="game"]
     .top-nav-bar.is-anonymous
     .top-nav-locale {
     position: absolute !important;
@@ -5146,7 +5178,8 @@ html[data-theme="war-table"] body[data-app-section="lobby"] .lobby-meta-line {
     min-height: 44px;
   }
 
-  body[data-shell-kind="app"][data-app-section="game"]
+  html[data-theme="war-table"]
+    body[data-shell-kind="app"][data-app-section="game"]
     .top-nav-bar.is-anonymous
     .top-nav-locale-select {
     width: 52px !important;
