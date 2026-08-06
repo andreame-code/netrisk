@@ -30,7 +30,7 @@ describe("GameplayMapViewport fitting", () => {
     ).toBeCloseTo(390 / 741, 5);
   });
 
-  it("keeps desktop boards at the default scale and caps extreme fit ratios", () => {
+  it("keeps desktop boards at the default scale and preserves the full-board fit ratio", () => {
     expect(
       calculateMinimumViewportScale({
         boardHeight: 500,
@@ -46,7 +46,7 @@ describe("GameplayMapViewport fitting", () => {
         surfaceHeight: 500,
         surfaceWidth: 390
       })
-    ).toBe(0.5);
+    ).toBeCloseTo(390 / 2000, 5);
   });
 
   it("allows horizontal crop for wide maps that can still fit vertically", () => {
