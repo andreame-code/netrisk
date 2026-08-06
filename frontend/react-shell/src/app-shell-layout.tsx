@@ -181,6 +181,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     setIsMobileNavOpen(false);
     setIsUserMenuOpen(false);
+    setLoginError("");
   }, [location.pathname]);
 
   useEffect(() => {
@@ -453,7 +454,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
             id="top-nav-auth-feedback"
             className={`auth-feedback top-nav-auth-feedback${loginError ? " is-error" : ""}`}
             aria-live="polite"
-            hidden={!loginError}
+            hidden={section === "login" || !loginError}
           >
             {loginError}
           </p>

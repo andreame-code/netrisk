@@ -1766,6 +1766,7 @@ function createApp(options: CreateAppOptions = {}) {
       (url.pathname === "/" ||
         url.pathname === "/setup" ||
         url.pathname === "/login" ||
+        url.pathname === "/login/" ||
         url.pathname === "/register" ||
         url.pathname === "/lobby" ||
         url.pathname === "/lobby/new" ||

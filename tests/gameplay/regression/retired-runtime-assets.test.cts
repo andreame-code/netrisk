@@ -88,6 +88,16 @@ register(
   }
 );
 
+register("GET /login/ serves the React shell document", async () => {
+  await withApp(async (app: any) => {
+    const response = await callRequest(app, "/login/");
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["Content-Type"], "text/html; charset=utf-8");
+    assert.match(response.body, /<div id="root"><\/div>/);
+  });
+});
+
 register("GET /modules serves declared public module assets", async () => {
   await withApp(async (app: any) => {
     const response = await callRequest(

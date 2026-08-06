@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 
 import type { ModuleOptionsResponse } from "@frontend-generated/shared-runtime-validation.mts";
 
-import { getModuleOptions, getSession } from "@frontend-core/api/client.mts";
+import { getModuleOptions, getSession, login } from "@frontend-core/api/client.mts";
 
 import { renderReactShell } from "../../test/render-react-shell";
 
@@ -25,6 +25,7 @@ vi.mock("@frontend-core/api/client.mts", () => ({
 
 const getSessionMock = vi.mocked(getSession);
 const getModuleOptionsMock = vi.mocked(getModuleOptions);
+const loginMock = vi.mocked(login);
 
 const localeExpectations = [
   {
@@ -103,6 +104,38 @@ beforeEach(() => {
 });
 
 describe.each(namespaces)("$label public authentication routes", ({ prefix }) => {
+  it("clears a failed quick-login error before showing the dedicated login page", async () => {
+    loginMock.mockRejectedValue(new Error("Invalid header credentials"));
+    const { user } = renderReactShell(`${prefix}/register`, "it");
+
+    const registerPage = await screen.findByTestId("react-shell-register-page");
+    const headerUsername = document.querySelector<HTMLInputElement>("#header-auth-username");
+    const headerPassword = document.querySelector<HTMLInputElement>("#header-auth-password");
+    const headerSubmit = document.querySelector<HTMLButtonElement>("#header-login-button");
+    const headerFeedback = document.querySelector<HTMLParagraphElement>("#top-nav-auth-feedback");
+
+    expect(headerUsername).not.toBeNull();
+    expect(headerPassword).not.toBeNull();
+    expect(headerSubmit).not.toBeNull();
+    expect(headerFeedback).not.toBeNull();
+
+    await user.type(headerUsername!, "bad-user");
+    await user.type(headerPassword!, "bad-password");
+    await user.click(headerSubmit!);
+
+    await waitFor(() => {
+      expect(headerFeedback).toHaveTextContent("Invalid header credentials");
+    });
+
+    await user.click(within(registerPage).getByRole("link", { name: "Accedi" }));
+    expect(await screen.findByTestId("react-shell-login-page")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(headerFeedback).toHaveTextContent("");
+      expect(headerFeedback).not.toBeVisible();
+    });
+  });
+
   it("accepts the login route with a trailing slash", async () => {
     renderReactShell(`${prefix}/login/`, "it");
 
