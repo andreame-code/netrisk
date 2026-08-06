@@ -77,6 +77,27 @@ type MinimumViewportScaleInput = {
   surfaceWidth: number;
 };
 
+type ClampViewportTranslationInput = MinimumViewportScaleInput & {
+  anchorX: number;
+  anchorY: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
+  viewportBottom?: number;
+  viewportLeft?: number;
+  viewportRight?: number;
+  viewportTop?: number;
+};
+
+type ViewportGeometry = {
+  anchorX: number;
+  anchorY: number;
+  viewportBottom: number;
+  viewportLeft: number;
+  viewportRight: number;
+  viewportTop: number;
+};
+
 type PointerPosition = {
   clientX: number;
   clientY: number;
@@ -84,8 +105,20 @@ type PointerPosition = {
 
 type PinchState = {
   pointerIds: [number, number];
+  startClientX: number;
+  startClientY: number;
   startDistance: number;
   startScale: number;
+  startTranslateX: number;
+  startTranslateY: number;
+};
+
+type ZoomOrigin = {
+  clientX: number;
+  clientY: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
 };
 
 type GameplayMapViewportProps = {
@@ -123,25 +156,37 @@ export function calculateMinimumViewportScale({
   );
 }
 
-function clampTranslation(
-  translateX: number,
-  translateY: number,
-  scale: number,
-  surfaceWidth: number,
-  surfaceHeight: number,
-  boardWidth: number,
-  boardHeight: number
-): { x: number; y: number } {
+export function clampViewportTranslation({
+  anchorX,
+  anchorY,
+  boardHeight,
+  boardWidth,
+  scale,
+  surfaceHeight,
+  surfaceWidth,
+  translateX,
+  translateY,
+  viewportBottom = surfaceHeight,
+  viewportLeft = 0,
+  viewportRight = surfaceWidth,
+  viewportTop = 0
+}: ClampViewportTranslationInput): { x: number; y: number } {
   if (surfaceWidth <= 0 || surfaceHeight <= 0 || boardWidth <= 0 || boardHeight <= 0) {
     return { x: translateX, y: translateY };
   }
 
-  const overflowX = Math.max(0, (boardWidth * scale - surfaceWidth) / 2);
-  const overflowY = Math.max(0, (boardHeight * scale - surfaceHeight) / 2);
+  const horizontalBounds = [
+    viewportRight - anchorX - (boardWidth * scale) / 2,
+    viewportLeft + (boardWidth * scale) / 2 - anchorX
+  ];
+  const verticalBounds = [
+    viewportBottom - anchorY - (boardHeight * scale) / 2,
+    viewportTop + (boardHeight * scale) / 2 - anchorY
+  ];
 
   return {
-    x: clampNumber(translateX, -overflowX, overflowX),
-    y: clampNumber(translateY, -overflowY, overflowY)
+    x: clampNumber(translateX, Math.min(...horizontalBounds), Math.max(...horizontalBounds)),
+    y: clampNumber(translateY, Math.min(...verticalBounds), Math.max(...verticalBounds))
   };
 }
 
@@ -150,24 +195,39 @@ function normalizeViewport(
   surfaceWidth: number,
   surfaceHeight: number,
   boardWidth: number,
-  boardHeight: number
+  boardHeight: number,
+  geometry?: ViewportGeometry
 ): ViewportState {
+  const resolvedGeometry = geometry || {
+    anchorX: surfaceWidth / 2,
+    anchorY: surfaceHeight / 2,
+    viewportBottom: surfaceHeight,
+    viewportLeft: 0,
+    viewportRight: surfaceWidth,
+    viewportTop: 0
+  };
   const minimumScale = calculateMinimumViewportScale({
     boardHeight,
     boardWidth,
-    surfaceHeight,
-    surfaceWidth
+    surfaceHeight: resolvedGeometry.viewportBottom - resolvedGeometry.viewportTop,
+    surfaceWidth: resolvedGeometry.viewportRight - resolvedGeometry.viewportLeft
   });
   const scale = clampNumber(viewport.scale, minimumScale, MAP_VIEWPORT_MAX_SCALE);
-  const clampedTranslation = clampTranslation(
-    viewport.translateX,
-    viewport.translateY,
-    scale,
-    surfaceWidth,
-    surfaceHeight,
+  const clampedTranslation = clampViewportTranslation({
+    anchorX: resolvedGeometry.anchorX,
+    anchorY: resolvedGeometry.anchorY,
+    boardHeight,
     boardWidth,
-    boardHeight
-  );
+    scale,
+    surfaceHeight,
+    surfaceWidth,
+    translateX: viewport.translateX,
+    translateY: viewport.translateY,
+    viewportBottom: resolvedGeometry.viewportBottom,
+    viewportLeft: resolvedGeometry.viewportLeft,
+    viewportRight: resolvedGeometry.viewportRight,
+    viewportTop: resolvedGeometry.viewportTop
+  });
 
   return {
     scale,
@@ -303,6 +363,7 @@ export function GameplayMapViewport({
   onTerritorySelect
 }: GameplayMapViewportProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const anchorRef = useRef<HTMLDivElement | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const [surfaceElement, setSurfaceElement] = useState<HTMLDivElement | null>(null);
@@ -356,6 +417,36 @@ export function GameplayMapViewport({
     return {
       width: fittedBoardFrame?.width || 0,
       height: fittedBoardFrame?.height || 0
+    };
+  }
+
+  function currentViewportGeometry(
+    currentSurfaceWidth: number,
+    currentSurfaceHeight: number
+  ): ViewportGeometry {
+    const surface = surfaceRef.current;
+    let safeTop = 0;
+    let safeBottom = 0;
+    if (surface) {
+      const surfaceStyles = window.getComputedStyle(surface);
+      safeTop = readCssLengthPixelValue(surface, surfaceStyles, "--game-map-safe-top");
+      safeBottom = readCssLengthPixelValue(surface, surfaceStyles, "--game-map-safe-bottom");
+    }
+    const viewportTop = clampNumber(safeTop, 0, currentSurfaceHeight);
+    const viewportBottom = clampNumber(
+      currentSurfaceHeight - safeBottom,
+      viewportTop,
+      currentSurfaceHeight
+    );
+    const anchor = anchorRef.current;
+
+    return {
+      anchorX: anchor?.offsetLeft ?? currentSurfaceWidth / 2,
+      anchorY: anchor?.offsetTop ?? (viewportTop + viewportBottom) / 2,
+      viewportBottom,
+      viewportLeft: 0,
+      viewportRight: currentSurfaceWidth,
+      viewportTop
     };
   }
 
@@ -491,7 +582,14 @@ export function GameplayMapViewport({
           pinchState.startScale * (distance / pinchState.startDistance),
           (firstPointer.clientX + secondPointer.clientX) / 2,
           (firstPointer.clientY + secondPointer.clientY) / 2,
-          true
+          true,
+          {
+            clientX: pinchState.startClientX,
+            clientY: pinchState.startClientY,
+            scale: pinchState.startScale,
+            translateX: pinchState.startTranslateX,
+            translateY: pinchState.startTranslateY
+          }
         );
         return;
       }
@@ -513,6 +611,10 @@ export function GameplayMapViewport({
       dragStateRef.current.suppressClick = true;
       const nextSurfaceSize = currentSurfaceSize();
       const nextBoardSize = currentBoardSize();
+      const nextViewportGeometry = currentViewportGeometry(
+        nextSurfaceSize.width,
+        nextSurfaceSize.height
+      );
       setViewport((currentViewport) => {
         const nextViewport = normalizeViewport(
           {
@@ -524,7 +626,8 @@ export function GameplayMapViewport({
           nextSurfaceSize.width,
           nextSurfaceSize.height,
           nextBoardSize.width,
-          nextBoardSize.height
+          nextBoardSize.height,
+          nextViewportGeometry
         );
         viewportRef.current = nextViewport;
         return nextViewport;
@@ -549,16 +652,24 @@ export function GameplayMapViewport({
   }, []);
 
   useEffect(() => {
-    setViewport((currentViewport) =>
-      normalizeViewport(
+    setViewport((currentViewport) => {
+      const nextViewportGeometry = currentViewportGeometry(surfaceSize.width, surfaceSize.height);
+      return normalizeViewport(
         currentViewport,
         surfaceSize.width,
         surfaceSize.height,
         currentBoardSize().width,
-        currentBoardSize().height
-      )
-    );
-  }, [fittedBoardFrame?.height, fittedBoardFrame?.width, surfaceSize.height, surfaceSize.width]);
+        currentBoardSize().height,
+        nextViewportGeometry
+      );
+    });
+  }, [
+    commandDockSheetState,
+    fittedBoardFrame?.height,
+    fittedBoardFrame?.width,
+    surfaceSize.height,
+    surfaceSize.width
+  ]);
 
   useLayoutEffect(() => {
     measureRenderedBoardFrame();
@@ -690,7 +801,8 @@ export function GameplayMapViewport({
     nextScale: number,
     clientX: number,
     clientY: number,
-    isGestureActive = false
+    isGestureActive = false,
+    origin?: ZoomOrigin
   ): void {
     const surface = surfaceRef.current;
     const nextSurfaceSize = currentSurfaceSize();
@@ -698,35 +810,55 @@ export function GameplayMapViewport({
     if (!surface || nextSurfaceSize.width <= 0 || nextSurfaceSize.height <= 0) {
       return;
     }
+    const nextViewportGeometry = currentViewportGeometry(
+      nextSurfaceSize.width,
+      nextSurfaceSize.height
+    );
 
     setViewport((currentViewport) => {
+      const sourceViewport = origin
+        ? {
+            scale: origin.scale,
+            translateX: origin.translateX,
+            translateY: origin.translateY,
+            isDragging: true
+          }
+        : currentViewport;
       const normalizedViewport = normalizeViewport(
-        currentViewport,
+        sourceViewport,
         nextSurfaceSize.width,
         nextSurfaceSize.height,
         nextBoardSize.width,
-        nextBoardSize.height
+        nextBoardSize.height,
+        nextViewportGeometry
       );
       const minimumScale = calculateMinimumViewportScale({
         boardHeight: nextBoardSize.height,
         boardWidth: nextBoardSize.width,
-        surfaceHeight: nextSurfaceSize.height,
-        surfaceWidth: nextSurfaceSize.width
+        surfaceHeight: nextViewportGeometry.viewportBottom - nextViewportGeometry.viewportTop,
+        surfaceWidth: nextViewportGeometry.viewportRight - nextViewportGeometry.viewportLeft
       });
       const clampedScale = clampNumber(nextScale, minimumScale, MAP_VIEWPORT_MAX_SCALE);
       if (clampedScale <= minimumScale + 0.001 && nextScale <= normalizedViewport.scale) {
-        const nextViewport = {
-          ...normalizedViewport,
-          scale: minimumScale,
-          translateX: 0,
-          translateY: 0,
-          isDragging: isGestureActive
-        };
+        const nextViewport = normalizeViewport(
+          {
+            ...normalizedViewport,
+            scale: minimumScale,
+            translateX: 0,
+            translateY: 0,
+            isDragging: isGestureActive
+          },
+          nextSurfaceSize.width,
+          nextSurfaceSize.height,
+          nextBoardSize.width,
+          nextBoardSize.height,
+          nextViewportGeometry
+        );
         viewportRef.current = nextViewport;
         return nextViewport;
       }
 
-      if (Math.abs(clampedScale - normalizedViewport.scale) < 0.001) {
+      if (!origin && Math.abs(clampedScale - normalizedViewport.scale) < 0.001) {
         const nextViewport = {
           ...normalizedViewport,
           isDragging: isGestureActive
@@ -738,12 +870,14 @@ export function GameplayMapViewport({
       const surfaceRect = surface.getBoundingClientRect();
       const localX = clientX - surfaceRect.left;
       const localY = clientY - surfaceRect.top;
-      const currentCenterX = nextSurfaceSize.width / 2 + normalizedViewport.translateX;
-      const currentCenterY = nextSurfaceSize.height / 2 + normalizedViewport.translateY;
-      const contentX = (localX - currentCenterX) / normalizedViewport.scale;
-      const contentY = (localY - currentCenterY) / normalizedViewport.scale;
-      const nextTranslateX = localX - nextSurfaceSize.width / 2 - contentX * clampedScale;
-      const nextTranslateY = localY - nextSurfaceSize.height / 2 - contentY * clampedScale;
+      const originLocalX = (origin?.clientX ?? clientX) - surfaceRect.left;
+      const originLocalY = (origin?.clientY ?? clientY) - surfaceRect.top;
+      const currentCenterX = nextViewportGeometry.anchorX + normalizedViewport.translateX;
+      const currentCenterY = nextViewportGeometry.anchorY + normalizedViewport.translateY;
+      const contentX = (originLocalX - currentCenterX) / normalizedViewport.scale;
+      const contentY = (originLocalY - currentCenterY) / normalizedViewport.scale;
+      const nextTranslateX = localX - nextViewportGeometry.anchorX - contentX * clampedScale;
+      const nextTranslateY = localY - nextViewportGeometry.anchorY - contentY * clampedScale;
       const nextViewport = normalizeViewport(
         {
           scale: clampedScale,
@@ -754,7 +888,8 @@ export function GameplayMapViewport({
         nextSurfaceSize.width,
         nextSurfaceSize.height,
         nextBoardSize.width,
-        nextBoardSize.height
+        nextBoardSize.height,
+        nextViewportGeometry
       );
       viewportRef.current = nextViewport;
       return nextViewport;
@@ -769,11 +904,15 @@ export function GameplayMapViewport({
 
     const nextSurfaceSize = currentSurfaceSize();
     const nextBoardSize = currentBoardSize();
+    const nextViewportGeometry = currentViewportGeometry(
+      nextSurfaceSize.width,
+      nextSurfaceSize.height
+    );
     const minimumScale = calculateMinimumViewportScale({
       boardHeight: nextBoardSize.height,
       boardWidth: nextBoardSize.width,
-      surfaceHeight: nextSurfaceSize.height,
-      surfaceWidth: nextSurfaceSize.width
+      surfaceHeight: nextViewportGeometry.viewportBottom - nextViewportGeometry.viewportTop,
+      surfaceWidth: nextViewportGeometry.viewportRight - nextViewportGeometry.viewportLeft
     });
 
     if (
@@ -782,13 +921,20 @@ export function GameplayMapViewport({
       Math.hypot(viewport.translateX, viewport.translateY) > 1
     ) {
       setViewport((currentViewport) => {
-        const nextViewport = {
-          ...currentViewport,
-          scale: minimumScale,
-          translateX: 0,
-          translateY: 0,
-          isDragging: false
-        };
+        const nextViewport = normalizeViewport(
+          {
+            ...currentViewport,
+            scale: minimumScale,
+            translateX: 0,
+            translateY: 0,
+            isDragging: false
+          },
+          nextSurfaceSize.width,
+          nextSurfaceSize.height,
+          nextBoardSize.width,
+          nextBoardSize.height,
+          nextViewportGeometry
+        );
         viewportRef.current = nextViewport;
         return nextViewport;
       });
@@ -820,8 +966,12 @@ export function GameplayMapViewport({
 
     pinchStateRef.current = {
       pointerIds: [firstPointerId, secondPointerId],
+      startClientX: (firstPointer.clientX + secondPointer.clientX) / 2,
+      startClientY: (firstPointer.clientY + secondPointer.clientY) / 2,
       startDistance,
-      startScale: viewportRef.current.scale
+      startScale: viewportRef.current.scale,
+      startTranslateX: viewportRef.current.translateX,
+      startTranslateY: viewportRef.current.translateY
     };
     dragStateRef.current.pointerId = null;
     dragStateRef.current.didDrag = true;
@@ -936,13 +1086,33 @@ export function GameplayMapViewport({
 
   const viewportSize = currentSurfaceSize();
   const boardSize = currentBoardSize();
+  const viewportGeometry = currentViewportGeometry(viewportSize.width, viewportSize.height);
   const minimumScale = calculateMinimumViewportScale({
     boardHeight: boardSize.height,
     boardWidth: boardSize.width,
-    surfaceHeight: viewportSize.height,
-    surfaceWidth: viewportSize.width
+    surfaceHeight: viewportGeometry.viewportBottom - viewportGeometry.viewportTop,
+    surfaceWidth: viewportGeometry.viewportRight - viewportGeometry.viewportLeft
   });
-  const hasViewportOffset = Math.hypot(viewport.translateX, viewport.translateY) > 1;
+  const fittedTranslation = clampViewportTranslation({
+    anchorX: viewportGeometry.anchorX,
+    anchorY: viewportGeometry.anchorY,
+    boardHeight: boardSize.height,
+    boardWidth: boardSize.width,
+    scale: minimumScale,
+    surfaceHeight: viewportSize.height,
+    surfaceWidth: viewportSize.width,
+    translateX: 0,
+    translateY: 0,
+    viewportBottom: viewportGeometry.viewportBottom,
+    viewportLeft: viewportGeometry.viewportLeft,
+    viewportRight: viewportGeometry.viewportRight,
+    viewportTop: viewportGeometry.viewportTop
+  });
+  const hasViewportOffset =
+    Math.hypot(
+      viewport.translateX - fittedTranslation.x,
+      viewport.translateY - fittedTranslation.y
+    ) > 1;
   const connectionBadgeClassName =
     Math.abs(viewport.scale - MAP_VIEWPORT_DEFAULT_SCALE) > 0.001 || hasViewportOffset
       ? viewport.isDragging
@@ -981,8 +1151,8 @@ export function GameplayMapViewport({
   const markerBoardFrame =
     renderedBoardFrame ||
     ({
-      left: viewportSize.width / 2 + viewport.translateX - (boardSize.width * viewport.scale) / 2,
-      top: viewportSize.height / 2 + viewport.translateY - (boardSize.height * viewport.scale) / 2,
+      left: viewportGeometry.anchorX + viewport.translateX - (boardSize.width * viewport.scale) / 2,
+      top: viewportGeometry.anchorY + viewport.translateY - (boardSize.height * viewport.scale) / 2,
       width: boardSize.width * viewport.scale,
       height: boardSize.height * viewport.scale
     } satisfies BoardFrame);
@@ -1023,16 +1193,29 @@ export function GameplayMapViewport({
             type="button"
             className="map-control-button"
             data-map-control="focus"
-            aria-label={t("game.map.reset")}
-            title={t("game.map.reset")}
+            aria-label={t("game.map.fit")}
+            title={t("game.map.fit")}
             onClick={() =>
               setViewport(() => {
-                const nextViewport = {
-                  scale: minimumScale,
-                  translateX: 0,
-                  translateY: 0,
-                  isDragging: false
-                };
+                const nextSurfaceSize = currentSurfaceSize();
+                const nextBoardSize = currentBoardSize();
+                const nextViewportGeometry = currentViewportGeometry(
+                  nextSurfaceSize.width,
+                  nextSurfaceSize.height
+                );
+                const nextViewport = normalizeViewport(
+                  {
+                    scale: minimumScale,
+                    translateX: 0,
+                    translateY: 0,
+                    isDragging: false
+                  },
+                  nextSurfaceSize.width,
+                  nextSurfaceSize.height,
+                  nextBoardSize.width,
+                  nextBoardSize.height,
+                  nextViewportGeometry
+                );
                 viewportRef.current = nextViewport;
                 return nextViewport;
               })
@@ -1051,6 +1234,8 @@ export function GameplayMapViewport({
           data-map-node-scale={nodeScale.toFixed(4)}
           data-map-translate-x={viewport.translateX.toFixed(2)}
           data-map-translate-y={viewport.translateY.toFixed(2)}
+          data-map-viewport-bottom={viewportGeometry.viewportBottom.toFixed(2)}
+          data-map-viewport-top={viewportGeometry.viewportTop.toFixed(2)}
           style={
             {
               aspectRatio: mapAspectRatio(snapshot),
@@ -1061,6 +1246,7 @@ export function GameplayMapViewport({
           onPointerDown={handlePointerDown}
         >
           <div
+            ref={anchorRef}
             className="map-board-anchor"
             data-map-anchor
             style={{
