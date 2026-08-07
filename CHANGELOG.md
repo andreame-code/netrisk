@@ -2,6 +2,12 @@
 
 NetRisk uses the application version from `shared/version-manifest.cts` as the release source of truth. Every merge to `main` must include a new app version and a changelog entry for that version.
 
+## 0.1.064 - 2026-08-07
+
+- Limited both command and War Table lobby views to 15 initial games with an accessible load-more action, full-dataset search and filters, and active/waiting-first ordering.
+- Kept focused campaigns resolvable beyond the visible page and added mobile coverage with more than 70 sessions at 390 by 844 pixels.
+- Hid known automated fixture prefixes from the production lobby and added daily cleanup for fixture sessions older than 24 hours.
+
 ## 0.1.063 - 2026-08-07
 
 - Redirected anonymous profile and game-setup routes to login before protected content or data requests are loaded.

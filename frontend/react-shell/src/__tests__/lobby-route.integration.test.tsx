@@ -415,4 +415,84 @@ describe("LobbyRoute War Table theme behavior", () => {
 
     expect(await screen.findByText("Waiting for opponent")).toBeInTheDocument();
   });
+
+  it("paginates a large War Table lobby while filters and focus use the full dataset", async () => {
+    const games = Array.from({ length: 70 }, (_, index) =>
+      createGameSummary({
+        id: `campaign-${String(index + 1).padStart(2, "0")}`,
+        name: `Campaign ${String(index + 1).padStart(2, "0")}`,
+        updatedAt: new Date(Date.UTC(2026, 3, 20, 6, 0, 0) - index * 60_000).toISOString()
+      })
+    );
+    const focusedGame = games[69];
+    const archivedGame = games[68];
+    if (!focusedGame || !archivedGame) {
+      throw new Error("Large lobby fixtures were not created.");
+    }
+    archivedGame.phase = "finished";
+
+    listGamesMock.mockResolvedValue(createLobbyGames(games, focusedGame.id));
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    const { user } = renderLobbyRoute("war-table");
+
+    await screen.findByTestId("react-shell-lobby-row-campaign-01");
+    expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(15);
+    expect(screen.queryByTestId(`react-shell-lobby-row-${focusedGame.id}`)).not.toBeInTheDocument();
+    expect(document.querySelector("#lobby-active-focus")).toHaveTextContent(focusedGame.name);
+
+    const loadMoreButton = screen.getByRole("button", { name: "Load more" });
+    expect(loadMoreButton).toHaveAttribute("aria-controls", "game-session-list");
+    await user.click(loadMoreButton);
+    expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(30);
+
+    const search = screen.getByPlaceholderText("Search games...");
+    await user.type(search, focusedGame.name);
+    expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(1);
+    expect(screen.getByTestId(`react-shell-lobby-row-${focusedGame.id}`)).toBeInTheDocument();
+
+    await user.clear(search);
+    await user.click(screen.getByRole("tab", { name: "Finished" }));
+    expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(1);
+    expect(screen.getByTestId(`react-shell-lobby-row-${archivedGame.id}`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "All" }));
+    expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(15);
+    for (const expectedCount of [30, 45, 60, 70]) {
+      await user.click(screen.getByRole("button", { name: "Load more" }));
+      expect(screen.getAllByTestId(/^react-shell-lobby-row-/)).toHaveLength(expectedCount);
+    }
+    expect(screen.queryByRole("button", { name: "Load more" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-load-more")).toHaveTextContent(
+      "All 70 games are visible."
+    );
+  });
+
+  it("announces loading and load failures explicitly", async () => {
+    listGamesMock.mockReturnValue(new Promise(() => undefined));
+    const loadingRender = renderLobbyRoute("command");
+
+    expect(screen.getByText("Loading sessions...")).toBeInTheDocument();
+    loadingRender.unmount();
+
+    listGamesMock.mockRejectedValue(new Error("Lobby backend unavailable"));
+    renderLobbyRoute("command");
+
+    const errorState = await screen.findByText("Lobby backend unavailable");
+    expect(errorState).toHaveClass("is-error");
+  });
+
+  it("shows an explicit empty state when full-dataset filters have no matches", async () => {
+    listGamesMock.mockResolvedValue(createLobbyGames([createGameSummary()]));
+    getGameOptionsMock.mockResolvedValue(createGameOptionsResponse());
+
+    const { user } = renderLobbyRoute("war-table");
+    await screen.findByTestId("react-shell-lobby-row-joinable-game");
+    await user.type(screen.getByPlaceholderText("Search games..."), "missing campaign");
+
+    expect(
+      screen.getByText("No games available. Create a new one to get started.")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("react-shell-lobby-load-more")).toHaveClass("is-hidden");
+  });
 });

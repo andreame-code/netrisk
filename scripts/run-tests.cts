@@ -53,6 +53,11 @@ const {
   recoverAiTurnState,
   recoverStuckAiTurns
 } = require("../backend/services/ai-turn-recovery.cjs");
+const {
+  filterAutomatedGameFixtures,
+  isAutomatedGameFixture,
+  pruneExpiredAutomatedGameFixtures
+} = require("../backend/services/automated-game-fixture-retention.cjs");
 const { enforceTurnTimeouts } = require("../backend/services/turn-timeout-enforcement.cjs");
 const { createAuthStore } = require("../backend/auth.cjs");
 const { createAuthRepository } = require("../backend/auth-repository.cjs");
@@ -3285,7 +3290,8 @@ register("grant admin revoca sessioni solo quando il ruolo cambia", () => {
 });
 
 async function withServer(
-  run: (baseUrl: string, context: ServerTestContext) => Promise<void>
+  run: (baseUrl: string, context: ServerTestContext) => Promise<void>,
+  options: { hideAutomatedGameFixtures?: boolean } = {}
 ): Promise<void> {
   const unique = `${Date.now()}-${uniqueSuffix()}`;
   const tempFile = path.join(__dirname, `tmp-users-${Date.now()}-${uniqueSuffix()}.json`);
@@ -3296,6 +3302,7 @@ async function withServer(
   );
   const tempDbFile = path.join(__dirname, `tmp-store-${unique}.sqlite`);
   const app = createApp({
+    ...options,
     dataFile: tempFile,
     gamesFile: tempGamesFile,
     sessionsFile: tempSessionsFile,
@@ -5148,7 +5155,77 @@ register(
   }
 );
 
-register("scheduler entrypoint espone anche il job di recovery AI", async () => {
+register("fixture automatici sono riconosciuti solo da prefissi tecnici espliciti", () => {
+  assert.equal(isAutomatedGameFixture({ id: "route_game_mobile_01" }), true);
+  assert.equal(isAutomatedGameFixture({ id: "game-1", name: "CI Preview lobby" }), true);
+  assert.equal(isAutomatedGameFixture({ id: "preview-probe-123" }), true);
+  assert.equal(isAutomatedGameFixture({ id: "game-2", name: "CI Previewer League" }), false);
+  assert.equal(isAutomatedGameFixture({ id: "game-3", name: "Preview Campaign" }), false);
+  assert.deepEqual(
+    filterAutomatedGameFixtures([
+      { id: "route_game_mobile_01" },
+      { id: "game-2", name: "Regular Campaign" },
+      { id: "game-3", name: "CI Preview smoke" }
+    ]).map((entry: any) => entry.id),
+    ["game-2"]
+  );
+});
+
+register("fixture automatici scaduti vengono eliminati senza toccare partite normali", async () => {
+  const now = new Date("2026-08-07T12:00:00.000Z");
+  const deletedGameIds: string[] = [];
+  const afterDeletePayloads: Array<{ gameId: string; gameName: string | null }> = [];
+  const result = await pruneExpiredAutomatedGameFixtures({
+    listGames: () => [
+      {
+        id: "route_game_old",
+        name: "Route game old",
+        updatedAt: "2026-08-05T12:00:00.000Z"
+      },
+      {
+        id: "ci-preview-old",
+        name: "CI Preview nightly",
+        updatedAt: "2026-08-05T12:00:00.000Z"
+      },
+      {
+        id: "preview-probe-old",
+        name: "Probe",
+        updatedAt: "2026-08-05T12:00:00.000Z"
+      },
+      {
+        id: "route_game_recent",
+        name: "Route game recent",
+        updatedAt: "2026-08-07T11:00:00.000Z"
+      },
+      { id: "route_game_invalid", name: "Invalid date", updatedAt: "not-a-date" },
+      {
+        id: "regular-old",
+        name: "Long Running Campaign",
+        updatedAt: "2026-07-01T12:00:00.000Z"
+      }
+    ],
+    deleteGame: (gameId: string) => deletedGameIds.push(gameId),
+    afterDelete: (payload: { gameId: string; gameName: string | null }) =>
+      afterDeletePayloads.push(payload),
+    now
+  });
+
+  assert.deepEqual(deletedGameIds, ["route_game_old", "ci-preview-old", "preview-probe-old"]);
+  assert.deepEqual(
+    afterDeletePayloads.map((payload) => payload.gameId),
+    deletedGameIds
+  );
+  assert.deepEqual(result, {
+    scannedGames: 6,
+    matchedFixtures: 5,
+    eligibleFixtures: 3,
+    deletedGames: 3,
+    skippedInvalidUpdatedAt: 1,
+    deletedGameIds
+  });
+});
+
+register("scheduler entrypoint espone recovery AI e retention automatiche", async () => {
   const payload = await runScheduledJobs({
     listGames: () => [],
     deleteGame: () => undefined,
@@ -5168,7 +5245,12 @@ register("scheduler entrypoint espone anche il job di recovery AI", async () => 
   assert.equal(payload.ok, true);
   assert.deepEqual(
     payload.jobs.map((job: any) => job.name),
-    ["turn-timeout-enforcement", "ai-turn-recovery", "finished-game-retention"]
+    [
+      "turn-timeout-enforcement",
+      "ai-turn-recovery",
+      "automated-game-fixture-retention",
+      "finished-game-retention"
+    ]
   );
 });
 
@@ -5694,7 +5776,12 @@ register(
         assert.equal(cronPayload.jobs[0].result.forcedTurns, 1);
         assert.deepEqual(
           cronPayload.jobs.map((job: any) => job.name),
-          ["turn-timeout-enforcement", "ai-turn-recovery", "finished-game-retention"]
+          [
+            "turn-timeout-enforcement",
+            "ai-turn-recovery",
+            "automated-game-fixture-retention",
+            "finished-game-retention"
+          ]
         );
 
         const stateResponse = await fetch(
@@ -5745,6 +5832,40 @@ register("API games summary espone metadati configurazione", async () => {
     assert.equal(game.totalPlayers, 4);
     assert.equal(game.aiCount, 2);
   });
+});
+
+register("API lobby di produzione nasconde i fixture automatici senza cancellarli", async () => {
+  await withServer(
+    async (baseUrl, context) => {
+      const updatedAt = new Date("2026-08-07T10:00:00.000Z").toISOString();
+      for (const entry of [
+        { id: "route_game_mobile", name: "Route fixture" },
+        { id: "preview-id", name: "CI Preview smoke" },
+        { id: "preview-probe-mobile", name: "Preview probe" },
+        { id: "regular-campaign", name: "Regular Campaign" }
+      ]) {
+        await context.app.datastore.createGame({
+          ...entry,
+          version: 1,
+          creatorUserId: null,
+          state: createInitialState(),
+          createdAt: updatedAt,
+          updatedAt
+        });
+      }
+
+      const response = await fetch(baseUrl + "/api/games");
+      assert.equal(response.status, 200);
+      const payload: any = await readJson(response);
+      const publicGameIds = payload.games.map((game: any) => game.id);
+      assert.equal(publicGameIds.includes("regular-campaign"), true);
+      assert.equal(publicGameIds.includes("route_game_mobile"), false);
+      assert.equal(publicGameIds.includes("preview-id"), false);
+      assert.equal(publicGameIds.includes("preview-probe-mobile"), false);
+      assert.equal((await context.app.datastore.listGames()).length, 5);
+    },
+    { hideAutomatedGameFixtures: true }
+  );
 });
 
 register("API games rifiuta configurazioni incomplete", async () => {
