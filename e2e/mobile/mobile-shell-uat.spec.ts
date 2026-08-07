@@ -16,6 +16,7 @@ test("mobile profile exposes touch input and renders the public and protected sh
 }, testInfo) => {
   const expectedProfile = mobileProfile(testInfo.project.name);
   await resetGame(page);
+  await page.goto("/");
 
   const runtimeProfile = await page.evaluate(() => ({
     maxTouchPoints: navigator.maxTouchPoints,
@@ -34,7 +35,6 @@ test("mobile profile exposes touch input and renders the public and protected sh
     expectedProfile.browser === "webkit" ? /iPhone|Mobile/i : /Android|Mobile/i
   );
 
-  await page.goto("/");
   await expect(page.locator(".ld-header")).toBeVisible();
   await page.evaluate(() => {
     window.addEventListener(
@@ -72,7 +72,8 @@ test("mobile registration and login keep one keyboard-safe form", async ({ page 
   await expect(registerUsername).toHaveCount(1);
   await expect(registerPassword).toHaveCount(1);
   await expect(registerConfirm).toHaveCount(1);
-  await expect(page.locator("#header-login-form")).toHaveCount(0);
+  await expect(page.locator("#header-login-form")).toBeHidden();
+  await expect(page.locator("form:visible")).toHaveCount(1);
   await expectTouchTarget(registerSubmit);
   await expectKeyboardFocusRemainsUsable(page, registerConfirm);
 
@@ -92,7 +93,8 @@ test("mobile registration and login keep one keyboard-safe form", async ({ page 
 
   await expect(loginUsername).toHaveCount(1);
   await expect(loginPassword).toHaveCount(1);
-  await expect(page.locator("#header-login-form")).toHaveCount(0);
+  await expect(page.locator("#header-login-form")).toBeHidden();
+  await expect(page.locator("form:visible")).toHaveCount(1);
   await expectTouchTarget(loginSubmit);
   await expectKeyboardFocusRemainsUsable(page, loginPassword);
 
@@ -156,9 +158,9 @@ test("mobile lobby renders deterministic empty, waiting, and full states", async
   });
   const fullRow = page.locator("[data-testid^='react-shell-lobby-row-']", { hasText: fullName });
   await expect(waitingRow).toBeVisible({ timeout: 15000 });
-  await expect(waitingRow).toContainText("1/2");
+  await expect(waitingRow).toContainText(/1\s*\/\s*2/);
   await expect(fullRow).toBeVisible();
-  await expect(fullRow).toContainText("2/2");
+  await expect(fullRow).toContainText(/2\s*\/\s*2/);
   await expectTouchTarget(waitingRow);
   await expectTouchTarget(fullRow);
 });
