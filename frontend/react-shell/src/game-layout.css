@@ -6695,6 +6695,8 @@ html[data-theme="war-table"] .game-map-first-page .game-command-dock-mandatory-t
   html[data-theme="war-table"] .game-map-first-page .map-controls {
     top: 34px !important;
     right: 34px !important;
+    flex-direction: row !important;
+    align-items: center !important;
     gap: 8px !important;
   }
 
