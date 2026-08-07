@@ -72,7 +72,7 @@ test("mobile registration and login keep one keyboard-safe form", async ({ page 
   await expect(registerUsername).toHaveCount(1);
   await expect(registerPassword).toHaveCount(1);
   await expect(registerConfirm).toHaveCount(1);
-  await expect(page.locator("#header-login-form")).toBeHidden();
+  await expect(page.locator("#header-login-form")).toHaveCount(0);
   await expect(page.locator("form:visible")).toHaveCount(1);
   await expectTouchTarget(registerSubmit);
   await expectKeyboardFocusRemainsUsable(page, registerConfirm);
@@ -93,7 +93,7 @@ test("mobile registration and login keep one keyboard-safe form", async ({ page 
 
   await expect(loginUsername).toHaveCount(1);
   await expect(loginPassword).toHaveCount(1);
-  await expect(page.locator("#header-login-form")).toBeHidden();
+  await expect(page.locator("#header-login-form")).toHaveCount(0);
   await expect(page.locator("form:visible")).toHaveCount(1);
   await expectTouchTarget(loginSubmit);
   await expectKeyboardFocusRemainsUsable(page, loginPassword);

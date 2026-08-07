@@ -397,7 +397,7 @@ export function AppShellLayout({ children }: { children: ReactNode }) {
           >
             <WarTableIcon name="bell" />
           </button>
-          {!isAuthenticated && section !== "login" ? (
+          {!isAuthenticated && section !== "login" && section !== "register" ? (
             <form
               id="header-login-form"
               className="top-nav-auth-form"
